@@ -55,7 +55,7 @@ public class PresetDerivationController {
     @Operation(
             summary = "Derive Element from Preset",
             description = "Derive an element based on the specified preset and version, applying the provided element data. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_READ + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_READ + "`."
     )
     public ElementDerivationResponse derive(
             @AuthenticationPrincipal Jwt jwt,

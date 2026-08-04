@@ -67,7 +67,7 @@ public class PaymentProviderController {
     @Operation(
             summary = "List Payment Providers",
             description = "Retrieve a paginated list of payment providers with optional filtering. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“."
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "`."
     )
     public Page<PaymentProviderResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -86,7 +86,7 @@ public class PaymentProviderController {
     @Operation(
             summary = "Create Payment Provider",
             description = "Create a new payment provider. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "“."
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "`."
     )
     public PaymentProviderResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -120,7 +120,7 @@ public class PaymentProviderController {
     @Operation(
             summary = "Retrieve Payment Provider",
             description = "Retrieve details of a specific payment provider by its key. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“."
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "`."
     )
     public PaymentProviderResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -139,7 +139,7 @@ public class PaymentProviderController {
     @Operation(
             summary = "Update Payment Provider",
             description = "Update an existing payment provider. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_UPDATE + "“."
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_UPDATE + "`."
     )
     public PaymentProviderResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -182,7 +182,7 @@ public class PaymentProviderController {
     @Operation(
             summary = "Delete Payment Provider",
             description = "Delete an existing payment provider. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_DELETE + "“."
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_DELETE + "`."
     )
     public void destroy(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -213,7 +213,7 @@ public class PaymentProviderController {
     @Operation(
             summary = "Test Payment Provider",
             description = "Test the configuration of a payment provider by performing a test transaction. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_UPDATE + "“."
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_UPDATE + "`."
     )
     public PaymentProviderTestDataResponseDTO test(
             @Nullable @AuthenticationPrincipal Jwt jwt,

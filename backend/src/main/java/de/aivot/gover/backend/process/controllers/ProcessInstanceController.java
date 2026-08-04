@@ -294,7 +294,9 @@ public class ProcessInstanceController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete Process Instance",
-            description = "Delete a process instance by its ID. Requires super admin privileges."
+            description = "Delete a process instance by its ID. Requires the permission `" +
+                    ProcessInstancePermissionProvider.PROCESS_INSTANCE_DELETE +
+                    "` for the affected process instance or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,

@@ -105,7 +105,8 @@ public class TeamMembershipController {
     @Operation(
             summary = "Create Team Membership",
             description = "Create a new team membership to assign a user to a team. " +
-                    "You need the team membership create permission for the team to create a membership with initial roles."
+                    "Requires the permission `" + TeamPermissionProvider.TEAM_MEMBERSHIP_CREATE +
+                    "` for the target team or at system level."
     )
     public TeamMembershipEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -172,7 +173,8 @@ public class TeamMembershipController {
     @Operation(
             summary = "Update Team Membership",
             description = "Update an existing team membership. " +
-                    "You need the team membership update permission for the team to update a membership."
+                    "Requires the permission `" + TeamPermissionProvider.TEAM_MEMBERSHIP_UPDATE +
+                    "` for the membership's team or at system level."
     )
     public TeamMembershipEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -215,7 +217,8 @@ public class TeamMembershipController {
     @Operation(
             summary = "Delete Team Membership",
             description = "Delete a team membership by its ID. " +
-                    "You need the team membership delete permission for the team to delete a membership."
+                    "Requires the permission `" + TeamPermissionProvider.TEAM_MEMBERSHIP_DELETE +
+                    "` for the membership's team or at system level."
     )
     public void delete(
             @AuthenticationPrincipal Jwt jwt,

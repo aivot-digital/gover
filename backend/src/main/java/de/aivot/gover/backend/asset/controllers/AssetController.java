@@ -674,7 +674,8 @@ public class AssetController {
     @Operation(
             summary = "Copy an asset",
             description = "Copy an asset file from a source path to a target path in the same storage provider. " +
-                    "This requires the permissions " + AssetPermissionProvider.ASSET_READ + " and " + AssetPermissionProvider.ASSET_CREATE + "."
+                    "Requires both system-level permissions `" + AssetPermissionProvider.ASSET_READ + "` and `" +
+                    AssetPermissionProvider.ASSET_CREATE + "`."
     )
     public VStorageIndexItemWithAssetEntity copyFile(
             @Nullable @AuthenticationPrincipal Jwt jwt,

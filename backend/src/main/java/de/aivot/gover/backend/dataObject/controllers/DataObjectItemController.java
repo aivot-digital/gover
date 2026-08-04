@@ -65,7 +65,7 @@ public class DataObjectItemController {
     @Operation(
             summary = "List Data Object Items",
             description = "Retrieve a paginated list of data object items for a specific schema with optional filtering. " +
-                    "This requires the permission „" + DataObjectPermissionProvider.OBJECT_ITEM_READ + "“."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_ITEM_READ + "`."
     )
     public Page<DataObjectItemResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -91,7 +91,7 @@ public class DataObjectItemController {
     @Operation(
             summary = "Create Data Object Item",
             description = "Create a new data object item under a specific schema. " +
-                    "This requires the permission „" + DataObjectPermissionProvider.OBJECT_ITEM_CREATE + "“."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_ITEM_CREATE + "`."
     )
     public DataObjectItemResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -140,7 +140,7 @@ public class DataObjectItemController {
     @Operation(
             summary = "Retrieve Data Object Item",
             description = "Retrieve a specific data object item by its ID under a specific schema. " +
-                    "This requires the permission „" + DataObjectPermissionProvider.OBJECT_ITEM_READ + "“."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_ITEM_READ + "`."
     )
     public DataObjectItemResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -167,7 +167,7 @@ public class DataObjectItemController {
     @Operation(
             summary = "Update Data Object Item",
             description = "Update an existing data object item under a specific schema. " +
-                    "This requires the permission „" + DataObjectPermissionProvider.OBJECT_ITEM_UPDATE + "“."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_ITEM_UPDATE + "`."
     )
     public DataObjectItemResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -220,7 +220,7 @@ public class DataObjectItemController {
     @Operation(
             summary = "Delete Data Object Item",
             description = "Delete a specific data object item by its ID under a specific schema. " +
-                    "This requires the permission „" + DataObjectPermissionProvider.OBJECT_ITEM_DELETE + "“."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_ITEM_DELETE + "`."
     )
     public void destroy(
             @Nullable @AuthenticationPrincipal Jwt jwt,

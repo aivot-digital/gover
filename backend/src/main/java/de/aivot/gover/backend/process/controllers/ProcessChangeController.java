@@ -109,7 +109,9 @@ public class ProcessChangeController {
     @PostMapping("")
     @Operation(
             summary = "Create Process Definition Change",
-            description = "Create a new process definition change. Requires super admin privileges or a user role with create process permissions."
+            description = "Create a new process definition change. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessChangeEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -173,7 +175,9 @@ public class ProcessChangeController {
     @PutMapping("{id}/")
     @Operation(
             summary = "Update Process Definition Change",
-            description = "Update an existing process definition change. Requires super admin privileges or a user role with edit process permissions."
+            description = "Update an existing process definition change. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessChangeEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -218,7 +222,9 @@ public class ProcessChangeController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete Process Definition Change",
-            description = "Delete a process definition change by its ID. Requires super admin privileges."
+            description = "Delete a process definition change by its ID. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,

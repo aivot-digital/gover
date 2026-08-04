@@ -120,7 +120,8 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
     @Operation(
             summary = "Create Department User Role Assignment",
             description = "Create a new user role assignment within a department membership. " +
-                    "Requires super admin privileges or appropriate department edit permissions."
+                    "Requires the permission `" + DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_UPDATE +
+                    "` for the membership's organisation unit or at system level."
     )
     public VDepartmentUserRoleAssignmentWithDetailsEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -218,7 +219,8 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
     @Operation(
             summary = "Delete Department User Role Assignment",
             description = "Delete a user role assignment from a department membership. " +
-                    "Requires super admin privileges or appropriate department edit permissions."
+                    "Requires the permission `" + DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_UPDATE +
+                    "` for the membership's organisation unit or at system level."
     )
     public void destroy(
             @AuthenticationPrincipal Jwt jwt,

@@ -86,7 +86,8 @@ public class UserConfigController {
             summary = "List User Configurations",
             description = "Retrieve a paginated list of user configurations for a specific user with optional filtering. " +
                     "If the special userId 'self' is used, the configurations of the authenticated user will be fetched. " +
-                    "Users without the user_config.read permission can only see public configurations of other users."
+                    "Without the system-level permission `" + ConfigPermissionProvider.USER_CONFIG_READ +
+                    "`, only public configurations of other users are returned."
     )
     public Page<UserConfigResponseDto> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -126,7 +127,8 @@ public class UserConfigController {
             summary = "Update User Configuration",
             description = "Update the value of a specific user configuration identified by its key for a specific user. " +
                     "If the special userId 'self' is used, the configuration of the authenticated user will be updated. " +
-                    "Users can update their own configurations, while user_config.update permits updating configurations for any user."
+                    "Updating another user's configuration requires the system-level permission `" +
+                    ConfigPermissionProvider.USER_CONFIG_UPDATE + "`."
     )
     public UserConfigResponseDto update(
             @Nullable @AuthenticationPrincipal Jwt jwt,

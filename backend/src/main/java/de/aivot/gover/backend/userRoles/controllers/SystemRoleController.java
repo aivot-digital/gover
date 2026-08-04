@@ -62,7 +62,7 @@ public class SystemRoleController {
     @Operation(
             summary = "List System Roles",
             description = "Retrieve a paginated list of system roles. Supports filtering and pagination. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "`."
     )
     public Page<SystemRoleEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -84,7 +84,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Create System Role",
             description = "Create a new system role. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_CREATE + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_CREATE + "`."
     )
     public SystemRoleEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -127,7 +127,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Retrieve System Role",
             description = "Retrieve a system role by its ID. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "`."
     )
     public SystemRoleEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -149,7 +149,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Update System Role",
             description = "Update an existing system role. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE + "`."
     )
     public SystemRoleEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -193,7 +193,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Delete System Role",
             description = "Delete a system role by its ID. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_DELETE + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_DELETE + "`."
     )
     public DeleteSystemRoleResponseDto destroy(
             @AuthenticationPrincipal Jwt jwt,

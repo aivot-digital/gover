@@ -36,7 +36,7 @@ import java.util.Map;
 @Tag(
         name = "Provider Links",
         description = "Provider links can be used to link to external resources from within Gover. " +
-                      "They can be managed by system administrators and are often used to provide links to documentation, support pages, or other relevant external sites."
+                "They can be managed with the corresponding system configuration permissions and are often used to provide links to documentation, support pages, or other relevant external sites."
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProviderLinkController {
@@ -61,7 +61,7 @@ public class ProviderLinkController {
     @Operation(
             summary = "List Provider Links",
             description = "List provider links with pagination and filtering. " +
-                    "This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_READ + "“."
+                    "Requires the system-level permission `" + ConfigPermissionProvider.SYSTEM_CONFIG_READ + "`."
     )
     public Page<ProviderLinkResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -77,7 +77,8 @@ public class ProviderLinkController {
     @GetMapping("available/")
     @Operation(
             summary = "List Available Provider Links",
-            description = "List provider links for the staff dashboard. This endpoint is available to authenticated staff users without system configuration permissions."
+            description = "List provider links for the staff dashboard. Does not require the system-level permission `" +
+                    ConfigPermissionProvider.SYSTEM_CONFIG_READ + "`."
     )
     public Page<ProviderLinkResponseDTO> listAvailable(
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
@@ -99,7 +100,7 @@ public class ProviderLinkController {
     @Operation(
             summary = "Create Provider Link",
             description = "Create a new provider link. " +
-                    "This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_CREATE + "“."
+                    "Requires the system-level permission `" + ConfigPermissionProvider.SYSTEM_CONFIG_CREATE + "`."
     )
     public ProviderLinkResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -134,7 +135,7 @@ public class ProviderLinkController {
     @Operation(
             summary = "Retrieve Provider Link",
             description = "Retrieve a provider link by its ID. " +
-                    "This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_READ + "“."
+                    "Requires the system-level permission `" + ConfigPermissionProvider.SYSTEM_CONFIG_READ + "`."
     )
     public ProviderLinkResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -153,7 +154,7 @@ public class ProviderLinkController {
     @Operation(
             summary = "Update Provider Link",
             description = "Update an existing provider link. " +
-                    "This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE + "“."
+                    "Requires the system-level permission `" + ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE + "`."
     )
     public ProviderLinkResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -189,7 +190,7 @@ public class ProviderLinkController {
     @Operation(
             summary = "Delete Provider Link",
             description = "Delete a provider link by its ID. " +
-                    "This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_DELETE + "“."
+                    "Requires the system-level permission `" + ConfigPermissionProvider.SYSTEM_CONFIG_DELETE + "`."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,

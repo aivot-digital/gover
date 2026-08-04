@@ -148,7 +148,9 @@ public class ProcessInstanceTaskController {
     @PutMapping("{id}/rerun-failed/")
     @Operation(
             summary = "Update Process Instance Task",
-            description = "Update an existing process instance task. Requires super admin privileges or a user role with edit process permissions."
+            description = "Rerun a failed process instance task. Requires the permission `" +
+                    ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK +
+                    "` for the affected process instance or at system level."
     )
     public ProcessInstanceTaskEntity rerunFailedTask(
             @Nullable @AuthenticationPrincipal Jwt jwt,

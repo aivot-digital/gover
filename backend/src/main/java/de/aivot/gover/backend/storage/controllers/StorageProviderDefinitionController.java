@@ -45,7 +45,9 @@ public class StorageProviderDefinitionController {
     @Operation(
             summary = "List Storage Provider Definitions",
             description = "Retrieve a list of all available storage provider definitions. " +
-                    "This requires the permission „" + StoragePermissionProvider.STORAGE_PROVIDER_READ + "“ or „" + StoragePermissionProvider.STORAGE_PROVIDER_CREATE + "“."
+                    "Requires at least one of the system-level permissions `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_READ + "` or `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_CREATE + "`."
     )
     public List<StorageProviderDefinitionDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt
@@ -62,7 +64,9 @@ public class StorageProviderDefinitionController {
     @Operation(
             summary = "Retrieve Storage Provider Definition",
             description = "Retrieve a specific storage provider definition by its key and version. " +
-                    "This requires the permission „" + StoragePermissionProvider.STORAGE_PROVIDER_READ + "“ or „" + StoragePermissionProvider.STORAGE_PROVIDER_CREATE + "“."
+                    "Requires at least one of the system-level permissions `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_READ + "` or `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_CREATE + "`."
     )
     public StorageProviderDefinitionDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,

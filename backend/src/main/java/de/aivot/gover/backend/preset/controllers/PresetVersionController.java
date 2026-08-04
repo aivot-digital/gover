@@ -76,7 +76,7 @@ public class PresetVersionController {
     @Operation(
             summary = "List Preset Versions",
             description = "Retrieve a paginated list of versions for a specific preset with optional filtering. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_READ + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_READ + "`."
     )
     public Page<PresetVersionEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -105,7 +105,7 @@ public class PresetVersionController {
     @Operation(
             summary = "Create Preset Version",
             description = "Create a new version for a specific preset. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_UPDATE + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_UPDATE + "`."
     )
     public PresetVersionEntity createVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -164,7 +164,7 @@ public class PresetVersionController {
     @Operation(
             summary = "Retrieve Preset Version",
             description = "Retrieve a specific version of a preset by its version number. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_READ + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_READ + "`."
     )
     public PresetVersionEntity retrieveVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -194,7 +194,7 @@ public class PresetVersionController {
     @Operation(
             summary = "Update Preset Version",
             description = "Update an existing version of a preset. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_UPDATE + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_UPDATE + "`."
     )
     public PresetVersionEntity updateVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -251,7 +251,7 @@ public class PresetVersionController {
     @Operation(
             summary = "Delete Preset Version",
             description = "Delete a specific version of a preset. Published versions cannot be deleted. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_DELETE + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_DELETE + "`."
     )
     public void destroyVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -298,7 +298,7 @@ public class PresetVersionController {
     @Operation(
             summary = "Publish Preset Version",
             description = "Publish a specific version of a preset. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_PUBLISH_LOCAL + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_PUBLISH_LOCAL + "`."
     )
     public PresetVersionEntity publishVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -342,7 +342,7 @@ public class PresetVersionController {
     @Operation(
             summary = "Revoke Preset Version",
             description = "Revoke a specific version of a preset. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_PUBLISH_LOCAL + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_PUBLISH_LOCAL + "`."
     )
     public PresetVersionEntity revokeVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
