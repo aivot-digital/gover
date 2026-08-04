@@ -68,6 +68,9 @@ import RestorePageIcon from '@aivot/mui-material-symbols-400-n25-outlined/Restor
 import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
+import {PaymentRequestOverview} from '../../modules/payment/components/payment-request-overview';
+import {showWarningSnackbar} from '../../slices/snackbar-slice';
+import {useConfirm} from '../../providers/confirm-provider';
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
@@ -98,6 +101,7 @@ export function CustomerFormPage() {
 
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const confirm = useConfirm();
     const testClaimKey = useMemo(() => searchParams.get(TestClaimSearchParam), [searchParams]);
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
 
@@ -242,6 +246,28 @@ export function CustomerFormPage() {
             return;
         }
 
+        const costs = await new FormTriggerApiService()
+            .calculateCosts(process.slug, resolvedFormSlug, values, {
+                testClaim: testClaimKey ?? undefined,
+            });
+
+        if (costs.totalCost > 0) {
+            const proceedWithPaymentRequirements = await confirm({
+                title: 'Kostenpflichtige Einreichung',
+                children: (
+                    <PaymentRequestOverview
+                        request={costs}
+                    />
+                ),
+                confirmButtonText: 'Kostenpflichtig absenden',
+            });
+
+            if (!proceedWithPaymentRequirements) {
+                dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen.'));
+                return;
+            }
+        }
+
         const formData = new FormData();
         formData.append('inputs', JSON.stringify(values));
 
@@ -265,18 +291,10 @@ export function CustomerFormPage() {
         }));
 
         try {
-            const startRes = await new BaseApiService()
-                .postFormData<{
-                    startedProcessAccessKey: string;
-                }>(
-                    `/api/public/form/${process.slug}/${resolvedFormSlug}/submit/`,
-                    formData,
-                    {
-                        query: {
-                            'test-claim': testClaimKey,
-                        },
-                    },
-                );
+            const startRes = await new FormTriggerApiService()
+                .submitForm(process.slug, resolvedFormSlug, formData, {
+                    testClaim: testClaimKey ?? undefined,
+                });
 
             CustomerInputService.cleanCustomerInput(process.slug, resolvedFormSlug, version.processVersion);
             setStartedProcessAccessKey(startRes.startedProcessAccessKey);

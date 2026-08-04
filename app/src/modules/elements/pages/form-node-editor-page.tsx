@@ -85,7 +85,6 @@ import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {RootStructureActionsContextProvider} from '../../../components/form/root-structure-actions-context';
 import {RootComponentFooter} from '../../../components/form/root-component-footer';
 import {SUBMIT_EVENT} from '../../../components/form/root.component.view';
-import {BaseApiService} from '../../../services/base-api-service';
 import {ProcessTestClaimApiService} from '../../process/services/process-test-claim-api-service';
 import {walkAuthoredElementValues} from '../../../utils/element-data-utils';
 import {FileUploadElementItem, isFileUploadElementItem} from '../../../models/elements/form/input/file-upload-element';
@@ -122,6 +121,7 @@ import {AssetsApiService} from '../../assets/assets-api-service';
 import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
 import {Chip} from '../../../components/chip/chip';
 import {quoteString} from '../../../utils/string-utils';
+import {PaymentRequestOverview} from '../../payment/components/payment-request-overview';
 
 export const DialogSearchParam = 'dialog';
 
@@ -160,7 +160,6 @@ function resolvePrintablePdfFilename(layout: FormLayoutElement | null, node: Pro
         node.name,
         PrintablePdfFallbackFilenameBase,
     ];
-
 
 
     for (const candidate of candidates) {
@@ -559,7 +558,7 @@ export function FormNodeEditorPage() {
                 setNode(updated);
                 setFormLayout(
                     updated.configuration[FormLayoutFieldKey] ??
-                    generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement
+                    generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement,
                 );
             });
     };
@@ -590,7 +589,8 @@ export function FormNodeEditorPage() {
                             Sie sind im Begriff, ein XDatenfeld-Schema zu importieren.
                         </Typography>
                         <Typography>
-                            Beim Import werden ggf. bereits bestehende Formularfelder im Editor durch die importierte Struktur ersetzt.
+                            Beim Import werden ggf. bereits bestehende Formularfelder im Editor durch die importierte
+                            Struktur ersetzt.
                             Möchten Sie den Vorgang wirklich fortsetzen?
                         </Typography>
                     </>
@@ -1100,6 +1100,28 @@ export function FormNodeEditorPage() {
             testClaimRef.current = testClaim;
         }
 
+        const costs = await new FormTriggerApiService()
+            .calculateCosts(process.slug, node.configuration.formSlug, values, {
+                testClaim: testClaim.accessKey,
+            });
+
+        if (costs.totalCost > 0) {
+            const proceedWithPaymentRequirements = await confirm({
+                title: 'Kostenpflichtige Einreichung',
+                children: (
+                    <PaymentRequestOverview
+                        request={costs}
+                    />
+                ),
+                confirmButtonText: 'Kostenpflichtig absenden',
+            });
+
+            if (!proceedWithPaymentRequirements) {
+                dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen.'));
+                return;
+            }
+        }
+
         const formData = new FormData();
         formData.append('inputs', JSON.stringify(values));
 
@@ -1123,18 +1145,10 @@ export function FormNodeEditorPage() {
         }));
 
         try {
-            const startRes = await new BaseApiService()
-                .postFormData<{
-                    startedProcessAccessKey: string;
-                }>(
-                    `/api/public/form/${process?.slug}/${node.configuration.formSlug}/submit/`,
-                    formData,
-                    {
-                        query: {
-                            'test-claim': testClaimRef.current?.accessKey,
-                        },
-                    },
-                );
+            const startRes = await new FormTriggerApiService()
+                .submitForm(process.slug, node.configuration.formSlug, formData, {
+                    testClaim: testClaimRef.current?.accessKey,
+                });
 
             setStartedProcessAccessKey(startRes.startedProcessAccessKey);
         } catch (err) {
