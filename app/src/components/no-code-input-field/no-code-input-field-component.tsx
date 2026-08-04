@@ -29,6 +29,7 @@ interface NoCodeInputFieldComponentProps {
     value?: NoCodeInputFieldElementItem | null;
     desiredReturnType: NoCodeDataType;
     onChange: (value: NoCodeInputFieldElementItem | null) => void;
+    disablePopoutModeWhenFormLayoutChild?: boolean;
 }
 
 export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps) {
@@ -46,6 +47,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
         value,
         desiredReturnType,
         onChange,
+        disablePopoutModeWhenFormLayoutChild = false,
     } = props;
 
     const isFormLayout = (rootElement as { type: ElementType }).type === ElementType.FormLayout;
@@ -97,7 +99,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
     return (
         <>
             {
-                isFormLayout ? (
+                (isFormLayout && !disablePopoutModeWhenFormLayoutChild) ? (
                     <>
                         <Box
                             sx={{
