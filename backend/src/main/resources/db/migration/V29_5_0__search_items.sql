@@ -102,7 +102,7 @@ SELECT text 'process_nodes'                                         AS origin_ta
        array_unique_union_agg(upp.permissions)                      AS permissions
 FROM process_nodes
          JOIN v_user_process_access_permissions AS upp
-              ON upp.target_process_id = process_nodes.process_id -- TODO: Cross Join w/ v_user_system_permission
+              ON upp.target_process_id = process_nodes.process_id
 WHERE coalesce(name, '') <> ''
    OR coalesce(description, '') <> ''
 GROUP BY process_nodes.id,
@@ -265,7 +265,7 @@ SELECT text 'processes'                                              AS origin_t
        array_unique_union_agg(usp.permissions)                        as permissions
 FROM process_versions pv
          JOIN processes p ON pv.process_id = p.id
-         JOIN v_user_process_access_permissions AS usp ON usp.target_process_id = p.id -- TODO: Cross Join w/ v_user_system_permission
+         JOIN v_user_process_access_permissions AS usp ON usp.target_process_id = p.id
 GROUP BY p.id,
          p.internal_title,
          pv.process_version,
@@ -290,4 +290,4 @@ SELECT text 'process_instances'                                     AS origin_ta
        upp.permissions                                              AS permissions
 FROM process_instances pi
          JOIN v_user_process_instance_access_permissions AS upp
-              ON upp.target_process_instance_id = pi.id; -- TODO: Cross Join w/ v_user_system_permission
+              ON upp.target_process_instance_id = pi.id;
