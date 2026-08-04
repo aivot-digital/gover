@@ -14,6 +14,7 @@ import de.aivot.gover.backend.elements.models.ElementDerivationOptions;
 import de.aivot.gover.backend.elements.models.ElementDerivationRequest;
 import de.aivot.gover.backend.elements.models.elements.BaseElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
+import de.aivot.gover.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.gover.backend.elements.models.elements.steps.SubmitStepElement;
@@ -32,8 +33,12 @@ import de.aivot.gover.backend.identity.utils.IdentityCookieUtils;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.models.dtos.MaxFileSizeDto;
+import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.gover.backend.payment.exceptions.PaymentException;
+import de.aivot.gover.backend.payment.models.XBezahldienstePaymentRequest;
+import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.gover.backend.payment.services.PaymentProviderService;
+import de.aivot.gover.backend.payment.services.PaymentRequestCreationService;
 import de.aivot.gover.backend.plugins.form.v1.services.FormPaymentService;
 import de.aivot.gover.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.gover.backend.process.entities.*;
@@ -41,6 +46,7 @@ import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.gover.backend.process.enums.ProcessVersionStatus;
 import de.aivot.gover.backend.process.filters.ProcessNodeFilter;
 import de.aivot.gover.backend.process.filters.ProcessVersionFilter;
+import de.aivot.gover.backend.process.models.ProcessExecutionData;
 import de.aivot.gover.backend.process.services.*;
 import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
 import de.aivot.gover.backend.storage.services.StorageProviderService;
@@ -96,6 +102,9 @@ public class FormTriggerControllerV1 {
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final FormTriggerNodeV1 formTriggerNodeV1;
     private final IdentityService identityService;
+    private final PaymentRequestCreationService paymentRequestCreationService;
+    private final PaymentProviderRepository paymentProviderRepository;
+    private final ProcessDataService processDataService;
 
     @Autowired
     public FormTriggerControllerV1(GoverConfig goverConfig,
@@ -124,7 +133,7 @@ public class FormTriggerControllerV1 {
                                    ElementDataTransformService elementDataTransformService,
                                    ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
                                    FormTriggerNodeV1 formTriggerNodeV1,
-                                   IdentityService identityService) {
+                                   IdentityService identityService, PaymentRequestCreationService paymentRequestCreationService, PaymentProviderRepository paymentProviderRepository, ProcessDataService processDataService) {
         this.goverConfig = goverConfig;
         this.paymentService = paymentService;
         this.identityProviderService = identityProviderService;
@@ -148,6 +157,9 @@ public class FormTriggerControllerV1 {
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.formTriggerNodeV1 = formTriggerNodeV1;
         this.identityService = identityService;
+        this.paymentRequestCreationService = paymentRequestCreationService;
+        this.paymentProviderRepository = paymentProviderRepository;
+        this.processDataService = processDataService;
     }
 
     @GetMapping("")
@@ -364,9 +376,69 @@ public class FormTriggerControllerV1 {
                                                                @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                                                                @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identitySessionId,
                                                                @Nonnull @RequestBody AuthoredElementValues values) throws PaymentException, ResponseException {
-        // TODO: Implement with the paymentService
-        var exists = paymentService != null;
-        return new FormTriggerCostCalculationResponseV1(BigDecimal.ZERO, List.of(), "");
+        var execUser = getExecUser(jwt);
+        var process = getProcessEntity(processSlug);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
+        var node = getProcessNodeEntity(formSlug, process, processVersion);
+
+        FormTriggerConfigV1 config = processNodeService
+                .deriveConfiguration(node, formTriggerNodeV1, execUser, true)
+                .configuration();
+
+        PaymentConfigElementValue paymentConfig = config.payment;
+
+        if (paymentConfig == null) {
+            // No payment required
+            return FormTriggerCostCalculationResponseV1.empty();
+        }
+
+        if (paymentConfig.paymentProviderKey() == null) {
+            throw ResponseException.internalServerError("Für den Formularauslöser ist kein gültiger Zahlungsanbieter hinterlegt.");
+        }
+
+        PaymentProviderEntity paymentProvider = paymentProviderRepository
+                .findById(paymentConfig.paymentProviderKey())
+                .orElseThrow(ResponseException::internalServerError);
+
+        var options = new ElementDerivationOptions()
+                .setSkipValuesForElementIds(List.of())
+                .setSkipOverridesForElementIds(List.of())
+                .setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS))
+                .setSkipVisibilitiesForElementIds(List.of());
+
+        var request = new ElementDerivationRequest(
+                config.formLayout,
+                values,
+                options
+        );
+
+        var derivationLogger = new ElementDerivationLogger();
+        var derivedElementData = elementDerivationService
+                .derive(request, new IdentityDataMap(), derivationLogger);
+
+        var payloadInstanceData = elementDataTransformService.buildPayload(
+                config.formLayout,
+                derivedElementData.getEffectiveValues(),
+                derivedElementData.getElementStates()
+        );
+
+        ProcessExecutionData execData = new ProcessExecutionData();
+        execData.addProcessData(payloadInstanceData);
+
+        Optional<XBezahldienstePaymentRequest> paymentRequest = paymentRequestCreationService.createRequest(
+                paymentConfig,
+                derivedElementData,
+                execData,
+                "https://example.com"
+        );
+
+        // No payment required
+        return paymentRequest
+                .map(xBezahldienstePaymentRequest -> FormTriggerCostCalculationResponseV1.of(
+                        xBezahldienstePaymentRequest,
+                        paymentProvider
+                ))
+                .orElseGet(FormTriggerCostCalculationResponseV1::empty);
     }
 
     @PostMapping("derive/")
@@ -470,9 +542,7 @@ public class FormTriggerControllerV1 {
                 .orElseThrow(ResponseException::notFound)
                 : null;
 
-
         testCaptchaReplayProtection(config.configuration().formLayout, effectiveValues);
-
 
         var processInstance = startProcess(
                 testClaim,
