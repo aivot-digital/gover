@@ -8,11 +8,11 @@ import de.aivot.gover.backend.elements.annotations.ReplicatingContainerLayoutEle
 import de.aivot.gover.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.elements.ElementVisibilityFunctions;
-import de.aivot.gover.backend.elements.models.elements.form.input.ProcessInstanceAttachmentSetSelectElement;
-import de.aivot.gover.backend.elements.models.elements.form.input.StoragePathSelectorInputElement;
-import de.aivot.gover.backend.elements.models.elements.form.input.StoragePathSelectorInputElementValue;
-import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.gover.backend.elements.models.elements.form.content.HeadlineContentElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.*;
 import de.aivot.gover.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.gover.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.gover.backend.enums.ElementType;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
@@ -21,6 +21,7 @@ import de.aivot.gover.backend.nocode.models.NoCodeReference;
 import de.aivot.gover.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.gover.backend.plugins.core.CorePlugin;
 import de.aivot.gover.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
+import de.aivot.gover.backend.plugins.core.v1.operators.object.NoCodeObjectGetOperator;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.gover.backend.process.enums.ProcessNodeExecutionLogLevel;
@@ -39,9 +40,12 @@ import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecution
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.TemplateRenderService;
+import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
 import de.aivot.gover.backend.storage.enums.StorageProviderType;
 import de.aivot.gover.backend.storage.models.StorageItemMetadata;
+import de.aivot.gover.backend.storage.models.StorageProviderMetadataAttribute;
 import de.aivot.gover.backend.storage.repositories.StorageProviderRepository;
+import de.aivot.gover.backend.storage.services.StorageProviderDefinitionService;
 import de.aivot.gover.backend.storage.services.StorageService;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -70,22 +74,27 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     private static final String OUTPUT_NAME_FILE_NAMES = "fileNames";
     private static final String OUTPUT_NAME_COUNT = "count";
 
+    private static final String METADATA_ATTRIBUTES_PREFIX = "meta__attributes";
+
     private final TemplateRenderService templateRenderService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final StorageService storageService;
     private final StorageProviderRepository storageProviderRepository;
+    private final StorageProviderDefinitionService storageProviderDefinitionService;
 
     public StoreAttachmentSetActionNodeV1(TemplateRenderService templateRenderService,
                                           ProcessInstanceAttachmentService processInstanceAttachmentService,
                                           ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
                                           StorageService storageService,
-                                          StorageProviderRepository storageProviderRepository) {
+                                          StorageProviderRepository storageProviderRepository,
+                                          StorageProviderDefinitionService storageProviderDefinitionService) {
         this.templateRenderService = templateRenderService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.storageService = storageService;
         this.storageProviderRepository = storageProviderRepository;
+        this.storageProviderDefinitionService = storageProviderDefinitionService;
     }
 
     @Nonnull
@@ -156,10 +165,58 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 .ifPresent(field -> field.setVisibility(ElementVisibilityFunctions
                         .of(NoCodeExpression.of(
                                 NoCodeEqualsOperator.OPERATOR_ID,
-                                new NoCodeReference(AttachmentSetStorageConfig.CUSTOMIZE_FILE_NAME_FIELD_ID),
-                                new NoCodeStaticValue(true)
+                                NoCodeReference.of(AttachmentSetStorageConfig.CUSTOMIZE_FILE_NAME_FIELD_ID),
+                                NoCodeStaticValue.of(true)
                         ))
                         .recalculateReferencedIds()));
+
+        var allStorageProvidersWithMetadata = storageProviderRepository
+                .findAllByMetadataAttributesNotEmptyAndReadOnlyStorageIsFalseAndTypeIsIn(List.of(StorageProviderType.Assets, StorageProviderType.External));
+
+        layout
+                .findChild(StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, ReplicatingContainerLayoutElement.class)
+                .ifPresent(container -> {
+                    allStorageProvidersWithMetadata
+                            .stream()
+                            .filter(this::storageProviderSupportsMetadataAttributes)
+                            .forEach(provider -> {
+                                var group = new GroupLayoutElement();
+                                group.setId(metadataAttributesGroupId(provider.getId()));
+
+                                group.setVisibility(
+                                        ElementVisibilityFunctions
+                                                .of(
+                                                        NoCodeExpression
+                                                                .of(
+                                                                        NoCodeEqualsOperator.OPERATOR_ID,
+                                                                        NoCodeExpression
+                                                                                .of(
+                                                                                        NoCodeObjectGetOperator.OPERATOR_ID,
+                                                                                        NoCodeReference.of(AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID),
+                                                                                        NoCodeStaticValue.of("storageProviderId")
+                                                                                ),
+                                                                        NoCodeStaticValue.of(provider.getId())
+                                                                )
+                                                )
+                                                .recalculateReferencedIds()
+                                );
+
+                                var headline = new HeadlineContentElement();
+                                headline.setId(metadataAttributesHeadlineId(provider.getId()));
+                                headline.setContent("Metadaten");
+                                group.addChild(headline);
+
+                                for (var m : provider.getMetadataAttributes()) {
+                                    var in = new TextInputElement();
+                                    in.setId(metadataAttributeFieldId(provider.getId(), m.getKey()));
+                                    in.setLabel(m.getLabel());
+                                    in.setHint(m.getDescription());
+                                    group.addChild(in);
+                                }
+
+                                container.addChild(group);
+                            });
+                });
 
         return layout;
     }
@@ -213,10 +270,11 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
             }
 
             var storageProviderId = resolveStorageProviderId(attachmentSetConfig.storagePath);
+            StorageProviderEntity storageProvider = null;
             if (storageProviderId == null) {
                 addError(errors, AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Es muss ein Speicheranbieter ausgewählt werden.".formatted(rowIndex));
             } else {
-                var storageProvider = storageProviderRepository.findById(storageProviderId).orElse(null);
+                storageProvider = storageProviderRepository.findById(storageProviderId).orElse(null);
                 if (storageProvider == null) {
                     addError(errors, AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter wurde nicht gefunden.".formatted(rowIndex));
                 } else if (Boolean.TRUE.equals(storageProvider.getReadOnlyStorage())) {
@@ -242,9 +300,24 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 }
             }
 
-            if (Boolean.TRUE.equals(attachmentSetConfig.customizeFileName)
-                && StringUtils.isNullOrEmpty(attachmentSetConfig.fileName)) {
-                addError(errors, AttachmentSetStorageConfig.FILE_NAME_FIELD_ID, "Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
+            if (storageProvider != null && storageProviderSupportsMetadataAttributes(storageProvider)) {
+                validateMetadataTemplates(processNodeEntity.getConfiguration(), storageProvider, i, errors);
+            }
+
+            if (Boolean.TRUE.equals(attachmentSetConfig.customizeFileName)) {
+                var fileNameTemplate = StringUtils.toNullableTrimmedString(attachmentSetConfig.fileName);
+                if (fileNameTemplate == null) {
+                    addError(errors, AttachmentSetStorageConfig.FILE_NAME_FIELD_ID, "Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
+                } else {
+                    var diagnostics = templateRenderService.validateInterpolationSyntax(fileNameTemplate);
+                    for (var diagnostic : diagnostics) {
+                        addError(
+                                errors,
+                                AttachmentSetStorageConfig.FILE_NAME_FIELD_ID,
+                                "Eintrag %d, Zeile %d: %s".formatted(rowIndex, diagnostic.lineNumber(), diagnostic.message())
+                        );
+                    }
+                }
             }
         }
 
@@ -300,7 +373,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
             }
 
             var storageProviderId = resolveRequiredStorageProviderId(attachmentSetConfig.storagePath);
-            ensureWritableStorageProvider(storageProviderId);
+            var storageProvider = ensureWritableStorageProvider(storageProviderId);
 
             var renderedTargetFolderPath = interpolateTargetPath(context, resolveConfiguredPath(attachmentSetConfig.storagePath), rowIndex + 1);
             var normalizedTargetFolderPath = normalizeFolderPath(renderedTargetFolderPath);
@@ -308,6 +381,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Zielpfad wurde nicht angegeben oder leer interpoliert.".formatted(rowIndex + 1));
             }
 
+            var storageItemMetadata = resolveStorageItemMetadata(context, storageProvider, rowIndex);
             var setStoragePaths = new ArrayList<String>();
             var setFileNames = new ArrayList<String>();
             var usedCustomFileNames = new LinkedHashSet<String>();
@@ -316,7 +390,12 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 var attachment = attachments.get(i);
                 var attachmentIndex = i + 1;
                 var targetFolderPath = applyFileIndex(normalizedTargetFolderPath, attachmentIndex);
-                var storedFileName = resolveStoredFileName(attachmentSetConfig, attachment.getFileName(), attachmentIndex, usedCustomFileNames, rowIndex + 1);
+                var attachmentGroup = StringUtils.toNullableTrimmedString(attachment.getGroup());
+                if (attachmentGroup != null) {
+                    validateGroupFolderName(attachmentGroup, rowIndex + 1);
+                    targetFolderPath = appendPathSegment(targetFolderPath, attachmentGroup);
+                }
+                var storedFileName = resolveStoredFileName(context, attachmentSetConfig, attachment.getFileName(), attachmentIndex, usedCustomFileNames, rowIndex + 1);
                 var targetPath = appendPathSegment(targetFolderPath, storedFileName);
                 ensureParentFolders(storageProviderId, targetPath, createdFolders);
 
@@ -328,7 +407,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                             storageProviderId,
                             targetPath,
                             attachmentContent,
-                            StorageItemMetadata.empty()
+                            storageItemMetadata
                     );
                     storagePaths.add(storedDocument.getPathFromRoot());
                     fileNames.add(storedDocument.getName());
@@ -366,7 +445,8 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 .setNodeData(metadata);
     }
 
-    private void ensureWritableStorageProvider(@Nonnull Integer storageProviderId) throws ProcessNodeExecutionException {
+    @Nonnull
+    private StorageProviderEntity ensureWritableStorageProvider(@Nonnull Integer storageProviderId) throws ProcessNodeExecutionException {
         var storageProvider = storageProviderRepository
                 .findById(storageProviderId)
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
@@ -387,6 +467,8 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                     storageProviderId
             );
         }
+
+        return storageProvider;
     }
 
     @Nullable
@@ -498,31 +580,57 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     }
 
     @Nonnull
-    private static String resolveStoredFileName(@Nonnull AttachmentSetStorageConfig attachmentSetConfig,
-                                                @Nonnull String originalFileName,
-                                                int attachmentIndex,
-                                                @Nonnull Set<String> usedCustomFileNames,
-                                                int rowIndex) throws ProcessNodeExecutionException {
+    private String resolveStoredFileName(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
+                                         @Nonnull AttachmentSetStorageConfig attachmentSetConfig,
+                                         @Nonnull String originalFileName,
+                                         int attachmentIndex,
+                                         @Nonnull Set<String> usedCustomFileNames,
+                                         int rowIndex) throws ProcessNodeExecutionException {
         if (!Boolean.TRUE.equals(attachmentSetConfig.customizeFileName)) {
             return originalFileName;
         }
 
-        var configuredFileName = StringUtils.toNullableTrimmedString(attachmentSetConfig.fileName);
-        if (configuredFileName == null) {
+        var fileNameTemplate = StringUtils.toNullableTrimmedString(attachmentSetConfig.fileName);
+        if (fileNameTemplate == null) {
             throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
         }
 
-        var configuredBaseFileName = removeExtensionFromConfiguredFileName(configuredFileName)
+        var renderedFileName = StringUtils.toNullableTrimmedString(interpolateFileName(context, fileNameTemplate, rowIndex));
+        if (renderedFileName == null) {
+            throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Dateiname bei Speicherung wurde nicht angegeben oder leer interpoliert.".formatted(rowIndex));
+        }
+
+        var configuredBaseFileName = removeExtensionFromConfiguredFileName(renderedFileName)
                 .replace("#", Integer.toString(attachmentIndex));
         var resolvedFileName = StringUtils
                 .extractExtensionFromFileName(originalFileName)
                 .map(extension -> configuredBaseFileName + "." + extension)
                 .orElse(configuredBaseFileName);
 
+        resolvedFileName = appendNumericSuffix(resolvedFileName, attachmentIndex);
         resolvedFileName = ensureUniqueFileName(resolvedFileName, usedCustomFileNames);
         validateResolvedFileName(resolvedFileName, rowIndex);
         usedCustomFileNames.add(resolvedFileName);
         return resolvedFileName;
+    }
+
+    @Nonnull
+    private String interpolateFileName(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
+                                       @Nonnull String fileName,
+                                       int rowIndex) throws ProcessNodeExecutionException {
+        try {
+            var renderedFileName = templateRenderService.interpolate(context.getCurrentProcessExecutionData(), fileName);
+            if (renderedFileName == null) {
+                throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
+            }
+            return renderedFileName;
+        } catch (IllegalArgumentException e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(e, "Eintrag %d: Der Dateiname bei Speicherung ist syntaktisch ungültig: %s", rowIndex, e.getMessage());
+        } catch (ProcessNodeExecutionException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw new ProcessNodeExecutionExceptionUnknown(e, "Eintrag %d: Der Dateiname bei Speicherung konnte nicht interpoliert werden: %s", rowIndex, e.getMessage());
+        }
     }
 
     @Nonnull
@@ -559,9 +667,9 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
         }
 
         return fileName.substring(0, lastDotIndex) +
-               "-" +
-               suffix +
-               fileName.substring(lastDotIndex);
+                "-" +
+                suffix +
+                fileName.substring(lastDotIndex);
     }
 
     private static void validateResolvedFileName(@Nonnull String resolvedFileName,
@@ -576,6 +684,16 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
         if (resolvedFileName.contains("/") || resolvedFileName.contains("\\") || resolvedFileName.contains("\r") || resolvedFileName.contains("\n")) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Eintrag %d: Der konfigurierte Dateiname bei Speicherung ist ungültig.",
+                    rowIndex
+            );
+        }
+    }
+
+    private static void validateGroupFolderName(@Nonnull String groupFolderName,
+                                                int rowIndex) throws ProcessNodeExecutionException {
+        if (groupFolderName.contains("/") || groupFolderName.contains("\\") || groupFolderName.contains("\r") || groupFolderName.contains("\n")) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Eintrag %d: Der Gruppenname des Anhangs ist als Ordnername ungültig.",
                     rowIndex
             );
         }
@@ -622,6 +740,159 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     @Nullable
     private static String resolveConfiguredPath(@Nullable StoragePathSelectorInputElementValue storagePath) {
         return storagePath == null ? null : StringUtils.toNullableTrimmedString(storagePath.getPath());
+    }
+
+    private boolean storageProviderSupportsMetadataAttributes(@Nonnull StorageProviderEntity storageProvider) {
+        return storageProviderDefinitionService
+                .retrieveProviderDefinition(
+                        storageProvider.getStorageProviderDefinitionKey(),
+                        storageProvider.getStorageProviderDefinitionVersion()
+                )
+                .map(definition -> Boolean.TRUE.equals(definition.getSupportsMetadataAttributes()))
+                .orElse(false);
+    }
+
+    @Nonnull
+    private StorageItemMetadata resolveStorageItemMetadata(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
+                                                           @Nonnull StorageProviderEntity storageProvider,
+                                                           int rowIndex) throws ProcessNodeExecutionException {
+        var metadataAttributes = resolveStorageProviderMetadataAttributes(storageProvider);
+        if (metadataAttributes.isEmpty() || !storageProviderSupportsMetadataAttributes(storageProvider)) {
+            return StorageItemMetadata.empty();
+        }
+
+        var rowValues = resolveAttachmentSetRowValues(context.getThisNode().getConfiguration(), rowIndex);
+        if (rowValues == null) {
+            return StorageItemMetadata.empty();
+        }
+
+        var metadata = new StorageItemMetadata();
+        for (var metadataAttribute : metadataAttributes) {
+            var metadataKey = StringUtils.toNullableTrimmedString(metadataAttribute.getKey());
+            if (metadataKey == null) {
+                continue;
+            }
+
+            var rawValue = rowValues.get(metadataAttributeFieldId(storageProvider.getId(), metadataKey));
+            var metadataValueTemplate = rawValue == null ? null : StringUtils.toNullableTrimmedString(rawValue.toString());
+            if (metadataValueTemplate == null) {
+                continue;
+            }
+
+            var renderedMetadataValue = interpolateMetadataValue(context, metadataValueTemplate, rowIndex + 1, metadataKey);
+            var normalizedMetadataValue = StringUtils.toNullableTrimmedString(renderedMetadataValue);
+            if (normalizedMetadataValue != null) {
+                metadata.put(metadataKey, normalizedMetadataValue);
+            }
+        }
+
+        return metadata;
+    }
+
+    @Nonnull
+    private static List<StorageProviderMetadataAttribute> resolveStorageProviderMetadataAttributes(@Nonnull StorageProviderEntity storageProvider) {
+        return storageProvider.getMetadataAttributes() == null ? List.of() : storageProvider.getMetadataAttributes();
+    }
+
+    @Nullable
+    private static AuthoredElementValues resolveAttachmentSetRowValues(@Nullable AuthoredElementValues configuration,
+                                                                       int rowIndex) {
+        if (configuration == null) {
+            return null;
+        }
+
+        var attachmentSetValues = ReplicatingContainerLayoutElement._formatValue(configuration.get(StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID));
+        if (attachmentSetValues == null || rowIndex < 0 || rowIndex >= attachmentSetValues.size()) {
+            return null;
+        }
+
+        return attachmentSetValues.get(rowIndex).getValues();
+    }
+
+    @Nonnull
+    private String interpolateMetadataValue(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
+                                            @Nonnull String metadataValue,
+                                            int rowIndex,
+                                            @Nonnull String metadataKey) throws ProcessNodeExecutionException {
+        try {
+            var renderedValue = templateRenderService.interpolate(context.getCurrentProcessExecutionData(), metadataValue);
+            return renderedValue == null ? "" : renderedValue;
+        } catch (IllegalArgumentException e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Eintrag %d: Der Metadatenwert %s ist syntaktisch ungültig: %s",
+                    rowIndex,
+                    StringUtils.quote(metadataKey),
+                    e.getMessage()
+            );
+        } catch (RuntimeException e) {
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Eintrag %d: Der Metadatenwert %s konnte nicht interpoliert werden: %s",
+                    rowIndex,
+                    StringUtils.quote(metadataKey),
+                    e.getMessage()
+            );
+        }
+    }
+
+    private void validateMetadataTemplates(@Nullable AuthoredElementValues configuration,
+                                           @Nonnull StorageProviderEntity storageProvider,
+                                           int rowIndex,
+                                           @Nonnull Map<String, List<String>> errors) {
+        var metadataAttributes = resolveStorageProviderMetadataAttributes(storageProvider);
+        if (metadataAttributes.isEmpty()) {
+            return;
+        }
+
+        var rowValues = resolveAttachmentSetRowValues(configuration, rowIndex);
+        if (rowValues == null) {
+            return;
+        }
+
+        for (var metadataAttribute : metadataAttributes) {
+            var metadataKey = StringUtils.toNullableTrimmedString(metadataAttribute.getKey());
+            if (metadataKey == null) {
+                continue;
+            }
+
+            var fieldId = metadataAttributeFieldId(storageProvider.getId(), metadataKey);
+            var rawValue = rowValues.get(fieldId);
+            var metadataValueTemplate = rawValue == null ? null : StringUtils.toNullableTrimmedString(rawValue.toString());
+            if (metadataValueTemplate == null) {
+                continue;
+            }
+
+            var diagnostics = templateRenderService.validateInterpolationSyntax(metadataValueTemplate);
+            for (var diagnostic : diagnostics) {
+                addError(
+                        errors,
+                        fieldId,
+                        "Eintrag %d, Metadatenfeld %s, Zeile %d: %s".formatted(
+                                rowIndex + 1,
+                                StringUtils.quote(metadataKey),
+                                diagnostic.lineNumber(),
+                                diagnostic.message()
+                        )
+                );
+            }
+        }
+    }
+
+    @Nonnull
+    private static String metadataAttributesGroupId(@Nonnull Integer storageProviderId) {
+        return "%s_%d".formatted(METADATA_ATTRIBUTES_PREFIX, storageProviderId);
+    }
+
+    @Nonnull
+    private static String metadataAttributesHeadlineId(@Nonnull Integer storageProviderId) {
+        return "%s_hdl".formatted(metadataAttributesGroupId(storageProviderId));
+    }
+
+    @Nonnull
+    private static String metadataAttributeFieldId(@Nonnull Integer storageProviderId,
+                                                   @Nonnull String metadataKey) {
+        return "%s_%s".formatted(metadataAttributesGroupId(storageProviderId), metadataKey);
     }
 
     @Nonnull
@@ -736,7 +1007,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
         @InputElementPOJOBinding(id = FILE_NAME_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dateiname bei Speicherung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional. Wenn gesetzt, wird dieser Wert als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der gespeicherten Datei. Werden mehrere Dateien gespeichert, wird ab der zweiten Datei ein Index angehängt, zum Beispiel DATEINAME-2.pdf."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional. Wenn gesetzt, wird dieser Wert als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der gespeicherten Datei. Diese Eingabe unterstützt \"Smarte Platzhalter\". Beim Speichern wird immer ein Index angehängt, zum Beispiel DATEINAME-1.pdf."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
         public String fileName;

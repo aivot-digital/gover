@@ -17,6 +17,7 @@ import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.gover.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
+import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.gover.backend.process.models.ProcessExecutionData;
 import de.aivot.gover.backend.process.models.ProcessNodeExecutionLogger;
@@ -31,7 +32,10 @@ import de.aivot.gover.backend.storage.enums.StorageProviderStatus;
 import de.aivot.gover.backend.storage.enums.StorageProviderType;
 import de.aivot.gover.backend.storage.models.StorageDocument;
 import de.aivot.gover.backend.storage.models.StorageItemMetadata;
+import de.aivot.gover.backend.storage.models.StorageProviderDefinition;
+import de.aivot.gover.backend.storage.models.StorageProviderMetadataAttribute;
 import de.aivot.gover.backend.storage.repositories.StorageProviderRepository;
+import de.aivot.gover.backend.storage.services.StorageProviderDefinitionService;
 import de.aivot.gover.backend.storage.services.StorageService;
 import de.aivot.gover.backend.utils.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,13 +75,18 @@ class StoreAttachmentSetActionNodeV1Test {
     private static final Long TASK_ID = 456L;
     private static final Integer TARGET_STORAGE_PROVIDER_ID = 77;
     private static final Integer SECOND_TARGET_STORAGE_PROVIDER_ID = 88;
+    private static final String STORAGE_PROVIDER_DEFINITION_KEY = "local_disk_storage";
+    private static final String METADATA_STORAGE_PROVIDER_DEFINITION_KEY = "s3_storage";
+    private static final Integer STORAGE_PROVIDER_DEFINITION_VERSION = 1;
 
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
     private ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private StorageService storageService;
     private StorageProviderRepository storageProviderRepository;
+    private StorageProviderDefinitionService storageProviderDefinitionService;
     private StoreAttachmentSetActionNodeV1 node;
     private List<StoredDocument> storedDocuments;
+    private List<StorageItemMetadata> storedDocumentMetadata;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -85,12 +94,25 @@ class StoreAttachmentSetActionNodeV1Test {
         processInstanceAttachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
         storageService = mock(StorageService.class);
         storageProviderRepository = mock(StorageProviderRepository.class);
+        storageProviderDefinitionService = mock(StorageProviderDefinitionService.class);
         storedDocuments = new ArrayList<>();
+        storedDocumentMetadata = new ArrayList<>();
+
+        var storageProviderDefinition = mock(StorageProviderDefinition.class);
+        when(storageProviderDefinition.getSupportsMetadataAttributes()).thenReturn(false);
+        var metadataStorageProviderDefinition = mock(StorageProviderDefinition.class);
+        when(metadataStorageProviderDefinition.getSupportsMetadataAttributes()).thenReturn(true);
+        when(storageProviderDefinitionService.retrieveProviderDefinition(STORAGE_PROVIDER_DEFINITION_KEY, STORAGE_PROVIDER_DEFINITION_VERSION))
+                .thenReturn(Optional.of(storageProviderDefinition));
+        when(storageProviderDefinitionService.retrieveProviderDefinition(METADATA_STORAGE_PROVIDER_DEFINITION_KEY, STORAGE_PROVIDER_DEFINITION_VERSION))
+                .thenReturn(Optional.of(metadataStorageProviderDefinition));
 
         when(storageProviderRepository.findById(TARGET_STORAGE_PROVIDER_ID))
                 .thenReturn(Optional.of(storageProvider(TARGET_STORAGE_PROVIDER_ID, "Ziel", false)));
         when(storageProviderRepository.findById(SECOND_TARGET_STORAGE_PROVIDER_ID))
                 .thenReturn(Optional.of(storageProvider(SECOND_TARGET_STORAGE_PROVIDER_ID, "Weiteres Ziel", false)));
+        when(storageProviderRepository.findAllByMetadataAttributesNotEmptyAndReadOnlyStorageIsFalseAndTypeIsIn(any()))
+                .thenReturn(List.of());
         when(storageService.storeDocument(
                 any(Integer.class),
                 anyString(),
@@ -99,7 +121,11 @@ class StoreAttachmentSetActionNodeV1Test {
         )).thenAnswer(invocation -> {
             var path = invocation.getArgument(1, String.class);
             var content = invocation.getArgument(2, InputStream.class).readAllBytes();
+            var metadata = invocation.getArgument(3, StorageItemMetadata.class);
+            var copiedMetadata = StorageItemMetadata.empty();
+            copiedMetadata.putAll(metadata);
             storedDocuments.add(new StoredDocument(path, new String(content, StandardCharsets.UTF_8)));
+            storedDocumentMetadata.add(copiedMetadata);
             return new StorageDocument(
                     path,
                     StringUtils.getLastPathSegment(path),
@@ -113,7 +139,8 @@ class StoreAttachmentSetActionNodeV1Test {
                 processInstanceAttachmentService,
                 processInstanceAttachmentSetService,
                 storageService,
-                storageProviderRepository
+                storageProviderRepository,
+                storageProviderDefinitionService
         );
     }
 
@@ -147,6 +174,30 @@ class StoreAttachmentSetActionNodeV1Test {
                 .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.FILE_NAME_FIELD_ID, TextInputElement.class)
                 .orElseThrow();
         assertNotNull(fileNameField.getVisibility());
+    }
+
+    @Test
+    void getConfigurationLayout_AddsMetadataFieldsOnlyForProvidersSupportingMetadata() throws Exception {
+        when(storageProviderRepository.findAllByMetadataAttributesNotEmptyAndReadOnlyStorageIsFalseAndTypeIsIn(any()))
+                .thenReturn(List.of(
+                        storageProviderWithMetadata(
+                                TARGET_STORAGE_PROVIDER_ID,
+                                "Metadaten-Ziel",
+                                false,
+                                metadataAttribute("x-amz-meta-case-id", "Vorgangs-ID")
+                        ),
+                        storageProvider(SECOND_TARGET_STORAGE_PROVIDER_ID, "Ohne Metadaten", false)
+                                .setMetadataAttributes(List.of(metadataAttribute("x-amz-meta-ignored", "Ignoriert")))
+                ));
+
+        var layout = node.getConfigurationLayout(null);
+
+        assertTrue(layout
+                .findChild(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), TextInputElement.class)
+                .isPresent());
+        assertTrue(layout
+                .findChild(metadataFieldId(SECOND_TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-ignored"), TextInputElement.class)
+                .isEmpty());
     }
 
     @Test
@@ -191,7 +242,62 @@ class StoreAttachmentSetActionNodeV1Test {
     }
 
     @Test
-    void init_CustomizesFileNamesAndPostfixesDuplicates() throws Exception {
+    void init_StoresRenderedMetadataWhenTargetProviderSupportsMetadata() throws Exception {
+        when(storageProviderRepository.findById(TARGET_STORAGE_PROVIDER_ID))
+                .thenReturn(Optional.of(storageProviderWithMetadata(
+                        TARGET_STORAGE_PROVIDER_ID,
+                        "Metadaten-Ziel",
+                        false,
+                        metadataAttribute("x-amz-meta-case-id", "Vorgangs-ID"),
+                        metadataAttribute("x-amz-meta-static", "Statisch"),
+                        metadataAttribute("x-amz-meta-empty", "Leer")
+                )));
+        arrangeAttachmentSet(
+                "documents",
+                321,
+                attachment("alpha.PDF", 1, 11, "/source/alpha.pdf")
+        );
+
+        var configuration = configuration(
+                attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/documents")
+        );
+        var authoredAttachmentSet = new AuthoredElementValues();
+        authoredAttachmentSet.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), "case-{{caseId}}");
+        authoredAttachmentSet.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-static"), " static value ");
+        authoredAttachmentSet.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-empty"), " ");
+        authoredAttachmentSet.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-unregistered"), "ignored");
+
+        node.init(context(configuration, authoredConfiguration(authoredAttachmentSet)));
+
+        assertEquals(1, storedDocumentMetadata.size());
+        var metadata = storedDocumentMetadata.getFirst();
+        assertEquals("case-123", metadata.get("x-amz-meta-case-id"));
+        assertEquals("static value", metadata.get("x-amz-meta-static"));
+        assertEquals(2, metadata.size());
+    }
+
+    @Test
+    void init_StoresEmptyMetadataWhenTargetProviderDoesNotSupportMetadata() throws Exception {
+        arrangeAttachmentSet(
+                "documents",
+                321,
+                attachment("alpha.PDF", 1, 11, "/source/alpha.pdf")
+        );
+
+        var configuration = configuration(
+                attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/documents")
+        );
+        var authoredAttachmentSet = new AuthoredElementValues();
+        authoredAttachmentSet.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), "case-{{caseId}}");
+
+        node.init(context(configuration, authoredConfiguration(authoredAttachmentSet)));
+
+        assertEquals(1, storedDocumentMetadata.size());
+        assertTrue(storedDocumentMetadata.getFirst().isEmpty());
+    }
+
+    @Test
+    void init_CustomizesFileNamesWithRenderedTemplatesAndNumberSuffixes() throws Exception {
         arrangeAttachmentSet(
                 "documents",
                 321,
@@ -200,14 +306,57 @@ class StoreAttachmentSetActionNodeV1Test {
         );
 
         var configuration = configuration(
-                attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/#", true, "stored-name.ignored")
+                attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/#", true, "stored-{{caseId}}.ignored")
         );
         node.init(context(configuration));
 
         assertEquals(List.of(
-                new StoredDocument("/case/123/1/stored-name.pdf", "alpha.PDF"),
-                new StoredDocument("/case/123/2/stored-name-2.pdf", "beta.pdf")
+                new StoredDocument("/case/123/1/stored-123-1.pdf", "alpha.PDF"),
+                new StoredDocument("/case/123/2/stored-123-2.pdf", "beta.pdf")
         ), storedDocuments);
+    }
+
+    @Test
+    void init_StoresAttachmentsWithNonEmptyGroupsInGroupFolders() throws Exception {
+        arrangeAttachmentSet(
+                "documents",
+                321,
+                attachment("alpha.PDF", 1, 11, "/source/alpha.pdf").setGroup(" invoices "),
+                attachment("beta.pdf", 2, 11, "/source/beta.pdf"),
+                attachment("gamma.pdf", 3, 11, "/source/gamma.pdf").setGroup(" "),
+                attachment("delta.pdf", 4, 11, "/source/delta.pdf").setGroup("contracts")
+        );
+
+        var configuration = configuration(
+                attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/#")
+        );
+        node.init(context(configuration));
+
+        assertEquals(List.of(
+                new StoredDocument("/case/123/1/invoices/alpha.PDF", "alpha.PDF"),
+                new StoredDocument("/case/123/2/beta.pdf", "beta.pdf"),
+                new StoredDocument("/case/123/3/gamma.pdf", "gamma.pdf"),
+                new StoredDocument("/case/123/4/contracts/delta.pdf", "delta.pdf")
+        ), storedDocuments);
+    }
+
+    @Test
+    void init_FailsWhenAttachmentGroupCannotBeUsedAsFolderName() throws Exception {
+        arrangeAttachmentSet(
+                "documents",
+                321,
+                attachment("alpha.PDF", 1, 11, "/source/alpha.pdf").setGroup("bad/group")
+        );
+
+        var configuration = configuration(
+                attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/")
+        );
+
+        assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(context(configuration))
+        );
+        verify(storageService, never()).storeDocument(any(Integer.class), anyString(), any(InputStream.class), any(StorageItemMetadata.class));
     }
 
     @Test
@@ -293,6 +442,47 @@ class StoreAttachmentSetActionNodeV1Test {
 
         assertNotNull(errors);
         assertTrue(errors.get(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID).getFirst().contains("Zeile"));
+    }
+
+    @Test
+    void validateConfiguration_ValidatesTemplateSyntaxInFileName() {
+        var configuration = configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/", true, "{{"));
+
+        var errors = node.validateConfiguration(processNode(), configuration);
+
+        assertNotNull(errors);
+        assertTrue(errors.get(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.FILE_NAME_FIELD_ID).getFirst().contains("Zeile"));
+    }
+
+    @Test
+    void validateConfiguration_ValidatesTemplateSyntaxInMetadataValuesForMetadataProviders() {
+        when(storageProviderRepository.findById(TARGET_STORAGE_PROVIDER_ID))
+                .thenReturn(Optional.of(storageProviderWithMetadata(
+                        TARGET_STORAGE_PROVIDER_ID,
+                        "Metadaten-Ziel",
+                        false,
+                        metadataAttribute("x-amz-meta-case-id", "Vorgangs-ID")
+        )));
+        var configuration = configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/"));
+        var authoredAttachmentSet = new AuthoredElementValues();
+        var fieldId = metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id");
+        authoredAttachmentSet.put(fieldId, "{{");
+
+        var errors = node.validateConfiguration(processNode(authoredConfiguration(authoredAttachmentSet)), configuration);
+
+        assertNotNull(errors);
+        assertTrue(errors.get(fieldId).getFirst().contains("Metadatenfeld"));
+    }
+
+    @Test
+    void validateConfiguration_IgnoresMetadataTemplatesForUnsupportedProviders() {
+        var configuration = configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/"));
+        var authoredAttachmentSet = new AuthoredElementValues();
+        authoredAttachmentSet.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), "{{");
+
+        var errors = node.validateConfiguration(processNode(authoredConfiguration(authoredAttachmentSet)), configuration);
+
+        assertNull(errors);
     }
 
     @Test
@@ -391,11 +581,26 @@ class StoreAttachmentSetActionNodeV1Test {
 
     private static ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig> context(
             StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig configuration,
+            AuthoredElementValues nodeConfiguration
+    ) {
+        return context(configuration, mock(ProcessInstanceHistoryEventRepository.class), nodeConfiguration);
+    }
+
+    private static ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig> context(
+            StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig configuration,
             ProcessInstanceHistoryEventRepository eventRepository
+    ) {
+        return context(configuration, eventRepository, new AuthoredElementValues());
+    }
+
+    private static ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig> context(
+            StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig configuration,
+            ProcessInstanceHistoryEventRepository eventRepository,
+            AuthoredElementValues nodeConfiguration
     ) {
         return new ProcessNodeExecutionInitContext<>(
                 logger(eventRepository),
-                processNode(),
+                processNode(nodeConfiguration),
                 processInstance(),
                 task(),
                 null,
@@ -405,6 +610,10 @@ class StoreAttachmentSetActionNodeV1Test {
     }
 
     private static ProcessNodeEntity processNode() {
+        return processNode(new AuthoredElementValues());
+    }
+
+    private static ProcessNodeEntity processNode(AuthoredElementValues configuration) {
         return new ProcessNodeEntity()
                 .setId(NODE_ID)
                 .setProcessId(PROCESS_ID)
@@ -413,7 +622,7 @@ class StoreAttachmentSetActionNodeV1Test {
                 .setDataKey("storeAttachmentSet")
                 .setProcessNodeDefinitionKey("de.aivot.core.store_attachment_set")
                 .setProcessNodeDefinitionVersion(1)
-                .setConfiguration(new AuthoredElementValues())
+                .setConfiguration(configuration)
                 .setOutputMappings(Map.of());
     }
 
@@ -473,11 +682,42 @@ class StoreAttachmentSetActionNodeV1Test {
                                                          boolean readOnly) {
         return new StorageProviderEntity()
                 .setId(id)
+                .setStorageProviderDefinitionKey(STORAGE_PROVIDER_DEFINITION_KEY)
+                .setStorageProviderDefinitionVersion(STORAGE_PROVIDER_DEFINITION_VERSION)
                 .setName(name)
                 .setDescription("")
                 .setType(StorageProviderType.Assets)
                 .setStatus(StorageProviderStatus.Synced)
-                .setReadOnlyStorage(readOnly);
+                .setReadOnlyStorage(readOnly)
+                .setMetadataAttributes(List.of());
+    }
+
+    private static StorageProviderEntity storageProviderWithMetadata(Integer id,
+                                                                     String name,
+                                                                     boolean readOnly,
+                                                                     StorageProviderMetadataAttribute... metadataAttributes) {
+        return storageProvider(id, name, readOnly)
+                .setStorageProviderDefinitionKey(METADATA_STORAGE_PROVIDER_DEFINITION_KEY)
+                .setMetadataAttributes(List.of(metadataAttributes));
+    }
+
+    private static StorageProviderMetadataAttribute metadataAttribute(String key,
+                                                                     String label) {
+        return new StorageProviderMetadataAttribute()
+                .setKey(key)
+                .setLabel(label)
+                .setDescription(label);
+    }
+
+    private static AuthoredElementValues authoredConfiguration(AuthoredElementValues... attachmentSets) {
+        var configuration = new AuthoredElementValues();
+        configuration.put(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, List.of(attachmentSets));
+        return configuration;
+    }
+
+    private static String metadataFieldId(Integer storageProviderId,
+                                          String metadataKey) {
+        return "meta__attributes_%d_%s".formatted(storageProviderId, metadataKey);
     }
 
     private record StoredDocument(String path, String content) {
