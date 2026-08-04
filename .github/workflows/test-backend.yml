@@ -1,4 +1,4 @@
-name: Test
+name: Test Backend
 
 on:
   workflow_call:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   testBackend:
-    name: Run unit tests
+    name: Run backend tests
     runs-on: ubuntu-24.04
     env:
       BUILD_VERSION: ${{ inputs.build_version }}
@@ -24,6 +24,6 @@ jobs:
           distribution: temurin
           architecture: x64
 
-      - name: Build with Maven
+      - name: Run Maven tests
         working-directory: backend
         run: mvn --batch-mode --update-snapshots test

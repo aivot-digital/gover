@@ -1,3 +1,4 @@
+import {describe, expect, it} from 'vitest';
 import {ElementType} from '../data/element-type/element-type';
 import {ComputedElementValueSource, createDerivedRuntimeElementData} from '../models/element-data';
 import {resolveValueForResolvedOverride} from './element-data-utils';

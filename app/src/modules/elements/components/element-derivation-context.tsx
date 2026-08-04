@@ -204,7 +204,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     }, [element, disableValidation, disableVisibilities, renderMode]);
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
-        const patchedDerivedData = patchDerivedDataWithAuthoredValues(element, newData, derivedData);
+        const patchedDerivedData = patchDerivedDataWithAuthoredValues(element, newData, baseDerivedData);
         setInternalDerivedData(patchedDerivedData);
         onDerivedDataChange?.(patchedDerivedData);
         onAuthoredElementValuesChange(newData);

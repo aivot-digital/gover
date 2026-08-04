@@ -69,6 +69,10 @@ public class ProcessInstanceAccessControlPresetFilter implements Filter<ProcessI
         return this;
     }
 
+    public Integer getTargetProcessVersion() {
+        return targetProcessVersion;
+    }
+
     public ProcessInstanceAccessControlPresetFilter setTargetProcessVersion(Integer targetProcessVersion) {
         this.targetProcessVersion = targetProcessVersion;
         return this;

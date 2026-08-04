@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
@@ -48,8 +48,12 @@ import {
 } from '../../../../permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
 import {type PermissionSet} from '../../../../permissions/models/permission-set';
+import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 
 const deletedUserMembershipTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
+const membershipIdsLoadingTooltip = 'Lade bestehende Mitgliedschaften…';
+const membershipIdsLoadErrorTooltip = 'Die bestehenden Mitgliedschaften konnten nicht geladen werden.';
+type MembershipIdsLoadState = 'loading' | 'loaded' | 'error';
 
 export function UserDetailsPageTeamMemberships() {
     const dispatch = useAppDispatch();
@@ -67,15 +71,19 @@ export function UserDetailsPageTeamMemberships() {
     const [showSelectNewTeamDialog, setShowSelectNewTeamDialog] = useState(false);
     const [showSelectRolesDialogForTeam, setShowSelectRolesDialogForTeam] = useState<TeamEntity | null>(null);
     const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VTeamMembershipWithDetailsEntity | null>(null);
+    const [assignedTeamIds, setAssignedTeamIds] = useState<Set<number>>(new Set());
+    const [assignedTeamIdsLoadState, setAssignedTeamIdsLoadState] = useState<MembershipIdsLoadState>('loading');
 
     const canManageMemberships = user != null && !user.deletedInIdp;
     const canReadDomainRoles = hasSystemPermission(permissions, Permission.DOMAIN_ROLE_READ);
     const canReadAnyTeam = hasAnyTeamPermission(permissions, Permission.TEAM_READ);
     const canCreateAnyTeamMembership = hasAnyTeamPermission(permissions, Permission.TEAM_MEMBERSHIP_CREATE);
-    const canOpenSelectNewTeamDialog = canManageMemberships &&
+    const canOpenSelectNewTeamDialogBase = canManageMemberships &&
         canReadAnyTeam &&
         canCreateAnyTeamMembership &&
         canReadDomainRoles;
+    const canOpenSelectNewTeamDialog = canOpenSelectNewTeamDialogBase &&
+        assignedTeamIdsLoadState === 'loaded';
 
     const newMembershipDisabledTooltip = !canManageMemberships
         ? deletedUserMembershipTooltip
@@ -85,7 +93,11 @@ export function UserDetailsPageTeamMemberships() {
                 ? formatMissingPermissionTooltip(Permission.TEAM_READ)
                 : !canReadDomainRoles
                     ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
-                    : '';
+                    : assignedTeamIdsLoadState === 'error'
+                        ? membershipIdsLoadErrorTooltip
+                        : assignedTeamIdsLoadState !== 'loaded'
+                            ? membershipIdsLoadingTooltip
+                            : '';
 
     const columns = useMemo(() => buildColumns(permissions, canReadDomainRoles), [canReadDomainRoles, permissions]);
 
@@ -99,37 +111,48 @@ export function UserDetailsPageTeamMemberships() {
             )));
     };
 
-    useEffect(() => {
-        if (!canOpenSelectNewTeamDialog) {
+    const refreshAvailableTeams = useCallback(() => {
+        const userId = user?.id;
+
+        if (!canOpenSelectNewTeamDialogBase || userId == null) {
             setAvailableTeams(undefined);
-            return undefined;
+            setAssignedTeamIds(new Set());
+            setAssignedTeamIdsLoadState('loaded');
+            return;
         }
 
-        let isActive = true;
+        setAvailableTeams(undefined);
+        setAssignedTeamIdsLoadState('loading');
 
-        new TeamsApiService()
-            .listAll()
-            .then(({content}) => {
-                if (!isActive) {
-                    return;
-                }
+        Promise
+            .all([
+                new TeamsApiService().listAll(),
+                new VTeamMembershipWithDetailsApiService().listAll({userId}),
+            ])
+            .then(([teams, memberships]) => {
+                const nextAssignedTeamIds = new Set(memberships.content.map((membership) => membership.teamId));
 
-                setAvailableTeams(content.filter((team) => hasTeamPermission(
-                    permissions,
-                    team.id,
-                    Permission.TEAM_MEMBERSHIP_CREATE,
+                setAssignedTeamIds(nextAssignedTeamIds);
+                setAvailableTeams(teams.content.filter((team) => (
+                    !nextAssignedTeamIds.has(team.id) &&
+                    hasTeamPermission(
+                        permissions,
+                        team.id,
+                        Permission.TEAM_MEMBERSHIP_CREATE,
+                    )
                 )));
+                setAssignedTeamIdsLoadState('loaded');
             })
             .catch((err) => {
-                if (isActive) {
-                    dispatch(showApiErrorSnackbar(err, 'Beim Laden der verfügbaren Teams ist ein Fehler aufgetreten.'));
-                }
+                console.error(err);
+                dispatch(showApiErrorSnackbar(err, 'Beim Laden der verfügbaren Teams ist ein Fehler aufgetreten.'));
+                setAssignedTeamIdsLoadState('error');
             });
+    }, [canOpenSelectNewTeamDialogBase, dispatch, permissions, user?.id]);
 
-        return () => {
-            isActive = false;
-        };
-    }, [canOpenSelectNewTeamDialog, dispatch, permissions]);
+    useEffect(() => {
+        refreshAvailableTeams();
+    }, [refreshAvailableTeams]);
 
     const preSearchElements = useMemo(() => {
         return [
@@ -160,6 +183,7 @@ export function UserDetailsPageTeamMemberships() {
         if (
             !canManageMemberships ||
             !canReadDomainRoles ||
+            assignedTeamIds.has(team.id) ||
             !hasTeamPermission(permissions, team.id, Permission.TEAM_MEMBERSHIP_CREATE)
         ) {
             return;
@@ -178,8 +202,8 @@ export function UserDetailsPageTeamMemberships() {
                 roleIds: roleIdsToAdd,
             })
             .then(() => {
-                // Refresh list
                 listControlRef.current?.refresh();
+                refreshAvailableTeams();
                 refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
@@ -283,6 +307,7 @@ export function UserDetailsPageTeamMemberships() {
                     .destroy(membership.membershipId)
                     .then(() => {
                         listControlRef.current?.refresh();
+                        refreshAvailableTeams();
                         refreshPermissionsAfterMembershipChange();
                     })
                     .catch((error) => {
@@ -401,6 +426,10 @@ export function UserDetailsPageTeamMemberships() {
                     title: 'Alle',
                     options: availableTeams ?? [],
                     onSelect: (dep) => {
+                        if (assignedTeamIds.has(dep.id)) {
+                            return;
+                        }
+
                         setShowSelectRolesDialogForTeam(dep);
                         setShowSelectNewTeamDialog(false);
                     },
@@ -408,6 +437,8 @@ export function UserDetailsPageTeamMemberships() {
                     searchKeys: ['name'],
                     primaryTextKey: 'name',
                     getId: o => String(o.id),
+                    getIcon: () => ModuleIcons.teams,
+                    noOptionsMessage: 'Keine weiteren Teams verfügbar.',
                 }]}
             />
 

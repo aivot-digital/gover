@@ -71,29 +71,30 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
             return;
         }
 
-        var enabledPreferences = 0;
-        if (Boolean.TRUE.equals(value.getPreferPreviousTaskAssignee())) {
-            enabledPreferences++;
-        }
-        if (Boolean.TRUE.equals(value.getPreferUninvolvedUser())) {
-            enabledPreferences++;
-        }
-        if (Boolean.TRUE.equals(value.getPreferProcessInstanceAssignee())) {
-            enabledPreferences++;
+        var generalAssigneePreference = value.getGeneralAssigneePreference();
+        if (generalAssigneePreference != null && !_isGeneralAssigneePreference(generalAssigneePreference)) {
+            throw new ValidationException(this, "Ungültige Bevorzugung bei der Zuweisung.");
         }
 
-        if (enabledPreferences > 1) {
-            throw new ValidationException(this, "Es darf nur eine Bevorzugungs-Option ausgewählt werden.");
+        var repeatExecutionAssigneePreference = value.getRepeatExecutionAssigneePreference();
+        if (repeatExecutionAssigneePreference != null && !_isRepeatExecutionAssigneePreference(repeatExecutionAssigneePreference)) {
+            throw new ValidationException(this, "Ungültige Bevorzugung bei erneuter Ausführung.");
         }
 
         var normalizedValues = value
                 .getDomainAndUserSelection();
+        var hasSelection = normalizedValues != null && !normalizedValues.isEmpty();
+        var hasPreference = generalAssigneePreference != null || repeatExecutionAssigneePreference != null;
 
-        if ((normalizedValues == null || normalizedValues.isEmpty()) && Boolean.TRUE.equals(getRequired())) {
+        if (!hasSelection && hasPreference) {
+            throw new ValidationException(this, "Für eine Bevorzugung muss ein Personenkreis ausgewählt sein.");
+        }
+
+        if (!hasSelection && Boolean.TRUE.equals(getRequired())) {
             throw new ValidationException(this, "Dieses Feld ist ein Pflichtfeld und darf nicht leer sein.");
         }
 
-        if (normalizedValues == null || normalizedValues.isEmpty()) {
+        if (!hasSelection) {
             return;
         }
 
@@ -145,16 +146,20 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
         }
 
         var preferences = new ArrayList<String>();
-        if (Boolean.TRUE.equals(value.getPreferPreviousTaskAssignee())) {
-            preferences.add("Bevorzuge Bearbeiter:in vorheriger Aufgabe");
-        }
-
-        if (Boolean.TRUE.equals(value.getPreferUninvolvedUser())) {
+        if (value.prefersPreviousProcessStepAssignee()) {
+            preferences.add("Bevorzuge Bearbeiter:in des vorherigen Prozessschritts");
+        } else if (value.prefersUninvolvedUser()) {
             preferences.add("Bevorzuge eine neue, unbeteiligte Mitarbeiter:in");
+        } else if (value.prefersProcessInstanceAssignee()) {
+            preferences.add("Bevorzuge die dem Vorgang zugewiesene Mitarbeiter:in");
         }
 
-        if (Boolean.TRUE.equals(value.getPreferProcessInstanceAssignee())) {
-            preferences.add("Bevorzuge dem Vorgang zugewiesene Mitarbeiter:in");
+        if (value.prefersPreviousIterationAssignee()) {
+            preferences.add("Bevorzuge zuletzt zuständige Mitarbeiter:in");
+        }
+
+        if (value.prefersDifferentFromPreviousIterationAssignee()) {
+            preferences.add("Bevorzuge eine andere Mitarbeiter:in");
         }
 
         if (!preferences.isEmpty()) {
@@ -214,15 +219,9 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
             case AssignmentContextInputElementValue val -> val;
             case Map<?, ?> map -> _formatSingleValue(map);
             case DomainAndUserSelectInputElementValue singleValue -> new AssignmentContextInputElementValue()
-                    .setDomainAndUserSelection(List.of(singleValue))
-                    .setPreferPreviousTaskAssignee(false)
-                    .setPreferUninvolvedUser(false)
-                    .setPreferProcessInstanceAssignee(false);
+                    .setDomainAndUserSelection(List.of(singleValue));
             case Collection<?> cValue -> new AssignmentContextInputElementValue()
-                    .setDomainAndUserSelection(_formatDomainSelection(cValue))
-                    .setPreferPreviousTaskAssignee(false)
-                    .setPreferUninvolvedUser(false)
-                    .setPreferProcessInstanceAssignee(false);
+                    .setDomainAndUserSelection(_formatDomainSelection(cValue));
             case String token -> {
                 var parsed = DomainAndUserSelectInputElement._formatValue(List.of(token));
                 if (parsed == null) {
@@ -230,10 +229,7 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
                 }
 
                 yield new AssignmentContextInputElementValue()
-                        .setDomainAndUserSelection(parsed)
-                        .setPreferPreviousTaskAssignee(false)
-                        .setPreferUninvolvedUser(false)
-                        .setPreferProcessInstanceAssignee(false);
+                        .setDomainAndUserSelection(parsed);
             }
             default -> null;
         };
@@ -246,9 +242,8 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
 
         result
                 .setDomainAndUserSelection(normalizedSelection)
-                .setPreferPreviousTaskAssignee(Boolean.TRUE.equals(result.getPreferPreviousTaskAssignee()))
-                .setPreferUninvolvedUser(Boolean.TRUE.equals(result.getPreferUninvolvedUser()))
-                .setPreferProcessInstanceAssignee(Boolean.TRUE.equals(result.getPreferProcessInstanceAssignee()));
+                .setGeneralAssigneePreference(_formatGeneralAssigneePreference(result.getGeneralAssigneePreference()))
+                .setRepeatExecutionAssigneePreference(_formatRepeatExecutionAssigneePreference(result.getRepeatExecutionAssigneePreference()));
 
         return result.isEmpty() ? null : result;
     }
@@ -260,14 +255,10 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
             case AssignmentContextInputElementValue val -> val;
             case Map<?, ?> map -> new AssignmentContextInputElementValue()
                     .setDomainAndUserSelection(_formatDomainSelection(map.get("domainAndUserSelection")))
-                    .setPreferPreviousTaskAssignee(_formatBoolean(map.get("preferPreviousTaskAssignee")))
-                    .setPreferUninvolvedUser(_formatBoolean(map.get("preferUninvolvedUser")))
-                    .setPreferProcessInstanceAssignee(_formatBoolean(map.get("preferProcessInstanceAssignee")));
+                    .setGeneralAssigneePreference(_formatGeneralAssigneePreference(map.get("generalAssigneePreference")))
+                    .setRepeatExecutionAssigneePreference(_formatRepeatExecutionAssigneePreference(map.get("repeatExecutionAssigneePreference")));
             case Collection<?> cValue -> new AssignmentContextInputElementValue()
-                    .setDomainAndUserSelection(_formatDomainSelection(cValue))
-                    .setPreferPreviousTaskAssignee(false)
-                    .setPreferUninvolvedUser(false)
-                    .setPreferProcessInstanceAssignee(false);
+                    .setDomainAndUserSelection(_formatDomainSelection(cValue));
             case String token -> {
                 var parsed = DomainAndUserSelectInputElement._formatValue(List.of(token));
                 if (parsed == null) {
@@ -275,10 +266,7 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
                 }
 
                 yield new AssignmentContextInputElementValue()
-                        .setDomainAndUserSelection(parsed)
-                        .setPreferPreviousTaskAssignee(false)
-                        .setPreferUninvolvedUser(false)
-                        .setPreferProcessInstanceAssignee(false);
+                        .setDomainAndUserSelection(parsed);
             }
             default -> null;
         };
@@ -301,16 +289,58 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
         return normalized.isEmpty() ? null : normalized;
     }
 
-    private static boolean _formatBoolean(@Nullable Object value) {
+    @Nullable
+    private static String _formatGeneralAssigneePreference(@Nullable Object value) {
         if (value == null) {
-            return false;
+            return null;
         }
 
-        if (value instanceof Boolean b) {
-            return b;
+        var normalized = value.toString().trim();
+        if (normalized.isBlank() || "none".equalsIgnoreCase(normalized)) {
+            return null;
+        }
+        if (AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PREVIOUS_PROCESS_STEP_ASSIGNEE.equalsIgnoreCase(normalized)) {
+            return AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PREVIOUS_PROCESS_STEP_ASSIGNEE;
+        }
+        if (AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_UNINVOLVED_USER.equalsIgnoreCase(normalized)) {
+            return AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_UNINVOLVED_USER;
+        }
+        if (AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PROCESS_INSTANCE_ASSIGNEE.equalsIgnoreCase(normalized)) {
+            return AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PROCESS_INSTANCE_ASSIGNEE;
         }
 
-        return "true".equalsIgnoreCase(value.toString().trim());
+        return normalized;
+    }
+
+    @Nullable
+    private static String _formatRepeatExecutionAssigneePreference(@Nullable Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        var normalized = value.toString().trim();
+        if (normalized.isBlank() || "none".equalsIgnoreCase(normalized)) {
+            return null;
+        }
+        if (AssignmentContextInputElementValue.REPEAT_EXECUTION_ASSIGNEE_PREFERENCE_PREVIOUS_ITERATION_ASSIGNEE.equalsIgnoreCase(normalized)) {
+            return AssignmentContextInputElementValue.REPEAT_EXECUTION_ASSIGNEE_PREFERENCE_PREVIOUS_ITERATION_ASSIGNEE;
+        }
+        if (AssignmentContextInputElementValue.REPEAT_EXECUTION_ASSIGNEE_PREFERENCE_DIFFERENT_FROM_PREVIOUS_ITERATION_ASSIGNEE.equalsIgnoreCase(normalized)) {
+            return AssignmentContextInputElementValue.REPEAT_EXECUTION_ASSIGNEE_PREFERENCE_DIFFERENT_FROM_PREVIOUS_ITERATION_ASSIGNEE;
+        }
+
+        return normalized;
+    }
+
+    private static boolean _isGeneralAssigneePreference(@Nonnull String value) {
+        return AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PREVIOUS_PROCESS_STEP_ASSIGNEE.equals(value)
+                || AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_UNINVOLVED_USER.equals(value)
+                || AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PROCESS_INSTANCE_ASSIGNEE.equals(value);
+    }
+
+    private static boolean _isRepeatExecutionAssigneePreference(@Nonnull String value) {
+        return AssignmentContextInputElementValue.REPEAT_EXECUTION_ASSIGNEE_PREFERENCE_PREVIOUS_ITERATION_ASSIGNEE.equals(value)
+                || AssignmentContextInputElementValue.REPEAT_EXECUTION_ASSIGNEE_PREFERENCE_DIFFERENT_FROM_PREVIOUS_ITERATION_ASSIGNEE.equals(value);
     }
 
     @Nonnull

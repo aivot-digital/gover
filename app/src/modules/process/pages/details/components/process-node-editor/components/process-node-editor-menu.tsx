@@ -1,5 +1,6 @@
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
+import Info from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
 import {ProcessActionMenu} from '../../process-action-menu';
 
@@ -8,6 +9,7 @@ interface ProcessNodeEditorMenuProps {
     onClose: () => void;
 
     editable: boolean;
+    onShowNodeProviderDetails: () => void;
     onExportNode: () => void;
     onReplaceNode: () => void;
     onDeleteNode: () => void;
@@ -19,6 +21,7 @@ export function ProcessNodeEditorMenu(props: ProcessNodeEditorMenuProps) {
         onClose,
 
         editable,
+        onShowNodeProviderDetails,
         onExportNode,
         onReplaceNode,
         onDeleteNode,
@@ -48,6 +51,12 @@ export function ProcessNodeEditorMenu(props: ProcessNodeEditorMenuProps) {
                     onClick: onReplaceNode,
                     icon: <SwapHoriz/>,
                     disabled: !editable,
+                },
+                'separator',
+                {
+                    label: 'Elementinformationen',
+                    onClick: onShowNodeProviderDetails,
+                    icon: <Info/>,
                 },
                 'separator',
                 {

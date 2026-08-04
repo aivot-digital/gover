@@ -7,6 +7,7 @@ import type {ProcessInstanceAttachmentEntity} from '../../../../entities/process
 import type {ProcessInstanceAttachmentSetEntity} from '../../../../entities/process-instance-attachment-set-entity';
 
 import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
+import {type ProcessNodeProvider} from '../../../../services/process-node-provider-api-service';
 
 export interface ProcessFlowEditorContextType {
     editable: boolean;
@@ -21,6 +22,7 @@ export interface ProcessFlowEditorContextType {
     onConnectNodeToExisting: (node: ProcessNodeEntity, preferredPortKey?: string) => void;
     onStartReplaceNode: (node: ProcessNodeEntity) => void;
     onStartCloneNode: (node: ProcessNodeEntity) => void;
+    onShowNodeProviderDetails: (provider: ProcessNodeProvider) => void;
 
     onReloadRuntimeData: () => void;
     onDownloadAttachment?: (attachment: ProcessInstanceAttachmentEntity) => void | Promise<void>;

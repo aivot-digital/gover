@@ -7,6 +7,27 @@ import {
 import {AssignmentContextValue} from '../models/elements/form/input/assignment-context-field-element';
 import {DomainAndUserSelectItem} from '../models/elements/form/input/domain-user-select-field-element';
 
+function normalizeGeneralAssigneePreference(value: unknown): AssignmentContextValue['generalAssigneePreference'] {
+    switch (value) {
+        case 'previousProcessStepAssignee':
+        case 'uninvolvedUser':
+        case 'processInstanceAssignee':
+            return value;
+        default:
+            return undefined;
+    }
+}
+
+function normalizeRepeatExecutionAssigneePreference(value: unknown): AssignmentContextValue['repeatExecutionAssigneePreference'] {
+    switch (value) {
+        case 'previousIterationAssignee':
+        case 'differentFromPreviousIterationAssignee':
+            return value;
+        default:
+            return undefined;
+    }
+}
+
 function normalizeDomainSelection(value: unknown): DomainAndUserSelectItem[] {
     if (!Array.isArray(value)) {
         return [];
@@ -35,9 +56,8 @@ function normalizeAssignmentContextValue(value: unknown): AssignmentContextValue
             ? undefined
             : {
                 domainAndUserSelection: normalizedSelection,
-                preferPreviousTaskAssignee: false,
-                preferUninvolvedUser: false,
-                preferProcessInstanceAssignee: false,
+                generalAssigneePreference: undefined,
+                repeatExecutionAssigneePreference: undefined,
             };
     }
 
@@ -47,24 +67,21 @@ function normalizeAssignmentContextValue(value: unknown): AssignmentContextValue
 
     const rawValue = value as Record<string, unknown>;
     const normalizedSelection = normalizeDomainSelection(rawValue.domainAndUserSelection);
-    const preferPreviousTaskAssignee = rawValue.preferPreviousTaskAssignee === true;
-    const preferUninvolvedUser = rawValue.preferUninvolvedUser === true;
-    const preferProcessInstanceAssignee = rawValue.preferProcessInstanceAssignee === true;
+    const generalAssigneePreference = normalizeGeneralAssigneePreference(rawValue.generalAssigneePreference);
+    const repeatExecutionAssigneePreference = normalizeRepeatExecutionAssigneePreference(rawValue.repeatExecutionAssigneePreference);
 
     if (
         normalizedSelection.length === 0 &&
-        !preferPreviousTaskAssignee &&
-        !preferUninvolvedUser &&
-        !preferProcessInstanceAssignee
+        generalAssigneePreference == null &&
+        repeatExecutionAssigneePreference == null
     ) {
         return undefined;
     }
 
     return {
         domainAndUserSelection: normalizedSelection,
-        preferPreviousTaskAssignee,
-        preferUninvolvedUser,
-        preferProcessInstanceAssignee,
+        generalAssigneePreference,
+        repeatExecutionAssigneePreference,
     };
 }
 

@@ -10,11 +10,9 @@ import {
     Divider,
     Typography,
 } from '@mui/material';
-import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment';
 import ExpandMore from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {SearchInput} from '../../../components/search-input/search-input';
-import {KnownProviderIcons} from '../data/known-provider-icons';
 import {ProviderTypeStyles} from '../data/provider-type-styles';
 import {type ProcessNodeProvider, ProcessNodeType} from '../services/process-node-provider-api-service';
 import {SelectionDialogShell} from '../../../components/selection-dialog/selection-dialog-shell';
@@ -22,7 +20,10 @@ import {SelectionListRow} from '../../../components/selection-dialog/selection-l
 import {SelectionDetailsPanel} from '../../../components/selection-dialog/selection-details-panel';
 import {useRetainedDialogValue} from '../../../hooks/use-retained-dialog-value';
 import {type Action} from '../../../components/actions/actions-props';
-import {ProcessNodeOutputCard} from '../components/process-node-output-card';
+import {
+    getProcessNodeProviderIcon,
+    ProcessNodeProviderDetailsContent,
+} from '../components/process-node-provider-details';
 
 const PROCESS_NODE_TYPE_ORDER = [
     ProcessNodeType.Trigger,
@@ -390,7 +391,7 @@ function SelectNodeProviderDialogRow(props: SelectNodeProviderDialogRowProps): R
         onAdd,
     } = props;
 
-    const ProviderIcon = KnownProviderIcons[provider.componentKey] ?? KnownProviderIcons[provider.key] ?? Assignment;
+    const ProviderIcon = getProcessNodeProviderIcon(provider);
 
     return (
         <SelectionListRow
@@ -436,7 +437,7 @@ function SelectNodeProviderDetails(props: SelectNodeProviderDetailsProps): React
         bgColor: typeBgColor,
         textColor: typeTextColor,
     } = typeStyle;
-    const ProviderIcon = KnownProviderIcons[provider.componentKey] ?? KnownProviderIcons[provider.key] ?? Assignment;
+    const ProviderIcon = getProcessNodeProviderIcon(provider);
 
     return (
         <SelectionDetailsPanel
@@ -458,130 +459,7 @@ function SelectNodeProviderDetails(props: SelectNodeProviderDetailsProps): React
             onPrimaryAction={onAdd}
             onClose={onClose}
         >
-            {
-                provider.deprecationNotice != null &&
-                <Alert severity="warning">
-                    {provider.deprecationNotice}
-                </Alert>
-            }
-
-            <SelectNodeProviderDetailsSection title="Allgemein">
-                <SelectNodeProviderDetailsRow label="Plugin" value={provider.parentPluginKey}/>
-                <SelectNodeProviderDetailsRow label="Elementschlüssel" value={provider.key}/>
-                <SelectNodeProviderDetailsRow label="Komponente" value={provider.componentKey}/>
-                <SelectNodeProviderDetailsRow label="Komponententyp" value={provider.componentType}/>
-                <SelectNodeProviderDetailsRow label="Komponentenversion" value={provider.componentVersion}/>
-            </SelectNodeProviderDetailsSection>
-
-            <SelectNodeProviderDetailsSection title="Ausgänge">
-                {
-                    provider.ports.length > 0 ?
-                        provider.ports.map((port) => (
-                            <SelectNodeProviderDetailsListRow
-                                key={port.key}
-                                primary={port.label}
-                                secondary={port.description}
-                            />
-                        )) :
-                        <Typography variant="body2" color="text.secondary">
-                            Dieses Prozesselement besitzt keine Ausgangsports.
-                        </Typography>
-                }
-            </SelectNodeProviderDetailsSection>
-
-            <SelectNodeProviderDetailsSection title="Ausgangsdaten">
-                {
-                    provider.outputs.length > 0 ?
-                        provider.outputs.map((output) => (
-                            <ProcessNodeOutputCard
-                                key={output.key}
-                                label={output.label}
-                                outputKey={output.key}
-                                description={output.description}
-                            />
-                        )) :
-                        <Typography variant="body2" color="text.secondary">
-                            Dieses Prozesselement erzeugt keine zusätzlichen Ausgangsdaten.
-                        </Typography>
-                }
-            </SelectNodeProviderDetailsSection>
+            <ProcessNodeProviderDetailsContent provider={provider}/>
         </SelectionDetailsPanel>
-    );
-}
-
-interface SelectNodeProviderDetailsSectionProps {
-    title: string;
-    children: ReactNode;
-}
-
-function SelectNodeProviderDetailsSection(props: SelectNodeProviderDetailsSectionProps): ReactNode {
-    return (
-        <Box>
-            <Typography
-                variant="subtitle2"
-                sx={{
-                    mb: 1.25,
-                    fontWeight: 700,
-                }}
-            >
-                {props.title}
-            </Typography>
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1.25,
-                }}
-            >
-                {props.children}
-            </Box>
-        </Box>
-    );
-}
-
-interface SelectNodeProviderDetailsRowProps {
-    label: string;
-    value: string;
-}
-
-function SelectNodeProviderDetailsRow(props: SelectNodeProviderDetailsRowProps): ReactNode {
-    return (
-        <Box
-            sx={{
-                py: 0.25,
-            }}
-        >
-            <Typography variant="caption" color="text.secondary">
-                {props.label}
-            </Typography>
-            <Typography variant="body2" sx={{mt: 0.25}}>
-                {props.value}
-            </Typography>
-        </Box>
-    );
-}
-
-interface SelectNodeProviderDetailsListRowProps {
-    primary: string;
-    secondary: string;
-}
-
-function SelectNodeProviderDetailsListRow(props: SelectNodeProviderDetailsListRowProps): ReactNode {
-    return (
-        <Box
-            sx={{
-                p: 1.5,
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1.5,
-            }}
-        >
-            <Typography variant="body2" fontWeight={600}>
-                {props.primary}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
-                {props.secondary}
-            </Typography>
-        </Box>
     );
 }

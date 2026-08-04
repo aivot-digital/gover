@@ -14,6 +14,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,52 +36,80 @@ public class PotentialProcessInstanceAccessService {
     ) {
         var normalizedRequiredPermissions = normalizePermissions(requiredPermissions);
 
-        var rows = repository.findRowsByProcessIdAndProcessVersion(processId, processVersion)
+        var rows = repository.findSelectableRowsByProcessIdAndProcessVersion(processId, processVersion)
                 .stream()
                 .map(PotentialProcessInstanceAccessService::toRow)
                 .filter(Objects::nonNull)
                 .toList();
 
-        var matchingUsers = rows
+        var matchingUserRows = rows
                 .stream()
                 .filter(PotentialProcessInstanceAccessService::isUserRow)
                 .filter(row -> Boolean.TRUE.equals(row.userIsEnabled()))
-                .filter(row -> hasDirectUserAccess(row, normalizedRequiredPermissions))
+                .filter(row -> hasDirectUserProcessAccess(row, normalizedRequiredPermissions))
                 .toList();
 
-        var departmentsWithMatchingUsers = matchingUsers
+        var eligibleUserIdsByDepartment = matchingUserRows
                 .stream()
-                .map(PotentialAccessRow::userViaDepartmentId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+                .filter(row -> row.userViaDepartmentId() != null)
+                .filter(row -> row.userId() != null && !row.userId().isBlank())
+                .collect(Collectors.groupingBy(
+                        PotentialAccessRow::userViaDepartmentId,
+                        Collectors.mapping(PotentialAccessRow::userId, Collectors.toSet())
+                ));
 
-        var teamsWithMatchingUsers = matchingUsers
+        var eligibleUserIdsByTeam = matchingUserRows
                 .stream()
-                .map(PotentialAccessRow::userViaTeamId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+                .filter(row -> row.userViaTeamId() != null)
+                .filter(row -> row.userId() != null && !row.userId().isBlank())
+                .collect(Collectors.groupingBy(
+                        PotentialAccessRow::userViaTeamId,
+                        Collectors.mapping(PotentialAccessRow::userId, Collectors.toSet())
+                ));
 
         var selectableItems = new LinkedHashMap<String, ProcessInstanceAccessSelectableItem>();
 
         for (var row : rows) {
             if (isUserRow(row)) {
                 if (Boolean.TRUE.equals(row.userIsEnabled()) &&
-                    hasDirectUserAccess(row, normalizedRequiredPermissions)) {
-                    putItem(selectableItems, "user", row.userId());
+                    hasDirectUserProcessAccess(row, normalizedRequiredPermissions)) {
+                    putItem(
+                            selectableItems,
+                            "user",
+                            row.userId(),
+                            row.userLabel(),
+                            row.userSubLabel(),
+                            null,
+                            null
+                    );
                 }
                 continue;
             }
 
             if (row.departmentId() != null &&
-                (hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions) ||
-                 departmentsWithMatchingUsers.contains(row.departmentId()))) {
-                putItem(selectableItems, "orgUnit", row.departmentId().toString());
+                hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions)) {
+                putItem(
+                        selectableItems,
+                        "orgUnit",
+                        row.departmentId().toString(),
+                        row.departmentLabel(),
+                        null,
+                        row.departmentDepth(),
+                        countEligibleUsers(eligibleUserIdsByDepartment.get(row.departmentId()))
+                );
             }
 
             if (row.teamId() != null &&
-                (hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions) ||
-                 teamsWithMatchingUsers.contains(row.teamId()))) {
-                putItem(selectableItems, "team", row.teamId().toString());
+                hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions)) {
+                putItem(
+                        selectableItems,
+                        "team",
+                        row.teamId().toString(),
+                        row.teamLabel(),
+                        "Team",
+                        null,
+                        countEligibleUsers(eligibleUserIdsByTeam.get(row.teamId()))
+                );
             }
         }
 
@@ -113,12 +142,12 @@ public class PotentialProcessInstanceAccessService {
                 .toList();
     }
 
-    private static boolean hasDirectUserAccess(
+    private static boolean hasDirectUserProcessAccess(
             @Nonnull PotentialAccessRow row,
             @Nonnull List<String> requiredPermissions
     ) {
         return Boolean.TRUE.equals(row.userIsDirectMember()) &&
-               hasRequiredPermissions(row.userDirectPermissions(), requiredPermissions);
+               hasRequiredPermissions(row.permissions(), requiredPermissions);
     }
 
     private static boolean hasRequiredPermissions(
@@ -158,32 +187,68 @@ public class PotentialProcessInstanceAccessService {
     private static void putItem(
             @Nonnull LinkedHashMap<String, ProcessInstanceAccessSelectableItem> itemMap,
             @Nonnull String type,
-            @Nonnull String id
+            @Nonnull String id,
+            @Nullable String label,
+            @Nullable String subLabel,
+            @Nullable Integer departmentDepth,
+            @Nullable Integer eligibleUserCount
     ) {
         var normalizedId = id.trim();
         if (normalizedId.isBlank()) {
             return;
         }
 
-        itemMap.put(type + ":" + normalizedId, new ProcessInstanceAccessSelectableItem(type, normalizedId));
+        var normalizedLabel = label == null || label.isBlank()
+                ? fallbackLabel(type, normalizedId)
+                : label.trim();
+
+        itemMap.put(
+                type + ":" + normalizedId,
+                new ProcessInstanceAccessSelectableItem(
+                        type,
+                        normalizedId,
+                        normalizedLabel,
+                        subLabel == null || subLabel.isBlank() ? null : subLabel.trim(),
+                        departmentDepth,
+                        eligibleUserCount
+                )
+        );
+    }
+
+    private static int countEligibleUsers(@Nullable Set<String> userIds) {
+        return userIds == null ? 0 : userIds.size();
+    }
+
+    @Nonnull
+    private static String fallbackLabel(@Nonnull String type, @Nonnull String id) {
+        return switch (type) {
+            case "orgUnit" -> "Organisationseinheit #" + id;
+            case "team" -> "Team #" + id;
+            case "user" -> "Mitarbeiter:in #" + id;
+            default -> type + ":" + id;
+        };
     }
 
     @Nullable
     private static PotentialAccessRow toRow(@Nullable Object[] row) {
-        if (row == null || row.length < 9) {
+        if (row == null || row.length < 13) {
             return null;
         }
 
         return new PotentialAccessRow(
                 toInteger(row[0]),
-                toInteger(row[1]),
-                toStringValue(row[2]),
-                toBoolean(row[3]),
-                toInteger(row[4]),
-                toInteger(row[5]),
+                toStringValue(row[1]),
+                toInteger(row[2]),
+                toInteger(row[3]),
+                toStringValue(row[4]),
+                toStringValue(row[5]),
                 toBoolean(row[6]),
-                toStringList(row[7]),
-                toStringList(row[8])
+                toStringValue(row[7]),
+                toStringValue(row[8]),
+                toInteger(row[9]),
+                toInteger(row[10]),
+                toBoolean(row[11]),
+                toStringList(row[12])
         );
     }
 
@@ -314,13 +379,17 @@ public class PotentialProcessInstanceAccessService {
 
     private record PotentialAccessRow(
             @Nullable Integer departmentId,
+            @Nullable String departmentLabel,
+            @Nullable Integer departmentDepth,
             @Nullable Integer teamId,
+            @Nullable String teamLabel,
             @Nullable String userId,
             @Nullable Boolean userIsEnabled,
+            @Nullable String userLabel,
+            @Nullable String userSubLabel,
             @Nullable Integer userViaDepartmentId,
             @Nullable Integer userViaTeamId,
             @Nullable Boolean userIsDirectMember,
-            @Nonnull List<String> userDirectPermissions,
             @Nonnull List<String> permissions
     ) {
     }

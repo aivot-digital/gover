@@ -28,6 +28,7 @@ import {
 } from '../../../slices/snackbar-slice';
 import UndoIcon from '@aivot/mui-material-symbols-400-n25-outlined/Undo';
 import RedoIcon from '@aivot/mui-material-symbols-400-n25-outlined/Redo';
+import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {DeveloperTools} from '../../../components/developer-tools/developer-tools';
 import {
     AuthoredElementValues,
@@ -949,19 +950,17 @@ export function FormNodeEditorPage() {
         },
         'separator' as const,
         {
-            tooltip: 'Zurück zum Prozess',
-            icon: ModuleIcons.processes,
+            label: 'Zurück zum Prozess',
             onClick: onBackToProcess,
-            variant: 'contained' as const,
-            activeStyle: {ml: 1},
+            variant: 'text' as const,
         },
         {
             label: 'Speichern',
-            tooltip: 'Änderungen speichern',
-            icon: null,
+            tooltip: 'Änderungen am Formular speichern',
+            icon: <Save/>,
+            iconPosition: 'start' as const,
             onClick: handleSave,
             variant: 'contained' as const,
-            activeStyle: {ml: 1},
             disabled: !hasChanged || !isEditable,
         },
     ];

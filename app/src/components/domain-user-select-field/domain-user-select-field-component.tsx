@@ -27,6 +27,7 @@ interface DomainUserSelectFieldComponentProps {
     required?: boolean;
     readOnly?: boolean;
     options?: DomainAndUserSelectOption[];
+    onOptionsChange?: (options: DomainAndUserSelectOption[]) => void;
     allowedTypes?: DomainAndUserSelectItemType[] | null;
     processAccessConstraint?: DomainAndUserSelectProcessAccessConstraint | null;
 }
@@ -60,6 +61,7 @@ export function DomainUserSelectFieldComponent(props: DomainUserSelectFieldCompo
         required,
         readOnly,
         options: providedOptions,
+        onOptionsChange,
         allowedTypes,
         processAccessConstraint,
     } = props;
@@ -110,6 +112,10 @@ export function DomainUserSelectFieldComponent(props: DomainUserSelectFieldCompo
     }, [optionConstraint]);
 
     const options = providedOptions ?? loadedOptions;
+    useEffect(() => {
+        onOptionsChange?.(options);
+    }, [onOptionsChange, options]);
+
     const loadedOptionKeys = useMemo(() => {
         return new Set(options.map((entry) => entry.key));
     }, [options]);
@@ -137,12 +143,12 @@ export function DomainUserSelectFieldComponent(props: DomainUserSelectFieldCompo
         }
     }, [providedOptions]);
 
-    const triggerLoad = useCallback(() => {
+    const triggerLoad = useCallback((forceReload: boolean = false) => {
         if (providedOptions != null) {
             return;
         }
 
-        if (!hasEnabledType || loadedOptionsKey === optionsLoadKey) {
+        if (!hasEnabledType || (!forceReload && loadedOptionsKey === optionsLoadKey)) {
             return;
         }
 
@@ -156,7 +162,7 @@ export function DomainUserSelectFieldComponent(props: DomainUserSelectFieldCompo
         setIsLoading(true);
         setLoadError(undefined);
 
-        loadDomainAndUserSelectOptions(false, optionConstraint)
+        loadDomainAndUserSelectOptions(forceReload, optionConstraint)
             .then((nextOptions) => {
                 if (latestLoadTokenRef.current !== loadToken) {
                     return;
@@ -235,6 +241,7 @@ export function DomainUserSelectFieldComponent(props: DomainUserSelectFieldCompo
             open={open}
             onOpen={() => {
                 setOpen(true);
+                triggerLoad(optionConstraint != null);
             }}
             onClose={() => {
                 setOpen(false);

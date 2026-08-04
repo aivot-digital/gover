@@ -10,7 +10,10 @@ import {
     DomainAndUserSelectItem,
     DomainAndUserSelectItemType,
 } from '../../models/elements/form/input/domain-user-select-field-element';
-import {ProcessInstanceAccessControlApiService} from '../../modules/process/services/process-instance-access-control-api-service';
+import {
+    ProcessInstanceAccessControlApiService,
+    type ProcessInstanceAccessSelectableItem,
+} from '../../modules/process/services/process-instance-access-control-api-service';
 import {Page} from '../../models/dtos/page';
 import {listAllPages} from '../../utils/page-utils';
 
@@ -23,6 +26,7 @@ export interface DomainAndUserSelectOption {
     group: DomainAndUserSelectOptionGroup;
     subLabel?: string;
     icon?: ReactElement;
+    eligibleUserCount?: number | null;
 }
 
 export interface DomainAndUserSelectOptionConstraint {
@@ -218,10 +222,9 @@ export async function loadDomainAndUserSelectOptions(
     forceReload: boolean = false,
     constraint?: DomainAndUserSelectOptionConstraint,
 ): Promise<DomainAndUserSelectOption[]> {
-    const allOptions = await loadAllDomainAndUserSelectOptions(forceReload);
     const normalizedConstraint = normalizeConstraint(constraint);
     if (normalizedConstraint == null) {
-        return allOptions;
+        return await loadAllDomainAndUserSelectOptions(forceReload);
     }
 
     const processAccessControlService = new ProcessInstanceAccessControlApiService();
@@ -231,12 +234,60 @@ export async function loadDomainAndUserSelectOptions(
         normalizedConstraint.requiredPermissions,
     );
 
-    const selectableKeys = new Set(selectableValues
-        .map((value) => normalizeDomainAndUserSelectItem(value))
-        .filter((value): value is DomainAndUserSelectItem => value != null)
-        .map(createDomainAndUserSelectValueKey));
+    return sortOptions(selectableValues
+        .map(createConstrainedOption)
+        .filter((option): option is DomainAndUserSelectOption => option != null));
+}
 
-    return allOptions.filter((option) => selectableKeys.has(option.key));
+function createConstrainedOption(item: ProcessInstanceAccessSelectableItem): DomainAndUserSelectOption | undefined {
+    const value = normalizeDomainAndUserSelectItem(item);
+    if (value == null) {
+        return undefined;
+    }
+
+    const key = createDomainAndUserSelectValueKey(value);
+    const label = item.label?.trim() || formatDomainAndUserSelectValue(value);
+
+    if (value.type === 'orgUnit') {
+        return {
+            value,
+            key,
+            label,
+            subLabel: item.subLabel?.trim() || (
+                item.departmentDepth != null
+                    ? getDepartmentTypeLabel(item.departmentDepth)
+                    : 'Organisationseinheit'
+            ),
+            group: 'Organisationseinheiten',
+            icon: getDepartmentTypeIcons(item.departmentDepth ?? 0),
+            eligibleUserCount: item.eligibleUserCount,
+        };
+    }
+
+    if (value.type === 'team') {
+        return {
+            value,
+            key,
+            label,
+            subLabel: item.subLabel?.trim() || 'Team',
+            group: 'Teams',
+            icon: ModuleIcons.teams,
+            eligibleUserCount: item.eligibleUserCount,
+        };
+    }
+
+    if (value.type === 'user') {
+        return {
+            value,
+            key,
+            label,
+            subLabel: item.subLabel?.trim() || undefined,
+            group: 'Mitarbeitende',
+            icon: createElement(PersonOutlineOutlinedIcon),
+        };
+    }
+
+    return undefined;
 }
 
 async function loadAllDomainAndUserSelectOptions(forceReload: boolean = false): Promise<DomainAndUserSelectOption[]> {

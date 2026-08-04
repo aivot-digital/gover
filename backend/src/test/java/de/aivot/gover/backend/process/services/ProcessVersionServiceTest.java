@@ -65,13 +65,15 @@ class ProcessVersionServiceTest {
                 .setProcessVersion(5)
                 .setStatus(ProcessVersionStatus.Drafted)
                 .setPublicTitle("Alt")
-                .setCaseNumberTemplate(null);
+                .setCaseNumberTemplate(null)
+                .setNotes("Alte Notizen");
         var updatedEntity = new ProcessVersionEntity()
                 .setProcessId(12)
                 .setProcessVersion(5)
                 .setStatus(ProcessVersionStatus.Published)
                 .setPublicTitle("Neu")
-                .setCaseNumberTemplate("AZ-%YYY-%M-%I(4)");
+                .setCaseNumberTemplate("AZ-%YYY-%M-%I(4)")
+                .setNotes("Neue Notizen");
 
         var result = service.performUpdate(ProcessVersionEntityId.of(12, 5), updatedEntity, existingEntity);
 
@@ -80,5 +82,6 @@ class ProcessVersionServiceTest {
         assertEquals(ProcessVersionStatus.Published, result.getStatus());
         assertEquals("Neu", result.getPublicTitle());
         assertEquals("AZ-%YYY-%M-%I(4)", result.getCaseNumberTemplate());
+        assertEquals("Neue Notizen", result.getNotes());
     }
 }

@@ -6,6 +6,7 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.Instant;
@@ -38,6 +39,10 @@ public class ProcessVersionEntity {
     @Nullable
     private String caseNumberTemplate;
 
+    @Nullable
+    @Size(max = 2048, message = "Die Notizen dürfen maximal 2048 Zeichen lang sein.")
+    private String notes;
+
     @Nonnull
     private Instant created;
 
@@ -62,6 +67,7 @@ public class ProcessVersionEntity {
                                 @Nonnull ProcessVersionStatus status,
                                 @Nonnull String publicTitle,
                                 @Nullable String caseNumberTemplate,
+                                @Nullable String notes,
                                 @Nonnull Instant created,
                                 @Nonnull Instant updated,
                                 @Nullable Instant published,
@@ -71,10 +77,34 @@ public class ProcessVersionEntity {
         this.status = status;
         this.publicTitle = publicTitle;
         this.caseNumberTemplate = caseNumberTemplate;
+        this.notes = notes;
         this.created = created;
         this.updated = updated;
         this.published = published;
         this.revoked = revoked;
+    }
+
+    public ProcessVersionEntity(@Nonnull Integer processId,
+                                @Nonnull Integer processVersion,
+                                @Nonnull ProcessVersionStatus status,
+                                @Nonnull String publicTitle,
+                                @Nullable String caseNumberTemplate,
+                                @Nonnull Instant created,
+                                @Nonnull Instant updated,
+                                @Nullable Instant published,
+                                @Nullable Instant revoked) {
+        this(
+                processId,
+                processVersion,
+                status,
+                publicTitle,
+                caseNumberTemplate,
+                null,
+                created,
+                updated,
+                published,
+                revoked
+        );
     }
 
     // endregion
@@ -183,6 +213,16 @@ public class ProcessVersionEntity {
 
     public ProcessVersionEntity setCaseNumberTemplate(@Nullable String caseNumberTemplate) {
         this.caseNumberTemplate = caseNumberTemplate;
+        return this;
+    }
+
+    @Nullable
+    public String getNotes() {
+        return notes;
+    }
+
+    public ProcessVersionEntity setNotes(@Nullable String notes) {
+        this.notes = notes;
         return this;
     }
 

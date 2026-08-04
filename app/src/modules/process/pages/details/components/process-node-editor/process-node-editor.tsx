@@ -7,7 +7,6 @@ import {keyframes} from '@mui/material/styles';
 import {Link, Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {useProcessDetailsPageContext} from '../../process-details-page-context';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
-import {KnownProviderIcons} from '../../../../data/known-provider-icons';
 import {
     type ProcessNodeProvider,
     ProcessNodeProviderApiService,
@@ -29,7 +28,6 @@ import {ProcessNodeEditorSkeleton} from './process-node-editor-skeleton';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
 import {useDelayedVisibility} from '../../../../../../hooks/use-delayed-visibility';
 import {downloadObjectFile} from '../../../../../../utils/download-utils';
-import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment';
 import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 import {isDerivedRuntimeElementData} from '../../../../../../models/element-data';
 import {shouldSkipProcessNodeEditorChangeBlocker} from './process-node-editor-change-blocker';
@@ -38,6 +36,10 @@ import {
     isUiDefinitionInputFieldElement,
 } from '../../../../../../models/elements/form/input/ui-definition-input-field-element';
 import {type ProcessNodeDefinitionMetadata} from '../../../../entities/process-node-definition-metadata';
+import {
+    getProcessNodeProviderIcon,
+    ProcessNodeProviderDetailsDialog,
+} from '../../../../components/process-node-provider-details';
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
@@ -75,6 +77,7 @@ export function ProcessNodeEditor(): ReactNode {
     const [editedNode, setEditedNode] = useState<ProcessNodeEntity | null>(null);
     const [layout, setLayout] = useState<GroupLayout | null>(null);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
+    const [isProviderDetailsDialogOpen, setIsProviderDetailsDialogOpen] = useState(false);
     const [isNodeLoading, setIsNodeLoading] = useState(false);
     const [showNodeLoadedFeedback, setShowNodeLoadedFeedback] = useState(false);
     const [problems, setProblems] = useState<ProcessNodeProblems | null>(null);
@@ -228,15 +231,11 @@ export function ProcessNodeEditor(): ReactNode {
 
     const ProviderIcon = useMemo(() => {
         if (provider == null) {
-            return Assignment;
+            return TypeIcon;
         }
 
-        return (
-            KnownProviderIcons[provider.componentKey] ||
-            KnownProviderIcons[provider.key] ||
-            Assignment
-        );
-    }, [provider]);
+        return getProcessNodeProviderIcon(provider);
+    }, [provider, TypeIcon]);
 
     const currentTab = useMemo(() => {
         if (location.pathname.endsWith('/tabs/outputs')) {
@@ -587,6 +586,9 @@ export function ProcessNodeEditor(): ReactNode {
                     setMenuAnchorEl(null);
                 }}
                 editable={structureEditable}
+                onShowNodeProviderDetails={() => {
+                    setIsProviderDetailsDialogOpen(true);
+                }}
                 onExportNode={handleExportSelected}
                 onReplaceNode={() => {
                     if (!structureEditable || originalNode == null) {
@@ -596,6 +598,14 @@ export function ProcessNodeEditor(): ReactNode {
                     onStartReplaceNode(originalNode);
                 }}
                 onDeleteNode={handleDeleteSelected}
+            />
+
+            <ProcessNodeProviderDetailsDialog
+                open={isProviderDetailsDialogOpen}
+                provider={provider}
+                onClose={() => {
+                    setIsProviderDetailsDialogOpen(false);
+                }}
             />
         </>
     );
