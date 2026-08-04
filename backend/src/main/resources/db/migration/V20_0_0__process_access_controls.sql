@@ -51,7 +51,7 @@ create table process_instance_access_controls
     source_team_id             integer       null references teams (id) on delete cascade,
     source_department_id       integer       null references departments (id) on delete cascade,
 
-    target_process_instance_id integer       not null references process_instances (id) on delete cascade,
+    target_process_instance_id bigint        not null references process_instances (id) on delete cascade,
 
     permissions                varchar(64)[] not null default '{}',
 

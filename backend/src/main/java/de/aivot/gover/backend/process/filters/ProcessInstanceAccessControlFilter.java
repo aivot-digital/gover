@@ -11,8 +11,8 @@ import java.util.List;
 public class ProcessInstanceAccessControlFilter implements Filter<ProcessInstanceAccessControlEntity> {
     private Integer sourceTeamId;
     private Integer sourceDepartmentId;
-    private Integer targetProcessInstanceId;
-    private List<Integer> targetProcessInstanceIds;
+    private Long targetProcessInstanceId;
+    private List<Long> targetProcessInstanceIds;
     private Integer targetProcessInstanceTaskId;
 
     public static ProcessInstanceAccessControlFilter create() {
@@ -51,20 +51,20 @@ public class ProcessInstanceAccessControlFilter implements Filter<ProcessInstanc
         return this;
     }
 
-    public Integer getTargetProcessInstanceId() {
+    public Long getTargetProcessInstanceId() {
         return targetProcessInstanceId;
     }
 
-    public ProcessInstanceAccessControlFilter setTargetProcessInstanceId(Integer targetProcessInstanceId) {
+    public ProcessInstanceAccessControlFilter setTargetProcessInstanceId(Long targetProcessInstanceId) {
         this.targetProcessInstanceId = targetProcessInstanceId;
         return this;
     }
 
-    public List<Integer> getTargetProcessInstanceIds() {
+    public List<Long> getTargetProcessInstanceIds() {
         return targetProcessInstanceIds;
     }
 
-    public ProcessInstanceAccessControlFilter setTargetProcessInstanceIds(List<Integer> targetProcessInstanceIds) {
+    public ProcessInstanceAccessControlFilter setTargetProcessInstanceIds(List<Long> targetProcessInstanceIds) {
         this.targetProcessInstanceIds = targetProcessInstanceIds;
         return this;
     }
