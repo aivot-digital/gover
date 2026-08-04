@@ -54,7 +54,7 @@ public class SearchRecentItemService {
             @Nonnull String userId,
             int size
     ) {
-        var normalizedSize = Math.max(1, Math.min(size, maxItemsPerUser));
+        var normalizedSize = Math.clamp(size, 1, maxItemsPerUser);
         var cutoff = Instant.now().minus(retentionDays, ChronoUnit.DAYS);
         var recentItems = searchRecentItemRepository
                 .findAllByUserIdAndLastAccessedGreaterThanEqual(
