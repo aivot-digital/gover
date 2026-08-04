@@ -22,7 +22,7 @@ export function PaymentRequestOverview(props: PaymentRequestOverviewProps) {
                     mt: 1,
                 }}
             >
-                Um Ihre Einreichung bearbeiten zu können, ist eine Bezahlung von Gebühren erforderlich.
+                Um Ihre Einreichung bearbeiten zu können, ist eine Zahlung von Gebühren erforderlich.
                 Die Zahlung wird durch den
                 Dienstleister <strong>{request.paymentProviderName}</strong> abgewickelt.
                 Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben und den

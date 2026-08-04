@@ -253,13 +253,13 @@ export function CustomerFormPage() {
 
         if (costs.totalCost > 0) {
             const proceedWithPaymentRequirements = await confirm({
-                title: 'Kostenpflichtige Einreichung',
+                title: 'Zahlung erforderlich',
                 children: (
                     <PaymentRequestOverview
                         request={costs}
                     />
                 ),
-                confirmButtonText: 'Kostenpflichtig absenden',
+                confirmButtonText: 'Fortfahren',
             });
 
             if (!proceedWithPaymentRequirements) {
