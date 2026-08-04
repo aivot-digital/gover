@@ -247,6 +247,11 @@ public class ProcessNodeController {
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
 
+        updateDTO
+                .setId(existing.getId())
+                .setProcessId(existing.getProcessId())
+                .setProcessVersion(existing.getProcessVersion());
+
         if (processNodeRepository.existsByDataKeyAndIdIsNotAndProcessIdAndProcessVersion(
                 updateDTO.getDataKey(),
                 existing.getId(),
@@ -262,8 +267,6 @@ public class ProcessNodeController {
 
         var existingMap = objectMapper
                 .convertValue(existing, Map.class);
-
-        updateDTO.setId(existing.getId());
 
         if (onlyConfigSave != null) {
             var conf = new AuthoredElementValues();
