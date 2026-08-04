@@ -34,7 +34,7 @@ export interface FormLayoutElement extends BaseElement<ElementType.FormLayout> {
 }
 
 export function isRootElement(obj: any): obj is FormLayoutElement {
-    return obj.type === ElementType.FormLayout;
+    return obj != null && obj.type === ElementType.FormLayout;
 }
 
 export function resolveFormNodeName(layout: FormLayoutElement | undefined | null, processVersion: ProcessVersionEntity): string {
