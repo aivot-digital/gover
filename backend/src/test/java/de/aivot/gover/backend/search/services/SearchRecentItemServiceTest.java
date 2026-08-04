@@ -3,6 +3,7 @@ package de.aivot.gover.backend.search.services;
 import de.aivot.gover.backend.search.dtos.SearchItemResponseDTO;
 import de.aivot.gover.backend.search.dtos.SearchRecentItemRequestDTO;
 import de.aivot.gover.backend.search.entities.SearchRecentItemEntity;
+import de.aivot.gover.backend.search.properties.SearchRecentItemProperties;
 import de.aivot.gover.backend.search.repositories.SearchRecentItemRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Pageable;
@@ -40,7 +41,7 @@ class SearchRecentItemServiceTest {
                 "processes:process-1,1", new SearchItemResponseDTO("process-1,1", "Prozess 1", "processes"),
                 "departments:department-1", new SearchItemResponseDTO("department-1", "Abteilung 1", "departments")
         ));
-        var service = new SearchRecentItemService(repository, searchItemService, 50, 180);
+        var service = new SearchRecentItemService(repository, searchItemService, properties(50, 180));
 
         var result = service.listVisibleRecentItems("user-1", 10);
 
@@ -80,7 +81,7 @@ class SearchRecentItemServiceTest {
         var searchItemService = new TestSearchItemService(Map.of(
                 "secrets:secret-1", new SearchItemResponseDTO("secret-1", "Geheimnis 1", "secrets")
         ));
-        var service = new SearchRecentItemService(repository, searchItemService, 25, 180);
+        var service = new SearchRecentItemService(repository, searchItemService, properties(25, 180));
 
         service.recordRecentItem("user-1", new SearchRecentItemRequestDTO("secret-1", "secrets"));
         service.recordRecentItem("user-1", new SearchRecentItemRequestDTO("secret-2", "secrets"));
@@ -124,6 +125,13 @@ class SearchRecentItemServiceTest {
                 .setItemId(itemId)
                 .setCreated(Instant.now())
                 .setLastAccessed(Instant.now());
+    }
+
+    private static SearchRecentItemProperties properties(int maxItemsPerUser, int retentionDays) {
+        var properties = new SearchRecentItemProperties();
+        properties.setMaxItemsPerUser(maxItemsPerUser);
+        properties.setRetentionDays(retentionDays);
+        return properties;
     }
 
     private static final class TestSearchItemService extends SearchItemService {
