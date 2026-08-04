@@ -12,6 +12,10 @@ import {DepartmentEntity} from '../../entities/department-entity';
 import {ProcessEntity} from '../../../process/entities/process-entity';
 import {ProcessDefinitionApiService} from '../../../process/services/process-definition-api-service';
 import {ProcessStatusChipGroup} from '../../../process/components/process-status/process-status-chip-group';
+import {Permission} from '../../../../data/permissions/permission';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {requireDepartmentPermission} from '../../../permissions/utils/permission-utils';
 
 const filters = [
     {
@@ -76,6 +80,7 @@ const columns: GridColDef<ProcessEntity>[] = [
 ];
 
 export function DepartmentsDetailsPageProcesses() {
+    const permissions = useAppSelector(selectPermissions);
     const {
         item,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentEntity, undefined>;
@@ -84,13 +89,15 @@ export function DepartmentsDetailsPageProcesses() {
         return null;
     }
 
+    requireDepartmentPermission(permissions, item.id, Permission.PROCESS_DEFINITION_READ);
+
     return (
         <Box>
             <Typography
                 variant="h5"
                 sx={{mt: 1.5, mb: 1}}
             >
-                Prozesse der Organisationseinheit
+                Verwaltete Prozesse
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
@@ -129,8 +136,8 @@ export function DepartmentsDetailsPageProcesses() {
                 rowMenuItems={[]}
                 noDataPlaceholder={
                     <EmptyDataListPlaceholder
-                        title="Keine Prozesse zugeordnet"
-                        description="Diese Zuordnung zeigt, welche Prozesse von dieser Organisationseinheit verwaltet werden."
+                        title="Keine verwalteten Prozesse"
+                        description="Diese Ansicht zeigt, welche Prozesse von dieser Organisationseinheit verwaltet werden."
                     />
                 }
                 loadingPlaceholder="Lade Prozesse..."

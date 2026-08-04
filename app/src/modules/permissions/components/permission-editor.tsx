@@ -13,8 +13,7 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
-import React, {useEffect, useMemo, useState} from 'react';
-import Fuse from 'fuse.js';
+import React, {useCallback, useDeferredValue, useEffect, useMemo, useState} from 'react';
 import UnfoldMoreIcon from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldMore';
 import UnfoldLessIcon from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldLess';
 import MoreVertIcon from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
@@ -30,24 +29,25 @@ import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/
 import {SearchInput} from '../../../components/search-input/search-input';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
-import {PermissionScope} from '../enums/permission-scope';
-import {type PermissionEntry, type PermissionProvider} from '../models/permission-provider';
+import {type PermissionProvider} from '../models/permission-provider';
 import {PermissionGroupAccordion} from './permission-group-accordion';
-
-function groupKey(label: string): string {
-    return label.trim();
-}
-
-function normalizeSearch(value: string): string {
-    return value
-        .trim()
-        .toLowerCase()
-        .normalize('NFD')
-        // remove accents/diacritics
-        .replace(/[\u0300-\u036f]/g, '');
-}
-
-export type PermissionGroup = Pick<PermissionProvider, 'contextLabel' | 'permissions'>;
+import {
+    buildAssignablePermissionGroups,
+    buildPermissionDiff,
+    buildPermissionMetaMap,
+    buildPermissionSearchIndex,
+    buildPermissionSet,
+    buildRecoveryPermissionGroups,
+    buildRemovedFromSystemPermissions,
+    buildUnavailableForDomainRolePermissions,
+    filterPermissionGroups,
+    getPermissionKeys,
+    getSelectedGroupKeys,
+    groupKey,
+    normalizeSearch,
+    toSortedPermissionList,
+    type PermissionMeta,
+} from './permission-editor-utils';
 
 interface PermissionEditorProps {
     /** Persisted permissions (used for diff view). */
@@ -62,8 +62,33 @@ interface PermissionEditorProps {
     isBusy?: boolean;
     /** Optional label above editor. */
     title?: string;
-    /** Scope of the permissions. */
-    scope?: PermissionScope | PermissionScope[];
+    /** When true, only shows permissions assignable to domain roles. */
+    onlyDomainRoleAssignable?: boolean;
+}
+
+function mergeExpandedGroups(
+    previous: Record<string, boolean>,
+    groupIds: readonly string[],
+    expanded: boolean,
+): Record<string, boolean> {
+    let changed = false;
+    const next = {...previous};
+
+    for (const groupId of groupIds) {
+        if (next[groupId] !== expanded) {
+            next[groupId] = expanded;
+            changed = true;
+        }
+    }
+
+    return changed ? next : previous;
+}
+
+function formatPermissionChipLabel(
+    permissionMeta: ReadonlyMap<string, PermissionMeta>,
+    permission: string,
+): string {
+    return `${permissionMeta.get(permission)?.label ?? permission} (${permission})`;
 }
 
 export function PermissionEditor(props: PermissionEditorProps): React.ReactElement {
@@ -74,192 +99,208 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
         isEditable = true,
         isBusy = false,
         title = 'Berechtigungen',
-        scope = [PermissionScope.System, PermissionScope.Domain],
+        onlyDomainRoleAssignable = false,
     } = props;
 
     const dispatch = useAppDispatch();
 
     const [apiPermissions, setApiPermissions] = useState<PermissionProvider[]>([]);
     const [permissionQuery, setPermissionQuery] = useState('');
+    const deferredPermissionQuery = useDeferredValue(permissionQuery);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
     const [bulkMenuAnchorEl, setBulkMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [diffDialogOpen, setDiffDialogOpen] = useState(false);
 
     useEffect(() => {
+        let isActive = true;
+
         new PermissionApiService()
             .listPermissions()
             .then((permissions: PermissionProvider[]) => {
-                setApiPermissions(permissions);
+                if (isActive) {
+                    setApiPermissions(permissions);
+                }
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Beim Laden der Berechtigungen ist ein Fehler aufgetreten.'));
+                if (isActive) {
+                    dispatch(showApiErrorSnackbar(err, 'Beim Laden der Berechtigungen ist ein Fehler aufgetreten.'));
+                }
             });
+
+        return () => {
+            isActive = false;
+        };
     }, [dispatch]);
 
-    const permissions = useMemo(() => {
-        const allowedScopes = scope
-            ? Array.isArray(scope) ? scope : [scope]
-            : null;
-
-        return allowedScopes
-            ? apiPermissions.filter((g) => allowedScopes.includes(g.scope))
-            : apiPermissions;
-    }, [apiPermissions, scope]);
-
     const selectedPermissions = value ?? [];
+    const selectedPermissionsSet = useMemo(() => new Set(selectedPermissions), [selectedPermissions]);
     const selectedCount = selectedPermissions.length;
+    const hasLoadedApiPermissions = apiPermissions.length > 0;
 
+    const assignablePermissions = useMemo(
+        () => buildAssignablePermissionGroups(apiPermissions, onlyDomainRoleAssignable),
+        [apiPermissions, onlyDomainRoleAssignable],
+    );
+
+    const allApiPermissionMeta = useMemo(
+        () => buildPermissionMetaMap(apiPermissions),
+        [apiPermissions],
+    );
+
+    const assignablePermissionSet = useMemo(
+        () => buildPermissionSet(assignablePermissions),
+        [assignablePermissions],
+    );
+
+    const allApiPermissionSet = useMemo(
+        () => new Set(allApiPermissionMeta.keys()),
+        [allApiPermissionMeta],
+    );
+
+    const removedFromSystemPermissions = useMemo(
+        () => buildRemovedFromSystemPermissions(
+            selectedPermissions,
+            allApiPermissionSet,
+            hasLoadedApiPermissions,
+        ),
+        [allApiPermissionSet, hasLoadedApiPermissions, selectedPermissions],
+    );
+
+    const unavailableForDomainRolePermissions = useMemo(
+        () => buildUnavailableForDomainRolePermissions(
+            selectedPermissions,
+            allApiPermissionSet,
+            assignablePermissionSet,
+            allApiPermissionMeta,
+            onlyDomainRoleAssignable,
+            hasLoadedApiPermissions,
+        ),
+        [
+            allApiPermissionMeta,
+            allApiPermissionSet,
+            assignablePermissionSet,
+            hasLoadedApiPermissions,
+            onlyDomainRoleAssignable,
+            selectedPermissions,
+        ],
+    );
+
+    const recoveryPermissionCount = removedFromSystemPermissions.length + unavailableForDomainRolePermissions.length;
+
+    const permissionGroups = useMemo(() => [
+        // Recovery permissions are shown only while selected. This keeps them removable without making them selectable again.
+        ...buildRecoveryPermissionGroups(removedFromSystemPermissions, unavailableForDomainRolePermissions),
+        ...assignablePermissions,
+    ], [assignablePermissions, removedFromSystemPermissions, unavailableForDomainRolePermissions]);
+
+    const allKnownPermissions = useMemo(
+        () => getPermissionKeys(assignablePermissions),
+        [assignablePermissions],
+    );
+
+    const normalizedPermissionQuery = useMemo(
+        () => normalizeSearch(deferredPermissionQuery),
+        [deferredPermissionQuery],
+    );
+
+    const permissionSearchIndex = useMemo(
+        () => buildPermissionSearchIndex(permissionGroups),
+        [permissionGroups],
+    );
+
+    const filteredPermissionGroups = useMemo(
+        () => filterPermissionGroups(permissionGroups, permissionSearchIndex, normalizedPermissionQuery),
+        [normalizedPermissionQuery, permissionGroups, permissionSearchIndex],
+    );
+
+    const visiblePermissions = useMemo(
+        () => getPermissionKeys(filteredPermissionGroups),
+        [filteredPermissionGroups],
+    );
+
+    const selectedGroupKeys = useMemo(
+        () => getSelectedGroupKeys(permissionGroups, selectedPermissionsSet),
+        [permissionGroups, selectedPermissionsSet],
+    );
+
+    const selectedGroupKeySignature = selectedGroupKeys.join('\u0000');
     useEffect(() => {
-        const initialExpanded: Record<string, boolean> = {};
-        for (const g of permissions) {
-            const selected = selectedPermissions.some((p) => g.permissions.some((gp) => gp.permission === p));
-            if (selected) {
-                initialExpanded[groupKey(g.contextLabel)] = true;
+        if (selectedGroupKeySignature.length === 0) {
+            return;
+        }
+
+        setExpandedGroups((prev) => mergeExpandedGroups(prev, selectedGroupKeys, true));
+    }, [selectedGroupKeySignature, selectedGroupKeys]);
+
+    const filteredGroupKeys = useMemo(
+        () => filteredPermissionGroups.map((group) => groupKey(group.contextLabel)),
+        [filteredPermissionGroups],
+    );
+
+    const filteredGroupKeySignature = filteredGroupKeys.join('\u0000');
+    useEffect(() => {
+        if (!normalizedPermissionQuery) {
+            return;
+        }
+
+        setExpandedGroups((prev) => mergeExpandedGroups(prev, filteredGroupKeys, true));
+    }, [filteredGroupKeySignature, filteredGroupKeys, normalizedPermissionQuery]);
+
+    const diff = useMemo(
+        () => buildPermissionDiff(originalPermissions, selectedPermissions),
+        [originalPermissions, selectedPermissions],
+    );
+
+    const permissionMeta = useMemo(() => {
+        const map = new Map(allApiPermissionMeta);
+
+        for (const group of permissionGroups) {
+            for (const permission of group.permissions) {
+                map.set(permission.permission, {
+                    label: permission.label,
+                    description: permission.description,
+                });
             }
         }
-        setExpandedGroups((prev) => ({...prev, ...initialExpanded}));
-    }, [permissions, selectedPermissions]);
 
-    const bulkMenuOpen = Boolean(bulkMenuAnchorEl);
-    const openBulkMenu = (event: React.MouseEvent<HTMLElement>): void => {
-        setBulkMenuAnchorEl(event.currentTarget);
-    };
-    const closeBulkMenu = (): void => {
-        setBulkMenuAnchorEl(null);
-    };
+        return map;
+    }, [allApiPermissionMeta, permissionGroups]);
 
-    const diff = useMemo(() => {
-        const original = new Set(originalPermissions ?? []);
+    const setPermissionsValue = useCallback((next: Iterable<string>): void => {
+        onChange(toSortedPermissionList(next));
+    }, [onChange]);
+
+    const handleTogglePermission = useCallback((permission: string, checked: boolean): void => {
         const current = new Set(selectedPermissions);
-
-        const added: string[] = [];
-        const removed: string[] = [];
-
-        current.forEach((p) => {
-            if (!original.has(p)) added.push(p);
-        });
-        original.forEach((p) => {
-            if (!current.has(p)) removed.push(p);
-        });
-
-        added.sort();
-        removed.sort();
-
-        return {
-            added,
-            removed,
-            hasChanges: added.length > 0 || removed.length > 0,
-        };
-    }, [originalPermissions, selectedPermissions]);
-
-    const permissionSearchIndex = useMemo(() => {
-        type IndexedPermission = {
-            groupLabel: string;
-            permission: PermissionEntry;
-            searchLabel: string;
-            searchPermission: string;
-            searchDescription: string;
-            searchGroupLabel: string;
-        };
-
-        const indexedPermissions: IndexedPermission[] = permissions.flatMap((group) =>
-            group.permissions.map((permission) => ({
-                groupLabel: group.contextLabel,
-                permission,
-                searchLabel: normalizeSearch(permission.label),
-                searchPermission: normalizeSearch(permission.permission),
-                searchDescription: normalizeSearch(permission.description ?? ''),
-                searchGroupLabel: normalizeSearch(group.contextLabel),
-            })),
-        );
-
-        return new Fuse(indexedPermissions, {
-            keys: ['searchLabel', 'searchPermission', 'searchDescription', 'searchGroupLabel'],
-            threshold: 0.35,
-            ignoreLocation: true,
-        });
-    }, [permissions]);
-
-    const filteredPermissionGroups = useMemo(() => {
-        const q = normalizeSearch(permissionQuery);
-        if (!q) {
-            return permissions.map((g) => ({
-                ...g,
-                permissions: [...g.permissions].sort((a, b) => a.label.localeCompare(b.label)),
-            }));
-        }
-
-        const matchesByGroup = new Map<string, PermissionEntry[]>();
-        const seen = new Set<string>();
-
-        permissionSearchIndex.search(q).forEach(({item}) => {
-            const key = `${groupKey(item.groupLabel)}::${item.permission.permission}`;
-            if (seen.has(key)) return;
-            seen.add(key);
-
-            const existing = matchesByGroup.get(item.groupLabel) ?? [];
-            existing.push(item.permission);
-            matchesByGroup.set(item.groupLabel, existing);
-        });
-
-        return permissions
-            .map((group) => ({
-                ...group,
-                permissions: [...(matchesByGroup.get(group.contextLabel) ?? [])]
-                    .sort((a, b) => a.label.localeCompare(b.label)),
-            }))
-            .filter((group) => group.permissions.length > 0);
-    }, [permissions, permissionQuery, permissionSearchIndex]);
-
-    const visiblePermissions = useMemo(() => {
-        const set = new Set<string>();
-        for (const g of filteredPermissionGroups) {
-            for (const p of g.permissions) set.add(p.permission);
-        }
-        return Array.from(set).sort();
-    }, [filteredPermissionGroups]);
-
-    const allKnownPermissions = useMemo(() => {
-        const all = new Set<string>();
-        for (const g of permissions) {
-            for (const p of g.permissions) all.add(p.permission);
-        }
-        return Array.from(all).sort();
-    }, [permissions]);
-
-    const setPermissionsValue = (next: string[]): void => {
-        const stable = [...next].filter(Boolean);
-        stable.sort();
-        onChange(stable);
-    };
-
-    const handleTogglePermission = (permission: string, checked: boolean): void => {
-        const current = new Set(selectedPermissions);
-        if (checked) current.add(permission);
-        else current.delete(permission);
-        setPermissionsValue(Array.from(current));
-    };
-
-    const handleToggleGroup = (group: PermissionGroup, checked: boolean): void => {
-        const current = new Set(selectedPermissions);
-        const groupPerms = group.permissions.map((p) => p.permission);
 
         if (checked) {
-            for (const p of groupPerms) current.add(p);
+            current.add(permission);
         } else {
-            for (const p of groupPerms) current.delete(p);
+            current.delete(permission);
         }
 
-        setPermissionsValue(Array.from(current));
-    };
+        setPermissionsValue(current);
+    }, [selectedPermissions, setPermissionsValue]);
 
-    const handleSelectAll = (checked: boolean, scope: 'all' | 'visible' = 'all'): void => {
+    const handleToggleGroup = useCallback((group: typeof permissionGroups[number], checked: boolean): void => {
+        const current = new Set(selectedPermissions);
+
+        for (const permission of group.permissions) {
+            if (checked) {
+                current.add(permission.permission);
+            } else {
+                current.delete(permission.permission);
+            }
+        }
+
+        setPermissionsValue(current);
+    }, [selectedPermissions, setPermissionsValue]);
+
+    const handleSelectAll = useCallback((checked: boolean, scope: 'all' | 'visible' = 'all'): void => {
         const base = scope === 'visible' ? visiblePermissions : allKnownPermissions;
 
         if (checked) {
-            const current = new Set(selectedPermissions);
-            for (const p of base) current.add(p);
-            setPermissionsValue(Array.from(current));
+            setPermissionsValue([...selectedPermissions, ...base]);
             return;
         }
 
@@ -268,64 +309,49 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
             return;
         }
 
-        const current = new Set(selectedPermissions);
-        for (const p of base) current.delete(p);
-        setPermissionsValue(Array.from(current));
-    };
+        const visiblePermissionSet = new Set(base);
+        setPermissionsValue(selectedPermissions.filter((permission) => !visiblePermissionSet.has(permission)));
+    }, [allKnownPermissions, selectedPermissions, setPermissionsValue, visiblePermissions]);
 
-    const expandAll = (next: boolean, scope: 'all' | 'filtered' = 'all'): void => {
-        const base = scope === 'filtered' ? filteredPermissionGroups : permissions;
-        const nextExpanded: Record<string, boolean> = {};
-        for (const g of base) nextExpanded[groupKey(g.contextLabel)] = next;
+    const expandAll = useCallback((next: boolean, scope: 'all' | 'filtered' = 'all'): void => {
+        const base = scope === 'filtered' ? filteredGroupKeys : permissionGroups.map((group) => groupKey(group.contextLabel));
+        setExpandedGroups((prev) => mergeExpandedGroups(prev, base, next));
+    }, [filteredGroupKeys, permissionGroups]);
 
-        setExpandedGroups((prev) => ({...prev, ...nextExpanded}));
-    };
+    const expandSelectedAndSearchMatchGroups = useCallback((): void => {
+        const nextExpanded = new Set(selectedGroupKeys);
 
-    const expandSelectedAndSearchMatchGroups = (): void => {
-        const nextExpanded: Record<string, boolean> = {};
-
-        // Expand groups that currently matter: those with selected permissions and,
-        // only when a query is active, groups with search matches.
-        for (const g of permissions) {
-            const hasSelected = selectedPermissions.some((p) => g.permissions.some((gp) => gp.permission === p));
-            if (hasSelected) nextExpanded[groupKey(g.contextLabel)] = true;
-        }
-        if (permissionQuery.trim()) {
-            for (const g of filteredPermissionGroups) {
-                nextExpanded[groupKey(g.contextLabel)] = true;
+        if (normalizedPermissionQuery) {
+            for (const groupId of filteredGroupKeys) {
+                nextExpanded.add(groupId);
             }
         }
 
-        setExpandedGroups((prev) => ({...prev, ...nextExpanded}));
-    };
+        setExpandedGroups((prev) => mergeExpandedGroups(prev, Array.from(nextExpanded), true));
+    }, [filteredGroupKeys, normalizedPermissionQuery, selectedGroupKeys]);
 
-    useEffect(() => {
-        if (!permissionQuery.trim()) return;
-        expandAll(true, 'filtered');
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [permissionQuery]);
+    const handleExpandedChange = useCallback((groupId: string, next: boolean): void => {
+        setExpandedGroups((prev) => {
+            if (prev[groupId] === next) {
+                return prev;
+            }
 
-    const permissionMeta = useMemo(() => {
-        const map = new Map<string, { label?: string; description?: string }>();
-        for (const g of permissions) {
-            for (const p of g.permissions) map.set(p.permission, {
-                label: p.label,
-                description: p.description,
-            });
-        }
-        return map;
-    }, [permissions]);
+            return {
+                ...prev,
+                [groupId]: next,
+            };
+        });
+    }, []);
 
-    const inferCrud = (permission: string): 'create' | 'read' | 'update' | 'delete' | null => {
-        const p = permission.toLowerCase();
-        if (p.includes('create') || p.includes('add') || p.includes('new')) return 'create';
-        if (p.includes('read') || p.includes('view') || p.includes('list') || p.includes('get')) return 'read';
-        if (p.includes('update') || p.includes('edit') || p.includes('write')) return 'update';
-        if (p.includes('delete') || p.includes('destroy') || p.includes('remove')) return 'delete';
-        return null;
-    };
+    const bulkMenuOpen = Boolean(bulkMenuAnchorEl);
+    const openBulkMenu = useCallback((event: React.MouseEvent<HTMLElement>): void => {
+        setBulkMenuAnchorEl(event.currentTarget);
+    }, []);
+    const closeBulkMenu = useCallback((): void => {
+        setBulkMenuAnchorEl(null);
+    }, []);
 
-    const toolbarActions: Action[] = [
+    const toolbarActions = useMemo<Action[]>(() => [
         {
             tooltip: 'Alle auswählen',
             ariaLabel: 'Alle auswählen',
@@ -345,16 +371,24 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
             ariaLabel: 'Gruppen mit Auswahl und Suchtreffern ausklappen',
             icon: <UnfoldMoreIcon fontSize="small"/>,
             onClick: expandSelectedAndSearchMatchGroups,
-            disabled: permissions.length === 0,
+            disabled: permissionGroups.length === 0,
         },
         {
             tooltip: 'Alle einklappen',
             ariaLabel: 'Alle einklappen',
             icon: <UnfoldLessIcon fontSize="small"/>,
             onClick: () => expandAll(false, 'all'),
-            disabled: permissions.length === 0,
+            disabled: permissionGroups.length === 0,
         },
-    ];
+    ], [
+        allKnownPermissions.length,
+        expandAll,
+        expandSelectedAndSearchMatchGroups,
+        handleSelectAll,
+        isEditable,
+        permissionGroups.length,
+        selectedCount,
+    ]);
 
     return (
         <Box sx={{mt: 3}}>
@@ -373,8 +407,9 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                             color="text.secondary"
                             sx={{display: 'inline'}}
                         >
-                            ({selectedCount} von {allKnownPermissions.length} ausgewählt
-                            {permissionQuery.trim() ? ` · ${visiblePermissions.length} sichtbar` : ''})
+                            ({selectedCount} ausgewählt · {allKnownPermissions.length} zuweisbar
+                            {recoveryPermissionCount > 0 ? ` · ${recoveryPermissionCount} zu prüfen` : ''}
+                            {normalizedPermissionQuery ? ` · ${visiblePermissions.length} sichtbar` : ''})
                         </Typography>
                     </Typography>
                 </Box>
@@ -389,31 +424,31 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                         arrow
                     >
                         <span>
-                          <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={() => setDiffDialogOpen(true)}
-                              disabled={!diff.hasChanges}
-                              startIcon={<CompareArrows/>}
-                          >
-                            <Stack
-                                direction="row"
-                                spacing={1}
-                                alignItems="center"
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={() => setDiffDialogOpen(true)}
+                                disabled={!diff.hasChanges}
+                                startIcon={<CompareArrows/>}
                             >
-                              <Typography variant="inherit">Änderungen</Typography>
-                              <Chip
-                                  size="small"
-                                  label={`+${diff.added.length}`}
-                                  variant={diff.added.length > 0 ? 'filled' : 'outlined'}
-                              />
-                              <Chip
-                                  size="small"
-                                  label={`-${diff.removed.length}`}
-                                  variant={diff.removed.length > 0 ? 'filled' : 'outlined'}
-                              />
-                            </Stack>
-                          </Button>
+                                <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    alignItems="center"
+                                >
+                                    <Typography variant="inherit">Änderungen</Typography>
+                                    <Chip
+                                        size="small"
+                                        label={`+${diff.added.length}`}
+                                        variant={diff.added.length > 0 ? 'filled' : 'outlined'}
+                                    />
+                                    <Chip
+                                        size="small"
+                                        label={`-${diff.removed.length}`}
+                                        variant={diff.removed.length > 0 ? 'filled' : 'outlined'}
+                                    />
+                                </Stack>
+                            </Button>
                         </span>
                     </Tooltip>
 
@@ -425,12 +460,12 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                         size="small"
                     />
 
-                    {permissionQuery.trim() && (
+                    {normalizedPermissionQuery && (
                         <Button
                             variant="outlined"
                             size="small"
                             onClick={openBulkMenu}
-                            disabled={isBusy || permissions.length === 0}
+                            disabled={isBusy || permissionGroups.length === 0}
                             endIcon={<MoreVertIcon/>}
                         >
                             Gefiltert
@@ -488,6 +523,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                 clearable
                 disabled={isBusy}
                 size="small"
+                debounce={120}
                 sx={{
                     mt: 1.5,
                     mb: 2,
@@ -497,27 +533,46 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
             {filteredPermissionGroups.length === 0 &&
                 <AlertComponent color="info">Keine Berechtigungen gefunden.</AlertComponent>}
 
+            {removedFromSystemPermissions.length > 0 && (
+                <AlertComponent
+                    color="warning"
+                    sx={{mb: 2}}
+                >
+                    Diese Rolle enthält Berechtigungen, die aktuell nicht mehr vom System bereitgestellt werden.
+                    Das kann zum Beispiel durch entfernte Funktionen oder Erweiterungen (Plugins) entstehen.
+                    Die Berechtigungen werden beim Speichern unverändert übernommen, solange sie ausgewählt bleiben,
+                    sollten aber entfernt werden, um die Rolle zu bereinigen.
+                </AlertComponent>
+            )}
+
+            {unavailableForDomainRolePermissions.length > 0 && (
+                <AlertComponent
+                    color="warning"
+                    sx={{mb: 2}}
+                >
+                    Diese Domänenrolle enthält Berechtigungen, die aktuell nicht für Domänenrollen verfügbar sind.
+                    Das kann zum Beispiel durch geänderte Funktionen oder Erweiterungen (Plugins) entstehen.
+                    Die Berechtigungen werden beim Speichern unverändert übernommen, solange sie ausgewählt bleiben,
+                    sollten aber entfernt werden, um die Rolle zu bereinigen.
+                </AlertComponent>
+            )}
+
             <Stack spacing={2}>
                 {filteredPermissionGroups.map((group) => {
-                    const isExpanded = expandedGroups[groupKey(group.contextLabel)] ?? false;
+                    const currentGroupKey = groupKey(group.contextLabel);
 
                     return (
                         <PermissionGroupAccordion
-                            key={group.contextLabel}
+                            key={currentGroupKey}
                             group={group}
-                            selectedPermissions={selectedPermissions}
-                            isExpanded={isExpanded}
+                            groupId={currentGroupKey}
+                            selectedPermissionsSet={selectedPermissionsSet}
+                            isExpanded={expandedGroups[currentGroupKey] ?? false}
                             isBusy={isBusy}
                             isEditable={isEditable}
-                            onExpandedChange={(next) =>
-                                setExpandedGroups((prev) => ({
-                                    ...prev,
-                                    [groupKey(group.contextLabel)]: next,
-                                }))
-                            }
+                            onExpandedChange={handleExpandedChange}
                             onToggleGroup={handleToggleGroup}
                             onTogglePermission={handleTogglePermission}
-                            inferCrud={inferCrud}
                         />
                     );
                 })}
@@ -529,8 +584,9 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                 fullWidth
                 maxWidth="md"
             >
-                <DialogTitleWithClose onClose={() => setDiffDialogOpen(false)}>Änderungen an
-                                                                               Berechtigungen</DialogTitleWithClose>
+                <DialogTitleWithClose onClose={() => setDiffDialogOpen(false)}>
+                    Änderungen an Berechtigungen
+                </DialogTitleWithClose>
                 <DialogContent>
                     {!diff.hasChanges ? (
                         <Typography
@@ -558,11 +614,11 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                                         useFlexGap
                                         flexWrap="wrap"
                                     >
-                                        {diff.added.map((p) => (
+                                        {diff.added.map((permission) => (
                                             <Chip
-                                                key={p}
+                                                key={permission}
                                                 size="small"
-                                                label={(permissionMeta.get(p)?.label ?? p) + ` (${p})`}
+                                                label={formatPermissionChipLabel(permissionMeta, permission)}
                                             />
                                         ))}
                                     </Stack>
@@ -583,12 +639,12 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                                         useFlexGap
                                         flexWrap="wrap"
                                     >
-                                        {diff.removed.map((p) => (
+                                        {diff.removed.map((permission) => (
                                             <Chip
-                                                key={p}
+                                                key={permission}
                                                 size="small"
                                                 variant="outlined"
-                                                label={(permissionMeta.get(p)?.label ?? p) + ` (${p})`}
+                                                label={formatPermissionChipLabel(permissionMeta, permission)}
                                             />
                                         ))}
                                     </Stack>
@@ -601,7 +657,9 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                     <Button
                         sx={{ml: 'auto'}}
                         onClick={() => setDiffDialogOpen(false)}
-                    >Schließen</Button>
+                    >
+                        Schließen
+                    </Button>
                 </DialogActions>
             </Dialog>
         </Box>

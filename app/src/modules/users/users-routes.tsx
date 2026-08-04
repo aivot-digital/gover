@@ -23,11 +23,11 @@ export const usersRoutes: RouteObject[] = [
                 element: <UserDetailsPageIndex />,
             },
             {
-                path: '/users/:id/departments-and-roles',
+                path: '/users/:id/department-memberships',
                 element: <UserDetailsPageDepartmentMemberships />,
             },
             {
-                path: '/users/:id/teams-and-roles',
+                path: '/users/:id/team-memberships',
                 element: <UserDetailsPageTeamMemberships />,
             },
             {

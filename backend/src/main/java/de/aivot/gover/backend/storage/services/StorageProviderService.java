@@ -9,6 +9,7 @@ import de.aivot.gover.backend.lib.services.EntityService;
 import de.aivot.gover.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
 import de.aivot.gover.backend.storage.enums.StorageProviderStatus;
+import de.aivot.gover.backend.storage.enums.StorageProviderType;
 import de.aivot.gover.backend.storage.models.StorageProviderDefinition;
 import de.aivot.gover.backend.storage.repositories.StorageProviderRepository;
 import de.aivot.gover.backend.utils.StringUtils;
@@ -25,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -97,6 +99,12 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
     ) {
         return storageProviderRepository
                 .findById(key);
+    }
+
+    @Nonnull
+    public List<StorageProviderEntity> listAllByType(@Nonnull StorageProviderType type) {
+        return storageProviderRepository
+                .findAllByType(type);
     }
 
     @Nonnull

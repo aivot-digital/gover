@@ -1,9 +1,11 @@
 package de.aivot.gover.backend.dataObject.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class DataObjectPermissionProvider implements PermissionProvider {
@@ -36,8 +38,18 @@ public class DataObjectPermissionProvider implements PermissionProvider {
         };
     }
 
+    @Nonnull
     @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
+    public List<SearchPermission> getSearchPermissions() {
+        return List.of(
+                new PermissionProvider.SearchPermission(
+                        "data_object_items",
+                        OBJECT_ITEM_READ
+                ),
+                new PermissionProvider.SearchPermission(
+                        "data_object_schemas",
+                        OBJECT_SCHEMA_READ
+                )
+        );
     }
 }

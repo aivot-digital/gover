@@ -11,6 +11,10 @@ import {
     loadDomainAndUserSelectOptions,
     normalizeDomainAndUserSelectItem,
 } from '../components/domain-user-select-field/domain-user-select-options';
+import {
+    getAssignmentContextGeneralAssigneePreferenceLabel,
+    getAssignmentContextRepeatExecutionAssigneePreferenceLabel,
+} from '../utils/assignment-context-preference-options';
 
 export function AssignmentContextFieldSummary(props: BaseSummaryProps<AssignmentContextFieldElement, AssignmentContextValue>) {
     const theme = useTheme();
@@ -66,22 +70,11 @@ export function AssignmentContextFieldSummary(props: BaseSummaryProps<Assignment
     }, [labelLookup, selectedValues]);
 
     const enabledPreferences = useMemo(() => {
-        const preferences: string[] = [];
-
-        if (props.value?.preferPreviousTaskAssignee === true) {
-            preferences.push('Bevorzuge Bearbeiter:in vorheriger Aufgabe');
-        }
-
-        if (props.value?.preferUninvolvedUser === true) {
-            preferences.push('Bevorzuge eine neue, unbeteiligte Mitarbeiter:in');
-        }
-
-        if (props.value?.preferProcessInstanceAssignee === true) {
-            preferences.push('Bevorzuge dem Vorgang zugewiesene Mitarbeiter:in');
-        }
-
-        return preferences;
-    }, [props.value?.preferPreviousTaskAssignee, props.value?.preferProcessInstanceAssignee, props.value?.preferUninvolvedUser]);
+        return [
+            getAssignmentContextGeneralAssigneePreferenceLabel(props.value?.generalAssigneePreference),
+            getAssignmentContextRepeatExecutionAssigneePreferenceLabel(props.value?.repeatExecutionAssigneePreference),
+        ].filter((preference): preference is string => preference != null);
+    }, [props.value?.generalAssigneePreference, props.value?.repeatExecutionAssigneePreference]);
 
     const isEmpty = displayedValues.length === 0 && enabledPreferences.length === 0;
 

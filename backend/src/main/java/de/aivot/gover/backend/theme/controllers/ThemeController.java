@@ -5,10 +5,12 @@ import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.theme.dtos.ThemeRequestDTO;
 import de.aivot.gover.backend.theme.dtos.ThemeResponseDTO;
 import de.aivot.gover.backend.theme.entities.ThemeEntity;
 import de.aivot.gover.backend.theme.filters.ThemeFilter;
+import de.aivot.gover.backend.theme.permissions.ThemePermissionProvider;
 import de.aivot.gover.backend.theme.services.ThemeService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
@@ -38,24 +40,37 @@ public class ThemeController {
     private final ScopedAuditService auditService;
     private final ThemeService service;
     private final UserService userService;
+    private final PermissionService permissionService;
 
     @Autowired
     public ThemeController(AuditService auditService,
-                           ThemeService service, UserService userService) {
+                           ThemeService service,
+                           UserService userService,
+                           PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ThemeController.class, "Erscheinungsbilder");
         this.service = service;
         this.userService = userService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
     @Operation(
             summary = "List themes",
-            description = "Retrieve a paginated list of themes. Supports filtering."
+            description = "Retrieve a paginated list of themes. Supports filtering. " +
+                    "Requires the system-level permission `" + ThemePermissionProvider.THEME_READ + "`."
     )
     public Page<ThemeResponseDTO> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ThemeFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), ThemePermissionProvider.THEME_READ);
+
         return service
                 .list(pageable, filter)
                 .map(ThemeResponseDTO::fromEntity);
@@ -64,7 +79,8 @@ public class ThemeController {
     @PostMapping("")
     @Operation(
             summary = "Create theme",
-            description = "Create a new theme. Requires system admin permissions."
+            description = "Create a new theme. " +
+                    "Requires the system-level permission `" + ThemePermissionProvider.THEME_CREATE + "`."
     )
     public ThemeResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -72,9 +88,10 @@ public class ThemeController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSystemAdmin()
-                .orElseThrow(ResponseException::noSystemAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), ThemePermissionProvider.THEME_CREATE);
 
         var newTheme = newThemeRequest
                 .toEntity();
@@ -109,11 +126,20 @@ public class ThemeController {
     @GetMapping("{id}/")
     @Operation(
             summary = "Retrieve theme",
-            description = "Retrieve a specific theme by its ID."
+            description = "Retrieve a specific theme by its ID. " +
+                    "Requires the system-level permission `" + ThemePermissionProvider.THEME_READ + "`."
     )
     public ThemeResponseDTO retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), ThemePermissionProvider.THEME_READ);
+
         return service
                 .retrieve(id)
                 .map(ThemeResponseDTO::fromEntity)
@@ -124,7 +150,8 @@ public class ThemeController {
     @PutMapping("{id}/")
     @Operation(
             summary = "Update theme",
-            description = "Update an existing theme. Requires system admin permissions."
+            description = "Update an existing theme. " +
+                    "Requires the system-level permission `" + ThemePermissionProvider.THEME_UPDATE + "`."
     )
     public ThemeResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -133,9 +160,10 @@ public class ThemeController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSystemAdmin()
-                .orElseThrow(ResponseException::noSystemAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), ThemePermissionProvider.THEME_UPDATE);
 
         var changedTheme = changeThemeRequest
                 .toEntity();
@@ -170,7 +198,8 @@ public class ThemeController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete theme",
-            description = "Delete an existing theme. Requires system admin permissions."
+            description = "Delete an existing theme. " +
+                    "Requires the system-level permission `" + ThemePermissionProvider.THEME_DELETE + "`."
     )
     public void destroy(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -178,9 +207,10 @@ public class ThemeController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSystemAdmin()
-                .orElseThrow(ResponseException::noSystemAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), ThemePermissionProvider.THEME_DELETE);
 
         var deletedTheme = service
                 .delete(id);

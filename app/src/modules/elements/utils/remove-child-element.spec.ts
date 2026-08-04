@@ -1,3 +1,4 @@
+import {describe, expect, it} from 'vitest';
 import {removeChildElement} from './remove-child-element';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {ElementType} from '../../../data/element-type/element-type';

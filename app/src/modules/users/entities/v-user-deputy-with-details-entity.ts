@@ -4,6 +4,7 @@ export interface VUserDeputyWithDetailsEntity {
     untilTimestamp: string | null;
     active: boolean;
 
+    originalUserId: string;
     originalUserEmail: string;
     originalUserFirstName: string;
     originalUserLastName: string;
@@ -13,6 +14,7 @@ export interface VUserDeputyWithDetailsEntity {
     originalUserSystemRoleId: number;
     originalUserFullName: string;
 
+    deputyUserId: string;
     deputyUserEmail: string;
     deputyUserFirstName: string;
     deputyUserLastName: string;

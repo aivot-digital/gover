@@ -999,9 +999,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                                 id: 'user_123',
                             },
                         ],
-                        preferPreviousTaskAssignee: true,
-                        preferUninvolvedUser: false,
-                        preferProcessInstanceAssignee: false,
+                        generalAssigneePreference: 'previousProcessStepAssignee',
+                        repeatExecutionAssigneePreference: 'previousIterationAssignee',
                     }}
                     onChange={() => {
                     }}

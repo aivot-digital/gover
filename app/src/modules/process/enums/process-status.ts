@@ -1,7 +1,7 @@
 import {type SvgIconComponent} from '../../../types/svg-icon-component';
 import DraftOrders from '@aivot/mui-material-symbols-400-n25-outlined/DraftOrders';
-import Unpublished from '@aivot/mui-material-symbols-400-n25-outlined/Unpublished';
-import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import Inventory2 from '@aivot/mui-material-symbols-400-n25-outlined/Inventory2';
+import Route from '@aivot/mui-material-symbols-400-n25-outlined/Route';
 
 export enum ProcessStatus {
     Drafted = 'Drafted',
@@ -17,8 +17,8 @@ export const ProcessStatusColors: Record<ProcessStatus, 'success' | 'warning' | 
 
 export const ProcessStatusIcons: Record<ProcessStatus, SvgIconComponent> = {
     Drafted: DraftOrders,
-    Published: CheckCircle,
-    Revoked: Unpublished,
+    Published: Route,
+    Revoked: Inventory2,
 };
 
 export const ProcessStatusLabels: Record<ProcessStatus, string> = {

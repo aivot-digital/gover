@@ -23,6 +23,7 @@ import {type StatusTablePropsItem} from '../../../../../components/status-table/
 import {
     useGenericDetailsPageContext,
 } from '../../../../../components/generic-details-page/generic-details-page-context';
+import {isApiError} from '../../../../../models/api-error';
 
 export interface ExtensionsDetailsPageItem {
     plugins: PluginDTO[];
@@ -343,6 +344,10 @@ export async function loadExtensionsDetailsPageItem(): Promise<ExtensionsDetails
             loadingFailed: false,
         };
     } catch (err) {
+        if (isApiError(err) && err.status === 403) {
+            throw err;
+        }
+
         console.error(err);
 
         return {

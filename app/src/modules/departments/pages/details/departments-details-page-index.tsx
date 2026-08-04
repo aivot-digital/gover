@@ -6,7 +6,7 @@ import {useApi} from '../../../../hooks/use-api';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {RichTextInputComponent, RichTextInputComponentProps} from '../../../../components/rich-text-input-component/rich-text-input-component';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
@@ -18,10 +18,11 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {ThemeResponseDTO} from '../../../themes/models/theme';
 import {ThemesApiService} from '../../../themes/themes-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {DepartmentsDetailsPageAdditionalData, NewParentIdQueryParam} from './departments-details-page';
 import {TextFieldComponentProps} from '../../../../components/text-field/text-field-component-props';
 import {SelectFieldComponentProps} from '../../../../components/select-field/select-field-component-props';
+import {PhoneNumberFieldComponent} from '../../../../components/phone-number-field/phone-number-field-component';
+import {PhoneNumberFieldComponentProps} from '../../../../components/phone-number-field/phone-number-field-component-props';
 import {DepartmentEntity} from '../../entities/department-entity';
 import {DepartmentApiService} from '../../services/department-api-service';
 import {getDepartmentTypeLabel, getMaxDepartmentDepth} from '../../utils/department-utils';
@@ -31,8 +32,16 @@ import MoveGroup from '@aivot/mui-material-symbols-400-n25-outlined/MoveGroup';
 import {MoveDepartmentDialog} from '../../dialogs/move-department-dialog';
 import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
 import {VDepartmentShadowedEntity} from '../../entities/v-department-shadowed-entity';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useHasDepartmentPermission} from '../../../permissions/hooks/use-permissions';
+import {isApiError} from '../../../../models/api-error';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {alpha} from '@mui/material/styles';
+import {isBlankPhoneNumber, isValidPhoneNumber, type PhoneNumberValidationMode} from '../../../../utils/phone-number-utils';
+
+const DepartmentPhoneNumberValidationMode: PhoneNumberValidationMode = 'strict';
 
 const canInheritRequiredSetting = (context: yup.TestContext, isCreatedAsChild: boolean) => {
     return isCreatedAsChild || context.parent?.parentDepartmentId != null;
@@ -97,8 +106,23 @@ const optionalShadowedTextAllowEmpty = () => optionalShadowedString();
 
 const optionalShadowedTrimmedTextAllowEmpty = () => optionalShadowedTrimmedString();
 
-const optionalShadowedPhone = () => optionalShadowedTrimmedTextAllowEmpty()
-    .max(96, 'Die Telefonnummer darf maximal 96 Zeichen lang sein.');
+const optionalShadowedPhone = (legacyValue?: string | null) => optionalShadowedTrimmedTextAllowEmpty()
+    .max(96, 'Die Telefonnummer darf maximal 96 Zeichen lang sein.')
+    .test('valid-phone-number', 'Bitte geben Sie eine gültige Telefonnummer mit Ländervorwahl ein.', (value) => {
+        if (isBlankPhoneNumber(value)) {
+            return true;
+        }
+
+        if (
+            legacyValue != null &&
+            value!.trim() === legacyValue.trim() &&
+            !isValidPhoneNumber(legacyValue, DepartmentPhoneNumberValidationMode)
+        ) {
+            return true;
+        }
+
+        return isValidPhoneNumber(value, DepartmentPhoneNumberValidationMode);
+    });
 
 const optionalShadowedInfo = () => optionalShadowedTextAllowEmpty();
 
@@ -125,7 +149,7 @@ const validateOptionalMailSignature = () => optionalShadowedRichText();
 
 const validateOptionalContactInfo = () => optionalShadowedInfo();
 
-const validateOptionalContactPhone = () => optionalShadowedPhone();
+const validateOptionalContactPhone = (legacyValue?: string | null) => optionalShadowedPhone(legacyValue);
 
 const validateThemeId = () => yup.number()
     .optional()
@@ -142,7 +166,10 @@ function getProcessDetailsPath(processId: number, version: number | null): strin
     return `/processes/${processId}/versions/${version}`;
 }
 
-export const createDepartmentSchema = (isCreatedAsChild: boolean) => yup.object({
+export const createDepartmentSchema = (
+    isCreatedAsChild: boolean,
+    legacyDepartment?: Pick<DepartmentEntity, 'specialSupportPhone' | 'technicalSupportPhone'> | null,
+) => yup.object({
     name: yup.string()
         .trim()
         .min(3, 'Der Name der Organisationseinheit muss mindestens 3 Zeichen lang sein.')
@@ -150,10 +177,10 @@ export const createDepartmentSchema = (isCreatedAsChild: boolean) => yup.object(
         .required('Der Name der Organisationseinheit ist ein Pflichtfeld.'),
     postalAddress: validatePostalAddress(isCreatedAsChild),
     specialSupportEmail: validateRequiredEmail('Die E-Mail-Adresse für fachliche Unterstützung', isCreatedAsChild),
-    specialSupportPhone: validateOptionalContactPhone(),
+    specialSupportPhone: validateOptionalContactPhone(legacyDepartment?.specialSupportPhone),
     specialSupportInfo: validateOptionalContactInfo(),
     technicalSupportEmail: validateRequiredEmail('Die E-Mail-Adresse für technische Unterstützung', isCreatedAsChild),
-    technicalSupportPhone: validateOptionalContactPhone(),
+    technicalSupportPhone: validateOptionalContactPhone(legacyDepartment?.technicalSupportPhone),
     technicalSupportInfo: validateOptionalContactInfo(),
     defaultMailSignature: validateOptionalMailSignature(),
     imprint: validateRichTextRequired('Das Impressum', isCreatedAsChild),
@@ -186,26 +213,13 @@ export function DepartmentsDetailsPageIndex() {
         setIsBusy,
         isEditable,
         additionalData,
+        isNewItem,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentEntity, DepartmentsDetailsPageAdditionalData>;
 
-    useEffect(() => {
-        if (isEditable) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            severity: SnackbarSeverity.Warning,
-            type: SnackbarType.Dismissable,
-            message: 'Diese Organisationseinheit kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            key: 'no-edit-permission-department',
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('no-edit-permission-department'));
-        };
-    }, [isEditable]);
-
-    const departmentSchema = useMemo(() => createDepartmentSchema(parentOrgUnitId != null), [parentOrgUnitId]);
+    const departmentSchema = useMemo(
+        () => createDepartmentSchema(parentOrgUnitId != null, item),
+        [parentOrgUnitId, item?.specialSupportPhone, item?.technicalSupportPhone],
+    );
 
     const {
         currentItem,
@@ -220,7 +234,13 @@ export function DepartmentsDetailsPageIndex() {
     const apiService = useMemo(() => new DepartmentApiService(), []);
     const department = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
-    const effectiveDepartmentDepth = department?.id === 0 && parentOrgUnitId != null && additionalData?.shadowedDepartment != null
+    const isNewDepartment = isNewItem === true;
+    const editPermission = isNewDepartment ? Permission.DEPARTMENT_CREATE : Permission.DEPARTMENT_UPDATE;
+    const canDeleteDepartment = useHasDepartmentPermission(
+        isNewDepartment ? undefined : department?.id,
+        Permission.DEPARTMENT_DELETE,
+    );
+    const effectiveDepartmentDepth = isNewDepartment && parentOrgUnitId != null && additionalData?.shadowedDepartment != null
         ? additionalData.shadowedDepartment.depth + 1
         : department?.depth ?? 0;
 
@@ -254,25 +274,53 @@ export function DepartmentsDetailsPageIndex() {
     const [availableThemes, setAvailableThemes] = useState<ThemeResponseDTO[]>();
     const [showMoveDialog, setShowMoveDialog] = useState(false);
     const [inheritedDepartment, setInheritedDepartment] = useState<VDepartmentShadowedEntity | null>(null);
+    const shouldLoadAvailableThemes = department != null;
 
     useEffect(() => {
+        if (!shouldLoadAvailableThemes) {
+            return;
+        }
+
+        let isActive = true;
+
         new ThemesApiService(api)
             .listAll()
             .then((result) => {
+                if (!isActive) {
+                    return;
+                }
+
                 setAvailableThemes(result.content);
             })
             .catch((err) => {
+                if (!isActive) {
+                    return;
+                }
+
                 console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Laden der verfügbaren Fabschemata.'));
+                if (isApiError(err) && err.status === 403) {
+                    if (isEditable) {
+                        dispatch(showErrorSnackbar(
+                            `Die verfügbaren Farbschemata konnten nicht geladen werden. Für die Auswahl ist die Berechtigung ${Permission.THEME_READ} erforderlich.`,
+                        ));
+                    }
+                } else {
+                    dispatch(showErrorSnackbar('Fehler beim Laden der verfügbaren Farbschemata.'));
+                }
+                setAvailableThemes([]);
             });
-    }, []);
+
+        return () => {
+            isActive = false;
+        };
+    }, [api, dispatch, shouldLoadAvailableThemes]);
 
     useEffect(() => {
         if (department == null) {
             return;
         }
 
-        if (department.id === 0) {
+        if (isNewDepartment) {
             setInheritedDepartment(parentOrgUnitId != null ? additionalData?.shadowedDepartment ?? null : null);
             return;
         }
@@ -305,7 +353,7 @@ export function DepartmentsDetailsPageIndex() {
         return () => {
             isActive = false;
         };
-    }, [department?.id, department?.parentDepartmentId, parentOrgUnitId, additionalData?.shadowedDepartment]);
+    }, [department?.id, department?.parentDepartmentId, parentOrgUnitId, additionalData?.shadowedDepartment, isNewDepartment]);
 
     if (department == null || availableThemes == null) {
         return (
@@ -313,13 +361,22 @@ export function DepartmentsDetailsPageIndex() {
         );
     }
 
+    const saveDisabledByPermission = !isEditable;
+    const saveDisabledTooltip = saveDisabledByPermission
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledByPermission = !canDeleteDepartment;
+    const deleteDisabledTooltip = deleteDisabledByPermission
+        ? formatMissingPermissionTooltip(Permission.DEPARTMENT_DELETE)
+        : undefined;
+
     const handleSave = () => {
         // Do not save if department is null
         if (department == null) {
             return;
         }
 
-        if (department.id === 0 && effectiveDepartmentDepth > getMaxDepartmentDepth()) {
+        if (isNewDepartment && effectiveDepartmentDepth > getMaxDepartmentDepth()) {
             dispatch(showErrorSnackbar(`Organisationseinheiten sind auf ${getMaxDepartmentDepth() + 1} Ebenen beschränkt.`));
             return;
         }
@@ -335,7 +392,7 @@ export function DepartmentsDetailsPageIndex() {
 
         setIsBusy(true);
 
-        if (department.id === 0) {
+        if (isNewDepartment) {
             const parentId = parseInt(searchParams.get(NewParentIdQueryParam) ?? '');
 
             apiService
@@ -356,10 +413,10 @@ export function DepartmentsDetailsPageIndex() {
                         });
                     }, 0);
                 })
-                .catch(err => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                })
+                .catch(err => dispatch(showApiErrorSnackbar(
+                    err,
+                    'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.',
+                )))
                 .finally(() => {
                     setIsBusy(false);
                 });
@@ -372,10 +429,10 @@ export function DepartmentsDetailsPageIndex() {
 
                     dispatch(showSuccessSnackbar('Änderungen an der Organisationseinheit erfolgreich gespeichert.'));
                 })
-                .catch(err => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                })
+                .catch(err => dispatch(showApiErrorSnackbar(
+                    err,
+                    'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.',
+                )))
                 .finally(() => {
                     setIsBusy(false);
                 });
@@ -383,7 +440,7 @@ export function DepartmentsDetailsPageIndex() {
     };
 
     const checkAndHandleDelete = async () => {
-        if (department.id === 0) {
+        if (isNewDepartment) {
             return;
         }
 
@@ -424,7 +481,7 @@ export function DepartmentsDetailsPageIndex() {
     };
 
     const confirmDelete = () => {
-        if (department.id === 0) return;
+        if (isNewDepartment) return;
 
         setIsBusy(true);
         apiService.destroy(department.id)
@@ -440,21 +497,21 @@ export function DepartmentsDetailsPageIndex() {
     };
 
     const doNotShadow = department.depth === 0 && parentOrgUnitId == null;
-    const canMoveDepartment = department.id !== 0 && isEditable && hasNotChanged;
+    const canMoveDepartment = !isNewDepartment && isEditable && hasNotChanged;
     const moveDisabledReason = isBusy
         ? 'Bitte warten, bis die aktuelle Aktion abgeschlossen ist.'
-        : department.id === 0
-            ? 'Die Organisationseinheit kann erst nach dem Anlegen verschoben werden.'
-            : !isEditable
-                ? 'Die Organisationseinheit kann nur von Administrator:innen verschoben werden.'
-                : !hasNotChanged
-                    ? 'Bitte speichern oder verwerfen Sie zuerst Ihre Änderungen.'
-                    : null;
+            : isNewDepartment
+                ? 'Die Organisationseinheit kann erst nach dem Anlegen verschoben werden.'
+                : !isEditable
+                    ? formatMissingPermissionTooltip(Permission.DEPARTMENT_UPDATE)
+                    : !hasNotChanged
+                        ? 'Bitte speichern oder verwerfen Sie zuerst Ihre Änderungen.'
+                        : null;
 
     const orgUnitPathParts = (() => {
         const safeName = department.name?.trim() || 'Unbenannt';
 
-        if (department.id === 0 && parentOrgUnitId != null && additionalData?.shadowedDepartment != null) {
+        if (isNewDepartment && parentOrgUnitId != null && additionalData?.shadowedDepartment != null) {
             const parentPath = [
                 ...(additionalData.shadowedDepartment.parentNames ?? []),
                 additionalData.shadowedDepartment.name,
@@ -512,55 +569,6 @@ export function DepartmentsDetailsPageIndex() {
                         error={errors.name}
                         disabled={!isEditable}
                     />
-                    {
-                        shouldShowOrgUnitHierarchy &&
-                        <>
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                    mt: 0.25,
-                                    display: 'block',
-                                }}
-                            >
-                                Einordnung in der Organisationsstruktur:
-                            </Typography>
-                            <Breadcrumbs
-                                separator="›"
-                                maxItems={5}
-                                itemsBeforeCollapse={2}
-                                itemsAfterCollapse={2}
-                                sx={{
-                                    mt: 0,
-                                    mb: 2,
-                                    color: 'text.secondary',
-                                    '& .MuiBreadcrumbs-ol': {
-                                        flexWrap: 'nowrap',
-                                        overflow: 'hidden',
-                                    },
-                                }}
-                            >
-                                {
-                                    orgUnitPathParts.map((segment, index) => (
-                                        <Typography
-                                            key={`${department.id}-${index}`}
-                                            variant="caption"
-                                            color="text.secondary"
-                                            sx={{
-                                                maxWidth: 220,
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                            }}
-                                            title={segment}
-                                        >
-                                            {segment}
-                                        </Typography>
-                                    ))
-                                }
-                            </Breadcrumbs>
-                        </>
-                    }
                 </Grid>
                 <Grid
                     size={{
@@ -568,6 +576,61 @@ export function DepartmentsDetailsPageIndex() {
                         lg: 6,
                     }}
                 />
+                {
+                    shouldShowOrgUnitHierarchy &&
+                    <Grid
+                        size={{
+                            xs: 12,
+                        }}
+                        sx={{ mb: 1 }}
+                    >
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                                display: 'block',
+                            }}
+                        >
+                            Einordnung in der Organisationsstruktur:
+                        </Typography>
+                        <Breadcrumbs
+                            separator="›"
+                            maxItems={5}
+                            itemsBeforeCollapse={2}
+                            itemsAfterCollapse={2}
+                            sx={{
+                                mt: 0,
+                                color: 'text.secondary',
+                                '& .MuiBreadcrumbs-ol': {
+                                    alignItems: 'flex-start',
+                                    flexWrap: 'wrap',
+                                    overflow: 'visible',
+                                    rowGap: 0.25,
+                                },
+                                '& .MuiBreadcrumbs-li': {
+                                    minWidth: 0,
+                                },
+                            }}
+                        >
+                            {
+                                orgUnitPathParts.map((segment, index) => (
+                                    <Typography
+                                        key={`${department.id}-${index}`}
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{
+                                            overflowWrap: 'anywhere',
+                                            whiteSpace: 'normal',
+                                        }}
+                                        title={segment}
+                                    >
+                                        {segment}
+                                    </Typography>
+                                ))
+                            }
+                        </Breadcrumbs>
+                    </Grid>
+                }
                 {
                     !doNotShadow &&
                     <Grid
@@ -732,9 +795,9 @@ export function DepartmentsDetailsPageIndex() {
                         disabled={!isEditable}
                     />
 
-                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                    <ShadowedInput<PhoneNumberFieldComponentProps, typeof PhoneNumberFieldComponent>
                         doNotShadow={doNotShadow}
-                        Component={TextFieldComponent}
+                        Component={PhoneNumberFieldComponent}
                         override={department.specialSupportPhone != null}
                         onSetOverride={handleShadowedStringOverride('specialSupportPhone')}
                         shadowedProps={{
@@ -742,11 +805,10 @@ export function DepartmentsDetailsPageIndex() {
                             disabled: true,
                         }}
                         label="Kontakt-Telefonnummer für fachliche Unterstützung"
-                        type="tel"
                         value={department.specialSupportPhone ?? ''}
                         onChange={handleShadowedStringChange('specialSupportPhone')}
                         onBlur={handleShadowedStringBlur('specialSupportPhone')}
-                        maxCharacters={96}
+                        hint="Bitte geben Sie die Telefonnummer mit Ländervorwahl ein, z. B. +4930123456."
                         error={errors.specialSupportPhone}
                         disabled={!isEditable}
                     />
@@ -799,9 +861,9 @@ export function DepartmentsDetailsPageIndex() {
                         disabled={!isEditable}
                     />
 
-                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                    <ShadowedInput<PhoneNumberFieldComponentProps, typeof PhoneNumberFieldComponent>
                         doNotShadow={doNotShadow}
-                        Component={TextFieldComponent}
+                        Component={PhoneNumberFieldComponent}
                         override={department.technicalSupportPhone != null}
                         onSetOverride={handleShadowedStringOverride('technicalSupportPhone')}
                         shadowedProps={{
@@ -809,11 +871,10 @@ export function DepartmentsDetailsPageIndex() {
                             disabled: true,
                         }}
                         label="Kontakt-Telefonnummer für technische Unterstützung"
-                        type="tel"
                         value={department.technicalSupportPhone ?? ''}
                         onChange={handleShadowedStringChange('technicalSupportPhone')}
                         onBlur={handleShadowedStringBlur('technicalSupportPhone')}
-                        maxCharacters={96}
+                        hint="Bitte geben Sie die Telefonnummer mit Ländervorwahl ein, z. B. +4930123456."
                         error={errors.technicalSupportPhone}
                         disabled={!isEditable}
                     />
@@ -942,31 +1003,41 @@ export function DepartmentsDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
+                <DisabledTooltip
+                    title={saveDisabledTooltip}
                     disabled={isBusy || hasNotChanged || !isEditable}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon />}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon />}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
-                    department.id !== 0 &&
-                    <Button
-                        onClick={() => {
-                            reset();
-                        }}
+                    !isNewDepartment &&
+                    <DisabledTooltip
+                        title={saveDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
-                        color="error"
                     >
-                        Zurücksetzen
-                    </Button>
+                        <Button
+                            onClick={() => {
+                                reset();
+                            }}
+                            disabled={isBusy || hasNotChanged || !isEditable}
+                            color="error"
+                        >
+                            Zurücksetzen
+                        </Button>
+                    </DisabledTooltip>
                 }
 
                 {
-                    department.id !== 0 &&
+                    !isNewDepartment &&
                     <Box
                         sx={{
                             display: 'flex',
@@ -974,32 +1045,35 @@ export function DepartmentsDetailsPageIndex() {
                             marginLeft: 'auto',
                         }}
                     >
-                        <Tooltip
-                            title={moveDisabledReason ?? ''}
-                            disableHoverListener={moveDisabledReason == null}
+                        <DisabledTooltip
+                            title={moveDisabledReason}
+                            disabled={isBusy || !canMoveDepartment}
                         >
-                            <span>
-                                <Button
-                                    variant="outlined"
-                                    onClick={() => {
-                                        setShowMoveDialog(true);
-                                    }}
-                                    disabled={isBusy || !canMoveDepartment}
-                                    startIcon={<MoveGroup />}
-                                >
-                                    Verschieben
-                                </Button>
-                            </span>
-                        </Tooltip>
-                        <Button
-                            variant="outlined"
-                            onClick={checkAndHandleDelete}
-                            disabled={isBusy || !isEditable}
-                            color="error"
-                            startIcon={<Delete />}
+                            <Button
+                                variant="outlined"
+                                onClick={() => {
+                                    setShowMoveDialog(true);
+                                }}
+                                disabled={isBusy || !canMoveDepartment}
+                                startIcon={<MoveGroup />}
+                            >
+                                Verschieben
+                            </Button>
+                        </DisabledTooltip>
+                        <DisabledTooltip
+                            title={deleteDisabledTooltip}
+                            disabled={isBusy || deleteDisabledByPermission}
                         >
-                            Löschen
-                        </Button>
+                            <Button
+                                variant="outlined"
+                                onClick={checkAndHandleDelete}
+                                disabled={isBusy || deleteDisabledByPermission}
+                                color="error"
+                                startIcon={<Delete />}
+                            >
+                                Löschen
+                            </Button>
+                        </DisabledTooltip>
                     </Box>
                 }
             </Box>

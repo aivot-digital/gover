@@ -72,6 +72,7 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
             return processDefinitionRepository.findAll(specification, pageable);
         }
 
+        // A process can be visible through its owning department or through an explicit process grant.
         var accessibleDepartmentIds = permissionService
                 .getDepartmentsWithPermission(userId, ProcessPermissionProvider.PROCESS_DEFINITION_READ)
                 .stream()

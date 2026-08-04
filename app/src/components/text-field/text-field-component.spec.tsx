@@ -1,7 +1,8 @@
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {TextFieldComponent} from './text-field-component';
 
-jest.mock('../copy-to-clipboard-button/copy-to-clipboard-button', () => ({
+vi.mock('../copy-to-clipboard-button/copy-to-clipboard-button', () => ({
     CopyToClipboardButton: ({text, disabled, ariaLabel}: {
         text: string;
         disabled?: boolean;
@@ -21,14 +22,14 @@ jest.mock('../copy-to-clipboard-button/copy-to-clipboard-button', () => ({
 
 describe('TextFieldComponent', () => {
     afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     it('should only render the copy button when copyable is enabled', () => {
         const {rerender} = render(
             <TextFieldComponent
                 label="API Key"
-                onChange={jest.fn()}
+                onChange={vi.fn()}
             />,
         );
 
@@ -37,7 +38,7 @@ describe('TextFieldComponent', () => {
         rerender(
             <TextFieldComponent
                 label="API Key"
-                onChange={jest.fn()}
+                onChange={vi.fn()}
                 copyable
             />,
         );
@@ -50,7 +51,7 @@ describe('TextFieldComponent', () => {
             <TextFieldComponent
                 label="API Key"
                 value="secret-value"
-                onChange={jest.fn()}
+                onChange={vi.fn()}
                 copyable
                 muiPassTroughProps={{
                     InputProps: {
@@ -65,8 +66,8 @@ describe('TextFieldComponent', () => {
     });
 
     it('should copy the live input value before the debounced change is flushed', () => {
-        jest.useFakeTimers();
-        const onChange = jest.fn();
+        vi.useFakeTimers();
+        const onChange = vi.fn();
 
         render(
             <TextFieldComponent
@@ -93,7 +94,7 @@ describe('TextFieldComponent', () => {
             <TextFieldComponent
                 label="URL-Segment"
                 value="antrag"
-                onChange={jest.fn()}
+                onChange={vi.fn()}
                 copyable
                 copyValueTemplate="https://example.test/form/process/{value}/"
             />,
@@ -103,7 +104,7 @@ describe('TextFieldComponent', () => {
     });
 
     it('should emit null when the user clears the value', () => {
-        const onChange = jest.fn();
+        const onChange = vi.fn();
 
         render(
             <TextFieldComponent

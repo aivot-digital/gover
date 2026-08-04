@@ -35,25 +35,27 @@ import {alpha} from '@mui/material/styles';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import Remove from '@aivot/mui-material-symbols-400-n25-outlined/Remove';
 import CropFree from '@aivot/mui-material-symbols-400-n25-outlined/CropFree';
-import Lock from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
-import LockOpen from '@aivot/mui-material-symbols-400-n25-outlined/LockOpen';
 import Groups from '@aivot/mui-material-symbols-400-n25-outlined/Groups';
 import ViewRealSize from '@aivot/mui-material-symbols-400-n25-outlined/ViewRealSize';
 import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
-import {memo, type CSSProperties, type ReactNode, useCallback, useEffect, useState} from 'react';
+import {memo, type CSSProperties, type ReactNode, useEffect, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {StringAvatar} from '../../../../components/avatar/string-avatar';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {getDepartmentTypeIcons, getDepartmentTypeLabel} from '../../../departments/utils/department-utils';
 import {
     type OrganizationChartDepartmentItem,
     type OrganizationChartTeamItem,
     type OrganizationChartUserItem,
 } from './organization-chart-types';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 interface OrganizationChartFlowProps {
     view: OrganizationChartFlowView;
     rootDepartments: OrganizationChartDepartmentItem[];
     teams: OrganizationChartTeamItem[];
+    canReadUsers: boolean;
 }
 
 export type OrganizationChartFlowView = 'departments' | 'teams';
@@ -63,11 +65,15 @@ type OrganizationChartFlowNodeData =
         itemType: 'department';
         item: OrganizationChartDepartmentItem;
         height: number;
+        canReadUsers: boolean;
+        canReadMemberships: boolean;
     }
     | {
         itemType: 'team';
         item: OrganizationChartTeamItem;
         height: number;
+        canReadUsers: boolean;
+        canReadMemberships: boolean;
     };
 
 type OrganizationChartFlowNode = ReactFlowNode<OrganizationChartFlowNodeData>;
@@ -95,6 +101,7 @@ interface OrganizationChartFlowCanvasProps {
     view: OrganizationChartFlowView;
     rootDepartments: OrganizationChartDepartmentItem[];
     teams: OrganizationChartTeamItem[];
+    canReadUsers: boolean;
 }
 
 interface OrganizationChartTreeGroup {
@@ -184,6 +191,7 @@ export function OrganizationChartFlow(props: OrganizationChartFlowProps): ReactN
         view,
         rootDepartments,
         teams,
+        canReadUsers,
     } = props;
 
     const [renderedView, setRenderedView] = useState<OrganizationChartFlowView>(view);
@@ -243,6 +251,7 @@ export function OrganizationChartFlow(props: OrganizationChartFlowProps): ReactN
                                 view={renderedView}
                                 rootDepartments={rootDepartments}
                                 teams={teams}
+                                canReadUsers={canReadUsers}
                             />
                         </ReactFlowProvider>
                     )
@@ -290,6 +299,7 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
         view,
         rootDepartments,
         teams,
+        canReadUsers,
     } = props;
     const theme = useTheme();
     const {
@@ -302,13 +312,12 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
         groups: [],
     });
     const [isLayoutReady, setIsLayoutReady] = useState(false);
-    const [isViewportLocked, setIsViewportLocked] = useState(false);
 
     useEffect(() => {
         let isActive = true;
         setIsLayoutReady(false);
 
-        createLayout(view, rootDepartments, teams)
+        createLayout(view, rootDepartments, teams, canReadUsers)
             .then((nextLayout) => {
                 if (!isActive) {
                     return;
@@ -334,7 +343,7 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
         return () => {
             isActive = false;
         };
-    }, [rootDepartments, teams, view]);
+    }, [canReadUsers, rootDepartments, teams, view]);
 
     useEffect(() => {
         if (!isLayoutReady || layout.nodes.length === 0) {
@@ -349,10 +358,6 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
             cancelAnimationFrame(frameHandle);
         };
     }, [fitView, isLayoutReady, layout.nodes.length, view]);
-
-    const handleToggleViewportLock = useCallback(() => {
-        setIsViewportLocked((current) => !current);
-    }, []);
 
     return (
         <ReactFlow
@@ -377,11 +382,11 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
             edgesReconnectable={false}
             minZoom={FLOW_MIN_ZOOM}
             maxZoom={FLOW_MAX_ZOOM}
-            panOnDrag={!isViewportLocked}
-            zoomOnScroll={!isViewportLocked}
-            zoomOnPinch={!isViewportLocked}
-            zoomOnDoubleClick={!isViewportLocked}
-            preventScrolling={!isViewportLocked}
+            panOnDrag={true}
+            zoomOnScroll={true}
+            zoomOnPinch={true}
+            zoomOnDoubleClick={true}
+            preventScrolling={true}
             proOptions={{
                 hideAttribution: true,
             }}
@@ -392,22 +397,12 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
             <OrganizationChartTreeGroups
                 groups={layout.groups}
             />
-            <OrganizationChartFlowViewportControls
-                isViewportLocked={isViewportLocked}
-                onToggleViewportLock={handleToggleViewportLock}
-            />
+            <OrganizationChartFlowViewportControls />
         </ReactFlow>
     );
 }
 
-function OrganizationChartFlowViewportControls(props: {
-    isViewportLocked: boolean;
-    onToggleViewportLock: () => void;
-}): ReactNode {
-    const {
-        isViewportLocked,
-        onToggleViewportLock,
-    } = props;
+function OrganizationChartFlowViewportControls(): ReactNode {
     const {
         fitView,
         zoomIn,
@@ -466,18 +461,6 @@ function OrganizationChartFlowViewportControls(props: {
                 tooltip="Zoom auf Originalgröße (100 %)"
             >
                 <ViewRealSize sx={{fontSize: 18}} />
-            </OrganizationChartFlowControlButton>
-
-            <OrganizationChartFlowControlButton
-                onClick={onToggleViewportLock}
-                ariaLabel={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
-                tooltip={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
-            >
-                {
-                    isViewportLocked ?
-                        <Lock sx={{fontSize: 18}} /> :
-                        <LockOpen sx={{fontSize: 18}} />
-                }
             </OrganizationChartFlowControlButton>
         </Controls>
     );
@@ -632,11 +615,15 @@ function OrganizationChartNodeCard(props: {
     const item = data.item;
     const department = data.itemType === 'department' ? data.item : null;
     const members = item.members;
+    const canReadDetails = item.canReadDetails;
+    const canReadUsers = data.canReadUsers;
+    const canReadMemberships = data.canReadMemberships;
     const isDepartment = department != null;
     const title = item.name;
     const detailLinkTo = isDepartment ? `/departments/${item.id}` : `/teams/${item.id}`;
     const managementLinkTo = isDepartment ? `/departments/${item.id}/members` : `/teams/${item.id}/members`;
     const typeLabel = department != null ? getDepartmentTypeLabel(department.depth) : 'Team';
+    const membershipReadPermission = isDepartment ? Permission.DEPARTMENT_MEMBERSHIP_READ : Permission.TEAM_MEMBERSHIP_READ;
 
     return (
         <Paper
@@ -685,26 +672,44 @@ function OrganizationChartNodeCard(props: {
                 </StringAvatar>
 
                 <Box sx={{display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1}}>
-                    <Typography
-                        component={RouterLink}
-                        to={detailLinkTo}
-                        className="nodrag nopan"
-                        variant="subtitle1"
-                        title={title}
-                        sx={{
-                            color: 'text.primary',
-                            textDecoration: 'none',
-                            fontWeight: 700,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            '&:hover': {
-                                textDecoration: 'underline',
-                            },
-                        }}
-                    >
-                        {title}
-                    </Typography>
+                    {
+                        canReadDetails ? (
+                            <Typography
+                                component={RouterLink}
+                                to={detailLinkTo}
+                                className="nodrag nopan"
+                                variant="subtitle1"
+                                title={title}
+                                sx={{
+                                    color: 'text.primary',
+                                    textDecoration: 'none',
+                                    fontWeight: 700,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    '&:hover': {
+                                        textDecoration: 'underline',
+                                    },
+                                }}
+                            >
+                                {title}
+                            </Typography>
+                        ) : (
+                            <Typography
+                                variant="subtitle1"
+                                title={title}
+                                sx={{
+                                    color: 'text.primary',
+                                    fontWeight: 700,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                }}
+                            >
+                                {title}
+                            </Typography>
+                        )
+                    }
                     <Typography
                         variant="caption"
                         color="text.secondary"
@@ -719,22 +724,38 @@ function OrganizationChartNodeCard(props: {
                     </Typography>
                 </Box>
 
-                <Button
-                    component={RouterLink}
-                    to={managementLinkTo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="nodrag nopan"
-                    variant="outlined"
-                    size="small"
-                    sx={{flexShrink: 0}}
+                <DisabledTooltip
+                    disabled={!canReadMemberships}
+                    title={formatMissingPermissionTooltip(membershipReadPermission)}
+                    wrapperSx={{flexShrink: 0}}
                 >
-                    Verwalten
-                </Button>
+                    <Button
+                        component={RouterLink}
+                        to={managementLinkTo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="nodrag nopan"
+                        variant="outlined"
+                        size="small"
+                        disabled={!canReadMemberships}
+                    >
+                        Verwalten
+                    </Button>
+                </DisabledTooltip>
             </Box>
 
             {
-                members.length > 0 ? (
+                !canReadUsers ? (
+                    <OrganizationChartMembersPermissionState
+                        message="Die Berechtigung zum Einsehen der Mitarbeiter:innendaten fehlt"
+                        permission={Permission.USER_READ}
+                    />
+                ) : !canReadMemberships ? (
+                    <OrganizationChartMembersPermissionState
+                        message="Die Berechtigung zum Einsehen der Zuordnungen fehlt"
+                        permission={membershipReadPermission}
+                    />
+                ) : members.length > 0 ? (
                     <OrganizationChartMemberList
                         members={members.slice(0, MEMBER_PREVIEW_COUNT)}
                         compact
@@ -745,6 +766,8 @@ function OrganizationChartNodeCard(props: {
             }
 
             {
+                canReadUsers &&
+                canReadMemberships &&
                 members.length > MEMBER_PREVIEW_COUNT &&
                 <Button
                     component={RouterLink}
@@ -768,6 +791,43 @@ function OrganizationChartNodeCard(props: {
                 </Button>
             }
         </Paper>
+    );
+}
+
+function OrganizationChartMembersPermissionState(props: {
+    message: string;
+    permission: Permission;
+}): ReactNode {
+    const {
+        message,
+        permission,
+    } = props;
+
+    return (
+        <Box
+            sx={{
+                minHeight: 76,
+                boxSizing: 'border-box',
+                borderRadius: 1.5,
+                border: (theme) => `1px solid ${theme.palette.action.hover}`,
+                bgcolor: 'action.hover',
+                display: 'flex',
+                alignItems: 'center',
+                px: 1.25,
+                py: 1,
+            }}
+        >
+            <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                    fontWeight: 600,
+                    lineHeight: 1.35,
+                }}
+            >
+                {`${message} (${permission}).`}
+            </Typography>
+        </Box>
     );
 }
 
@@ -1012,16 +1072,17 @@ async function createLayout(
     view: OrganizationChartFlowView,
     rootDepartments: OrganizationChartDepartmentItem[],
     teams: OrganizationChartTeamItem[],
+    canReadUsers: boolean,
 ): Promise<OrganizationChartLayoutResult> {
     if (view === 'teams') {
-        return createTeamLayout(teams);
+        return createTeamLayout(teams, canReadUsers);
     }
 
-    return await createDepartmentLayout(rootDepartments);
+    return await createDepartmentLayout(rootDepartments, canReadUsers);
 }
 
-async function createDepartmentLayout(rootDepartments: OrganizationChartDepartmentItem[]): Promise<OrganizationChartLayoutResult> {
-    const treeLayoutInputs = rootDepartments.map(createDepartmentTreeLayoutInput);
+async function createDepartmentLayout(rootDepartments: OrganizationChartDepartmentItem[], canReadUsers: boolean): Promise<OrganizationChartLayoutResult> {
+    const treeLayoutInputs = rootDepartments.map((rootDepartment) => createDepartmentTreeLayoutInput(rootDepartment, canReadUsers));
     const normalizedNodesById = new Map(
         normalizeFlowNodeHeights(treeLayoutInputs.flatMap((tree) => tree.nodes))
             .map((node) => [node.id, node])
@@ -1064,12 +1125,12 @@ async function createDepartmentLayout(rootDepartments: OrganizationChartDepartme
     };
 }
 
-function createDepartmentTreeLayoutInput(rootDepartment: OrganizationChartDepartmentItem): OrganizationChartDepartmentTreeLayoutInput {
+function createDepartmentTreeLayoutInput(rootDepartment: OrganizationChartDepartmentItem, canReadUsers: boolean): OrganizationChartDepartmentTreeLayoutInput {
     const nodes: OrganizationChartFlowNode[] = [];
     const edges: OrganizationChartFlowEdge[] = [];
 
     function appendDepartment(department: OrganizationChartDepartmentItem): void {
-        nodes.push(createFlowNode('department', department));
+        nodes.push(createFlowNode('department', department, canReadUsers));
 
         for (const child of department.children) {
             edges.push(createFlowEdge(
@@ -1152,8 +1213,8 @@ async function createPositionedDepartmentTreeLayout(
     };
 }
 
-function createTeamLayout(teams: OrganizationChartTeamItem[]): OrganizationChartLayoutResult {
-    const nodes = normalizeFlowNodeHeights(teams.map((team) => createFlowNode('team', team)));
+function createTeamLayout(teams: OrganizationChartTeamItem[], canReadUsers: boolean): OrganizationChartLayoutResult {
+    const nodes = normalizeFlowNodeHeights(teams.map((team) => createFlowNode('team', team, canReadUsers)));
     const rowHeights: number[] = [];
 
     nodes.forEach((node, index) => {
@@ -1188,17 +1249,21 @@ function createTeamLayout(teams: OrganizationChartTeamItem[]): OrganizationChart
 function createFlowNode(
     itemType: 'department',
     item: OrganizationChartDepartmentItem,
+    canReadUsers: boolean,
 ): OrganizationChartFlowNode;
 function createFlowNode(
     itemType: 'team',
     item: OrganizationChartTeamItem,
+    canReadUsers: boolean,
 ): OrganizationChartFlowNode;
 function createFlowNode(
     itemType: 'department' | 'team',
     item: OrganizationChartDepartmentItem | OrganizationChartTeamItem,
+    canReadUsers: boolean,
 ): OrganizationChartFlowNode {
     const id = getNodeId(itemType, item.id);
-    const height = getFlowNodeHeight(item);
+    const canReadMembers = canReadUsers && item.canReadMemberships;
+    const height = getFlowNodeHeight(item, canReadMembers);
 
     return {
         id,
@@ -1217,10 +1282,14 @@ function createFlowNode(
             itemType,
             item: item as OrganizationChartDepartmentItem,
             height,
+            canReadUsers,
+            canReadMemberships: item.canReadMemberships,
         } : {
             itemType,
             item: item as OrganizationChartTeamItem,
             height,
+            canReadUsers,
+            canReadMemberships: item.canReadMemberships,
         },
     };
 }
@@ -1283,7 +1352,11 @@ function collectDepartmentNodeIds(department: OrganizationChartDepartmentItem): 
     ];
 }
 
-function getFlowNodeHeight(item: OrganizationChartDepartmentItem | OrganizationChartTeamItem): number {
+function getFlowNodeHeight(item: OrganizationChartDepartmentItem | OrganizationChartTeamItem, canReadMembers: boolean): number {
+    if (!canReadMembers) {
+        return FLOW_NODE_MIN_HEIGHT;
+    }
+
     const visibleMemberCount = Math.min(item.members.length, MEMBER_PREVIEW_COUNT);
     const hasMoreMembersLink = item.members.length > MEMBER_PREVIEW_COUNT;
 

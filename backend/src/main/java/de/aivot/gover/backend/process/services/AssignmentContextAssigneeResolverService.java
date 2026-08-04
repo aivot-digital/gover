@@ -45,6 +45,8 @@ public class AssignmentContextAssigneeResolverService {
             @Nonnull Integer processId,
             @Nonnull Integer processVersion,
             @Nonnull Long processInstanceId,
+            @Nullable Integer currentProcessNodeId,
+            @Nullable Long currentProcessInstanceTaskId,
             @Nullable Integer previousProcessNodeId,
             @Nullable String processInstanceAssignedUserId,
             @Nullable AssignmentContextInputElementValue assignmentContext,
@@ -68,7 +70,7 @@ public class AssignmentContextAssigneeResolverService {
                 .filter(PotentialAccessRow::isUserRow)
                 .filter(row -> Boolean.TRUE.equals(row.userIsEnabled()))
                 .filter(row -> Boolean.TRUE.equals(row.userIsDirectMember()))
-                .filter(row -> hasRequiredPermissions(row.userDirectPermissions(), normalizedRequiredPermissions))
+                .filter(row -> hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions))
                 .toList();
 
         if (eligibleUserRows.isEmpty()) {
@@ -90,6 +92,8 @@ public class AssignmentContextAssigneeResolverService {
                 candidateUserIds,
                 assignmentContext,
                 processInstanceId,
+                currentProcessNodeId,
+                currentProcessInstanceTaskId,
                 previousProcessNodeId,
                 processInstanceAssignedUserId
         );
@@ -159,6 +163,8 @@ public class AssignmentContextAssigneeResolverService {
             @Nonnull LinkedHashSet<String> candidateUserIds,
             @Nullable AssignmentContextInputElementValue assignmentContext,
             @Nonnull Long processInstanceId,
+            @Nullable Integer currentProcessNodeId,
+            @Nullable Long currentProcessInstanceTaskId,
             @Nullable Integer previousProcessNodeId,
             @Nullable String processInstanceAssignedUserId
     ) {
@@ -166,20 +172,49 @@ public class AssignmentContextAssigneeResolverService {
             return candidateUserIds;
         }
 
-        if (Boolean.TRUE.equals(assignmentContext.getPreferPreviousTaskAssignee())) {
+        if (assignmentContext.prefersPreviousIterationAssignee()) {
+            var previousIterationAssigneeId = resolvePreviousIterationAssignee(
+                    processInstanceId,
+                    currentProcessNodeId,
+                    currentProcessInstanceTaskId
+            );
+            if (previousIterationAssigneeId != null && candidateUserIds.contains(previousIterationAssigneeId)) {
+                return new LinkedHashSet<>(List.of(previousIterationAssigneeId));
+            }
+        }
+
+        if (assignmentContext.prefersDifferentFromPreviousIterationAssignee()) {
+            var previousIterationAssigneeId = resolvePreviousIterationAssignee(
+                    processInstanceId,
+                    currentProcessNodeId,
+                    currentProcessInstanceTaskId
+            );
+            if (previousIterationAssigneeId != null && candidateUserIds.contains(previousIterationAssigneeId)) {
+                var differentCandidateUserIds = candidateUserIds
+                        .stream()
+                        .filter(userId -> !Objects.equals(userId, previousIterationAssigneeId))
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+
+                if (!differentCandidateUserIds.isEmpty()) {
+                    candidateUserIds = differentCandidateUserIds;
+                }
+            }
+        }
+
+        if (assignmentContext.prefersPreviousProcessStepAssignee()) {
             var preferredUserId = resolvePreviousTaskAssignee(processInstanceId, previousProcessNodeId);
             if (preferredUserId != null && candidateUserIds.contains(preferredUserId)) {
                 return new LinkedHashSet<>(List.of(preferredUserId));
             }
         }
 
-        if (Boolean.TRUE.equals(assignmentContext.getPreferProcessInstanceAssignee())) {
+        if (assignmentContext.prefersProcessInstanceAssignee()) {
             if (processInstanceAssignedUserId != null && candidateUserIds.contains(processInstanceAssignedUserId)) {
                 return new LinkedHashSet<>(List.of(processInstanceAssignedUserId));
             }
         }
 
-        if (Boolean.TRUE.equals(assignmentContext.getPreferUninvolvedUser())) {
+        if (assignmentContext.prefersUninvolvedUser()) {
             var involvedUserIds = processInstanceTaskRepository
                     .findAllByProcessInstanceId(processInstanceId)
                     .stream()
@@ -198,6 +233,25 @@ public class AssignmentContextAssigneeResolverService {
         }
 
         return candidateUserIds;
+    }
+
+    @Nullable
+    private String resolvePreviousIterationAssignee(@Nonnull Long processInstanceId,
+                                                    @Nullable Integer currentProcessNodeId,
+                                                    @Nullable Long currentProcessInstanceTaskId) {
+        if (currentProcessNodeId == null || currentProcessInstanceTaskId == null) {
+            return null;
+        }
+
+        var previousTask = processInstanceTaskRepository
+                .findFirstByProcessInstanceIdAndProcessNodeIdAndIdNotOrderByStartedDesc(
+                        processInstanceId,
+                        currentProcessNodeId,
+                        currentProcessInstanceTaskId
+                )
+                .orElse(null);
+
+        return previousTask != null ? previousTask.getAssignedUserId() : null;
     }
 
     @Nullable

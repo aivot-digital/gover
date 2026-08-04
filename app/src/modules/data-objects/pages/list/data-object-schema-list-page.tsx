@@ -1,4 +1,8 @@
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
@@ -14,17 +18,22 @@ import {v4 as uuid4} from 'uuid';
 import CloudUploadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CloudUpload';
 import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
-import React, {useCallback, useMemo} from 'react';
+import React, {useCallback} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {Permission} from '../../../../data/permissions/permission';
+
+const dataObjectSchemaListPermissionCheck: GenericListPagePermissionConfig<DataObjectSchema> = {
+    scope: {
+        type: 'system',
+    },
+    read: Permission.OBJECT_SCHEMA_READ,
+    create: Permission.OBJECT_SCHEMA_CREATE,
+    update: Permission.OBJECT_SCHEMA_UPDATE,
+};
 
 export function DataObjectSchemaListPage() {
     const navigate = useNavigate();
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
 
     const handleImport = useCallback(() => {
         uploadObjectFile<DataObjectSchema>('application/json')
@@ -40,7 +49,7 @@ export function DataObjectSchemaListPage() {
             });
     }, [navigate]);
 
-    const header = useMemo(() => ({
+    const header = useCallback((permissions: GenericListPagePermissionState<DataObjectSchema>) => ({
         icon: <FolderData />,
         title: 'Datenmodelle',
         actions: [
@@ -49,14 +58,16 @@ export function DataObjectSchemaListPage() {
                 onClick: handleImport,
                 variant: 'text' as const,
                 label: 'Importieren',
-                disabled: !hasAccess,
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
             {
                 label: 'Neues Datenmodell',
                 icon: <AddOutlinedIcon />,
                 to: '/data-models/new',
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -80,7 +91,7 @@ export function DataObjectSchemaListPage() {
                 </>
             ),
         },
-    }), [handleImport, hasAccess]);
+    }), [handleImport]);
 
     const fetchSchemas = useCallback((options: GenericListPropsFetchOptions<DataObjectSchema>) => {
         return new DataObjectSchemasApiService(options.api)
@@ -95,7 +106,7 @@ export function DataObjectSchemaListPage() {
             );
     }, []);
 
-    const columnDefinitions = useMemo(() => [
+    const columnDefinitions = useCallback((permissions: GenericListPagePermissionState<DataObjectSchema>) => [
         {
             field: 'icon',
             headerName: '',
@@ -111,7 +122,7 @@ export function DataObjectSchemaListPage() {
             renderCell: (params: any) => (
                 <CellLink
                     to={`/data-models/${params.row.key}`}
-                    title={hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen'}
+                    title={permissions.canUpdate(params.row) ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen'}
                 >
                     {String(params.value)}
                 </CellLink>
@@ -122,22 +133,40 @@ export function DataObjectSchemaListPage() {
             headerName: 'Beschreibung',
             flex: 2,
         },
-    ], [hasAccess]);
+    ], []);
 
     const getRowIdentifier = useCallback((row: DataObjectSchema) => row.key.toString(), []);
 
-    const rowActions = useCallback((item: DataObjectSchema) => [
-        {
-            icon: hasAccess ? <EditOutlined /> : <Visibility />,
-            to: `/data-models/${item.key}`,
-            tooltip: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
-        },
-        {
-            icon: <DataObject />,
-            to: `/data-objects/${item.key}`,
-            tooltip: 'Datenobjekte zu diesem Modell anzeigen',
-        },
-    ], [hasAccess]);
+    const rowActions = useCallback((item: DataObjectSchema, permissions: GenericListPagePermissionState<DataObjectSchema>) => {
+        const canUpdateDataObjectSchema = permissions.canUpdate(item);
+        const canReadDataObjectItems = permissions.hasPermission(Permission.OBJECT_ITEM_READ);
+
+        return [
+            {
+                icon: canUpdateDataObjectSchema ? <EditOutlined /> : <Visibility />,
+                to: `/data-models/${item.key}`,
+                tooltip: canUpdateDataObjectSchema ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+            },
+            {
+                icon: <DataObject />,
+                to: `/data-objects/${item.key}`,
+                tooltip: 'Datenobjekte zu diesem Modell anzeigen',
+                disabled: !canReadDataObjectItems,
+                disabledTooltip: permissions.getMissingPermissionTooltip(Permission.OBJECT_ITEM_READ),
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<DataObjectSchema>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Datenmodelle vorhanden"
+            description="Datenmodelle definieren die Struktur wiederverwendbarer Datensätze, die in Formularen und Prozessen genutzt werden können."
+            addText="Neues Datenmodell anlegen"
+            onAdd={() => navigate('/data-models/new')}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [navigate]);
 
     return (
         <>
@@ -148,19 +177,13 @@ export function DataObjectSchemaListPage() {
             >
                 <GenericListPage<DataObjectSchema>
                     header={header}
+                    permissionCheck={dataObjectSchemaListPermissionCheck}
                     searchLabel="Datenmodell suchen"
                     searchPlaceholder="Name des Datenmodells eingeben…"
                     fetch={fetchSchemas}
                     columnDefinitions={columnDefinitions}
                     getRowIdentifier={getRowIdentifier}
-                    noDataPlaceholder={
-                        <EmptyDataListPlaceholder
-                            title="Noch keine Datenmodelle angelegt"
-                            description="Datenmodelle definieren die Struktur wiederverwendbarer Datensätze, die in Formularen und Prozessen genutzt werden können."
-                            addText={hasAccess ? "Neues Datenmodell anlegen" : undefined}
-                            onAdd={hasAccess ? () => navigate('/data-models/new') : undefined}
-                        />
-                    }
+                    noDataPlaceholder={noDataPlaceholder}
                     noSearchResultsPlaceholder="Keine Datenmodelle gefunden"
                     rowActionsCount={2}
                     rowActions={rowActions}

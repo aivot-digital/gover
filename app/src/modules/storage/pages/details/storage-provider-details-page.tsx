@@ -12,6 +12,9 @@ import Sync from '@aivot/mui-material-symbols-400-n25-outlined/Sync';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {GenericDetailsPageControlRef} from '../../../../components/generic-details-page/generic-details-page-props';
+import {Permission} from '../../../../data/permissions/permission';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 type StorageProviderSyncPreparationHandler = () => Promise<boolean>;
 
@@ -31,6 +34,7 @@ export function useStorageProviderDetailsPageSyncContext(): StorageProviderDetai
 
 export function StorageProviderDetailsPage(): ReactNode {
     const dispatch = useAppDispatch();
+    const canUpdateStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
 
     const [provider, setProvider] = useState<StorageProviderEntity>();
     const [isSyncing, setIsSyncing] = useState(false);
@@ -42,7 +46,7 @@ export function StorageProviderDetailsPage(): ReactNode {
     }, []);
 
     const handleSync = async (): Promise<void> => {
-        if (provider == null || isSyncing) {
+        if (provider == null || isSyncing || !canUpdateStorageProvider) {
             return;
         }
 
@@ -71,6 +75,14 @@ export function StorageProviderDetailsPage(): ReactNode {
                 background
             >
                 <GenericDetailsPage<StorageProviderEntity, number, StorageProviderAdditionalData>
+                    permissionCheck={{
+                        create: Permission.STORAGE_PROVIDER_CREATE,
+                        read: Permission.STORAGE_PROVIDER_READ,
+                        update: Permission.STORAGE_PROVIDER_UPDATE,
+                        scope: {
+                            type: 'system',
+                        },
+                    }}
                     header={{
                         icon: ModuleIcons.storage,
                         title: 'Speicheranbieter bearbeiten',
@@ -81,7 +93,10 @@ export function StorageProviderDetailsPage(): ReactNode {
                             onClick: () => {
                                 void handleSync();
                             },
-                            disabled: provider?.id === 0 || isSyncing,
+                            disabled: provider?.id === 0 || isSyncing || !canUpdateStorageProvider,
+                            disabledTooltip: !canUpdateStorageProvider
+                                ? formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_UPDATE)
+                                : undefined,
                         }],
                         helpDialog: {
                             title: 'Hilfe zu Speicheranbietern',
@@ -116,12 +131,14 @@ export function StorageProviderDetailsPage(): ReactNode {
                         {
                             path: '/storage-providers/:id/explore',
                             label: 'Dateiexplorer',
-                            isDisabled: (item) => item?.id === 0,
+                            onlyExisting: true,
+                            requiredPermission: Permission.STORAGE_PROVIDER_READ,
                         },
                         {
                             path: '/storage-providers/:id/test',
                             label: 'Testen',
-                            isDisabled: (item) => item?.id === 0,
+                            onlyExisting: true,
+                            requiredPermission: Permission.STORAGE_PROVIDER_UPDATE,
                         },
                     ]}
                     initializeItem={() => {

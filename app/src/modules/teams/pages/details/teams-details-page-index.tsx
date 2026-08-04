@@ -1,8 +1,7 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {useContext, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
-import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -10,16 +9,15 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
-import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
-import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {ThemeResponseDTO} from '../../../themes/models/theme';
-import {ThemesApiService} from '../../../themes/themes-api-service';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {TeamsApiService} from '../../services/teams-api-service';
 import {TeamEntity} from "../../entities/team-entity";
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useHasTeamPermission} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const TeamSchema = yup.object({
     name: yup.string()
@@ -33,31 +31,14 @@ export function TeamsDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    const api = useApi();
     const {
         item,
         setItem,
         isBusy,
         setIsBusy,
         isEditable,
+        isNewItem,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<TeamEntity, void>;
-
-    useEffect(() => {
-        if (isEditable) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            severity: SnackbarSeverity.Warning,
-            type: SnackbarType.Dismissable,
-            message: 'Dieses Team kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            key: 'no-edit-permission-team',
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('no-edit-permission-team'));
-        };
-    }, [isEditable]);
 
     const {
         currentItem: team,
@@ -71,28 +52,29 @@ export function TeamsDetailsPageIndex() {
 
     const apiService = useMemo(() => new TeamsApiService(), []);
     const changeBlocker = useChangeBlocker(item, team);
+    const isNewTeam = isNewItem === true;
+    const editPermission = isNewTeam ? Permission.TEAM_CREATE : Permission.TEAM_UPDATE;
+    const canDeleteTeam = useHasTeamPermission(
+        isNewTeam ? undefined : team?.id,
+        Permission.TEAM_DELETE,
+    );
 
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
-    const [relatedApplications, setRelatedApplications] = useState<ConstraintLinkProps[] | undefined>(undefined);
-    const [availableThemes, setAvailableThemes] = useState<ThemeResponseDTO[]>();
 
-    useEffect(() => {
-        new ThemesApiService(api)
-            .listAll()
-            .then((result) => {
-                setAvailableThemes(result.content);
-            })
-            .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Laden der verfügbaren Fabschemata.'));
-            });
-    }, []);
-
-    if (team == null || availableThemes == null) {
+    if (team == null) {
         return (
             <GenericDetailsSkeleton />
         );
     }
+
+    const saveDisabledByPermission = !isEditable;
+    const saveDisabledTooltip = saveDisabledByPermission
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledByPermission = !canDeleteTeam;
+    const deleteDisabledTooltip = deleteDisabledByPermission
+        ? formatMissingPermissionTooltip(Permission.TEAM_DELETE)
+        : undefined;
 
     const handleSave = () => {
         if (team != null) {
@@ -106,7 +88,7 @@ export function TeamsDetailsPageIndex() {
 
             setIsBusy(true);
 
-            if (team.id === 0) {
+            if (isNewTeam) {
                 apiService
                     .create({
                         id: 0,
@@ -158,7 +140,7 @@ export function TeamsDetailsPageIndex() {
     };
 
     const confirmDelete = () => {
-        if (team.id === 0) return;
+        if (isNewTeam) return;
 
         setIsBusy(true);
         apiService.destroy(team.id)
@@ -182,7 +164,7 @@ export function TeamsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Öffentliche Informationen des Teams
+                Angaben zum Team
             </Typography>
             <Typography
                 sx={{
@@ -190,7 +172,7 @@ export function TeamsDetailsPageIndex() {
                     maxWidth: 900,
                 }}
             >
-                Hinterlegen Sie grundsätzliche Informationen über dieses Team. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
+                Hinterlegen Sie interne Angaben dieses Teams. Diese Angaben werden in Gover zum Beispiel in Listen, Zuweisungen und Auswahlen verwendet.
             </Typography>
             <Grid
                 container
@@ -223,45 +205,58 @@ export function TeamsDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
+                <DisabledTooltip
+                    title={saveDisabledTooltip}
                     disabled={isBusy || hasNotChanged || !isEditable}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon />}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon />}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
-                    team.id !== 0 &&
-                    <Button
-                        onClick={() => {
-                            reset();
-                        }}
+                    !isNewTeam &&
+                    <DisabledTooltip
+                        title={saveDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
-                        color="error"
                     >
-                        Zurücksetzen
-                    </Button>
+                        <Button
+                            onClick={() => {
+                                reset();
+                            }}
+                            disabled={isBusy || hasNotChanged || !isEditable}
+                            color="error"
+                        >
+                            Zurücksetzen
+                        </Button>
+                    </DisabledTooltip>
                 }
 
                 {
-                    team.id !== 0 &&
-                    <Button
-                        variant="outlined"
-                        onClick={() => {
-                            setConfirmDeleteAction(() => confirmDelete);
-                        }}
-                        disabled={isBusy || !isEditable}
-                        color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete />}
+                    !isNewTeam &&
+                    <DisabledTooltip
+                        title={deleteDisabledTooltip}
+                        disabled={isBusy || deleteDisabledByPermission}
+                        wrapperSx={{marginLeft: 'auto'}}
                     >
-                        Löschen
-                    </Button>
+                        <Button
+                            variant="outlined"
+                            onClick={() => {
+                                setConfirmDeleteAction(() => confirmDelete);
+                            }}
+                            disabled={isBusy || deleteDisabledByPermission}
+                            color="error"
+                            startIcon={<Delete />}
+                        >
+                            Löschen
+                        </Button>
+                    </DisabledTooltip>
                 }
             </Box>
 

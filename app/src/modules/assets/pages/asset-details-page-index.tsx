@@ -37,6 +37,10 @@ import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {deepEquals} from '../../../utils/equality-utils';
 import {CopyToClipboardButton} from '../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
+import {Permission} from '../../../data/permissions/permission';
+import {useHasSystemPermission} from '../../permissions/hooks/use-permissions';
+import {formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../components/disabled-tooltip/disabled-tooltip';
 
 export const AssetSchema = yup.object({
     filename: yup.string()
@@ -60,7 +64,11 @@ export function AssetDetailsPageIndex() {
         additionalData,
         isBusy,
         setIsBusy,
+        isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Asset, AssetDetailsPageAdditionalData>;
+    const canCreateAssets = useHasSystemPermission(Permission.ASSET_CREATE);
+    const canUpdateAssets = useHasSystemPermission(Permission.ASSET_UPDATE);
+    const canDeleteAssets = useHasSystemPermission(Permission.ASSET_DELETE);
 
     const {
         currentItem,
@@ -143,13 +151,28 @@ export function AssetDetailsPageIndex() {
     const hasSelectedFile = file != null && file.length > 0;
     const hasPendingChanges = !hasNotChanged || hasSelectedFile;
     const isNewAsset = asset?.filename === '';
-    const canCreateAsset = !isStorageReadOnly;
-    const canReplaceFile = !isStorageReadOnly;
-    const canDeleteAsset = !isStorageReadOnly;
-    const canEditPrivacy = !isNewAsset;
-    const canEditExistingMetadata = !isNewAsset && !isStorageReadOnly;
+    const canCreateAsset = canCreateAssets && !isStorageReadOnly;
+    const canDeleteAsset = canDeleteAssets && !isStorageReadOnly;
+    const canEditPrivacy = !isNewAsset && canUpdateAssets;
+    const canEditExistingMetadata = !isNewAsset && canUpdateAssets && !isStorageReadOnly;
     const metadataHasChanged = !deepEquals(item?.metadata ?? {}, asset?.metadata ?? {});
     const privacyHasChanged = item?.isPrivate !== asset?.isPrivate;
+    const createDisabledTooltip = !canCreateAssets
+        ? formatMissingPermissionTooltip(Permission.ASSET_CREATE)
+        : isStorageReadOnly
+            ? `${readOnlyHint} Neue Dateien können nicht hochgeladen werden.`
+            : undefined;
+    const updateDisabledTooltip = !canUpdateAssets
+        ? formatMissingPermissionTooltip(Permission.ASSET_UPDATE)
+        : isStorageReadOnly
+            ? `${readOnlyHint} Dateien können nicht geändert werden.`
+            : undefined;
+    const deleteDisabledTooltip = !canDeleteAssets
+        ? formatMissingPermissionTooltip(Permission.ASSET_DELETE)
+        : isStorageReadOnly
+            ? `${readOnlyHint} Dateien können nicht gelöscht werden.`
+            : undefined;
+    const saveDisabledTooltip = isNewAsset ? createDisabledTooltip : updateDisabledTooltip;
 
     if (asset == null) {
         return (
@@ -209,6 +232,10 @@ export function AssetDetailsPageIndex() {
 
             if (!validationResult) {
                 dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
+                return;
+            }
+
+            if (!canUpdateAssets || !isEditable) {
                 return;
             }
 
@@ -437,9 +464,9 @@ export function AssetDetailsPageIndex() {
                                         onChange={(val) => handleInputChange('isPrivate')(!val)}
                                         disabled={!canEditPrivacy}
                                         variant="switch"
-                                        hint="Wenn diese Option aktiviert ist, kann die Datei über einen öffentlichen Link ohne Authentifizierung abgerufen werden.
-                                              Nutzen Sie diese Option nur für Dateien, die öffentlich sein müssen und niemals für sicherheitsrelevante
-                                              Dateien wie Zertifikate. Änderungen werden erst nach dem Speichern wirksam."
+                                        hint={!canUpdateAssets
+                                            ? formatMissingPermissionTooltip(Permission.ASSET_UPDATE)
+                                            : "Wenn diese Option aktiviert ist, kann die Datei über einen öffentlichen Link ohne Authentifizierung abgerufen werden. Nutzen Sie diese Option nur für Dateien, die öffentlich sein müssen und niemals für sicherheitsrelevante Dateien wie Zertifikate. Änderungen werden erst nach dem Speichern wirksam."}
                                     />
                                 ),
                             },
@@ -516,7 +543,9 @@ export function AssetDetailsPageIndex() {
                                         color="text.secondary"
                                         sx={{mt: 1}}
                                     >
-                                        Metadaten können bei schreibgeschützten Speicheranbietern nicht geändert werden.
+                                        {!canUpdateAssets
+                                            ? formatMissingPermissionTooltip(Permission.ASSET_UPDATE)
+                                            : 'Metadaten können bei schreibgeschützten Speicheranbietern nicht geändert werden.'}
                                     </Typography>
                                 )}
                             </Box>
@@ -531,15 +560,20 @@ export function AssetDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={asset?.filename !== '' ? handleSave : handleSubmit}
-                    disabled={isBusy || (isNewAsset ? (!canCreateAsset || !hasSelectedFile) : !hasPendingChanges)}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon/>}
+                <DisabledTooltip
+                    disabled={isBusy || (isNewAsset ? (!canCreateAsset || !hasSelectedFile) : !canUpdateAssets)}
+                    title={saveDisabledTooltip}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={asset?.filename !== '' ? handleSave : handleSubmit}
+                        disabled={isBusy || (isNewAsset ? (!canCreateAsset || !hasSelectedFile) : (!hasPendingChanges || !canUpdateAssets))}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon/>}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
                     asset.key !== '' &&
@@ -558,18 +592,21 @@ export function AssetDetailsPageIndex() {
 
                 {
                     asset.key !== '' &&
-                    <Button
-                        variant={'outlined'}
-                        onClick={() => setConfirmDeleteAction(() => confirmDelete)}
+                    <DisabledTooltip
                         disabled={isBusy || !canDeleteAsset}
-                        color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete/>}
+                        title={deleteDisabledTooltip}
+                        wrapperSx={{marginLeft: 'auto'}}
                     >
-                        Löschen
-                    </Button>
+                        <Button
+                            variant={'outlined'}
+                            onClick={() => setConfirmDeleteAction(() => confirmDelete)}
+                            disabled={isBusy || !canDeleteAsset}
+                            color="error"
+                            startIcon={<Delete/>}
+                        >
+                            Löschen
+                        </Button>
+                    </DisabledTooltip>
                 }
             </Box>
 

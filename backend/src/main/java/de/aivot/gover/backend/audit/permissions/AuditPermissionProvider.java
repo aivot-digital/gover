@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.audit.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -23,10 +22,5 @@ public class AuditPermissionProvider implements PermissionProvider {
                         "Erlaubt das Anzeigen und Auflisten von Audit-Logs."
                 )
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }

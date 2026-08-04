@@ -121,9 +121,40 @@ public class ProcessNodeController {
             description = "List all process definition nodes with optional filtering and pagination."
     )
     public Page<ProcessNodeEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessNodeFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.hasSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
+            if (filter.getProcessId() != null) {
+                permissionService.requireProcessPermission(
+                        user.getId(),
+                        filter.getProcessId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_READ
+                );
+            } else {
+                var accessibleProcessIds = permissionService
+                        .getProcessesWithPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ);
+
+                if (filter.getProcessIds() != null) {
+                    accessibleProcessIds = filter.getProcessIds()
+                            .stream()
+                            .filter(accessibleProcessIds::contains)
+                            .toList();
+                }
+
+                if (accessibleProcessIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setProcessIds(accessibleProcessIds);
+            }
+        }
+
         return processDefinitionNodeService
                 .list(pageable, filter);
     }
@@ -131,7 +162,9 @@ public class ProcessNodeController {
     @PostMapping("")
     @Operation(
             summary = "Create Process Definition Node",
-            description = "Create a new process definition node. Requires super admin privileges or a user role with create process permissions."
+            description = "Create a new process definition node. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessNodeEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -140,6 +173,12 @@ public class ProcessNodeController {
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.requireProcessPermission(
+                execUser.getId(),
+                newNode.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         var result = processDefinitionNodeService
                 .create(newNode);
@@ -164,17 +203,32 @@ public class ProcessNodeController {
             description = "Retrieve a process definition node by its ID."
     )
     public ProcessNodeEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
-        return processDefinitionNodeService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var node = processDefinitionNodeService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireProcessPermission(
+                user.getId(),
+                node.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
+
+        return node;
     }
 
     @PutMapping("{id}/")
     @Operation(
             summary = "Update Process Definition Node",
-            description = "Update an existing process definition node. Requires super admin privileges or a user role with edit process permissions."
+            description = "Update an existing process definition node. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessNodeEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -191,6 +245,17 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
+        permissionService.requireProcessPermission(
+                execUser.getId(),
+                existing.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
+
+        updateDTO
+                .setId(existing.getId())
+                .setProcessId(existing.getProcessId())
+                .setProcessVersion(existing.getProcessVersion());
+
         if (processNodeRepository.existsByDataKeyAndIdIsNotAndProcessIdAndProcessVersion(
                 updateDTO.getDataKey(),
                 existing.getId(),
@@ -206,8 +271,6 @@ public class ProcessNodeController {
 
         var existingMap = objectMapper
                 .convertValue(existing, Map.class);
-
-        updateDTO.setId(existing.getId());
 
         if (onlyConfigSave != null) {
             var conf = new AuthoredElementValues();
@@ -249,7 +312,9 @@ public class ProcessNodeController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete Process Definition Node",
-            description = "Delete a process definition node by its ID. Requires super admin privileges."
+            description = "Delete a process definition node by its ID. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -257,9 +322,17 @@ public class ProcessNodeController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        var existing = processDefinitionNodeService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireProcessPermission(
+                user.getId(),
+                existing.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         var deleted = processDefinitionNodeService
                 .delete(id);
@@ -280,7 +353,8 @@ public class ProcessNodeController {
     @Operation(
             summary = "Export Process Definition Node",
             description = "Export a process definition node including its cleaned configuration. " +
-                    "Requires read permissions for the owning process definition."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_READ +
+                    "` for the affected process or at system level."
     )
     public ProcessNodeExportService.ProcessNodeExport export(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -294,13 +368,9 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var existingProcess = processDefinitionService
-                .retrieve(existingNode.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
-        permissionService.testDepartmentPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
-                existingProcess.getDepartmentId(),
+                existingNode.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
         );
 
@@ -329,7 +399,8 @@ public class ProcessNodeController {
     @Operation(
             summary = "Import Process Definition Node",
             description = "Import a process definition node into a specific process version. " +
-                    "Requires edit permissions for the target process definition."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the target process or at system level."
     )
     public ProcessNodeEntity importNode(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -341,13 +412,9 @@ public class ProcessNodeController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var targetProcess = processDefinitionService
-                .retrieve(processId)
-                .orElseThrow(ResponseException::notFound);
-
-        permissionService.testDepartmentPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
-                targetProcess.getDepartmentId(),
+                processId,
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
 
@@ -423,6 +490,12 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
+        permissionService.requireProcessPermission(
+                user.getId(),
+                node.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
+
         var provider = processNodeProviderService
                 .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::badRequest);
@@ -463,13 +536,9 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var processDefinition = processDefinitionService
-                .retrieve(node.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
-        permissionService.testDepartmentPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
-                processDefinition.getDepartmentId(),
+                node.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
         );
 
@@ -493,6 +562,12 @@ public class ProcessNodeController {
         var node = processDefinitionNodeService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireProcessPermission(
+                user.getId(),
+                node.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         ProcessNodeDefinition<NodeConfig> provider = (ProcessNodeDefinition<NodeConfig>) processNodeProviderService
                 .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
@@ -535,9 +610,19 @@ public class ProcessNodeController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
         var node = processNodeRepository
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireProcessPermission(
+                user.getId(),
+                node.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
 
         var provider = processNodeProviderService
                 .getProcessNodeDefinition(node)

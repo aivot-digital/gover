@@ -1,4 +1,8 @@
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
@@ -12,19 +16,24 @@ import BadgeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Badg
 import {IdentityProviderListDTO} from '../../models/identity-provider-list-dto';
 import Chip from '@mui/material/Chip';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
-import React, {useCallback, useMemo} from 'react';
+import React, {useCallback} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {Permission} from '../../../../data/permissions/permission';
+
+const identityProvidersListPermissionCheck: GenericListPagePermissionConfig<IdentityProviderListDTO> = {
+    scope: {
+        type: 'system',
+    },
+    read: Permission.IDENTITY_PROVIDER_READ,
+    create: Permission.IDENTITY_PROVIDER_CREATE,
+    update: Permission.IDENTITY_PROVIDER_UPDATE,
+};
 
 export function IdentityProvidersListPage() {
     const navigate = useNavigate();
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
 
-    const header = useMemo(() => ({
+    const header = useCallback((permissions: GenericListPagePermissionState<IdentityProviderListDTO>) => ({
         icon: <BadgeOutlinedIcon />,
         title: 'Nutzerkontenanbieter',
         actions: [
@@ -33,7 +42,8 @@ export function IdentityProvidersListPage() {
                 icon: <AddOutlinedIcon />,
                 to: '/identity-providers/new',
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -106,14 +116,14 @@ export function IdentityProvidersListPage() {
                 </>
             ),
         },
-    }), [hasAccess]);
+    }), []);
 
     const fetchIdentityProviders = useCallback((options: GenericListPropsFetchOptions<IdentityProviderListDTO>) => {
         return new IdentityProvidersApiService()
             .list(options.page, options.size, options.sort, options.order, {name: options.search});
     }, []);
 
-    const columnDefinitions = useMemo(() => [
+    const columnDefinitions = useCallback((permissions: GenericListPagePermissionState<IdentityProviderListDTO>) => [
         {
             field: 'icon',
             headerName: '',
@@ -129,7 +139,7 @@ export function IdentityProvidersListPage() {
             renderCell: (params: any) => (
                 <CellLink
                     to={`/identity-providers/${params.id}`}
-                    title={hasAccess ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen'}
+                    title={permissions.canUpdate(params.row) ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen'}
                 >
                     {String(params.value)}
                     {params.row.isTestProvider && <Chip
@@ -170,22 +180,39 @@ export function IdentityProvidersListPage() {
                 </>
             ),
         },
-    ], [hasAccess]);
+    ], []);
 
     const getRowIdentifier = useCallback((row: IdentityProviderListDTO) => row.key, []);
 
-    const rowActions = useCallback((item: IdentityProviderListDTO) => [
-        {
-            icon: hasAccess ? <EditOutlined /> : <Visibility />,
-            to: `/identity-providers/${item.key}`,
-            tooltip: hasAccess ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
-        },
-        {
-            icon: <ScienceOutlinedIcon />,
-            to: `/identity-providers/${item.key}/test`,
-            tooltip: 'Konfiguration testen',
-        },
-    ], [hasAccess]);
+    const rowActions = useCallback((item: IdentityProviderListDTO, permissions: GenericListPagePermissionState<IdentityProviderListDTO>) => {
+        const canUpdateIdentityProvider = permissions.canUpdate(item);
+
+        return [
+            {
+                icon: canUpdateIdentityProvider ? <EditOutlined /> : <Visibility />,
+                to: `/identity-providers/${item.key}`,
+                tooltip: canUpdateIdentityProvider ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
+            },
+            {
+                icon: <ScienceOutlinedIcon />,
+                to: `/identity-providers/${item.key}/test`,
+                tooltip: 'Konfiguration testen',
+                disabled: !canUpdateIdentityProvider,
+                disabledTooltip: permissions.getMissingPermissionTooltip(Permission.IDENTITY_PROVIDER_UPDATE),
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<IdentityProviderListDTO>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Nutzerkontenanbieter vorhanden"
+            description="Nutzerkontenanbieter verbinden Gover mit Anmeldeverfahren oder Benutzerquellen wie Verzeichnisdiensten."
+            addText="Neuen Nutzerkontenanbieter anlegen"
+            onAdd={() => navigate('/identity-providers/new')}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [navigate]);
 
     return (
         <>
@@ -196,19 +223,13 @@ export function IdentityProvidersListPage() {
             >
                 <GenericListPage<IdentityProviderListDTO>
                     header={header}
+                    permissionCheck={identityProvidersListPermissionCheck}
                     searchLabel="Nutzerkontenanbieter suchen"
                     searchPlaceholder="Name der Konfiguration eingeben…"
                     fetch={fetchIdentityProviders}
                     columnDefinitions={columnDefinitions}
                     getRowIdentifier={getRowIdentifier}
-                    noDataPlaceholder={
-                        <EmptyDataListPlaceholder
-                            title="Noch keine Nutzerkontenanbieter angelegt"
-                            description="Nutzerkontenanbieter verbinden Gover mit Anmeldeverfahren oder Benutzerquellen wie Verzeichnisdiensten."
-                            addText={hasAccess ? "Neuen Nutzerkontenanbieter anlegen" : undefined}
-                            onAdd={hasAccess ? () => navigate('/identity-providers/new') : undefined}
-                        />
-                    }
+                    noDataPlaceholder={noDataPlaceholder}
                     noSearchResultsPlaceholder="Keine Nutzerkontenanbieter gefunden"
                     rowActionsCount={2}
                     rowActions={rowActions}

@@ -115,7 +115,7 @@ public class AssetController {
 
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+                .requireSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -146,7 +146,7 @@ public class AssetController {
             @Nullable @RequestParam(required = false) Boolean isPublic
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+                .requireSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
         getStorageProvider(storageProviderId);
 
@@ -174,7 +174,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_CREATE);
+                .requireSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_CREATE);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -223,7 +223,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_DELETE);
+                .requireSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_DELETE);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -278,7 +278,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_CREATE);
+                .requireSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_CREATE);
 
         var filePath = getNormalizedFilePath(request);
 
@@ -352,7 +352,7 @@ public class AssetController {
             @Nonnull HttpServletRequest request
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+                .requireSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -388,7 +388,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_UPDATE);
+                .requireSystemPermission(jwt, AssetPermissionProvider.ASSET_UPDATE);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -477,7 +477,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_UPDATE);
+                .requireSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_UPDATE);
 
         var storageProvider = getStorageProvider(storageProviderId);
         var filePath = getNormalizedFileMetadataPath(request);
@@ -547,7 +547,7 @@ public class AssetController {
             @Nonnull HttpServletRequest request
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+                .requireSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -605,7 +605,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(user.getId(), AssetPermissionProvider.ASSET_UPDATE);
+                .requireSystemPermission(user.getId(), AssetPermissionProvider.ASSET_UPDATE);
 
         var storageProvider = getStorageProvider(storageProviderId);
         if (storageProvider.getReadOnlyStorage()) {
@@ -673,7 +673,9 @@ public class AssetController {
     )
     @Operation(
             summary = "Copy an asset",
-            description = "Copy an asset file from a source path to a target path in the same storage provider."
+            description = "Copy an asset file from a source path to a target path in the same storage provider. " +
+                    "Requires both system-level permissions `" + AssetPermissionProvider.ASSET_READ + "` and `" +
+                    AssetPermissionProvider.ASSET_CREATE + "`."
     )
     public VStorageIndexItemWithAssetEntity copyFile(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -684,8 +686,11 @@ public class AssetController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
+        // Copying reads the source asset and creates a new asset record at the target path.
         permissionService
-                .testSystemPermission(user.getId(), AssetPermissionProvider.ASSET_UPDATE);
+                .requireSystemPermission(user.getId(), AssetPermissionProvider.ASSET_READ);
+        permissionService
+                .requireSystemPermission(user.getId(), AssetPermissionProvider.ASSET_CREATE);
 
         var storageProvider = getStorageProvider(storageProviderId);
         if (storageProvider.getReadOnlyStorage()) {
@@ -765,7 +770,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(user.getId(), AssetPermissionProvider.ASSET_DELETE);
+                .requireSystemPermission(user.getId(), AssetPermissionProvider.ASSET_DELETE);
 
         var storageProvider = getStorageProvider(storageProviderId);
 

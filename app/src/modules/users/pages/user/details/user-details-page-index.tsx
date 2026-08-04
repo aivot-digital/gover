@@ -27,12 +27,6 @@ import {CreateUserResponseDTO, UsersApiService} from '../../../users-api-service
 import {useConfirm} from '../../../../../providers/confirm-provider';
 import {SystemRolesApiService} from '../../../../system/services/system-roles-api-service';
 import {useChangeBlocker} from '../../../../../hooks/use-change-blocker';
-import {
-    addSnackbarMessage,
-    removeSnackbarMessage,
-    SnackbarSeverity,
-    SnackbarType,
-} from '../../../../../slices/shell-slice';
 import {createOidcPath} from '../../../../../utils/create-oidc-path';
 import {ProcessInstanceTaskApiService} from '../../../../process/services/process-instance-task-api-service';
 import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../../../process/enums/process-task-status';
@@ -40,6 +34,10 @@ import {InfoDialog} from '../../../../../dialogs/info-dialog/info-dialog';
 import {CopyToClipboardButton} from '../../../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 import {downloadTextFile} from '../../../../../utils/download-utils';
 import {AlertComponent} from '../../../../../components/alert/alert-component';
+import {useHasSystemPermission, useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
 
 const KEYCLOAK_PERSON_NAME_MAX_CHARACTERS = 255;
 const KEYCLOAK_EMAIL_MAX_CHARACTERS = 255;
@@ -101,6 +99,11 @@ export function UserDetailsPageIndex() {
     const navigate = useNavigate();
     const location = useLocation();
     const confirm = useConfirm();
+    const refreshPermissionSet = useRefreshPermissionSet();
+    const canReadSystemRoles = useHasSystemPermission(Permission.SYSTEM_ROLE_READ);
+    const canDeleteUser = useHasSystemPermission(Permission.USER_DELETE);
+    const deleteUserDisabledTooltip = formatMissingPermissionTooltip(Permission.USER_DELETE);
+    const systemRoleReadDisabledTooltip = formatMissingPermissionTooltip(Permission.SYSTEM_ROLE_READ);
 
     const {
         item: user,
@@ -110,23 +113,7 @@ export function UserDetailsPageIndex() {
         setIsBusy,
         isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<User, undefined>;
-
-    useEffect(() => {
-        if (isEditable) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            key: 'access-denied-user-details',
-            message: 'Diese Mitarbeiter:in kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            type: SnackbarType.Dismissable,
-            severity: SnackbarSeverity.Warning,
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('access-denied-user-details'));
-        };
-    }, [dispatch, isEditable]);
+    const updateUserDisabledTooltip = formatMissingPermissionTooltip(isNewUser ? Permission.USER_CREATE : Permission.USER_UPDATE);
 
     const {
         currentItem: editedUser,
@@ -161,14 +148,51 @@ export function UserDetailsPageIndex() {
     }, [editedUser?.id]);
 
     const canEditUser = isEditable && !user?.deletedInIdp && !user?.artificialUser;
+    const canResetUserPassword = canEditUser && !isNewUser;
+    const canDeleteExistingUser = canDeleteUser && !isNewUser && !user?.deletedInIdp && !user?.artificialUser;
+    const saveDisabled =
+        isBusy ||
+        hasNotChanged ||
+        !canEditUser ||
+        !canReadSystemRoles ||
+        isSystemRolesLoading ||
+        systemRoleOptions.length === 0;
+    const saveDisabledTooltip =
+        !canEditUser
+            ? updateUserDisabledTooltip
+            : !canReadSystemRoles
+                ? systemRoleReadDisabledTooltip
+                : undefined;
+
+    const refreshPermissionsAfterUserRoleChange = () => {
+        // Effective permissions may include system grants inherited through deputy assignments.
+        // The frontend cannot know whether the edited user is currently represented by the active user.
+        refreshPermissionSet({broadcast: true})
+            .catch((err) => dispatch(showApiErrorSnackbar(
+                err,
+                'Die Berechtigungen konnten nach der Änderung der Mitarbeiter:in nicht aktualisiert werden.',
+            )));
+    };
 
     useEffect(() => {
+        if (!canReadSystemRoles) {
+            setSystemRoleOptions([]);
+            setHasSystemRolesLoadingError(false);
+            setIsSystemRolesLoading(false);
+            return;
+        }
+
+        let isActive = true;
         setIsSystemRolesLoading(true);
         setHasSystemRolesLoadingError(false);
 
         new SystemRolesApiService()
             .listAll()
             .then((result) => {
+                if (!isActive) {
+                    return;
+                }
+
                 const options = result.content
                     .map((role) => ({
                         label: role.name,
@@ -178,13 +202,23 @@ export function UserDetailsPageIndex() {
                 setSystemRoleOptions(options);
             })
             .catch((err) => {
+                if (!isActive) {
+                    return;
+                }
+
                 setHasSystemRolesLoadingError(true);
                 dispatch(showApiErrorSnackbar(err, 'Beim Laden der Systemrollen ist ein Fehler aufgetreten.'));
             })
             .finally(() => {
-                setIsSystemRolesLoading(false);
+                if (isActive) {
+                    setIsSystemRolesLoading(false);
+                }
             });
-    }, [dispatch]);
+
+        return () => {
+            isActive = false;
+        };
+    }, [canReadSystemRoles, dispatch]);
 
     useEffect(() => {
         const navigationState = location.state as UserDetailsLocationState | null;
@@ -268,6 +302,10 @@ export function UserDetailsPageIndex() {
     );
 
     const handleSave = () => {
+        if (!canEditUser || !canReadSystemRoles) {
+            return;
+        }
+
         if (!validate()) {
             dispatch(showErrorSnackbar('Bitte prüfen Sie die Pflichtfelder.'));
             return;
@@ -289,6 +327,7 @@ export function UserDetailsPageIndex() {
                 .then((result) => {
                     setItem(result.user);
                     reset();
+                    refreshPermissionsAfterUserRoleChange();
                     setSendInitialCredentialsByEmail(false);
 
                     if (result.initialCredentialsSentByEmail) {
@@ -322,6 +361,7 @@ export function UserDetailsPageIndex() {
                 .then((savedUser) => {
                     setItem(savedUser);
                     reset();
+                    refreshPermissionsAfterUserRoleChange();
 
                     dispatch(showSuccessSnackbar('Die Mitarbeiter:in wurde erfolgreich gespeichert.'));
                 })
@@ -335,7 +375,7 @@ export function UserDetailsPageIndex() {
     };
 
     const checkAndHandleDelete = async () => {
-        if (isNewUser || user?.id == null || user.deletedInIdp) {
+        if (!canDeleteUser || isNewUser || user?.id == null || user.deletedInIdp || user.artificialUser) {
             return;
         }
 
@@ -381,7 +421,7 @@ export function UserDetailsPageIndex() {
     };
 
     const handleDelete = () => {
-        if (isNewUser || user?.id == null || user.deletedInIdp) {
+        if (!canDeleteUser || isNewUser || user?.id == null || user.deletedInIdp || user.artificialUser) {
             return;
         }
 
@@ -391,6 +431,7 @@ export function UserDetailsPageIndex() {
             .destroy(user.id)
             .then(() => {
                 reset();
+                refreshPermissionsAfterUserRoleChange();
                 navigate('/users', {
                     replace: true,
                 });
@@ -409,7 +450,7 @@ export function UserDetailsPageIndex() {
     };
 
     const handlePasswordReset = () => {
-        if (isNewUser || user?.id == null || user.deletedInIdp) {
+        if (!canResetUserPassword || user?.id == null || user.deletedInIdp) {
             return;
         }
 
@@ -530,19 +571,23 @@ export function UserDetailsPageIndex() {
                             options={systemRoleOptions}
                             placeholder="Systemrolle auswählen"
                             emptyStatePlaceholder={
-                                isSystemRolesLoading
+                                !canReadSystemRoles
+                                    ? 'Keine Berechtigung zur Einsicht'
+                                    : isSystemRolesLoading
                                     ? 'Systemrollen werden geladen…'
                                     : hasSystemRolesLoadingError
                                         ? 'Systemrollen konnten nicht geladen werden'
                                         : 'Keine Systemrollen vorhanden'
                             }
                             hint={
-                                hasSystemRolesLoadingError
+                                !canReadSystemRoles
+                                    ? systemRoleReadDisabledTooltip
+                                    : hasSystemRolesLoadingError
                                     ? 'Die Rollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder wenden Sie sich an eine Administrator:in.'
                                     : undefined
                             }
                             error={errors.systemRoleId}
-                            disabled={isBusy || !canEditUser || isSystemRolesLoading}
+                            disabled={isBusy || !canEditUser || !canReadSystemRoles || isSystemRolesLoading}
                             required
                         />
                     </Grid>
@@ -635,67 +680,84 @@ export function UserDetailsPageIndex() {
                     )
                 }
 
-                {
-                    canEditUser &&
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            marginTop: 5,
-                            gap: 2,
-                        }}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        marginTop: 5,
+                        gap: 2,
+                    }}
+                >
+                    <DisabledTooltip
+                        disabled={saveDisabled && saveDisabledTooltip != null}
+                        title={saveDisabledTooltip}
                     >
                         <Button
                             variant="contained"
                             color="primary"
                             startIcon={<SaveOutlinedIcon/>}
-                            disabled={isBusy || hasNotChanged || isSystemRolesLoading || systemRoleOptions.length === 0}
+                            disabled={saveDisabled}
                             onClick={handleSave}
                         >
                             {isNewUser ? 'Mitarbeiter:in anlegen' : 'Speichern'}
                         </Button>
+                    </DisabledTooltip>
 
-                        {
-                            !isNewUser &&
+                    {
+                        !isNewUser &&
+                        <DisabledTooltip
+                            disabled={!canEditUser}
+                            title={updateUserDisabledTooltip}
+                        >
                             <Button
                                 color="error"
-                                disabled={isBusy || hasNotChanged}
+                                disabled={isBusy || hasNotChanged || !canEditUser}
                                 onClick={() => {
                                     reset();
                                 }}
                             >
                                 Zurücksetzen
                             </Button>
-                        }
+                        </DisabledTooltip>
+                    }
 
-                        {
-                            !isNewUser &&
-                            <>
+                    {
+                        !isNewUser &&
+                        <>
+                            <DisabledTooltip
+                                disabled={!canResetUserPassword}
+                                title={updateUserDisabledTooltip}
+                                wrapperSx={{
+                                    ml: 'auto',
+                                }}
+                            >
                                 <Button
                                     variant="outlined"
                                     color="primary"
                                     startIcon={<LockResetOutlinedIcon/>}
-                                    disabled={isBusy}
+                                    disabled={isBusy || !canResetUserPassword}
                                     onClick={handlePasswordReset}
-                                    sx={{
-                                        ml: 'auto',
-                                    }}
                                 >
                                     Passwort zurücksetzen
                                 </Button>
+                            </DisabledTooltip>
+                            <DisabledTooltip
+                                disabled={!canDeleteExistingUser}
+                                title={user?.deletedInIdp ? undefined : deleteUserDisabledTooltip}
+                            >
                                 <Button
                                     onClick={checkAndHandleDelete}
                                     variant="outlined"
                                     color="error"
                                     startIcon={<Delete/>}
 
-                                    disabled={isBusy}
+                                    disabled={isBusy || !canDeleteExistingUser}
                                 >
                                     Löschen
                                 </Button>
-                            </>
-                        }
-                    </Box>
-                }
+                            </DisabledTooltip>
+                        </>
+                    }
+                </Box>
             </Box>
 
             {changeBlocker.dialog}

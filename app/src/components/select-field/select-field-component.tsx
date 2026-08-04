@@ -18,6 +18,7 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
         onChange,
         options,
         emptyStatePlaceholder,
+        includeEmptyOption = true,
         startIcon,
         endAction,
         sx,
@@ -126,6 +127,7 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
             fullWidth
         >
             {
+                includeEmptyOption &&
                 !(required ?? false) &&
                 options.length > 0 &&
                 <MenuItem

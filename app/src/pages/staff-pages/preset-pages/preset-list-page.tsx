@@ -1,78 +1,83 @@
-import {GenericListPage} from '../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../components/generic-list-page/generic-list-page';
 import {EmptyDataListPlaceholder} from '../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {Typography} from '@mui/material';
 import CopyAllOutlined from '@aivot/mui-material-symbols-400-n25-outlined/CopyAll';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../slices/user-slice';
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {CellLink} from '../../../components/cell-link/cell-link';
 import {Preset} from '../../../models/entities/preset';
 import {PresetsApiService} from '../../../modules/presets/presets-api-service';
-import {useAppSelector} from '../../../hooks/use-app-selector';
-import {selectSystemConfigValue} from '../../../slices/system-config-slice';
-import {SystemConfigKeys} from '../../../data/system-config-keys';
-import {GridColDef} from '@mui/x-data-grid';
 import {AddPresetDialog} from '../../../dialogs/preset-dialogs/add-preset-dialog/add-preset-dialog';
 import {useNavigate} from 'react-router-dom';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
-import {GenericListPropsFetchOptions} from '../../../components/generic-list/generic-list-props';
+import {GenericListColDef, GenericListPropsFetchOptions} from '../../../components/generic-list/generic-list-props';
+import {Permission} from '../../../data/permissions/permission';
 
-const columns: Array<GridColDef<Preset>> = [
-    {
-        field: 'icon',
-        headerName: '',
-        renderCell: () => <CellContentWrapper><CopyAllOutlined /></CellContentWrapper>,
-        disableColumnMenu: true,
-        width: 24,
-        sortable: false,
+const presetsListPermissionCheck: GenericListPagePermissionConfig<Preset> = {
+    scope: {
+        type: 'system',
     },
-    {
-        field: 'title',
-        headerName: 'Titel',
-        renderCell: (params) => (
-            <CellLink
-                to={`/presets/edit/${params.id}/${params.row.draftedVersion ?? params.row.publishedVersion}`}
-                title="Vorlage bearbeiten"
-            >
-                {String(params.value)}
-            </CellLink>
-        ),
-        flex: 1,
-    },
-    {
-        field: 'draftedVersion',
-        headerName: 'Entwurf',
-        renderCell: (params) => {
-            return (<CellContentWrapper>{params.row.draftedVersion ? `Version ${params.row.draftedVersion}` : (<Typography color={'text.secondary'} sx={{fontStyle: 'italic'}}>Kein Entwurf vorhanden</Typography>)}</CellContentWrapper>);
-        },
-        flex: 1,
-    },
-    {
-        field: 'publishedVersion',
-        headerName: 'Veröffentlichte Version',
-        renderCell: (params) => {
-            return (<CellContentWrapper>{params.row.publishedVersion ? `Version ${params.row.publishedVersion}` : (<Typography color={'text.secondary'} sx={{fontStyle: 'italic'}}>Keine Version veröffentlicht</Typography>)}</CellContentWrapper>);
-        },
-        flex: 1,
-    },
-];
+    read: Permission.PRESET_READ,
+    create: Permission.PRESET_CREATE,
+    update: Permission.PRESET_UPDATE,
+};
 
 export function PresetListPage() {
-    const user = useSelector(selectUser);
     const navigate = useNavigate();
-
-    const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
     const [showAddPresetDialog, setShowAddPresetDialog] = useState(false);
 
     const navigateTo = useCallback((preset: Preset): void => {
         navigate(`/presets/edit/${preset.key}/${preset.draftedVersion}`);
     }, [navigate]);
 
-    const header = useMemo(() => ({
+    const columns = useCallback((permissions: GenericListPagePermissionState<Preset>): Array<GenericListColDef<Preset>> => [
+        {
+            field: 'icon',
+            headerName: '',
+            renderCell: () => <CellContentWrapper><CopyAllOutlined /></CellContentWrapper>,
+            disableColumnMenu: true,
+            width: 24,
+            sortable: false,
+        },
+        {
+            field: 'title',
+            headerName: 'Titel',
+            renderCell: (params) => (
+                <CellLink
+                    to={`/presets/edit/${params.id}/${params.row.draftedVersion ?? params.row.publishedVersion}`}
+                    title={permissions.canUpdate(params.row) && params.row.draftedVersion != null ? 'Vorlage bearbeiten' : 'Vorlage ansehen'}
+                >
+                    {String(params.value)}
+                </CellLink>
+            ),
+            flex: 1,
+        },
+        {
+            field: 'draftedVersion',
+            headerName: 'Entwurf',
+            renderCell: (params) => {
+                return (<CellContentWrapper>{params.row.draftedVersion ? `Version ${params.row.draftedVersion}` : (<Typography color={'text.secondary'} sx={{fontStyle: 'italic'}}>Kein Entwurf vorhanden</Typography>)}</CellContentWrapper>);
+            },
+            flex: 1,
+        },
+        {
+            field: 'publishedVersion',
+            headerName: 'Veröffentlichte Version',
+            renderCell: (params) => {
+                return (<CellContentWrapper>{params.row.publishedVersion ? `Version ${params.row.publishedVersion}` : (<Typography color={'text.secondary'} sx={{fontStyle: 'italic'}}>Keine Version veröffentlicht</Typography>)}</CellContentWrapper>);
+            },
+            flex: 1,
+        },
+    ], []);
+
+    const header = useCallback((permissions: GenericListPagePermissionState<Preset>) => ({
         icon: <CopyAllOutlined />,
         title: 'Vorlagen',
         actions: [
@@ -83,6 +88,8 @@ export function PresetListPage() {
                     setShowAddPresetDialog(true);
                 },
                 variant: 'contained' as const,
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -117,20 +124,30 @@ export function PresetListPage() {
 
     const getRowIdentifier = useCallback((row: Preset) => row.key, []);
 
-    const rowActions = useCallback((item: Preset) => [
-        {
-            icon: <EditOutlined />,
-            to: `/presets/edit/${item.key}/${item.draftedVersion}`,
-            tooltip: 'Vorlage bearbeiten',
-            visible: item.draftedVersion != null,
-        },
-        {
-            icon: <Visibility />,
-            to: `/presets/edit/${item.key}/${item.publishedVersion}`,
-            tooltip: 'Vorlage ansehen',
-            visible: item.draftedVersion === null && item.publishedVersion != null,
-        },
-    ], []);
+    const rowActions = useCallback((item: Preset, permissions: GenericListPagePermissionState<Preset>) => {
+        const version = item.draftedVersion ?? item.publishedVersion;
+        const canEditDraft = permissions.canUpdate(item) && item.draftedVersion != null;
+
+        return [
+            {
+                icon: canEditDraft ? <EditOutlined /> : <Visibility />,
+                to: `/presets/edit/${item.key}/${version}`,
+                tooltip: canEditDraft ? 'Vorlage bearbeiten' : 'Vorlage ansehen',
+                visible: version != null,
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<Preset>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Vorlagen vorhanden"
+            description="Vorlagen bündeln wiederverwendbare Bausteine, damit Prozesse und Formulare schneller und einheitlicher erstellt werden können."
+            addText="Neue Vorlage anlegen"
+            onAdd={() => setShowAddPresetDialog(true)}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), []);
 
     return (
         <PageWrapper
@@ -140,21 +157,15 @@ export function PresetListPage() {
         >
             <GenericListPage<Preset>
                 header={header}
+                permissionCheck={presetsListPermissionCheck}
                 searchLabel="Vorlage suchen"
                 searchPlaceholder="Name der Vorlage eingeben…"
                 fetch={fetchPresets}
                 columnDefinitions={columns}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={
-                    <EmptyDataListPlaceholder
-                        title="Noch keine Vorlagen angelegt"
-                        description="Vorlagen bündeln wiederverwendbare Bausteine, damit Prozesse und Formulare schneller und einheitlicher erstellt werden können."
-                        addText="Neue Vorlage anlegen"
-                        onAdd={() => setShowAddPresetDialog(true)}
-                    />
-                }
+                noDataPlaceholder={noDataPlaceholder}
                 noSearchResultsPlaceholder="Keine Vorlagen gefunden"
-                rowActionsCount={3}
+                rowActionsCount={1}
                 rowActions={rowActions}
                 defaultSortField="title"
                 disableFullWidthToggle={true}

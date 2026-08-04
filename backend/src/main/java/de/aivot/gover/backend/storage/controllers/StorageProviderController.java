@@ -86,7 +86,8 @@ public class StorageProviderController {
     @GetMapping("")
     @Operation(
             summary = "List Storage Providers",
-            description = "Retrieve a paginated list of storage providers with optional filtering. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_READ + "."
+            description = "Retrieve a paginated list of storage providers with optional filtering. Requires the system-level permission `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_READ + "`."
     )
     public Page<StorageProviderEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -94,7 +95,7 @@ public class StorageProviderController {
             @Nonnull @ParameterObject @Valid StorageProviderFilter filter
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         return storageProviderService
                 .list(pageable, filter);
@@ -103,14 +104,15 @@ public class StorageProviderController {
     @PostMapping("")
     @Operation(
             summary = "Create Storage Provider",
-            description = "Create a new storage provider. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_CREATE + "."
+            description = "Create a new storage provider. Requires the system-level permission `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_CREATE + "`."
     )
     public StorageProviderEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @RequestBody @Valid StorageProviderEntity newStorageProvider
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_CREATE);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_CREATE);
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
@@ -133,14 +135,15 @@ public class StorageProviderController {
     @GetMapping("{id}/")
     @Operation(
             summary = "Retrieve Storage Provider",
-            description = "Retrieve details of a specific storage provider by its id. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_READ + "."
+            description = "Retrieve details of a specific storage provider by its id. Requires the system-level permission `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_READ + "`."
     )
     public StorageProviderEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         return storageProviderService
                 .retrieve(id)
@@ -150,7 +153,8 @@ public class StorageProviderController {
     @PutMapping("{id}/")
     @Operation(
             summary = "Update Storage Provider",
-            description = "Update an existing storage provider. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_UPDATE + "."
+            description = "Update an existing storage provider. Requires the system-level permission `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_UPDATE + "`."
     )
     public StorageProviderEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -158,7 +162,7 @@ public class StorageProviderController {
             @Nonnull @RequestBody @Valid StorageProviderEntity update
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
@@ -181,14 +185,15 @@ public class StorageProviderController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete Storage Provider",
-            description = "Delete an existing storage provider. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_DELETE + "."
+            description = "Delete an existing storage provider. Requires the system-level permission `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_DELETE + "`."
     )
     public void destroy(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_DELETE);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_DELETE);
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
@@ -209,14 +214,15 @@ public class StorageProviderController {
     @PutMapping("{id}/resync/")
     @Operation(
             summary = "Resync Storage Provider",
-            description = "Mark a storage provider for resynchronization. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_UPDATE + "."
+            description = "Mark a storage provider for resynchronization. Requires the system-level permission `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_UPDATE + "`."
     )
     public StorageProviderEntity markForResync(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
@@ -251,7 +257,8 @@ public class StorageProviderController {
     })
     @Operation(
             summary = "Get Folder from Storage Provider",
-            description = "Retrieve a folder from the specified storage provider. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_READ + "."
+            description = "Retrieve a folder from the specified storage provider. Requires the system-level permission `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_READ + "`."
     )
     public List<StorageIndexItemEntity> getFolder(
             @AuthenticationPrincipal Jwt jwt,
@@ -259,7 +266,7 @@ public class StorageProviderController {
             HttpServletRequest request
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         var normalizedPath = getNormalizedPath(request, true);
 
@@ -270,7 +277,8 @@ public class StorageProviderController {
     @GetMapping("{id}/search/")
     @Operation(
             summary = "Search Storage Provider Contents",
-            description = "Search files and folders in the specified storage provider by filename or path. Returns a paginated result list. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_READ + "."
+            description = "Search files and folders in the specified storage provider by filename or path. Returns a paginated result list. " +
+                    "Requires the system-level permission `" + StoragePermissionProvider.STORAGE_PROVIDER_READ + "`."
     )
     public Page<StorageIndexItemEntity> search(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -280,7 +288,7 @@ public class StorageProviderController {
             @RequestParam(name = "includeMissing", defaultValue = "false") boolean includeMissing
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         storageProviderService
                 .retrieve(id)
@@ -322,14 +330,15 @@ public class StorageProviderController {
     @PostMapping("{id}/test/")
     @Operation(
             summary = "Test Storage Provider",
-            description = "Manually test the connection to a storage provider. Uses the same logic as the health check. Optionally checks for writability."
+            description = "Manually test the connection to a storage provider. Uses the same logic as the health check. " +
+                    "Requires the system-level permission `" + StoragePermissionProvider.STORAGE_PROVIDER_UPDATE + "`."
     )
     public Map<String, Object> testStorageProvider(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id,
             @RequestParam(name = "writable", required = false, defaultValue = "false") boolean writable
     ) throws ResponseException {
-        permissionService.testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+        permissionService.requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
 
         var provider = storageProviderService.retrieve(id).orElseThrow(ResponseException::notFound);
         var def = storageProviderDefinitionService

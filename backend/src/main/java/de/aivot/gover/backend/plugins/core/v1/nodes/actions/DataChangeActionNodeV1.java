@@ -226,6 +226,8 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                         context.getThisNode().getProcessId(),
                         context.getThisNode().getProcessVersion(),
                         context.getThisProcessInstance().getId(),
+                        context.getThisNode().getId(),
+                        context.getThisTask().getId(),
                         context.getThisTask().getPreviousProcessNodeId(),
                         context.getThisProcessInstance().getAssignedUserId(),
                         config.assignmentContext,

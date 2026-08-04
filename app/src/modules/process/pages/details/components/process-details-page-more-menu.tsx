@@ -4,13 +4,11 @@ import Comment from '@aivot/mui-material-symbols-400-n25-outlined/Comment';
 import FileExport from '@aivot/mui-material-symbols-400-n25-outlined/FileExport';
 import Science from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
-import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
-import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 import {ProcessActionMenu, type ProcessActionMenuItem} from './process-action-menu';
 import {useNotImplemented} from '../../../../../hooks/use-not-implemented';
 
-export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances' | 'delete';
+export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances' | 'notes';
 
 interface ProcessDetailsPageMoreMenuProps {
     anchorEl: null | HTMLElement;
@@ -27,7 +25,6 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
         onMenuEvent,
     } = props;
 
-    const dispatch = useAppDispatch();
     const notImplemented = useNotImplemented();
 
     const dispatchEvent = (event: ProcessDetailsPageMoreMenuEvent | undefined): void => {
@@ -73,6 +70,7 @@ const entries: Array<{
     {
         icon: <Comment/>,
         label: 'Übersicht der Notizen anzeigen',
+        event: 'notes',
     },
     'separator',
     {
@@ -94,12 +92,5 @@ const entries: Array<{
     {
         icon: <BugReport/>,
         label: 'Entwicklerwerkzeuge öffnen',
-    },
-    'separator',
-    {
-        icon: <Delete/>,
-        label: 'Prozess löschen',
-        event: 'delete',
-        isDangerous: true,
     },
 ];

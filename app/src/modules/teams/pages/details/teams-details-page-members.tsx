@@ -18,10 +18,10 @@ import {UserStatusChip} from '../../../users/components/user-status-chip';
 import {UserRolesAssignmentDialog} from '../../../user-roles/components/user-roles-assignment-dialog';
 import {setLoadingMessage} from '../../../../slices/shell-slice';
 import {isApiError} from '../../../../models/api-error';
-import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {
-    ListTeamMembershipsWithRolesFilter,
+    ListTeamMembershipsWithDetailsFilter,
     VTeamMembershipWithDetailsApiService
 } from "../../services/v-team-membership-with-details-api-service";
 import {VTeamMembershipWithDetailsEntity} from "../../entities/v-team-membership-with-details-entity";
@@ -32,14 +32,28 @@ import {
     VTeamUserRoleAssignmentWithDetailsApiService
 } from "../../services/v-team-user-role-assignment-with-details-api-service";
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {
+    useHasSystemPermission,
+    useHasTeamPermission,
+    useRefreshPermissionSet,
+} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export function TeamsDetailsPageMembers() {
     const dispatch = useAppDispatch();
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const {
         item,
-        isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<TeamEntity, void>;
+    const canReadMemberships = useHasTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_READ);
+    const canCreateMembership = useHasTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_CREATE);
+    const canUpdateMembership = useHasTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_UPDATE);
+    const canDeleteMembership = useHasTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_DELETE);
+    const canReadDomainRoles = useHasSystemPermission(Permission.DOMAIN_ROLE_READ);
+    const canReadUsers = useHasSystemPermission(Permission.USER_READ);
 
     const showConfirm = useConfirm();
 
@@ -47,9 +61,20 @@ export function TeamsDetailsPageMembers() {
     const [showSelectNewMemberDialog, setShowSelectNewMemberDialog] = useState(false);
     const [showSelectRolesDialogForUser, setShowSelectRolesDialogForUser] = useState<User | null>(null);
     const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VTeamMembershipWithDetailsEntity | null>(null);
+    const [existingMemberUserIds, setExistingMemberUserIds] = useState<string[]>([]);
+
+    const refreshPermissionsAfterMembershipChange = useCallback(() => {
+        // Effective permissions may include grants inherited through deputy assignments.
+        // The frontend cannot know whether the changed membership belongs to a represented user.
+        refreshPermissionSet({broadcast: true})
+            .catch((err) => dispatch(showApiErrorSnackbar(
+                err,
+                'Die Berechtigungen konnten nach der Änderung der Teammitgliedschaft nicht aktualisiert werden.',
+            )));
+    }, [dispatch, refreshPermissionSet]);
 
     const fetchMembers = useCallback((options: GenericListPropsFetchOptions<VTeamMembershipWithDetailsEntity>) => {
-        if (item == null) {
+        if (item == null || !canReadMemberships) {
             const p: Page<VTeamMembershipWithDetailsEntity> = {
                 content: [],
                 page: {
@@ -62,7 +87,7 @@ export function TeamsDetailsPageMembers() {
             return Promise.resolve(p);
         }
 
-        const filters: ListTeamMembershipsWithRolesFilter = {
+        const filters: ListTeamMembershipsWithDetailsFilter = {
             teamId: item.id,
             userSearch: options.search,
         };
@@ -83,8 +108,8 @@ export function TeamsDetailsPageMembers() {
         }
 
         return new VTeamMembershipWithDetailsApiService()
-            .listTeamMembershipsWithRoles(0, 999, options.sort as any, options.order, filters);
-    }, [item]);
+            .listTeamMembershipsWithDetails(0, 999, options.sort as any, options.order, filters);
+    }, [canReadMemberships, item]);
 
     const buildRowActions = useCallback((membershipItem: VTeamMembershipWithDetailsEntity) => {
         return [
@@ -94,7 +119,12 @@ export function TeamsDetailsPageMembers() {
                     setShowSelectRolesDialogForMembership(membershipItem);
                 },
                 tooltip: membershipItem.userDeletedInIdp ? `Kann für gelöschte Mitarbeiter:innen nicht geändert werden` : 'Rolle der Mitarbeiter:in bearbeiten',
-                disabled: membershipItem.userDeletedInIdp ?? undefined,
+                disabled: !canUpdateMembership || !canReadDomainRoles || (membershipItem.userDeletedInIdp ?? false),
+                disabledTooltip: !canUpdateMembership
+                    ? formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_UPDATE)
+                    : !canReadDomainRoles
+                        ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
+                        : undefined,
             },
             {
                 icon: <Delete />,
@@ -130,6 +160,7 @@ export function TeamsDetailsPageMembers() {
                                 .then(() => {
                                     // Refresh list
                                     listControlRef.current?.refresh();
+                                    refreshPermissionsAfterMembershipChange();
                                 })
                                 .catch((error) => {
                                     if (isApiError(error) && error.displayableToUser) {
@@ -145,25 +176,60 @@ export function TeamsDetailsPageMembers() {
                         });
                 },
                 tooltip: 'Mitarbeiter:in entfernen',
+                disabled: !canDeleteMembership,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_DELETE),
             },
         ];
-    }, [dispatch, item, showConfirm, listControlRef]);
+    }, [canDeleteMembership, canReadDomainRoles, canUpdateMembership, dispatch, item, refreshPermissionsAfterMembershipChange, showConfirm, listControlRef]);
 
-    const preSearchElements = useMemo(() => {
-        if (!isEditable) {
-            return undefined;
+    const columns = useMemo(() => buildColumns(canReadDomainRoles), [canReadDomainRoles]);
+
+    const openSelectNewMemberDialog = useCallback(() => {
+        if (item == null) {
+            return;
         }
 
+        new TeamMembershipsApiService()
+            .listAll({
+                teamId: item.id,
+            })
+            .then((membershipsPage) => {
+                setExistingMemberUserIds(membershipsPage.content.map((membership) => membership.userId));
+                setShowSelectNewMemberDialog(true);
+            })
+            .catch((err) => dispatch(showApiErrorSnackbar(
+                err,
+                'Die bestehenden Mitgliedschaften konnten nicht geladen werden.',
+            )));
+    }, [dispatch, item]);
+
+    const preSearchElements = useMemo(() => {
+        const addDisabled = !canCreateMembership || !canReadUsers || !canReadDomainRoles;
+        const addDisabledTooltip = !canCreateMembership
+            ? formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_CREATE)
+            : !canReadUsers
+                ? formatMissingPermissionTooltip(Permission.USER_READ)
+                : !canReadDomainRoles
+                    ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
+                    : '';
+
         return [
-            <Button
-                variant="contained"
-                startIcon={<AddOutlinedIcon />}
-                onClick={() => setShowSelectNewMemberDialog(true)}
+            <DisabledTooltip
+                key="add-team-member"
+                title={addDisabledTooltip}
+                disabled={addDisabled}
             >
-                Mitarbeiter:in hinzufügen
-            </Button>,
+                <Button
+                    variant="contained"
+                    startIcon={<AddOutlinedIcon />}
+                    onClick={openSelectNewMemberDialog}
+                    disabled={addDisabled}
+                >
+                    Mitarbeiter:in hinzufügen
+                </Button>
+            </DisabledTooltip>,
         ];
-    }, [isEditable]);
+    }, [canCreateMembership, canReadDomainRoles, canReadUsers, openSelectNewMemberDialog]);
 
     const handleAddMembership = useCallback((user: User | null, roleIdsToAdd: number[]) => {
         if (user == null || item == null) {
@@ -178,25 +244,14 @@ export function TeamsDetailsPageMembers() {
 
         new TeamMembershipsApiService()
             .create({
-                id: 0,
                 userId: user.id,
                 teamId: item.id,
-                created: new Date().toISOString(),
-                updated: new Date().toISOString(),
-            })
-            .then((membership) => {
-                const apiService = new VTeamUserRoleAssignmentWithDetailsApiService();
-                return Promise.all(roleIdsToAdd.map((roleId) => apiService.create({
-                    id: 0,
-                    departmentMembershipId: null,
-                    teamMembershipId: membership.id,
-                    userRoleId: roleId,
-                    created: new Date().toISOString(),
-                })));
+                roleIds: roleIdsToAdd,
             })
             .then(() => {
                 // Refresh list
                 listControlRef.current?.refresh();
+                refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
                 if (isApiError(error) && error.displayableToUser) {
@@ -209,7 +264,7 @@ export function TeamsDetailsPageMembers() {
             .finally(() => {
                 dispatch(setLoadingMessage(undefined));
             });
-    }, [dispatch, item, listControlRef]);
+    }, [dispatch, item, listControlRef, refreshPermissionsAfterMembershipChange]);
 
     const handleUpdateMembership = useCallback((membership: VTeamMembershipWithDetailsEntity | null, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
         if (membership == null) {
@@ -244,6 +299,7 @@ export function TeamsDetailsPageMembers() {
             .then(() => {
                 // Refresh list
                 listControlRef.current?.refresh();
+                refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
                 if (isApiError(error) && error.displayableToUser) {
@@ -256,7 +312,7 @@ export function TeamsDetailsPageMembers() {
             .finally(() => {
                 dispatch(setLoadingMessage(undefined));
             });
-    }, [dispatch, listControlRef]);
+    }, [dispatch, listControlRef, refreshPermissionsAfterMembershipChange]);
 
     if (item == null) {
         return null;
@@ -292,21 +348,27 @@ export function TeamsDetailsPageMembers() {
                     mx: '-16px',
                     mb: '-16px',
                 }}
-                columnDefinitions={Columns}
+                columnDefinitions={columns}
                 fetch={fetchMembers}
                 getRowIdentifier={getRowIdentifier}
                 searchLabel="Mitarbeiter:in suchen"
                 searchPlaceholder="Name der Mitarbeiter:in eingeben…"
-                rowActionsCount={isEditable ? 2 : 0}
-                rowActions={isEditable ? buildRowActions : undefined}
+                rowActionsCount={2}
+                rowActions={buildRowActions}
                 defaultSortField="userId"
                 rowMenuItems={[]}
                 noDataPlaceholder={
                     <EmptyDataListPlaceholder
-                        title="Keine Mitarbeiter:innen zugeordnet"
-                        description="Mitglieder eines Teams teilen Zuständigkeiten, Berechtigungen oder Aufgaben in Prozessen."
-                        addText={isEditable ? "Mitarbeiter:in hinzufügen" : undefined}
-                        onAdd={isEditable ? () => setShowSelectNewMemberDialog(true) : undefined}
+                        title="Keine Mitgliedschaften im Zugriff"
+                        description="Es wurden keine Mitgliedschaften gefunden, auf die Sie Zugriff haben. Möglicherweise wurden noch keine Mitarbeiter:innen zugeordnet oder Ihnen fehlt die Leseberechtigung für Mitgliedschaften."
+                        addText="Mitarbeiter:in hinzufügen"
+                        onAdd={openSelectNewMemberDialog}
+                        addDisabled={!canCreateMembership || !canReadUsers || !canReadDomainRoles}
+                        addDisabledTooltip={!canCreateMembership
+                            ? formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_CREATE)
+                            : !canReadUsers
+                                ? formatMissingPermissionTooltip(Permission.USER_READ)
+                                : formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)}
                     />
                 }
                 loadingPlaceholder="Lade Mitarbeiter:innen…"
@@ -316,7 +378,7 @@ export function TeamsDetailsPageMembers() {
 
             <SelectUserDialog
                 open={showSelectNewMemberDialog}
-                idsToExclude={/*memberships.map((membership) => membership.userId)*/ []}
+                idsToExclude={existingMemberUserIds}
                 onClose={() => setShowSelectNewMemberDialog(false)}
                 onSelect={(user) => {
                     setShowSelectRolesDialogForUser(user);
@@ -334,7 +396,9 @@ export function TeamsDetailsPageMembers() {
                     setShowSelectRolesDialogForUser(null);
                 }}
                 userId={showSelectRolesDialogForUser?.id ?? undefined}
+                userLabel={showSelectRolesDialogForUser?.fullName}
                 parentId={item.id}
+                parentLabel={item.name}
                 parentType="team"
             />
 
@@ -348,7 +412,9 @@ export function TeamsDetailsPageMembers() {
                     setShowSelectRolesDialogForMembership(null);
                 }}
                 userId={showSelectRolesDialogForMembership?.userId ?? undefined}
+                userLabel={showSelectRolesDialogForMembership?.userFullName ?? undefined}
                 parentId={item.id}
+                parentLabel={item.name}
                 parentType="team"
             />
         </Box>
@@ -370,45 +436,55 @@ const Filters = [
     },
 ];
 
-const Columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
-    {
-        field: 'userFullName',
-        headerName: 'Mitarbeiter:in',
-        flex: 1,
-    },
-    {
-        field: 'userEmail',
-        headerName: 'E-Mail',
-        flex: 1,
-    },
-    {
-        field: 'roles',
-        headerName: 'Rollen',
-        flex: 1,
-        sortable: false,
-        renderCell: (params) => (
-            <UserRoleChips
-                roles={params.row.domainRoles.map(item => ({
-                    name: item.name ?? '',
-                    id: item.id,
-                }))}
-                maxVisibleChips={1}
-            />
-        ),
-    },
-    {
-        field: 'enabled',
-        headerName: 'Status',
-        type: 'boolean',
-        sortable: false,
-        renderCell: (params) => (
-            <UserStatusChip
-                userDeletedInIdp={params.row.userDeletedInIdp}
-                userEnabled={params.row.userEnabled}
-            />
-        ),
-    },
-];
+function buildColumns(canReadDomainRoles: boolean): Array<GridColDef<VTeamMembershipWithDetailsEntity>> {
+    return [
+        {
+            field: 'userFullName',
+            headerName: 'Mitarbeiter:in',
+            flex: 1,
+        },
+        {
+            field: 'userEmail',
+            headerName: 'E-Mail',
+            flex: 1,
+        },
+        {
+            field: 'roles',
+            headerName: 'Rollen',
+            flex: 1,
+            sortable: false,
+            renderCell: (params) => canReadDomainRoles ? (
+                <UserRoleChips
+                    roles={params.row.domainRoles.map(item => ({
+                        name: item.name ?? '',
+                        id: item.id,
+                    }))}
+                    maxVisibleChips={1}
+                />
+            ) : (
+                <UserRoleChips
+                    roles={[{
+                        id: 'domain-role-read-missing',
+                        name: 'Keine Berechtigung zur Einsicht',
+                    }]}
+                    maxVisibleChips={1}
+                />
+            ),
+        },
+        {
+            field: 'enabled',
+            headerName: 'Status',
+            type: 'boolean',
+            sortable: false,
+            renderCell: (params) => (
+                <UserStatusChip
+                    userDeletedInIdp={params.row.userDeletedInIdp}
+                    userEnabled={params.row.userEnabled}
+                />
+            ),
+        },
+    ];
+}
 
 function getRowIdentifier(item: VTeamMembershipWithDetailsEntity): string {
     return item.userId;

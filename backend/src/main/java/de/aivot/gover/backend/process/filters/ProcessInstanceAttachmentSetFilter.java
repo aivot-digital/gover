@@ -6,8 +6,11 @@ import de.aivot.gover.backend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
+
 public class ProcessInstanceAttachmentSetFilter implements Filter<ProcessInstanceAttachmentSetEntity> {
     private Long processInstanceId;
+    private List<Long> processInstanceIds;
     private Long processInstanceTaskId;
     private String name;
     private String dataKey;
@@ -22,6 +25,7 @@ public class ProcessInstanceAttachmentSetFilter implements Filter<ProcessInstanc
         return SpecificationBuilder
                 .create(ProcessInstanceAttachmentSetEntity.class)
                 .withEquals("processInstanceId", processInstanceId)
+                .withInList("processInstanceId", processInstanceIds)
                 .withEquals("processInstanceTaskId", processInstanceTaskId)
                 .withContains("name", name)
                 .withEquals("dataKey", dataKey)
@@ -34,6 +38,15 @@ public class ProcessInstanceAttachmentSetFilter implements Filter<ProcessInstanc
 
     public ProcessInstanceAttachmentSetFilter setProcessInstanceId(Long processInstanceId) {
         this.processInstanceId = processInstanceId;
+        return this;
+    }
+
+    public List<Long> getProcessInstanceIds() {
+        return processInstanceIds;
+    }
+
+    public ProcessInstanceAttachmentSetFilter setProcessInstanceIds(List<Long> processInstanceIds) {
+        this.processInstanceIds = processInstanceIds;
         return this;
     }
 

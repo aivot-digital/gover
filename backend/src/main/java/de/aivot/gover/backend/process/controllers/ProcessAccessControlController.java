@@ -2,10 +2,13 @@ package de.aivot.gover.backend.process.controllers;
 
 import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.core.GenericCrudController;
+import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.process.entities.ProcessAccessControlEntity;
 import de.aivot.gover.backend.process.filters.ProcessAccessControlFilter;
+import de.aivot.gover.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.gover.backend.process.services.ProcessAccessControlService;
 import de.aivot.gover.backend.user.entities.UserEntity;
 import de.aivot.gover.backend.user.services.UserService;
@@ -13,6 +16,8 @@ import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,17 +30,93 @@ import org.springframework.web.bind.annotation.RestController;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessAccessControlController extends GenericCrudController<ProcessAccessControlEntity, Integer, ProcessAccessControlFilter> {
+    private final ProcessAccessControlService processAccessControlService;
+    private final PermissionService permissionService;
+
     public ProcessAccessControlController(AuditService auditService,
                                           UserService userService,
-                                          ProcessAccessControlService processAccessControlService) {
+                                          ProcessAccessControlService processAccessControlService,
+                                          PermissionService permissionService) {
         super(auditService.createScopedAuditService(ProcessAccessControlController.class, "Prozesse"),
                 userService,
                 processAccessControlService);
+        this.processAccessControlService = processAccessControlService;
+        this.permissionService = permissionService;
     }
 
     @Override
     protected Integer getIdForEntity(ProcessAccessControlEntity entity) {
         return entity.getId();
+    }
+
+    @Override
+    protected Page<ProcessAccessControlEntity> performList(@Nonnull UserEntity user,
+                                                           @Nonnull Pageable pageable,
+                                                           @Nonnull ProcessAccessControlFilter filter) throws ResponseException {
+        if (!permissionService.hasSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE)) {
+            if (filter.getTargetProcessId() != null) {
+                permissionService.requireProcessPermission(
+                        user.getId(),
+                        filter.getTargetProcessId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+                );
+            } else {
+                var accessibleProcessIds = permissionService
+                        .getProcessesWithPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE);
+
+                if (filter.getTargetProcessIds() != null) {
+                    // Keep requested targets, but only where the user may administer process access rules.
+                    accessibleProcessIds = filter.getTargetProcessIds()
+                            .stream()
+                            .filter(accessibleProcessIds::contains)
+                            .toList();
+                }
+
+                if (accessibleProcessIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setTargetProcessIds(accessibleProcessIds);
+            }
+        }
+
+        return super.performList(user, pageable, filter);
+    }
+
+    @Override
+    protected void checkCreatePermissions(@Nonnull UserEntity execUser,
+                                          @Nonnull ProcessAccessControlEntity newItem) throws ResponseException {
+        permissionService.requireProcessPermission(
+                execUser.getId(),
+                newItem.getTargetProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
+    }
+
+    @Override
+    protected void checkRetrievePermissions(@Nonnull UserEntity execUser,
+                                            @Nonnull Integer itemid) throws ResponseException {
+        var existing = processAccessControlService
+                .retrieve(itemid)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireProcessPermission(
+                execUser.getId(),
+                existing.getTargetProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
+    }
+
+    @Override
+    protected void checkUpdatePermission(@Nonnull UserEntity execUser,
+                                         @Nonnull Integer itemid) throws ResponseException {
+        checkRetrievePermissions(execUser, itemid);
+    }
+
+    @Override
+    protected void checkDeletePermission(@Nonnull UserEntity execUser,
+                                         @Nonnull Integer itemid) throws ResponseException {
+        checkRetrievePermissions(execUser, itemid);
     }
 
     @Override
@@ -76,5 +157,4 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
         );
     }
 
-    // TODO: Implement Permission Checks
 }

@@ -6,6 +6,7 @@ import {GenericPageHeaderPropsHelpDialog} from '../../../../components/generic-p
 import {TeamsApiService} from '../../services/teams-api-service';
 import {TeamEntity} from "../../entities/team-entity";
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
+import {Permission} from '../../../../data/permissions/permission';
 
 export function TeamsDetailsPage() {
     return (
@@ -15,6 +16,15 @@ export function TeamsDetailsPage() {
             background
         >
             <GenericDetailsPage<TeamEntity, number, void>
+                permissionCheck={{
+                    create: Permission.TEAM_CREATE,
+                    read: Permission.TEAM_READ,
+                    update: Permission.TEAM_UPDATE,
+                    scope: {
+                        type: 'team',
+                        getResourceId: (item) => item.id,
+                    },
+                }}
                 header={{
                     icon: ModuleIcons.teams,
                     title: 'Team bearbeiten',
@@ -28,7 +38,8 @@ export function TeamsDetailsPage() {
                     {
                         path: '/teams/:id/members',
                         label: 'Teammitglieder',
-                        isDisabled: (item) => !item?.id,
+                        onlyExisting: true,
+                        requiredPermission: Permission.TEAM_MEMBERSHIP_READ,
                     },
                 ]}
                 initializeItem={(api) => TeamsApiService.initialize()}
@@ -53,7 +64,7 @@ export function TeamsDetailsPage() {
                     label: 'Liste der Teams',
                     to: '/teams',
                 }}
-                entityType={ServerEntityType.Departments}
+                entityType={ServerEntityType.Teams}
             />
         </PageWrapper>
     );

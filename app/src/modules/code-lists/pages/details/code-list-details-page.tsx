@@ -5,7 +5,6 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import {GenericDetailsPageControlRef} from '../../../../components/generic-details-page/generic-details-page-props';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
@@ -14,18 +13,18 @@ import {CodeList} from '../../models/code-list';
 import {CodeListStatusChip} from '../../components/code-list-status-chip';
 import {isCodeListSyncable} from '../../enums/code-list-source-type';
 import SyncProblem from '@aivot/mui-material-symbols-400-n25-outlined/SyncProblem';
+import {Permission} from '../../../../data/permissions/permission';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 export function CodeListDetailsPage(): ReactNode {
     const dispatch = useAppDispatch();
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    const canUpdateCodeLists = useHasSystemPermission(Permission.CODE_LIST_UPDATE);
     const detailsPageControlRef = useRef<GenericDetailsPageControlRef | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
 
     const handleSync = async (codeList: CodeList | undefined, keepOutdated: boolean): Promise<void> => {
-        if (codeList == null || codeList.key.length === 0 || !isCodeListSyncable(codeList.sourceType) || isSyncing) {
+        if (codeList == null || codeList.key.length === 0 || !isCodeListSyncable(codeList.sourceType) || isSyncing || !canUpdateCodeLists) {
             return;
         }
 
@@ -68,7 +67,10 @@ export function CodeListDetailsPage(): ReactNode {
                             onClick: () => {
                                 void handleSync(item, true);
                             },
-                            disabled: isSyncing || !hasAccess,
+                            disabled: isSyncing || !canUpdateCodeLists,
+                            disabledTooltip: !canUpdateCodeLists
+                                ? formatMissingPermissionTooltip(Permission.CODE_LIST_UPDATE)
+                                : undefined,
                         },
                         {
                             tooltip: 'Codeliste synchronisieren (veraltete Einträge entfernen)',
@@ -76,7 +78,10 @@ export function CodeListDetailsPage(): ReactNode {
                             onClick: () => {
                                 void handleSync(item, false);
                             },
-                            disabled: isSyncing || !hasAccess,
+                            disabled: isSyncing || !canUpdateCodeLists,
+                            disabledTooltip: !canUpdateCodeLists
+                                ? formatMissingPermissionTooltip(Permission.CODE_LIST_UPDATE)
+                                : undefined,
                         },
                     ] : [],
                     helpDialog: {
@@ -114,6 +119,14 @@ export function CodeListDetailsPage(): ReactNode {
                 ]}
                 initializeItem={() => new CodeListsApiService().initialize()}
                 fetchData={(_, key: string) => new CodeListsApiService().retrieve(key)}
+                permissionCheck={{
+                    scope: {
+                        type: 'system',
+                    },
+                    create: Permission.CODE_LIST_CREATE,
+                    read: Permission.CODE_LIST_READ,
+                    update: Permission.CODE_LIST_UPDATE,
+                }}
                 getTabTitle={(item) => item.key.length === 0 ? 'Neue Codeliste' : item.name}
                 getHeaderTitle={(item, isNewItem, notFound) => {
                     if (notFound ?? false) return 'Codeliste nicht gefunden';
@@ -125,7 +138,6 @@ export function CodeListDetailsPage(): ReactNode {
                     to: '/code-lists',
                 }}
                 entityType={ServerEntityType.CodeLists}
-                isEditable={() => hasAccess}
                 controlRef={detailsPageControlRef}
                 idParam="key"
             />

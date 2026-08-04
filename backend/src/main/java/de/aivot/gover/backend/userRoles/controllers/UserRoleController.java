@@ -5,11 +5,13 @@ import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.userRoles.dtos.UserRoleRequestDTO;
 import de.aivot.gover.backend.userRoles.dtos.UserRoleResponseDTO;
 import de.aivot.gover.backend.userRoles.entities.UserRoleEntity;
 import de.aivot.gover.backend.userRoles.filters.UserRoleFilter;
+import de.aivot.gover.backend.userRoles.permissions.DomainRolePermissionProvider;
 import de.aivot.gover.backend.userRoles.services.UserRoleService;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,25 +40,39 @@ public class UserRoleController {
     private final ScopedAuditService auditService;
     private final UserRoleService userRoleService;
     private final UserService userService;
+    private final PermissionService permissionService;
 
     @Autowired
-    public UserRoleController(AuditService auditService, UserRoleService userRoleService, UserService userService) {
+    public UserRoleController(AuditService auditService,
+                              UserRoleService userRoleService,
+                              UserService userService,
+                              PermissionService permissionService) {
         this.auditService = auditService
                 .createScopedAuditService(UserRoleController.class, "Rollen");
 
         this.userRoleService = userRoleService;
         this.userService = userService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
     @Operation(
             summary = "List User Roles",
-            description = "Retrieve a paginated list of user roles. Supports filtering and pagination."
+            description = "Retrieve a paginated list of user roles. Supports filtering and pagination. " +
+                    "Requires the system-level permission `" + DomainRolePermissionProvider.DOMAIN_ROLE_READ + "`."
     )
     public Page<UserRoleResponseDTO> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid UserRoleFilter filter
     ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ);
+
         return userRoleService
                 .list(pageable, filter)
                 .map(UserRoleResponseDTO::fromEntity);
@@ -65,7 +81,8 @@ public class UserRoleController {
     @PostMapping("")
     @Operation(
             summary = "Create User Role",
-            description = "Create a new user role. Requires super admin privileges."
+            description = "Create a new user role. " +
+                    "Requires the system-level permission `" + DomainRolePermissionProvider.DOMAIN_ROLE_CREATE + "`."
     )
     public UserRoleResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -73,9 +90,10 @@ public class UserRoleController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_CREATE);
 
         var created = userRoleService
                 .create(requestDTO.toEntity());
@@ -107,11 +125,20 @@ public class UserRoleController {
     @GetMapping("{id}/")
     @Operation(
             summary = "Retrieve User Role",
-            description = "Retrieve a user role by its ID."
+            description = "Retrieve a user role by its ID. " +
+                    "Requires the system-level permission `" + DomainRolePermissionProvider.DOMAIN_ROLE_READ + "`."
     )
     public UserRoleResponseDTO retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ);
+
         return userRoleService
                 .retrieve(id)
                 .map(UserRoleResponseDTO::fromEntity)
@@ -121,7 +148,8 @@ public class UserRoleController {
     @PutMapping("{id}/")
     @Operation(
             summary = "Update User Role",
-            description = "Update an existing user role. Requires super admin privileges."
+            description = "Update an existing user role. " +
+                    "Requires the system-level permission `" + DomainRolePermissionProvider.DOMAIN_ROLE_UPDATE + "`."
     )
     public UserRoleResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -130,9 +158,10 @@ public class UserRoleController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_UPDATE);
 
         var result = userRoleService
                 .update(id, requestDTO.toEntity());
@@ -164,7 +193,8 @@ public class UserRoleController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete User Role",
-            description = "Delete a user role by its ID. Requires super admin privileges."
+            description = "Delete a user role by its ID. " +
+                    "Requires the system-level permission `" + DomainRolePermissionProvider.DOMAIN_ROLE_DELETE + "`."
     )
     public void destroy(
             @AuthenticationPrincipal Jwt jwt,
@@ -172,9 +202,10 @@ public class UserRoleController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_DELETE);
 
         var entity = userRoleService
                 .retrieve(id)

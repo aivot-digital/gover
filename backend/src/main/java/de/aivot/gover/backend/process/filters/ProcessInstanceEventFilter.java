@@ -7,9 +7,12 @@ import de.aivot.gover.backend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
+
 public class ProcessInstanceEventFilter implements Filter<ProcessInstanceEventEntity> {
     private String triggeringUserId;
     private Long processInstanceId;
+    private List<Long> processInstanceIds;
     private Long processInstanceTaskId;
     private ProcessNodeExecutionLogLevel level;
     private Boolean isTechnical;
@@ -29,6 +32,7 @@ public class ProcessInstanceEventFilter implements Filter<ProcessInstanceEventEn
                 .create(ProcessInstanceEventEntity.class)
                 .withEquals("triggeringUserId", triggeringUserId)
                 .withEquals("processInstanceId", processInstanceId)
+                .withInList("processInstanceId", processInstanceIds)
                 .withEquals("processInstanceTaskId", processInstanceTaskId)
                 .withEquals("level", level)
                 .withEquals("isTechnical", isTechnical)
@@ -55,6 +59,15 @@ public class ProcessInstanceEventFilter implements Filter<ProcessInstanceEventEn
 
     public ProcessInstanceEventFilter setProcessInstanceId(Long processInstanceId) {
         this.processInstanceId = processInstanceId;
+        return this;
+    }
+
+    public List<Long> getProcessInstanceIds() {
+        return processInstanceIds;
+    }
+
+    public ProcessInstanceEventFilter setProcessInstanceIds(List<Long> processInstanceIds) {
+        this.processInstanceIds = processInstanceIds;
         return this;
     }
 
@@ -121,4 +134,3 @@ public class ProcessInstanceEventFilter implements Filter<ProcessInstanceEventEn
         return this;
     }
 }
-

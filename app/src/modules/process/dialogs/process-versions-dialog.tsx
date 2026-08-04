@@ -21,6 +21,7 @@ import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {LoadingOverlay} from '../../../components/loading-overlay/loading-overlay';
 import NewWindow from '@aivot/mui-material-symbols-400-n25-outlined/NewWindow';
+import Science from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 import {ProcessEntity} from '../entities/process-entity';
 import {ProcessVersionEntity} from '../entities/process-version-entity';
 import {ProcessStatus, ProcessStatusIcons} from '../enums/process-status';
@@ -32,18 +33,51 @@ import {ProcessDefinitionApiService} from '../services/process-definition-api-se
 import {ProcessExport} from '../entities/process-export';
 import {NewProcessDialog} from './new-process-dialog';
 import {clearLoadingMessage, setLoadingMessage} from '../../../slices/shell-slice';
+import {ProcessPublishDialog} from './process-publish-dialog';
+import {
+    type ProcessNodeProvider,
+    ProcessNodeProviderApiService,
+} from '../services/process-node-provider-api-service';
+import {useRevokeProcessVersion} from '../hooks/use-revoke-process-version';
+import {ProcessTestClaimApiService} from '../services/process-test-claim-api-service';
+import {type ProcessTestClaimEntity} from '../entities/process-test-claim-entity';
+import {type User} from '../../users/models/user';
+import {UsersApiService} from '../../users/users-api-service';
+import {resolveUserName} from '../../users/utils/resolve-user-name';
+
+function deriveProcessFromVersions(
+    process: ProcessEntity,
+    versions: ProcessVersionEntity[],
+): ProcessEntity {
+    if (versions.length === 0) {
+        return process;
+    }
+
+    return {
+        ...process,
+        draftedVersion: versions.find(v => v.status === ProcessStatus.Drafted)?.processVersion ?? null,
+        publishedVersion: versions.find(v => v.status === ProcessStatus.Published)?.processVersion ?? null,
+        versionCount: versions.length,
+    };
+}
+
+interface ProcessVersionTestClaim {
+    claim: ProcessTestClaimEntity;
+    user: User | null;
+}
 
 interface ProcessVersionsDialogProps {
     open: boolean;
     process: ProcessEntity;
     currentOpenVersion?: number;
+    currentTestClaim?: ProcessVersionTestClaim | null;
     onClose: () => void;
     onNewDraft: (basis: {
         process: ProcessEntity;
         version: ProcessVersionEntity;
     }) => void | Promise<ProcessVersionEntity | void>;
     onDeleteVersion: (process: number, version: number) => void;
-    onShouldReload?: (process: ProcessEntity) => void;
+    onShouldReload?: (process: ProcessEntity, currentOpenVersion?: ProcessVersionEntity) => void;
 }
 
 export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
@@ -51,6 +85,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
         open,
         process,
         currentOpenVersion,
+        currentTestClaim,
         onClose,
         onNewDraft,
         onDeleteVersion,
@@ -60,11 +95,16 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
     const showExport = useProcessExport();
+    const revokeProcessVersion = useRevokeProcessVersion();
 
     const [isLoading, setIsLoading] = useState(false);
     const [isBusy, setIsBusy] = useState(false);
 
     const [versions, setVersions] = useState<ProcessVersionEntity[]>([]);
+    const [testClaims, setTestClaims] = useState<ProcessVersionTestClaim[]>([]);
+    const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
+    const [hasLoadedNodeProviders, setHasLoadedNodeProviders] = useState(false);
+    const [versionToPublish, setVersionToPublish] = useState<ProcessVersionEntity | null>(null);
 
     const hasDraft = useMemo(() => {
         return versions.some(v => v.status === ProcessStatus.Drafted);
@@ -74,27 +114,29 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
         return versions.find(v => v.status === ProcessStatus.Published)?.processVersion ?? null;
     }, [versions]);
 
-    const draftedVersion = useMemo(() => {
-        if (versions.length > 0) {
-            return versions.find(v => v.status === ProcessStatus.Drafted)?.processVersion ?? null;
-        }
-
-        return process.draftedVersion;
-    }, [process.draftedVersion, versions]);
-
     // The parent process prop can be stale after dialog-local version changes, so derive version metadata from the loaded versions.
     const effectiveProcess = useMemo(() => {
-        return {
-            ...process,
-            draftedVersion,
-            publishedVersion: versions.length > 0 ? publishedVersion : process.publishedVersion,
-            versionCount: versions.length > 0 ? versions.length : process.versionCount,
-        };
-    }, [draftedVersion, process, publishedVersion, versions.length]);
+        return deriveProcessFromVersions(process, versions);
+    }, [process, versions]);
 
     const latestVersion = useMemo(() => {
         return versions.length > 0 ? versions[0].processVersion : null;
     }, [versions]);
+
+    const testClaimByVersion = useMemo(() => {
+        const claimMap = new Map<number, ProcessVersionTestClaim>();
+
+        for (const testClaim of testClaims) {
+            claimMap.set(testClaim.claim.processVersion, testClaim);
+        }
+
+        // Overlay the detail page state so a newly started test is visible before the dialog reloads its own claim list.
+        if (currentTestClaim != null && currentTestClaim.claim.processId === process.id) {
+            claimMap.set(currentTestClaim.claim.processVersion, currentTestClaim);
+        }
+
+        return claimMap;
+    }, [currentTestClaim, process.id, testClaims]);
 
     const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLElement | null>(null);
     const [moreMenuProcess, setMoreMenuProcess] = useState<ProcessVersionEntity | null>(null);
@@ -118,6 +160,37 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
             .catch(error => {
                 dispatch(showApiErrorSnackbar(error, 'Fehler beim Laden der Prozessversionen'));
                 return versions;
+            });
+    };
+
+    const loadTestClaims = (): Promise<ProcessVersionTestClaim[]> => {
+        return new ProcessTestClaimApiService()
+            .listAll({
+                processId: process.id,
+            })
+            .then(async ({content}) => {
+                const usersById = new Map<string, User | null>();
+                const userIds = Array.from(new Set(content.map((claim) => claim.owningUserId)));
+
+                await Promise.all(userIds.map(async (userId) => {
+                    try {
+                        usersById.set(userId, await new UsersApiService().retrieve(userId));
+                    } catch (error) {
+                        usersById.set(userId, null);
+                    }
+                }));
+
+                const testClaimContexts = content.map((claim) => ({
+                    claim,
+                    user: usersById.get(claim.owningUserId) ?? null,
+                }));
+
+                setTestClaims(testClaimContexts);
+                return testClaimContexts;
+            })
+            .catch(error => {
+                dispatch(showApiErrorSnackbar(error, 'Fehler beim Laden der Testansprüche'));
+                return testClaims;
             });
     };
 
@@ -145,13 +218,57 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
         }
     }
 
+    function notifyVersionsChanged(loadedVersions: ProcessVersionEntity[]): void {
+        if (onShouldReload == null) {
+            return;
+        }
+
+        const currentVersion = currentOpenVersion == null
+            ? undefined
+            : loadedVersions.find(v => v.processVersion === currentOpenVersion);
+
+        onShouldReload(deriveProcessFromVersions(process, loadedVersions), currentVersion);
+    }
+
+    async function ensureAvailableNodeProviders(): Promise<void> {
+        if (hasLoadedNodeProviders) {
+            return;
+        }
+
+        const nodeProviders = await new ProcessNodeProviderApiService()
+            .getNodeProviders();
+
+        setAvailableNodeProviders(nodeProviders);
+        setHasLoadedNodeProviders(true);
+    }
+
     useEffect(() => {
+        if (!open) {
+            return;
+        }
+
         setIsLoading(true);
-        withDelay(loadVersions(), 600)
+        withDelay(Promise.all([
+            loadVersions(),
+            loadTestClaims(),
+        ]), 600)
             .finally(() => {
                 setIsLoading(false);
             });
-    }, [process]);
+    }, [open, process.id]);
+
+    useEffect(() => {
+        if (currentTestClaim !== null || currentOpenVersion == null) {
+            return;
+        }
+
+        // A null detail-page claim only proves that the opened version is no longer in test mode.
+        // Keep claims for other versions that were loaded by the dialog itself.
+        setTestClaims((previousTestClaims) => previousTestClaims.filter((testClaim) => (
+            testClaim.claim.processId !== process.id ||
+            testClaim.claim.processVersion !== currentOpenVersion
+        )));
+    }, [currentOpenVersion, currentTestClaim, process.id]);
 
     async function createDraftFromVersion(version: ProcessVersionEntity): Promise<void> {
         setIsBusy(true);
@@ -253,6 +370,71 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
         handleCloseMoreMenu();
     };
 
+    async function handlePublishProcessVersion(version: number): Promise<void> {
+        let item: ProcessVersionEntity;
+        try {
+            item = await loadVersion(version);
+        } catch (error) {
+            if (isApiError(error) && error.displayableToUser) {
+                dispatch(showErrorSnackbar(error.message));
+            } else {
+                console.error(error);
+                dispatch(showErrorSnackbar('Fehler beim Laden der Prozessversion'));
+            }
+            return;
+        }
+
+        setIsBusy(true);
+        try {
+            await ensureAvailableNodeProviders();
+            setVersionToPublish(item);
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Die verfügbaren Prozesselemente konnten nicht geladen werden.'));
+        } finally {
+            setIsBusy(false);
+        }
+    }
+
+    async function handlePublishedProcessVersion(_publishedVersion: ProcessVersionEntity): Promise<void> {
+        setVersionToPublish(null);
+        setIsBusy(true);
+        try {
+            const loadedVersions = await withDelay(loadVersions(), 500);
+            notifyVersionsChanged(loadedVersions);
+        } finally {
+            setIsBusy(false);
+        }
+    }
+
+    async function handleRevokeProcessVersion(version: number): Promise<void> {
+        let item: ProcessVersionEntity;
+        try {
+            item = await loadVersion(version);
+        } catch (error) {
+            if (isApiError(error) && error.displayableToUser) {
+                dispatch(showErrorSnackbar(error.message));
+            } else {
+                console.error(error);
+                dispatch(showErrorSnackbar('Fehler beim Laden der Prozessversion'));
+            }
+            return;
+        }
+
+        const revokedVersion = await revokeProcessVersion(effectiveProcess, item);
+
+        if (revokedVersion == null) {
+            return;
+        }
+
+        setIsBusy(true);
+        try {
+            const loadedVersions = await withDelay(loadVersions(), 500);
+            notifyVersionsChanged(loadedVersions);
+        } finally {
+            setIsBusy(false);
+        }
+    }
+
     async function handleDeleteProcessVersion(version: number): Promise<void> {
         let item: ProcessVersionEntity;
         try {
@@ -308,12 +490,10 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
                         processDefinitionId: process.id,
                         processDefinitionVersion: item.processVersion,
                     })
-                    .then(() => {
-                        loadVersions();
+                    .then(async () => {
+                        const loadedVersions = await loadVersions();
                         handleCloseMoreMenu();
-                        if (onShouldReload != null) {
-                            onShouldReload(effectiveProcess);
-                        }
+                        notifyVersionsChanged(loadedVersions);
                         onDeleteVersion(process.id, item.processVersion);
                     })
                     .catch(error => {
@@ -380,6 +560,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
                                         <VersionListItem
                                             item={ver}
                                             currentOpenVersion={currentOpenVersion}
+                                            testClaim={testClaimByVersion.get(ver.processVersion) ?? null}
                                             onMoreClick={(target, item) => {
                                                 setMoreMenuAnchorEl(target);
                                                 setMoreMenuProcess(item);
@@ -401,11 +582,29 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
                     anchorEl={moreMenuAnchorEl}
                     process={effectiveProcess}
                     processVersion={moreMenuProcess}
+                    lifecycleActionsDisabled={testClaimByVersion.has(moreMenuProcess.processVersion)}
+                    lifecycleActionsDisabledReason="Diese Prozessversion befindet sich aktuell im Test."
                     onClose={handleCloseMoreMenu}
+                    onPublishVersion={handlePublishProcessVersion}
+                    onRevokeVersion={handleRevokeProcessVersion}
                     onReuseVersionAsDraft={handleUseAsNewDraft}
                     onReuseVersionAsNewProcess={handleUseAsNewProcess}
                     onExportVersion={handleExportProcessVersion}
                     onDeleteVersion={handleDeleteProcessVersion}
+                />
+            }
+
+            {
+                versionToPublish != null &&
+                <ProcessPublishDialog
+                    open={true}
+                    process={effectiveProcess}
+                    version={versionToPublish}
+                    availableNodeProviders={availableNodeProviders}
+                    onClose={() => {
+                        setVersionToPublish(null);
+                    }}
+                    onPublish={handlePublishedProcessVersion}
                 />
             }
 
@@ -426,6 +625,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
 interface VersionListItemProps {
     item: ProcessVersionEntity;
     currentOpenVersion?: number;
+    testClaim: ProcessVersionTestClaim | null;
     onMoreClick: (target: HTMLButtonElement, item: ProcessVersionEntity) => void;
 }
 
@@ -434,6 +634,7 @@ function VersionListItem(props: VersionListItemProps) {
     const {
         item,
         currentOpenVersion,
+        testClaim,
         onMoreClick,
     } = props;
 
@@ -447,6 +648,13 @@ function VersionListItem(props: VersionListItemProps) {
     } = item;
 
     const editorFullName = undefined; // TODO: find out, who edited this version the last time
+    const testClaimOwnerName = useMemo(() => {
+        if (testClaim == null) {
+            return null;
+        }
+
+        return testClaim.user != null ? resolveUserName(testClaim.user) : 'Unbekannte Mitarbeiter:in';
+    }, [testClaim]);
 
     const subtext = useMemo(() => {
         const _format = (val: string | null | undefined) => {
@@ -454,19 +662,26 @@ function VersionListItem(props: VersionListItemProps) {
             return format(val ?? fallback, 'dd.MM.yyyy – HH:mm') + ' Uhr';
         };
 
+        let statusText = '';
+
         switch (status) {
             case ProcessStatus.Drafted:
-                return `Zuletzt bearbeitet: ${_format(updated)}\nBearbeitet von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
+                statusText = `Zuletzt bearbeitet: ${_format(updated)}\nBearbeitet von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
+                break;
             case ProcessStatus.Published:
-                return `Veröffentlicht am: ${_format(published)}\nVeröffentlicht von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
+                statusText = `Veröffentlicht am: ${_format(published)}\nVeröffentlicht von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
+                break;
             case ProcessStatus.Revoked:
-                return `Zurückgezogen am: ${_format(revoked)}\nZurückgezogen von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
-            default:
-                return '';
+                statusText = `Zurückgezogen am: ${_format(revoked)}\nZurückgezogen von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
+                break;
         }
+
+        return statusText;
     }, [status, updated, revoked, published, editorFullName]);
 
     const Icon = useMemo(() => ProcessStatusIcons[status], [status]);
+    const isCurrentOpenVersion = item.processVersion === currentOpenVersion;
+    const showStatusChip = status === ProcessStatus.Drafted || status === ProcessStatus.Published;
 
     return (
         <ListItem
@@ -483,6 +698,12 @@ function VersionListItem(props: VersionListItemProps) {
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'nowrap'}}>
                     <Typography
                         variant="h5"
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'baseline',
+                            gap: 1,
+                            flexWrap: 'wrap',
+                        }}
                     >
                         <Link
                             style={{color: 'inherit', textDecoration: 'none'}}
@@ -491,23 +712,83 @@ function VersionListItem(props: VersionListItemProps) {
                         >
                             Version {version}
                         </Link>
+                        {
+                            isCurrentOpenVersion &&
+                            <Typography
+                                component="span"
+                                color="text.secondary"
+                                sx={{
+                                    fontSize: '0.875rem',
+                                    fontWeight: 400,
+                                }}
+                            >
+                                (aktuell geöffnet)
+                            </Typography>
+                        }
                     </Typography>
-                    {(status === ProcessStatus.Drafted || status === ProcessStatus.Published) && (
-                        <Box sx={{ml: 'auto', mr: 0.5}}>
+                    {
+                        showStatusChip &&
+                        <Box
+                            sx={{
+                                ml: 'auto',
+                                mr: 0.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.75,
+                                flexShrink: 0,
+                            }}
+                        >
                             <ProcessStatusChip
                                 status={status}
                                 size="small"
                                 variant="soft"
                             />
                         </Box>
-                    )}
+                    }
                 </Box>
                 <Typography
                     color="text.secondary"
-                    sx={{mt: 0.5}}
+                    sx={{
+                        mt: 0.5,
+                        whiteSpace: 'pre-line',
+                    }}
                 >
                     {subtext}
                 </Typography>
+                {
+                    testClaimOwnerName != null &&
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                        }}
+                    >
+                        <Typography
+                            component="span"
+                            sx={{
+                                color: 'text.secondary',
+                            }}
+                        >
+                            Im Test durch:
+                        </Typography>
+                        <Typography
+                            component="span"
+                            sx={{
+                                color: 'text.secondary',
+                            }}
+                        >
+                            {testClaimOwnerName}
+                        </Typography>
+                        <Science
+                            sx={{
+                                color: 'warning.main',
+                                fontSize: 16,
+                                flexShrink: 0,
+                            }}
+                        />
+                    </Box>
+                }
             </Box>
 
             <Box

@@ -29,10 +29,6 @@ export function createSearchItemLink(searchItem: SearchItemResponseDto): string 
             return idTail != null ? `/data-objects/${idHead}/${idTail}` : '/data-objects';
         case 'data_object_schemas':
             return `/data-models/${id}`;
-        case 'destinations':
-            return '/destinations/' + id;
-        case 'forms':
-            return idTail != null ? `/forms/${idHead}/${idTail}` : '/forms';
         case 'identity_providers':
             return '/identity-providers/' + id;
         case 'payment_providers':
@@ -45,10 +41,12 @@ export function createSearchItemLink(searchItem: SearchItemResponseDto): string 
             return '/provider-links/' + id;
         case 'secrets':
             return '/secrets/' + id;
+        case 'code_lists':
+            return '/code-lists/' + encodeURIComponent(id);
         case 'teams':
             return '/teams/' + id;
-        case 'submissions':
-            return '/submissions/' + id;
+        case 'users':
+            return '/users/' + id;
         case 'themes':
             return '/themes/' + id;
         case 'domain_roles':

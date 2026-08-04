@@ -1,9 +1,11 @@
 package de.aivot.gover.backend.userRoles.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 public class DomainRolePermissionProvider implements PermissionProvider {
@@ -27,8 +29,12 @@ public class DomainRolePermissionProvider implements PermissionProvider {
         };
     }
 
+    @Nonnull
     @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
+    public Optional<SearchPermission> getSearchPermission() {
+        return Optional.of(new PermissionProvider.SearchPermission(
+                "domain_roles",
+                DOMAIN_ROLE_READ
+        ));
     }
 }

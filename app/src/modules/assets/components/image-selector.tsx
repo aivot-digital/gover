@@ -20,6 +20,9 @@ import {AssetsApiService} from '../assets-api-service';
 import {type VStorageIndexItemWithAssetEntity} from '../../storage/entities/storage-index-item-entity';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
+import {useHasSystemPermission} from '../../permissions/hooks/use-permissions';
+import {Permission} from '../../../data/permissions/permission';
+import {isApiError} from '../../../models/api-error';
 
 interface ImageSelectorProps {
     label: string;
@@ -52,6 +55,7 @@ export function ImageSelector(props: ImageSelectorProps) {
     } = props;
 
     const dispatch = useAppDispatch();
+    const canReadAssets = useHasSystemPermission(Permission.ASSET_READ);
     const [showSelectAssetDialog, setShowSelectAssetDialog] = useState(false);
     const [asset, setAsset] = useState<VStorageIndexItemWithAssetEntity>();
     const [assetLoadFailed, setAssetLoadFailed] = useState(false);
@@ -79,6 +83,15 @@ export function ImageSelector(props: ImageSelectorProps) {
             };
         }
 
+        // Existing public images can still be previewed by key. Metadata lookup requires asset.read and
+        // should not create permission toasts when the surrounding form is opened read-only.
+        if (!canReadAssets) {
+            setAssetLoadFailed(true);
+            return () => {
+                active = false;
+            };
+        }
+
         void new AssetsApiService()
             .retrieveByKey(value)
             .then((res) => {
@@ -89,14 +102,16 @@ export function ImageSelector(props: ImageSelectorProps) {
             .catch((err) => {
                 if (active) {
                     setAssetLoadFailed(true);
-                    dispatch(showApiErrorSnackbar(err, 'Asset konnte nicht geladen werden'));
+                    if (!isApiError(err) || err.status !== 403) {
+                        dispatch(showApiErrorSnackbar(err, 'Asset konnte nicht geladen werden'));
+                    }
                 }
             });
 
         return () => {
             active = false;
         };
-    }, [dispatch, value]);
+    }, [canReadAssets, dispatch, value]);
 
     const handleOpenDialog = () => {
         if (!disabled) {

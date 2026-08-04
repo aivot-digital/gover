@@ -2,20 +2,21 @@ import {Box, Button, Container, Paper, Stack, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {useChangeBlocker} from '../../../hooks/use-change-blocker-2';
 import {AssetsApiService} from '../assets-api-service';
 import {FileUploadComponent} from '../../../components/file-upload-field/file-upload-component';
-import {hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {GenericDetailsSkeleton} from '../../../components/generic-details-page/generic-details-skeleton';
 import {StorageMetadataAttributesEditor} from '../../storage/components/storage-metadata-attributes-editor';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
-import {StorageProviderEntity} from '../../storage/entities/storage-provider-entity';
-import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
 import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import {clearLoadingMessage, setLoadingMessage} from '../../../slices/shell-slice';
+import {useRequireSystemPermission} from '../../permissions/hooks/use-permissions';
+import {Permission} from '../../../data/permissions/permission';
+import {type AssetStorageProvider} from '../models/asset-storage-provider';
+import {DisabledTooltip} from '../../../components/disabled-tooltip/disabled-tooltip';
 
 const DEFAULT_DATA = {
     file: null,
@@ -29,8 +30,10 @@ export function AssetDetailsPageNew() {
         storageProviderId: string;
     }>();
     const [searchParams] = useSearchParams();
+    useRequireSystemPermission(Permission.ASSET_READ);
+    useRequireSystemPermission(Permission.ASSET_CREATE);
 
-    const [storageProvider, setStorageProvider] = useState<StorageProviderEntity | null>(null);
+    const [storageProvider, setStorageProvider] = useState<AssetStorageProvider | null>(null);
     const [newAssetData, setNewAssetData] = useState<{
         file: File | null;
         metadata: Record<string, string> | null;
@@ -45,13 +48,13 @@ export function AssetDetailsPageNew() {
 
         const sid = parseInt(storageProviderId);
 
-        new StorageProvidersApiService()
-            .retrieve(sid)
+        new AssetsApiService()
+            .retrieveStorageProvider(sid)
             .then(setStorageProvider)
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Der angeforderte Speicheranbieter konnte nicht geladen werden. Bitte versuchen Sie es später erneut.', true));
             });
-    }, [storageProviderId]);
+    }, [dispatch, storageProviderId]);
 
     const uploadFolderPath = useMemo(() => {
         const pathRaw = searchParams.get('path');
@@ -248,13 +251,18 @@ export function AssetDetailsPageNew() {
                         justifyContent="flex-start"
                         alignItems="center"
                     >
-                        <Button
-                            variant="contained"
-                            disabled={newAssetData.file == null || storageProvider.readOnlyStorage || isBusy}
-                            onClick={handleUpload}
+                        <DisabledTooltip
+                            disabled={storageProvider.readOnlyStorage}
+                            title="Der Speicheranbieter ist schreibgeschützt. Neue Dateien können nicht hochgeladen werden."
                         >
-                            Hochladen
-                        </Button>
+                            <Button
+                                variant="contained"
+                                disabled={newAssetData.file == null || storageProvider.readOnlyStorage || isBusy}
+                                onClick={handleUpload}
+                            >
+                                Hochladen
+                            </Button>
+                        </DisabledTooltip>
                     </Stack>
                 </Paper>
             </Container>

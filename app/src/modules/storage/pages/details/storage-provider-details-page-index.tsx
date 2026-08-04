@@ -14,12 +14,6 @@ import {useChangeBlocker} from '../../../../hooks/use-change-blocker-2';
 import * as yup from 'yup';
 import {goverSchemaToYup, mapFormManagerErrorsToComputedErrors} from '../../../../utils/gover-schema-to-yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {
-    addSnackbarMessage,
-    removeSnackbarMessage,
-    SnackbarSeverity,
-    SnackbarType,
-} from '../../../../slices/shell-slice';
 import {type StorageProviderDefinition} from '../../entities/storage-provider-definition';
 import {type StorageProviderEntity, StorageProviderMetadataAttribute} from '../../entities/storage-provider-entity';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
@@ -48,6 +42,10 @@ import {StorageProviderStatus} from '../../enums/storage-provider-status';
 import {isApiError} from '../../../../models/api-error';
 import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 const DefaultStorageProcessAttachmentsSystemConfigDefinitionKey = 'storage.attachments.default_storage_provider';
 const DefaultStorageAssetsSystemConfigDefinitionKey = 'storage.assets.default_storage_provider';
@@ -122,6 +120,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const {registerSyncPreparationHandler} = useStorageProviderDetailsPageSyncContext();
+    const canDeleteStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_DELETE);
+    const canCreateStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_CREATE);
+    const canUpdateStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
 
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
     const [derivedElementData, setDerivedElementData] = useState<DerivedRuntimeElementData | null>(null);
@@ -138,6 +139,8 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         isEditable,
         isExistingItem,
     } = useGenericDetailsPageContext<StorageProviderEntity, StorageProviderAdditionalData>();
+    const refreshDefinitionsPermission = isExistingItem === true ? Permission.STORAGE_PROVIDER_UPDATE : Permission.STORAGE_PROVIDER_CREATE;
+    const canRefreshDefinitions = isExistingItem === true ? canUpdateStorageProvider : canCreateStorageProvider;
 
     // Extract the id of the storage provider for later usage.
     const {
@@ -162,23 +165,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     useEffect(() => {
         setInitialDerivationDone(false);
     }, [storageProviderId]);
-
-    useEffect(() => {
-        if (isEditable) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            key: 'storage-provider-no-access',
-            message: 'Dieser Speicheranbieter kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            severity: SnackbarSeverity.Warning,
-            type: SnackbarType.Dismissable,
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('storage-provider-no-access'));
-        };
-    }, [isEditable]);
 
     const {
         currentItem: editedStorageProvider,
@@ -359,7 +345,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     }
 
     const handleDelete = async (): Promise<void> => {
-        if (editedStorageProvider.id === 0) {
+        if (editedStorageProvider.id === 0 || !canDeleteStorageProvider) {
             return;
         }
 
@@ -379,6 +365,10 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     };
 
     const handleRefreshDefinitions = async () => {
+        if (!canRefreshDefinitions) {
+            return;
+        }
+
         setIsBusy(true);
         try {
             const updatedDefinitions = await new StorageProvidersApiService().listDefinitions();
@@ -396,6 +386,23 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     };
 
     const inputsDisabled = editedStorageProvider.systemProvider || isBusy || !isEditable;
+    const editPermission = isExistingItem === true ? Permission.STORAGE_PROVIDER_UPDATE : Permission.STORAGE_PROVIDER_CREATE;
+    const editDisabledTooltip = !isEditable
+        ? formatMissingPermissionTooltip(editPermission)
+        : editedStorageProvider.systemProvider
+            ? 'Systemanbieter können nicht bearbeitet werden.'
+            : undefined;
+    const refreshDefinitionsTooltip = canRefreshDefinitions
+        ? 'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'
+        : formatMissingPermissionTooltip(refreshDefinitionsPermission);
+    const defaultStorageDeleteDisabled = isDefaultAttachmentStorage || isDefaultAssetStorage;
+    const deleteDisabledTooltip = !canDeleteStorageProvider
+        ? formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_DELETE)
+        : editedStorageProvider.systemProvider
+            ? 'Systemanbieter können nicht gelöscht werden.'
+            : defaultStorageDeleteDisabled
+                ? 'Dieser Speicheranbieter ist als Standardanbieter für Anhänge von Vorgängen oder Dateien und Medien konfiguriert und kann nicht gelöscht werden.'
+                : 'Löscht den Speicheranbieter. Bitte beachten Sie, dass die Ordner und Dokumente des Speicheranbieters nicht gelöscht werden.';
     const attributesError = getIndexedFieldError(
         errors,
         'metadataAttributes',
@@ -802,55 +809,53 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
+                <DisabledTooltip
+                    title={editDisabledTooltip}
                     disabled={inputsDisabled || hasNotChanged}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon/>}
                 >
-                    Speichern
-                </Button>
-
-                <Tooltip title="Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.">
                     <Button
-                        onClick={handleRefreshDefinitions}
-                        disabled={inputsDisabled}
+                        onClick={handleSave}
+                        disabled={inputsDisabled || hasNotChanged}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon/>}
                     >
-                        Auswahllisten neu laden <HelpIconOutlined
-                        fontSize="small"
-                        sx={{ml: 1}}
-                    />
+                        Speichern
                     </Button>
+                </DisabledTooltip>
+
+                <Tooltip title={refreshDefinitionsTooltip}>
+                    <Box component="span">
+                        <Button
+                            onClick={handleRefreshDefinitions}
+                            disabled={isBusy || !canRefreshDefinitions}
+                        >
+                            Auswahllisten neu laden <HelpIconOutlined
+                            fontSize="small"
+                            sx={{ml: 1}}
+                        />
+                        </Button>
+                    </Box>
                 </Tooltip>
 
                 {
                     editedStorageProvider.id !== 0 &&
                     originalStorageProvider != null &&
-                    <Tooltip
-                        title={
-                            (isDefaultAttachmentStorage || isDefaultAssetStorage) ?
-                                'Dieser Speicheranbieter ist als Standardanbieter für Anhänge von Vorgängen oder Dateien und Medien konfiguriert und kann nicht gelöscht werden.' :
-                                'Löscht den Speicheranbieter. Bitte beachten Sie, dass die Ordner und Dokumente des Speicheranbieters nicht gelöscht werden.'
-                        }
+                    <DisabledTooltip
+                        title={deleteDisabledTooltip}
+                        disabled={isBusy || editedStorageProvider.systemProvider || !canDeleteStorageProvider || defaultStorageDeleteDisabled}
+                        wrapperSx={{marginLeft: 'auto'}}
                     >
-                        <Box
-                            component="span"
-                            sx={{
-                                marginLeft: 'auto',
-                            }}
+                        <Button
+                            variant="outlined"
+                            onClick={() => setShowConfirmDialog(true)}
+                            disabled={isBusy || editedStorageProvider.systemProvider || !canDeleteStorageProvider || defaultStorageDeleteDisabled}
+                            color="error"
+                            startIcon={<Delete/>}
                         >
-                            <Button
-                                variant={'outlined'}
-                                onClick={() => setShowConfirmDialog(true)}
-                                disabled={inputsDisabled || isDefaultAttachmentStorage || isDefaultAssetStorage}
-                                color="error"
-                                startIcon={<Delete/>}
-                            >
-                                Löschen
-                            </Button>
-                        </Box>
-                    </Tooltip>
+                            Löschen
+                        </Button>
+                    </DisabledTooltip>
                 }
             </Box>
 
@@ -874,16 +879,16 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         mt: 2,
                     }}
                 >
-                    <p>
+                    <Typography sx={{mb: 2}}>
                         Wenn der Speicheranbieter bereits für die Ablage von Dateien genutzt wurde, können diese Dateien
                         nach dem Löschen des Speicheranbieters nicht mehr erreicht werden. Bitte stellen Sie sicher,
                         dass
                         Sie alle Dateien migriert oder gelöscht haben, bevor Sie fortfahren.
-                    </p>
-                    <p>
-                        Bitte beachten Sie außerdem: Die Ordner und Dokument des Speicheranbieters
+                    </Typography>
+                    <Typography>
+                        Bitte beachten Sie außerdem: Die Ordner und Dokumente des Speicheranbieters
                         werden <strong>nicht</strong> gelöscht.
-                    </p>
+                    </Typography>
                 </AlertComponent>
             </ConfirmDialog>
 

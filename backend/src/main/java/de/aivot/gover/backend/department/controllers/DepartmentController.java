@@ -6,15 +6,14 @@ import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
 import de.aivot.gover.backend.department.entities.DepartmentEntity;
 import de.aivot.gover.backend.department.filters.DepartmentFilter;
-import de.aivot.gover.backend.department.filters.VDepartmentMembershipWithPermissionsFilter;
+import de.aivot.gover.backend.department.permissions.DepartmentPermissionProvider;
 import de.aivot.gover.backend.department.repositories.DepartmentRepository;
 import de.aivot.gover.backend.department.services.DepartmentService;
-import de.aivot.gover.backend.department.services.VDepartmentMembershipWithPermissionsService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
-import de.aivot.gover.backend.userRoles.data.PermissionLabels;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -31,6 +30,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -47,20 +47,20 @@ public class DepartmentController {
 
     private final DepartmentService departmentService;
     private final DepartmentRepository departmentRepository;
-    private final VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService;
+    private final PermissionService permissionService;
     private final UserService userService;
 
     @Autowired
     public DepartmentController(AuditService auditService,
                                 DepartmentService departmentService,
                                 DepartmentRepository departmentRepository,
-                                VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService,
+                                PermissionService permissionService,
                                 UserService userService) {
         this.auditService = auditService.createScopedAuditService(DepartmentController.class, MODULE_NAME);
 
         this.departmentService = departmentService;
         this.departmentRepository = departmentRepository;
-        this.vDepartmentMembershipWithPermissionsService = vDepartmentMembershipWithPermissionsService;
+        this.permissionService = permissionService;
         this.userService = userService;
     }
 
@@ -70,9 +70,41 @@ public class DepartmentController {
             description = "List departments with pagination and filtering."
     )
     public Page<DepartmentEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid DepartmentFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.hasSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_READ)) {
+            if (filter.getId() != null) {
+                permissionService.requireDepartmentPermission(
+                        user.getId(),
+                        filter.getId(),
+                        DepartmentPermissionProvider.DEPARTMENT_READ
+                );
+            } else {
+                var accessibleDepartmentIds = permissionService
+                        .getDepartmentsWithPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_READ);
+
+                if (filter.getIds() != null) {
+                    // Preserve explicit client filtering, but intersect it with the departments the user may read.
+                    accessibleDepartmentIds = filter.getIds()
+                            .stream()
+                            .filter(accessibleDepartmentIds::contains)
+                            .toList();
+                }
+
+                if (accessibleDepartmentIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setIds(accessibleDepartmentIds);
+            }
+        }
+
         return departmentService
                 .list(pageable, filter);
     }
@@ -80,7 +112,8 @@ public class DepartmentController {
     @PostMapping("")
     @Operation(
             summary = "Create department",
-            description = "Create a new department. This requires system admin permissions."
+            description = "Create a new department. Requires the system-level permission `" +
+                    DepartmentPermissionProvider.DEPARTMENT_CREATE + "`."
     )
     public DepartmentEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -88,9 +121,13 @@ public class DepartmentController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSystemAdmin()
-                .orElseThrow(ResponseException::noSystemAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        // Creating departments changes the organization structure and is always controlled system-wide.
+        permissionService.requireSystemPermission(
+                execUser.getId(),
+                DepartmentPermissionProvider.DEPARTMENT_CREATE
+        );
 
         var createdDepartment = departmentService
                 .create(newDepartment);
@@ -120,8 +157,19 @@ public class DepartmentController {
             description = "Retrieve a department by its id."
     )
     public DepartmentEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.requireDepartmentPermission(
+                user.getId(),
+                id,
+                DepartmentPermissionProvider.DEPARTMENT_READ
+        );
+
         return departmentService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
@@ -130,7 +178,9 @@ public class DepartmentController {
     @PutMapping("{id}/")
     @Operation(
             summary = "Update department",
-            description = "Update a department. Requires super admin permissions or department edit permissions."
+            description = "Update a department. Requires the permission `" +
+                    DepartmentPermissionProvider.DEPARTMENT_UPDATE +
+                    "` for the affected organisation unit or at system level."
     )
     public DepartmentEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -141,21 +191,11 @@ public class DepartmentController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!user.getIsSystemAdmin()) {
-            var filter = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(user.getId())
-                    .setDepartmentId(id)
-                    .setDepartmentPermissionEdit(true);
-
-            var hasPermissionToEdit = vDepartmentMembershipWithPermissionsService
-                    .exists(filter.build());
-
-            if (!hasPermissionToEdit) {
-                throw ResponseException
-                        .noPermission(PermissionLabels.DepartmentPermissionEdit);
-            }
-        }
+        permissionService.requireDepartmentPermission(
+                user.getId(),
+                id,
+                DepartmentPermissionProvider.DEPARTMENT_UPDATE
+        );
 
         var existingDepartment = departmentService
                 .retrieve(id)
@@ -191,7 +231,9 @@ public class DepartmentController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete department",
-            description = "Delete a department. Requires super admin permissions."
+            description = "Delete a department. Requires the permission `" +
+                    DepartmentPermissionProvider.DEPARTMENT_DELETE +
+                    "` for the affected organisation unit or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -199,9 +241,13 @@ public class DepartmentController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.requireDepartmentPermission(
+                user.getId(),
+                id,
+                DepartmentPermissionProvider.DEPARTMENT_DELETE
+        );
 
         var dep = departmentRepository
                 .findById(id)

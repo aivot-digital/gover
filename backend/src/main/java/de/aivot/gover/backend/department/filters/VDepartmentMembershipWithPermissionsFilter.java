@@ -5,10 +5,12 @@ import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 
 public class VDepartmentMembershipWithPermissionsFilter implements Filter<VDepartmentMembershipWithPermissionsEntity> {
     private Integer id;
     private Integer departmentId;
+    private List<Integer> departmentIds;
     private String userId;
     private Boolean departmentPermissionEdit;
     private Boolean formPermissionCreate;
@@ -27,6 +29,7 @@ public class VDepartmentMembershipWithPermissionsFilter implements Filter<VDepar
                 .create(VDepartmentMembershipWithPermissionsEntity.class)
                 .withEquals("id", id)
                 .withEquals("departmentId", departmentId)
+                .withInList("departmentId", departmentIds)
                 .withEquals("userId", userId)
                 .withEquals("departmentPermissionEdit", departmentPermissionEdit)
                 .withEquals("formPermissionCreate", formPermissionCreate)
@@ -52,6 +55,15 @@ public class VDepartmentMembershipWithPermissionsFilter implements Filter<VDepar
 
     public VDepartmentMembershipWithPermissionsFilter setDepartmentId(Integer departmentId) {
         this.departmentId = departmentId;
+        return this;
+    }
+
+    public List<Integer> getDepartmentIds() {
+        return departmentIds;
+    }
+
+    public VDepartmentMembershipWithPermissionsFilter setDepartmentIds(List<Integer> departmentIds) {
+        this.departmentIds = departmentIds;
         return this;
     }
 

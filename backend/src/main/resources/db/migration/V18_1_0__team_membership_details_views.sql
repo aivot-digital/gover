@@ -90,18 +90,27 @@ with aggregated_system_permissions as (select usr.id                            
                                        from users usr
                                                 left join v_user_is_recursively_deputy_for dpty
                                                           on usr.id = dpty.deputy_user_id
-                                                left join team_memberships dm
-                                                          on dm.user_id = dpty.original_user_id or
-                                                             dm.user_id = usr.id
+                                                right join team_memberships dm
+                                                           on dm.user_id = dpty.original_user_id or
+                                                              dm.user_id = usr.id
                                                 left join domain_role_assignments dra
                                                           on dra.team_membership_id = dm.id
                                                 left join domain_roles dr
                                                           on dr.id = dra.domain_role_id
-                                       group by usr.id, dm.team_id)
-select usr.id                                                                                 as user_id,
-       adp.team_id                                                                            as team_id,
-       bool_or(adp.is_direct_member)                                                          as is_direct_member,
-       bool_or(adp.is_indirect_member)                                                        as is_indirect_member,
+                                       group by usr.id, dm.team_id),
+     user_team_scope as (select user_id, team_id
+                         from aggregated_domain_permissions
+
+                         union
+
+                         select asp.user_id, tms.id as team_id
+                         from aggregated_system_permissions asp
+                                  cross join teams tms
+                         where cardinality(asp.system_role_permissions) > 0)
+select uts.user_id                                                                            as user_id,
+       uts.team_id                                                                            as team_id,
+       coalesce(bool_or(adp.is_direct_member), false)                                         as is_direct_member,
+       coalesce(bool_or(adp.is_indirect_member), false)                                       as is_indirect_member,
        array_unique_union_agg(asp.direct_system_role_permissions)                             as direct_system_role_permissions,
        array_unique_union_agg(asp.indirect_system_role_permissions)                           as indirect_system_role_permissions,
        array_unique_union_agg(asp.system_role_permissions)                                    as system_role_permissions,
@@ -122,8 +131,8 @@ select usr.id                                                                   
        )                                                                                      as indirect_permissions,
        array_unique_union_multi_agg(asp.system_role_permissions, adp.domain_role_permissions) as permissions,
        array_unique_union_multi_agg(asp.deputy_for_user_ids, adp.deputy_for_user_ids)         as deputy_for_user_ids
-from users usr
-         left join aggregated_system_permissions asp on asp.user_id = usr.id
-         left join aggregated_domain_permissions adp on adp.user_id = usr.id
-group by usr.id, adp.team_id;
+from user_team_scope uts
+         left join aggregated_domain_permissions adp on adp.user_id = uts.user_id and adp.team_id = uts.team_id
+         left join aggregated_system_permissions asp on asp.user_id = uts.user_id
+group by uts.user_id, uts.team_id;
 

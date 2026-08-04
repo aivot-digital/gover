@@ -17,7 +17,7 @@ export function DashboardProviderLinks(props: DashboardProviderLinksProps) {
 
     useEffect(() => {
         new ProviderLinksApiService(api)
-            .listAllOrdered('text', 'ASC')
+            .listAvailableOrdered('text', 'ASC')
             .then(setProviderLinks);
     }, [api]);
 

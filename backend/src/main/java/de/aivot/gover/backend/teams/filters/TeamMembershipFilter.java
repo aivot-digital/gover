@@ -6,9 +6,11 @@ import de.aivot.gover.backend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
+import java.util.List;
 
 public class TeamMembershipFilter implements Filter<TeamMembershipEntity> {
     private Integer teamId;
+    private List<Integer> teamIds;
     private String userId;
 
     public static TeamMembershipFilter create() {
@@ -21,6 +23,7 @@ public class TeamMembershipFilter implements Filter<TeamMembershipEntity> {
         return SpecificationBuilder
                 .create(TeamMembershipEntity.class)
                 .withEquals("teamId", teamId)
+                .withInList("teamId", teamIds)
                 .withEquals("userId", userId)
                 .build();
     }
@@ -31,6 +34,15 @@ public class TeamMembershipFilter implements Filter<TeamMembershipEntity> {
 
     public TeamMembershipFilter setTeamId(Integer teamId) {
         this.teamId = teamId;
+        return this;
+    }
+
+    public List<Integer> getTeamIds() {
+        return teamIds;
+    }
+
+    public TeamMembershipFilter setTeamIds(List<Integer> teamIds) {
+        this.teamIds = teamIds;
         return this;
     }
 

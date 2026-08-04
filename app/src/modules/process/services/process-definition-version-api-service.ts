@@ -40,6 +40,7 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
             processVersion: 0,
             publicTitle: '',
             caseNumberTemplate: null,
+            notes: null,
             status: ProcessStatus.Drafted,
             crated: new Date().toISOString(),
             updated: new Date().toISOString(),
