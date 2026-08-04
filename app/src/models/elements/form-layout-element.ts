@@ -33,7 +33,7 @@ export interface FormLayoutElement extends BaseElement<ElementType.FormLayout> {
     pdfTemplateKey: string | null | undefined;
 }
 
-export function isRootElement(obj: any): obj is FormLayoutElement {
+export function isFormLayoutElement(obj: any): obj is FormLayoutElement {
     return obj != null && obj.type === ElementType.FormLayout;
 }
 

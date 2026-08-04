@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Box, Typography} from '@mui/material';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
-import {isRootElement} from '../../models/elements/form-layout-element';
+import {isFormLayoutElement} from '../../models/elements/form-layout-element';
 import {AnyElement} from '../../models/elements/any-element';
 import {AnyElementWithChildren, isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {getElementNameForType} from '../../data/element-type/element-names';
@@ -495,8 +495,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                         children: changedChildren,
                                     } as T);
                                 }}
-                                addNewElementLabel={isRootElement(value) ? 'Neuen Abschnitt hinzufügen' : undefined}
-                                addElementDialogTitle={isRootElement(value) ? 'Formularabschnitt hinzufügen' : undefined}
+                                addNewElementLabel={isFormLayoutElement(value) ? 'Neuen Abschnitt hinzufügen' : undefined}
+                                addElementDialogTitle={isFormLayoutElement(value) ? 'Formularabschnitt hinzufügen' : undefined}
                                 openAddElementSignal={openRootAddElementSignal}
                             />
 

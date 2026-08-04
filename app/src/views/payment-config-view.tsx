@@ -30,7 +30,7 @@ import {ProcessDataKeyInputComponent} from './process-data-key-input-field-view'
 import {NoCodeInputFieldComponent} from '../components/no-code-input-field/no-code-input-field-component';
 import {NoCodeDataType} from '../data/no-code-data-type';
 import {CodeInputFieldComponent} from '../components/code-input-field/code-input-field-component';
-import {isRootElement} from '../models/elements/form-layout-element';
+import {isFormLayoutElement} from '../models/elements/form-layout-element';
 import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
 import {AnyElement} from '../models/elements/any-element';
 import {NoCodeOperand} from '../models/functions/no-code-expression';
@@ -164,7 +164,7 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
 
     const calculationRootElement = useMemo<AnyElement>(() => {
         const configuredFormLayout = authoredElementValues[FormLayoutFieldKey];
-        return isRootElement(configuredFormLayout) ? configuredFormLayout : rootElement;
+        return isFormLayoutElement(configuredFormLayout) ? configuredFormLayout : rootElement;
     }, [authoredElementValues, rootElement]);
 
     const itemRows = useMemo<PaymentItemRow[]>(() => {

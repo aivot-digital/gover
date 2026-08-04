@@ -21,7 +21,7 @@ import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {ExpandableList} from '../expandable-list/expandable-list';
 import {MarkdownContent} from '../markdown-content/markdown-content';
-import {isRootElement} from '../../models/elements/form-layout-element';
+import {isFormLayoutElement} from '../../models/elements/form-layout-element';
 import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
 import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
 import {Grid} from '@mui/material';
@@ -59,7 +59,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         rootElement,
     } = useViewDispatcherContext();
 
-    const formElement = isRootElement(rootElement) ? rootElement : null;
+    const formElement = isFormLayoutElement(rootElement) ? rootElement : null;
     const departmentSections = useFormDepartmentAddressSections(formElement);
 
     const initialDisplayCount = 4;

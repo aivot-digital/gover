@@ -14,7 +14,7 @@ import {AltchaWidget} from '../altcha/altcha-widget';
 import {ElementType} from '../../data/element-type/element-type';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
-import {isRootElement} from '../../models/elements/form-layout-element';
+import {isFormLayoutElement} from '../../models/elements/form-layout-element';
 import {useFormDepartmentAddressSections} from '../form-department-addresses/form-department-addresses';
 
 export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>): React.ReactNode | null {
@@ -34,7 +34,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
     const initialDisplayCount = 4;
 
     const [costs, setCosts] = useState<FormCostCalculationResponseDTO>();
-    const formElement = isRootElement(rootElement) ? rootElement : null;
+    const formElement = isFormLayoutElement(rootElement) ? rootElement : null;
     const departmentSections = useFormDepartmentAddressSections(formElement);
 
     useEffect(() => {
@@ -105,7 +105,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
         );
     }
 
-    if (!isRootElement(rootElement)) {
+    if (!isFormLayoutElement(rootElement)) {
         return null;
     }
 

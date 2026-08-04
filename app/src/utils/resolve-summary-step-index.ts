@@ -1,6 +1,6 @@
 import {type AnyElement} from '../models/elements/any-element';
 import {type DerivedRuntimeElementData} from '../models/element-data';
-import {isRootElement} from '../models/elements/form-layout-element';
+import {isFormLayoutElement} from '../models/elements/form-layout-element';
 import {extractVisibleFormSteps} from './visible-form-steps';
 
 export function resolveSummaryStepIndex(
@@ -8,7 +8,7 @@ export function resolveSummaryStepIndex(
     derivedData: DerivedRuntimeElementData,
     stepId: string,
 ): number {
-    if (!isRootElement(rootElement)) {
+    if (!isFormLayoutElement(rootElement)) {
         return -1;
     }
 
