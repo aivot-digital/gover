@@ -2,14 +2,15 @@ import type {Page} from '../../../models/dtos/page';
 import type {AuthoredElementValues} from '../../../models/element-data';
 import type {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import type {SortOrder} from '../../../components/generic-list/generic-list-props';
-import {BaseApiService} from '../../../services/base-api-service';
 import type {QueryParams} from '../../../services/base-api-service';
+import {BaseApiService} from '../../../services/base-api-service';
 import type {ProcessEntity} from '../../process/entities/process-entity';
 import type {ProcessNodeEntity} from '../../process/entities/process-node-entity';
 import type {ProcessVersionEntity} from '../../process/entities/process-version-entity';
 import type {Theme} from '../../themes/models/theme';
 import type {FormTriggerIdentityDetailsDTO} from '../dtos/form-trigger-identity-details-dto';
 import type {PaymentConfigElementValue} from '../../../models/elements/form/input/payment-config-element';
+import {XBezahldienstePaymentItem} from '../../../models/xbezahldienste/x-bezahldienste-payment-item';
 
 export interface FormTriggerFilter {
     id: number;
@@ -41,7 +42,46 @@ export interface FormTriggerListItem {
     node: FormTriggerNodeEntity;
 }
 
+export interface FormTriggerSubmissionStatusResponseV1 {
+    startedProcessAccessKey: string;
+}
+
+export interface FormTriggerCostCalculationResponseV1 {
+    totalCost: number;
+    paymentItems: XBezahldienstePaymentItem[];
+    paymentProviderName: string;
+}
+
 export class FormTriggerApiService extends BaseApiService {
+    public async submitForm(processSlug: string, triggerSlug: string, formData: FormData, options?: {
+        testClaim?: string;
+    }): Promise<FormTriggerSubmissionStatusResponseV1> {
+        return await this.postFormData<FormTriggerSubmissionStatusResponseV1>(
+            `/api/public/form/${processSlug}/${triggerSlug}/submit/`,
+            formData,
+            {
+                query: {
+                    'test-claim': options?.testClaim,
+                },
+            },
+        );
+    }
+
+    public async calculateCosts(processSlug: string, triggerSlug: string, authoredElementValues: AuthoredElementValues, options?: {
+        testClaim?: string;
+    }): Promise<FormTriggerCostCalculationResponseV1> {
+        return await this.post<AuthoredElementValues, FormTriggerCostCalculationResponseV1>(
+            `/api/public/form/${processSlug}/${triggerSlug}/costs/`,
+            authoredElementValues,
+            {
+                query: {
+                    'test-claim': options?.testClaim,
+                },
+            },
+        );
+    }
+
+
     public async list(
         page: number,
         limit: number,
