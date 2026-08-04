@@ -59,7 +59,7 @@ public class UserRoleController {
     @Operation(
             summary = "List User Roles",
             description = "Retrieve a paginated list of user roles. Supports filtering and pagination. " +
-                    "This requires the permission „" + DomainRolePermissionProvider.DOMAIN_ROLE_READ + "“."
+                    "Requires the system-level permission `" + DomainRolePermissionProvider.DOMAIN_ROLE_READ + "`."
     )
     public Page<UserRoleResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -82,7 +82,7 @@ public class UserRoleController {
     @Operation(
             summary = "Create User Role",
             description = "Create a new user role. " +
-                    "This requires the permission „" + DomainRolePermissionProvider.DOMAIN_ROLE_CREATE + "“."
+                    "Requires the system-level permission `" + DomainRolePermissionProvider.DOMAIN_ROLE_CREATE + "`."
     )
     public UserRoleResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -126,7 +126,7 @@ public class UserRoleController {
     @Operation(
             summary = "Retrieve User Role",
             description = "Retrieve a user role by its ID. " +
-                    "This requires the permission „" + DomainRolePermissionProvider.DOMAIN_ROLE_READ + "“."
+                    "Requires the system-level permission `" + DomainRolePermissionProvider.DOMAIN_ROLE_READ + "`."
     )
     public UserRoleResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -149,7 +149,7 @@ public class UserRoleController {
     @Operation(
             summary = "Update User Role",
             description = "Update an existing user role. " +
-                    "This requires the permission „" + DomainRolePermissionProvider.DOMAIN_ROLE_UPDATE + "“."
+                    "Requires the system-level permission `" + DomainRolePermissionProvider.DOMAIN_ROLE_UPDATE + "`."
     )
     public UserRoleResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -194,7 +194,7 @@ public class UserRoleController {
     @Operation(
             summary = "Delete User Role",
             description = "Delete a user role by its ID. " +
-                    "This requires the permission „" + DomainRolePermissionProvider.DOMAIN_ROLE_DELETE + "“."
+                    "Requires the system-level permission `" + DomainRolePermissionProvider.DOMAIN_ROLE_DELETE + "`."
     )
     public void destroy(
             @AuthenticationPrincipal Jwt jwt,

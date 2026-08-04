@@ -114,7 +114,9 @@ public class ProcessVersionController {
     @PostMapping("")
     @Operation(
             summary = "Create Process Definition Version",
-            description = "Create a new process definition version. Requires super admin privileges or a user role with create process permissions."
+            description = "Create a new process definition version. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessVersionEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -135,6 +137,11 @@ public class ProcessVersionController {
                         processDefinition.getId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
                 );
+
+        newVersion
+                .setStatus(ProcessVersionStatus.Drafted)
+                .setPublished(null)
+                .setRevoked(null);
 
         var result = processDefinitionVersionService
                 .create(newVersion);
@@ -159,9 +166,10 @@ public class ProcessVersionController {
 
     @GetMapping("{processDefinitionId}/latest/")
     @Operation(
-            summary = "Retrieve Latest Form Version",
-            description = "Retrieve the latest version of a form. " +
-                    "Requires read permissions on the parent form unless the user is a super admin."
+            summary = "Retrieve Latest Process Definition Version",
+            description = "Retrieve the latest version of a process definition. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_READ +
+                    "` for the affected process or at system level."
     )
     public ProcessVersionEntity retrieveLatest(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -205,7 +213,9 @@ public class ProcessVersionController {
     @PutMapping("{processDefinitionId}/{processDefinitionVersion}/")
     @Operation(
             summary = "Update Process Definition Version",
-            description = "Update an existing process definition version. Requires super admin privileges or a user role with edit process permissions."
+            description = "Update an existing process definition version. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessVersionEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -234,6 +244,7 @@ public class ProcessVersionController {
 
         updateDTO.setProcessId(existing.getProcessId());
         updateDTO.setProcessVersion(existing.getProcessVersion());
+        updateDTO.setStatus(existing.getStatus());
 
         var result = processDefinitionVersionService
                 .update(id, updateDTO);
@@ -261,7 +272,9 @@ public class ProcessVersionController {
     @DeleteMapping("{processDefinitionId}/{processDefinitionVersion}/")
     @Operation(
             summary = "Delete Process Definition Version",
-            description = "Delete a process definition version by its composite ID. Requires super admin privileges."
+            description = "Delete a process definition version by its composite ID. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,

@@ -1,7 +1,8 @@
 -- create example code lists
 with updated_code_list as (
     update code_lists
-        set source_type = 0,
+        set key = 'kita-betreuungsumfang',
+            source_type = 0,
             source_ref = '',
             name = 'Kita-Betreuungsumfang',
             description = 'Beispielhafte manuelle Codeliste für Betreuungsmodelle in Kindertagesstätten.',
@@ -12,12 +13,12 @@ with updated_code_list as (
             status_message = null,
             last_sync = null,
             updated = current_timestamp
-        where name = 'Kita-Betreuungsumfang'
-          and source_type = 0
+        where key = 'kita-betreuungsumfang'
         returning id
 ),
 inserted_code_list as (
     insert into code_lists (
+        key,
         source_type,
         source_ref,
         name,
@@ -29,7 +30,8 @@ inserted_code_list as (
         status_message,
         last_sync
     )
-    select 0,
+    select 'kita-betreuungsumfang',
+           0,
            '',
            'Kita-Betreuungsumfang',
            'Beispielhafte manuelle Codeliste für Betreuungsmodelle in Kindertagesstätten.',
@@ -64,7 +66,8 @@ from example_code_list
 
 with updated_code_list as (
     update code_lists
-        set source_type = 2,
+        set key = 'familienstand',
+            source_type = 2,
             source_ref = 'urn:de:xauslaender:codelist:familienstand_2',
             name = 'Familienstand',
             description = 'Beschreibt den Familienstand einer Person.',
@@ -75,12 +78,12 @@ with updated_code_list as (
             status_message = null,
             last_sync = timestamp with time zone '2026-07-19 00:00:00+02',
             updated = current_timestamp
-        where source_ref = 'urn:de:xauslaender:codelist:familienstand_2'
-          and source_type = 2
+        where key = 'familienstand'
         returning id
 ),
 inserted_code_list as (
     insert into code_lists (
+        key,
         source_type,
         source_ref,
         name,
@@ -92,7 +95,8 @@ inserted_code_list as (
         status_message,
         last_sync
     )
-    select 2,
+    select 'familienstand',
+           2,
            'urn:de:xauslaender:codelist:familienstand_2',
            'Familienstand',
            'Beschreibt den Familienstand einer Person.',

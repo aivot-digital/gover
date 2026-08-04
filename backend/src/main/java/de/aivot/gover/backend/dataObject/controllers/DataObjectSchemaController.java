@@ -59,7 +59,7 @@ public class DataObjectSchemaController {
             summary = "List Data Object Schemas",
             description = "Retrieve a paginated list of data object schemas. " +
                     "Supports filtering based on various criteria. " +
-                    "This requires the permission „" + DataObjectPermissionProvider.OBJECT_SCHEMA_READ + "“."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_SCHEMA_READ + "`."
     )
     public Page<DataObjectSchemaEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -77,7 +77,7 @@ public class DataObjectSchemaController {
     @Operation(
             summary = "Create Data Object Schema",
             description = "Create a new data object schema. " +
-                    "This requires the permission „" + DataObjectPermissionProvider.OBJECT_SCHEMA_CREATE + "“."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_SCHEMA_CREATE + "`."
     )
     public DataObjectSchemaEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -114,7 +114,7 @@ public class DataObjectSchemaController {
     @Operation(
             summary = "Retrieve Data Object Schema",
             description = "Retrieve a specific data object schema by its unique key. " +
-                    "This requires the permission „" + DataObjectPermissionProvider.OBJECT_SCHEMA_READ + "“."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_SCHEMA_READ + "`."
     )
     public DataObjectSchemaEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -132,7 +132,7 @@ public class DataObjectSchemaController {
     @Operation(
             summary = "Update Data Object Schema",
             description = "Update an existing data object schema. " +
-                    "This requires the permission „" + DataObjectPermissionProvider.OBJECT_SCHEMA_UPDATE + "“."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_SCHEMA_UPDATE + "`."
     )
     public DataObjectSchemaEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -170,7 +170,7 @@ public class DataObjectSchemaController {
     @Operation(
             summary = "Delete Data Object Schema",
             description = "Delete an existing data object schema. " +
-                    "This requires the permission „" + DataObjectPermissionProvider.OBJECT_SCHEMA_DELETE + "“."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_SCHEMA_DELETE + "`."
     )
     public void destroy(
             @Nullable @AuthenticationPrincipal Jwt jwt,

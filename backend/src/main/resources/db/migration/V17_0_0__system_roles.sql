@@ -26,13 +26,11 @@ from (select u.id as id,
 
       union all
 
-      select u_original.id as id,
-             sr.id         as system_role_id
+      select v.deputy_user_id as id,
+             u_original.system_role_id
       from v_user_is_recursively_deputy_for v
                join users u_original
-                    on v.original_user_id = u_original.id
-               join system_roles sr
-                    on u_original.system_role_id = sr.id) as u
+                    on v.original_user_id = u_original.id) as u
 
          join system_roles sr
               on u.system_role_id = sr.id

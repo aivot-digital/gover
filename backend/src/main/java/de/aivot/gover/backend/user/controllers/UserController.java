@@ -78,7 +78,8 @@ public class UserController {
     @PostMapping("")
     @Operation(
             summary = "Create User",
-            description = "Create a new user in the system. Requires the user.create permission."
+            description = "Create a new user in the system. Requires the system-level permission `" +
+                    UserPermissionProvider.USER_CREATE + "`."
     )
     public UserEntity create(
             @AuthenticationPrincipal Jwt jwt,
@@ -127,7 +128,8 @@ public class UserController {
     @PostMapping("provision/")
     @Operation(
             summary = "Provision User",
-            description = "Create a new user in the system, set initial credentials and optionally send them by mail. Requires the user.create permission."
+            description = "Create a new user in the system, set initial credentials and optionally send them by mail. " +
+                    "Requires the system-level permission `" + UserPermissionProvider.USER_CREATE + "`."
     )
     public CreateUserResponseDTO provision(
             @AuthenticationPrincipal Jwt jwt,
@@ -215,7 +217,8 @@ public class UserController {
     @Operation(
             summary = "Update User",
             description = "Update the details of an existing user. " +
-                    "Requires the user.update permission or the user can update their own information."
+                    "Requires the system-level permission `" + UserPermissionProvider.USER_UPDATE +
+                    "`, unless the caller updates their own information."
     )
     public UserEntity update(
             @AuthenticationPrincipal Jwt jwt,
@@ -302,7 +305,8 @@ public class UserController {
     @Operation(
             summary = "Reset Password",
             description = "Reset the password of a user. " +
-                    "Requires the user.update permission or the user can reset their own password."
+                    "Requires the system-level permission `" + UserPermissionProvider.USER_UPDATE +
+                    "`, unless the caller resets their own password."
     )
     public Map<String, String> resetPassword(
             @AuthenticationPrincipal Jwt jwt,
@@ -351,7 +355,8 @@ public class UserController {
     @Operation(
             summary = "Update Password",
             description = "Update the password of a user. " +
-                    "Requires the user.update permission or the user can update their own password."
+                    "Requires the system-level permission `" + UserPermissionProvider.USER_UPDATE +
+                    "`, unless the caller updates their own password."
     )
     public UserEntity updatePassword(
             @AuthenticationPrincipal Jwt jwt,

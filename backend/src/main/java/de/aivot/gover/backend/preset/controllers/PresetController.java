@@ -65,7 +65,7 @@ public class PresetController {
     @Operation(
             summary = "List Presets",
             description = "Retrieve a paginated list of presets with optional filtering. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_READ + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_READ + "`."
     )
     public Page<PresetEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -84,7 +84,7 @@ public class PresetController {
     @Operation(
             summary = "Create Preset",
             description = "Create a new preset. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_CREATE + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_CREATE + "`."
     )
     public PresetEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -130,7 +130,7 @@ public class PresetController {
     @Operation(
             summary = "Retrieve Preset",
             description = "Retrieve a specific preset by its unique key. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_READ + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_READ + "`."
     )
     public PresetEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -156,7 +156,7 @@ public class PresetController {
     @Operation(
             summary = "Update Preset",
             description = "Update an existing preset. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_UPDATE + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_UPDATE + "`."
     )
     public PresetEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -203,7 +203,7 @@ public class PresetController {
     @Operation(
             summary = "Delete Preset",
             description = "Delete an existing preset. " +
-                    "This requires the permission „" + PresetPermissionProvider.PRESET_DELETE + "“."
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_DELETE + "`."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,

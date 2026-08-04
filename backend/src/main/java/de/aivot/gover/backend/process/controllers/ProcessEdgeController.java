@@ -105,7 +105,9 @@ public class ProcessEdgeController {
     @PostMapping("")
     @Operation(
             summary = "Create Process Definition Edge",
-            description = "Create a new process definition edge. Requires super admin privileges or a user role with create process permissions."
+            description = "Create a new process definition edge. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessEdgeEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -167,7 +169,9 @@ public class ProcessEdgeController {
     @PutMapping("{id}/")
     @Operation(
             summary = "Update Process Definition Edge",
-            description = "Update an existing process definition edge. Requires super admin privileges or a user role with edit process permissions."
+            description = "Update an existing process definition edge. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessEdgeEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -188,10 +192,13 @@ public class ProcessEdgeController {
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
 
+        updateDTO
+                .setId(existing.getId())
+                .setProcessId(existing.getProcessId())
+                .setProcessVersion(existing.getProcessVersion());
+
         var existingMap = objectMapper
                 .convertValue(existing, java.util.Map.class);
-
-        updateDTO.setId(existing.getId());
 
         var result = processDefinitionEdgeService
                 .update(id, updateDTO);
@@ -217,7 +224,9 @@ public class ProcessEdgeController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete Process Definition Edge",
-            description = "Delete a process definition edge by its ID. Requires super admin privileges."
+            description = "Delete a process definition edge by its ID. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,

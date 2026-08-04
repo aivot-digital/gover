@@ -138,7 +138,7 @@ export function StorageProviderDetailsPage(): ReactNode {
                             path: '/storage-providers/:id/test',
                             label: 'Testen',
                             onlyExisting: true,
-                            requiredPermission: Permission.STORAGE_PROVIDER_READ,
+                            requiredPermission: Permission.STORAGE_PROVIDER_UPDATE,
                         },
                     ]}
                     initializeItem={() => {

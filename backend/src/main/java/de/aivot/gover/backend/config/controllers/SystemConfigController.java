@@ -64,7 +64,7 @@ public class SystemConfigController {
     @Operation(
             summary = "List System Configurations",
             description = "Retrieve a paginated list of system configurations with optional filtering. " +
-                    "This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_READ + "“."
+                    "Requires the system-level permission `" + ConfigPermissionProvider.SYSTEM_CONFIG_READ + "`."
     )
     public Page<SystemConfigResponseDto> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -93,7 +93,7 @@ public class SystemConfigController {
     @Operation(
             summary = "List System Configuration Definitions",
             description = "Retrieve a list of all system configuration definitions. This endpoint can be used to get metadata about the available system configurations, such as their types, categories and descriptions. This is especially useful for clients to dynamically adapt to available configurations. " +
-                    "This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_READ + "“."
+                    "Requires the system-level permission `" + ConfigPermissionProvider.SYSTEM_CONFIG_READ + "`."
     )
     public List<SystemConfigDefinition<?>> list(
             @Nullable @AuthenticationPrincipal Jwt jwt
@@ -109,7 +109,7 @@ public class SystemConfigController {
     @Operation(
             summary = "Update System Configuration",
             description = "Update the value of a specific system configuration identified by its key. " +
-                    "This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE + "“."
+                    "Requires the system-level permission `" + ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE + "`."
     )
     public SystemConfigResponseDto update(
             @Nullable @AuthenticationPrincipal Jwt jwt,

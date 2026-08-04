@@ -256,7 +256,6 @@ const BaseDrawerGroups: DrawerGroup[] = [
                         ...drawerIcon(<ReadinessScore/>, <ReadinessScoreFilled/>),
                         label: 'Systeminformationen',
                         to: '/settings/status',
-                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
                     },
                     {
                         ...drawerModuleIcon('audit'),
@@ -944,7 +943,8 @@ function DrawerGroup({
 function DrawerListItem({
                             item,
                             level = 0,
-                        }: { item: DrawerItem; level?: number }) {
+                            isLastSibling = true,
+                        }: { item: DrawerItem; level?: number; isLastSibling?: boolean }) {
     const location = useLocation();
     const pathname = location.pathname;
 
@@ -1060,6 +1060,22 @@ function DrawerListItem({
                                 },
                             }
                             : {}),
+                        ...(level > 0 && isLastSibling && item.children != null && expanded
+                            ? {
+                                '&::after': {
+                                    // Cover the part of the parent-level connector that still runs through
+                                    // this last visible branch item before the nested child list starts.
+                                    left: -17,
+                                    top: 'calc(50% - 3px)',
+                                    bottom: -12,
+                                    width: '6px',
+                                    content: '""',
+                                    position: 'absolute',
+                                    backgroundColor: 'primary.dark',
+                                    pointerEvents: 'none',
+                                },
+                            }
+                            : {}),
                         ...(level > 1
                             ? {
                                 // Fix positioning of the nested line connectors
@@ -1128,13 +1144,31 @@ function DrawerListItem({
                             backgroundColor: 'primary.light',
                             bottom: 'calc(36px - 2px - 14px / 2)',
                         },
+                        ...(level > 0 && isLastSibling
+                            ? {
+                                '&::after': {
+                                    // The parent-level connector is drawn by the surrounding list. When this
+                                    // expanded branch is the last visible sibling, mask that connector inside
+                                    // the nested branch so it stops at the current item instead of running down.
+                                    top: -8,
+                                    left: (level - 1) * 30 + 17,
+                                    width: '6px',
+                                    content: '""',
+                                    position: 'absolute',
+                                    backgroundColor: 'primary.dark',
+                                    bottom: 0,
+                                    pointerEvents: 'none',
+                                },
+                            }
+                            : {}),
                     }}
                 >
-                    {item.children.map((child) => (
+                    {item.children.map((child, index) => (
                         <DrawerListItem
                             key={child.label}
                             item={child}
                             level={level + 1}
+                            isLastSibling={index === item.children!.length - 1}
                         />
                     ))}
                 </List>

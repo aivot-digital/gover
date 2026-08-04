@@ -97,7 +97,7 @@ export function UserRolesDetailsPage() {
                     label: 'Liste der Domänenrollen',
                     to: '/user-roles',
                 }}
-                entityType={ServerEntityType.UserRoles}
+                entityType={ServerEntityType.DomainRoles}
             />
         </PageWrapper>
     );

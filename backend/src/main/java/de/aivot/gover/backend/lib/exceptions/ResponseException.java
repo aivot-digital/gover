@@ -139,19 +139,6 @@ public class ResponseException extends Exception {
         return ResponseException.forbidden(String.format(format, args));
     }
 
-    public static ResponseException noSuperAdminPermission() {
-        return ResponseException.forbidden("Sie müssen die Systemrolle „Superadministrator:in“ besitzen, um diese Aktion durchzuführen.");
-    }
-
-    public static ResponseException noSystemAdminPermission() {
-        return ResponseException.forbidden("Sie müssen die Systemrolle „Systemadministrator:in“ besitzen, um diese Aktion durchzuführen.");
-    }
-
-    public static ResponseException noPermission(String permissionName) {
-        return ResponseException.forbidden(String.format(
-                "Sie müssen die Systemrolle „Superadministrator:in“ besitzen, oder benötigen eine Domänenrolle mit der Berechtigung „%s“, um diese Aktion durchzuführen.", permissionName));
-    }
-
     public static ResponseException notFound() {
         return ResponseException.notFound("Die angeforderte Ressource wurde nicht gefunden.");
     }

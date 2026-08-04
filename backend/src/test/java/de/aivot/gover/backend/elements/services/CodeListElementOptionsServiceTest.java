@@ -43,7 +43,7 @@ class CodeListElementOptionsServiceTest {
         var service = new CodeListElementOptionsService(itemRepository, codeListRepository);
         var element = new SelectInputElement()
                 .setOptionsSource(OptionsSourceType.CodeList)
-                .setCodeListId(7)
+                .setCodeListKey("test")
                 .setDependsOnSelectFieldId("parent")
                 .setOptions(List.of(SelectInputElementOption.of("old", "Old")));
 
@@ -66,7 +66,7 @@ class CodeListElementOptionsServiceTest {
         var service = new CodeListElementOptionsService(itemRepository, codeListRepository);
         var element = new RadioInputElement()
                 .setOptionsSource(OptionsSourceType.CodeList)
-                .setCodeListId(7);
+                .setCodeListKey("test");
 
         when(itemRepository.findAllByCodeListIdOrderByIdAsc(7)).thenReturn(List.of(
                 item("001", "Berlin")
@@ -84,7 +84,7 @@ class CodeListElementOptionsServiceTest {
         var service = new CodeListElementOptionsService(itemRepository, codeListRepository);
         var element = new MultiCheckboxInputElement()
                 .setOptionsSource(OptionsSourceType.CodeList)
-                .setCodeListId(7);
+                .setCodeListKey("test");
 
         when(itemRepository.findAllByCodeListIdOrderByIdAsc(7)).thenReturn(List.of(
                 item("001", "Berlin")
@@ -102,7 +102,7 @@ class CodeListElementOptionsServiceTest {
         var service = new CodeListElementOptionsService(itemRepository, codeListRepository);
         var element = new ChipInputElement()
                 .setOptionsSource(OptionsSourceType.CodeList)
-                .setCodeListId(7)
+                .setCodeListKey("test")
                 .setSuggestions(List.of("Old"));
 
         when(itemRepository.findAllByCodeListIdOrderByIdAsc(7)).thenReturn(List.of(
@@ -118,7 +118,7 @@ class CodeListElementOptionsServiceTest {
     }
 
     @Test
-    void rejectsMissingCodeListId() {
+    void rejectsMissingCodeListKey() {
         var service = new CodeListElementOptionsService(null, null);
         var element = new SelectInputElement()
                 .setOptionsSource(OptionsSourceType.CodeList);
@@ -130,12 +130,12 @@ class CodeListElementOptionsServiceTest {
     }
 
     @Test
-    void rejectsDeletedCodeListLikeMissingCodeListId() {
+    void rejectsDeletedCodeListLikeMissingCodeListKey() {
         var codeListRepository = codeListRepository();
         var service = new CodeListElementOptionsService(null, codeListRepository);
         var element = new SelectInputElement()
                 .setOptionsSource(OptionsSourceType.CodeList)
-                .setCodeListId(7);
+                .setCodeListKey("test");
 
         var error = assertThrows(ResponseException.class, () -> service.resolve(element));
 
@@ -145,9 +145,10 @@ class CodeListElementOptionsServiceTest {
 
     private static CodeListRepository codeListRepository(int codeListId) {
         var codeListRepository = mock(CodeListRepository.class);
-        when(codeListRepository.existsById(codeListId)).thenReturn(true);
-        when(codeListRepository.findById(codeListId)).thenReturn(Optional.of(
-                new CodeListEntity().setId(codeListId)
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(
+                new CodeListEntity()
+                        .setKey("test")
+                        .setId(codeListId)
         ));
         return codeListRepository;
     }

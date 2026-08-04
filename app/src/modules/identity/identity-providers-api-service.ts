@@ -16,6 +16,10 @@ export interface IdentityProvidersFilter {
     isTestProvider: boolean;
 }
 
+export interface IdentityProviderTestStartResponseDTO {
+    redirectUrl: string;
+}
+
 export class IdentityProvidersApiService extends BaseCrudApiService<
     IdentityProviderRequestDTO,
     IdentityProviderListDTO,
@@ -54,6 +58,15 @@ export class IdentityProvidersApiService extends BaseCrudApiService<
         return await this.post<any, IdentityProviderDetailsDTO>('/api/identity-providers/prepare/', {
             endpoint: endpoint,
         });
+    }
+
+    public async startTest(key: string, origin: string): Promise<string> {
+        const response = await this.post<{ origin: string }, IdentityProviderTestStartResponseDTO>(
+            `${this.buildPath(key)}test/start/`,
+            {origin},
+            {},
+        );
+        return response.redirectUrl;
     }
 
     public static createLink(key: string,

@@ -10,6 +10,7 @@ import de.aivot.gover.backend.identity.dtos.IdentityProviderRequestDTO;
 import de.aivot.gover.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.gover.backend.identity.filters.IdentityProviderFilter;
 import de.aivot.gover.backend.identity.permissions.IdentityProviderPermissionProvider;
+import de.aivot.gover.backend.identity.services.IdentityService;
 import de.aivot.gover.backend.identity.services.IdentityProviderService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
@@ -22,6 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -31,6 +33,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -47,18 +50,21 @@ public class IdentityProviderController {
     private final ScopedAuditService auditService;
 
     private final IdentityProviderService identityProviderService;
+    private final IdentityService identityService;
     private final UserService userService;
     private final PermissionService permissionService;
 
     @Autowired
     public IdentityProviderController(AuditService auditService,
                                       IdentityProviderService identityProviderService,
+                                      IdentityService identityService,
                                       UserService userService,
                                       PermissionService permissionService) {
         this.auditService = auditService
                 .createScopedAuditService(IdentityProviderController.class, "Identitätsanbieter");
 
         this.identityProviderService = identityProviderService;
+        this.identityService = identityService;
         this.userService = userService;
         this.permissionService = permissionService;
     }
@@ -67,7 +73,7 @@ public class IdentityProviderController {
     @Operation(
             summary = "List Identity Providers",
             description = "Retrieves a paginated list of identity providers based on the provided filters. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ + "“."
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ + "`."
     )
     public Page<IdentityProviderListDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -86,7 +92,9 @@ public class IdentityProviderController {
     @Operation(
             summary = "Prepare Identity Provider",
             description = "Prepares an identity provider by validating the provided endpoint and retrieving necessary metadata. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE + "“ or „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE + "“."
+                    "Requires at least one of the system-level permissions `" +
+                    IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE + "` or `" +
+                    IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE + "`."
     )
     public IdentityProviderDetailsDTO prepare(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -116,7 +124,7 @@ public class IdentityProviderController {
     @Operation(
             summary = "Create Identity Provider",
             description = "Creates a new identity provider with the provided configuration. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE + "“."
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE + "`."
     )
     public IdentityProviderDetailsDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -150,7 +158,7 @@ public class IdentityProviderController {
     @Operation(
             summary = "Retrieve Identity Provider",
             description = "Retrieves the details of a specific identity provider by its unique key. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ + "“."
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ + "`."
     )
     public IdentityProviderDetailsDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -170,7 +178,7 @@ public class IdentityProviderController {
             summary = "Update Identity Provider",
             description = "Updates the configuration of an existing identity provider. " +
                     "If the provider is disabled, it will be unlinked from all forms that use it. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE + "“."
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE + "`."
     )
     public IdentityProviderDetailsDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -203,11 +211,38 @@ public class IdentityProviderController {
                 .from(updatedEntity);
     }
 
+    @PostMapping("{key}/test/start/")
+    @Operation(
+            summary = "Start Identity Provider Test",
+            description = "Creates the authorization redirect URL for testing an identity provider. " +
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE + "`."
+    )
+    public IdentityProviderTestStartResponseDTO startTest(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable UUID key,
+            @Nonnull @Valid @RequestBody IdentityProviderTestStartRequestDTO requestDTO
+    ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE);
+
+        var redirectUrl = identityService
+                .createRedirectURL(
+                        null,
+                        key,
+                        key.toString(),
+                        requestDTO.origin(),
+                        List.of(),
+                        0
+                );
+
+        return new IdentityProviderTestStartResponseDTO(redirectUrl.toString());
+    }
+
     @DeleteMapping("{key}/")
     @Operation(
             summary = "Delete Identity Provider",
             description = "Deletes an identity provider if it is disabled and not linked to any published forms. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_DELETE + "“."
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_DELETE + "`."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -245,5 +280,15 @@ public class IdentityProviderController {
                 StringUtils.quote(String.valueOf(deletedEntity.getKey())),
                 StringUtils.quote(user.getFullName())
         ).log();
+    }
+
+    public record IdentityProviderTestStartRequestDTO(
+            @NotBlank String origin
+    ) {
+    }
+
+    public record IdentityProviderTestStartResponseDTO(
+            @Nonnull String redirectUrl
+    ) {
     }
 }

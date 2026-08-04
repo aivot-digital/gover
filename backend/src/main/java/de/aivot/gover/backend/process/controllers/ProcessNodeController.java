@@ -162,7 +162,9 @@ public class ProcessNodeController {
     @PostMapping("")
     @Operation(
             summary = "Create Process Definition Node",
-            description = "Create a new process definition node. Requires super admin privileges or a user role with create process permissions."
+            description = "Create a new process definition node. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessNodeEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -224,7 +226,9 @@ public class ProcessNodeController {
     @PutMapping("{id}/")
     @Operation(
             summary = "Update Process Definition Node",
-            description = "Update an existing process definition node. Requires super admin privileges or a user role with edit process permissions."
+            description = "Update an existing process definition node. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessNodeEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -247,6 +251,11 @@ public class ProcessNodeController {
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
 
+        updateDTO
+                .setId(existing.getId())
+                .setProcessId(existing.getProcessId())
+                .setProcessVersion(existing.getProcessVersion());
+
         if (processNodeRepository.existsByDataKeyAndIdIsNotAndProcessIdAndProcessVersion(
                 updateDTO.getDataKey(),
                 existing.getId(),
@@ -262,8 +271,6 @@ public class ProcessNodeController {
 
         var existingMap = objectMapper
                 .convertValue(existing, Map.class);
-
-        updateDTO.setId(existing.getId());
 
         if (onlyConfigSave != null) {
             var conf = new AuthoredElementValues();
@@ -305,7 +312,9 @@ public class ProcessNodeController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete Process Definition Node",
-            description = "Delete a process definition node by its ID. Requires super admin privileges."
+            description = "Delete a process definition node by its ID. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -344,7 +353,8 @@ public class ProcessNodeController {
     @Operation(
             summary = "Export Process Definition Node",
             description = "Export a process definition node including its cleaned configuration. " +
-                    "Requires read permissions for the owning process definition."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_READ +
+                    "` for the affected process or at system level."
     )
     public ProcessNodeExportService.ProcessNodeExport export(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -389,7 +399,8 @@ public class ProcessNodeController {
     @Operation(
             summary = "Import Process Definition Node",
             description = "Import a process definition node into a specific process version. " +
-                    "Requires edit permissions for the target process definition."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the target process or at system level."
     )
     public ProcessNodeEntity importNode(
             @Nullable @AuthenticationPrincipal Jwt jwt,

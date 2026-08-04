@@ -74,6 +74,22 @@ FROM teams
 
 UNION ALL
 
+-- Users
+SELECT text 'users'                                                              AS origin_table,
+       null                                                                      AS origin_table_subset,
+       coalesce(nullif(full_name, ''), email, id)                                AS label,
+       id::varchar                                                               AS id,
+       to_tsvector('german', coalesce(full_name, '')) ||
+       to_tsvector('german', coalesce(email, ''))                                AS searchable_element,
+       trim(coalesce(full_name, '') || ' ' || coalesce(email, ''))               AS search_text,
+       usp.user_id                                                               AS user_id,
+       usp.permissions                                                           AS permissions
+FROM users
+         CROSS JOIN v_user_system_permission AS usp
+WHERE deleted_in_idp = false
+
+UNION ALL
+
 -- Process Nodes
 SELECT text 'process_nodes'                                         AS origin_table,
        process_node_definition_key::varchar                         AS origin_table_subset,
@@ -83,12 +99,18 @@ SELECT text 'process_nodes'                                         AS origin_ta
        to_tsvector('german', coalesce(description, ''))             AS searchable_element,
        trim(coalesce(name, '') || ' ' || coalesce(description, '')) AS search_text,
        upp.user_id                                                  AS user_id,
-       upp.permissions                                              AS permissions
+       array_unique_union_agg(upp.permissions)                      AS permissions
 FROM process_nodes
          JOIN v_user_process_access_permissions AS upp
-              ON upp.target_process_id = process_nodes.process_id -- TODO: Cross Join w/ v_user_system_permission
+              ON upp.target_process_id = process_nodes.process_id
 WHERE coalesce(name, '') <> ''
    OR coalesce(description, '') <> ''
+GROUP BY process_nodes.id,
+         process_nodes.process_node_definition_key,
+         process_nodes.name,
+         process_nodes.data_key,
+         process_nodes.description,
+         upp.user_id
 
 UNION ALL
 
@@ -190,14 +212,15 @@ FROM themes
 UNION ALL
 
 -- Code Lists
-SELECT text 'code_lists'               AS origin_table,
-    null                        AS origin_table_subset,
-       name                        AS label,
-       id::varchar                 AS id,
-    to_tsvector('german', name) AS searchable_element,
-       name                        AS search_text,
-       usp.user_id                 AS user_id,
-       usp.permissions             AS permissions
+SELECT text 'code_lists'                               AS origin_table,
+        null                                           AS origin_table_subset,
+        name                                           AS label,
+        key                                            AS id,
+        to_tsvector('german', name) ||
+        to_tsvector('german', key)                     AS searchable_element,
+        trim(name || ' ' || key)                       AS search_text,
+        usp.user_id                                    AS user_id,
+        usp.permissions                                AS permissions
 FROM code_lists
          CROSS JOIN v_user_system_permission AS usp
 
@@ -239,10 +262,14 @@ SELECT text 'processes'                                              AS origin_t
        to_tsvector('german', p.internal_title)                       AS searchable_element,
        p.internal_title                                              AS search_text,
        usp.user_id                                                   as user_id,
-       usp.permissions                                               as permissions
+       array_unique_union_agg(usp.permissions)                        as permissions
 FROM process_versions pv
          JOIN processes p ON pv.process_id = p.id
-         JOIN v_user_process_access_permissions AS usp ON usp.target_process_id = p.id -- TODO: Cross Join w/ v_user_system_permission
+         JOIN v_user_process_access_permissions AS usp ON usp.target_process_id = p.id
+GROUP BY p.id,
+         p.internal_title,
+         pv.process_version,
+         usp.user_id
 
 UNION ALL
 
@@ -263,4 +290,4 @@ SELECT text 'process_instances'                                     AS origin_ta
        upp.permissions                                              AS permissions
 FROM process_instances pi
          JOIN v_user_process_instance_access_permissions AS upp
-              ON upp.target_process_instance_id = pi.id; -- TODO: Cross Join w/ v_user_system_permission
+              ON upp.target_process_instance_id = pi.id;

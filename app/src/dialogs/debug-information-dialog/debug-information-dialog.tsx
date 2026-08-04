@@ -16,6 +16,8 @@ import {type User} from '../../modules/users/models/user';
 import {UsersApiService} from '../../modules/users/users-api-service';
 import {AuthService} from '../../services/auth-service';
 import {humanizeMilliseconds} from '../../utils/humanization-utils';
+import {useHasSystemPermission} from '../../modules/permissions/hooks/use-permissions';
+import {Permission} from '../../data/permissions/permission';
 
 interface DebugInformationDialogProps {
     open: boolean;
@@ -75,8 +77,42 @@ function toDebugOptionalBooleanString(value: boolean | undefined): string {
     return value ? 'true' : 'false';
 }
 
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+    return value != null && typeof value === 'object';
+}
+
+function appendSafeHealthDetails(lines: string[], key: keyof HealthDataComponents, details: unknown): void {
+    if (!isObjectRecord(details)) {
+        return;
+    }
+
+    const error = details.error;
+    if (typeof error === 'string' && error.length > 0) {
+        lines.push(`- ${key}.error: ${error}`);
+    }
+
+    const hint = details.hint;
+    if (typeof hint === 'string' && hint.length > 0) {
+        lines.push(`- ${key}.hint: ${hint}`);
+    }
+
+    if (key === 'storage') {
+        const providers = details.providers;
+        if (Array.isArray(providers)) {
+            const providerRecords = providers.filter(isObjectRecord);
+            const providersWithErrors = providerRecords.filter((provider) => typeof provider.error === 'string').length;
+            const providersWithHints = providerRecords.filter((provider) => typeof provider.hint === 'string').length;
+
+            lines.push(`- ${key}.providers: ${providerRecords.length}`);
+            lines.push(`- ${key}.providersWithErrors: ${providersWithErrors}`);
+            lines.push(`- ${key}.providersWithHints: ${providersWithHints}`);
+        }
+    }
+}
+
 export function DebugInformationDialog(props: DebugInformationDialogProps): React.ReactElement {
     const dispatch = useAppDispatch();
+    const canReadPlugins = useHasSystemPermission(Permission.PLUGIN_READ);
     const [
         fetchedHealthData,
         setFetchedHealthData,
@@ -139,6 +175,12 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             return;
         }
 
+        if (!canReadPlugins) {
+            setFetchedPlugins(undefined);
+            setPluginsLoadingFailed(false);
+            return;
+        }
+
         let isCurrent = true;
         setFetchedPlugins(undefined);
         setPluginsLoadingFailed(false);
@@ -165,6 +207,7 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
     }, [
         props.open,
         props.plugins,
+        canReadPlugins,
     ]);
 
     useEffect(() => {
@@ -243,13 +286,14 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             lines.push('- overallStatus: error');
         } else {
             lines.push(`- overallStatus: ${healthData.status}`);
-            lines.push(`- payload: ${JSON.stringify(healthData)}`);
             const componentsInOrder: Array<keyof HealthDataComponents> = [
                 'db',
                 'mail',
                 'av',
                 'diskSpace',
                 'redis',
+                'rabbit',
+                'storage',
                 'gotenberg',
             ];
             for (const key of componentsInOrder) {
@@ -260,13 +304,15 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
                 }
                 lines.push(`- ${key}: ${component.status}`);
                 if ('details' in component && component.details != null) {
-                    lines.push(`- ${key}.details: ${JSON.stringify(component.details)}`);
+                    appendSafeHealthDetails(lines, key, component.details);
                 }
             }
         }
 
         lines.push('', '## plugins');
-        if (plugins == null && !pluginsLoadingFailed) {
+        if (!canReadPlugins && props.plugins == null) {
+            lines.push('- status: not_authorized');
+        } else if (plugins == null && !pluginsLoadingFailed) {
             lines.push('- status: loading');
         } else if (pluginsLoadingFailed) {
             lines.push('- status: error');
@@ -302,9 +348,6 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             lines.push(`- email: ${anonymizeEmailKeepDomain(selfUser.email)}`);
             lines.push(`- enabled: ${toDebugBooleanString(selfUser.enabled)}`);
             lines.push(`- verified: ${toDebugBooleanString(selfUser.verified)}`);
-            lines.push(`- isSystemAdmin: ${toDebugBooleanString(selfUser.isSystemAdmin)}`);
-            lines.push(`- isSuperAdmin: ${toDebugBooleanString(selfUser.isSuperAdmin)}`);
-            lines.push(`- globalRole: ${selfUser.globalRole}`);
             lines.push(`- systemRoleId: ${selfUser.systemRoleId ?? 'none'}`);
             lines.push(`- deletedInIdp: ${toDebugBooleanString(selfUser.deletedInIdp)}`);
         }
@@ -369,12 +412,14 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
         return lines.join('\n');
     }, [
         compileDate,
+        canReadPlugins,
         hasBuildDate,
         hasBuildNumber,
         hasBuildVersion,
         healthData,
         plugins,
         pluginsLoadingFailed,
+        props.plugins,
         selfLoadingFailed,
         selfUser,
         versionLabel,
@@ -408,7 +453,8 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             <DialogContent>
                 <Typography sx={{maxWidth: 900}}>
                     Diese Informationen helfen dem technischen Support bei der Fehleranalyse.
-                    Enthalten sind System-, Browser-, Health-, Plugin- und Benutzerinformationen.
+                    Enthalten sind System-, Browser-, Health- und Benutzerinformationen.
+                    Plugininformationen werden bei vorhandener Berechtigung ergänzt.
                     Prüfen Sie vor dem Teilen, ob sensible Daten enthalten sind.
                 </Typography>
 

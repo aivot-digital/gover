@@ -93,7 +93,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
 
                         onPatch({
                             optionsSource: nextSource,
-                            codeListId: nextSource === OptionsSourceType.CodeList ? element.codeListId : undefined,
+                            codeListKey: nextSource === OptionsSourceType.CodeList ? element.codeListKey : undefined,
                             dependsOnSelectFieldId: nextSource === OptionsSourceType.CodeList ? undefined : element.dependsOnSelectFieldId,
                         });
                     }}
@@ -137,10 +137,10 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                     }}
                 >
                     <CodeListSelectField
-                        value={element.codeListId}
-                        onChange={(codeListId) => {
+                        value={element.codeListKey}
+                        onChange={(codeListKey) => {
                             onPatch({
-                                codeListId,
+                                codeListKey,
                             });
                         }}
                         disabled={!editable}

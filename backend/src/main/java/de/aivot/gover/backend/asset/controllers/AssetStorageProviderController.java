@@ -48,7 +48,8 @@ public class AssetStorageProviderController {
     @Operation(
             summary = "List asset storage providers",
             description = "Lists storage providers that can be used in Dateien & Medien. " +
-                    "This returns only asset UI metadata and requires the permission " + AssetPermissionProvider.ASSET_READ + "."
+                    "Returns only asset UI metadata and requires the system-level permission `" +
+                    AssetPermissionProvider.ASSET_READ + "`."
     )
     public List<AssetStorageProviderDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt
@@ -67,7 +68,7 @@ public class AssetStorageProviderController {
     @Operation(
             summary = "Retrieve asset storage provider metadata",
             description = "Retrieves asset UI metadata for a storage provider without exposing provider configuration. " +
-                    "This requires the permission " + AssetPermissionProvider.ASSET_READ + "."
+                    "Requires the system-level permission `" + AssetPermissionProvider.ASSET_READ + "`."
     )
     public AssetStorageProviderDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,

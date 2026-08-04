@@ -1,7 +1,6 @@
-import {Box, CircularProgress, Dialog, DialogContent, DialogTitle, Divider, IconButton, InputBase, List, ListItem, ListItemIcon, ListItemText, Pagination, Paper, Typography} from '@mui/material';
+import {Box, CircularProgress, Dialog, DialogContent, DialogTitle, Divider, IconButton, InputBase, List, ListItem, ListItemIcon, ListItemText, Pagination, Paper, Skeleton, Typography} from '@mui/material';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectShowSearchDialog, setShowSearchDialog} from '../../../slices/shell-slice';
-import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {useEffect, useState} from 'react';
 import {SearchItemService} from '../../../modules/search/search-item-service';
 import {Page} from '../../../models/dtos/page';
@@ -12,26 +11,30 @@ import HelpClinic from '@aivot/mui-material-symbols-400-n25-outlined/HelpClinic'
 import {Link} from 'react-router-dom';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../utils/string-utils';
 import Chip from '@mui/material/Chip';
-import {selectEntityHistory} from '../../../slices/entity-history-slice';
 import {ServerEntityType} from '../data/server-entity-type';
 import Search from '@aivot/mui-material-symbols-400-n25-outlined/Search';
 import Close from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import Lightbulb2 from '@aivot/mui-material-symbols-400-n25-outlined/Lightbulb2';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {useRetainedDialogValue} from '../../../hooks/use-retained-dialog-value';
+
+const RECENT_ITEMS_SKELETON_COUNT = 5;
 
 export function ShellSearchDialog() {
     const dispatch = useAppDispatch();
     const show = useAppSelector(selectShowSearchDialog);
-    const entityHistory = useAppSelector(selectEntityHistory);
 
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState(search);
-    const [isBusy, setIsBusy] = useState(false);
+    const [isSearchBusy, setIsSearchBusy] = useState(false);
+    const [isRecentItemsBusy, setIsRecentItemsBusy] = useState(false);
     const [searchResults, setSearchResults] = useState<Page<SearchItemResponseDto> | undefined>(undefined);
+    const [recentItems, setRecentItems] = useState<SearchItemResponseDto[]>([]);
     const [page, setPage] = useState(0);
     const [size] = useState(12);
 
-    // debounce input
+    // Debounce input before querying the backend.
     useEffect(() => {
         const t = window.setTimeout(() => setDebouncedSearch(search), 400);
         return () => window.clearTimeout(t);
@@ -46,9 +49,9 @@ export function ShellSearchDialog() {
     };
 
     useEffect(() => {
-        if (debouncedSearch.length === 0) {
+        if (!show || debouncedSearch.length === 0) {
             setSearchResults(undefined);
-            setIsBusy(false);
+            setIsSearchBusy(false);
             return;
         }
 
@@ -58,12 +61,13 @@ export function ShellSearchDialog() {
         withAsyncWrapper({
             desiredMinRuntime: 400,
             signal: ac.signal,
-            runtimeCallback: (running) => setIsBusy(running),
+            runtimeCallback: (running) => setIsSearchBusy(running),
             main: async (_before, signal) => {
                 return await new SearchItemService().getSearchItems(
                     debouncedSearch,
                     page,
                     size,
+                    signal,
                 );
             },
             after: async (res) => {
@@ -76,15 +80,59 @@ export function ShellSearchDialog() {
             canceled = true;
             ac.abort();
         };
-    }, [debouncedSearch, page]);
+    }, [debouncedSearch, page, show]);
 
-    const results = searchResults?.content ?? [];
-    const totalElements = searchResults?.page.totalElements ?? 0;
-    const totalPages = searchResults?.page.totalPages ?? 0;
-    const historyCapped = entityHistory.slice(0, 10);
+    useEffect(() => {
+        if (!show) {
+            setRecentItems([]);
+            setIsRecentItemsBusy(false);
+            return;
+        }
+
+        if (debouncedSearch.length > 0) {
+            setIsRecentItemsBusy(false);
+            return;
+        }
+
+        const ac = new AbortController();
+        let canceled = false;
+        setRecentItems([]);
+
+        withAsyncWrapper({
+            desiredMinRuntime: 400,
+            signal: ac.signal,
+            runtimeCallback: (running) => setIsRecentItemsBusy(running),
+            main: async (_before, signal) => {
+                return await new SearchItemService().getRecentSearchItems(10, signal);
+            },
+        }).then((res) => {
+            // Apply the result after withAsyncWrapper resolves so the skeleton respects the minimum runtime.
+            if (!canceled) setRecentItems(res);
+        }).catch(() => {
+            if (!canceled) setRecentItems([]);
+        });
+
+        return () => {
+            canceled = true;
+            ac.abort();
+        };
+    }, [debouncedSearch, show]);
+
+    const renderSearch = useRetainedDialogValue(show, search);
+    const renderDebouncedSearch = useRetainedDialogValue(show, debouncedSearch);
+    const renderSearchResults = useRetainedDialogValue(show, searchResults);
+    const renderRecentItems = useRetainedDialogValue(show, recentItems);
+    const renderIsRecentItemsBusy = useRetainedDialogValue(show, isRecentItemsBusy);
+    const renderPage = useRetainedDialogValue(show, page);
+
+    const results = renderSearchResults?.content ?? [];
+    const totalElements = renderSearchResults?.page.totalElements ?? 0;
+    const totalPages = renderSearchResults?.page.totalPages ?? 0;
+    const showRecentItemsSection = isStringNullOrEmpty(renderDebouncedSearch) &&
+        (renderRecentItems.length > 0 || renderIsRecentItemsBusy);
 
     const handlePageChange = (_event: React.ChangeEvent<unknown>, newPage: number) => {
-        // convert page number because MUI is 1 based and SpringBoot is 0 based
+        // MUI pages are 1-based, while the backend expects 0-based page indexes.
         setPage(newPage - 1);
     };
 
@@ -108,7 +156,7 @@ export function ShellSearchDialog() {
                         mb: 2,
                     }}
                 >
-                    {isBusy ? (
+                    {isSearchBusy ? (
                         <Box
                             sx={{
                                 width: '2.1875rem',
@@ -131,7 +179,7 @@ export function ShellSearchDialog() {
                     )}
                     <InputBase
                         placeholder="Suche…"
-                        value={search}
+                        value={renderSearch}
                         onChange={(e) => {
                             setSearch(e.target.value);
                             setPage(0);
@@ -156,7 +204,7 @@ export function ShellSearchDialog() {
                     }}
                 >
 
-                    {isStringNullOrEmpty(debouncedSearch) && (
+                    {isStringNullOrEmpty(renderDebouncedSearch) && (
                         <Box
                             sx={{
                                 display: 'flex',
@@ -183,8 +231,8 @@ export function ShellSearchDialog() {
 
                     <Divider sx={{mx: -3}} />
 
-                    {/* Suchergebnisse */}
-                    {searchResults && results.length > 0 && (
+                    {/* Search results */}
+                    {renderSearchResults && results.length > 0 && (
                         <>
                             <Box sx={{
                                 display: 'flex',
@@ -195,18 +243,18 @@ export function ShellSearchDialog() {
                                 <List sx={{'& .MuiListItem-root:last-of-type': {borderBottom: 'none'}}}>
                                     {results.map((item, idx) => (
                                         <SearchDialogListItem
-                                            key={`${page}-${item.originTable}-${item.id}-${idx}`}
+                                            key={`${renderPage}-${item.originTable}-${item.id}-${idx}`}
                                             id={item.id}
                                             type={item.originTable}
                                             link={createSearchItemLink(item)}
-                                            search={debouncedSearch}
+                                            search={renderDebouncedSearch}
                                             label={item.label}
                                             handleClose={handleClose}
                                         />
                                     ))}
                                 </List>
 
-                                {/* Pagination + Trefferanzahl */}
+                                {/* Pagination and result count */}
                                 <Box
                                     sx={{
                                         display: 'flex',
@@ -221,12 +269,12 @@ export function ShellSearchDialog() {
                                             color="text.secondary"
                                             sx={{mt: 2, mb: 1, fontSize: '0.875rem'}}
                                         >
-                                            Ergebnisse {`${page * size + 1}–${Math.min((page + 1) * size, totalElements)} von ${totalElements}`}
+                                            Ergebnisse {`${renderPage * size + 1}–${Math.min((renderPage + 1) * size, totalElements)} von ${totalElements}`}
                                         </Typography>
                                     )}
                                     <Pagination
                                         count={totalPages}
-                                        page={page + 1}
+                                        page={renderPage + 1}
                                         color="primary"
                                         size="small"
                                         onChange={handlePageChange}
@@ -238,9 +286,9 @@ export function ShellSearchDialog() {
                     )}
 
 
-                    {/* Keine Ergebnisse */}
-                    {isStringNotNullOrEmpty(debouncedSearch) &&
-                        searchResults != null &&
+                    {/* No results */}
+                    {isStringNotNullOrEmpty(renderDebouncedSearch) &&
+                        renderSearchResults != null &&
                         results.length === 0 && (
                             <Typography
                                 variant="body1"
@@ -259,8 +307,8 @@ export function ShellSearchDialog() {
                             </Typography>
                         )}
 
-                    {/* Zuletzt verwendet */}
-                    {isStringNullOrEmpty(debouncedSearch) && entityHistory.length > 0 && (
+                    {/* Recent items */}
+                    {showRecentItemsSection && (
                         <>
                             <Typography
                                 variant="h6"
@@ -269,23 +317,29 @@ export function ShellSearchDialog() {
                                 Zuletzt verwendet
                             </Typography>
                             <List sx={{'& .MuiListItem-root:last-of-type': {borderBottom: 'none'}}}>
-                                {historyCapped.map((item, idx) => (
-                                    <SearchDialogListItem
-                                        key={`${item.type}-${item.link}-${idx}`}
-                                        id={item.title}
-                                        type={item.type}
-                                        link={item.link}
-                                        search={debouncedSearch}
-                                        label={item.title}
-                                        handleClose={handleClose}
-                                    />
-                                ))}
+                                {renderRecentItems.length === 0 && renderIsRecentItemsBusy ? (
+                                    Array.from({length: RECENT_ITEMS_SKELETON_COUNT}).map((_, idx) => (
+                                        <SearchDialogListItemSkeleton key={idx} />
+                                    ))
+                                ) : (
+                                    renderRecentItems.map((item, idx) => (
+                                        <SearchDialogListItem
+                                            key={`${item.originTable}-${item.id}-${idx}`}
+                                            id={item.id}
+                                            type={item.originTable}
+                                            link={createSearchItemLink(item)}
+                                            search={renderDebouncedSearch}
+                                            label={item.label}
+                                            handleClose={handleClose}
+                                        />
+                                    ))
+                                )}
                             </List>
                         </>
                     )}
 
                     {/* Empty State */}
-                    {isStringNullOrEmpty(search) && entityHistory.length === 0 && (
+                    {isStringNullOrEmpty(renderDebouncedSearch) && renderRecentItems.length === 0 && !renderIsRecentItemsBusy && (
                         <Typography
                             variant="body1"
                             sx={{
@@ -356,6 +410,41 @@ function SearchDialogListItem(props: ShellSearchDialogProps) {
                 size="small"
                 sx={{ml: 2}}
                 label={OriginTableLabels[type] ?? 'Unbekannt'}
+            />
+        </ListItem>
+    );
+}
+
+function SearchDialogListItemSkeleton() {
+    return (
+        <ListItem
+            dense={true}
+            sx={{
+                borderBottom: '1px solid #eee',
+                px: 0.25,
+            }}
+        >
+            <ListItemIcon sx={{minWidth: '2.5rem', textAlign: 'center'}}>
+                <Skeleton
+                    variant="circular"
+                    width={24}
+                    height={24}
+                />
+            </ListItemIcon>
+            <ListItemText
+                primary={
+                    <Skeleton
+                        variant="text"
+                        width="72%"
+                        height={24}
+                    />
+                }
+            />
+            <Skeleton
+                variant="rounded"
+                width={92}
+                height={24}
+                sx={{ml: 2, borderRadius: 4}}
             />
         </ListItem>
     );

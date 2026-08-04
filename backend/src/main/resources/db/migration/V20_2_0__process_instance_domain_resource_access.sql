@@ -96,6 +96,7 @@ from processes pro
               on pro.id = ver.process_id
          join process_instance_access_control_presets pac
               on pac.target_process_id = pro.id
+                  and pac.target_process_version = ver.process_version
          left join departments dpt
                    on pac.source_department_id = dpt.id
          left join teams tm
@@ -128,6 +129,7 @@ from processes pro
               on pro.id = ver.process_id
          join process_instance_access_control_presets pac
               on pac.target_process_id = pro.id
+                  and pac.target_process_version = ver.process_version
          join v_user_domain_permissions udp
               on (pac.source_department_id is not null and pac.source_department_id = udp.department_id)
                   or (pac.source_team_id is not null and pac.source_team_id = udp.team_id)

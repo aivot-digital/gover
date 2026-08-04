@@ -189,6 +189,10 @@ gover:
   departmentLevelLabels: "${GOVER_DEPARTMENT_LEVEL_LABELS:Organisation,Bereich,Abteilung,Sachgebiet,Arbeitsbereich}"
   security:
     csrfTtlSeconds: "${GOVER_CSRF_TTL_SECONDS:86400}"
+  search:
+    recent:
+      max-items-per-user: "${GOVER_SEARCH_RECENT_MAX_ITEMS_PER_USER:50}"
+      retention-days: "${GOVER_SEARCH_RECENT_RETENTION_DAYS:90}"
   http:
     connectionTimeoutSeconds: "${GOVER_HTTP_CONNECTION_TIMEOUT_SECONDS:2}"
     readTimeoutSeconds: "${GOVER_HTTP_READ_TIMEOUT_SECONDS:60}"

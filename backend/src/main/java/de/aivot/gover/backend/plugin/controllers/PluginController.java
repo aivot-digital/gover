@@ -78,7 +78,7 @@ public class PluginController {
     @Operation(
             summary = "List Plugins",
             description = "Retrieve a list of all installed plugins along with their details. " +
-                    "This requires the permission „" + PluginPermissionProvider.PLUGIN_READ + "“."
+                    "Requires the system-level permission `" + PluginPermissionProvider.PLUGIN_READ + "`."
     )
     public List<PluginDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt
@@ -93,7 +93,7 @@ public class PluginController {
     @Operation(
             summary = "Retrieve a Plugin",
             description = "Retrieve detailed information about a specific plugin by its unique key. " +
-                    "This requires the permission „" + PluginPermissionProvider.PLUGIN_READ + "“."
+                    "Requires the system-level permission `" + PluginPermissionProvider.PLUGIN_READ + "`."
     )
     public PluginDTO retrievePlugin(
             @Nullable @AuthenticationPrincipal Jwt jwt,

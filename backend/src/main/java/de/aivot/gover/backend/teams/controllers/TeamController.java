@@ -105,7 +105,8 @@ public class TeamController {
     @PostMapping("")
     @Operation(
             summary = "Create Team",
-            description = "Create a new team. Requires system admin privileges."
+            description = "Create a new team. Requires the system-level permission `" +
+                    TeamPermissionProvider.TEAM_CREATE + "`."
     )
     public TeamEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -163,7 +164,8 @@ public class TeamController {
     @PutMapping("{id}/")
     @Operation(
             summary = "Update Team",
-            description = "Update an existing team. Requires super admin privileges."
+            description = "Update an existing team. Requires the permission `" +
+                    TeamPermissionProvider.TEAM_UPDATE + "` for the affected team or at system level."
     )
     public TeamEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -204,7 +206,8 @@ public class TeamController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete Team",
-            description = "Delete a team by its ID. Requires super admin privileges."
+            description = "Delete a team by its ID. Requires the permission `" +
+                    TeamPermissionProvider.TEAM_DELETE + "` for the affected team or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,

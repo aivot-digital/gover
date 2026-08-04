@@ -10,6 +10,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.io.Serializable;
 
 public class CodeListFilter implements Filter<CodeListEntity>, Serializable {
+    private String key;
     private String name;
     private CodeListSourceType sourceType;
 
@@ -22,9 +23,19 @@ public class CodeListFilter implements Filter<CodeListEntity>, Serializable {
     public Specification<CodeListEntity> build() {
         return SpecificationBuilder
                 .create(CodeListEntity.class)
+                .withContains("key", key)
                 .withContains("name", name)
                 .withEquals("sourceType", sourceType)
                 .build();
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public CodeListFilter setKey(String key) {
+        this.key = key;
+        return this;
     }
 
     public String getName() {

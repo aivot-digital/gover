@@ -27,19 +27,19 @@ public class CodeListWorker {
 
     @RabbitListener(queues = DO_WORK_ON_CODE_LIST_QUEUE)
     public void listen(CodeListUpdateMessage message) {
-        codeListService.syncCodeList(message.codeListId(), message.keepOutdated());
+        codeListService.syncCodeList(message.codeListKey(), message.keepOutdated());
     }
 
-    public void triggerCodeListUpdate(Integer codeListId, boolean keepOutdated) {
+    public void triggerCodeListUpdate(String codeListKey, boolean keepOutdated) {
         rabbitTemplate
                 .convertAndSend(
                         CodeListWorker.DO_WORK_ON_CODE_LIST_QUEUE,
-                        new CodeListUpdateMessage(codeListId, keepOutdated)
+                        new CodeListUpdateMessage(codeListKey, keepOutdated)
                 );
     }
 
     public record CodeListUpdateMessage(
-            Integer codeListId,
+            String codeListKey,
             boolean keepOutdated
     ) implements Serializable {
     }

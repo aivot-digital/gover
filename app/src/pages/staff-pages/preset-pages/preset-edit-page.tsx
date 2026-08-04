@@ -36,7 +36,6 @@ import {
 import {FormStatus} from '../../../modules/forms/enums/form-status';
 import {useConfirm} from '../../../providers/confirm-provider';
 import {addDerivationLogItems} from '../../../slices/logging-slice';
-import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import {useElementSize} from '../../../utils/element-size';
@@ -58,6 +57,7 @@ import {
 import {Permission} from '../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../modules/permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../components/disabled-tooltip/disabled-tooltip';
+import {SearchItemService} from '../../../modules/search/search-item-service';
 
 export function PresetEditPage() {
     const api = useApi();
@@ -137,11 +137,13 @@ export function PresetEditPage() {
             .retrieve(presetKey)
             .then((preset) => {
                 setPreset(preset);
-                dispatch(addEntityHistoryItem({
-                    type: ServerEntityType.Presets,
-                    link: `/presets/edit/${preset.key}/${versionNumber}`,
-                    title: preset.title,
-                }));
+                new SearchItemService()
+                    .recordRecentSearchItem({
+                        id: `${preset.key},${versionNumber}`,
+                        originTable: ServerEntityType.Presets,
+                    })
+                    .catch(() => {
+                    });
             })
             .catch(() => {
                 setNetworkError({

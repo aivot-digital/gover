@@ -6,6 +6,11 @@ export type StatusTablePropsItem = PropsWithChildren<{
     icon?: React.ReactNode;
     alignTop?: boolean;
     subItems?: StatusTablePropsItem[] | null;
+    details?: React.ReactNode;
+    detailsLabel?: string;
+    detailsExpandedLabel?: string;
+    detailsDefaultExpanded?: boolean;
+    indentDetails?: boolean;
 }>;
 
 export interface StatusTableProps {

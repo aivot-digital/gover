@@ -6,7 +6,6 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.actuate.web.exchanges.InMemoryHttpExchangeRepository;
 import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,13 +23,6 @@ public class ServerConfiguration implements WebMvcConfigurer {
     @Override
     public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
         configurer.strategies(List.of(new FixedContentNegotiationStrategy(MediaType.APPLICATION_JSON)));
-    }
-
-    @Bean
-    public InMemoryHttpExchangeRepository createTraceRepository() {
-        var exchanges = new InMemoryHttpExchangeRepository();
-        exchanges.setCapacity(100);
-        return exchanges;
     }
 
     @Value("${spring.flyway.repairOnMigrate}")

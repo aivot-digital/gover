@@ -117,7 +117,8 @@ public class DepartmentMembershipController {
     @Operation(
             summary = "Create department membership",
             description = "Create a new department membership linking a user to a department. " +
-                    "Requires the department membership create permission for the target department."
+                    "Requires the permission `" + DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_CREATE +
+                    "` for the target organisation unit or at system level."
     )
     public DepartmentMembershipEntity create(
             @AuthenticationPrincipal Jwt jwt,
@@ -202,7 +203,8 @@ public class DepartmentMembershipController {
     @Operation(
             summary = "Update department membership",
             description = "Update an existing department membership. " +
-                    "Requires super admin permissions or department edit permissions for the membership's department."
+                    "Requires the permission `" + DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_UPDATE +
+                    "` for the membership's organisation unit or at system level."
     )
     public DepartmentMembershipEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -254,7 +256,8 @@ public class DepartmentMembershipController {
     @Operation(
             summary = "Delete department membership",
             description = "Delete an existing department membership. " +
-                    "Requires super admin permissions or department edit permissions for the membership's department."
+                    "Requires the permission `" + DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_DELETE +
+                    "` for the membership's organisation unit or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,

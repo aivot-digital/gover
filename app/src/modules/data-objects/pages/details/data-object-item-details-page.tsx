@@ -1,6 +1,6 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
-import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
+import {GenericDetailsPage, NEW_ID_INDICATOR} from '../../../../components/generic-details-page/generic-details-page';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {DataObjectSchema} from '../../models/data-object-schema';
 import {useEffect, useState} from 'react';
@@ -16,8 +16,9 @@ import {Permission} from '../../../../data/permissions/permission';
 import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 
 export function DataObjectItemDetailsPage() {
-    const schemaKey = useParams().schemaKey;
-    useRequireSystemPermission(Permission.OBJECT_ITEM_READ);
+    const {schemaKey, id} = useParams();
+    const isNewItem = id === NEW_ID_INDICATOR;
+    useRequireSystemPermission(isNewItem ? Permission.OBJECT_ITEM_CREATE : Permission.OBJECT_ITEM_READ);
     useRequireSystemPermission(Permission.OBJECT_SCHEMA_READ);
     const canUpdateDataObjectSchema = useHasSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
 
@@ -124,6 +125,7 @@ export function DataObjectItemDetailsPage() {
                     to: `/data-objects/${dataObjectSchema.key}/items`,
                 }}
                 entityType={ServerEntityType.DataObjectItems}
+                getSearchItemId={(item) => `${item.schemaKey},${item.id}`}
             />
         </PageWrapper>
     );

@@ -78,6 +78,8 @@ export function PaymentProviderDetailsPageIndex() {
     const navigate = useNavigate();
     const showConfirm = useConfirm();
     const canDeletePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_DELETE);
+    const canCreatePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_CREATE);
+    const canUpdatePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_UPDATE);
 
     const [derivedRuntimeConfigData, setDerivedRuntimeConfigData] = useState<DerivedRuntimeElementData | null>(null);
     const [paymentProviderSchema, setPaymentProviderSchema] = useState<PaymentProviderYupSchemaType>(BasePaymentProviderYupSchema);
@@ -130,13 +132,18 @@ export function PaymentProviderDetailsPageIndex() {
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
     const [relatedEntities, setRelatedEntities] = useState<ConstraintLinkProps[] | null>(null);
-    const editPermission = isNewPaymentProvider ? Permission.PAYMENT_PROVIDER_CREATE : Permission.PAYMENT_PROVIDER_UPDATE;
+    const editPermission = isNewPaymentProvider === true ? Permission.PAYMENT_PROVIDER_CREATE : Permission.PAYMENT_PROVIDER_UPDATE;
+    const refreshDefinitionsPermission = isNewPaymentProvider === true ? Permission.PAYMENT_PROVIDER_CREATE : Permission.PAYMENT_PROVIDER_UPDATE;
+    const canRefreshDefinitions = isNewPaymentProvider === true ? canCreatePaymentProvider : canUpdatePaymentProvider;
     const editDisabledTooltip = !isEditable
         ? formatMissingPermissionTooltip(editPermission)
         : undefined;
     const deleteDisabledTooltip = !canDeletePaymentProvider
         ? formatMissingPermissionTooltip(Permission.PAYMENT_PROVIDER_DELETE)
         : undefined;
+    const refreshDefinitionsTooltip = canRefreshDefinitions
+        ? 'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'
+        : formatMissingPermissionTooltip(refreshDefinitionsPermission);
 
     useEffect(() => {
         if (selectedPaymentProviderDefinition?.configLayout == null) {
@@ -192,6 +199,10 @@ export function PaymentProviderDetailsPageIndex() {
     }
 
     const handleRefreshDefinitions = () => {
+        if (!canRefreshDefinitions) {
+            return;
+        }
+
         setIsBusy(true);
 
         new PaymentProvidersApiService()
@@ -523,16 +534,18 @@ export function PaymentProviderDetailsPageIndex() {
                     </Button>
                 </DisabledTooltip>
 
-                <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
-                    <Button
-                        onClick={handleRefreshDefinitions}
-                        disabled={isBusy}
-                    >
-                        Auswahllisten neu laden <HelpIconOutlined
-                        fontSize="small"
-                        sx={{ml: 1}}
-                    />
-                    </Button>
+                <Tooltip title={refreshDefinitionsTooltip}>
+                    <Box component="span">
+                        <Button
+                            onClick={handleRefreshDefinitions}
+                            disabled={isBusy || !canRefreshDefinitions}
+                        >
+                            Auswahllisten neu laden <HelpIconOutlined
+                            fontSize="small"
+                            sx={{ml: 1}}
+                        />
+                        </Button>
+                    </Box>
                 </Tooltip>
 
                 {
@@ -593,7 +606,7 @@ export function PaymentProviderDetailsPageIndex() {
                         mt: 2,
                     }}
                 >
-                    <strong>Hinweis:</strong>
+                    <strong>Hinweis:</strong>{' '}
                     Sofern noch ausstehende Transaktionen bestehen, werden diese ebenfalls gelöscht.
                     Eine Liste mit ausstehenden Transaktionen können Sie im
                     Reiter <strong>Transaktionen</strong> einsehen.

@@ -10,7 +10,7 @@ export interface MultiCheckboxFieldElementOption {
 export interface MultiCheckboxFieldElement extends BaseInputElement<ElementType.MultiCheckbox> {
     options: MultiCheckboxFieldElementOption[] | null | undefined;
     optionsSource: OptionsSourceType | null | undefined;
-    codeListId: number | null | undefined;
+    codeListKey: string | null | undefined;
     minimumRequiredOptions: number | null | undefined;
     displayInline: boolean | null | undefined;
 }
