@@ -17,6 +17,10 @@ export default defineConfig(() => {
             host: '0.0.0.0',
         },
         build: {
+            // Publicly communicated compatibility covers the latest three versions of
+            // Chrome, Edge, Firefox, and Safari. Builds use Vite's Baseline target,
+            // which may change with Vite upgrades.
+            target: 'baseline-widely-available',
             outDir: './build/customer',
         },
     };
