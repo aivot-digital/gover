@@ -99,12 +99,18 @@ SELECT text 'process_nodes'                                         AS origin_ta
        to_tsvector('german', coalesce(description, ''))             AS searchable_element,
        trim(coalesce(name, '') || ' ' || coalesce(description, '')) AS search_text,
        upp.user_id                                                  AS user_id,
-       upp.permissions                                              AS permissions
+       array_unique_union_agg(upp.permissions)                      AS permissions
 FROM process_nodes
          JOIN v_user_process_access_permissions AS upp
               ON upp.target_process_id = process_nodes.process_id -- TODO: Cross Join w/ v_user_system_permission
 WHERE coalesce(name, '') <> ''
    OR coalesce(description, '') <> ''
+GROUP BY process_nodes.id,
+         process_nodes.process_node_definition_key,
+         process_nodes.name,
+         process_nodes.data_key,
+         process_nodes.description,
+         upp.user_id
 
 UNION ALL
 
@@ -256,10 +262,14 @@ SELECT text 'processes'                                              AS origin_t
        to_tsvector('german', p.internal_title)                       AS searchable_element,
        p.internal_title                                              AS search_text,
        usp.user_id                                                   as user_id,
-       usp.permissions                                               as permissions
+       array_unique_union_agg(usp.permissions)                        as permissions
 FROM process_versions pv
          JOIN processes p ON pv.process_id = p.id
          JOIN v_user_process_access_permissions AS usp ON usp.target_process_id = p.id -- TODO: Cross Join w/ v_user_system_permission
+GROUP BY p.id,
+         p.internal_title,
+         pv.process_version,
+         usp.user_id
 
 UNION ALL
 
