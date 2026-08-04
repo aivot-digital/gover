@@ -26,11 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class PaymentRequestCreationService {
@@ -50,16 +46,17 @@ public class PaymentRequestCreationService {
     }
 
     @Nonnull
-    public XBezahldienstePaymentRequest createRequest(
+    public Optional<XBezahldienstePaymentRequest> createRequest(
             @Nonnull PaymentConfigElementValue paymentConfigElementValue,
-            @Nonnull ProcessExecutionData processExecutionData,
+            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nullable ProcessExecutionData processExecutionData,
             @Nonnull String redirectUrl
     ) throws PaymentException {
         if (StringUtils.isNullOrEmpty(redirectUrl)) {
             throw new PaymentException("Die Redirect-URL für die Zahlungsanfrage darf nicht leer sein.");
         }
 
-        var items = createItems(paymentConfigElementValue, processExecutionData);
+        var items = createItems(paymentConfigElementValue, derivedRuntimeElementData, processExecutionData);
 
         var request = new XBezahldienstePaymentRequest();
         request.setRandomRequestId();
@@ -71,16 +68,21 @@ public class PaymentRequestCreationService {
         request.setItemsAndCalculateGrosAmount(items);
 
         if (request.getGrosAmount() == null || request.getGrosAmount().compareTo(BigDecimal.ZERO) == 0) {
-            throw new PaymentException("Der Gesamtbetrag der Zahlungsanfrage darf nicht 0 sein.");
+            return Optional.empty();
         }
 
-        return request;
+        if (request.getGrosAmount().compareTo(BigDecimal.ZERO) < 0) {
+            throw new PaymentException("Die Zahlungsanfrage darf keine negativen Gesamtkosten enthalten.");
+        }
+
+        return Optional.of(request);
     }
 
     @Nonnull
     private List<XBezahldienstePaymentItem> createItems(
             @Nonnull PaymentConfigElementValue paymentConfigElementValue,
-            @Nonnull ProcessExecutionData processExecutionData
+            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nullable ProcessExecutionData processExecutionData
     ) throws PaymentException {
         var configItems = paymentConfigElementValue.items();
         if (configItems == null || configItems.isEmpty()) {
@@ -89,7 +91,7 @@ public class PaymentRequestCreationService {
 
         var items = new LinkedList<XBezahldienstePaymentItem>();
         for (var i = 0; i < configItems.size(); i++) {
-            var item = createItem(configItems.get(i), processExecutionData, i);
+            var item = createItem(configItems.get(i), derivedRuntimeElementData, processExecutionData, i);
             if (item != null) {
                 items.add(item);
             }
@@ -105,15 +107,16 @@ public class PaymentRequestCreationService {
     @Nullable
     private XBezahldienstePaymentItem createItem(
             @Nonnull PaymentConfigElementValueItem itemConfig,
-            @Nonnull ProcessExecutionData processExecutionData,
+            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nullable ProcessExecutionData processExecutionData,
             int index
     ) throws PaymentException {
-        var quantity = resolveQuantity(itemConfig, processExecutionData, index);
+        var quantity = resolveQuantity(itemConfig, derivedRuntimeElementData, processExecutionData, index);
         if (quantity <= 0) {
             return null;
         }
 
-        var singleNetAmount = resolveCosts(itemConfig, processExecutionData, index);
+        var singleNetAmount = resolveCosts(itemConfig, derivedRuntimeElementData, processExecutionData, index);
         if (singleNetAmount.compareTo(BigDecimal.ZERO) < 0) {
             throw new PaymentException("Die Zahlungsposition %d darf keine negativen Kosten enthalten.", index + 1);
         }
@@ -165,7 +168,8 @@ public class PaymentRequestCreationService {
     @Nonnull
     private BigDecimal resolveCosts(
             @Nonnull PaymentConfigElementValueItem itemConfig,
-            @Nonnull ProcessExecutionData processExecutionData,
+            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nullable ProcessExecutionData processExecutionData,
             int index
     ) throws PaymentException {
         return switch (itemConfig.costType()) {
@@ -174,6 +178,7 @@ public class PaymentRequestCreationService {
                     itemConfig.variableCostsCalculationType(),
                     itemConfig.variableCostsNoCodeCalculation(),
                     itemConfig.variableCostsLowCodeCalculation(),
+                    derivedRuntimeElementData,
                     processExecutionData,
                     "Kosten der Zahlungsposition " + (index + 1)
             );
@@ -183,7 +188,8 @@ public class PaymentRequestCreationService {
 
     private long resolveQuantity(
             @Nonnull PaymentConfigElementValueItem itemConfig,
-            @Nonnull ProcessExecutionData processExecutionData,
+            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nullable ProcessExecutionData processExecutionData,
             int index
     ) throws PaymentException {
         var quantity = switch (itemConfig.quantityType()) {
@@ -192,6 +198,7 @@ public class PaymentRequestCreationService {
                     itemConfig.variableQuantityCalculationType(),
                     itemConfig.variableQuantityNoCodeCalculation(),
                     itemConfig.variableQuantityLowCodeCalculation(),
+                    derivedRuntimeElementData,
                     processExecutionData,
                     "Menge der Zahlungsposition " + (index + 1)
             );
@@ -206,7 +213,8 @@ public class PaymentRequestCreationService {
             @Nullable PaymentConfigElementValueItem.VariableValueCalculationType calculationType,
             @Nullable NoCodeOperand noCodeCalculation,
             @Nullable JavascriptCode lowCodeCalculation,
-            @Nonnull ProcessExecutionData processExecutionData,
+            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nullable ProcessExecutionData processExecutionData,
             @Nonnull String fieldName
     ) throws PaymentException {
         return switch (calculationType) {
@@ -215,14 +223,14 @@ public class PaymentRequestCreationService {
                     throw new PaymentException("%s muss eine No-Code-Berechnung enthalten.", fieldName);
                 }
                 var result = noCodeEvaluationService
-                        .evaluate(noCodeCalculation, new DerivedRuntimeElementData(), processExecutionData);
+                        .evaluate(noCodeCalculation, derivedRuntimeElementData, processExecutionData);
                 yield requireNumber(result.getValue(), fieldName);
             }
             case LowCode -> {
                 if (lowCodeCalculation == null || lowCodeCalculation.isEmpty()) {
                     throw new PaymentException("%s muss eine Low-Code-Berechnung enthalten.", fieldName);
                 }
-                yield evaluateLowCodeNumber(lowCodeCalculation, processExecutionData, fieldName);
+                yield evaluateLowCodeNumber(lowCodeCalculation, derivedRuntimeElementData, processExecutionData, fieldName);
             }
             case null -> throw new PaymentException("%s muss einen Berechnungstyp enthalten.", fieldName);
         };
@@ -231,11 +239,13 @@ public class PaymentRequestCreationService {
     @Nonnull
     private BigDecimal evaluateLowCodeNumber(
             @Nonnull JavascriptCode lowCodeCalculation,
-            @Nonnull ProcessExecutionData processExecutionData,
+            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nullable ProcessExecutionData processExecutionData,
             @Nonnull String fieldName
     ) throws PaymentException {
         try (var javascriptEngine = javascriptEngineFactoryService.getEngine()) {
             var result = javascriptEngine
+                    .registerGlobalContextObject(derivedRuntimeElementData)
                     .registerProcessExecutionData(processExecutionData)
                     .evaluateCode(lowCodeCalculation);
             return requireNumber(result.asNumber(), fieldName);
