@@ -9,6 +9,7 @@ import de.aivot.gover.backend.elements.exceptions.ElementDataConversionException
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.gover.backend.elements.models.elements.form.content.HeadlineContentElement;
+import de.aivot.gover.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.*;
 import de.aivot.gover.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -205,6 +206,11 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                                 headline.setId(metadataAttributesHeadlineId(provider.getId()));
                                 headline.setContent("Metadaten");
                                 group.addChild(headline);
+
+                                var description = new RichTextContentElement();
+                                description.setId(metadataAttributesDescriptionId(provider.getId()));
+                                description.setContent("Die gesetzten Metadaten gelten für den Anlagensatz. Beinhaltet dieser mehrere Dateien, so erhalten alle Dateien des Anlagensatzes diese Metadaten.");
+                                group.addChild(description);
 
                                 for (var m : provider.getMetadataAttributes()) {
                                     var in = new TextInputElement();
@@ -890,6 +896,11 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     }
 
     @Nonnull
+    private static String metadataAttributesDescriptionId(@Nonnull Integer storageProviderId) {
+        return "%s_desc".formatted(metadataAttributesGroupId(storageProviderId));
+    }
+
+    @Nonnull
     private static String metadataAttributeFieldId(@Nonnull Integer storageProviderId,
                                                    @Nonnull String metadataKey) {
         return "%s_%s".formatted(metadataAttributesGroupId(storageProviderId), metadataKey);
@@ -1008,7 +1019,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
         @InputElementPOJOBinding(id = FILE_NAME_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dateiname bei Speicherung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wenn gesetzt, wird dieser Wert als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der gespeicherten Datei. Diese Eingabe unterstützt \"Smarte Platzhalter\". Beim Speichern wird immer ein Index angehängt, zum Beispiel DATEINAME-1.pdf."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der gespeicherten Datei. Diese Eingabe unterstützt \"Smarte Platzhalter\". Beim Speichern wird immer ein Index angehängt, zum Beispiel DATEINAME-1.pdf."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
         public String fileName;
