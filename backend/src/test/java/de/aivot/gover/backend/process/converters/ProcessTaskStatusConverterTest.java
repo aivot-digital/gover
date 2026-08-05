@@ -19,13 +19,14 @@ class ProcessTaskStatusConverterTest {
         var expectedValues = Map.of(
                 ProcessTaskStatus.Running, 0,
                 ProcessTaskStatus.Paused, 1,
-                ProcessTaskStatus.AwaitingPayment, 2,
-                ProcessTaskStatus.Completed, 3,
-                ProcessTaskStatus.Aborted, 4,
-                ProcessTaskStatus.Failed, 5,
-                ProcessTaskStatus.Restarted, 6
+                ProcessTaskStatus.AwaitingPayment, 6,
+                ProcessTaskStatus.Completed, 2,
+                ProcessTaskStatus.Aborted, 3,
+                ProcessTaskStatus.Failed, 4,
+                ProcessTaskStatus.Restarted, 5
         );
 
+        assertEquals(ProcessTaskStatus.values().length, expectedValues.size());
         expectedValues.forEach((status, databaseValue) -> {
             assertEquals(databaseValue.shortValue(), converter.convertToDatabaseColumn(status));
             assertEquals(status, converter.convertToEntityAttribute(databaseValue.shortValue()));

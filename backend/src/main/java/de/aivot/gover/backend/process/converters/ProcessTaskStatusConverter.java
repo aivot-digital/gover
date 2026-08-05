@@ -8,6 +8,9 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Persists task statuses with explicit values so changes to the enum declaration order do not alter stored data.
+ */
 @Converter
 public class ProcessTaskStatusConverter implements AttributeConverter<ProcessTaskStatus, Short> {
     private static final Map<Short, ProcessTaskStatus> STATUSES_BY_DATABASE_VALUE = Arrays
