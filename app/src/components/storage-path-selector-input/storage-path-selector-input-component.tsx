@@ -369,7 +369,10 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                                             <IconButton
                                                 size="small"
                                                 onClick={() => {
-                                                    onChange(null);
+                                                    onChange({
+                                                        storageProviderId: value.storageProviderId,
+                                                        path: null,
+                                                    });
                                                 }}
                                             >
                                                 <CloseIcon fontSize="small"/>
