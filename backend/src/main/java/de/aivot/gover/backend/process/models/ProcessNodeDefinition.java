@@ -18,6 +18,7 @@ import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.core.io.Resource;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.io.IOException;
 import java.util.*;
@@ -112,7 +113,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
         }
     }
 
-                                                             /**
+    /**
      * Get the testing layout for nodes of this provider type. This layout is used to be displayed in the testing tab of the node during an active test claim. <br/> Use this to
      * display additional information for the user which is usefull for the testing.
      *
@@ -120,7 +121,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @return The testing layout, or null if not provided.
      * @throws ResponseException If an error occurs while generating the layout.
      */
-                                                             @Nullable
+    @Nullable
     default GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionTestingLayoutContext<NodeConfig> context) throws ResponseException {
         return null;
     }
