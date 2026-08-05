@@ -1,8 +1,8 @@
 package de.aivot.gover.backend.submission.services;
 
 import de.aivot.gover.backend.elements.models.ComputedElementState;
-import de.aivot.gover.backend.elements.models.ComputedElementSubState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
+import de.aivot.gover.backend.elements.models.ComputedElementSubState;
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
 import de.aivot.gover.backend.elements.models.elements.BaseElement;
 import de.aivot.gover.backend.elements.models.elements.BaseFormElement;
@@ -14,7 +14,6 @@ import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContain
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
-import de.aivot.gover.backend.submission.services.ElementDataTransformService;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -22,8 +21,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.*;
 
 class DestinationKeyPayloadServiceTest {
     private final ElementDataTransformService service = new ElementDataTransformService();
@@ -411,10 +409,12 @@ class DestinationKeyPayloadServiceTest {
                 "payload", Map.of(
                         "people", List.of(
                                 Map.of(
+                                        "id", "person-1",
                                         "first_name", "Ada",
                                         "address", Map.of("street", "Main Street 1")
                                 ),
                                 Map.of(
+                                        "id", "person-2",
                                         "first_name", "Grace",
                                         "address", Map.of("street", "Side Alley 2")
                                 )
@@ -426,14 +426,16 @@ class DestinationKeyPayloadServiceTest {
 
         var rows = assertInstanceOf(List.class, effectiveValues.get("people"));
         assertEquals(2, rows.size());
-        assertReplicatingRowValues(rows.get(0), Map.of(
+        var firstRow = assertReplicatingRowValues(rows.get(0), Map.of(
                 "rowFirstName", "Ada",
                 "rowStreet", "Main Street 1"
         ));
-        assertReplicatingRowValues(rows.get(1), Map.of(
+        assertEquals("person-1", firstRow.getId());
+        var secondRow = assertReplicatingRowValues(rows.get(1), Map.of(
                 "rowFirstName", "Grace",
                 "rowStreet", "Side Alley 2"
         ));
+        assertEquals("person-2", secondRow.getId());
     }
 
     @Test
@@ -477,9 +479,11 @@ class DestinationKeyPayloadServiceTest {
         ));
     }
 
-    private static void assertReplicatingRowValues(Object row, Map<?, ?> expectedValues) {
+    private static ReplicatingContainerLayoutElementValue assertReplicatingRowValues(Object row, Map<?, ?> expectedValues) {
         var rowValue = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, row);
+        assertNotNull(rowValue.getId());
         assertEquals(expectedValues, rowValue.getValues());
+        return rowValue;
     }
 
     private static FormLayoutElement createRoot(BaseFormElement child) {
