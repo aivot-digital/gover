@@ -36,11 +36,11 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
     const submittedFileNameError = props.element.submittedFileName == null || props.element.submittedFileName.trim().length === 0 ?
         'Bitte geben Sie einen Dateinamen bei Einreichung an.' :
         undefined;
-    const submittedFileNameHint = !requiresSubmittedFileNameIndex ?
-        'Pflicht. Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei.' :
-        hasReplicatingContainerParent ?
-            'Pflicht. Die Dateiendung kommt immer von der hochgeladenen Datei. Der Index enthält die Datensatzpositionen strukturierter Listen von oben nach unten; bei mehreren Anlagen folgt die Anlagenposition. Ohne # wird der Index angehängt, zum Beispiel Geburtsurkunde-3-2.pdf. Mit # legen Sie die Position fest.' :
-            'Pflicht. Die Dateiendung kommt immer von der hochgeladenen Datei. Bei mehreren Anlagen wird immer ein Index eingefügt: Ohne # wird er angehängt, zum Beispiel DATEINAME-1.pdf. Mit # legen Sie die Position fest, zum Beispiel # Nachweis wird zu 1 Nachweis.pdf.';
+    const submittedFileNameHint = !requiresSubmittedFileNameIndex
+        ? 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei.'
+        : hasReplicatingContainerParent
+            ? 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei. Mit "#" können Sie den Index angeben. Ist "#" nicht vorhanden, wird der Index automatisch am Ende angefügt, zum Beispiel DATEINAME-3-2.pdf.'
+            : 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei. Mit "#" können Sie den Index angeben. Ist "#" nicht vorhanden, wird der Index automatisch am Ende angefügt, zum Beispiel DATEINAME-1.pdf.';
 
     if (hasSummaryLayoutParent) {
         return null;
