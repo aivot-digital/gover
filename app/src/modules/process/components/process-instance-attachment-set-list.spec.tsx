@@ -97,6 +97,7 @@ function createAttachment(
     return {
         key,
         fileName,
+        originalFileName: 'OriginalFileName',
         group,
         attachmentSetId: 1,
         processInstanceId: 42,
