@@ -85,13 +85,14 @@ create table process_instance_tasks
     previous_process_node_port_key    varchar(96) null,
 
     -- The status of this process task
-    -- Options are:
+    -- Values are stable and mapped by ProcessTaskStatusConverter:
     --   0 - Running
     --   1 - Paused
-    --   2 - Waiting for retry
+    --   2 - Awaiting payment
     --   3 - Completed (this node reached an end state)
     --   4 - Aborted (by user)
     --   5 - Failed
+    --   6 - Restarted
     status                            smallint    not null default 0,
     -- The status override triggered by nodes
     status_override                   varchar(96) null,

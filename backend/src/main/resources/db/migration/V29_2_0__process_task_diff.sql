@@ -116,5 +116,5 @@ create trigger trg_process_task_completion
     after insert or update of status
     on process_instance_tasks
     for each row
-    when (NEW.status = 3) -- 3 is the status ProcessTaskStatus.Completed
+    when (NEW.status = 3) -- Stable database value of ProcessTaskStatus.Completed
 execute function handle_process_task_completion();
