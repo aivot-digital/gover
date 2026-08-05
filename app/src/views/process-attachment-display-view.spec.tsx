@@ -212,7 +212,6 @@ function createBaseProps(
         onResetErrors: vi.fn(),
         suppressErrors: false,
         derivationTriggerIdQueue: [],
-        parents: [],
     };
 }
 
