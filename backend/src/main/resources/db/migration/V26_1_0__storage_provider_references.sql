@@ -23,6 +23,10 @@ create table process_instance_attachments
 
     -- The name of the attachment, e.g. the filename
     file_name                varchar(255) not null,
+    -- The original file name under which the attachment was uploaded or generated
+    original_file_name       varchar(255) not null,
+    -- Optional group key for attachments belonging to the same structured list item
+    "group"                  text         null,
 
     -- The attachment set this attachment belongs to
     attachment_set_id        integer      not null references process_instance_attachment_sets (id) on delete restrict,
@@ -39,6 +43,9 @@ create table process_instance_attachments
     -- The id of the user, who uploaded this attachment, if it was explicitly uploaded by a user
     -- If this is null, the attachment was added automatically by the system
     uploaded_by_user_id      varchar(36)  null references users (id) on delete restrict,
+
+    -- The position of the attachment in the attachment set, starting from 1
+    position                 integer      not null default 1,
 
     foreign key (storage_provider_id, storage_path_from_root) references storage_index_items (storage_provider_id, path_from_root)
 );

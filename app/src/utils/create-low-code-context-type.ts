@@ -90,7 +90,7 @@ function elementToContextStateInterface({element, parents}: ElementWithParents):
         /** Gibt an, ob der effektive Wert authored oder derived ist. */
         valueSource: 'Authored' | 'Derived' | undefined | null;
         /** Enthält bei strukturierten Listen die States der einzelnen Datensätze. */
-        subStates: Record<string, ${createElementStateInterfaceName(element)}>[] | undefined | null;
+        subStates: {id: string | undefined | null; states: Record<string, ${createElementStateInterfaceName(element)}>}[] | undefined | null;
     }`;
 }
 
@@ -136,6 +136,8 @@ function elementToValueType(element: AnyElement): string {
             return 'Record<string, unknown>';
         case ElementType.HtmlTemplateInput:
             return '{assetKey: string | null; slots: Record<string, string | null>}';
+        case ElementType.StoragePathSelector:
+            return '{storageProviderId: number | null | undefined; path: string | null | undefined}';
         case ElementType.IdentityConfigElement:
             return '{identityProviderKey: string | null | undefined; identityAttributes: Record<string, unknown> | null | undefined}';
         case ElementType.FileUpload:
@@ -148,7 +150,7 @@ function elementToValueType(element: AnyElement): string {
         case ElementType.Table:
             return `{${element.fields?.map((field) => `${field.key}: string | number | null | undefined`).join('; ')}}[]`;
         case ElementType.ReplicatingContainer:
-            return 'Record<string, unknown>[]';
+            return '{id: string | null | undefined; values: Record<string, unknown> | null | undefined}[]';
         default:
             return 'never';
     }

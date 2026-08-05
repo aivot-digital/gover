@@ -358,6 +358,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     editable={editable}
                     scope={'application' /* TODO: remove this */}
                     hasSummaryLayoutParent={hasSummaryLayoutParent}
+                    hasReplicatingContainerParent={replicatingParents.length > 0}
                 />
             }
 

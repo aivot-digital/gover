@@ -317,10 +317,10 @@ public class KeyCloakApiService {
                         .map(error -> mapUserValidationMessage(defaultMessage, error))
                         .orElse(defaultMessage + " Ungültige Daten wurden übermittelt.");
 
-                yield ResponseException.badRequest(validationError, body);
+                yield ResponseException.badRequestWithDetails(validationError, body);
             }
             case 403 -> ResponseException
-                    .badRequest("Der Backend-Client hat keine Berechtigung, um Mitarbeiter:innen zu verwalten.", exception.getResponseBodyAsString());
+                    .badRequestWithDetails("Der Backend-Client hat keine Berechtigung, um Mitarbeiter:innen zu verwalten.", exception.getResponseBodyAsString());
             default -> ResponseException
                     .internalServerError(defaultMessage, exception);
         };

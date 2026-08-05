@@ -41,6 +41,7 @@ public class StringUtils {
 
     /**
      * Auto appends a slash to the end of the url if it is missing
+     *
      * @param url the url to normalize
      * @return the normalized url
      */
@@ -56,6 +57,7 @@ public class StringUtils {
 
     /**
      * Obfuscates the key by replacing the middle characters with asterisks
+     *
      * @param key the key to obfuscate
      * @return the obfuscated key
      */
@@ -130,8 +132,7 @@ public class StringUtils {
     }
 
     /**
-     * Extracts the file extension from the given file name.
-     * If the file name is null, empty, or does not contain a valid extension, an empty Optional is returned.
+     * Extracts the file extension from the given file name. If the file name is null, empty, or does not contain a valid extension, an empty Optional is returned.
      *
      * @param fileName the file name to extract the extension from
      * @return an Optional containing the file extension in lowercase, or an empty Optional if no valid extension is found
@@ -162,5 +163,44 @@ public class StringUtils {
         }
         var str = value.toString().trim();
         return str.isEmpty() ? null : str;
+    }
+
+    public static String replaceSpecialGermanCharacters(String string) {
+        var sb = new StringBuilder();
+
+        for (int i = 0; i < string.length(); i++) {
+            boolean isNextCharUppercase = false;
+            if (i < string.length() - 1) {
+                isNextCharUppercase = Character.isUpperCase(string.charAt(i + 1));
+            }
+
+            if (isNextCharUppercase) {
+                switch (string.charAt(i)) {
+                    case 'ä' -> sb.append("ae");
+                    case 'Ä' -> sb.append("AE");
+                    case 'ö' -> sb.append("oe");
+                    case 'Ö' -> sb.append("OE");
+                    case 'ü' -> sb.append("ue");
+                    case 'Ü' -> sb.append("UE");
+                    case 'ß' -> sb.append("ss");
+                    case 'ẞ' -> sb.append("SS");
+                    default -> sb.append(string.charAt(i));
+                }
+            } else {
+                switch (string.charAt(i)) {
+                    case 'ä' -> sb.append("ae");
+                    case 'Ä' -> sb.append("Ae");
+                    case 'ö' -> sb.append("oe");
+                    case 'Ö' -> sb.append("Oe");
+                    case 'ü' -> sb.append("ue");
+                    case 'Ü' -> sb.append("Ue");
+                    case 'ß' -> sb.append("ss");
+                    case 'ẞ' -> sb.append("Ss");
+                    default -> sb.append(string.charAt(i));
+                }
+            }
+        }
+
+        return sb.toString();
     }
 }

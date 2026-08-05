@@ -380,6 +380,11 @@ public class XdfTransformService {
                         uploadField.setLabel(label);
                         uploadField.setHint(hint);
                         uploadField.setRequired(isRequired);
+                        var submittedFileName = StringUtils.toNullableTrimmedString(label);
+                        if (submittedFileName == null) {
+                            submittedFileName = StringUtils.toNullableTrimmedString(name);
+                        }
+                        uploadField.setSubmittedFileName(submittedFileName == null ? id : submittedFileName);
 
                         fields.add(uploadField);
                         break;

@@ -5,11 +5,12 @@ import de.aivot.gover.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.gover.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.gover.backend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
 import de.aivot.gover.backend.elements.exceptions.ElementDataConversionException;
+import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
 import de.aivot.gover.backend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.gover.backend.elements.utils.ElementPOJOMapper;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.enums.ElementType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,9 +29,11 @@ class ElementPOJOMapperTest {
         testElementData.put("text_field", "Test Value");
         testElementData.put("switch_field", true);
 
-        var replicatingChildData = new EffectiveElementValues();
+        var replicatingChildData = new AuthoredElementValues();
         replicatingChildData.put("text_field", "Replicating Value 1");
-        testElementData.put("replicating_container", List.of(replicatingChildData));
+        testElementData.put("replicating_container", List.of(
+                new ReplicatingContainerLayoutElementValue().setValues(replicatingChildData)
+        ));
     }
 
     @Test
