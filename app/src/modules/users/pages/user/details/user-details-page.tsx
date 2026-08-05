@@ -8,13 +8,11 @@ import {stringOrDefault} from '../../../../../utils/string-utils';
 import React from 'react';
 import PersonOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Person';
 import {resolveUserName} from '../../../utils/resolve-user-name';
-import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import {useParams} from 'react-router-dom';
+import {Permission} from '../../../../../data/permissions/permission';
+import {ServerEntityType} from '../../../../../shells/staff/data/server-entity-type';
 
 export function UserDetailsPage() {
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-    });
     const params = useParams();
     const isNewUser = params.id === NEW_ID_INDICATOR;
 
@@ -24,7 +22,15 @@ export function UserDetailsPage() {
             fullWidth
             background
         >
-            <GenericDetailsPage<User, number, undefined>
+            <GenericDetailsPage<User, string, undefined>
+                permissionCheck={{
+                    create: Permission.USER_CREATE,
+                    read: Permission.USER_READ,
+                    update: Permission.USER_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={(_, isNewItem) => ({
                     icon: <PersonOutlined />,
                     title: isNewItem ? 'Mitarbeiter:in anlegen' : 'Mitarbeiter:in bearbeiten',
@@ -55,30 +61,42 @@ export function UserDetailsPage() {
                         ),
                     },
                 })}
-                isEditable={() => hasAccess}
                 tabs={[
                     {
                         path: '/users/:id',
                         label: 'Allgemeine Informationen',
                     },
                     {
-                        path: '/users/:id/departments-and-roles',
-                        label: 'Organisationseinheiten und Rollen',
-                        isDisabled: (item) => !item?.id,
+                        path: '/users/:id/department-memberships',
+                        label: 'Mitgliedschaften in Organisationseinheiten',
+                        onlyExisting: true,
+                        requiredPermission: {
+                            permission: Permission.DEPARTMENT_MEMBERSHIP_READ,
+                            scope: {
+                                type: 'anyDepartment',
+                            },
+                        },
                     },
                     {
-                        path: '/users/:id/teams-and-roles',
-                        label: 'Teams und Rollen',
-                        isDisabled: (item) => !item?.id,
+                        path: '/users/:id/team-memberships',
+                        label: 'Mitgliedschaften in Teams',
+                        onlyExisting: true,
+                        requiredPermission: {
+                            permission: Permission.TEAM_MEMBERSHIP_READ,
+                            scope: {
+                                type: 'anyTeam',
+                            },
+                        },
                     },
                     {
                         path: '/users/:id/deputies',
                         label: 'Stellvertreter:innen',
-                        isDisabled: (item) => !item?.id,
+                        onlyExisting: true,
+                        requiredPermission: Permission.DEPUTY_READ,
                     },
                 ]}
                 initializeItem={(api) => new UsersApiService().initialize()}
-                fetchData={(api, id: number) => new UsersApiService().retrieve(String(id))}
+                fetchData={(api, id: string) => new UsersApiService().retrieve(id)}
                 getTabTitle={(item: User) => {
                     return stringOrDefault(item.fullName, 'Kein Name hinterlegt');
                 }}
@@ -97,6 +115,7 @@ export function UserDetailsPage() {
                     label: 'Liste der Mitarbeiter:innen',
                     to: '/users',
                 }}
+                entityType={ServerEntityType.Users}
             />
         </PageWrapper>
     );

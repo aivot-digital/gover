@@ -13,10 +13,16 @@ import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNe
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {SystemRolesApiService} from '../../../system/services/system-roles-api-service';
 import SupervisedUserCircle from '@aivot/mui-material-symbols-400-n25-outlined/SupervisedUserCircle';
+import {createOidcPath} from '../../../../utils/create-oidc-path';
 
 export function AccountDetailsPageIndex() {
     const user = useSelector(selectUser);
     const [systemRoleLabel, setSystemRoleLabel] = useState('Keine Systemrolle zugewiesen');
+    const credentialsManagementUrl = useMemo(() => {
+        const realm = encodeURIComponent(AppConfig.oidc.realm);
+
+        return createOidcPath(`/realms/${realm}/account/account-security/signing-in`);
+    }, []);
 
     useEffect(() => {
         if (user?.systemRoleId == null) {
@@ -91,8 +97,8 @@ export function AccountDetailsPageIndex() {
 
             <Typography sx={{mb: 2, maxWidth: 900}}>
                 Ihre Kontoinformationen werden von einem Identity Provider (IDP) System bereitgestellt.
-                Änderungen an den hier angezeigten Daten sind nur über die Verwaltungsoberfläche des IDP möglich.
-                Bitte beachten Sie, dass Änderungen erst nach dem nächsten Login sichtbar werden.
+                Zugangsdaten wie Passwort oder weitere Anmeldemethoden können Sie direkt in der
+                Verwaltungsoberfläche des IDP bearbeiten.
             </Typography>
 
             <StatusTable
@@ -112,12 +118,12 @@ export function AccountDetailsPageIndex() {
             >
                 <Button
                     target="_blank"
-                    href={`${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/account/#/personal-info`}
+                    href={credentialsManagementUrl}
                     variant="contained"
                     color="primary"
                     startIcon={<OpenInNewIcon />}
                 >
-                    Daten verwalten
+                    Zugangsdaten verwalten
                 </Button>
             </Box>
         </Box>

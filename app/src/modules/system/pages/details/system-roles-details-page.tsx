@@ -3,7 +3,6 @@ import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import React from 'react';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {SystemRoleEntity} from "../../entities/system-role-entity";
 import {SystemRolesApiService} from "../../services/system-roles-api-service";
@@ -14,9 +13,9 @@ import {
     DefaultUserSystemRoleBadge,
     isDefaultUserSystemRole,
 } from '../../components/default-user-system-role-badge';
+import {Permission} from '../../../../data/permissions/permission';
 
 export function SystemRolesDetailsPage() {
-    const userIsAdmin = useUserIsAdmin();
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
 
     return (
@@ -26,7 +25,14 @@ export function SystemRolesDetailsPage() {
             background
         >
             <GenericDetailsPage<SystemRoleEntity, number, void>
-                isEditable={() => userIsAdmin}
+                permissionCheck={{
+                    create: Permission.SYSTEM_ROLE_CREATE,
+                    read: Permission.SYSTEM_ROLE_READ,
+                    update: Permission.SYSTEM_ROLE_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={(item, isNewItem, notFound) => ({
                     icon: ModuleIcons.roles,
                     title: 'Systemrolle bearbeiten',
@@ -65,7 +71,8 @@ export function SystemRolesDetailsPage() {
                     {
                         path: '/system-roles/:id/members',
                         label: 'Zugeordnete Mitarbeiter:innen',
-                        isDisabled: (item) => !item?.id,
+                        onlyExisting: true,
+                        requiredPermission: Permission.USER_READ,
                     },
                 ]}
                 initializeItem={(api) => SystemRolesApiService.initialize()}

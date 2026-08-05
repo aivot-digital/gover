@@ -1,4 +1,8 @@
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
@@ -16,6 +20,8 @@ import {type StorageProviderStatus} from '../../enums/storage-provider-status';
 import {StorageStatusChip} from '../../components/storage-status-chip';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {Permission} from '../../../../data/permissions/permission';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 
 const availableFilter = [
     {
@@ -32,6 +38,15 @@ const availableFilter = [
     },
 ];
 
+const storageProvidersListPermissionCheck: GenericListPagePermissionConfig<StorageProviderEntity> = {
+    scope: {
+        type: 'system',
+    },
+    read: Permission.STORAGE_PROVIDER_READ,
+    create: Permission.STORAGE_PROVIDER_CREATE,
+    update: Permission.STORAGE_PROVIDER_UPDATE,
+};
+
 export function StorageProvidersListPage(): ReactNode {
     const navigate = useNavigate();
     const [definitions, setDefinitions] = useState<StorageProviderDefinition[]>([]);
@@ -44,7 +59,7 @@ export function StorageProvidersListPage(): ReactNode {
             .catch(console.error);
     }, []);
 
-    const header = useMemo(() => ({
+    const header = useCallback((permissions: GenericListPagePermissionState<StorageProviderEntity>) => ({
         icon: ModuleIcons.storage,
         title: 'Speicheranbieter',
         actions: [
@@ -53,6 +68,8 @@ export function StorageProvidersListPage(): ReactNode {
                 icon: <AddOutlinedIcon/>,
                 to: '/storage-providers/new',
                 variant: 'contained' as const,
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -118,7 +135,7 @@ export function StorageProvidersListPage(): ReactNode {
 
     const columnIcon = useCallback(() => ModuleIcons.storage, []);
 
-    const columnDefinitions = useMemo(() => [
+    const columnDefinitions = useCallback((permissions: GenericListPagePermissionState<StorageProviderEntity>) => [
         {
             field: 'name',
             headerName: 'Name',
@@ -126,7 +143,7 @@ export function StorageProvidersListPage(): ReactNode {
             renderCell: (params: any) => (
                 <CellLink
                     to={`/storage-providers/${params.id}`}
-                    title="Konfiguration bearbeiten"
+                    title={permissions.canUpdate(params.row) ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen'}
                 >
                     {String(params.value)}
                 </CellLink>
@@ -167,13 +184,28 @@ export function StorageProvidersListPage(): ReactNode {
 
     const getRowIdentifier = useCallback((row: StorageProviderEntity) => row.id.toString(), []);
 
-    const rowActions = useCallback((item: StorageProviderEntity) => [
-        {
-            icon: <EditOutlined/>,
-            to: `/storage-providers/${item.id}`,
-            tooltip: 'Konfiguration bearbeiten',
-        },
-    ], []);
+    const rowActions = useCallback((item: StorageProviderEntity, permissions: GenericListPagePermissionState<StorageProviderEntity>) => {
+        const canUpdateStorageProvider = permissions.canUpdate(item);
+
+        return [
+            {
+                icon: canUpdateStorageProvider ? <EditOutlined/> : <Visibility/>,
+                to: `/storage-providers/${item.id}`,
+                tooltip: canUpdateStorageProvider ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<StorageProviderEntity>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Speicheranbieter vorhanden"
+            description="Speicheranbieter verbinden Gover mit Dateispeichern für Uploads, Anlagen und erzeugte Dokumente."
+            addText="Neuen Speicheranbieter anlegen"
+            onAdd={() => navigate('/storage-providers/new')}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [navigate]);
 
     return (
         <>
@@ -186,6 +218,7 @@ export function StorageProvidersListPage(): ReactNode {
                     defaultFilter="all"
                     filters={availableFilter}
                     header={header}
+                    permissionCheck={storageProvidersListPermissionCheck}
                     searchLabel="Speicheranbieter suchen"
                     searchPlaceholder="Name der Konfiguration eingeben…"
                     preSearchElements={preSearchElements}
@@ -193,14 +226,7 @@ export function StorageProvidersListPage(): ReactNode {
                     columnIcon={columnIcon}
                     columnDefinitions={columnDefinitions}
                     getRowIdentifier={getRowIdentifier}
-                    noDataPlaceholder={
-                        <EmptyDataListPlaceholder
-                            title="Noch keine Speicheranbieter angelegt"
-                            description="Speicheranbieter verbinden Gover mit Dateispeichern für Uploads, Anlagen und erzeugte Dokumente."
-                            addText="Neuen Speicheranbieter anlegen"
-                            onAdd={() => navigate('/storage-providers/new')}
-                        />
-                    }
+                    noDataPlaceholder={noDataPlaceholder}
                     noSearchResultsPlaceholder="Keine Speicheranbieter gefunden"
                     rowActionsCount={1}
                     rowActions={rowActions}

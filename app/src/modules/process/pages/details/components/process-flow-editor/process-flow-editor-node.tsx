@@ -4,9 +4,7 @@ import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState
 import Typography from '@mui/material/Typography';
 import {alpha} from '@mui/material/styles';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
-import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
-import {KnownProviderIcons} from '../../../../data/known-provider-icons';
 import {ProcessFlowEditorNodeHandle} from './process-flow-editor-node-handle';
 import {useProcessFlowEditorContext} from './process-flow-editor-context';
 import {HANDLE_COLOR, HANDLE_SIZE, INTERACTIVE_HANDLE_SIZE} from './data/process-flow-constants';
@@ -24,6 +22,7 @@ import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {ProcessTaskStatus} from '../../../../enums/process-task-status';
 import Link from '@aivot/mui-material-symbols-400-n25-outlined/Link';
 import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
+import Info from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import {ProcessActionMenu, type ProcessActionMenuItem} from '../process-action-menu';
 import {ModuleIcons} from '../../../../../../shells/staff/data/module-icons';
 import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
@@ -37,6 +36,7 @@ import {
     buildTaskProcessInstanceAttachmentSetItems,
     ProcessInstanceAttachmentSetList,
 } from '../../../../components/process-instance-attachment-set-list';
+import {getProcessNodeProviderIcon} from '../../../../components/process-node-provider-details';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
@@ -60,6 +60,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         onConnectNodeToExisting,
         onStartReplaceNode,
         onStartCloneNode,
+        onShowNodeProviderDetails,
         onDeleteEdge,
         onDeleteNode,
         showTargetHandles,
@@ -138,12 +139,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     }, [provider.type]);
 
     const ProviderIcon = useMemo(() => {
-        return (
-            KnownProviderIcons[provider.componentKey] ||
-            KnownProviderIcons[provider.key] ||
-            Assignment
-        );
-    }, [provider.componentKey, provider.key]);
+        return getProcessNodeProviderIcon(provider);
+    }, [provider]);
 
     const nodeName = useMemo(() => getNodeName(node, provider), [node, provider]);
     const nodeDescription = useMemo(() => getNodeDescription(node, provider), [node, provider]);
@@ -224,13 +221,20 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             `${port.key}:${outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key) ? '1' : '0'}`
         )).join('|')
     ), [outgoingEdges, provider.ports]);
-    const shouldRenderMenuButtonSlot = editable || associatedTask == null;
     const availableOutputPorts = useMemo(() => (
         provider.ports.filter((port) => (
             !outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key)
         ))
     ), [outgoingEdges, provider.ports]);
     const menuItems = useMemo<ProcessActionMenuItem[]>(() => {
+        // Provider details are read-only and must stay available even when structural editing is disabled.
+        const informationItem: ProcessActionMenuItem = {
+            label: 'Elementinformationen',
+            icon: <Info/>,
+            onClick: () => {
+                onShowNodeProviderDetails(provider);
+            },
+        };
         const actionItems: ProcessActionMenuItem[] = editable ? [
             {
                 label: 'Konfigurieren',
@@ -261,32 +265,35 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 },
             },
         ] : [];
+        const deleteItem: ProcessActionMenuItem = {
+            label: 'Löschen',
+            icon: <Delete/>,
+            isDangerous: true,
+            onClick: () => {
+                void confirm({
+                    title: 'Prozesselement löschen',
+                    children: (
+                        <Typography>
+                            Möchten Sie das Prozesselement <strong>{nodeName}</strong> wirklich löschen?
+                        </Typography>
+                    ),
+                })
+                    .then((confirmed) => {
+                        if (confirmed) {
+                            void onDeleteNode(node);
+                        }
+                    });
+            },
+        };
 
         return [
             ...actionItems,
             ...(actionItems.length > 0 ? ['separator' as const] : []),
-            {
-                label: 'Löschen',
-                icon: <Delete/>,
-                isDangerous: true,
-                onClick: () => {
-                    void confirm({
-                        title: 'Prozesselement löschen',
-                        children: (
-                            <Typography>
-                                Möchten Sie das Prozesselement <strong>{nodeName}</strong> wirklich löschen?
-                            </Typography>
-                        ),
-                    })
-                        .then((confirmed) => {
-                            if (confirmed) {
-                                void onDeleteNode(node);
-                            }
-                        });
-                },
-            },
+            informationItem,
+            ...(editable ? ['separator' as const, deleteItem] : []),
         ];
-    }, [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode, onSelectNode, onStartCloneNode, onStartReplaceNode]);
+    }, [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode, onSelectNode, onShowNodeProviderDetails, onStartCloneNode, onStartReplaceNode, provider]);
+    const shouldRenderMenuButtonSlot = menuItems.length > 0 && (editable || associatedTask == null);
 
     const runtimeMenuItems: ProcessActionMenuItem[] = useMemo(() => {
         const items: ProcessActionMenuItem[] = [];
@@ -531,17 +538,17 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                 <IconButton
                                     ref={menuButtonRef}
                                     size="small"
-                                    aria-hidden={!editable}
-                                    disabled={!editable}
+                                    aria-hidden={menuItems.length === 0}
+                                    disabled={menuItems.length === 0}
                                     sx={{
                                         color: theme.palette.text.secondary,
                                         mt: -0.25,
                                         mr: -0.75,
-                                        visibility: editable ? 'visible' : 'hidden',
-                                        pointerEvents: editable ? 'auto' : 'none',
+                                        visibility: menuItems.length > 0 ? 'visible' : 'hidden',
+                                        pointerEvents: menuItems.length > 0 ? 'auto' : 'none',
                                     }}
                                     onClick={(event) => {
-                                        if (!editable) {
+                                        if (menuItems.length === 0) {
                                             return;
                                         }
 

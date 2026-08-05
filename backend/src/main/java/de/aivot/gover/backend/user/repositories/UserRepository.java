@@ -12,7 +12,7 @@ import java.util.List;
 public interface UserRepository extends JpaRepository<UserEntity, String>, JpaSpecificationExecutor<UserEntity> {
     Integer countAllByDeletedInIdpIsFalseAndEnabledIsTrue();
 
-    Boolean existsBySystemRoleId(Integer globalRole);
+    Boolean existsBySystemRoleId(Integer systemRoleId);
 
     boolean existsByEmail(String email);
 

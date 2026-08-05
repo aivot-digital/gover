@@ -64,6 +64,16 @@ jobs:
     with:
       build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
 
+  testFrontend:
+    name: Test Frontend
+    needs:
+      - prepareBuildVars
+    uses: ./.github/workflows/test-frontend.yml
+    permissions:
+      contents: read
+    with:
+      build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
+
   generateSbom:
     name: SBOM
     needs:
@@ -82,6 +92,7 @@ jobs:
     needs:
       - prepareBuildVars
       - testBackend
+      - testFrontend
       - generateSbom
     uses: ./.github/workflows/generate-library.yml
     permissions:
@@ -97,6 +108,7 @@ jobs:
     needs:
       - prepareBuildVars
       - testBackend
+      - testFrontend
       - generateSbom
     uses: ./.github/workflows/generate-image.yml
     permissions:

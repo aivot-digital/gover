@@ -1,3 +1,4 @@
+import {describe, expect, it} from 'vitest';
 import {ElementType} from '../data/element-type/element-type';
 import {type TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {type FileUploadElement} from '../models/elements/form/input/file-upload-element';

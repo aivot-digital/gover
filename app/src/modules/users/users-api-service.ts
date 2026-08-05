@@ -1,4 +1,4 @@
-import {SystemUserRole, User} from './models/user';
+import {User} from './models/user';
 import {BaseCrudApiService} from '../../services/base-crud-api-service';
 
 export interface UserFilter {
@@ -45,9 +45,6 @@ export class UsersApiService extends BaseCrudApiService<User, User, User, User, 
                     fullName: '',
                     enabled: false,
                     verified: false,
-                    isSuperAdmin: false,
-                    isSystemAdmin: false,
-                    globalRole: SystemUserRole.Default,
                     deletedInIdp: false,
                     systemRoleId: null,
                 };
@@ -69,9 +66,6 @@ export class UsersApiService extends BaseCrudApiService<User, User, User, User, 
             fullName: '',
             enabled: true,
             verified: false,
-            isSuperAdmin: false,
-            isSystemAdmin: false,
-            globalRole: SystemUserRole.Default,
             deletedInIdp: false,
             systemRoleId: null,
         };

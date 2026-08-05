@@ -7,12 +7,14 @@ import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
 import java.time.Instant;
+import java.util.List;
 
 public class ProcessDefinitionChangeFilter implements Filter<ProcessChangeEntity> {
     private Long id;
     private Instant timestamp;
     private String userId;
     private Integer processDefinitionId;
+    private List<Integer> processDefinitionIds;
     private Integer processDefinitionVersion;
     private Integer processDefinitionNodeId;
     private Integer processDefinitionEdgeId;
@@ -32,6 +34,7 @@ public class ProcessDefinitionChangeFilter implements Filter<ProcessChangeEntity
                 .withEquals("timestamp", timestamp)
                 .withContains("userId", userId)
                 .withEquals("processId", processDefinitionId)
+                .withInList("processId", processDefinitionIds)
                 .withEquals("processVersion", processDefinitionVersion)
                 .withEquals("processNodeId", processDefinitionNodeId)
                 .withEquals("processEdgeId", processDefinitionEdgeId)
@@ -74,6 +77,15 @@ public class ProcessDefinitionChangeFilter implements Filter<ProcessChangeEntity
 
     public ProcessDefinitionChangeFilter setProcessDefinitionId(Integer processDefinitionId) {
         this.processDefinitionId = processDefinitionId;
+        return this;
+    }
+
+    public List<Integer> getProcessDefinitionIds() {
+        return processDefinitionIds;
+    }
+
+    public ProcessDefinitionChangeFilter setProcessDefinitionIds(List<Integer> processDefinitionIds) {
+        this.processDefinitionIds = processDefinitionIds;
         return this;
     }
 
@@ -122,4 +134,3 @@ public class ProcessDefinitionChangeFilter implements Filter<ProcessChangeEntity
         return this;
     }
 }
-

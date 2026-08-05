@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
@@ -14,7 +14,6 @@ import {
     GenericDetailsPageContextType
 } from '../../../../../components/generic-details-page/generic-details-page-context';
 import {GenericDetailsSkeleton} from '../../../../../components/generic-details-page/generic-details-skeleton';
-import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {UserRoleChips} from '../../../../user-roles/components/user-role-chips';
 import {
@@ -26,9 +25,7 @@ import {
 import {Button} from "@mui/material";
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {VDepartmentShadowedEntity} from "../../../../departments/entities/v-department-shadowed-entity";
-import {SearchBaseDialog} from "../../../../../dialogs/search-base-dialog/search-base-dialog";
-import {getDepartmentPath, getDepartmentTypeIcons} from "../../../../departments/utils/department-utils";
-import {VDepartmentShadowedApiService} from "../../../../departments/services/v-department-shadowed-api-service";
+import {SelectDepartmentDialog} from '../../../../departments/dialogs/select-department-dialog';
 import {useAppDispatch} from "../../../../../hooks/use-app-dispatch";
 import {showApiErrorSnackbar, showErrorSnackbar} from "../../../../../slices/snackbar-slice";
 import {UserRolesAssignmentDialog} from "../../../../user-roles/components/user-roles-assignment-dialog";
@@ -40,39 +37,29 @@ import {
     VDepartmentUserRoleAssignmentWithDetailsService
 } from "../../../../departments/services/v-department-user-role-assignment-with-details-service";
 import {useConfirm} from "../../../../../providers/confirm-provider";
+import {useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
+import {useAppSelector} from '../../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../../slices/user-slice';
+import {Permission} from '../../../../../data/permissions/permission';
+import {
+    hasAnyDepartmentPermission,
+    hasDepartmentPermission,
+    hasSystemPermission,
+    formatMissingPermissionTooltip,
+} from '../../../../permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
+import {type PermissionSet} from '../../../../permissions/models/permission-set';
 
-
-const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
-    {
-        field: 'departmentName',
-        headerName: 'Organisationseinheit',
-        flex: 1,
-        renderCell: (params) => (
-            <CellLink
-                to={`/departments/${params.row.departmentId}`}
-                title="Organisationseinheit bearbeiten"
-            >
-                {String(params.row.departmentName)}
-            </CellLink>
-        ),
-    },
-    {
-        field: 'domainRoles',
-        headerName: 'Rollen',
-        flex: 1,
-        sortable: false,
-        renderCell: (params) => (
-            <UserRoleChips roles={params.row.domainRoles.map(item => ({
-                id: item.id!,
-                name: item.name ?? '',
-            }))}/>
-        ),
-    },
-];
+const deletedUserMembershipTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
+const membershipIdsLoadingTooltip = 'Lade bestehende Mitgliedschaften…';
+const membershipIdsLoadErrorTooltip = 'Die bestehenden Mitgliedschaften konnten nicht geladen werden.';
+type MembershipIdsLoadState = 'loading' | 'loaded' | 'error';
 
 export function UserDetailsPageDepartmentMemberships() {
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
+    const refreshPermissionSet = useRefreshPermissionSet();
+    const permissions = useAppSelector(selectPermissions);
 
     const listControlRef = useRef<ListControlRef | null>(null);
 
@@ -80,41 +67,98 @@ export function UserDetailsPageDepartmentMemberships() {
         item: user,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<User, undefined>;
 
-    const [availableDepartments, setAvailableDepartments] = useState<VDepartmentShadowedEntity[]>();
     const [showSelectNewDepartmentDialog, setShowSelectNewDepartmentDialog] = useState(false);
     const [showSelectRolesDialogForDepartment, setShowSelectRolesDialogForDepartment] = useState<VDepartmentShadowedEntity | null>(null);
     const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VDepartmentMembershipWithDetailsEntity | null>(null);
+    const [assignedDepartmentIds, setAssignedDepartmentIds] = useState<Set<number>>(new Set());
+    const [assignedDepartmentIdsLoadState, setAssignedDepartmentIdsLoadState] = useState<MembershipIdsLoadState>('loading');
 
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    const canManageMemberships = user != null && !user.deletedInIdp;
+    const canReadDomainRoles = hasSystemPermission(permissions, Permission.DOMAIN_ROLE_READ);
+    const canReadAnyDepartment = hasAnyDepartmentPermission(permissions, Permission.DEPARTMENT_READ);
+    const canCreateAnyDepartmentMembership = hasAnyDepartmentPermission(permissions, Permission.DEPARTMENT_MEMBERSHIP_CREATE);
+    const canOpenSelectNewDepartmentDialogBase = canManageMemberships &&
+        canReadAnyDepartment &&
+        canCreateAnyDepartmentMembership &&
+        canReadDomainRoles;
+    const canOpenSelectNewDepartmentDialog = canOpenSelectNewDepartmentDialogBase &&
+        assignedDepartmentIdsLoadState === 'loaded';
 
-    useEffect(() => {
-        new VDepartmentShadowedApiService()
-            .listAll()
-            .then(({content}) => setAvailableDepartments(content))
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Beim Laden der verfügbaren Organisationseinheiten ist ein Fehler aufgetreten.'));
-            });
-    }, []);
+    const newMembershipDisabledTooltip = !canManageMemberships
+        ? deletedUserMembershipTooltip
+        : !canCreateAnyDepartmentMembership
+            ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE)
+            : !canReadAnyDepartment
+                ? formatMissingPermissionTooltip(Permission.DEPARTMENT_READ)
+                : !canReadDomainRoles
+                    ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
+                    : assignedDepartmentIdsLoadState === 'error'
+                        ? membershipIdsLoadErrorTooltip
+                        : assignedDepartmentIdsLoadState !== 'loaded'
+                            ? membershipIdsLoadingTooltip
+                            : '';
 
-    const preSearchElements = useMemo(() => {
-        if (!hasAccess) {
-            return undefined;
+    const columns = useMemo(() => buildColumns(permissions, canReadDomainRoles), [canReadDomainRoles, permissions]);
+
+    const refreshAssignedDepartmentIds = useCallback(() => {
+        const userId = user?.id;
+
+        if (!canOpenSelectNewDepartmentDialogBase || userId == null) {
+            setAssignedDepartmentIds(new Set());
+            setAssignedDepartmentIdsLoadState('loaded');
+            return;
         }
 
+        setAssignedDepartmentIdsLoadState('loading');
+
+        new VDepartmentMembershipWithDetailsService()
+            .listAll({userId})
+            .then(({content}) => {
+                setAssignedDepartmentIds(new Set(content.map((membership) => membership.departmentId)));
+                setAssignedDepartmentIdsLoadState('loaded');
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showApiErrorSnackbar(
+                    err,
+                    'Die bestehenden Organisationseinheitsmitgliedschaften konnten nicht geladen werden.',
+                ));
+                setAssignedDepartmentIdsLoadState('error');
+            });
+    }, [canOpenSelectNewDepartmentDialogBase, dispatch, user?.id]);
+
+    useEffect(() => {
+        refreshAssignedDepartmentIds();
+    }, [refreshAssignedDepartmentIds]);
+
+    const refreshPermissionsAfterMembershipChange = () => {
+        // Effective permissions may include grants inherited through deputy assignments.
+        // The frontend cannot know whether the edited user is currently represented by the active user.
+        refreshPermissionSet({broadcast: true})
+            .catch((err) => dispatch(showApiErrorSnackbar(
+                err,
+                'Die Berechtigungen konnten nach der Änderung der Organisationseinheitsmitgliedschaft nicht aktualisiert werden.',
+            )));
+    };
+
+    const preSearchElements = useMemo(() => {
         return [
-            <Button
-                variant="contained"
-                startIcon={<Add/>}
-                disabled={user?.deletedInIdp === true}
-                onClick={() => setShowSelectNewDepartmentDialog(true)}
+            <DisabledTooltip
+                key="add-department-membership"
+                title={newMembershipDisabledTooltip}
+                disabled={!canOpenSelectNewDepartmentDialog}
             >
-                Mitgliedschaft hinzufügen
-            </Button>,
+                <Button
+                    variant="contained"
+                    startIcon={<Add/>}
+                    disabled={!canOpenSelectNewDepartmentDialog}
+                    onClick={() => setShowSelectNewDepartmentDialog(true)}
+                >
+                    Mitgliedschaft hinzufügen
+                </Button>
+            </DisabledTooltip>,
         ];
-    }, [hasAccess, user?.deletedInIdp]);
+    }, [canOpenSelectNewDepartmentDialog, newMembershipDisabledTooltip]);
 
     if (user == null) {
         return (
@@ -122,11 +166,13 @@ export function UserDetailsPageDepartmentMemberships() {
         );
     }
 
-    const canManageMemberships = !user.deletedInIdp;
-    const disabledMembershipsManagementTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
-
     const handleAddMembership = (user: User, department: VDepartmentShadowedEntity, roleIdsToAdd: number[]) => {
-        if (!canManageMemberships) {
+        if (
+            !canManageMemberships ||
+            !canReadDomainRoles ||
+            assignedDepartmentIds.has(department.id) ||
+            !hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_MEMBERSHIP_CREATE)
+        ) {
             return;
         }
 
@@ -138,25 +184,14 @@ export function UserDetailsPageDepartmentMemberships() {
 
         new DepartmentMembershipApiService()
             .create({
-                id: 0,
                 userId: user.id,
                 departmentId: department.id,
-                created: new Date().toISOString(),
-                updated: new Date().toISOString(),
-            })
-            .then((membership) => {
-                const apiService = new VDepartmentUserRoleAssignmentWithDetailsService();
-                return Promise.all(roleIdsToAdd.map((roleId) => apiService.create({
-                    id: 0,
-                    departmentMembershipId: membership.id,
-                    teamMembershipId: null,
-                    userRoleId: roleId,
-                    created: new Date().toISOString(),
-                })));
+                roleIds: roleIdsToAdd,
             })
             .then(() => {
-                // Refresh list
                 listControlRef.current?.refresh();
+                refreshAssignedDepartmentIds();
+                refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
                 if (isApiError(error) && error.displayableToUser) {
@@ -172,7 +207,11 @@ export function UserDetailsPageDepartmentMemberships() {
     };
 
     const handleUpdateMembership = (membership: VDepartmentMembershipWithDetailsEntity, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
-        if (!canManageMemberships) {
+        if (
+            !canManageMemberships ||
+            !canReadDomainRoles ||
+            !hasDepartmentPermission(permissions, membership.departmentId, Permission.DEPARTMENT_MEMBERSHIP_UPDATE)
+        ) {
             return;
         }
 
@@ -204,6 +243,7 @@ export function UserDetailsPageDepartmentMemberships() {
             .then(() => {
                 // Refresh list
                 listControlRef.current?.refresh();
+                refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
                 if (isApiError(error) && error.displayableToUser) {
@@ -219,7 +259,7 @@ export function UserDetailsPageDepartmentMemberships() {
     };
 
     const handleDeleteMembership = (membership: VDepartmentMembershipWithDetailsEntity) => {
-        if (!hasAccess) {
+        if (!hasDepartmentPermission(permissions, membership.departmentId, Permission.DEPARTMENT_MEMBERSHIP_DELETE)) {
             return;
         }
 
@@ -254,6 +294,8 @@ export function UserDetailsPageDepartmentMemberships() {
                     .destroy(membership.membershipId)
                     .then(() => {
                         listControlRef.current?.refresh();
+                        refreshAssignedDepartmentIds();
+                        refreshPermissionsAfterMembershipChange();
                     })
                     .catch((error) => {
                         if (isApiError(error) && error.displayableToUser) {
@@ -309,60 +351,85 @@ export function UserDetailsPageDepartmentMemberships() {
                         <EmptyDataListPlaceholder
                             title="Keine Organisationseinheiten zugeordnet"
                             description="Organisationseinheiten beschreiben, in welchen fachlichen Bereichen diese Person mitarbeitet."
-                            addText={hasAccess && canManageMemberships ? "Mitgliedschaft hinzufügen" : undefined}
-                            onAdd={hasAccess && canManageMemberships ? () => setShowSelectNewDepartmentDialog(true) : undefined}
+                            addText="Mitgliedschaft hinzufügen"
+                            onAdd={() => setShowSelectNewDepartmentDialog(true)}
+                            addDisabled={!canOpenSelectNewDepartmentDialog}
+                            addDisabledTooltip={newMembershipDisabledTooltip}
                         />
                     }
                     loadingPlaceholder="Lade Organisationseinheiten…"
                     noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
-                    rowActions={(item) => [
-                        {
-                            icon: hasAccess ? <ManageAccountsOutlined/> : <Visibility/>,
-                            disabled: !canManageMemberships,
-                            disabledTooltip: disabledMembershipsManagementTooltip,
-                            onClick: () => {
-                                setShowSelectRolesDialogForMembership(item);
-                            },
-                            tooltip: hasAccess ? 'Rollen bearbeiten' : 'Rollen anzeigen',
-                        }, {
-                            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
-                            to: `/departments/${item.departmentId}`,
-                            tooltip: hasAccess ? 'Organisationseinheit bearbeiten' : 'Organisationseinheit anzeigen',
-                        }, {
-                            icon: <Delete/>,
-                            visible: hasAccess,
-                            tooltip: 'Mitgliedschaft löschen',
-                            onClick: () => {
-                                handleDeleteMembership(item);
-                            },
-                        }
-                    ]}
+                    rowActions={(item) => {
+                        const canReadDepartment = hasDepartmentPermission(permissions, item.departmentId, Permission.DEPARTMENT_READ);
+                        const canUpdateDepartment = hasDepartmentPermission(permissions, item.departmentId, Permission.DEPARTMENT_UPDATE);
+                        const canUpdateMembership = canManageMemberships &&
+                            hasDepartmentPermission(permissions, item.departmentId, Permission.DEPARTMENT_MEMBERSHIP_UPDATE);
+                        const canDeleteMembership = hasDepartmentPermission(permissions, item.departmentId, Permission.DEPARTMENT_MEMBERSHIP_DELETE);
+
+                        return [
+                            {
+                                icon: <ManageAccountsOutlined/>,
+                                disabled: !canUpdateMembership || !canReadDomainRoles,
+                                disabledTooltip: !canManageMemberships
+                                    ? deletedUserMembershipTooltip
+                                    : !canUpdateMembership
+                                        ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_UPDATE)
+                                        : !canReadDomainRoles
+                                            ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
+                                            : undefined,
+                                onClick: () => {
+                                    setShowSelectRolesDialogForMembership(item);
+                                },
+                                tooltip: 'Rollen bearbeiten',
+                            }, {
+                                icon: canUpdateDepartment ? <EditOutlined/> : <Visibility/>,
+                                to: `/departments/${item.departmentId}`,
+                                tooltip: canUpdateDepartment ? 'Organisationseinheit bearbeiten' : 'Organisationseinheit anzeigen',
+                                disabled: !canReadDepartment,
+                                disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_READ),
+                            }, {
+                                icon: <Delete/>,
+                                tooltip: 'Mitgliedschaft löschen',
+                                disabled: !canDeleteMembership,
+                                disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_DELETE),
+                                onClick: () => {
+                                    handleDeleteMembership(item);
+                                },
+                            }
+                        ];
+                    }}
+                    rowActionsCount={3}
                     preSearchElements={preSearchElements}
                 />
             </Box>
 
-            <SearchBaseDialog
+            <SelectDepartmentDialog
                 open={showSelectNewDepartmentDialog}
                 onClose={() => {
                     setShowSelectNewDepartmentDialog(false);
                 }}
                 title="Organisationseinheit auswählen"
-                tabs={[{
-                    title: 'Alle',
-                    options: availableDepartments ?? [],
-                    onSelect: (dep) => {
-                        setShowSelectRolesDialogForDepartment(dep);
-                        setShowSelectNewDepartmentDialog(false);
-                    },
-                    searchPlaceholder: 'Organisationseinheit suchen',
-                    searchKeys: ['name'],
-                    primaryTextKey: 'name',
-                    secondaryTextKey: (option) => getDepartmentPath(option),
-                    getId: o => String(o.id),
-                    getIcon: (option) => {
-                        return getDepartmentTypeIcons(option.depth);
-                    },
-                }]}
+                isDepartmentSelectable={(department) => (
+                    !assignedDepartmentIds.has(department.id) &&
+                    hasDepartmentPermission(
+                        permissions,
+                        department.id,
+                        Permission.DEPARTMENT_MEMBERSHIP_CREATE,
+                    )
+                )}
+                getDepartmentDisabledTooltip={(department) => (
+                    assignedDepartmentIds.has(department.id) ?
+                        'Bereits Mitglied' :
+                        formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE)
+                )}
+                onSelect={(department) => {
+                    if (assignedDepartmentIds.has(department.id)) {
+                        return;
+                    }
+
+                    setShowSelectRolesDialogForDepartment(department);
+                    setShowSelectNewDepartmentDialog(false);
+                }}
             />
 
             <UserRolesAssignmentDialog
@@ -378,7 +445,9 @@ export function UserDetailsPageDepartmentMemberships() {
                     setShowSelectRolesDialogForDepartment(null);
                 }}
                 userId={user.id}
+                userLabel={user.fullName}
                 parentId={showSelectRolesDialogForDepartment?.id}
+                parentLabel={showSelectRolesDialogForDepartment?.name}
                 parentType="orgUnit"
             />
 
@@ -396,9 +465,60 @@ export function UserDetailsPageDepartmentMemberships() {
                     setShowSelectRolesDialogForMembership(null);
                 }}
                 userId={user.id}
+                userLabel={user.fullName}
                 parentId={showSelectRolesDialogForMembership?.departmentId}
+                parentLabel={showSelectRolesDialogForMembership?.departmentName ?? undefined}
                 parentType="orgUnit"
             />
         </>
     );
+}
+
+function buildColumns(
+    permissions: PermissionSet | undefined,
+    canReadDomainRoles: boolean,
+): Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> {
+    return [
+        {
+            field: 'departmentName',
+            headerName: 'Organisationseinheit',
+            flex: 1,
+            renderCell: (params) => {
+                const departmentName = String(params.row.departmentName);
+
+                if (!hasDepartmentPermission(permissions, params.row.departmentId, Permission.DEPARTMENT_READ)) {
+                    return departmentName;
+                }
+
+                return (
+                    <CellLink
+                        to={`/departments/${params.row.departmentId}`}
+                        title="Organisationseinheit anzeigen"
+                    >
+                        {departmentName}
+                    </CellLink>
+                );
+            },
+        },
+        {
+            field: 'domainRoles',
+            headerName: 'Rollen',
+            flex: 1,
+            sortable: false,
+            renderCell: (params) => canReadDomainRoles ? (
+                <UserRoleChips roles={params.row.domainRoles.map(item => ({
+                    id: item.id!,
+                    name: item.name ?? '',
+                }))}/>
+            ) : (
+                <UserRoleChips
+                    roles={[{
+                        id: 'domain-role-read-missing',
+                        name: 'Keine Berechtigung zur Einsicht',
+                    }]}
+                    maxVisibleChips={1}
+                />
+            ),
+        },
+    ];
 }

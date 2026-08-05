@@ -1,10 +1,9 @@
 import {Box, Button, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {useContext, useMemo, useState} from 'react';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
 import {SecretsApiService} from '../../secrets-api-service';
 import {Secret} from '../../models/secret';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
@@ -20,6 +19,10 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const SecretSchema = yup.object({
     name: yup.string()
@@ -49,24 +52,9 @@ export function SecretsDetailsPageIndex() {
         isBusy,
         setIsBusy,
         isEditable,
+        isNewItem,
     } = useContext(GenericDetailsPageContext);
-
-    useEffect(() => {
-        if (isEditable) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            key: 'access-denied-secrets-details',
-            message: 'Dieses Geheimnis kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff',
-            severity: SnackbarSeverity.Warning,
-            type: SnackbarType.Dismissable,
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('access-denied-secrets-details'));
-        };
-    }, [isEditable]);
+    const canDeleteSecret = useHasSystemPermission(Permission.SECRET_DELETE);
 
     const {
         currentItem,
@@ -83,6 +71,14 @@ export function SecretsDetailsPageIndex() {
     const secret = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const isNewSecret = isNewItem === true;
+    const editPermission = isNewSecret ? Permission.SECRET_CREATE : Permission.SECRET_UPDATE;
+    const editDisabledTooltip = !isEditable
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledTooltip = !canDeleteSecret
+        ? formatMissingPermissionTooltip(Permission.SECRET_DELETE)
+        : undefined;
 
     if (secret == null) {
         return (
@@ -102,7 +98,7 @@ export function SecretsDetailsPageIndex() {
 
             setIsBusy(true);
 
-            if (isStringNullOrEmpty(secret.key)) {
+            if (isNewSecret) {
                 apiService
                     .create(secret)
                     .then((newSecret) => {
@@ -144,30 +140,32 @@ export function SecretsDetailsPageIndex() {
     };
 
     const handleDelete = () => {
-        if (isStringNotNullOrEmpty(secret.key)) {
-            setIsBusy(true);
-
-            apiService
-                .destroy(secret.key)
-                .then(() => {
-                    reset(); // prevent change blocker by resetting unsaved changes
-                    navigate('/secrets', {
-                        replace: true,
-                    });
-                    dispatch(showSuccessSnackbar('Das Geheimnis wurde erfolgreich gelöscht.'));
-                })
-                .catch(err => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Beim Löschen des Geheimnisses ist ein Fehler aufgetreten.'));
-                    setIsBusy(false);
-                });
+        if (isNewSecret) {
+            return;
         }
+
+        setIsBusy(true);
+
+        apiService
+            .destroy(secret.key)
+            .then(() => {
+                reset(); // prevent change blocker by resetting unsaved changes
+                navigate('/secrets', {
+                    replace: true,
+                });
+                dispatch(showSuccessSnackbar('Das Geheimnis wurde erfolgreich gelöscht.'));
+            })
+            .catch(err => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Beim Löschen des Geheimnisses ist ein Fehler aufgetreten.'));
+                setIsBusy(false);
+            });
     };
 
     return (
         <Box>
             {
-                isStringNotNullOrEmpty(secret.key) &&
+                !isNewSecret &&
                 <TextFieldComponent
                     label="Schlüssel"
                     value={secret.key}
@@ -238,43 +236,56 @@ export function SecretsDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
+                <DisabledTooltip
+                    title={editDisabledTooltip}
                     disabled={isBusy || hasNotChanged || !isEditable}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon />}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon />}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
-                    isStringNotNullOrEmpty(secret.key) &&
-                    <Button
-                        onClick={() => {
-                            reset();
-                        }}
+                    !isNewSecret &&
+                    <DisabledTooltip
+                        title={editDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
-                        color="error"
                     >
-                        Zurücksetzen
-                    </Button>
+                        <Button
+                            onClick={() => {
+                                reset();
+                            }}
+                            disabled={isBusy || hasNotChanged || !isEditable}
+                            color="error"
+                        >
+                            Zurücksetzen
+                        </Button>
+                    </DisabledTooltip>
                 }
 
                 {
-                    isStringNotNullOrEmpty(secret.key) &&
-                    <Button
-                        variant="outlined"
-                        onClick={() => setShowConfirmDialog(true)}
-                        disabled={isBusy || !isEditable}
-                        color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete />}
+                    !isNewSecret &&
+                    <DisabledTooltip
+                        title={deleteDisabledTooltip}
+                        disabled={isBusy || !canDeleteSecret}
+                        wrapperSx={{marginLeft: 'auto'}}
                     >
-                        Löschen
-                    </Button>
+                        <Button
+                            variant="outlined"
+                            onClick={() => setShowConfirmDialog(true)}
+                            disabled={isBusy || !canDeleteSecret}
+                            color="error"
+                            startIcon={<Delete />}
+                        >
+                            Löschen
+                        </Button>
+                    </DisabledTooltip>
                 }
             </Box>
 

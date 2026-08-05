@@ -27,6 +27,28 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
 
     boolean existsByCaseNumber(String caseNumber);
 
+    @Query(
+            value = "SELECT EXISTS(SELECT 1 FROM v_user_process_instance_access_permissions p WHERE p.user_id = :userId AND p.target_process_instance_id = :processInstanceId AND p.permissions::text[] @> ARRAY[:permission])",
+            nativeQuery = true
+    )
+    boolean hasPermission(@Param("userId") String userId,
+                          @Param("processInstanceId") Long processInstanceId,
+                          @Param("permission") String permission);
+
+    @Query(
+            value = "SELECT DISTINCT p.target_process_instance_id FROM v_user_process_instance_access_permissions p WHERE p.user_id = :userId AND p.target_process_instance_id IS NOT NULL AND p.permissions::text[] @> ARRAY[:permission]",
+            nativeQuery = true
+    )
+    List<Long> getProcessInstanceIdsWithPermission(@Param("userId") String userId,
+                                                   @Param("permission") String permission);
+
+    @Query(
+            value = "SELECT EXISTS(SELECT 1 FROM v_user_process_instance_access_permissions p WHERE p.user_id = :userId AND p.target_process_instance_id IS NOT NULL AND p.permissions::text[] @> ARRAY[:permission])",
+            nativeQuery = true
+    )
+    boolean hasPermissionInAnyProcessInstance(@Param("userId") String userId,
+                                              @Param("permission") String permission);
+
     /**
      * Reads the highest increment used for the already rendered static parts of a case number template.
      *

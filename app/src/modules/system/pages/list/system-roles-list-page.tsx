@@ -1,13 +1,16 @@
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {Typography} from '@mui/material';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
-import React, {useCallback, useMemo} from 'react';
+import React, {useCallback} from 'react';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {SystemRoleEntity} from "../../entities/system-role-entity";
@@ -20,17 +23,22 @@ import {
     isDefaultUserSystemRole,
 } from '../../components/default-user-system-role-badge';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {Permission} from '../../../../data/permissions/permission';
+
+const systemRolesListPermissionCheck: GenericListPagePermissionConfig<SystemRoleEntity> = {
+    scope: {
+        type: 'system',
+    },
+    read: Permission.SYSTEM_ROLE_READ,
+    create: Permission.SYSTEM_ROLE_CREATE,
+    update: Permission.SYSTEM_ROLE_UPDATE,
+};
 
 export function SystemRolesListPage() {
     const navigate = useNavigate();
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
 
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
-
-    const header = useMemo(() => ({
+    const header = useCallback((permissions: GenericListPagePermissionState<SystemRoleEntity>) => ({
         icon: ModuleIcons.roles,
         title: 'Systemrollen',
         actions: [
@@ -39,7 +47,8 @@ export function SystemRolesListPage() {
                 icon: <AddOutlinedIcon/>,
                 to: '/system-roles/new',
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -66,7 +75,7 @@ export function SystemRolesListPage() {
                 </>
             ),
         },
-    }), [hasAccess]);
+    }), []);
 
     const fetchSystemRoles = useCallback((options: GenericListPropsFetchOptions<SystemRoleEntity>) => {
         return new SystemRolesApiService()
@@ -83,40 +92,57 @@ export function SystemRolesListPage() {
 
     const columnIcon = useCallback(() => ModuleIcons.roles, []);
 
-    const columnDefinitions = useMemo(() => [
+    const columnDefinitions = useCallback((permissions: GenericListPagePermissionState<SystemRoleEntity>) => [
         {
             field: 'name',
             headerName: 'Name',
             flex: 1,
-            renderCell: (params: any) => (
-                <CellLink
-                    to={`/system-roles/${params.id}`}
-                    title={hasAccess ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen'}
-                >
-                    {String(params.value)}
-                    {
-                        isDefaultUserSystemRole(params.row.id, defaultSystemRoleId) &&
-                        <DefaultUserSystemRoleBadge sx={{ml: 1}} />
-                    }
-                </CellLink>
-            ),
+            renderCell: (params: any) => {
+                const badge = isDefaultUserSystemRole(params.row.id, defaultSystemRoleId) &&
+                    <DefaultUserSystemRoleBadge sx={{ml: 1}} />;
+
+                return (
+                    <CellLink
+                        to={`/system-roles/${params.id}`}
+                        title={permissions.canUpdate(params.row) ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen'}
+                    >
+                        {String(params.value)}
+                        {badge}
+                    </CellLink>
+                );
+            },
         },
         {
             field: 'description',
             headerName: 'Beschreibung',
             flex: 2,
         },
-    ], [defaultSystemRoleId, hasAccess]);
+    ], [defaultSystemRoleId]);
 
     const getRowIdentifier = useCallback((row: SystemRoleEntity) => row.id.toString(), []);
 
-    const rowActions = useCallback((item: SystemRoleEntity) => [
-        {
-            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
-            to: `/system-roles/${item.id}`,
-            tooltip: hasAccess ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen',
-        },
-    ], [hasAccess]);
+    const rowActions = useCallback((item: SystemRoleEntity, permissions: GenericListPagePermissionState<SystemRoleEntity>) => {
+        const canUpdateSystemRole = permissions.canUpdate(item);
+
+        return [
+            {
+                icon: canUpdateSystemRole ? <EditOutlined/> : <Visibility/>,
+                to: `/system-roles/${item.id}`,
+                tooltip: canUpdateSystemRole ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen',
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<SystemRoleEntity>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Systemrollen vorhanden"
+            description="Es wurden noch keine Systemrollen angelegt."
+            addText="Neue Systemrolle anlegen"
+            onAdd={() => navigate('/system-roles/new')}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [navigate]);
 
     return (
         <PageWrapper
@@ -126,21 +152,15 @@ export function SystemRolesListPage() {
         >
             <GenericListPage<SystemRoleEntity>
                 header={header}
+                permissionCheck={systemRolesListPermissionCheck}
                 searchLabel="Systemrolle suchen"
                 searchPlaceholder="Name der Systemrolle eingeben…"
                 fetch={fetchSystemRoles}
                 columnIcon={columnIcon}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={
-                    <EmptyDataListPlaceholder
-                        title="Noch keine Systemrollen angelegt"
-                        description="Systemrollen bündeln globale Berechtigungen, die unabhängig von Organisationseinheiten oder Teams gelten."
-                        addText={hasAccess ? "Neue Systemrolle anlegen" : undefined}
-                        onAdd={hasAccess ? () => navigate('/system-roles/new') : undefined}
-                    />
-                }
-                noSearchResultsPlaceholder="Keine Systemrollen gefunden"
+                noDataPlaceholder={noDataPlaceholder}
+                noSearchResultsPlaceholder="Keine Systemrollen gefunden, die zu Ihrer Suche passen"
                 rowActionsCount={1}
                 rowActions={rowActions}
                 defaultSortField="name"

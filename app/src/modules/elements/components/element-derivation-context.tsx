@@ -210,7 +210,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
         const normalizedNewData = normalizeReplicatingContainerValues(element, newData);
-        const patchedDerivedData = patchDerivedDataWithAuthoredValues(element, normalizedNewData, derivedData);
+        const patchedDerivedData = patchDerivedDataWithAuthoredValues(element, normalizedNewData, baseDerivedData);
         setInternalDerivedData(patchedDerivedData);
         onDerivedDataChange?.(patchedDerivedData);
         onAuthoredElementValuesChange(normalizedNewData);

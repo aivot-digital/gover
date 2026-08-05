@@ -3,14 +3,12 @@ import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import React from 'react';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
+import {Permission} from '../../../../data/permissions/permission';
 
 export function UserRolesDetailsPage() {
-    const userIsAdmin = useUserIsAdmin();
-
     return (
         <PageWrapper
             title="Domänenrolle bearbeiten"
@@ -18,7 +16,14 @@ export function UserRolesDetailsPage() {
             background
         >
             <GenericDetailsPage<UserRoleResponseDTO, number, undefined>
-                isEditable={() => userIsAdmin}
+                permissionCheck={{
+                    create: Permission.DOMAIN_ROLE_CREATE,
+                    read: Permission.DOMAIN_ROLE_READ,
+                    update: Permission.DOMAIN_ROLE_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={{
                     icon: ModuleIcons.roles,
                     title: 'Domänenrolle bearbeiten',
@@ -40,7 +45,7 @@ export function UserRolesDetailsPage() {
                                 >
                                     Domänenrollen ergänzen Systemrollen um kontextbezogene Rechte. Sie
                                     wirken nur dort, wo Mitarbeiter:innen über eine
-                                    Mitgliedschaft tatsächlich zugewiesen ist.
+                                    Mitgliedschaft tatsächlich zugewiesen sind.
                                 </Typography>
                             </>
                         ),
@@ -54,12 +59,24 @@ export function UserRolesDetailsPage() {
                     {
                         path: '/user-roles/:id/department-memberships',
                         label: 'Zuordnungen in Organisationseinheiten',
-                        isDisabled: (item) => !item?.id,
+                        onlyExisting: true,
+                        requiredPermission: {
+                            permission: Permission.DEPARTMENT_MEMBERSHIP_READ,
+                            scope: {
+                                type: 'anyDepartment',
+                            },
+                        },
                     },
                     {
                         path: '/user-roles/:id/team-memberships',
                         label: 'Zuordnungen in Teams',
-                        isDisabled: (item) => !item?.id,
+                        onlyExisting: true,
+                        requiredPermission: {
+                            permission: Permission.TEAM_MEMBERSHIP_READ,
+                            scope: {
+                                type: 'anyTeam',
+                            },
+                        },
                     },
                 ]}
                 initializeItem={(api) => new UserRolesApiService().initialize()}
@@ -80,7 +97,7 @@ export function UserRolesDetailsPage() {
                     label: 'Liste der Domänenrollen',
                     to: '/user-roles',
                 }}
-                entityType={ServerEntityType.UserRoles}
+                entityType={ServerEntityType.DomainRoles}
             />
         </PageWrapper>
     );

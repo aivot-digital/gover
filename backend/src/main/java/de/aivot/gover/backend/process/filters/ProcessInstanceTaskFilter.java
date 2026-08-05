@@ -1,15 +1,14 @@
 package de.aivot.gover.backend.process.filters;
 
-import de.aivot.gover.backend.lib.models.Filter;
+import de.aivot.gover.backend.lib.models.EntityFilter;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import de.aivot.gover.backend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.util.UUID;
 
-public class ProcessInstanceTaskFilter implements Filter<ProcessInstanceTaskEntity> {
+public class ProcessInstanceTaskFilter extends EntityFilter<ProcessInstanceTaskEntity> {
     private UUID accessKey;
     private Long processInstanceId;
     private Integer processId;
@@ -24,8 +23,8 @@ public class ProcessInstanceTaskFilter implements Filter<ProcessInstanceTaskEnti
 
     @Nonnull
     @Override
-    public Specification<ProcessInstanceTaskEntity> build() {
-        var builder = SpecificationBuilder
+    public SpecificationBuilder<ProcessInstanceTaskEntity> createSpecBuilder() {
+        return SpecificationBuilder
                 .create(ProcessInstanceTaskEntity.class)
                 .withEquals("accessKey", accessKey)
                 .withEquals("processInstanceId", processInstanceId)
@@ -34,8 +33,6 @@ public class ProcessInstanceTaskFilter implements Filter<ProcessInstanceTaskEnti
                 .withEquals("processNodeId", processNodeId)
                 .withEquals("status", status)
                 .withContains("assignedUserId", assignedUserId);
-
-        return builder.build();
     }
 
     public UUID getAccessKey() {

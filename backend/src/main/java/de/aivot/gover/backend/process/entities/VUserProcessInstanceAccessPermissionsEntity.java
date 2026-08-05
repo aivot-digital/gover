@@ -28,7 +28,7 @@ public class VUserProcessInstanceAccessPermissionsEntity {
 
     @Id
     @Nonnull
-    private Integer targetProcessInstanceId;
+    private Long targetProcessInstanceId;
 
     @Nonnull
     private List<String> permissions;
@@ -39,7 +39,7 @@ public class VUserProcessInstanceAccessPermissionsEntity {
     public VUserProcessInstanceAccessPermissionsEntity(@Nonnull String userId,
                                                        @Nullable Integer viaSourceTeamId,
                                                        @Nullable Integer viaSourceDepartmentId,
-                                                       @Nonnull Integer targetProcessInstanceId,
+                                                       @Nonnull Long targetProcessInstanceId,
                                                        @Nonnull List<String> permissions) {
         this.userId = userId;
         this.viaSourceTeamId = viaSourceTeamId;
@@ -93,12 +93,12 @@ public class VUserProcessInstanceAccessPermissionsEntity {
     }
 
     @Nonnull
-    public Integer getTargetProcessInstanceId() {
+    public Long getTargetProcessInstanceId() {
         return targetProcessInstanceId;
     }
 
-    public VUserProcessInstanceAccessPermissionsEntity setTargetProcessInstanceId(@Nonnull Integer targetProcessId) {
-        this.targetProcessInstanceId = targetProcessId;
+    public VUserProcessInstanceAccessPermissionsEntity setTargetProcessInstanceId(@Nonnull Long targetProcessInstanceId) {
+        this.targetProcessInstanceId = targetProcessInstanceId;
         return this;
     }
 

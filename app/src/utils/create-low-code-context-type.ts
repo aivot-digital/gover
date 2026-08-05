@@ -129,7 +129,7 @@ function elementToValueType(element: AnyElement): string {
         case ElementType.DomainAndUserSelect:
             return '{type: \'orgUnit\' | \'team\' | \'user\'; id: string}[]';
         case ElementType.AssignmentContext:
-            return '{domainAndUserSelection: {type: \'orgUnit\' | \'team\' | \'user\'; id: string}[] | null | undefined; preferPreviousTaskAssignee: boolean | null | undefined; preferUninvolvedUser: boolean | null | undefined; preferProcessInstanceAssignee: boolean | null | undefined}';
+            return '{domainAndUserSelection: {type: \'orgUnit\' | \'team\' | \'user\'; id: string}[] | null | undefined; generalAssigneePreference: \'previousProcessStepAssignee\' | \'uninvolvedUser\' | \'processInstanceAssignee\' | null | undefined; repeatExecutionAssigneePreference: \'previousIterationAssignee\' | \'differentFromPreviousIterationAssignee\' | null | undefined}';
         case ElementType.NoCodeInput:
             return '{noCode: Record<string, unknown> | null}';
         case ElementType.UiDefinitionInput:

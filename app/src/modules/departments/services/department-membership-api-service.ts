@@ -8,8 +8,14 @@ interface DepartmentMembershipFilter {
     userIds: string[];
 }
 
+export interface DepartmentMembershipCreateRequest {
+    departmentId: number;
+    userId: string;
+    roleIds?: number[];
+}
+
 export class DepartmentMembershipApiService extends BaseCrudApiService<
-    DepartmentMembershipEntity,
+    DepartmentMembershipCreateRequest,
     DepartmentMembershipEntity,
     DepartmentMembershipEntity,
     DepartmentMembershipEntity,

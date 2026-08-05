@@ -1,5 +1,5 @@
 import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Grid, Link, Stack, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type HelpDialogProps} from './help-dialog-props';
 import ExpandMoreOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
@@ -7,8 +7,89 @@ import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../
 import {PublicDepartmentResponseDTO} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {MarkdownContent} from '../../components/markdown-content/markdown-content';
+import {formatPhoneNumberForDisplay, normalizePhoneNumberForTelLink} from '../../utils/phone-number-utils';
+import {alpha} from '@mui/material/styles';
 
 export const HelpDialogId = 'help';
+
+const CollapsedSupportInfoMaxHeight = 144;
+
+function ExpandableSupportInfo(props: {
+    markdown: string;
+}) {
+    const {
+        markdown,
+    } = props;
+    const contentRef = useRef<HTMLDivElement | null>(null);
+    const [expanded, setExpanded] = useState(false);
+    const [canToggle, setCanToggle] = useState(false);
+
+    useEffect(() => {
+        setExpanded(false);
+    }, [markdown]);
+
+    useLayoutEffect(() => {
+        const contentElement = contentRef.current;
+        if (contentElement == null) {
+            return undefined;
+        }
+
+        const updateCanToggle = () => {
+            setCanToggle(contentElement.scrollHeight > CollapsedSupportInfoMaxHeight + 1);
+        };
+
+        updateCanToggle();
+
+        const resizeObserver = new ResizeObserver(updateCanToggle);
+        resizeObserver.observe(contentElement);
+
+        return () => resizeObserver.disconnect();
+    }, [markdown]);
+
+    return (
+        <Box>
+            <Box
+                ref={contentRef}
+                sx={{
+                    position: 'relative',
+                    maxHeight: canToggle && !expanded ? CollapsedSupportInfoMaxHeight : 'none',
+                    overflow: 'hidden',
+                }}
+            >
+                <MarkdownContent markdown={markdown}/>
+                {
+                    canToggle &&
+                    !expanded &&
+                    <Box
+                        aria-hidden="true"
+                        sx={(theme) => ({
+                            position: 'absolute',
+                            right: 0,
+                            bottom: 0,
+                            left: 0,
+                            height: 40,
+                            background: `linear-gradient(to bottom, ${alpha(theme.palette.background.paper, 0)}, ${theme.palette.background.paper})`,
+                        })}
+                    />
+                }
+            </Box>
+            {
+                canToggle &&
+                <Button
+                    size="small"
+                    sx={{
+                        mt: 1,
+                        ml: -1,
+                    }}
+                    aria-expanded={expanded}
+                    onClick={() => setExpanded((prev) => !prev)}
+                >
+                    {expanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
+                </Button>
+            }
+        </Box>
+    );
+}
 
 function SupportContactBlock(props: {
     title: string;
@@ -26,6 +107,8 @@ function SupportContactBlock(props: {
         info,
         mailSubject,
     } = props;
+    const normalizedPhoneNumber = normalizePhoneNumberForTelLink(phone);
+    const phoneNumberLabel = formatPhoneNumberForDisplay(phone);
 
     return (
         <Box
@@ -61,8 +144,16 @@ function SupportContactBlock(props: {
                 }
                 {
                     phone != null &&
+                    phone.trim().length > 0 &&
                     <Typography>
-                        <b>Telefon:</b> {phone}
+                        <b>Telefon:</b>{' '}
+                        {
+                            normalizedPhoneNumber != null ?
+                                <Link href={`tel:${normalizedPhoneNumber}`}>
+                                    {phoneNumberLabel}
+                                </Link> :
+                                phoneNumberLabel
+                        }
                     </Typography>
                 }
                 {
@@ -78,7 +169,7 @@ function SupportContactBlock(props: {
                             },
                         }}
                     >
-                        <MarkdownContent markdown={info}/>
+                        <ExpandableSupportInfo markdown={info}/>
                     </Box>
                 }
             </Stack>
@@ -90,30 +181,54 @@ export function HelpDialog(props: HelpDialogProps) {
     const application = props.form;
     const [technicalDepartment, setTechnicalDepartment] = useState<PublicDepartmentResponseDTO>();
     const [specialDepartment, setSpecialDepartment] = useState<PublicDepartmentResponseDTO>();
+    const technicalSupportDepartmentId = application?.technicalSupportDepartmentId ?? null;
+    const legalSupportDepartmentId = application?.legalSupportDepartmentId ?? null;
 
     useEffect(() => {
-        const ac = new AbortController();
-
-        if (
-            application?.technicalSupportDepartmentId != null &&
-            (technicalDepartment == null || technicalDepartment.id !== application.technicalSupportDepartmentId)
-        ) {
-            new DepartmentApiService()
-                .retrievePublic(application.technicalSupportDepartmentId)
-                .then(setTechnicalDepartment);
+        if (technicalSupportDepartmentId == null) {
+            setTechnicalDepartment(undefined);
+            return;
         }
 
-        if (
-            application.legalSupportDepartmentId != null &&
-            (specialDepartment == null || specialDepartment.id !== application.legalSupportDepartmentId)
-        ) {
-            new DepartmentApiService()
-                .retrievePublic(application.legalSupportDepartmentId)
-                .then(setSpecialDepartment);
+        let isCancelled = false;
+
+        // Clear stale department data immediately when the configured source is removed or changed.
+        setTechnicalDepartment(undefined);
+        new DepartmentApiService()
+            .retrievePublic(technicalSupportDepartmentId)
+            .then((department) => {
+                if (!isCancelled) {
+                    setTechnicalDepartment(department);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [technicalSupportDepartmentId]);
+
+    useEffect(() => {
+        if (legalSupportDepartmentId == null) {
+            setSpecialDepartment(undefined);
+            return;
         }
 
-        return () => ac.abort();
-    }, [application, technicalDepartment, specialDepartment]);
+        let isCancelled = false;
+
+        // Clear stale department data immediately when the configured source is removed or changed.
+        setSpecialDepartment(undefined);
+        new DepartmentApiService()
+            .retrievePublic(legalSupportDepartmentId)
+            .then((department) => {
+                if (!isCancelled) {
+                    setSpecialDepartment(department);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [legalSupportDepartmentId]);
 
     const mailSubjectTitle = application.publicTitle ?? 'Online-Formular';
     const hasSpecialContact = specialDepartment != null;

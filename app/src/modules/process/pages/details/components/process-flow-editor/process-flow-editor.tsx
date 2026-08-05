@@ -47,8 +47,6 @@ import {type ProcessInstanceAttachmentSetEntity} from '../../../../entities/proc
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import Remove from '@aivot/mui-material-symbols-400-n25-outlined/Remove';
 import CropFree from '@aivot/mui-material-symbols-400-n25-outlined/CropFree';
-import Lock from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
-import LockOpen from '@aivot/mui-material-symbols-400-n25-outlined/LockOpen';
 import ViewRealSize from '@aivot/mui-material-symbols-400-n25-outlined/ViewRealSize';
 import {getLatestTaskForEdge} from './utils/runtime-task-utils';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
@@ -60,6 +58,7 @@ import {
 
 import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 import {AlertComponent} from '../../../../../../components/alert/alert-component';
+import {ProcessNodeProviderDetailsDialog} from '../../../../components/process-node-provider-details';
 
 const FLOW_MIN_ZOOM = 0.25;
 const FLOW_MAX_ZOOM = 2;
@@ -179,15 +178,11 @@ interface ProcessFlowEditorViewportControlsProps {
         padding: number;
         duration: number;
     };
-    isViewportLocked: boolean;
-    onToggleViewportLock: () => void;
 }
 
 function ProcessFlowEditorViewportControls(props: ProcessFlowEditorViewportControlsProps): ReactNode {
     const {
         fitViewOptions,
-        isViewportLocked,
-        onToggleViewportLock,
     } = props;
 
     const {
@@ -252,19 +247,6 @@ function ProcessFlowEditorViewportControls(props: ProcessFlowEditorViewportContr
                 tooltip="Zoom auf Originalgröße (100 %)"
             >
                 <ViewRealSize sx={{fontSize: 18}}/>
-            </ProcessFlowEditorControlButton>
-
-            <ProcessFlowEditorControlButton
-                className="process-flow-editor-control-button"
-                onClick={onToggleViewportLock}
-                ariaLabel={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
-                tooltip={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
-            >
-                {
-                    isViewportLocked ?
-                        <Lock sx={{fontSize: 18}}/> :
-                        <LockOpen sx={{fontSize: 18}}/>
-                }
             </ProcessFlowEditorControlButton>
         </Controls>
     );
@@ -479,9 +461,9 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     // Keep the canvas hidden until the first viewport transform has been applied so the graph
     // never flashes in at the default top-left origin before we center it on the start lane.
     const [isInitialViewportReady, setIsInitialViewportReady] = useState<boolean>(processFlow.nodes.length === 0);
-    const [isViewportLocked, setIsViewportLocked] = useState<boolean>(false);
     const [canvasTriggerLaneHeaderPosition, setCanvasTriggerLaneHeaderPosition] = useState<CanvasTriggerLaneHeaderPosition | null>(null);
     const [layoutError, setLayoutError] = useState<ProcessFlowEditorLayoutError | null>(null);
+    const [providerDetailsDialogProvider, setProviderDetailsDialogProvider] = useState<ProcessNodeProvider | null>(null);
 
     const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
@@ -497,6 +479,9 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const hasProcessNodes = processFlow.nodes.length > 0;
     const canAddTrigger = isEditable && onAddTrigger != null;
     const handleAddTrigger = onAddTrigger ?? NOOP_ADD_TRIGGER;
+    const handleShowNodeProviderDetails = useCallback((provider: ProcessNodeProvider): void => {
+        setProviderDetailsDialogProvider(provider);
+    }, []);
     const hasAllNodeProviders = useMemo(() => (
         processFlow.nodes.every((node) => (
             nodeProviders.some((provider) => (
@@ -524,6 +509,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onConnectNodeToExisting: onConnectNodeToExisting ?? NOOP_CONNECT_NODE_TO_EXISTING,
         onStartReplaceNode: onStartReplaceNode ?? NOOP_START_REPLACE_NODE,
         onStartCloneNode: onStartCloneNode ?? NOOP_START_CLONE_NODE,
+        onShowNodeProviderDetails: handleShowNodeProviderDetails,
 
         onReloadRuntimeData: onReloadRuntimeData,
         onDownloadAttachment,
@@ -545,6 +531,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onDeleteNode,
         onStartReplaceNode,
         onStartCloneNode,
+        handleShowNodeProviderDetails,
         runtimeData,
         onDownloadAttachment,
         onReloadRuntimeData,
@@ -554,9 +541,6 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         showNodeProblemsForNodes,
         onSelectNode,
     ]);
-    const handleToggleViewportLock = useCallback(() => {
-        setIsViewportLocked((current) => !current);
-    }, []);
     const resetInitialViewportState = useCallback((isReady: boolean) => {
         hasResolvedInitialViewportRef.current = false;
         setPendingInitialViewport(false);
@@ -767,147 +751,155 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         <ProcessFlowEditorProvider
             value={contextValue}
         >
-            <ReactFlow
-                className="process-flow-editor"
-                style={{
-                    '--process-flow-editor-top-fade-color-solid': alpha(theme.palette.background.default, 0.96),
-                    '--process-flow-editor-top-fade-color-mid': alpha(theme.palette.background.default, 0.72),
-                    '--process-flow-editor-top-fade-color-transparent': alpha(theme.palette.background.default, 0),
-                    opacity: isInitialViewportReady || layoutError != null ? 1 : 0,
-                    transition: 'opacity 120ms ease-out',
-                } as React.CSSProperties}
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={handleNodesChange}
-                onEdgesChange={onEdgesChange}
-                onlyRenderVisibleElements
-                nodesDraggable={false}
-                nodesConnectable={isEditable}
-                elementsSelectable={false}
-                nodesFocusable={false}
-                edgesFocusable={false}
-                edgesReconnectable={false}
-                nodeTypes={NodeTypes}
-                edgeTypes={EdgeTypes}
-                minZoom={FLOW_MIN_ZOOM}
-                maxZoom={FLOW_MAX_ZOOM}
-                panOnDrag={!isViewportLocked}
-                zoomOnScroll={!isViewportLocked}
-                zoomOnPinch={!isViewportLocked}
-                zoomOnDoubleClick={!isViewportLocked}
-                preventScrolling={!isViewportLocked}
-                proOptions={{
-                    hideAttribution: true,
-                }}
-                onNodeClick={(_, node) => {
-                    if (onSelectNode == null) {
-                        return;
-                    }
-                    onSelectNode(node.data.graphNode.node);
-                }}
-                onPaneClick={() => {
-                    if (onSelectNode == null) {
-                        return;
-                    }
-
-                    onSelectNode(null);
-                }}
-                onConnect={(a) => {
-                    if (a.source == null || a.target == null || a.sourceHandle == null || onAddEdge == null) {
-                        return;
-                    }
-
-                    const sourceId = Number.parseInt(a.source, 10);
-                    const targetId = Number.parseInt(a.target, 10);
-                    if (Number.isNaN(sourceId) || Number.isNaN(targetId)) {
-                        return;
-                    }
-
-                    onAddEdge(sourceId, targetId, a.sourceHandle);
-                }}
-                onConnectStart={() => {
-                    if (!isEditable) {
-                        return;
-                    }
-                    setShowTargetHandles(true);
-                }}
-                onConnectEnd={() => {
-                    if (!isEditable) {
-                        return;
-                    }
-                    setShowTargetHandles(false);
-                }}
-            >
-                {
-                    !hasProcessNodes &&
-                    canAddTrigger &&
-                    <ProcessFlowEditorEmptyState
-                        label={emptyCanvasAddTriggerLabel}
-                        onAddTrigger={handleAddTrigger}
-                        verticalOffset={EMPTY_CANVAS_ADD_TRIGGER_VERTICAL_OFFSET}
-                    />
-                }
-                {
-                    canvasTriggerLaneHeaderPosition != null &&
-                    canAddTrigger &&
-                    <ProcessFlowEditorCanvasTriggerLaneHeader
-                        label={canvasAddTriggerLabel}
-                        onAddTrigger={handleAddTrigger}
-                        position={canvasTriggerLaneHeaderPosition}
-                    />
-                }
-                {
-                    layoutError != null &&
-                    <ProcessFlowEditorLayoutErrorPanel
-                        layoutError={layoutError}
-                    />
-                }
-                {
-                    topLeftPanel != null &&
-                    <Panel
-                        position="top-left"
-                        className="process-flow-editor-status-panel"
-                    >
-                        {topLeftPanel}
-                    </Panel>
-                }
-                {
-                    topRightPanel != null &&
-                    <Panel
-                        position="top-right"
-                        className="process-flow-editor-status-panel process-flow-editor-status-panel-right"
-                    >
-                        {topRightPanel}
-                    </Panel>
-                }
-                <Background
-                    variant={BackgroundVariant.Dots}
-                />
-                <ProcessFlowEditorViewportControls
-                    fitViewOptions={fitViewOptions}
-                    isViewportLocked={isViewportLocked}
-                    onToggleViewportLock={handleToggleViewportLock}
-                />
-                <MiniMap
-                    className="process-flow-editor-minimap"
-                    position="bottom-right"
-                    pannable={true}
-                    zoomable={true}
-                    zoomStep={0.8}
-                    nodeBorderRadius={12}
-                    nodeStrokeWidth={1.5}
-                    nodeColor={() => 'rgba(148, 163, 184, 0.34)'}
-                    nodeStrokeColor={() => 'rgba(100, 116, 139, 0.28)'}
-                    maskColor="rgba(248, 250, 252, 0.8)"
-                    maskStrokeColor="rgba(100, 116, 139, 0.28)"
-                    maskStrokeWidth={1}
+            <>
+                <ReactFlow
+                    className="process-flow-editor"
                     style={{
-                        backgroundColor: '#ffffff',
-                        width: 184,
-                        height: 116,
+                        '--process-flow-editor-top-fade-color-solid': alpha(theme.palette.background.default, 0.96),
+                        '--process-flow-editor-top-fade-color-mid': alpha(theme.palette.background.default, 0.72),
+                        '--process-flow-editor-top-fade-color-transparent': alpha(theme.palette.background.default, 0),
+                        opacity: isInitialViewportReady || layoutError != null ? 1 : 0,
+                        transition: 'opacity 120ms ease-out',
+                    } as React.CSSProperties}
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={handleNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onlyRenderVisibleElements
+                    nodesDraggable={false}
+                    nodesConnectable={isEditable}
+                    elementsSelectable={false}
+                    nodesFocusable={false}
+                    edgesFocusable={false}
+                    edgesReconnectable={false}
+                    nodeTypes={NodeTypes}
+                    edgeTypes={EdgeTypes}
+                    minZoom={FLOW_MIN_ZOOM}
+                    maxZoom={FLOW_MAX_ZOOM}
+                    panOnDrag={true}
+                    zoomOnScroll={true}
+                    zoomOnPinch={true}
+                    zoomOnDoubleClick={true}
+                    preventScrolling={true}
+                    proOptions={{
+                        hideAttribution: true,
+                    }}
+                    onNodeClick={(_, node) => {
+                        if (onSelectNode == null) {
+                            return;
+                        }
+                        onSelectNode(node.data.graphNode.node);
+                    }}
+                    onPaneClick={() => {
+                        if (onSelectNode == null) {
+                            return;
+                        }
+
+                        onSelectNode(null);
+                    }}
+                    onConnect={(a) => {
+                        if (a.source == null || a.target == null || a.sourceHandle == null || onAddEdge == null) {
+                            return;
+                        }
+
+                        const sourceId = Number.parseInt(a.source, 10);
+                        const targetId = Number.parseInt(a.target, 10);
+                        if (Number.isNaN(sourceId) || Number.isNaN(targetId)) {
+                            return;
+                        }
+
+                        onAddEdge(sourceId, targetId, a.sourceHandle);
+                    }}
+                    onConnectStart={() => {
+                        if (!isEditable) {
+                            return;
+                        }
+                        setShowTargetHandles(true);
+                    }}
+                    onConnectEnd={() => {
+                        if (!isEditable) {
+                            return;
+                        }
+                        setShowTargetHandles(false);
+                    }}
+                >
+                    {
+                        !hasProcessNodes &&
+                        canAddTrigger &&
+                        <ProcessFlowEditorEmptyState
+                            label={emptyCanvasAddTriggerLabel}
+                            onAddTrigger={handleAddTrigger}
+                            verticalOffset={EMPTY_CANVAS_ADD_TRIGGER_VERTICAL_OFFSET}
+                        />
+                    }
+                    {
+                        canvasTriggerLaneHeaderPosition != null &&
+                        canAddTrigger &&
+                        <ProcessFlowEditorCanvasTriggerLaneHeader
+                            label={canvasAddTriggerLabel}
+                            onAddTrigger={handleAddTrigger}
+                            position={canvasTriggerLaneHeaderPosition}
+                        />
+                    }
+                    {
+                        layoutError != null &&
+                        <ProcessFlowEditorLayoutErrorPanel
+                            layoutError={layoutError}
+                        />
+                    }
+                    {
+                        topLeftPanel != null &&
+                        <Panel
+                            position="top-left"
+                            className="process-flow-editor-status-panel"
+                        >
+                            {topLeftPanel}
+                        </Panel>
+                    }
+                    {
+                        topRightPanel != null &&
+                        <Panel
+                            position="top-right"
+                            className="process-flow-editor-status-panel process-flow-editor-status-panel-right"
+                        >
+                            {topRightPanel}
+                        </Panel>
+                    }
+                    <Background
+                        variant={BackgroundVariant.Dots}
+                    />
+                    <ProcessFlowEditorViewportControls
+                        fitViewOptions={fitViewOptions}
+                    />
+                    <MiniMap
+                        className="process-flow-editor-minimap"
+                        position="bottom-right"
+                        pannable={true}
+                        zoomable={true}
+                        zoomStep={0.8}
+                        nodeBorderRadius={12}
+                        nodeStrokeWidth={1.5}
+                        nodeColor={() => 'rgba(148, 163, 184, 0.34)'}
+                        nodeStrokeColor={() => 'rgba(100, 116, 139, 0.28)'}
+                        maskColor="rgba(248, 250, 252, 0.8)"
+                        maskStrokeColor="rgba(100, 116, 139, 0.28)"
+                        maskStrokeWidth={1}
+                        style={{
+                            backgroundColor: '#ffffff',
+                            width: 184,
+                            height: 116,
+                        }}
+                    />
+                </ReactFlow>
+
+                <ProcessNodeProviderDetailsDialog
+                    open={providerDetailsDialogProvider != null}
+                    provider={providerDetailsDialogProvider}
+                    onClose={() => {
+                        setProviderDetailsDialogProvider(null);
                     }}
                 />
-            </ReactFlow>
+            </>
         </ProcessFlowEditorProvider>
     );
 }

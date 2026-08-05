@@ -5,10 +5,12 @@ import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
 import de.aivot.gover.backend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.gover.backend.dataObject.filters.DataObjectSchemaFilter;
+import de.aivot.gover.backend.dataObject.permissions.DataObjectPermissionProvider;
 import de.aivot.gover.backend.dataObject.services.DataObjectSchemaService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,26 +40,35 @@ public class DataObjectSchemaController {
     private final ScopedAuditService auditService;
     private final DataObjectSchemaService service;
     private final UserService userService;
+    private final PermissionService permissionService;
 
     @Autowired
     public DataObjectSchemaController(AuditService auditService,
-                                      DataObjectSchemaService service, UserService userService) {
+                                      DataObjectSchemaService service,
+                                      UserService userService,
+                                      PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(DataObjectSchemaController.class, "Datenmodelle");
 
         this.service = service;
         this.userService = userService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
     @Operation(
             summary = "List Data Object Schemas",
             description = "Retrieve a paginated list of data object schemas. " +
-                    "Supports filtering based on various criteria."
+                    "Supports filtering based on various criteria. " +
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_SCHEMA_READ + "`."
     )
     public Page<DataObjectSchemaEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid DataObjectSchemaFilter filter
     ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_SCHEMA_READ);
+
         return service
                 .list(pageable, filter);
     }
@@ -66,7 +77,7 @@ public class DataObjectSchemaController {
     @Operation(
             summary = "Create Data Object Schema",
             description = "Create a new data object schema. " +
-                    "Requires system administrator privileges."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_SCHEMA_CREATE + "`."
     )
     public DataObjectSchemaEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -74,9 +85,10 @@ public class DataObjectSchemaController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSystemAdmin()
-                .orElseThrow(ResponseException::noSystemAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_SCHEMA_CREATE);
 
         var created = service.create(newDataObjectEntity);
 
@@ -101,11 +113,16 @@ public class DataObjectSchemaController {
     @GetMapping("{key}/")
     @Operation(
             summary = "Retrieve Data Object Schema",
-            description = "Retrieve a specific data object schema by its unique key."
+            description = "Retrieve a specific data object schema by its unique key. " +
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_SCHEMA_READ + "`."
     )
     public DataObjectSchemaEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String key
     ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_SCHEMA_READ);
+
         return service
                 .retrieve(key)
                 .orElseThrow(ResponseException::notFound);
@@ -115,7 +132,7 @@ public class DataObjectSchemaController {
     @Operation(
             summary = "Update Data Object Schema",
             description = "Update an existing data object schema. " +
-                    "Requires system administrator privileges."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_SCHEMA_UPDATE + "`."
     )
     public DataObjectSchemaEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -124,9 +141,10 @@ public class DataObjectSchemaController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSystemAdmin()
-                .orElseThrow(ResponseException::noSystemAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_SCHEMA_UPDATE);
 
         var updated = service
                 .update(key, updatedDataObjectEntity);
@@ -152,7 +170,7 @@ public class DataObjectSchemaController {
     @Operation(
             summary = "Delete Data Object Schema",
             description = "Delete an existing data object schema. " +
-                    "Requires system administrator privileges."
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_SCHEMA_DELETE + "`."
     )
     public void destroy(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -160,9 +178,10 @@ public class DataObjectSchemaController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSystemAdmin()
-                .orElseThrow(ResponseException::noSystemAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_SCHEMA_DELETE);
 
         var deleted = service.delete(key);
 

@@ -18,6 +18,8 @@ interface DepartmentSelectFieldProps {
     required?: boolean;
     dialogTitle?: string;
     departments?: VDepartmentShadowedEntityWithChildren[];
+    isDepartmentSelectable?: (department: VDepartmentShadowedEntityWithChildren) => boolean;
+    getDepartmentDisabledTooltip?: (department: VDepartmentShadowedEntityWithChildren) => string | undefined;
 }
 
 export function DepartmentSelectField(props: DepartmentSelectFieldProps): React.ReactElement {
@@ -32,6 +34,8 @@ export function DepartmentSelectField(props: DepartmentSelectFieldProps): React.
         required = false,
         dialogTitle = 'Organisationseinheit auswählen',
         departments,
+        isDepartmentSelectable,
+        getDepartmentDisabledTooltip,
     } = props;
 
     const [showSelectDepartmentDialog, setShowSelectDepartmentDialog] = useState(false);
@@ -249,6 +253,8 @@ export function DepartmentSelectField(props: DepartmentSelectFieldProps): React.
                 open={showSelectDepartmentDialog}
                 title={dialogTitle}
                 departments={departments}
+                isDepartmentSelectable={isDepartmentSelectable}
+                getDepartmentDisabledTooltip={getDepartmentDisabledTooltip}
                 selectedDepartmentId={value?.id ?? null}
                 onClose={() => {
                     setShowSelectDepartmentDialog(false);

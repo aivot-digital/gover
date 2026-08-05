@@ -8,10 +8,12 @@ import de.aivot.gover.backend.config.dtos.UserConfigResponseDto;
 import de.aivot.gover.backend.config.entities.UserConfigEntity;
 import de.aivot.gover.backend.config.filters.UserConfigFilter;
 import de.aivot.gover.backend.config.models.UserConfigDefinition;
+import de.aivot.gover.backend.config.permissions.ConfigPermissionProvider;
 import de.aivot.gover.backend.config.services.UserConfigService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,18 +53,21 @@ public class UserConfigController {
     private final UserConfigService userConfigService;
 
     private final Map<String, UserConfigDefinition> userConfigDefinitions;
+    private final PermissionService permissionService;
     private final UserService userService;
 
     @Autowired
     public UserConfigController(AuditService auditService,
                                 UserConfigService userConfigService,
                                 List<UserConfigDefinition> userConfigDefinitions,
+                                PermissionService permissionService,
                                 UserService userService) {
         this.auditService = auditService.createScopedAuditService(UserConfigController.class, "Nutzerkonfiguration");
         this.userConfigService = userConfigService;
         this.userConfigDefinitions = userConfigDefinitions
                 .stream()
                 .collect(Collectors.toMap(UserConfigDefinition::getKey, Function.identity()));
+        this.permissionService = permissionService;
         this.userService = userService;
     }
 
@@ -81,7 +86,8 @@ public class UserConfigController {
             summary = "List User Configurations",
             description = "Retrieve a paginated list of user configurations for a specific user with optional filtering. " +
                     "If the special userId 'self' is used, the configurations of the authenticated user will be fetched. " +
-                    "Non system admin users can only see public configurations of other users."
+                    "Without the system-level permission `" + ConfigPermissionProvider.USER_CONFIG_READ +
+                    "`, only public configurations of other users are returned."
     )
     public Page<UserConfigResponseDto> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -97,8 +103,9 @@ public class UserConfigController {
 
         filter.setUserId(targetUserId);
 
-        // If the user is not fetching their own configurations, and the user is not an admin only public configurations are allowed
-        if (!userId.equals(user.getId()) && !user.getIsSystemAdmin()) {
+        // Users without read permission may only see public configurations of other users.
+        if (!targetUserId.equals(user.getId()) &&
+                !permissionService.hasSystemPermission(user.getId(), ConfigPermissionProvider.USER_CONFIG_READ)) {
             filter.setPublicConfig(true);
         }
 
@@ -120,7 +127,8 @@ public class UserConfigController {
             summary = "Update User Configuration",
             description = "Update the value of a specific user configuration identified by its key for a specific user. " +
                     "If the special userId 'self' is used, the configuration of the authenticated user will be updated. " +
-                    "Users can update their own configurations, while administrators can update configurations for any user."
+                    "Updating another user's configuration requires the system-level permission `" +
+                    ConfigPermissionProvider.USER_CONFIG_UPDATE + "`."
     )
     public UserConfigResponseDto update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -136,9 +144,8 @@ public class UserConfigController {
             userId = user.getId();
         }
 
-        // If the user is not updating their own configurations, and the user is not an admin, the action is forbidden
-        if (!userId.equals(user.getId()) && !user.getIsSystemAdmin()) {
-            throw ResponseException.forbidden("Nur Systemadministrator:innen dürfen die Konfigurationen anderer Benutzer ändern.");
+        if (!userId.equals(user.getId())) {
+            permissionService.requireSystemPermission(user.getId(), ConfigPermissionProvider.USER_CONFIG_UPDATE);
         }
 
         var def = userConfigDefinitions.get(key);

@@ -1,5 +1,5 @@
 import {Box, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType,
@@ -14,9 +14,17 @@ import {AlertComponent} from '../../../../components/alert/alert-component';
 import {IdentityData} from '../../models/identity-data';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 import {ApiError, isApiError} from '../../../../models/api-error';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
 
 export function IdentityProviderDetailsPageTest() {
     const [urlSearchParams, _] = useSearchParams();
+    const dispatch = useAppDispatch();
+    const canTestIdentityProvider = useHasSystemPermission(Permission.IDENTITY_PROVIDER_UPDATE);
 
     const {
         item: identityProvider,
@@ -24,14 +32,7 @@ export function IdentityProviderDetailsPageTest() {
 
     const [identityData, setIdentityData] = useState<IdentityData>();
     const [identityError, setIdentityError] = useState<string>();
-
-    const testLink = useMemo(() => {
-        if (identityProvider == null) {
-            return '#';
-        }
-
-        return IdentityProvidersApiService.createLink(identityProvider.key, identityProvider.key, 0);
-    }, [identityProvider]);
+    const [isStartingTest, setIsStartingTest] = useState(false);
 
     useEffect(() => {
         if (identityProvider == null) {
@@ -75,6 +76,25 @@ export function IdentityProviderDetailsPageTest() {
         }
     }, [urlSearchParams, identityProvider]);
 
+    const handleStartTest = async () => {
+        if (identityProvider == null || !canTestIdentityProvider || isStartingTest) {
+            return;
+        }
+
+        setIsStartingTest(true);
+        try {
+            const redirectUrl = await new IdentityProvidersApiService()
+                .startTest(
+                    identityProvider.key,
+                    `${window.location.origin}${window.location.pathname}`,
+                );
+            window.location.href = redirectUrl;
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Der Test des Nutzerkontenanbieters konnte nicht gestartet werden.'));
+            setIsStartingTest(false);
+        }
+    };
+
     return (
         <Box>
             <Typography
@@ -95,15 +115,21 @@ export function IdentityProviderDetailsPageTest() {
                     mb: 2,
                 }}
             >
-                <Button
-                    component="a"
-                    href={testLink}
-                    variant="contained"
-                    startIcon={<ScienceOutlinedIcon />}
-                    disabled={identityProvider == null}
+                <DisabledTooltip
+                    title={formatMissingPermissionTooltip(Permission.IDENTITY_PROVIDER_UPDATE)}
+                    disabled={!canTestIdentityProvider}
                 >
-                    Authentifizierung testen
-                </Button>
+                    <Button
+                        onClick={() => {
+                            void handleStartTest();
+                        }}
+                        variant="contained"
+                        startIcon={<ScienceOutlinedIcon />}
+                        disabled={identityProvider == null || isStartingTest || !canTestIdentityProvider}
+                    >
+                        Authentifizierung testen
+                    </Button>
+                </DisabledTooltip>
             </Box>
 
             {

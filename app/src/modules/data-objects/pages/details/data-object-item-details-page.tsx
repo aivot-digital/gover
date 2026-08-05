@@ -1,6 +1,6 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
-import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
+import {GenericDetailsPage, NEW_ID_INDICATOR} from '../../../../components/generic-details-page/generic-details-page';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {DataObjectSchema} from '../../models/data-object-schema';
 import {useEffect, useState} from 'react';
@@ -12,9 +12,15 @@ import {DataObjectItem} from '../../models/data-object-item';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
+import {Permission} from '../../../../data/permissions/permission';
+import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 
 export function DataObjectItemDetailsPage() {
-    const schemaKey = useParams().schemaKey;
+    const {schemaKey, id} = useParams();
+    const isNewItem = id === NEW_ID_INDICATOR;
+    useRequireSystemPermission(isNewItem ? Permission.OBJECT_ITEM_CREATE : Permission.OBJECT_ITEM_READ);
+    useRequireSystemPermission(Permission.OBJECT_SCHEMA_READ);
+    const canUpdateDataObjectSchema = useHasSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
 
     const api = useApi();
 
@@ -47,6 +53,14 @@ export function DataObjectItemDetailsPage() {
             background
         >
             <GenericDetailsPage<DataObjectItem, string, void>
+                permissionCheck={{
+                    create: Permission.OBJECT_ITEM_CREATE,
+                    read: Permission.OBJECT_ITEM_READ,
+                    update: Permission.OBJECT_ITEM_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={{
                     icon: <DataObject />,
                     title: `Datenobjekt bearbeiten: ${dataObjectSchema.name}`,
@@ -76,7 +90,7 @@ export function DataObjectItemDetailsPage() {
                             icon: <FolderData />,
                             to: `/data-models/${dataObjectSchema.key}`,
                             variant: 'text',
-                            label: 'Datenmodell bearbeiten',
+                            label: canUpdateDataObjectSchema ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
                         },
                     ],
                 }}
@@ -111,6 +125,7 @@ export function DataObjectItemDetailsPage() {
                     to: `/data-objects/${dataObjectSchema.key}/items`,
                 }}
                 entityType={ServerEntityType.DataObjectItems}
+                getSearchItemId={(item) => `${item.schemaKey},${item.id}`}
             />
         </PageWrapper>
     );

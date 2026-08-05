@@ -6,11 +6,9 @@ import {SecretsApiService} from '../../secrets-api-service';
 import {Secret} from '../../models/secret';
 import React from 'react';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {Permission} from '../../../../data/permissions/permission';
 
 export function SecretsDetailsPage() {
-    const userIsAdmin = useUserIsAdmin();
-
     return (
         <PageWrapper
             title="Geheimnis bearbeiten"
@@ -18,7 +16,14 @@ export function SecretsDetailsPage() {
             background
         >
             <GenericDetailsPage<Secret, string, undefined>
-                isEditable={() => userIsAdmin}
+                permissionCheck={{
+                    create: Permission.SECRET_CREATE,
+                    read: Permission.SECRET_READ,
+                    update: Permission.SECRET_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={{
                     icon: <KeyOutlinedIcon />,
                     title: 'Geheimnis bearbeiten',

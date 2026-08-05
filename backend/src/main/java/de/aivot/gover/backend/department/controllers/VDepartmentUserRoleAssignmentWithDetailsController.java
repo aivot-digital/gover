@@ -4,15 +4,14 @@ import de.aivot.gover.backend.audit.enums.AuditAction;
 import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
 import de.aivot.gover.backend.department.entities.VDepartmentUserRoleAssignmentWithDetailsEntity;
-import de.aivot.gover.backend.department.filters.VDepartmentMembershipWithPermissionsFilter;
 import de.aivot.gover.backend.department.filters.VDepartmentUserRoleAssignmentWithDetailsFilter;
+import de.aivot.gover.backend.department.permissions.DepartmentPermissionProvider;
 import de.aivot.gover.backend.department.services.DepartmentMembershipService;
-import de.aivot.gover.backend.department.services.VDepartmentMembershipWithPermissionsService;
 import de.aivot.gover.backend.department.services.VDepartmentUserRoleAssignmentWithDetailsService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
-import de.aivot.gover.backend.userRoles.data.PermissionLabels;
 import de.aivot.gover.backend.userRoles.entities.UserRoleAssignmentEntity;
 import de.aivot.gover.backend.userRoles.services.UserRoleAssignmentService;
 import de.aivot.gover.backend.utils.StringUtils;
@@ -52,24 +51,24 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
 
     private final VDepartmentUserRoleAssignmentWithDetailsService vDepartmentUserRoleAssignmentWithDetailsService;
     private final UserRoleAssignmentService userRoleAssignmentService;
-    private final VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService;
     private final UserService userService;
     private final DepartmentMembershipService departmentMembershipService;
+    private final PermissionService permissionService;
 
     @Autowired
     public VDepartmentUserRoleAssignmentWithDetailsController(AuditService auditService,
                                                               VDepartmentUserRoleAssignmentWithDetailsService vDepartmentUserRoleAssignmentWithDetailsService,
                                                               UserRoleAssignmentService userRoleAssignmentService,
-                                                              VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService,
                                                               UserService userService,
-                                                              DepartmentMembershipService departmentMembershipService) {
+                                                              DepartmentMembershipService departmentMembershipService,
+                                                              PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(VDepartmentUserRoleAssignmentWithDetailsController.class, "Organisationseinheiten");
 
         this.vDepartmentUserRoleAssignmentWithDetailsService = vDepartmentUserRoleAssignmentWithDetailsService;
         this.userRoleAssignmentService = userRoleAssignmentService;
-        this.vDepartmentMembershipWithPermissionsService = vDepartmentMembershipWithPermissionsService;
         this.userService = userService;
         this.departmentMembershipService = departmentMembershipService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -79,9 +78,40 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
                     "Supports filtering based on various criteria."
     )
     public Page<VDepartmentUserRoleAssignmentWithDetailsEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid VDepartmentUserRoleAssignmentWithDetailsFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.hasSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ)) {
+            if (filter.getDepartmentId() != null) {
+                permissionService.requireDepartmentPermission(
+                        user.getId(),
+                        filter.getDepartmentId(),
+                        DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ
+                );
+            } else {
+                var accessibleDepartmentIds = permissionService
+                        .getDepartmentsWithPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ);
+
+                if (filter.getDepartmentIds() != null) {
+                    accessibleDepartmentIds = filter.getDepartmentIds()
+                            .stream()
+                            .filter(accessibleDepartmentIds::contains)
+                            .toList();
+                }
+
+                if (accessibleDepartmentIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setDepartmentIds(accessibleDepartmentIds);
+            }
+        }
+
         return vDepartmentUserRoleAssignmentWithDetailsService
                 .list(pageable, filter);
     }
@@ -90,7 +120,8 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
     @Operation(
             summary = "Create Department User Role Assignment",
             description = "Create a new user role assignment within a department membership. " +
-                    "Requires super admin privileges or appropriate department edit permissions."
+                    "Requires the permission `" + DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_UPDATE +
+                    "` for the membership's organisation unit or at system level."
     )
     public VDepartmentUserRoleAssignmentWithDetailsEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -108,21 +139,11 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
                 .retrieve(newAssignment.getDepartmentMembershipId())
                 .orElseThrow(ResponseException::badRequest);
 
-        if (!user.getIsSuperAdmin()) {
-            var filter = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(user.getId())
-                    .setDepartmentId(membership.getDepartmentId())
-                    .setDepartmentPermissionEdit(true);
-
-            var hasPermissionToEdit = vDepartmentMembershipWithPermissionsService
-                    .exists(filter.build());
-
-            if (!hasPermissionToEdit) {
-                throw ResponseException
-                        .noPermission(PermissionLabels.DepartmentPermissionEdit);
-            }
-        }
+        permissionService.requireDepartmentPermission(
+                user.getId(),
+                membership.getDepartmentId(),
+                DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_UPDATE
+        );
 
         var created = userRoleAssignmentService
                 .create(newAssignment);
@@ -162,18 +183,44 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
             description = "Retrieve detailed information about a specific department user role assignment by its ID."
     )
     public VDepartmentUserRoleAssignmentWithDetailsEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
-        return vDepartmentUserRoleAssignmentWithDetailsService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var assignment = vDepartmentUserRoleAssignmentWithDetailsService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        var entity = userRoleAssignmentService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        if (Objects.isNull(entity.getDepartmentMembershipId())) {
+            throw ResponseException.notFound();
+        }
+
+        var membership = departmentMembershipService
+                .retrieve(entity.getDepartmentMembershipId())
+                .orElseThrow(ResponseException::badRequest);
+
+        permissionService.requireDepartmentPermission(
+                user.getId(),
+                membership.getDepartmentId(),
+                DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ
+        );
+
+        return assignment;
     }
 
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete Department User Role Assignment",
             description = "Delete a user role assignment from a department membership. " +
-                    "Requires super admin privileges or appropriate department edit permissions."
+                    "Requires the permission `" + DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_UPDATE +
+                    "` for the membership's organisation unit or at system level."
     )
     public void destroy(
             @AuthenticationPrincipal Jwt jwt,
@@ -195,21 +242,11 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
                 .retrieve(entity.getDepartmentMembershipId())
                 .orElseThrow(ResponseException::badRequest);
 
-        if (!user.getIsSuperAdmin()) {
-            var filter = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(user.getId())
-                    .setDepartmentId(membership.getDepartmentId())
-                    .setDepartmentPermissionEdit(true);
-
-            var hasPermissionToEdit = vDepartmentMembershipWithPermissionsService
-                    .exists(filter.build());
-
-            if (!hasPermissionToEdit) {
-                throw ResponseException
-                        .noPermission(PermissionLabels.DepartmentPermissionEdit);
-            }
-        }
+        permissionService.requireDepartmentPermission(
+                user.getId(),
+                membership.getDepartmentId(),
+                DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_UPDATE
+        );
 
         userRoleAssignmentService
                 .deleteEntity(entity);

@@ -242,10 +242,7 @@ class ApprovalActionNodeV1Test {
 
     private static AssignmentContextInputElementValue assignmentContext() {
         return new AssignmentContextInputElementValue()
-                .setDomainAndUserSelection(List.of(new DomainAndUserSelectInputElementValue("user", "user-1")))
-                .setPreferPreviousTaskAssignee(false)
-                .setPreferUninvolvedUser(false)
-                .setPreferProcessInstanceAssignee(false);
+                .setDomainAndUserSelection(List.of(new DomainAndUserSelectInputElementValue("user", "user-1")));
     }
 
     private static ElementDerivationService derivationService() {
@@ -264,9 +261,7 @@ class ApprovalActionNodeV1Test {
                 "customContent", "<p>Bitte in Drittsystem prüfen.</p>",
                 "assignmentContext", new AssignmentContextInputElementValue()
                         .setDomainAndUserSelection(null)
-                        .setPreferPreviousTaskAssignee(true)
-                        .setPreferUninvolvedUser(false)
-                        .setPreferProcessInstanceAssignee(false)
+                        .setGeneralAssigneePreference(AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PREVIOUS_PROCESS_STEP_ASSIGNEE)
         );
     }
 
@@ -392,6 +387,8 @@ class ApprovalActionNodeV1Test {
                 Integer processId,
                 Integer processVersion,
                 Long processInstanceId,
+                Integer currentProcessNodeId,
+                Long currentProcessInstanceTaskId,
                 Integer previousProcessNodeId,
                 String processInstanceAssignedUserId,
                 AssignmentContextInputElementValue assignmentContext,

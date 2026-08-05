@@ -617,48 +617,36 @@ function assignmentContextFieldToYup(elem: AssignmentContextFieldElement): Schem
         .object()
         .shape({
             domainAndUserSelection: domainSelectionSchema,
-            preferPreviousTaskAssignee: yup.boolean().nullable(),
-            preferUninvolvedUser: yup.boolean().nullable(),
-            preferProcessInstanceAssignee: yup.boolean().nullable(),
+            generalAssigneePreference: yup.string().oneOf([
+                'none',
+                'previousProcessStepAssignee',
+                'uninvolvedUser',
+                'processInstanceAssignee',
+            ]).nullable(),
+            repeatExecutionAssigneePreference: yup.string().oneOf([
+                'none',
+                'previousIterationAssignee',
+                'differentFromPreviousIterationAssignee',
+            ]).nullable(),
         })
         .test(
-            'single-preference-only',
-            'Es darf nur eine Bevorzugungs-Option ausgewählt werden.',
+            'assignment-context-preference-requires-selection',
+            'Für eine Bevorzugung muss ein Personenkreis ausgewählt sein.',
             (value: unknown) => {
-                if (value == null || typeof value !== 'object') {
+                if (value == null) {
                     return true;
                 }
 
                 const typedValue = value as AssignmentContextValue;
-                const enabledPreferences = [
-                    typedValue.preferPreviousTaskAssignee === true,
-                    typedValue.preferUninvolvedUser === true,
-                    typedValue.preferProcessInstanceAssignee === true,
-                ]
-                    .filter((entry) => entry).length;
-
-                return enabledPreferences <= 1;
-            },
-        )
-        .test(
-            'normalize-assignment-context',
-            'Ungültiger Eintrag.',
-            (value: unknown) => {
-                if (value == null) {
-                    return elem.required !== true;
-                }
-
-                const typedValue = value as AssignmentContextValue;
                 const hasSelection = (typedValue.domainAndUserSelection ?? []).length > 0;
-                const hasPreference = typedValue.preferPreviousTaskAssignee === true ||
-                    typedValue.preferUninvolvedUser === true ||
-                    typedValue.preferProcessInstanceAssignee === true;
+                const hasPreference =
+                    typedValue.generalAssigneePreference === 'previousProcessStepAssignee' ||
+                    typedValue.generalAssigneePreference === 'uninvolvedUser' ||
+                    typedValue.generalAssigneePreference === 'processInstanceAssignee' ||
+                    typedValue.repeatExecutionAssigneePreference === 'previousIterationAssignee' ||
+                    typedValue.repeatExecutionAssigneePreference === 'differentFromPreviousIterationAssignee';
 
-                if (!hasSelection && !hasPreference) {
-                    return elem.required !== true;
-                }
-
-                return true;
+                return !hasPreference || hasSelection;
             },
         );
 

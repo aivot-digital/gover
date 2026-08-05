@@ -22,14 +22,18 @@ import {useApi} from '../../hooks/use-api';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {type StorageIndexItem} from '../../modules/storage/entities/storage-index-item-entity';
-import {StorageProvidersApiService} from '../../modules/storage/storage-providers-api-service';
-import {StorageProviderType} from '../../modules/storage/enums/storage-provider-type';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
 import {type Asset} from '../../modules/assets/models/asset';
-import {type StorageProviderEntity} from '../../modules/storage/entities/storage-provider-entity';
 import {AssetExplorer} from '../../modules/storage/components/asset-explorer';
 import {useConfirm} from '../../providers/confirm-provider';
 import {getFileTypeFilterSummary} from '../../utils/file-type-label';
+import {type AssetStorageProvider} from '../../modules/assets/models/asset-storage-provider';
+import {useHasSystemPermission} from '../../modules/permissions/hooks/use-permissions';
+import {Permission} from '../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../modules/permissions/utils/permission-utils';
+import {isApiError} from '../../models/api-error';
+
+type ProviderLoadError = 'permission' | 'generic';
 
 export interface AssetPickerDialogProps {
     title: string;
@@ -54,9 +58,11 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
     const api = useApi();
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
-    const [providers, setProviders] = useState<StorageProviderEntity[]>([]);
+    const canReadAssets = useHasSystemPermission(Permission.ASSET_READ);
+    const canUpdateAssets = useHasSystemPermission(Permission.ASSET_UPDATE);
+    const [providers, setProviders] = useState<AssetStorageProvider[]>([]);
     const [isLoadingProviders, setIsLoadingProviders] = useState(false);
-    const [hasProviderLoadError, setHasProviderLoadError] = useState(false);
+    const [providerLoadError, setProviderLoadError] = useState<ProviderLoadError>();
     const [selectedProviderId, setSelectedProviderId] = useState<number>();
     const [isProcessingSelection, setIsProcessingSelection] = useState(false);
     const [selectionProcessingMessage, setSelectionProcessingMessage] = useState<string>();
@@ -66,14 +72,22 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
     const loadProviders = useCallback(() => {
         const requestId = providerLoadRequestRef.current + 1;
         providerLoadRequestRef.current = requestId;
-        setIsLoadingProviders(true);
-        setHasProviderLoadError(false);
+        setProviders([]);
+        setSelectedProviderId(undefined);
+        setProviderLoadError(undefined);
 
-        new StorageProvidersApiService()
-            .listAll({
-                type: StorageProviderType.Assets,
-            })
-            .then(({content: loadedProviders}) => {
+        // The picker is embedded in forms that may still be readable without asset access.
+        if (!canReadAssets) {
+            setIsLoadingProviders(false);
+            setProviderLoadError('permission');
+            return;
+        }
+
+        setIsLoadingProviders(true);
+
+        new AssetsApiService()
+            .listStorageProviders()
+            .then((loadedProviders) => {
                 if (providerLoadRequestRef.current !== requestId) {
                     return;
                 }
@@ -83,7 +97,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                     .sort((a, b) => a.name.localeCompare(b.name, 'de', {sensitivity: 'base'}));
 
                 setProviders(sortedProviders);
-                setHasProviderLoadError(false);
+                setProviderLoadError(undefined);
                 setSelectedProviderId((previousProviderId) => {
                     if (previousProviderId != null && sortedProviders.some((provider) => provider.id === previousProviderId)) {
                         return previousProviderId;
@@ -99,7 +113,12 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
 
                 setProviders([]);
                 setSelectedProviderId(undefined);
-                setHasProviderLoadError(true);
+                if (isApiError(err) && err.status === 403) {
+                    setProviderLoadError('permission');
+                    return;
+                }
+
+                setProviderLoadError('generic');
                 dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter konnte nicht geladen werden.'));
             })
             .finally(() => {
@@ -107,7 +126,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                     setIsLoadingProviders(false);
                 }
             });
-    }, [dispatch]);
+    }, [canReadAssets, dispatch]);
 
     useEffect(() => {
         if (!show) {
@@ -219,6 +238,13 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
 
             if (mode === 'public' && assetIsPrivate === true) {
                 stopSelectionProcessing();
+                if (!canUpdateAssets) {
+                    dispatch(showErrorSnackbar(
+                        `Die Datei kann nicht ausgewählt werden, weil sie dafür veröffentlicht werden müsste. ${formatMissingPermissionTooltip(Permission.ASSET_UPDATE)}`,
+                    ));
+                    return;
+                }
+
                 const providerName = providers.find((provider) => provider.id === item.storageProviderId)?.name
                     ?? 'Unbekannter Speicheranbieter';
 
@@ -309,6 +335,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
         }
     }, [
         api,
+        canUpdateAssets,
         confirm,
         dispatch,
         loadAssetForSelection,
@@ -429,7 +456,14 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                         </Stack>
                     )}
 
-                    {!isLoadingProviders && hasProviderLoadError && (
+                    {!isLoadingProviders && providerLoadError === 'permission' && (
+                        <Alert severity="warning">
+                            Sie haben keine Berechtigung zum Anzeigen von Dateien und Medien. Für die Auswahl einer
+                            Datei ist die Berechtigung <Box component="code">asset.read</Box> erforderlich.
+                        </Alert>
+                    )}
+
+                    {!isLoadingProviders && providerLoadError === 'generic' && (
                         <Alert
                             severity="error"
                             action={(
@@ -446,7 +480,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                         </Alert>
                     )}
 
-                    {!isLoadingProviders && !hasProviderLoadError && providers.length === 0 && (
+                    {!isLoadingProviders && providerLoadError == null && providers.length === 0 && (
                         <Alert severity="info">
                             Es sind keine Speicheranbieter konfiguriert. Gehen Sie zu{' '}
                             <Link to="/storage-providers"

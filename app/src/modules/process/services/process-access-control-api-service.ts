@@ -5,6 +5,7 @@ interface ProcessAccessControlFilter {
     sourceTeamId: number;
     sourceDepartmentId: number;
     targetProcessId: number;
+    targetProcessIds: number[];
 }
 
 export class ProcessAccessControlApiService extends BaseCrudApiService<ProcessAccessControlEntity, ProcessAccessControlEntity, ProcessAccessControlEntity, ProcessAccessControlEntity, number, ProcessAccessControlFilter> {

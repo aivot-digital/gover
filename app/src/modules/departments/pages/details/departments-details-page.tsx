@@ -9,6 +9,7 @@ import {DepartmentEntity} from '../../entities/department-entity';
 import {VDepartmentShadowedEntity} from '../../entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../services/department-api-service';
 import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
+import {Permission} from '../../../../data/permissions/permission';
 
 export const NewParentIdQueryParam = 'parentId';
 
@@ -26,6 +27,15 @@ export function DepartmentsDetailsPage() {
             background
         >
             <GenericDetailsPage<DepartmentEntity, number, DepartmentsDetailsPageAdditionalData>
+                permissionCheck={{
+                    create: Permission.DEPARTMENT_CREATE,
+                    read: Permission.DEPARTMENT_READ,
+                    update: Permission.DEPARTMENT_UPDATE,
+                    scope: {
+                        type: 'department',
+                        getResourceId: (item) => item.id,
+                    },
+                }}
                 header={{
                     icon: <BusinessOutlinedIcon />,
                     title: 'Organisationseinheit bearbeiten',
@@ -39,12 +49,14 @@ export function DepartmentsDetailsPage() {
                     {
                         path: '/departments/:id/members',
                         label: 'Mitarbeiter:innen',
-                        isDisabled: (item) => !item?.id,
+                        onlyExisting: true,
+                        requiredPermission: Permission.DEPARTMENT_MEMBERSHIP_READ,
                     },
                     {
                         path: '/departments/:id/processes',
-                        label: 'Prozesse',
-                        isDisabled: (item) => !item?.id,
+                        label: 'Verwaltete Prozesse',
+                        onlyExisting: true,
+                        requiredPermission: Permission.PROCESS_DEFINITION_READ,
                     },
                 ]}
                 initializeItem={(api) => DepartmentApiService.initialize()}

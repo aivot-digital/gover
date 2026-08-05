@@ -9,12 +9,16 @@ import de.aivot.gover.backend.preset.entities.PresetEntity;
 import de.aivot.gover.backend.preset.entities.PresetVersionEntity;
 import de.aivot.gover.backend.preset.entities.PresetVersionEntityId;
 import de.aivot.gover.backend.preset.filters.PresetVersionFilter;
+import de.aivot.gover.backend.preset.permissions.PresetPermissionProvider;
 import de.aivot.gover.backend.preset.repositories.PresetRepository;
 import de.aivot.gover.backend.preset.repositories.PresetVersionRepository;
 import de.aivot.gover.backend.preset.repositories.PresetVersionWithDetailsRepository;
+import de.aivot.gover.backend.openApi.OpenApiConfiguration;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -37,24 +41,28 @@ import java.util.UUID;
         name = "Preset Versions",
         description = "Endpoints for managing preset versions"
 )
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class PresetVersionController {
     private final PresetRepository repository;
     private final PresetVersionRepository versionRepository;
     private final ScopedAuditService auditService;
     private final PresetVersionWithDetailsRepository presetVersionWithDetailsRepository;
     private final UserService userService;
+    private final PermissionService permissionService;
 
     @Autowired
     public PresetVersionController(PresetRepository repository,
                                    PresetVersionRepository versionRepository,
                                    AuditService auditService,
                                    PresetVersionWithDetailsRepository presetVersionWithDetailsRepository,
-                                   UserService userService) {
+                                   UserService userService,
+                                   PermissionService permissionService) {
         this.repository = repository;
         this.versionRepository = versionRepository;
         this.auditService = auditService.createScopedAuditService(PresetVersionController.class, "Vorlagen");
         this.presetVersionWithDetailsRepository = presetVersionWithDetailsRepository;
         this.userService = userService;
+        this.permissionService = permissionService;
     }
 
     /**
@@ -67,13 +75,18 @@ public class PresetVersionController {
     @GetMapping("")
     @Operation(
             summary = "List Preset Versions",
-            description = "Retrieve a paginated list of versions for a specific preset with optional filtering."
+            description = "Retrieve a paginated list of versions for a specific preset with optional filtering. " +
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_READ + "`."
     )
     public Page<PresetVersionEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid PresetVersionFilter filter,
             @Nonnull @PathVariable UUID presetKey
     ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
+
         filter.setPresetKey(presetKey);
 
         return presetVersionWithDetailsRepository
@@ -91,7 +104,8 @@ public class PresetVersionController {
     @PostMapping("")
     @Operation(
             summary = "Create Preset Version",
-            description = "Create a new version for a specific preset."
+            description = "Create a new version for a specific preset. " +
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_UPDATE + "`."
     )
     public PresetVersionEntity createVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -101,6 +115,9 @@ public class PresetVersionController {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_UPDATE);
 
         var preset = repository
                 .findById(presetKey)
@@ -146,13 +163,17 @@ public class PresetVersionController {
     @GetMapping("{version}/")
     @Operation(
             summary = "Retrieve Preset Version",
-            description = "Retrieve a specific version of a preset by its version number."
+            description = "Retrieve a specific version of a preset by its version number. " +
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_READ + "`."
     )
     public PresetVersionEntity retrieveVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID presetKey,
             @Nonnull @PathVariable Integer version
     ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
+
         var id = new PresetVersionEntityId(presetKey, version);
 
         return versionRepository
@@ -172,7 +193,8 @@ public class PresetVersionController {
     @PutMapping("{version}/")
     @Operation(
             summary = "Update Preset Version",
-            description = "Update an existing version of a preset."
+            description = "Update an existing version of a preset. " +
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_UPDATE + "`."
     )
     public PresetVersionEntity updateVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -183,6 +205,9 @@ public class PresetVersionController {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_UPDATE);
 
         var preset = repository
                 .findById(presetKey)
@@ -225,7 +250,8 @@ public class PresetVersionController {
     @DeleteMapping("{version}/")
     @Operation(
             summary = "Delete Preset Version",
-            description = "Delete a specific version of a preset. Published versions cannot be deleted."
+            description = "Delete a specific version of a preset. Published versions cannot be deleted. " +
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_DELETE + "`."
     )
     public void destroyVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -235,6 +261,9 @@ public class PresetVersionController {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_DELETE);
 
         var preset = repository
                 .findById(presetKey)
@@ -268,7 +297,8 @@ public class PresetVersionController {
     @PutMapping("{version}/publish/")
     @Operation(
             summary = "Publish Preset Version",
-            description = "Publish a specific version of a preset."
+            description = "Publish a specific version of a preset. " +
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_PUBLISH_LOCAL + "`."
     )
     public PresetVersionEntity publishVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -278,6 +308,9 @@ public class PresetVersionController {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_PUBLISH_LOCAL);
 
         var id = new PresetVersionEntityId(presetKey, version);
 
@@ -308,7 +341,8 @@ public class PresetVersionController {
     @PutMapping("{version}/revoke/")
     @Operation(
             summary = "Revoke Preset Version",
-            description = "Revoke a specific version of a preset."
+            description = "Revoke a specific version of a preset. " +
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_PUBLISH_LOCAL + "`."
     )
     public PresetVersionEntity revokeVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -318,6 +352,9 @@ public class PresetVersionController {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_PUBLISH_LOCAL);
 
         var id = new PresetVersionEntityId(presetKey, version);
 

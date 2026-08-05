@@ -4,7 +4,6 @@ import {type User} from '../modules/users/models/user';
 import {
     type VDepartmentMembershipWithDetailsEntity,
 } from '../modules/departments/entities/v-department-membership-with-details-entity';
-import {type Permission} from '../data/permissions/permission';
 import {type PermissionSet} from '../modules/permissions/models/permission-set';
 
 interface UserState {
@@ -47,16 +46,5 @@ export const {
 export const selectUser = (state: RootState): User | undefined => state.user.user;
 export const selectMemberships = (state: RootState): VDepartmentMembershipWithDetailsEntity[] | undefined => state.user.memberships;
 export const selectPermissions = (state: RootState): PermissionSet | undefined => state.user.permissions;
-export const selectHasMemberships = (departmentId: number, permission: Permission) => {
-    return (state: RootState): boolean => {
-        return state
-            .user
-            .memberships
-            ?.some((mem) => {
-                return mem.departmentId === departmentId &&
-                    mem.domainRoles.some((role) => role.permissions.includes(permission));
-            }) ?? false;
-    };
-};
 
 export const userReducer = userSlice.reducer;

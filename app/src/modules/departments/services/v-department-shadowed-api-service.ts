@@ -5,6 +5,7 @@ import {DepartmentApiService} from './department-api-service';
 interface VDepartmentShadowedFilter {
     id: number;
     ids: number[];
+    includeAncestors: boolean;
     name: string;
     themeId: number;
 }
@@ -26,7 +27,9 @@ export class VDepartmentShadowedApiService extends BaseCrudApiService<
     }
 
     public async retrieveOrgTree(): Promise<VDepartmentShadowedEntityWithChildren[]> {
-        const allOrgUnits = await this.listAll();
+        const allOrgUnits = await this.listAll({
+            includeAncestors: true,
+        });
 
         const orgUnitMap: Record<number, VDepartmentShadowedEntityWithChildren> = {};
         for (const orgUnit of allOrgUnits.content) {

@@ -42,7 +42,6 @@ import {useConfirm} from '../../../../providers/confirm-provider';
 import {type ProcessTestClaimEntity} from '../../entities/process-test-claim-entity';
 import {type User} from '../../../users/models/user';
 import {UsersApiService} from '../../../users/users-api-service';
-import {useUser} from '../../../../hooks/use-admin-guard';
 import {resolveUserName} from '../../../users/utils/resolve-user-name';
 import {type ProcessInstanceEntity} from '../../entities/process-instance-entity';
 import {type ProcessInstanceTaskEntity} from '../../entities/process-instance-task-entity';
@@ -77,7 +76,8 @@ import {ProcessTestClaimProcessInstancesDialog} from '../../dialogs/process-test
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
-import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectUser} from '../../../../slices/user-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {generateId} from '../../../../utils/id-utils';
 import {
@@ -89,11 +89,16 @@ import {useProcessExport} from '../../../../hooks/use-process-export';
 import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {NodeProblemsAlert} from '../../components/node-problems-alert';
 import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
+import {useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
 import {getProcessNodeLimit, isFormModuleEnabled, isProcessNodeTypeUnlimited} from '../../../../utils/module-flags';
 import {
     buildProcessInstanceAttachmentSetItems,
     ProcessInstanceAttachmentSetList,
 } from '../../components/process-instance-attachment-set-list';
+import {SearchItemService} from '../../../search/search-item-service';
+import {useDeleteProcess} from '../../hooks/use-delete-process';
+import {ProcessNotesOverviewDialog} from './components/process-notes-overview-dialog';
+import {useRevokeProcessVersion} from '../../hooks/use-revoke-process-version';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -484,8 +489,11 @@ function getNodeProviderFromList(
     )) ?? null;
 }
 
-export function getProcessNodeEditURL(processId: number, processVersion: number, nodeId: number, searchParams?: URLSearchParams) {
-    return `/processes/${processId}/versions/${processVersion}/nodes/${nodeId}?${searchParams != null ? searchParams.toString() : ''}`;
+export function getProcessNodeEditURL(processId: number, processVersion: number, nodeId: number, searchParams?: URLSearchParams, tab?: string) {
+    const query = searchParams != null && searchParams.toString().length > 0 ? `?${searchParams.toString()}` : '';
+    const tabPath = tab == null ? '' : `/tabs/${tab}`;
+
+    return `/processes/${processId}/versions/${processVersion}/nodes/${nodeId}${tabPath}${query}`;
 }
 
 export function ProcessDetailsPage(): ReactNode {
@@ -495,8 +503,11 @@ export function ProcessDetailsPage(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const confirm = useConfirm();
-    const user = useUser();
+    const user = useAppSelector(selectUser);
     const notImplemented = useNotImplemented();
+    const refreshPermissionSet = useRefreshPermissionSet();
+    const deleteProcess = useDeleteProcess();
+    const revokeProcessVersion = useRevokeProcessVersion();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
     const [isLoadingProcessFlow, setIsLoadingProcessFlow] = useState(true);
@@ -539,6 +550,7 @@ export function ProcessDetailsPage(): ReactNode {
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
     const [showProcessInstanceEventsDialog, setShowProcessInstanceEventsDialog] = useState(false);
     const [showProcessTestClaimInstancesDialog, setShowProcessTestClaimInstancesDialog] = useState(false);
+    const [showProcessNotesOverviewDialog, setShowProcessNotesOverviewDialog] = useState(false);
     const showProcessDetailsPageSkeleton = useDelayedVisibility(
         isLoadingProcessFlow && processFlow == null,
         PROCESS_DETAILS_PAGE_SKELETON_DELAY,
@@ -915,11 +927,13 @@ export function ProcessDetailsPage(): ReactNode {
                     edges: edges.content,
                 });
 
-                dispatch(addEntityHistoryItem({
-                    link: `/processes/${processId}/versions/${processVersion}`,
-                    title: `${definition.internalTitle} (Version ${processVersion})`,
-                    type: ServerEntityType.Processes,
-                }));
+                new SearchItemService()
+                    .recordRecentSearchItem({
+                        id: `${processId},${processVersion}`,
+                        originTable: ServerEntityType.Processes,
+                    })
+                    .catch(() => {
+                    });
             })
             .catch((error) => {
                 if (cancelled) {
@@ -1671,6 +1685,13 @@ export function ProcessDetailsPage(): ReactNode {
                 return;
             }
 
+            try {
+                // Starting a test claim creates runtime instances that can affect process-instance permissions.
+                await refreshPermissionSet({broadcast: true});
+            } catch (refreshError) {
+                dispatch(showApiErrorSnackbar(refreshError, 'Die Berechtigungen konnten nach dem Start des Tests nicht aktualisiert werden.'));
+            }
+
             setCurrentTestClaim({
                 claim: res,
                 user,
@@ -1707,6 +1728,13 @@ export function ProcessDetailsPage(): ReactNode {
                 return new ProcessTestClaimApiService()
                     .destroy(currentTestClaim.claim.id)
                     .then(() => {
+                        // Removing the claim also removes its runtime access, so refresh before updating the local UI state.
+                        return refreshPermissionSet({broadcast: true})
+                            .catch((refreshError) => {
+                                dispatch(showApiErrorSnackbar(refreshError, 'Die Berechtigungen konnten nach dem Löschen des Testanspruchs nicht aktualisiert werden.'));
+                            });
+                    })
+                    .then(() => {
                         setCurrentTestClaim(null);
                         setRuntimeData(null);
                         setShowProcessTestClaimInstancesDialog(false);
@@ -1722,59 +1750,51 @@ export function ProcessDetailsPage(): ReactNode {
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
             });
-    }, [confirm, currentTestClaim, dispatch, instanceId, searchParams, setSearchParams]);
+    }, [confirm, currentTestClaim, dispatch, instanceId, refreshPermissionSet, searchParams, setSearchParams]);
 
     const handleDeleteProcess = useCallback((): void => {
         if (processFlow == null) {
             return;
         }
 
-        const processToDelete = processFlow.definition;
-        confirm({
-            title: 'Prozess löschen',
-            children: (
-                <Typography>
-                    Möchten Sie den Prozess wirklich löschen?
-                    Alle zugehörigen Versionen, Modellierungen und Vorgänge werden dabei entfernt.
-                    Dieser Vorgang kann nicht rückgängig gemacht werden.
-                </Typography>
-            ),
-            confirmationText: processToDelete.internalTitle,
-            inputLabel: 'Interner Titel zur Bestätigung',
-            inputPlaceholder: processToDelete.internalTitle,
-            confirmButtonText: 'Prozess endgültig löschen',
-            isDestructive: true,
-        })
-            .then((confirmed) => {
-                if (!confirmed) {
-                    return;
-                }
+        void deleteProcess(processFlow.definition, {
+            onDeleted: () => {
+                setShowSettingsDialog(false);
+                navigate('/processes', {
+                    replace: true,
+                });
+            },
+        });
+    }, [deleteProcess, navigate, processFlow]);
 
-                dispatch(setLoadingMessage({
-                    message: 'Lösche Prozess',
-                    blocking: false,
-                    estimatedTime: 1200,
-                }));
+    const handleRevokeCurrentProcessVersion = useCallback(async (): Promise<void> => {
+        if (processFlow == null) {
+            return;
+        }
 
-                return new ProcessDefinitionApiService()
-                    .destroy(processToDelete.id)
-                    .then(() => {
-                        dispatch(showSuccessSnackbar('Der Prozess wurde erfolgreich gelöscht.'));
-                        navigate('/processes', {
-                            replace: true,
-                        });
-                    })
-                    .catch((error) => {
-                        dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht gelöscht werden.'));
-                    })
-                    .finally(() => {
-                        dispatch(clearLoadingMessage());
-                    });
-            })
-            .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Der Löschdialog konnte nicht geöffnet werden.'));
-            });
-    }, [confirm, dispatch, navigate, processFlow]);
+        const revokedVersion = await revokeProcessVersion(processFlow.definition, processFlow.version);
+
+        if (revokedVersion == null) {
+            return;
+        }
+
+        setProcessFlow((current) => {
+            if (current == null) {
+                return current;
+            }
+
+            return {
+                ...current,
+                definition: {
+                    ...current.definition,
+                    publishedVersion: null,
+                },
+                version: current.version.processVersion === revokedVersion.processVersion
+                    ? revokedVersion
+                    : current.version,
+            };
+        });
+    }, [processFlow, revokeProcessVersion]);
 
     const handleMenuEvent = (event: ProcessDetailsPageMoreMenuEvent): void => {
         switch (event) {
@@ -1787,14 +1807,30 @@ export function ProcessDetailsPage(): ReactNode {
             case 'instances':
                 navigate(`/process-instances?processId=${processFlow?.definition.id}&processVersion=${processFlow?.version.processVersion}`);
                 break;
-            case 'delete':
-                handleDeleteProcess();
+            case 'notes':
+                setShowProcessNotesOverviewDialog(true);
                 break;
             default:
                 notImplemented();
                 break;
         }
     };
+
+    const handleSelectNodeFromNotesOverview = useCallback((node: ProcessNodeEntity): void => {
+        if (processFlow == null) {
+            return;
+        }
+
+        setShowProcessNotesOverviewDialog(false);
+        handleExpandEditorPane();
+        navigate(getProcessNodeEditURL(
+            processFlow.definition.id,
+            processFlow.version.processVersion,
+            node.id,
+            searchParams,
+            'more',
+        ));
+    }, [handleExpandEditorPane, navigate, processFlow, searchParams]);
 
     const handleOpenAddTriggerDialog = useCallback(() => {
         setShowAddTriggerDialog(true);
@@ -2067,8 +2103,9 @@ export function ProcessDetailsPage(): ReactNode {
             dispatch(clearLoadingMessage());
         }
     }, [confirm, dispatch, flowNodeProviderCache, processFlow]);
+    const isInTestMode = currentTestClaim != null;
+
     const headerActions = useMemo<Action[]>(() => {
-        const isInTestMode = currentTestClaim != null;
         const testClaimInstanceActions: Action[] = activeTestClaimId == null ? [] : [
             {
                 tooltip: 'Test-Vorgänge anzeigen',
@@ -2175,28 +2212,7 @@ export function ProcessDetailsPage(): ReactNode {
                 disabledTooltip: 'Vor dem Zurückziehen muss der laufende Test beendet werden.',
                 icon: null,
                 onClick: () => {
-                    if (processFlow == null) {
-                        return;
-                    }
-                    new ProcessDefinitionVersionApiService()
-                        .revoke({
-                            processDefinitionId: processFlow.definition.id,
-                            processDefinitionVersion: processFlow.version.processVersion,
-                        })
-                        .then((updatedVersion) => {
-                            setProcessFlow({
-                                ...processFlow,
-                                version: updatedVersion,
-                                definition: {
-                                    ...processFlow.definition,
-                                    publishedVersion: null,
-                                },
-                            });
-                            dispatch(showSuccessSnackbar('Die Prozessversion wurde zurückgezogen.'));
-                        })
-                        .catch((err) => {
-                            dispatch(showApiErrorSnackbar(err, 'Die Prozessversion konnte nicht zurückgezogen werden.'));
-                        });
+                    void handleRevokeCurrentProcessVersion();
                 },
                 variant: 'contained',
                 disabled: processFlow == null || isInTestMode,
@@ -2216,8 +2232,10 @@ export function ProcessDetailsPage(): ReactNode {
         handleOpenAttachmentSetsDialog,
         processInstanceAttachmentSetItems.length,
         runtimeData,
+        isInTestMode,
         notImplemented,
         handleDeleteProcess,
+        handleRevokeCurrentProcessVersion,
     ]);
     const currentTestClaimOwnerName = useMemo(() => {
         if (currentTestClaim == null) {
@@ -2757,6 +2775,16 @@ export function ProcessDetailsPage(): ReactNode {
                 onMenuEvent={handleMenuEvent}
             />
 
+            <ProcessNotesOverviewDialog
+                open={showProcessNotesOverviewDialog}
+                nodes={processFlow.nodes}
+                providerCache={flowNodeProviderCache}
+                onClose={() => {
+                    setShowProcessNotesOverviewDialog(false);
+                }}
+                onSelectNode={handleSelectNodeFromNotesOverview}
+            />
+
             {
                 runtimeData != null &&
                 <ProcessInstanceEventDialog
@@ -2798,12 +2826,14 @@ export function ProcessDetailsPage(): ReactNode {
                         version,
                     });
                 }}
+                onDeleteProcess={handleDeleteProcess}
             />
 
             <ProcessVersionsDialog
                 open={showVersionsDialog}
                 process={processFlow.definition}
                 currentOpenVersion={processFlow.version.processVersion}
+                currentTestClaim={currentTestClaim}
                 onClose={() => {
                     setShowVersionsDialog(false);
                 }}
@@ -2814,6 +2844,13 @@ export function ProcessDetailsPage(): ReactNode {
                     if (version == processVersion) {
                         navigate('/processes');
                     }
+                }}
+                onShouldReload={(process, currentVersion) => {
+                    setProcessFlow((current) => current == null ? current : {
+                        ...current,
+                        definition: process,
+                        version: currentVersion ?? current.version,
+                    });
                 }}
             />
 

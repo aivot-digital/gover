@@ -4,6 +4,7 @@ import {BaseApiService, RequestOptions} from '../../services/base-api-service';
 import {Api} from '../../hooks/use-api';
 import {VStorageIndexItemWithAssetEntity} from '../storage/entities/storage-index-item-entity';
 import {Page} from '../../models/dtos/page';
+import {type AssetStorageProvider} from './models/asset-storage-provider';
 
 export class AssetsApiService extends BaseApiService {
     constructor(api?: Api) {
@@ -92,6 +93,14 @@ export class AssetsApiService extends BaseApiService {
 
     public async listFolderContent(storageProviderId: number, folderPath: string = '/', options?: RequestOptions): Promise<VStorageIndexItemWithAssetEntity[]> {
         return await this.get<VStorageIndexItemWithAssetEntity[]>(this.buildFolderApiPath(storageProviderId, folderPath), options);
+    }
+
+    public async listStorageProviders(options?: RequestOptions): Promise<AssetStorageProvider[]> {
+        return await this.get<AssetStorageProvider[]>('/api/assets/storage-providers/', options);
+    }
+
+    public async retrieveStorageProvider(storageProviderId: number, options?: RequestOptions): Promise<AssetStorageProvider> {
+        return await this.get<AssetStorageProvider>(`/api/assets/storage-providers/${storageProviderId}/`, options);
     }
 
     public async createFolder(storageProviderId: number, folderPath: string): Promise<void> {

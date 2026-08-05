@@ -62,7 +62,7 @@ public class SystemRoleController {
     @Operation(
             summary = "List System Roles",
             description = "Retrieve a paginated list of system roles. Supports filtering and pagination. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "`."
     )
     public Page<SystemRoleEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -74,7 +74,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_READ);
+                .requireSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_READ);
 
         return systemRoleService
                 .list(pageable, filter);
@@ -84,7 +84,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Create System Role",
             description = "Create a new system role. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_CREATE + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_CREATE + "`."
     )
     public SystemRoleEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -95,7 +95,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_CREATE);
+                .requireSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_CREATE);
 
         var createdEntity = systemRoleService
                 .create(newEntity);
@@ -127,7 +127,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Retrieve System Role",
             description = "Retrieve a system role by its ID. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "`."
     )
     public SystemRoleEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -138,7 +138,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_READ);
+                .requireSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_READ);
 
         return systemRoleService
                 .retrieve(id)
@@ -149,7 +149,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Update System Role",
             description = "Update an existing system role. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE + "`."
     )
     public SystemRoleEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -158,12 +158,10 @@ public class SystemRoleController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE);
+                .requireSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE);
 
         var updatedEntity = systemRoleService
                 .update(id, patchedEntity);
@@ -195,7 +193,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Delete System Role",
             description = "Delete a system role by its ID. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_DELETE + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_DELETE + "`."
     )
     public DeleteSystemRoleResponseDto destroy(
             @AuthenticationPrincipal Jwt jwt,
@@ -204,12 +202,10 @@ public class SystemRoleController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_DELETE);
+                .requireSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_DELETE);
 
         var entity = systemRoleService
                 .retrieve(id)

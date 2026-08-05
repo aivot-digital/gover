@@ -2,7 +2,7 @@ package de.aivot.gover.backend.process.services;
 
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
-import de.aivot.gover.backend.lib.services.EntityService;
+import de.aivot.gover.backend.lib.services.ReadEntityService;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import jakarta.annotation.Nonnull;
@@ -16,20 +16,13 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class ProcessInstanceEventService implements EntityService<ProcessInstanceEventEntity, Long> {
+public class ProcessInstanceEventService implements ReadEntityService<ProcessInstanceEventEntity, Long> {
 
     private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
 
     @Autowired
     public ProcessInstanceEventService(ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository) {
         this.processInstanceHistoryEventRepository = processInstanceHistoryEventRepository;
-    }
-
-    @Nonnull
-    @Override
-    public ProcessInstanceEventEntity create(@Nonnull ProcessInstanceEventEntity entity) throws ResponseException {
-        entity.setId(null);
-        return processInstanceHistoryEventRepository.save(entity);
     }
 
     @Nullable
@@ -62,18 +55,4 @@ public class ProcessInstanceEventService implements EntityService<ProcessInstanc
         return processInstanceHistoryEventRepository.exists(specification);
     }
 
-    @Nonnull
-    @Override
-    public ProcessInstanceEventEntity performUpdate(@Nonnull Long id,
-                                                    @Nonnull ProcessInstanceEventEntity entity,
-                                                    @Nonnull ProcessInstanceEventEntity existingEntity) throws ResponseException {
-        // No updatable fields for now
-        return existingEntity;
-    }
-
-    @Override
-    public void performDelete(@Nonnull ProcessInstanceEventEntity entity) throws ResponseException {
-        processInstanceHistoryEventRepository.delete(entity);
-    }
 }
-

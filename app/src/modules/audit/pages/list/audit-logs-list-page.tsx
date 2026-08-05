@@ -2,13 +2,14 @@ import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from '
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {Box, Chip, Tooltip, Typography} from '@mui/material';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {AuditLogEntity} from '../../models/audit-log-entity';
 import {AuditLogFilter, AuditLogFilterOptions, AuditLogsApiService} from '../../audit-logs-api-service';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectPermissions} from '../../../../slices/user-slice';
 import {AUDIT_LOG_READ_PERMISSION} from '../../constants/audit-permissions';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
@@ -17,13 +18,19 @@ import {getActorTypeColor, getActorTypeIcon, getActorTypeLabel} from '../../data
 import {AuditLogDetailsDialogContent} from './audit-log-details-dialog-content';
 import {ChipInputFieldComponent} from '../../../../components/chip-input-field/chip-input-field-component';
 
-
 const actorFilters = [
     {label: 'Alle', value: 'all'},
     {label: 'User', value: 'User'},
     {label: 'System', value: 'System'},
     {label: 'Process', value: 'Process'},
 ];
+
+const auditLogsListPermissionCheck: GenericListPagePermissionConfig<AuditLogEntity> = {
+    scope: {
+        type: 'system',
+    },
+    read: AUDIT_LOG_READ_PERMISSION,
+};
 
 function parseDate(value: string): Date | undefined {
     if (value.trim().length === 0) {
@@ -84,14 +91,7 @@ function trimValue(value: string | undefined, maxLength: number = 28): string {
 }
 
 export function AuditLogsListPage(): ReactNode {
-    const permissions = useAppSelector(selectPermissions);
-
     const confirm = useConfirm();
-
-    const hasReadAccess = useMemo(() => {
-        return permissions?.systemPermissions
-            ?.some((entry) => entry.permissions.includes(AUDIT_LOG_READ_PERMISSION)) ?? false;
-    }, [permissions]);
 
     const [filterOptions, setFilterOptions] = useState<AuditLogFilterOptions>({
         modules: [],
@@ -103,10 +103,6 @@ export function AuditLogsListPage(): ReactNode {
     const [selectedActors, setSelectedActors] = useState<string[] | undefined>(undefined);
 
     useEffect(() => {
-        if (!hasReadAccess) {
-            return;
-        }
-
         let cancelled = false;
         new AuditLogsApiService()
             .getFilterOptions()
@@ -121,7 +117,7 @@ export function AuditLogsListPage(): ReactNode {
         return () => {
             cancelled = true;
         };
-    }, [hasReadAccess]);
+    }, []);
 
     const actorLabelToValue = useMemo(() => {
         return Object.fromEntries(
@@ -351,16 +347,6 @@ export function AuditLogsListPage(): ReactNode {
         },
     ], [actorValueToLabel, confirm]);
 
-    if (!hasReadAccess) {
-        return (
-            <PageWrapper
-                title="Audit-Log"
-                background
-                error="Zugriff verweigert. Ihnen fehlt die Berechtigung audit_log.read."
-            />
-        );
-    }
-
     return (
         <PageWrapper title="Audit-Log"
                      fullWidth
@@ -369,6 +355,7 @@ export function AuditLogsListPage(): ReactNode {
                 defaultFilter="all"
                 filters={actorFilters}
                 header={header}
+                permissionCheck={auditLogsListPermissionCheck}
                 preSearchElements={preSearchElements}
                 fetch={fetchAuditLogs}
                 columnIcon={ModuleIcons.audit}

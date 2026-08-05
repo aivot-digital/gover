@@ -3,21 +3,21 @@ package de.aivot.gover.backend.process.controllers;
 import de.aivot.gover.backend.audit.enums.AuditAction;
 import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
-import de.aivot.gover.backend.department.services.DepartmentService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
+import de.aivot.gover.backend.process.dtos.ProcessInstanceReassignRequestDTO;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.gover.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import de.aivot.gover.backend.process.entities.VUserProcessInstanceAccessPermissionsEntity;
 import de.aivot.gover.backend.process.filters.ProcessInstanceFilter;
-import de.aivot.gover.backend.process.permissions.ProcessPermissionProvider;
+import de.aivot.gover.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.gover.backend.process.services.ProcessInstanceService;
 import de.aivot.gover.backend.process.services.ProcessInstanceTaskService;
 import de.aivot.gover.backend.process.services.ProcessNodeExecutionLoggerFactory;
-import de.aivot.gover.backend.process.services.ProcessService;
 import de.aivot.gover.backend.process.workers.ProcessWorker;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
@@ -49,32 +49,31 @@ import java.util.Map;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessInstanceController {
+    // Process instances are created by trigger controllers and changed only through explicit domain commands.
+    // Generic POST and PUT endpoints are intentionally not exposed because their runtime state is engine-owned.
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceTaskService processInstanceTaskService;
-    private final DepartmentService departmentService;
-    private final ProcessService processDefinitionService;
     private final RabbitTemplate rabbitTemplate;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
+    private final PermissionService permissionService;
 
     @Autowired
     public ProcessInstanceController(AuditService auditService,
                                      UserService userService,
                                      ProcessInstanceService processInstanceService,
-                                     DepartmentService departmentService,
-                                     ProcessService processDefinitionService,
                                      ProcessInstanceTaskService processInstanceTaskService,
                                      RabbitTemplate rabbitTemplate,
-                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
+                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
+                                     PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
-        this.departmentService = departmentService;
-        this.processDefinitionService = processDefinitionService;
         this.rabbitTemplate = rabbitTemplate;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -91,55 +90,29 @@ public class ProcessInstanceController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        filter.addAdditionalSpecification((root, query, criteriaBuilder) -> {
-            var subquery = query.subquery(VUserProcessInstanceAccessPermissionsEntity.class);
-            var processRoot = subquery.from(VUserProcessInstanceAccessPermissionsEntity.class);
+        if (!permissionService.hasSystemPermission(execUser.getId(), ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ)) {
+            // Keep all caller filters and add an EXISTS guard against the resolved process-instance permission view.
+            filter.addAdditionalSpecification((root, query, criteriaBuilder) -> {
+                var subquery = query.subquery(VUserProcessInstanceAccessPermissionsEntity.class);
+                var processRoot = subquery.from(VUserProcessInstanceAccessPermissionsEntity.class);
 
-            subquery.select(processRoot).where(
-                    criteriaBuilder.equal(processRoot.get("targetProcessInstanceId"), root.get("id")),
-                    criteriaBuilder.equal(processRoot.get("userId"), execUser.getId()),
-                    criteriaBuilder.isTrue(SpecificationBuilderArrayContains.getFunc(
-                            criteriaBuilder,
-                            processRoot,
-                            "permissions",
-                            ProcessPermissionProvider.PROCESS_INSTANCE_READ
-                    ))
-            );
+                subquery.select(processRoot).where(
+                        criteriaBuilder.equal(processRoot.get("targetProcessInstanceId"), root.get("id")),
+                        criteriaBuilder.equal(processRoot.get("userId"), execUser.getId()),
+                        criteriaBuilder.isTrue(SpecificationBuilderArrayContains.getFunc(
+                                criteriaBuilder,
+                                processRoot,
+                                "permissions",
+                                ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ
+                        ))
+                );
 
-            return criteriaBuilder.exists(subquery);
-        });
+                return criteriaBuilder.exists(subquery);
+            });
+        }
 
         return processInstanceService
                 .list(pageable, filter);
-    }
-
-    @PostMapping("")
-    @Operation(
-            summary = "Create Process Instance",
-            description = "Create a new process instance. Requires super admin privileges or a user role with create process permissions."
-    )
-    public ProcessInstanceEntity create(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @RequestBody @Valid ProcessInstanceEntity newInstance
-    ) throws ResponseException {
-        var execUser = userService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
-        var result = processInstanceService
-                .create(newInstance);
-
-        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, ProcessInstanceEntity.class, result.getId(), "id", Map.of(
-                "id", result.getId(),
-                "processDefinitionId", result.getProcessId()
-        )).withMessage(
-                "Die Prozessinstanz mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s erstellt.",
-                StringUtils.quote(String.valueOf(result.getId())),
-                StringUtils.quote(String.valueOf(result.getProcessId())),
-                StringUtils.quote(execUser.getFullName())
-        ).log();
-
-        return result;
     }
 
     @GetMapping("{id}/")
@@ -148,22 +121,35 @@ public class ProcessInstanceController {
             description = "Retrieve a process instance by its ID."
     )
     public ProcessInstanceEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long id
     ) throws ResponseException {
-        return processInstanceService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var instance = processInstanceService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireProcessInstancePermission(
+                user.getId(),
+                instance.getId(),
+                ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ
+        );
+
+        return instance;
     }
 
-    @PutMapping("{id}/")
+    @PutMapping("{id}/reassign/")
     @Operation(
-            summary = "Update Process Instance",
-            description = "Update an existing process instance. Requires super admin privileges or a user role with edit process permissions."
+            summary = "Reassign Process Instance",
+            description = "Assign an existing process instance to another user or clear its assignment."
     )
-    public ProcessInstanceEntity update(
+    public ProcessInstanceEntity reassign(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long id,
-            @Nonnull @RequestBody @Valid ProcessInstanceEntity updateDTO
+            @Nonnull @RequestBody @Valid ProcessInstanceReassignRequestDTO request
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
@@ -173,16 +159,27 @@ public class ProcessInstanceController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        updateDTO.setId(existing.getId());
+        permissionService.requireProcessInstancePermission(
+                execUser.getId(),
+                existing.getId(),
+                ProcessInstancePermissionProvider.PROCESS_INSTANCE_REASSIGN
+        );
 
-        var result = processInstanceService
-                .update(id, updateDTO);
+        if (request.assignedUserId() != null && userService.retrieve(request.assignedUserId()).isEmpty()) {
+            throw ResponseException.badRequest("Die zuzuweisende Mitarbeiter:in wurde nicht gefunden.");
+        }
+
+        var result = processInstanceService.save(
+                existing
+                        .setAssignedUserId(request.assignedUserId())
+                        .setUpdated(Instant.now())
+        );
 
         auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, ProcessInstanceEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "processDefinitionId", result.getProcessId()
         )).withMessage(
-                "Die Prozessinstanz mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                "Die Prozessinstanz mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s neu zugewiesen.",
                 StringUtils.quote(String.valueOf(result.getId())),
                 StringUtils.quote(String.valueOf(result.getProcessId())),
                 StringUtils.quote(execUser.getFullName())
@@ -202,13 +199,17 @@ public class ProcessInstanceController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
 
         var processInstance = processInstanceService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireProcessInstancePermission(
+                user.getId(),
+                processInstance.getId(),
+                ProcessInstancePermissionProvider.PROCESS_INSTANCE_UPDATE
+        );
 
         if (processInstance.getStatus() != ProcessInstanceStatus.Failed) {
             throw ResponseException.badRequest("Nur Vorgänge im Status 'Fehlgeschlagen' können neu gestartet werden.");
@@ -293,7 +294,9 @@ public class ProcessInstanceController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete Process Instance",
-            description = "Delete a process instance by its ID. Requires super admin privileges."
+            description = "Delete a process instance by its ID. Requires the permission `" +
+                    ProcessInstancePermissionProvider.PROCESS_INSTANCE_DELETE +
+                    "` for the affected process instance or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -301,9 +304,13 @@ public class ProcessInstanceController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.requireProcessInstancePermission(
+                user.getId(),
+                id,
+                ProcessInstancePermissionProvider.PROCESS_INSTANCE_DELETE
+        );
 
         var deleted = processInstanceService
                 .delete(id);

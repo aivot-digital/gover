@@ -16,27 +16,35 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
 
     const [department, setDepartment] = useState<PublicDepartmentResponseDTO>();
     const accessibilityDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId));
+    const parsedAccessibilityDepartmentId = accessibilityDepartmentId != null && accessibilityDepartmentId !== '' && !Number.isNaN(parseInt(accessibilityDepartmentId)) ?
+        parseInt(accessibilityDepartmentId) :
+        null;
+    const selectedAccessibilityDepartmentId = props.isListingPage ?
+        parsedAccessibilityDepartmentId :
+        application.accessibilityDepartmentId ?? null;
 
     useEffect(() => {
-        if (
-            !props.isListingPage &&
-            application.accessibilityDepartmentId != null &&
-            (department == null || department.id !== application.accessibilityDepartmentId)
-        ) {
-            new DepartmentApiService()
-                .retrievePublic(application.accessibilityDepartmentId)
-                .then(setDepartment);
-        } else if (
-            props.isListingPage &&
-            accessibilityDepartmentId != null &&
-            accessibilityDepartmentId != '' &&
-            (department == null || department.id !== parseInt(accessibilityDepartmentId))
-        ) {
-            new DepartmentApiService()
-                .retrievePublic(parseInt(accessibilityDepartmentId))
-                .then(setDepartment);
+        if (selectedAccessibilityDepartmentId == null) {
+            setDepartment(undefined);
+            return;
         }
-    }, [accessibilityDepartmentId, application, department]);
+
+        let isCancelled = false;
+
+        // Clear stale department data immediately when the configured source is removed or changed.
+        setDepartment(undefined);
+        new DepartmentApiService()
+            .retrievePublic(selectedAccessibilityDepartmentId)
+            .then((department) => {
+                if (!isCancelled) {
+                    setDepartment(department);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [selectedAccessibilityDepartmentId]);
 
     const commonAccessibility = department?.commonAccessibility;
     const formSpecificAccessibilityStatement = props.isListingPage ? undefined : application.formSpecificAccessibilityStatement;

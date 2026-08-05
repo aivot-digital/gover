@@ -1,35 +1,22 @@
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {VDepartmentShadowedEntity} from '../../../departments/entities/v-department-shadowed-entity';
 import {ProcessEntity} from '../../entities/process-entity';
-import React, {ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 import {PermissionEntry} from '../../../permissions/models/permission-provider';
 import {ProcessAccessControlEntity} from '../../entities/process-access-control-entity';
 import {PermissionApiService} from '../../../permissions/permission-api-service';
 import {ProcessAccessControlApiService} from '../../services/process-access-control-api-service';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {
-    Autocomplete,
-    Box, Stack,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TextField,
-    Typography,
-} from '@mui/material';
-import {getDepartmentPath, getDepartmentTypeIcons} from '../../../departments/utils/department-utils';
-import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
+import {Typography} from '@mui/material';
+import {getDepartmentPath} from '../../../departments/utils/department-utils';
 import {TeamEntity} from '../../../teams/entities/team-entity';
-import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
-import {Actions} from '../../../../components/actions/actions';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
-import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
-import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {deepEquals} from '../../../../utils/equality-utils';
 import {ElementEditorSectionHeader} from '../../../../components/element-editor-section-header/element-editor-section-header';
+import {
+    ProcessSettingsDialogAccessControlMatrix,
+    type ProcessSettingsAccessControlAddDomainOption,
+} from './process-settings-dialog-access-control-matrix';
 
 interface ProcessSettingsDialogTabProps {
     open: boolean;
@@ -37,24 +24,16 @@ interface ProcessSettingsDialogTabProps {
     departments: VDepartmentShadowedEntity[];
     teams: TeamEntity[];
     onUnsavedChangesChange?: (hasUnsavedChanges: boolean) => void;
+    onSavingChange?: (isSaving: boolean) => void;
+}
+
+export interface ProcessSettingsDialogProcessAccessTabHandle {
+    save: () => void;
+    reset: () => void;
 }
 
 interface ProcessAccessControlDraft extends ProcessAccessControlEntity {
     clientId: string;
-}
-
-interface ProcessAccessControlDraftWithDepartmentOrTeam extends ProcessAccessControlDraft {
-    department?: VDepartmentShadowedEntity;
-    team?: TeamEntity;
-}
-
-interface AddDomainOption {
-    label: string;
-    value: number;
-    subLabel?: string;
-    disabled?: boolean;
-    icon: ReactNode;
-    type: 'department' | 'team';
 }
 
 const relevantPermissions: string[] = [
@@ -88,7 +67,7 @@ function getAccessDomainKey(access: Pick<ProcessAccessControlEntity, 'sourceDepa
     return 'unknown';
 }
 
-export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDialogTabProps) {
+export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsDialogProcessAccessTabHandle, ProcessSettingsDialogTabProps>(function ProcessSettingsDialogProcessAccessTab(props, ref) {
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
 
@@ -98,16 +77,16 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
         departments,
         teams,
         onUnsavedChangesChange,
+        onSavingChange,
     } = props;
 
     const {
-        id: processesId,
+        id: processId,
     } = process;
 
     const [permissions, setPermissions] = useState<PermissionEntry[]>([]);
     const [persistedAccess, setPersistedAccess] = useState<ProcessAccessControlEntity[]>([]);
     const [draftAccess, setDraftAccess] = useState<ProcessAccessControlDraft[]>([]);
-    const [targetDomainOption, setTargetDomainOption] = useState<AddDomainOption | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const nextClientIdRef = useRef(0);
 
@@ -155,18 +134,17 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
     const loadAccess = useCallback(() => {
         new ProcessAccessControlApiService()
             .listAll({
-                targetProcessId: processesId,
+                targetProcessId: processId,
             })
             .then(({content}) => {
                 nextClientIdRef.current = 0;
                 setPersistedAccess(content);
                 setDraftAccess(content.map(createDraftAccess));
-                setTargetDomainOption(null);
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden der Berechtigungen für diesen Prozess'));
             });
-    }, [createDraftAccess, dispatch, processesId]);
+    }, [createDraftAccess, dispatch, processId]);
 
     useEffect(() => {
         if (!open) {
@@ -197,45 +175,18 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
         };
     }, [onUnsavedChangesChange]);
 
-    const resolvedAccessControl: ProcessAccessControlDraftWithDepartmentOrTeam[] = useMemo(() => {
-        return draftAccess
-            .map((accessControl) => {
-                return {
-                    ...accessControl,
-                    department: accessControl.sourceDepartmentId != null ? departments.find((d) => d.id === accessControl.sourceDepartmentId) : undefined,
-                    team: accessControl.sourceTeamId != null ? teams.find((d) => d.id === accessControl.sourceTeamId) : undefined,
-                };
-            });
-    }, [departments, draftAccess, teams]);
+    useEffect(() => {
+        onSavingChange?.(isSaving);
+    }, [isSaving, onSavingChange]);
 
-    const owningDepartment = useMemo(() => {
-        return departments.find((d) => d.id === process.departmentId)!;
-    }, [departments, process.departmentId]);
+    useEffect(() => {
+        return () => {
+            onSavingChange?.(false);
+        };
+    }, [onSavingChange]);
 
-    const addDomainOptions: AddDomainOption[] = useMemo(() => {
-        const assignedDomainKeys = new Set(draftAccess.map((accessControl) => getAccessDomainKey(accessControl)));
-
-        return [
-            ...departments.map((department) => ({
-                label: department.name,
-                value: department.id,
-                subLabel: getDepartmentPath(department),
-                icon: getDepartmentTypeIcons(department.depth),
-                type: 'department',
-                disabled: department.id === process.departmentId || assignedDomainKeys.has(`department-${department.id}`),
-            } as AddDomainOption)),
-            ...teams.map((team) => ({
-                label: team.name,
-                value: team.id,
-                icon: ModuleIcons.teams,
-                type: 'team',
-                disabled: assignedDomainKeys.has(`team-${team.id}`),
-            } as AddDomainOption)),
-        ];
-    }, [departments, draftAccess, process.departmentId, teams]);
-
-    const handleAddAccess = () => {
-        if (targetDomainOption == null || isSaving) {
+    const handleAddAccess = (targetDomainOption: ProcessSettingsAccessControlAddDomainOption) => {
+        if (isSaving) {
             return;
         }
 
@@ -246,50 +197,27 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
                 clientId: createNewClientId(),
                 sourceDepartmentId: targetDomainOption.type === 'department' ? targetDomainOption.value : null,
                 sourceTeamId: targetDomainOption.type === 'team' ? targetDomainOption.value : null,
-                targetProcessId: processesId,
+                targetProcessId: processId,
                 permissions: [],
             },
         ]);
-
-        setTargetDomainOption(null);
     };
 
-    const togglePermissionForAccess = (access: ProcessAccessControlDraft, permission: string) => {
-        if (isSaving) {
-            return;
+    const getAccessLabel = (access: ProcessAccessControlDraft) => {
+        if (access.sourceTeamId != null) {
+            return teams.find((team) => team.id === access.sourceTeamId)?.name ?? `Team #${access.sourceTeamId}`;
         }
 
-        const updatedPermissions = [
-            ...access.permissions,
-        ];
-        if (updatedPermissions.includes(permission)) {
-            const index = updatedPermissions.indexOf(permission);
-            updatedPermissions.splice(index, 1);
-        } else {
-            updatedPermissions.push(permission);
-        }
+        if (access.sourceDepartmentId != null) {
+            const department = departments.find((entry) => entry.id === access.sourceDepartmentId);
 
-        const updatedAccess = {
-            ...access,
-            permissions: updatedPermissions,
-        };
-
-        setDraftAccess((prev) => prev.map((a) => a.clientId === updatedAccess.clientId ? updatedAccess : a));
-    };
-
-    const getAccessLabel = (access: ProcessAccessControlDraftWithDepartmentOrTeam) => {
-        if (access.team != null) {
-            return access.team.name;
-        }
-
-        if (access.department != null) {
-            return getDepartmentPath(access.department);
+            return department != null ? getDepartmentPath(department) : `Organisationseinheit #${access.sourceDepartmentId}`;
         }
 
         return 'diese Domäne';
     };
 
-    const handleDeleteAccess = async (access: ProcessAccessControlDraftWithDepartmentOrTeam) => {
+    const handleDeleteAccess = async (access: ProcessAccessControlDraft) => {
         if (access.sourceDepartmentId === process.departmentId || isSaving) {
             return;
         }
@@ -311,7 +239,7 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
         setDraftAccess((prev) => prev.filter((a) => a.clientId !== access.clientId));
     };
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         if (!hasUnsavedChanges || isSaving) {
             return;
         }
@@ -320,6 +248,7 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
         let nextPersistedAccess = [...persistedAccess];
         let nextDraftAccess = [...draftAccess];
 
+        // Advance these snapshots after each request so partial failures keep already-saved changes in sync.
         setIsSaving(true);
 
         try {
@@ -330,6 +259,7 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
             );
             const deletedAccess = nextPersistedAccess.filter((access) => !draftAccessById.has(access.id));
 
+            // Delete first so removing and re-adding the same domain in one save does not violate uniqueness.
             for (const access of deletedAccess) {
                 await apiService.destroy(access.id);
                 nextPersistedAccess = nextPersistedAccess.filter((currentAccess) => currentAccess.id !== access.id);
@@ -383,232 +313,44 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
         } finally {
             setIsSaving(false);
         }
-    };
+    }, [dispatch, draftAccess, hasUnsavedChanges, isSaving, persistedAccess, toAccessEntity]);
+
+    const handleReset = useCallback(() => {
+        setDraftAccess(persistedAccess.map(createDraftAccess));
+    }, [createDraftAccess, persistedAccess]);
+
+    useImperativeHandle(ref, () => ({
+        save: () => {
+            void handleSave();
+        },
+        reset: handleReset,
+    }), [handleReset, handleSave]);
 
     return (
         <>
             <ElementEditorSectionHeader
-                title="Berechtigungen des Prozesses"
+                title="Prozessberechtigungen"
                 variant="h5"
                 disableMarginTop
-                maxWidth={560}
+                maxWidth={700}
             >
-                Steuern Sie, welche Organisationseinheiten und Teams diesen Prozess in der Verwaltung sehen, bearbeiten, prüfen oder veröffentlichen dürfen.
+                Legen Sie fest, welche Organisationseinheiten und Teams diesen Prozess in der Verwaltung sehen, bearbeiten, prüfen oder veröffentlichen dürfen.
+                Die verwaltende Organisationseinheit ist immer berechtigt und kann nicht entfernt werden.
             </ElementEditorSectionHeader>
 
-            <TableContainer>
-                <Table size="small">
-                    <TableHead>
-                        <TableRow>
-                            <TableCell
-                                sx={{
-                                    fontSize: '90%',
-                                }}
-                            >
-                                Organisationseinheit / Team
-                            </TableCell>
-                            {
-                                permissions
-                                    .map((permission) => (
-                                        <TableCell
-                                            key={permission.permission}
-                                            sx={{
-                                                fontSize: '90%',
-                                            }}
-                                        >
-                                            {permission.label}
-                                        </TableCell>
-                                    ))
-                            }
-                            <TableCell width={1}/>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        <TableRow>
-                            <TableCell>
-                                {getDepartmentPath(owningDepartment)} <br/>
-                                <em>(Verwaltende Organisationseinheit)</em>
-                            </TableCell>
-                            {
-                                permissions
-                                    .map((permission) => (
-                                        <TableCell
-                                            key={permission.permission}
-                                        >
-                                            <CheckboxFieldComponent
-                                                label=""
-                                                value={true}
-                                                onChange={() => {
-                                                }}
-                                                variant="switch"
-                                                disabled={true}
-                                            />
-                                        </TableCell>
-                                    ))
-                            }
-                            <TableCell/>
-                        </TableRow>
-                        {
-                            resolvedAccessControl
-                                .map((access) => (
-                                    <TableRow key={access.clientId}>
-                                        <TableCell>
-                                            {
-                                                access.team != null &&
-                                                access.team.name
-                                            }
-                                            {
-                                                access.department != null &&
-                                                getDepartmentPath(access.department)
-                                            }
-                                        </TableCell>
-                                        {
-                                            permissions
-                                                .map((permission) => (
-                                                    <TableCell
-                                                        key={permission.permission}
-                                                    >
-                                                        <CheckboxFieldComponent
-                                                            label=""
-                                                            value={access.permissions.includes(permission.permission)}
-                                                            busy={isSaving}
-                                                            onChange={() => {
-                                                                togglePermissionForAccess(access, permission.permission);
-                                                            }}
-                                                            variant="switch"
-                                                        />
-                                                    </TableCell>
-                                                ))
-                                        }
-                                        <TableCell align="right">
-                                            <Actions
-                                                isBusy={isSaving}
-                                                actions={[
-                                                    {
-                                                        icon: <Delete/>,
-                                                        tooltip: 'Berechtigung entfernen',
-                                                        disabled: access.sourceDepartmentId === process.departmentId,
-                                                        disabledTooltip: 'Die verwaltende Organisationseinheit kann nicht entfernt werden',
-                                                        ariaLabel: 'Berechtigung entfernen',
-                                                        onClick: () => {
-                                                            void handleDeleteAccess(access);
-                                                        },
-                                                    },
-                                                ]}
-                                                color="error"
-                                            />
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                        }
-                    </TableBody>
-                </Table>
-            </TableContainer>
-
-            <Stack
-                direction="row"
-                alignItems="center"
-                spacing={2}
-                sx={{
-                    mt: 2,
+            <ProcessSettingsDialogAccessControlMatrix
+                permissions={permissions}
+                accessControls={draftAccess}
+                owningDepartmentId={process.departmentId}
+                departments={departments}
+                teams={teams}
+                isBusy={isSaving}
+                onAccessControlsChange={setDraftAccess}
+                onAddAccessControl={handleAddAccess}
+                onDeleteAccessControl={(access) => {
+                    void handleDeleteAccess(access);
                 }}
-            >
-                <Autocomplete<AddDomainOption, false, false, false>
-                    options={addDomainOptions}
-                    value={targetDomainOption}
-                    onChange={(_, value) => {
-                        setTargetDomainOption(value);
-                    }}
-                    fullWidth={true}
-                    disabled={isSaving}
-                    getOptionLabel={(option) => option.label}
-                    isOptionEqualToValue={(option, value) => option.type === value.type && option.value === value.value}
-                    getOptionDisabled={(option) => option.disabled ?? false}
-                    noOptionsText="Keine gültigen Ziel-Domäne verfügbar"
-                    renderOption={(props, option) => (
-                        <Box
-                            component="li"
-                            {...props}
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                py: 0.5,
-                                minHeight: 40,
-                            }}
-                        >
-                            {
-                                option.icon != null &&
-                                <Box
-                                    sx={{
-                                        mr: 1,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    {option.icon}
-                                </Box>
-                            }
-                            <Box
-                                sx={{
-                                    minWidth: 0,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 0.125,
-                                    flex: 1,
-                                }}
-                            >
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        lineHeight: 1.2,
-                                    }}
-                                >
-                                    {option.label}
-                                </Typography>
-                                {
-                                    option.subLabel != null &&
-                                    <Typography
-                                        variant="caption"
-                                        color="textSecondary"
-                                        sx={{
-                                            lineHeight: 1.2,
-                                        }}
-                                    >
-                                        {option.subLabel}
-                                    </Typography>
-                                }
-                            </Box>
-                        </Box>
-                    )}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            label="Neue, berechtigte Domäne"
-                            placeholder="Domäne suchen…"
-                        />
-                    )}
-                />
-
-                <Actions
-                    isBusy={isSaving}
-                    actions={[
-                        {
-                            label: 'Hinzufügen',
-                            onClick: handleAddAccess,
-                            icon: <Add/>,
-                            disabled: targetDomainOption == null,
-                        },
-                        {
-                            label: 'Speichern',
-                            onClick: () => {
-                                void handleSave();
-                            },
-                            icon: <Save/>,
-                            disabled: !hasUnsavedChanges,
-                        },
-                    ]}
-                />
-            </Stack>
+            />
         </>
     );
-}
+});

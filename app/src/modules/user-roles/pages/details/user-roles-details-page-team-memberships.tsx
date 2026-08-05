@@ -13,6 +13,10 @@ import {GenericDetailsSkeleton} from "../../../../components/generic-details-pag
 import {GenericList} from "../../../../components/generic-list/generic-list";
 import {VTeamMembershipWithDetailsService} from '../../../teams/services/v-team-membership-with-details-service';
 import {VTeamMembershipWithDetailsEntity} from '../../../teams/entities/v-team-membership-with-details-entity';
+import {Permission} from '../../../../data/permissions/permission';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {requireAnyTeamPermission} from '../../../permissions/utils/permission-utils';
 
 const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
     {
@@ -44,6 +48,7 @@ const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
 ];
 
 export function UserRolesDetailsPageTeamMemberships() {
+    const permissions = useAppSelector(selectPermissions);
     const {
         item: userRole,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<UserRoleResponseDTO, undefined>;
@@ -53,6 +58,8 @@ export function UserRolesDetailsPageTeamMemberships() {
             <GenericDetailsSkeleton />
         );
     }
+
+    requireAnyTeamPermission(permissions, Permission.TEAM_MEMBERSHIP_READ);
 
     return (
         <>

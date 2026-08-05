@@ -7,6 +7,10 @@ export class PermissionApiService extends BaseApiService {
         return await this.get<PermissionProvider[]>('/api/permissions/');
     }
 
+    public async getOwnPermissionSet(): Promise<PermissionSet> {
+        return await this.get<PermissionSet>('/api/permissions/self/');
+    }
+
     public async getPermissionSetForUser(userId: string): Promise<PermissionSet> {
         return await this.get<PermissionSet>(`/api/permissions/users/${userId}/`);
     }

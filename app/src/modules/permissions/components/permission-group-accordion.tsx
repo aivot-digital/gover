@@ -17,47 +17,44 @@ import React from 'react';
 import ExpandMoreIcon from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
 import {CopyToClipboardButton} from '../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
-
-import {type PermissionGroup} from './permission-editor';
+import {inferCrud, type PermissionGroup} from './permission-editor-utils';
 
 interface PermissionGroupAccordionProps {
     group: PermissionGroup;
-    selectedPermissions: string[];
+    groupId: string;
+    selectedPermissionsSet: ReadonlySet<string>;
     isExpanded: boolean;
     isBusy: boolean;
     isEditable: boolean;
-    onExpandedChange: (next: boolean) => void;
+    onExpandedChange: (groupId: string, next: boolean) => void;
     onToggleGroup: (group: PermissionGroup, checked: boolean) => void;
     onTogglePermission: (permission: string, checked: boolean) => void;
-    inferCrud: (permission: string) => 'create' | 'read' | 'update' | 'delete' | null;
 }
 
-export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): React.ReactElement {
+export const PermissionGroupAccordion = React.memo(function PermissionGroupAccordion(props: PermissionGroupAccordionProps): React.ReactElement {
     const {
         group,
-        selectedPermissions,
+        groupId,
+        selectedPermissionsSet,
         isExpanded,
         isBusy,
         isEditable,
         onExpandedChange,
         onToggleGroup,
         onTogglePermission,
-        inferCrud,
     } = props;
 
-    const selectedPermissionsSet = React.useMemo(
-        () => new Set(selectedPermissions),
-        [selectedPermissions],
-    );
-
     const total = group.permissions.length;
-    const selectedInGroup = group.permissions.filter((p) => selectedPermissionsSet.has(p.permission)).length;
+    const selectedInGroup = group.permissions.reduce(
+        (count, permission) => count + (selectedPermissionsSet.has(permission.permission) ? 1 : 0),
+        0,
+    );
     const allSelected = total > 0 && selectedInGroup === total;
 
     return (
         <Accordion
             expanded={isExpanded}
-            onChange={(_, next) => onExpandedChange(next)}
+            onChange={(_, next) => onExpandedChange(groupId, next)}
             disableGutters
             sx={{
                 borderRadius: 2,
@@ -94,6 +91,15 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                         {group.contextLabel}
                     </Typography>
 
+                    {group.availabilityWarningLabel != null && (
+                        <Chip
+                            size="small"
+                            color="warning"
+                            variant="outlined"
+                            label={group.availabilityWarningLabel}
+                        />
+                    )}
+
                     <Chip
                         size="small"
                         variant={selectedInGroup > 0 ? 'filled' : 'outlined'}
@@ -129,6 +135,16 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
             </AccordionSummary>
 
             <AccordionDetails>
+                {group.assignmentHint != null && (
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{mb: 2}}
+                    >
+                        {group.assignmentHint}
+                    </Typography>
+                )}
+
                 <Box
                     sx={{
                         display: 'grid',
@@ -141,7 +157,7 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                     }}
                 >
                     {group.permissions.map(({permission, label, description}) => {
-                        const checked = selectedPermissions.includes(permission);
+                        const checked = selectedPermissionsSet.has(permission);
                         const crud = inferCrud(permission);
 
                         return (
@@ -152,6 +168,7 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                                     px: 1.5,
                                     py: 1,
                                     borderRadius: 2,
+                                    borderColor: group.availabilityWarningLabel != null ? 'warning.main' : undefined,
                                     display: 'flex',
                                     alignItems: 'flex-start',
                                     gap: 1,
@@ -269,4 +286,4 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
             </AccordionDetails>
         </Accordion>
     );
-}
+});

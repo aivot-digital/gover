@@ -1,6 +1,6 @@
-import React, {type ReactNode, useEffect, useMemo} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useMemo} from 'react';
 import {type User} from '../../modules/users/models/user';
-import {setMemberships, setPermissions, setUser} from '../../slices/user-slice';
+import {selectUser, setMemberships, setPermissions, setUser} from '../../slices/user-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {
@@ -39,17 +39,47 @@ import {
 import {UsersApiService} from '../../modules/users/users-api-service';
 import {PermissionApiService} from '../../modules/permissions/permission-api-service';
 import {PermissionSet} from '../../modules/permissions/models/permission-set';
-import {AlphaVersionNoticeDialog} from '../../dialogs/alpha-version-notice-dialog/alpha-version-notice-dialog';
+import {PreReleaseVersionNoticeDialog} from '../../dialogs/pre-release-version-notice-dialog/pre-release-version-notice-dialog';
 import {DuplicatePageWarning} from '../../components/duplicate-page-warning/duplicate-page-warning';
 import {isApiError} from '../../models/api-error';
+import {useCrossTabInvalidation} from '../../hooks/use-cross-tab-invalidation';
+import {
+    PERMISSION_SET_INVALIDATION_KEY,
+    useRefreshPermissionSet,
+} from '../../modules/permissions/hooks/use-permissions';
 
 export function StaffShell(): ReactNode {
     const routerError = useRouteError();
     const dispatch = useAppDispatch();
     const status = useAppSelector(selectStatus);
     const appError = useAppSelector(selectErrorMessage);
+    const user = useAppSelector(selectUser);
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const location = useLocation();
+
+    const handlePermissionSetInvalidation = useCallback(async () => {
+        await refreshPermissionSet({broadcast: false});
+    }, [refreshPermissionSet]);
+
+    const handlePermissionSetInvalidationError = useCallback((err: unknown) => {
+        console.error(err);
+        dispatch(addSnackbarMessage({
+            key: 'permission-set-cross-tab-refresh-failed',
+            message: 'Die Berechtigungen konnten nach einer Änderung in einem anderen Tab nicht aktualisiert werden.',
+            severity: SnackbarSeverity.Warning,
+            type: SnackbarType.Dismissable,
+        }));
+    }, [dispatch]);
+
+    useCrossTabInvalidation({
+        key: PERMISSION_SET_INVALIDATION_KEY,
+        scope: user?.id,
+        enabled: status === ShellStatus.Ready && user?.id != null,
+        deferWhileHidden: true,
+        onInvalidate: handlePermissionSetInvalidation,
+        onError: handlePermissionSetInvalidationError,
+    });
 
     // Display a message if the API becomes unreachable.
     useEffect(() => {
@@ -105,9 +135,13 @@ export function StaffShell(): ReactNode {
         }
 
         if (routerError != null && typeof routerError === 'object' && 'status' in routerError) {
+            const message = 'message' in routerError && typeof routerError.message === 'string'
+                ? routerError.message
+                : undefined;
+
             return {
                 status: routerError.status as number,
-                message: undefined,
+                message,
             };
         }
 
@@ -181,7 +215,7 @@ export function StaffShell(): ReactNode {
                     <ShellSessionEndWarnPopup/>
                     <ShellSessionExpiredDialog/>
                     <ShellResolutionOverlay/>
-                    <AlphaVersionNoticeDialog/>
+                    <PreReleaseVersionNoticeDialog/>
                     <DuplicatePageWarning/>
                 </>
             }
@@ -207,7 +241,7 @@ async function authenticateWithOidcCode(): Promise<{
     const memberships = membershipsPage.content;
 
     const permissionSet = await new PermissionApiService()
-        .getPermissionSetForUser(user.id);
+        .getOwnPermissionSet();
 
     const configs = AppConfig.systemConfigs;
 

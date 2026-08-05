@@ -3,15 +3,20 @@ package de.aivot.gover.backend.plugin.controllers;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.plugin.dtos.PluginComponentDTO;
 import de.aivot.gover.backend.plugin.dtos.PluginDTO;
 import de.aivot.gover.backend.plugin.models.Plugin;
 import de.aivot.gover.backend.plugin.models.PluginComponent;
+import de.aivot.gover.backend.plugin.permissions.PluginPermissionProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,9 +38,14 @@ import java.util.stream.Collectors;
 public class PluginController {
     private final List<PluginDTO> pluginList;
     private final Map<String, PluginDTO> pluginMap;
+    private final PermissionService permissionService;
 
     @Autowired
-    public PluginController(List<Plugin> plugins, List<PluginComponent> components) {
+    public PluginController(List<Plugin> plugins,
+                            List<PluginComponent> components,
+                            PermissionService permissionService) {
+        this.permissionService = permissionService;
+
         var componentList = components
                 .stream()
                 .map(PluginComponentDTO::from)
@@ -67,20 +77,31 @@ public class PluginController {
     @GetMapping("")
     @Operation(
             summary = "List Plugins",
-            description = "Retrieve a list of all installed plugins along with their details."
+            description = "Retrieve a list of all installed plugins along with their details. " +
+                    "Requires the system-level permission `" + PluginPermissionProvider.PLUGIN_READ + "`."
     )
-    public List<PluginDTO> list() {
+    public List<PluginDTO> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt
+    ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, PluginPermissionProvider.PLUGIN_READ);
+
         return pluginList;
     }
 
     @GetMapping("{pluginKey}/")
     @Operation(
             summary = "Retrieve a Plugin",
-            description = "Retrieve detailed information about a specific plugin by its unique key."
+            description = "Retrieve detailed information about a specific plugin by its unique key. " +
+                    "Requires the system-level permission `" + PluginPermissionProvider.PLUGIN_READ + "`."
     )
     public PluginDTO retrievePlugin(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String pluginKey
     ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, PluginPermissionProvider.PLUGIN_READ);
+
         var plugin = pluginMap.get(pluginKey);
 
         if (plugin == null) {
