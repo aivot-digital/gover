@@ -1007,7 +1007,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
         @InputElementPOJOBinding(id = FILE_NAME_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dateiname bei Speicherung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional. Wenn gesetzt, wird dieser Wert als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der gespeicherten Datei. Diese Eingabe unterstützt \"Smarte Platzhalter\". Beim Speichern wird immer ein Index angehängt, zum Beispiel DATEINAME-1.pdf."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wenn gesetzt, wird dieser Wert als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der gespeicherten Datei. Diese Eingabe unterstützt \"Smarte Platzhalter\". Beim Speichern wird immer ein Index angehängt, zum Beispiel DATEINAME-1.pdf."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
         public String fileName;
