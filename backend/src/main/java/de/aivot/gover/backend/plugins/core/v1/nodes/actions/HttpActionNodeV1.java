@@ -213,7 +213,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                 new ProcessNodeOutput(OUTPUT_NAME_ATTACHMENT_KEY, "Anhang-Schlüssel", "Der Schlüssel des gespeicherten Prozess-Anhangs."),
                 new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PROVIDER_ID, "Speicheranbieter", "Die ID des Speicheranbieters des gespeicherten Prozess-Anhangs."),
                 new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, "Speicherpfad", "Der Speicherpfad des gespeicherten Prozess-Anhangs."),
-                new ProcessNodeOutput(OUTPUT_NAME_FILES, "Dateien", "Die gespeicherten Antwortdateien im Format des Datei-Upload-Feldes.")
+                new ProcessNodeOutput(OUTPUT_NAME_FILES, "Dateien", "Die gespeicherten Antwortdateien im Format des Datei-Anlagen-Feldes.")
         );
     }
 
@@ -384,7 +384,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             } catch (ResponseException e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,
-                        "Die HTTP-Antwortdatei konnte nicht für das Datei-Upload-Feld aufbereitet werden: %s",
+                        "Die HTTP-Antwortdatei konnte nicht für das Datei-Anlagen-Feld aufbereitet werden: %s",
                         e.getMessage()
                 );
             }

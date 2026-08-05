@@ -161,7 +161,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 new ProcessNodeOutput(
                         DATA_KEY_CUSTOMER_SUMMARY_FILES,
                         "PDF-Zusammenfassung",
-                        "Die erzeugte PDF-Zusammenfassung der eingereichten Formulardaten im Format des Datei-Upload-Feldes."
+                        "Die erzeugte PDF-Zusammenfassung der eingereichten Formulardaten im Format des Datei-Anlagen-Feldes."
                 )
         );
     }
@@ -345,7 +345,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 var uploadElementLabel = FileUploadMultipartInputService.describeUploadElement(uploadElement);
                 var quotedUploadElementLabel = StringUtils.quote(uploadElementLabel);
                 var message = String.format(
-                        "Für das Upload-Feld %s muss ein Dateiname bei Einreichung hinterlegt sein.",
+                        "Für das Anlagen-Feld %s muss ein Dateiname bei Einreichung hinterlegt sein.",
                         quotedUploadElementLabel
                 );
                 errors.add(message);

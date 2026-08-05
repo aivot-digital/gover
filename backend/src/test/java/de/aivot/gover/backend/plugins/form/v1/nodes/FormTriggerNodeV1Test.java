@@ -201,7 +201,7 @@ class FormTriggerNodeV1Test {
 
         assertNotNull(errors);
         assertEquals(
-                List.of("Für das Upload-Feld „Nachweis“ muss ein Dateiname bei Einreichung hinterlegt sein."),
+                List.of("Für das Anlagen-Feld „Nachweis“ muss ein Dateiname bei Einreichung hinterlegt sein."),
                 errors.get(FormTriggerConfigV1.FORM_LAYOUT)
         );
     }

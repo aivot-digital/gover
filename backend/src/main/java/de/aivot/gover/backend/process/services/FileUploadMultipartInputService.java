@@ -88,7 +88,7 @@ public class FileUploadMultipartInputService {
         );
 
         if (!remainingFiles.isEmpty()) {
-            throw ResponseException.badRequest("Es wurden Dateien übertragen, die keinem Upload-Feld zugeordnet werden konnten.");
+            throw ResponseException.badRequest("Es wurden Dateien übertragen, die keinem Anlagen-Feld zugeordnet werden konnten.");
         }
 
         return new NormalizationResult(
@@ -240,7 +240,7 @@ public class FileUploadMultipartInputService {
 
             if (hasMissingAttachmentGroupPart) {
                 throw ResponseException.badRequest(
-                        "Für das Upload-Feld „%s“ fehlt eine ID des Listeneintrags.",
+                        "Für das Anlagen-Feld „%s“ fehlt eine ID des Listeneintrags.",
                         describeUploadElement(element)
                 );
             }
@@ -251,7 +251,7 @@ public class FileUploadMultipartInputService {
 
             if (configuredSubmittedFileName == null) {
                 throw ResponseException.badRequest(
-                        "Für das Upload-Feld „%s“ muss ein Dateiname bei Einreichung konfiguriert sein.",
+                        "Für das Anlagen-Feld „%s“ muss ein Dateiname bei Einreichung konfiguriert sein.",
                         describeUploadElement(element)
                 );
             }
@@ -317,12 +317,12 @@ public class FileUploadMultipartInputService {
             sourceKey = StringUtils.toNullableTrimmedString(element.getId());
         }
         if (sourceKey == null) {
-            throw ResponseException.badRequest("Ein Upload-Feld ohne Datenschlüssel benötigt eine Element-ID.");
+            throw ResponseException.badRequest("Ein Anlagen-Feld ohne Datenschlüssel benötigt eine Element-ID.");
         }
 
         var dataKey = sourceKey.replace('.', '_');
         if (dataKey.length() > 255) {
-            throw ResponseException.badRequest("Der Datenschlüssel des Upload-Felds „%s“ ist zu lang.", describeUploadElement(element));
+            throw ResponseException.badRequest("Der Datenschlüssel des Anlagen-Felds „%s“ ist zu lang.", describeUploadElement(element));
         }
 
         return dataKey;
@@ -469,14 +469,14 @@ public class FileUploadMultipartInputService {
                                                     @Nonnull String resolvedFileName) throws ResponseException {
         if (resolvedFileName.length() > 255) {
             throw ResponseException.badRequest(
-                    "Der konfigurierte Dateiname für das Upload-Feld „%s“ ist zu lang.",
+                    "Der konfigurierte Dateiname für das Anlagen-Feld „%s“ ist zu lang.",
                     describeUploadElement(element)
             );
         }
 
         if (resolvedFileName.contains("/") || resolvedFileName.contains("\\") || resolvedFileName.contains("\r") || resolvedFileName.contains("\n")) {
             throw ResponseException.badRequest(
-                    "Der konfigurierte Dateiname für das Upload-Feld „%s“ ist ungültig.",
+                    "Der konfigurierte Dateiname für das Anlagen-Feld „%s“ ist ungültig.",
                     describeUploadElement(element)
             );
         }
@@ -488,7 +488,7 @@ public class FileUploadMultipartInputService {
 
         var resolvedExtension = StringUtils.extractExtensionFromFileName(resolvedFileName)
                 .orElseThrow(() -> ResponseException.badRequest(
-                        "Der konfigurierte Dateiname für das Upload-Feld „%s“ benötigt eine erlaubte Dateiendung.",
+                        "Der konfigurierte Dateiname für das Anlagen-Feld „%s“ benötigt eine erlaubte Dateiendung.",
                         describeUploadElement(element)
                 ));
 
@@ -497,7 +497,7 @@ public class FileUploadMultipartInputService {
                 .anyMatch(allowedExtension -> allowedExtension.equalsIgnoreCase(resolvedExtension));
         if (!extensionAllowed) {
             throw ResponseException.badRequest(
-                    "Der konfigurierte Dateiname „%s“ für das Upload-Feld „%s“ hat eine nicht erlaubte Dateiendung.",
+                    "Der konfigurierte Dateiname „%s“ für das Anlagen-Feld „%s“ hat eine nicht erlaubte Dateiendung.",
                     resolvedFileName,
                     describeUploadElement(element)
             );
