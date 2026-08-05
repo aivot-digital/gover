@@ -21,6 +21,23 @@ describe('hasAuthoredElementValuesSomeInput', () => {
 });
 
 describe('hasAnyErrorRecursivelyInParent', () => {
+    it.each([
+        ElementType.SummaryStep,
+        ElementType.SubmitStep,
+    ])('should detect an error on a childless form step of type %s', (type) => {
+        const step = {
+            id: 'childless-step',
+            type,
+        } as any;
+        const elementStates: ComputedElementStates = {
+            'childless-step': {
+                error: 'Step error',
+            },
+        };
+
+        expect(hasAnyErrorRecursivelyInParent(step, elementStates)).toBe(true);
+    });
+
     it('should detect an error on the parent itself', () => {
         const parent = {
             id: 'parent',

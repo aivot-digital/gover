@@ -1,6 +1,6 @@
 import type {AnyElement} from './elements/any-element';
 import {isStringNotNullOrEmpty} from '../utils/string-utils';
-import {type AnyElementWithChildren, isAnyElementWithChildren} from './elements/any-element-with-children';
+import {isAnyElementWithChildren} from './elements/any-element-with-children';
 import {isReplicatingContainerLayout} from './elements/form/layout/replicating-container-layout';
 
 export type AuthoredElementValues = Partial<Record<string, any>>;
@@ -184,7 +184,7 @@ export function hasAnyErrorRecursively(elementStates: ComputedElementStates): bo
         });
 }
 
-export function hasAnyErrorRecursivelyInParent(parent: AnyElementWithChildren, allElementStates: ComputedElementStates): boolean {
+export function hasAnyErrorRecursivelyInParent(parent: AnyElement, allElementStates: ComputedElementStates): boolean {
     return hasAnyErrorRecursivelyInElement(parent, allElementStates);
 }
 
