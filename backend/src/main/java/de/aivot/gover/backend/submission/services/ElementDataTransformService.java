@@ -387,7 +387,10 @@ public class ElementDataTransformService {
                         mergeEffectiveValues(child, itemPayload, itemEffectiveValues, itemReplicationIndices);
                     }
 
-                    mappedItems.add(createReplicatingContainerItemValue(itemEffectiveValues));
+                    mappedItems.add(createReplicatingContainerItemValue(
+                            itemEffectiveValues,
+                            resolveReplicatingContainerItemId(rawItemMap)
+                    ));
                 } else {
                     mappedItems.add(rawItem);
                 }
@@ -434,8 +437,22 @@ public class ElementDataTransformService {
 
     @Nonnull
     private ReplicatingContainerLayoutElementValue createReplicatingContainerItemValue(@Nonnull EffectiveElementValues itemEffectiveValues) {
+        return createReplicatingContainerItemValue(itemEffectiveValues, null);
+    }
+
+    @Nonnull
+    private ReplicatingContainerLayoutElementValue createReplicatingContainerItemValue(@Nonnull EffectiveElementValues itemEffectiveValues,
+                                                                                      @Nullable String itemId) {
         AuthoredElementValues values = itemEffectiveValues.toAuthoredElementValues();
-        return new ReplicatingContainerLayoutElementValue().setValues(values);
+        var id = StringUtils.toNullableTrimmedString(itemId);
+        return new ReplicatingContainerLayoutElementValue()
+                .setId(id != null ? id : UUID.randomUUID().toString())
+                .setValues(values);
+    }
+
+    @Nullable
+    private String resolveReplicatingContainerItemId(@Nonnull Map<?, ?> rawItemMap) {
+        return StringUtils.toNullableTrimmedString(rawItemMap.get("id"));
     }
 
     /**
