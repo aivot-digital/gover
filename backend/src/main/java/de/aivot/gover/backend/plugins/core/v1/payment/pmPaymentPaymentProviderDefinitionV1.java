@@ -224,12 +224,12 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
                                     .withAuthorizationBearer(accessToken)
                     );
         } catch (HttpConnectionException e) {
-            throw new PaymentException(e, "Failed to poll payment from payment provider %s", getProviderName());
+            throw new PaymentException(e, "Failed to create payment from payment provider %s", getProviderName());
         }
 
         if (response.statusCode() != 200) {
             throw new PaymentException(
-                    "Failed to poll payment from payment provider %s. Status code was %d with body %s",
+                    "Failed to create payment from payment provider %s. Status code was %d with body %s",
                     getProviderName(),
                     response.statusCode(),
                     response.body()
