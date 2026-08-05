@@ -992,7 +992,8 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
          * If true, missing attachment sets and attachment sets without files are logged and skipped instead of failing execution.
          */
         @InputElementPOJOBinding(id = IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID, type = ElementType.Checkbox, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Optionalen Anlagensatz ignorieren, falls keine Dateien vorhanden sind"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Optionaler Anlagensatz"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wenn aktiviert, schlägt der Prozess nicht fehl, wenn kein Anlagensatz vorhanden ist."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
         @Nullable
