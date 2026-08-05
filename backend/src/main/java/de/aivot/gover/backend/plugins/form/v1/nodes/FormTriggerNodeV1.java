@@ -342,17 +342,17 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         }
         ElementStreamUtils.applyAction(formLayout, element -> {
             if (element instanceof FileUploadInputElement uploadElement && StringUtils.isNullOrEmpty(uploadElement.getSubmittedFileName())) {
-                errors.add("Für das Upload-Feld %s muss ein Dateiname bei Einreichung hinterlegt sein.".formatted(StringUtils.quote(describeUploadElement(uploadElement))));
+                var uploadElementLabel = FileUploadMultipartInputService.describeUploadElement(uploadElement);
+                var quotedUploadElementLabel = StringUtils.quote(uploadElementLabel);
+                var message = String.format(
+                        "Für das Upload-Feld %s muss ein Dateiname bei Einreichung hinterlegt sein.",
+                        quotedUploadElementLabel
+                );
+                errors.add(message);
             }
         });
 
         return errors;
-    }
-
-    @Nonnull
-    private String describeUploadElement(@Nonnull FileUploadInputElement uploadElement) {
-        var label = StringUtils.toNullableTrimmedString(uploadElement.getLabel());
-        return label == null ? Objects.toString(uploadElement.getId(), "Unbenanntes Upload-Feld") : label;
     }
 
     @Nonnull
