@@ -39,7 +39,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
     const submittedFileNameHint = !requiresSubmittedFileNameIndex
         ? 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei.'
         : hasReplicatingContainerParent
-            ? 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei. Mit "#" können Sie den Index angeben. Ist "#" nicht vorhanden, wird der Index automatisch am Ende angefügt, zum Beispiel DATEINAME-3-2.pdf.'
+            ? 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei. Mit "#" können Sie den Index angeben. Ist "#" nicht vorhanden, wird der Index automatisch am Ende angefügt, zum Beispiel DATEINAME-1.pdf.'
             : 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei. Mit "#" können Sie den Index angeben. Ist "#" nicht vorhanden, wird der Index automatisch am Ende angefügt, zum Beispiel DATEINAME-1.pdf.';
 
     if (hasSummaryLayoutParent) {
