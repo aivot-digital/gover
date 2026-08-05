@@ -168,7 +168,7 @@ class StoreAttachmentSetActionNodeV1Test {
         var ignoreEmptyAttachmentSetField = layout
                 .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID, CheckboxInputElement.class)
                 .orElseThrow();
-        assertEquals("Optionalen Anlagensatz ignorieren, falls keine Dateien vorhanden sind", ignoreEmptyAttachmentSetField.getLabel());
+        assertEquals("Optionaler Anlagensatz", ignoreEmptyAttachmentSetField.getLabel());
 
         var fileNameField = layout
                 .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.FILE_NAME_FIELD_ID, TextInputElement.class)
@@ -324,7 +324,8 @@ class StoreAttachmentSetActionNodeV1Test {
                 attachment("alpha.PDF", 1, 11, "/source/alpha.pdf").setGroup(" invoices "),
                 attachment("beta.pdf", 2, 11, "/source/beta.pdf"),
                 attachment("gamma.pdf", 3, 11, "/source/gamma.pdf").setGroup(" "),
-                attachment("delta.pdf", 4, 11, "/source/delta.pdf").setGroup("contracts")
+                attachment("delta.pdf", 4, 11, "/source/delta.pdf").setGroup("contracts"),
+                attachment("epsilon.pdf", 5, 11, "/source/epsilon.pdf").setGroup("person-1/dog-2")
         );
 
         var configuration = configuration(
@@ -336,16 +337,17 @@ class StoreAttachmentSetActionNodeV1Test {
                 new StoredDocument("/case/123/1/invoices/alpha.PDF", "alpha.PDF"),
                 new StoredDocument("/case/123/2/beta.pdf", "beta.pdf"),
                 new StoredDocument("/case/123/3/gamma.pdf", "gamma.pdf"),
-                new StoredDocument("/case/123/4/contracts/delta.pdf", "delta.pdf")
+                new StoredDocument("/case/123/4/contracts/delta.pdf", "delta.pdf"),
+                new StoredDocument("/case/123/5/person-1/dog-2/epsilon.pdf", "epsilon.pdf")
         ), storedDocuments);
     }
 
     @Test
-    void init_FailsWhenAttachmentGroupCannotBeUsedAsFolderName() throws Exception {
+    void init_FailsWhenAttachmentGroupCannotBeUsedAsFolderPath() throws Exception {
         arrangeAttachmentSet(
                 "documents",
                 321,
-                attachment("alpha.PDF", 1, 11, "/source/alpha.pdf").setGroup("bad/group")
+                attachment("alpha.PDF", 1, 11, "/source/alpha.pdf").setGroup("bad//group")
         );
 
         var configuration = configuration(

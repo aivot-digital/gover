@@ -396,10 +396,8 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 var attachment = attachments.get(i);
                 var attachmentIndex = i + 1;
                 var targetFolderPath = applyFileIndex(normalizedTargetFolderPath, attachmentIndex);
-                var attachmentGroup = StringUtils.toNullableTrimmedString(attachment.getGroup());
-                if (attachmentGroup != null) {
-                    validateGroupFolderName(attachmentGroup, rowIndex + 1);
-                    targetFolderPath = appendPathSegment(targetFolderPath, attachmentGroup);
+                for (var attachmentGroupSegment : resolveGroupPathSegments(attachment.getGroup(), rowIndex + 1)) {
+                    targetFolderPath = appendPathSegment(targetFolderPath, attachmentGroupSegment);
                 }
                 var storedFileName = resolveStoredFileName(context, attachmentSetConfig, attachment.getFileName(), attachmentIndex, usedCustomFileNames, rowIndex + 1);
                 var targetPath = appendPathSegment(targetFolderPath, storedFileName);
@@ -695,14 +693,36 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
         }
     }
 
-    private static void validateGroupFolderName(@Nonnull String groupFolderName,
-                                                int rowIndex) throws ProcessNodeExecutionException {
-        if (groupFolderName.contains("/") || groupFolderName.contains("\\") || groupFolderName.contains("\r") || groupFolderName.contains("\n")) {
+    @Nonnull
+    private static List<String> resolveGroupPathSegments(@Nullable String groupPath,
+                                                         int rowIndex) throws ProcessNodeExecutionException {
+        var normalizedGroupPath = StringUtils.toNullableTrimmedString(groupPath);
+        if (normalizedGroupPath == null) {
+            return List.of();
+        }
+
+        if (normalizedGroupPath.contains("\\") || normalizedGroupPath.contains("\r") || normalizedGroupPath.contains("\n")) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Eintrag %d: Der Gruppenname des Anhangs ist als Ordnername ungültig.",
                     rowIndex
             );
         }
+
+        var groupPathSegments = new ArrayList<String>();
+        // Keep empty segments visible so malformed subgroup paths fail instead of being normalized away.
+        for (var rawSegment : normalizedGroupPath.split("/", -1)) {
+            var segment = StringUtils.toNullableTrimmedString(rawSegment);
+            if (segment == null || ".".equals(segment) || "..".equals(segment)) {
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                        "Eintrag %d: Der Gruppenname des Anhangs ist als Ordnername ungültig.",
+                        rowIndex
+                );
+            }
+
+            groupPathSegments.add(segment);
+        }
+
+        return groupPathSegments;
     }
 
     @Nullable
