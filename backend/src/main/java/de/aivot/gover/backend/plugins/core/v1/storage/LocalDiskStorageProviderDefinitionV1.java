@@ -759,9 +759,9 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
         // 1. Replace all non-alphanumeric/dot/hyphen characters with an underscore
         // This removes spaces, slashes, and special characters like : * ? " < > |
-        var sanitized = StringUtils.replaceSpecialGermanCharacters(
-                filename.replaceAll("[^a-zA-Z0-9( .)_-]", "_")
-        );
+        var sanitized = StringUtils
+                .replaceSpecialGermanCharacters(filename)
+                .replaceAll("[^a-zA-Z0-9( .)_-]", "_");
 
         // 2. Prevent hidden files (starting with a dot) or empty names
         if (sanitized.startsWith(".") || sanitized.isEmpty()) {
