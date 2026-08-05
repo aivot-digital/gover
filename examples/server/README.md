@@ -110,7 +110,8 @@ To create the initial Gover administrator:
 7. Log into `${GOVER_HOSTNAME}/staff` with that staff user.
 
 When this user logs into Gover for the first time, Gover imports the user.
-If no Gover super administrator exists yet and the e-mail address matches `GOVER_BOOTSTRAP_ADMIN_MAIL`, the user receives the `Superadministrator:in` system role.
+If no active Gover user holds the configured system role with the highest permission level and the e-mail address matches `GOVER_BOOTSTRAP_ADMIN_MAIL`, the user receives that role.
+The role defaults to `Superadministrator:in` and can later be changed under the general application settings.
 
 ## 6. Backups
 

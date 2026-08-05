@@ -310,6 +310,13 @@ values ('users.default_system_role', '3')
 on conflict (key) do update
     set value = excluded.value;
 
+-- set the system role that represents the highest permission level
+insert into system_configs (key,
+                            value)
+values ('system_roles.most_privileged_role', '1')
+on conflict (key) do update
+    set value = excluded.value;
+
 -- fix id sequence for system_roles
 select setval('system_roles_id_seq',
               (select max(id) from system_roles));

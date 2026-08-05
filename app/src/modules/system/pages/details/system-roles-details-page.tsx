@@ -1,5 +1,5 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import {Typography} from '@mui/material';
+import {Box, Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import React from 'react';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
@@ -14,9 +14,14 @@ import {
     isDefaultUserSystemRole,
 } from '../../components/default-user-system-role-badge';
 import {Permission} from '../../../../data/permissions/permission';
+import {
+    isMostPrivilegedSystemRole,
+    MostPrivilegedSystemRoleBadge,
+} from '../../components/most-privileged-system-role-badge';
 
 export function SystemRolesDetailsPage() {
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
+    const mostPrivilegedSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.systemRoles.mostPrivilegedRole));
 
     return (
         <PageWrapper
@@ -36,8 +41,21 @@ export function SystemRolesDetailsPage() {
                 header={(item, isNewItem, notFound) => ({
                     icon: ModuleIcons.roles,
                     title: 'Systemrolle bearbeiten',
-                    badge: !isNewItem && !notFound && isDefaultUserSystemRole(item?.id, defaultSystemRoleId)
-                        ? <DefaultUserSystemRoleBadge showHintIcon />
+                    badge: !isNewItem && !notFound && (
+                        isDefaultUserSystemRole(item?.id, defaultSystemRoleId) ||
+                        isMostPrivilegedSystemRole(item?.id, mostPrivilegedSystemRoleId)
+                    )
+                        ? (
+                            <Box
+                                component="span"
+                                sx={{display: 'inline-flex', flexWrap: 'wrap', gap: 1}}
+                            >
+                                {isDefaultUserSystemRole(item?.id, defaultSystemRoleId) &&
+                                    <DefaultUserSystemRoleBadge showHintIcon/>}
+                                {isMostPrivilegedSystemRole(item?.id, mostPrivilegedSystemRoleId) &&
+                                    <MostPrivilegedSystemRoleBadge showHintIcon/>}
+                            </Box>
+                        )
                         : undefined,
                     helpDialog: {
                         title: 'Hilfe zu Systemrollen',

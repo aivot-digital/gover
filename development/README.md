@@ -254,18 +254,19 @@ Make sure to save the new password and the OTP secret in a secure place, as you 
 - Gover authenticates its own users against the Keycloak realm configured by `GOVER_KEYCLOAK_OIDC_REALM`.
 - In the default development setup, `GOVER_KEYCLOAK_OIDC_REALM` is set to `staff`.
 - Because of this, only users from the `staff` realm can log into the Gover staff app directly and be imported as Gover users.
-- The Gover bootstrap super admin is therefore a Gover application user from the `staff` realm, not a special Keycloak admin-console account.
+- The Gover bootstrap administrator is therefore a Gover application user from the `staff` realm, not a special Keycloak admin-console account.
 - The `customer` realm is used for customer identity provider integration and is not used for direct Gover staff login.
-- A user is promoted to the Gover system role `Superadministrator:in` only when all of the following are true:
+- A user is promoted to the configured Gover system role with the highest permission level only when all of the following are true:
   - the user is imported into Gover by user synchronization or by logging into Gover
   - the user comes from the `staff` realm
   - the user's e-mail address matches `GOVER_BOOTSTRAP_ADMIN_MAIL`
-  - no Gover super admin exists yet
+  - no active Gover user holds that system role
+- The role with the highest permission level defaults to `Superadministrator:in` and can be changed under the general application settings.
 - In the default development setup, these values are different:
   - the Keycloak admin user `superuser` has the e-mail `mail@example.com`
   - `GOVER_BOOTSTRAP_ADMIN_MAIL` in `./development/gover.env` is set to `admin@example.com`
 
-Because of this, the default Keycloak user `superuser` does not become the bootstrap Gover super admin.
+Because of this, the default Keycloak user `superuser` does not become the bootstrap Gover administrator.
 
 The Keycloak Setup Helper creates the following realms:
 
@@ -281,14 +282,14 @@ After saving the user, go to the "Credentials" tab and set a password for the us
 Make sure to disable the "Temporary" option, so the password does not expire after the first login.
 The user is now available for logging into the staff frontend application.
 
-If this staff user should become the first Gover super admin, set the user's e-mail address to the value of `GOVER_BOOTSTRAP_ADMIN_MAIL` before the user logs into Gover for the first time.
+If this staff user should receive Gover's system role with the highest permission level, set the user's e-mail address to the value of `GOVER_BOOTSTRAP_ADMIN_MAIL` before the user logs into Gover for the first time.
 In the default development setup, that means using the e-mail address `admin@example.com`, or changing `GOVER_BOOTSTRAP_ADMIN_MAIL` in `./development/gover.env` before the first import/login.
 
 **Bootstrap Gover Admin User:**
 
-When Keycloak users are synced into Gover, or when a user logs into Gover and is imported on demand, Gover checks whether that user should become the bootstrap super admin.
+When Keycloak users are synced into Gover, or when a user logs into Gover and is imported on demand, Gover checks whether that user should receive the system role with the highest permission level.
 Gover does this by comparing the imported user's e-mail address with the environment variable `GOVER_BOOTSTRAP_ADMIN_MAIL` in `./development/gover.env`.
-If the e-mail address matches and no Gover super admin exists yet, that user receives the Gover system role `Superadministrator:in`, which grants full access to the Gover application.
+If the e-mail address matches and no active Gover user holds the configured role, that user receives it. The role defaults to `Superadministrator:in`.
 
 ### 3.6 Message Broker (RabbitMQ)
 
