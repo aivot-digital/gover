@@ -980,7 +980,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
         @InputElementPOJOBinding(id = STORAGE_PATH_FIELD_ID, type = ElementType.StoragePathSelector, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zielpfad"),
-                @ElementPOJOBindingProperty(key = "storageProviderSelectHint", strValue = "Wählen Sie den beschreibbaren Speicheranbieter aus, in dem der Anlagensatz gespeichert wird."),
+                @ElementPOJOBindingProperty(key = "storageProviderSelectHint", strValue = "Speicheranbieter, bei welchem der Anlagensatz gespeichert wird."),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Der Pfad unter welchem der Anlagensatz gespeichert wird. Verwenden Sie \"#\" zur Angabe der aktuellen Dateinummerierung im Pfad. Diese Eingabe unterstützt \"Smarte Platzhalter\"."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),

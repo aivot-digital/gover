@@ -163,7 +163,7 @@ class StoreAttachmentSetActionNodeV1Test {
                 .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, StoragePathSelectorInputElement.class)
                 .orElseThrow();
         assertEquals(List.of(StorageProviderType.Assets, StorageProviderType.External), storagePathField.getAllowedStorageProviderTypes());
-        assertEquals("Wählen Sie den beschreibbaren Speicheranbieter aus, in dem der Anlagensatz gespeichert wird.", storagePathField.getStorageProviderSelectHint());
+        assertEquals("Speicheranbieter, bei welchem der Anlagensatz gespeichert wird.", storagePathField.getStorageProviderSelectHint());
 
         var ignoreEmptyAttachmentSetField = layout
                 .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID, CheckboxInputElement.class)
