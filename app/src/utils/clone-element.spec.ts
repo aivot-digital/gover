@@ -3,6 +3,7 @@ import {type GroupLayout} from '../models/elements/form/layout/group-layout';
 import {type TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {cloneElement} from './clone-element';
 import {generateElementWithDefaultValues} from './generate-element-with-default-values';
+import {describe, expect, it} from 'vitest';
 
 describe('cloneElement', () => {
     it('should append the copy suffix only to the cloned root element', () => {
