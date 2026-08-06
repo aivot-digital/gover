@@ -10,11 +10,11 @@ import {
     GenericDetailsPageContextType
 } from '../../../../../components/generic-details-page/generic-details-page-context';
 import {GenericDetailsSkeleton} from '../../../../../components/generic-details-page/generic-details-skeleton';
-import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import {Button, Dialog, DialogActions, DialogContent} from "@mui/material";
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {useAppDispatch} from "../../../../../hooks/use-app-dispatch";
-import {showErrorSnackbar} from "../../../../../slices/snackbar-slice";
+import {showApiErrorSnackbar, showErrorSnackbar} from "../../../../../slices/snackbar-slice";
 import {GenericListPropsFetchOptions, ListControlRef} from "../../../../../components/generic-list/generic-list-props";
 import {setLoadingMessage} from "../../../../../slices/shell-slice";
 import {isApiError} from "../../../../../models/api-error";
@@ -31,6 +31,14 @@ import {DateFieldComponent} from "../../../../../components/date-field/date-fiel
 import {DateFieldComponentModelMode} from "../../../../../models/elements/form/input/date-field-element";
 import {formatISODate} from "../../../../../utils/date-utils";
 import {addDays} from "date-fns/addDays";
+import {Permission} from '../../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
+import {useHasSystemPermission, useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
+import {Page} from '../../../../../models/dtos/page';
+import {useRetainedDialogValue} from '../../../../../hooks/use-retained-dialog-value';
+
+const deletedUserDeputyTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Stellvertretungen nicht mehr geändert werden.';
 
 const columns: Array<GridColDef<VUserDeputyWithDetailsEntity>> = [
     {
@@ -80,30 +88,57 @@ function getDeputyPeriodLabel(item: VUserDeputyWithDetailsEntity): string {
 
 export function UserDetailsPageDeputies() {
     const dispatch = useAppDispatch();
+    const canCreateDeputy = useHasSystemPermission(Permission.DEPUTY_CREATE);
+    const canUpdateDeputy = useHasSystemPermission(Permission.DEPUTY_UPDATE);
+    const canDeleteDeputy = useHasSystemPermission(Permission.DEPUTY_DELETE);
+    const canReadUsers = useHasSystemPermission(Permission.USER_READ);
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const listControlRef = useRef<ListControlRef | null>(null);
 
     const confirm = useConfirm();
 
     const [showSelectUserDialog, setShowSelectUserDialog] = useState(false);
-    const [deputyToAdd, setDeputyToAdd] = useState<UserDeputyEntity | null>(null);
+    const [deputyDraft, setDeputyDraft] = useState<UserDeputyEntity | null>(null);
+    const [deputyDraftDetails, setDeputyDraftDetails] = useState<VUserDeputyWithDetailsEntity | null>(null);
+    const isDeputyDialogOpen = deputyDraft != null;
+    // Keep the last selected deputy visible until the close transition has finished.
+    const renderDeputyDraft = useRetainedDialogValue(isDeputyDialogOpen, deputyDraft);
+    const renderDeputyDraftDetails = useRetainedDialogValue(isDeputyDialogOpen, deputyDraftDetails);
 
     const {
         item: user,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<User, undefined>;
+    const userId = user?.id;
 
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    const canManageDeputies = user != null && !user.deletedInIdp;
+    const addDeputyDisabled = !canManageDeputies || !canCreateDeputy || !canReadUsers;
+    const addDeputyDisabledTooltip = !canManageDeputies
+        ? deletedUserDeputyTooltip
+        : !canCreateDeputy
+            ? formatMissingPermissionTooltip(Permission.DEPUTY_CREATE)
+            : !canReadUsers
+                ? formatMissingPermissionTooltip(Permission.USER_READ)
+                : '';
+
+    const refreshPermissionsAfterDeputyChange = useCallback(() => {
+        // Deputy changes may alter effective permissions for the active user or another open tab.
+        refreshPermissionSet({broadcast: true})
+            .catch((err) => dispatch(showApiErrorSnackbar(
+                err,
+                'Die Berechtigungen konnten nach der Änderung der Stellvertretung nicht aktualisiert werden.',
+            )));
+    }, [dispatch, refreshPermissionSet]);
+
+    const isEditingDeputy = renderDeputyDraft != null && renderDeputyDraft.id !== 0;
 
     const deputyDateRangeError = useMemo(() => {
-        if (deputyToAdd?.untilTimestamp == null) {
+        if (renderDeputyDraft?.untilTimestamp == null) {
             return undefined;
         }
 
-        const fromTimestamp = parseISO(deputyToAdd.fromTimestamp);
-        const untilTimestamp = parseISO(deputyToAdd.untilTimestamp);
+        const fromTimestamp = parseISO(renderDeputyDraft.fromTimestamp);
+        const untilTimestamp = parseISO(renderDeputyDraft.untilTimestamp);
 
         if (Number.isNaN(fromTimestamp.getTime()) || Number.isNaN(untilTimestamp.getTime())) {
             return undefined;
@@ -114,26 +149,62 @@ export function UserDetailsPageDeputies() {
         }
 
         return undefined;
-    }, [deputyToAdd?.fromTimestamp, deputyToAdd?.untilTimestamp]);
+    }, [renderDeputyDraft?.fromTimestamp, renderDeputyDraft?.untilTimestamp]);
+
+    const saveDeputyDisabled = renderDeputyDraft == null ||
+        deputyDateRangeError != null ||
+        !canManageDeputies ||
+        (isEditingDeputy ? !canUpdateDeputy : (!canCreateDeputy || !canReadUsers));
+    const saveDeputyDisabledTooltip = !canManageDeputies
+        ? deletedUserDeputyTooltip
+        : isEditingDeputy && !canUpdateDeputy
+            ? formatMissingPermissionTooltip(Permission.DEPUTY_UPDATE)
+            : !isEditingDeputy && !canCreateDeputy
+                ? formatMissingPermissionTooltip(Permission.DEPUTY_CREATE)
+                : !isEditingDeputy && !canReadUsers
+                    ? formatMissingPermissionTooltip(Permission.USER_READ)
+                    : deputyDateRangeError;
 
     const preSearchElements = useMemo(() => {
-        if (!hasAccess) {
-            return undefined;
+        return [
+            <DisabledTooltip
+                key="add-deputy"
+                title={addDeputyDisabledTooltip}
+                disabled={addDeputyDisabled}
+            >
+                <Button
+                    variant="contained"
+                    startIcon={<Add/>}
+                    disabled={addDeputyDisabled}
+                    onClick={() => {
+                        setShowSelectUserDialog(true);
+                    }}
+                >
+                    Stellvertreter:in hinzufügen
+                </Button>
+            </DisabledTooltip>,
+        ];
+    }, [addDeputyDisabled, addDeputyDisabledTooltip]);
+
+    const fetchDeputies = useCallback((options: GenericListPropsFetchOptions<VUserDeputyWithDetailsEntity>): Promise<Page<VUserDeputyWithDetailsEntity>> => {
+        if (userId == null) {
+            return Promise.resolve({
+                content: [],
+                page: {
+                    size: 0,
+                    number: 0,
+                    totalElements: 0,
+                    totalPages: 0,
+                },
+            });
         }
 
-        return [
-            <Button
-                variant="contained"
-                startIcon={<Add/>}
-                disabled={user?.deletedInIdp === true}
-                onClick={() => {
-                    setShowSelectUserDialog(true);
-                }}
-            >
-                Stellvertreter:in hinzufügen
-            </Button>,
-        ];
-    }, [hasAccess, user?.deletedInIdp]);
+        return new VUserDeputyWithDetailsApiService()
+            .listAllOrdered(options.sort, options.order, {
+                originalUserId: userId,
+                deputyUserFullName: options.search,
+            });
+    }, [userId]);
 
     if (user == null) {
         return (
@@ -141,18 +212,17 @@ export function UserDetailsPageDeputies() {
         );
     }
 
-    const canManageDeputies = !user.deletedInIdp;
+    const closeDeputyDialog = () => {
+        setDeputyDraft(null);
+        setDeputyDraftDetails(null);
+    };
 
-    const fetchDeputies = useCallback((options: GenericListPropsFetchOptions<VUserDeputyWithDetailsEntity>) => {
-        return new VUserDeputyWithDetailsApiService()
-            .listAllOrdered(options.sort, options.order, {
-                originalUserId: user.id,
-                deputyUserFullName: options.search,
-            });
-    }, [user.id]);
+    const handleSaveDeputy = () => {
+        if (deputyDraft == null || !canManageDeputies) {
+            return;
+        }
 
-    const handleAddDeputy = () => {
-        if (!canManageDeputies || deputyToAdd == null) {
+        if (isEditingDeputy ? !canUpdateDeputy : (!canCreateDeputy || !canReadUsers)) {
             return;
         }
 
@@ -162,24 +232,32 @@ export function UserDetailsPageDeputies() {
         }
 
         dispatch(setLoadingMessage({
-            message: `Füge Stellvertretung für ${deputyToAdd.deputyUserId} hinzu`,
+            message: isEditingDeputy
+                ? `Aktualisiere Stellvertretung für ${deputyDraft.deputyUserId}`
+                : `Füge Stellvertretung für ${deputyDraft.deputyUserId} hinzu`,
             blocking: true,
             estimatedTime: 3000,
         }));
 
-        new UserDeputyApiService()
-            .create(deputyToAdd)
+        const request = isEditingDeputy
+            ? new UserDeputyApiService().update(deputyDraft.id, deputyDraft)
+            : new UserDeputyApiService().create(deputyDraft);
+
+        request
             .then(() => {
                 // Refresh list
                 listControlRef.current?.refresh();
-                setDeputyToAdd(null);
+                refreshPermissionsAfterDeputyChange();
+                closeDeputyDialog();
             })
             .catch((error) => {
                 if (isApiError(error) && error.displayableToUser) {
                     dispatch(showErrorSnackbar(error.message));
                 } else {
                     console.error(error);
-                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Stellvertretung'));
+                    dispatch(showErrorSnackbar(isEditingDeputy
+                        ? 'Fehler beim Aktualisieren der Stellvertretung'
+                        : 'Fehler beim Hinzufügen der Stellvertretung'));
                 }
             })
             .finally(() => {
@@ -188,7 +266,7 @@ export function UserDetailsPageDeputies() {
     };
 
     const handleDeleteDeputy = (item: VUserDeputyWithDetailsEntity) => {
-        if (!hasAccess) {
+        if (!canDeleteDeputy) {
             return;
         }
 
@@ -221,6 +299,7 @@ export function UserDetailsPageDeputies() {
                     .then(() => {
                         // Refresh list
                         listControlRef.current?.refresh();
+                        refreshPermissionsAfterDeputyChange();
                     })
                     .catch((error) => {
                         if (isApiError(error) && error.displayableToUser) {
@@ -268,22 +347,50 @@ export function UserDetailsPageDeputies() {
                         <EmptyDataListPlaceholder
                             title="Keine Stellvertretungen eingerichtet"
                             description="Stellvertretungen legen fest, wer Aufgaben dieser Person für einen Zeitraum übernehmen kann."
-                            addText={hasAccess && canManageDeputies ? "Stellvertretung hinzufügen" : undefined}
-                            onAdd={hasAccess && canManageDeputies ? () => setShowSelectUserDialog(true) : undefined}
+                            addText="Stellvertretung hinzufügen"
+                            onAdd={() => setShowSelectUserDialog(true)}
+                            addDisabled={addDeputyDisabled}
+                            addDisabledTooltip={addDeputyDisabledTooltip}
                         />
                     }
                     loadingPlaceholder="Lade Stellvertreter:innen…"
                     noSearchResultsPlaceholder="Keine Stellvertreter:innen gefunden"
-                    rowActions={(item) => [
-                        {
-                            tooltip: 'Stellvertreter:in löschen',
-                            disabled: !hasAccess,
-                            icon: <Delete/>,
-                            onClick: () => {
-                                handleDeleteDeputy(item);
+                    rowActions={(item) => {
+                        const updateDisabled = item.originalUserDeletedInIdp || item.deputyUserDeletedInIdp || !canUpdateDeputy;
+                        const updateDisabledTooltip = item.originalUserDeletedInIdp || item.deputyUserDeletedInIdp
+                            ? deletedUserDeputyTooltip
+                            : !canUpdateDeputy
+                                ? formatMissingPermissionTooltip(Permission.DEPUTY_UPDATE)
+                                : undefined;
+
+                        return [
+                            {
+                                tooltip: 'Stellvertretung bearbeiten',
+                                disabled: updateDisabled,
+                                disabledTooltip: updateDisabledTooltip,
+                                icon: <EditOutlined/>,
+                                onClick: () => {
+                                    setDeputyDraft({
+                                        id: item.id,
+                                        originalUserId: item.originalUserId,
+                                        deputyUserId: item.deputyUserId,
+                                        fromTimestamp: item.fromTimestamp ?? new Date().toISOString(),
+                                        untilTimestamp: item.untilTimestamp,
+                                    });
+                                    setDeputyDraftDetails(item);
+                                },
                             },
-                        }
-                    ]}
+                            {
+                                tooltip: 'Stellvertreter:in löschen',
+                                disabled: !canDeleteDeputy,
+                                disabledTooltip: formatMissingPermissionTooltip(Permission.DEPUTY_DELETE),
+                                icon: <Delete/>,
+                                onClick: () => {
+                                    handleDeleteDeputy(item);
+                                },
+                            }
+                        ];
+                    }}
                     preSearchElements={preSearchElements}
                 />
             </Box>
@@ -294,13 +401,14 @@ export function UserDetailsPageDeputies() {
                     setShowSelectUserDialog(false);
                 }}
                 onSelect={(deputy) => {
-                    setDeputyToAdd({
+                    setDeputyDraft({
                         id: 0,
                         deputyUserId: deputy.id,
                         originalUserId: user.id,
                         fromTimestamp: new Date().toISOString(),
                         untilTimestamp: null,
                     });
+                    setDeputyDraftDetails(null);
                     setShowSelectUserDialog(false);
                 }}
                 idsToExclude={[
@@ -309,30 +417,40 @@ export function UserDetailsPageDeputies() {
             />
 
             <Dialog
-                open={deputyToAdd != null}
-                onClose={() => setDeputyToAdd(null)}
+                open={isDeputyDialogOpen}
+                onClose={closeDeputyDialog}
                 maxWidth="sm"
                 fullWidth
             >
                 <DialogTitleWithClose
-                    onClose={() => {
-                        setDeputyToAdd(null);
-                    }}
+                    onClose={closeDeputyDialog}
                 >
-                    Stellvertreter:in hinzufügen
+                    {isEditingDeputy ? 'Stellvertretung bearbeiten' : 'Stellvertreter:in hinzufügen'}
                 </DialogTitleWithClose>
 
                 <DialogContent>
+                    {
+                        isEditingDeputy && renderDeputyDraftDetails != null &&
+                        <Box sx={{mb: 2}}>
+                            <Typography variant="body2">
+                                <Box component="span" sx={{fontWeight: 600}}>Mitarbeiter:in:</Box> {renderDeputyDraftDetails.originalUserFullName}
+                            </Typography>
+                            <Typography variant="body2">
+                                <Box component="span" sx={{fontWeight: 600}}>Stellvertreter:in:</Box> {renderDeputyDraftDetails.deputyUserFullName}
+                            </Typography>
+                        </Box>
+                    }
+
                     <DateFieldComponent
                         label="Start der Vertretung"
                         mode={DateFieldComponentModelMode.Day}
-                        value={deputyToAdd?.fromTimestamp}
+                        value={renderDeputyDraft?.fromTimestamp}
                         onChange={(val) => {
-                            if (deputyToAdd == null) {
+                            if (deputyDraft == null) {
                                 return;
                             }
-                            setDeputyToAdd({
-                                ...deputyToAdd,
+                            setDeputyDraft({
+                                ...deputyDraft,
                                 fromTimestamp: val != null ? val : new Date().toISOString(),
                             });
                         }}
@@ -342,15 +460,15 @@ export function UserDetailsPageDeputies() {
                     <DateFieldComponent
                         label="Ende der Vertretung"
                         mode={DateFieldComponentModelMode.Day}
-                        value={deputyToAdd?.untilTimestamp ?? undefined}
-                        minDate={deputyToAdd?.fromTimestamp != null ? addDays(parseISO(deputyToAdd.fromTimestamp), 1) : undefined}
+                        value={renderDeputyDraft?.untilTimestamp ?? undefined}
+                        minDate={renderDeputyDraft?.fromTimestamp != null ? addDays(parseISO(renderDeputyDraft.fromTimestamp), 1) : undefined}
                         error={deputyDateRangeError}
                         onChange={(val) => {
-                            if (deputyToAdd == null) {
+                            if (deputyDraft == null) {
                                 return;
                             }
-                            setDeputyToAdd({
-                                ...deputyToAdd,
+                            setDeputyDraft({
+                                ...deputyDraft,
                                 untilTimestamp: val != null ? val : null,
                             });
                         }}
@@ -358,19 +476,22 @@ export function UserDetailsPageDeputies() {
                 </DialogContent>
 
                 <DialogActions>
-                    <Button
-                        variant="contained"
-                        onClick={() => {
-                            handleAddDeputy();
-                        }}
-                        disabled={deputyToAdd == null || deputyDateRangeError != null}
+                    <DisabledTooltip
+                        title={saveDeputyDisabledTooltip}
+                        disabled={saveDeputyDisabled}
                     >
-                        Hinzufügen
-                    </Button>
+                        <Button
+                            variant="contained"
+                            onClick={() => {
+                                handleSaveDeputy();
+                            }}
+                            disabled={saveDeputyDisabled}
+                        >
+                            {isEditingDeputy ? 'Speichern' : 'Hinzufügen'}
+                        </Button>
+                    </DisabledTooltip>
                     <Button
-                        onClick={() => {
-                            setDeputyToAdd(null);
-                        }}
+                        onClick={closeDeputyDialog}
                     >
                         Abbrechen
                     </Button>

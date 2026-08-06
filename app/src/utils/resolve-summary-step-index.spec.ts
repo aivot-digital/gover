@@ -1,3 +1,4 @@
+import {describe, expect, it} from 'vitest';
 import {ElementType} from '../data/element-type/element-type';
 import {createDerivedRuntimeElementData} from '../models/element-data';
 import {type FormLayoutElement} from '../models/elements/form-layout-element';

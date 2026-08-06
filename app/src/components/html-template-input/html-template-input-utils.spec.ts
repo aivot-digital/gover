@@ -1,3 +1,4 @@
+import {describe, expect, it} from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import {
@@ -28,7 +29,7 @@ describe('html-template-input-utils', () => {
             }),
             expect.objectContaining({
                 id: 'absender',
-                type: 'text',
+                type: 'richtext',
             }),
             expect.objectContaining({
                 id: 'anschrift',

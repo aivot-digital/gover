@@ -9,6 +9,8 @@ import de.aivot.gover.backend.elements.exceptions.ElementDataConversionException
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
 import de.aivot.gover.backend.elements.models.elements.BaseElement;
 import de.aivot.gover.backend.elements.models.elements.LayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.enums.ElementType;
 import de.aivot.gover.backend.utils.ReflectionUtils;
 import de.aivot.gover.backend.utils.StringUtils;
@@ -123,13 +125,7 @@ public class ElementPOJOMapper {
 
         List<Object> results = new LinkedList<>();
         for (Object childElementDataObject : childElementData) {
-            if (childElementDataObject instanceof Map<?, ?> cd) {
-                var ef = ObjectMapperFactory
-                        .getInstance()
-                        .convertValue(cd, EffectiveElementValues.class);
-                var converted = mapToPOJO(ef, itemClass);
-                results.add(converted);
-            } else {
+            if (!(childElementDataObject instanceof ReplicatingContainerLayoutElementValue) && !(childElementDataObject instanceof Map<?, ?>)) {
                 throw new ElementDataConversionException(
                         "Type mismatch for field %s of class %s: expected effective element values but got %s",
                         StringUtils.quote(field.getName()),
@@ -137,6 +133,19 @@ public class ElementPOJOMapper {
                         childElementDataObject.getClass().getSimpleName()
                 );
             }
+
+            var rowValues = ReplicatingContainerLayoutElement._formatValue(List.of(childElementDataObject));
+            if (rowValues == null || rowValues.isEmpty()) {
+                continue;
+            }
+
+            var ef = new EffectiveElementValues();
+            var authoredValues = rowValues.getFirst().getValues();
+            if (authoredValues != null) {
+                ef.putAll(authoredValues);
+            }
+            var converted = mapToPOJO(ef, itemClass);
+            results.add(converted);
         }
 
         return results;

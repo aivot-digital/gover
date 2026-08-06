@@ -1,8 +1,38 @@
+import {describe, expect, it} from 'vitest';
 import {ElementType} from '../data/element-type/element-type';
 import {applyComputedErrors, type ComputedElementStates} from '../models/element-data';
-import {applyYupErrorsToElementData, mapFormManagerErrorsToComputedErrors} from './gover-schema-to-yup';
+import {applyYupErrorsToElementData, goverSchemaToYup, mapFormManagerErrorsToComputedErrors} from './gover-schema-to-yup';
+import * as yup from 'yup';
 
 describe('mapFormManagerErrorsToComputedErrors', () => {
+    it('should validate children inside replicating container row values', async () => {
+        const street = createTextField('street');
+        street.required = true;
+        const rootElement = createGroupLayout([
+            createReplicatingContainer('addresses', [
+                street,
+            ]),
+        ]);
+        const schema = yup.object().shape(goverSchemaToYup(rootElement, {}));
+
+        await expect(schema.validate({
+            addresses: [
+                {
+                    id: 'row-1',
+                    values: {
+                        street: '',
+                    },
+                },
+            ],
+        }, {abortEarly: false})).rejects.toMatchObject({
+            inner: [
+                expect.objectContaining({
+                    path: 'addresses[0].values.street',
+                }),
+            ],
+        });
+    });
+
     it('should map top-level form manager errors to computed element errors', () => {
         const rootElement = createGroupLayout([
             createTextField('apiKey'),
@@ -52,12 +82,22 @@ describe('mapFormManagerErrorsToComputedErrors', () => {
             rootElement,
             {
                 addresses: [
-                    {street: 'A'},
-                    {street: ''},
+                    {
+                        id: 'row-1',
+                        values: {
+                            street: 'A',
+                        },
+                    },
+                    {
+                        id: 'row-2',
+                        values: {
+                            street: '',
+                        },
+                    },
                 ],
             },
             {
-                'config.addresses[1].street': 'Street is required',
+                'config.addresses[1].values.street': 'Street is required',
             },
             {rootPath: 'config'},
         );
@@ -65,13 +105,19 @@ describe('mapFormManagerErrorsToComputedErrors', () => {
             addresses: {
                 subStates: [
                     {
-                        street: {
-                            visible: false,
+                        id: 'row-1',
+                        states: {
+                            street: {
+                                visible: false,
+                            },
                         },
                     },
                     {
-                        street: {
-                            visible: true,
+                        id: 'row-2',
+                        states: {
+                            street: {
+                                visible: true,
+                            },
                         },
                     },
                 ],
@@ -81,10 +127,16 @@ describe('mapFormManagerErrorsToComputedErrors', () => {
         expect(computedErrors).toEqual({
             addresses: {
                 subStates: [
-                    {},
                     {
-                        street: {
-                            error: 'Street is required',
+                        id: 'row-1',
+                        states: {},
+                    },
+                    {
+                        id: 'row-2',
+                        states: {
+                            street: {
+                                error: 'Street is required',
+                            },
                         },
                     },
                 ],
@@ -94,14 +146,20 @@ describe('mapFormManagerErrorsToComputedErrors', () => {
             addresses: {
                 subStates: [
                     {
-                        street: {
-                            visible: false,
+                        id: 'row-1',
+                        states: {
+                            street: {
+                                visible: false,
+                            },
                         },
                     },
                     {
-                        street: {
-                            visible: true,
-                            error: 'Street is required',
+                        id: 'row-2',
+                        states: {
+                            street: {
+                                visible: true,
+                                error: 'Street is required',
+                            },
                         },
                     },
                 ],

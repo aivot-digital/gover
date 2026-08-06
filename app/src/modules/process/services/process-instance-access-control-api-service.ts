@@ -5,6 +5,10 @@ export type ProcessInstanceAccessSelectableItemType = 'orgUnit' | 'team' | 'user
 export interface ProcessInstanceAccessSelectableItem {
     type: ProcessInstanceAccessSelectableItemType;
     id: string;
+    label?: string | null;
+    subLabel?: string | null;
+    departmentDepth?: number | null;
+    eligibleUserCount?: number | null;
 }
 
 export class ProcessInstanceAccessControlApiService extends BaseApiService {

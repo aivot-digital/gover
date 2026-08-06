@@ -8,6 +8,7 @@ import de.aivot.gover.backend.lib.services.EntityService;
 import de.aivot.gover.backend.system.services.SystemService;
 import de.aivot.gover.backend.theme.entities.ThemeEntity;
 import de.aivot.gover.backend.theme.repositories.ThemeRepository;
+import de.aivot.gover.backend.utils.PhoneNumberUtils;
 import de.aivot.gover.backend.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -19,6 +20,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -54,6 +56,7 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
         }
 
         validateRequiredSettings(entity);
+        validateAndNormalizePhoneSettings(entity, null);
 
         return departmentRepository
                 .save(entity);
@@ -122,6 +125,7 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
         }
 
         validateRequiredSettings(entity);
+        validateAndNormalizePhoneSettings(entity, existingDepartment);
 
         entity.setParentDepartmentId(entity.getParentDepartmentId());
 
@@ -147,14 +151,66 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
     ) throws ResponseException {
         if (value == null) {
             if (isRoot) {
-                throw ResponseException.badRequest("Für Organisationseinheiten der obersten Ebene muss „%s“ konfiguriert sein.", fieldName);
+                throw ResponseException.badRequest(String.format(
+                        "Für Organisationseinheiten der obersten Ebene muss „%s“ konfiguriert sein.",
+                        fieldName
+                ));
             }
             return;
         }
 
         if (StringUtils.isNullOrEmpty(value)) {
-            throw ResponseException.badRequest("„%s“ darf nicht leer überschrieben werden.", fieldName);
+            throw ResponseException.badRequest(String.format(
+                    "„%s“ darf nicht leer überschrieben werden.",
+                    fieldName
+            ));
         }
+    }
+
+    private void validateAndNormalizePhoneSettings(
+            @Nonnull DepartmentEntity entity,
+            @Nullable DepartmentEntity existingDepartment
+    ) throws ResponseException {
+        entity.setTechnicalSupportPhone(validateAndNormalizePhoneSetting(
+                entity.getTechnicalSupportPhone(),
+                "Kontakt-Telefonnummer für technische Unterstützung",
+                existingDepartment == null ? null : existingDepartment.getTechnicalSupportPhone()
+        ));
+        entity.setSpecialSupportPhone(validateAndNormalizePhoneSetting(
+                entity.getSpecialSupportPhone(),
+                "Kontakt-Telefonnummer für fachliche Unterstützung",
+                existingDepartment == null ? null : existingDepartment.getSpecialSupportPhone()
+        ));
+    }
+
+    @Nullable
+    private String validateAndNormalizePhoneSetting(
+            @Nullable String value,
+            @Nonnull String fieldName,
+            @Nullable String unchangedLegacyValue
+    ) throws ResponseException {
+        if (value == null) {
+            return null;
+        }
+
+        var trimmedValue = value.trim();
+        if (trimmedValue.isEmpty()) {
+            return "";
+        }
+
+        var normalizedPhoneNumber = PhoneNumberUtils.normalizeValidPhoneNumberToE164(trimmedValue);
+        if (normalizedPhoneNumber != null) {
+            return normalizedPhoneNumber;
+        }
+
+        if (unchangedLegacyValue != null && Objects.equals(trimmedValue, unchangedLegacyValue.trim())) {
+            return unchangedLegacyValue;
+        }
+
+        throw ResponseException.badRequest(String.format(
+                "Bitte geben Sie für „%s“ eine gültige Telefonnummer mit Ländervorwahl ein.",
+                fieldName
+        ));
     }
 
     private void validateParentHierarchy(

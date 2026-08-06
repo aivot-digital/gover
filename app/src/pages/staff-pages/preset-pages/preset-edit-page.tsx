@@ -27,8 +27,6 @@ import {PresetsApiService} from '../../../modules/presets/presets-api-service';
 import {PresetVersionApiService} from '../../../modules/presets/preset-version-api-service';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
-import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
-import {IdentityProvidersApiService} from '../../../modules/identity/identity-providers-api-service';
 import {
     AuthoredElementValues,
     createDerivedRuntimeElementData,
@@ -38,7 +36,6 @@ import {
 import {FormStatus} from '../../../modules/forms/enums/form-status';
 import {useConfirm} from '../../../providers/confirm-provider';
 import {addDerivationLogItems} from '../../../slices/logging-slice';
-import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import {useElementSize} from '../../../utils/element-size';
@@ -53,11 +50,24 @@ import {collectErrors} from '../../../components/error-alert/error-alert';
 import {RootStructureActionsContextProvider} from '../../../components/form/root-structure-actions-context';
 import {ElementTree} from '../../../components/element-tree-2/element-tree';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
+import {
+    useHasSystemPermission,
+    useRequireSystemPermission,
+} from '../../../modules/permissions/hooks/use-permissions';
+import {Permission} from '../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../modules/permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../components/disabled-tooltip/disabled-tooltip';
+import {SearchItemService} from '../../../modules/search/search-item-service';
 
 export function PresetEditPage() {
     const api = useApi();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
+    useRequireSystemPermission(Permission.PRESET_READ);
+    const canUpdatePreset = useHasSystemPermission(Permission.PRESET_UPDATE);
+    const canDeletePreset = useHasSystemPermission(Permission.PRESET_DELETE);
+    const updatePresetDisabledTooltip = formatMissingPermissionTooltip(Permission.PRESET_UPDATE);
+    const deletePresetDisabledTooltip = formatMissingPermissionTooltip(Permission.PRESET_DELETE);
 
     const {
         ref: containerRef,
@@ -84,7 +94,6 @@ export function PresetEditPage() {
 
     const [preset, setPreset] = useState<Preset>();
     const [presetVersion, setPresetVersion] = useState<PresetVersion>();
-    const [identityProviders, setIdentityProviders] = useState<IdentityProviderInfo[]>([]);
 
     const presetsApiService = useMemo(() => {
         return new PresetsApiService(api);
@@ -103,29 +112,18 @@ export function PresetEditPage() {
     const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
     const [openAddSectionSignal, setOpenAddSectionSignal] = useState(0);
     const rootStructureActions = useMemo(() => ({
-        canAddAtRoot: presetVersion?.status === FormStatus.Drafted,
+        canAddAtRoot: presetVersion?.status === FormStatus.Drafted && canUpdatePreset,
         openAddAtRootDialog: () => {
-            setOpenAddSectionSignal((prev) => prev + 1);
+            if (canUpdatePreset) {
+                setOpenAddSectionSignal((prev) => prev + 1);
+            }
         },
-    }), [presetVersion?.status]);
+    }), [canUpdatePreset, presetVersion?.status]);
 
     const [toolbarHeight, setToolbarHeight] = useState<number>(0);
     const updateToolbarHeight = (height: number) => {
         setToolbarHeight(height);
     };
-
-    // Fetch all available identity providers
-    useEffect(() => {
-        new IdentityProvidersApiService()
-            .listAll()
-            .then(res => setIdentityProviders(res.content.map(idp => ({
-                key: idp.key,
-                name: idp.name,
-                type: idp.type,
-                iconAssetKey: '',
-                metadataIdentifier: idp.metadataIdentifier,
-            }))));
-    }, [api]);
 
     // Fetch the preset on key or version change.
     // The version change is needed to update the current version field in the preset.
@@ -139,11 +137,13 @@ export function PresetEditPage() {
             .retrieve(presetKey)
             .then((preset) => {
                 setPreset(preset);
-                dispatch(addEntityHistoryItem({
-                    type: ServerEntityType.Presets,
-                    link: `/presets/edit/${preset.key}/${versionNumber}`,
-                    title: preset.title,
-                }));
+                new SearchItemService()
+                    .recordRecentSearchItem({
+                        id: `${preset.key},${versionNumber}`,
+                        originTable: ServerEntityType.Presets,
+                    })
+                    .catch(() => {
+                    });
             })
             .catch(() => {
                 setNetworkError({
@@ -192,8 +192,9 @@ export function PresetEditPage() {
             });
     }, [preset, presetVersion]);
 
+    // The legacy editor syncs preset metadata from local state; read-only access must not trigger that write on load.
     useEffect(() => {
-        if (preset == null) {
+        if (preset == null || !canUpdatePreset) {
             return;
         }
 
@@ -206,10 +207,10 @@ export function PresetEditPage() {
                 console.error(err);
                 dispatch(showErrorSnackbar('Vorlage konnte nicht gespeichert werden'));
             });
-    }, [preset]);
+    }, [canUpdatePreset, preset]);
 
     const handleDelete = () => {
-        if (preset == null || presetVersion == null) {
+        if (preset == null || presetVersion == null || !canDeletePreset) {
             return;
         }
 
@@ -223,7 +224,7 @@ export function PresetEditPage() {
     };
 
     const handleAddNewVersion = async () => {
-        if (!preset) {
+        if (!preset || !canUpdatePreset) {
             return;
         }
 
@@ -279,7 +280,7 @@ export function PresetEditPage() {
     };
 
     const handlePatch = (patch: Partial<PresetVersion>) => {
-        if (preset == null || presetVersion == null) {
+        if (preset == null || presetVersion == null || !canUpdatePreset) {
             return;
         }
 
@@ -352,7 +353,7 @@ export function PresetEditPage() {
     };
 
     const handleValueChange = (elementData: AuthoredElementValues) => {
-        if (preset == null || presetVersion == null) {
+        if (preset == null || presetVersion == null || !canUpdatePreset) {
             return;
         }
 
@@ -404,12 +405,21 @@ export function PresetEditPage() {
                                 Möchten Sie für die Vorlage <strong>{preset.title}</strong> eine neue Version anlegen?
                             </Typography>
 
-                            <Button
-                                onClick={handleAddNewVersion}
-                                sx={{mt: 2}}
+                            <DisabledTooltip
+                                disabled={!canUpdatePreset}
+                                title={updatePresetDisabledTooltip}
+                                wrapperSx={{
+                                    display: 'inline-block',
+                                    mt: 2,
+                                }}
                             >
-                                Jetzt neue Version anlegen
-                            </Button>
+                                <Button
+                                    onClick={handleAddNewVersion}
+                                    disabled={!canUpdatePreset}
+                                >
+                                    Jetzt neue Version anlegen
+                                </Button>
+                            </DisabledTooltip>
                         </Box>
                     }
                 </NotFoundPage>
@@ -465,6 +475,8 @@ export function PresetEditPage() {
                                                 icon: <NewWindow/>,
                                                 tooltip: 'Neuen Entwurf anlegen',
                                                 onClick: handleAddNewVersion,
+                                                disabled: !canUpdatePreset,
+                                                disabledTooltip: updatePresetDisabledTooltip,
                                             },
                                             {
                                                 icon: <HomeStorage/>,
@@ -483,8 +495,12 @@ export function PresetEditPage() {
                                                 icon: <Delete color={'error'}/>,
                                                 tooltip: 'Version der Vorlage löschen',
                                                 onClick: () => {
-                                                    setConfirmDelete(() => handleDelete);
+                                                    if (canDeletePreset) {
+                                                        setConfirmDelete(() => handleDelete);
+                                                    }
                                                 },
+                                                disabled: !canDeletePreset,
+                                                disabledTooltip: deletePresetDisabledTooltip,
                                                 visible: presetVersion.status != FormStatus.Published,
                                             },
                                         ]}
@@ -554,7 +570,7 @@ export function PresetEditPage() {
                                                 rootElement: p as any,
                                             });
                                         }}
-                                        editable={presetVersion.status == FormStatus.Drafted}
+                                        editable={presetVersion.status == FormStatus.Drafted && canUpdatePreset}
                                         openRootAddElementSignal={openAddSectionSignal}
                                         displayContext={ElementDisplayContext.CitizenFacing}
                                         allowElementIdEditing={false}

@@ -48,5 +48,6 @@ export enum ElementType {
     ProcessInstanceAttachmentSetSelect = 46,
     ProcessIdentityIdInput = 47,
     HtmlTemplateInput = 48,
-    PaymentConfigElement = 49,
+    StoragePathSelector = 49,
+    PaymentConfigElement = 50,
 }

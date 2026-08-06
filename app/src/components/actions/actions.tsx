@@ -2,6 +2,7 @@ import {type Action, type ActionColor, type ActionsProps, type ActionTooltipPlac
 import {Box, Button, IconButton, Tooltip} from '@mui/material';
 import React, {type ReactNode} from 'react';
 import {Link} from 'react-router-dom';
+import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
 
 export function Actions(props: ActionsProps): ReactNode {
     return (
@@ -146,11 +147,24 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
         );
     }
 
-    if (action.tooltip != null || (shouldDisable === true && action.disabledTooltip != null)) {
+    if (shouldDisable === true && action.disabledTooltip != null) {
+        return (
+            <DisabledTooltip
+                key={index}
+                disabled
+                title={action.disabledTooltip}
+                placement={tooltipPlacement}
+            >
+                {element}
+            </DisabledTooltip>
+        );
+    }
+
+    if (action.tooltip != null) {
         return (
             <Tooltip
                 key={index}
-                title={shouldDisable === true && action.disabledTooltip != null ? action.disabledTooltip : action.tooltip}
+                title={action.tooltip}
                 arrow
                 placement={tooltipPlacement}
             >

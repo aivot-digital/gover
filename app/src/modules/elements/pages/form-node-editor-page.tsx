@@ -28,6 +28,7 @@ import {
 } from '../../../slices/snackbar-slice';
 import UndoIcon from '@aivot/mui-material-symbols-400-n25-outlined/Undo';
 import RedoIcon from '@aivot/mui-material-symbols-400-n25-outlined/Redo';
+import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {DeveloperTools} from '../../../components/developer-tools/developer-tools';
 import {
     AuthoredElementValues,
@@ -101,7 +102,6 @@ import type {Theme as AppTheme} from '../../themes/models/theme';
 import {FormTriggerApiService} from '../../forms/services/form-trigger-api-service';
 import {createAppTheme} from '../../../theming/themes';
 import {BaseTheme} from '../../../theming/base-theme';
-import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {XdfApiService} from '../../xdf/v1/xdf-api-service';
 import Code from '@aivot/mui-material-symbols-400-n25-outlined/Code';
@@ -112,6 +112,7 @@ import {
     IdentityConfigElementSlotWithProviders,
 } from '../../../models/elements/form/input/identity-config-element';
 import IdentityPlatform from '@aivot/mui-material-symbols-400-n25-outlined/IdentityPlatform';
+import {SearchItemService} from '../../search/search-item-service';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {IdentityButton} from '../../identity/components/identity-button/identity-button';
 import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';
@@ -232,11 +233,13 @@ export function FormNodeEditorPage() {
         if (node == null) {
             return;
         }
-        dispatch(addEntityHistoryItem({
-            link: location.pathname,
-            title: node.name ?? 'Formular',
-            type: ServerEntityType.ProcessNodes,
-        }));
+        new SearchItemService()
+            .recordRecentSearchItem({
+                id: node.id.toString(),
+                originTable: ServerEntityType.ProcessNodes,
+            })
+            .catch(() => {
+            });
     }, [node]);
 
     useEffect(() => {
@@ -947,19 +950,17 @@ export function FormNodeEditorPage() {
         },
         'separator' as const,
         {
-            tooltip: 'Zurück zum Prozess',
-            icon: ModuleIcons.processes,
+            label: 'Zurück zum Prozess',
             onClick: onBackToProcess,
-            variant: 'contained' as const,
-            activeStyle: {ml: 1},
+            variant: 'text' as const,
         },
         {
             label: 'Speichern',
-            tooltip: 'Änderungen speichern',
-            icon: null,
+            tooltip: 'Änderungen am Formular speichern',
+            icon: <Save/>,
+            iconPosition: 'start' as const,
             onClick: handleSave,
             variant: 'contained' as const,
-            activeStyle: {ml: 1},
             disabled: !hasChanged || !isEditable,
         },
     ];

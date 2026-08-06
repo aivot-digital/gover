@@ -1,3 +1,4 @@
+import {describe, expect, it, vi, type Mock} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {ProcessAttachmentDisplayView} from './process-attachment-display-view';
@@ -31,7 +32,7 @@ describe('ProcessAttachmentDisplayView', () => {
             />,
         );
 
-        expect(screen.getByText('Fallunterlagen')).toBeInTheDocument();
+        expect(screen.getAllByText('Fallunterlagen').length).toBeGreaterThan(0);
         expect(screen.getByText('Bitte prüfen Sie den Anhang sorgfältig.')).toBeInTheDocument();
         expect(screen.getByText('Dies ist eine Vorschau. Anhänge können im Modellierungsmodus nicht angesehen oder heruntergeladen werden.')).toBeInTheDocument();
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
@@ -64,7 +65,7 @@ describe('ProcessAttachmentDisplayView', () => {
     });
 
     it('should trigger the provided download handler for matching attachments', () => {
-        const downloadAttachment = jest.fn().mockResolvedValue(undefined);
+        const downloadAttachment = vi.fn().mockResolvedValue(undefined);
 
         renderWithAttachmentContext(
             <ProcessAttachmentDisplayView
@@ -88,8 +89,8 @@ describe('ProcessAttachmentDisplayView', () => {
     });
 
     it('should trigger the provided view handler as the primary action', () => {
-        const viewAttachment = jest.fn().mockResolvedValue(undefined);
-        const downloadAttachment = jest.fn().mockResolvedValue(undefined);
+        const viewAttachment = vi.fn().mockResolvedValue(undefined);
+        const downloadAttachment = vi.fn().mockResolvedValue(undefined);
 
         renderWithAttachmentContext(
             <ProcessAttachmentDisplayView
@@ -158,8 +159,8 @@ function renderWithAttachmentContext(
         attachments: ProcessInstanceAttachmentEntity[];
         attachmentSets: ProcessInstanceAttachmentSetEntity[];
         isLoadingAttachments: boolean;
-        viewAttachment: jest.Mock;
-        downloadAttachment: jest.Mock;
+        viewAttachment: Mock;
+        downloadAttachment: Mock;
     }>,
 ) {
     return render(
@@ -168,8 +169,8 @@ function renderWithAttachmentContext(
                 attachments: overrides?.attachments ?? [],
                 attachmentSets: overrides?.attachmentSets ?? [],
                 isLoadingAttachments: overrides?.isLoadingAttachments ?? false,
-                viewAttachment: overrides?.viewAttachment ?? jest.fn(),
-                downloadAttachment: overrides?.downloadAttachment ?? jest.fn(),
+                viewAttachment: overrides?.viewAttachment ?? vi.fn(),
+                downloadAttachment: overrides?.downloadAttachment ?? vi.fn(),
             }}
         >
             {children}
@@ -198,17 +199,17 @@ function createBaseProps(
         isBusy: false,
         isDeriving: false,
         value: undefined,
-        setValue: jest.fn(),
-        onBlur: jest.fn(),
+        setValue: vi.fn(),
+        onBlur: vi.fn(),
         errors: undefined,
         errorDetails: undefined,
         authoredElementValues: {},
-        onAuthoredElementValuesChange: jest.fn(),
-        onElementBlur: jest.fn(),
+        onAuthoredElementValuesChange: vi.fn(),
+        onElementBlur: vi.fn(),
         derivedData: createDerivedRuntimeElementData(),
-        onDerive: jest.fn(),
-        onEvent: jest.fn(),
-        onResetErrors: jest.fn(),
+        onDerive: vi.fn(),
+        onEvent: vi.fn(),
+        onResetErrors: vi.fn(),
         suppressErrors: false,
         derivationTriggerIdQueue: [],
     };
@@ -219,6 +220,7 @@ function createAttachment(key: string, fileName: string, attachmentSetId: number
         key,
         fileName,
         attachmentSetId,
+        originalFileName: fileName,
         processInstanceId: 42,
         processInstanceTaskId: null,
         storageProviderId: 7,

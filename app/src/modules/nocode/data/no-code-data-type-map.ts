@@ -51,6 +51,7 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.ProcessInstanceAttachmentSetSelect]: NoCodeDataType.List,
     [ElementType.ProcessIdentityIdInput]: NoCodeDataType.List,
     [ElementType.HtmlTemplateInput]: NoCodeDataType.Object,
+    [ElementType.StoragePathSelector]: NoCodeDataType.Object,
     [ElementType.ProcessAttachmentDisplay]: NoCodeDataType.Runtime,
 }
 

@@ -1,4 +1,8 @@
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
@@ -15,10 +19,19 @@ import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
-import React, {useCallback, useMemo} from 'react';
+import React, {useCallback} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {Permission} from '../../../../data/permissions/permission';
+
+const themeListPermissionCheck: GenericListPagePermissionConfig<Theme> = {
+    scope: {
+        type: 'system',
+    },
+    read: Permission.THEME_READ,
+    create: Permission.THEME_CREATE,
+    update: Permission.THEME_UPDATE,
+};
 
 const activeThemeChip = (
     <Chip
@@ -37,12 +50,7 @@ export function ThemeListPage() {
     const navigate = useNavigate();
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
-
-    const header = useMemo(() => ({
+    const header = useCallback((permissions: GenericListPagePermissionState<Theme>) => ({
         icon: <PaletteOutlinedIcon />,
         title: 'Erscheinungsbilder',
         actions: [
@@ -51,7 +59,8 @@ export function ThemeListPage() {
                 icon: <AddOutlinedIcon />,
                 to: '/themes/new',
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -69,7 +78,7 @@ export function ThemeListPage() {
                 </>
             ),
         },
-    }), [hasAccess]);
+    }), []);
 
     const fetchThemes = useCallback((options: GenericListPropsFetchOptions<Theme>) => {
         return new ThemesApiService(options.api)
@@ -84,7 +93,7 @@ export function ThemeListPage() {
             );
     }, []);
 
-    const columnDefinitions = useMemo(() => [
+    const columnDefinitions = useCallback((permissions: GenericListPagePermissionState<Theme>) => [
         {
             field: 'icon',
             headerName: '',
@@ -97,15 +106,23 @@ export function ThemeListPage() {
             field: 'name',
             headerName: 'Name',
             flex: 1,
-            renderCell: (params: any) => (
-                <CellLink
-                    to={`/themes/${params.id}`}
-                    title={hasAccess ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen'}
-                >
-                    {String(params.value)}
-                    {params.row.id === Number(appThemeId) && activeThemeChip}
-                </CellLink>
-            ),
+            renderCell: (params: any) => {
+                const content = (
+                    <>
+                        {String(params.value)}
+                        {params.row.id === Number(appThemeId) && activeThemeChip}
+                    </>
+                );
+
+                return (
+                    <CellLink
+                        to={`/themes/${params.id}`}
+                        title={permissions.canUpdate(params.row) ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen'}
+                    >
+                        {content}
+                    </CellLink>
+                );
+            },
         },
         {
             field: 'colors',
@@ -156,22 +173,37 @@ export function ThemeListPage() {
                 );
             },
         },
-    ], [appThemeId, hasAccess]);
+    ], [appThemeId]);
 
     const getRowIdentifier = useCallback((row: Theme) => row.id.toString(), []);
 
-    const rowActions = useCallback((item: Theme) => [
-        {
-            icon: hasAccess ? <EditOutlined /> : <Visibility/>,
-            to: `/themes/${item.id}`,
-            tooltip: hasAccess ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen',
-        },
-        {
-            icon: <DescriptionOutlined />,
-            to: `/themes/${item.id}/forms`,
-            tooltip: 'Formulare mit diesem Erscheinungsbild ansehen',
-        },
-    ], [hasAccess]);
+    const rowActions = useCallback((item: Theme, permissions: GenericListPagePermissionState<Theme>) => {
+        const canUpdateTheme = permissions.canUpdate(item);
+
+        return [
+            {
+                icon: canUpdateTheme ? <EditOutlined /> : <Visibility/>,
+                to: `/themes/${item.id}`,
+                tooltip: canUpdateTheme ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen',
+            },
+            {
+                icon: <DescriptionOutlined />,
+                to: `/themes/${item.id}/forms`,
+                tooltip: 'Formulare mit diesem Erscheinungsbild ansehen',
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<Theme>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Erscheinungsbilder vorhanden"
+            description="Es wurden noch keine Erscheinungsbilder angelegt."
+            addText="Neues Erscheinungsbild anlegen"
+            onAdd={() => navigate('/themes/new')}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [navigate]);
 
     return (
         <PageWrapper
@@ -181,20 +213,14 @@ export function ThemeListPage() {
         >
             <GenericListPage<Theme>
                 header={header}
+                permissionCheck={themeListPermissionCheck}
                 searchLabel="Erscheinungsbild suchen"
                 searchPlaceholder="Name des Erscheinungsbildes eingeben…"
                 fetch={fetchThemes}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={
-                    <EmptyDataListPlaceholder
-                        title="Noch keine Erscheinungsbilder angelegt"
-                        description="Erscheinungsbilder steuern Farben, Logos und Layout-Einstellungen für Gover und veröffentlichte Formulare."
-                        addText={hasAccess ? "Neues Erscheinungsbild anlegen" : undefined}
-                        onAdd={hasAccess ? () => navigate('/themes/new') : undefined}
-                    />
-                }
-                noSearchResultsPlaceholder="Keine Erscheinungsbilder gefunden"
+                noDataPlaceholder={noDataPlaceholder}
+                noSearchResultsPlaceholder="Keine Erscheinungsbilder gefunden, die zu Ihrer Suche passen"
                 rowActionsCount={2}
                 rowActions={rowActions}
                 defaultSortField="name"

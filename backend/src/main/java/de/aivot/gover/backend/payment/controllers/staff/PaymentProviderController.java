@@ -11,8 +11,10 @@ import de.aivot.gover.backend.payment.dtos.PaymentProviderTestDataRequestDTO;
 import de.aivot.gover.backend.payment.dtos.PaymentProviderTestDataResponseDTO;
 import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.gover.backend.payment.filters.PaymentProviderFilter;
+import de.aivot.gover.backend.payment.permissions.PaymentProviderPermissionProvider;
 import de.aivot.gover.backend.payment.services.PaymentProviderService;
 import de.aivot.gover.backend.payment.services.PaymentProviderTestService;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,27 +48,35 @@ public class PaymentProviderController {
     private final PaymentProviderService paymentProviderService;
     private final PaymentProviderTestService paymentProviderTestService;
     private final UserService userService;
+    private final PermissionService permissionService;
 
     @Autowired
     public PaymentProviderController(AuditService auditService,
                                      PaymentProviderService paymentProviderService,
                                      PaymentProviderTestService paymentProviderTestService,
-                                     UserService userService) {
+                                     UserService userService,
+                                     PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(PaymentProviderController.class, "Zahlungen");
         this.paymentProviderService = paymentProviderService;
         this.paymentProviderTestService = paymentProviderTestService;
         this.userService = userService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
     @Operation(
             summary = "List Payment Providers",
-            description = "Retrieve a paginated list of payment providers with optional filtering."
+            description = "Retrieve a paginated list of payment providers with optional filtering. " +
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "`."
     )
     public Page<PaymentProviderResponseDTO> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid PaymentProviderFilter filter
     ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+
         return paymentProviderService
                 .list(pageable, filter)
                 .map(PaymentProviderResponseDTO::fromEntity);
@@ -75,7 +85,8 @@ public class PaymentProviderController {
     @PostMapping("")
     @Operation(
             summary = "Create Payment Provider",
-            description = "Create a new payment provider. Requires super admin permissions."
+            description = "Create a new payment provider. " +
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "`."
     )
     public PaymentProviderResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -83,9 +94,10 @@ public class PaymentProviderController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(execUser.getId(), PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE);
 
         var created = paymentProviderService
                 .create(requestDTO.toEntity());
@@ -107,11 +119,16 @@ public class PaymentProviderController {
     @GetMapping("{key}/")
     @Operation(
             summary = "Retrieve Payment Provider",
-            description = "Retrieve details of a specific payment provider by its key."
+            description = "Retrieve details of a specific payment provider by its key. " +
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "`."
     )
     public PaymentProviderResponseDTO retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID key
     ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+
         return paymentProviderService
                 .retrieve(key)
                 .map(PaymentProviderResponseDTO::fromEntity)
@@ -121,7 +138,8 @@ public class PaymentProviderController {
     @PutMapping("{key}/")
     @Operation(
             summary = "Update Payment Provider",
-            description = "Update an existing payment provider. Requires super admin permissions."
+            description = "Update an existing payment provider. " +
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_UPDATE + "`."
     )
     public PaymentProviderResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -130,9 +148,10 @@ public class PaymentProviderController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(execUser.getId(), PaymentProviderPermissionProvider.PAYMENT_PROVIDER_UPDATE);
 
         var existing = paymentProviderService
                 .retrieve(key)
@@ -162,17 +181,19 @@ public class PaymentProviderController {
     @DeleteMapping("{key}/")
     @Operation(
             summary = "Delete Payment Provider",
-            description = "Delete an existing payment provider. Requires super admin permissions."
+            description = "Delete an existing payment provider. " +
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_DELETE + "`."
     )
     public void destroy(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID key
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable UUID key
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(execUser.getId(), PaymentProviderPermissionProvider.PAYMENT_PROVIDER_DELETE);
 
         var deleted = paymentProviderService
                 .delete(key);
@@ -191,12 +212,17 @@ public class PaymentProviderController {
     @PostMapping("{key}/test/")
     @Operation(
             summary = "Test Payment Provider",
-            description = "Test the configuration of a payment provider by performing a test transaction."
+            description = "Test the configuration of a payment provider by performing a test transaction. " +
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_UPDATE + "`."
     )
     public PaymentProviderTestDataResponseDTO test(
-            @PathVariable UUID key,
-            @RequestBody @Valid PaymentProviderTestDataRequestDTO requestDTO
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable UUID key,
+            @Nonnull @RequestBody @Valid PaymentProviderTestDataRequestDTO requestDTO
     ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_UPDATE);
+
         var result = paymentProviderTestService.test(
                 key,
                 requestDTO.purpose(),

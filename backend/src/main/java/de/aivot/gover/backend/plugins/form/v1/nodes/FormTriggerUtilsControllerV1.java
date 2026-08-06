@@ -116,7 +116,7 @@ public class FormTriggerUtilsControllerV1 {
                 .retrieve(node.getProcessId())
                 .orElseThrow(ResponseException::badRequest);
 
-        permissionService.testDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 execUser.getId(),
                 process.getDepartmentId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ

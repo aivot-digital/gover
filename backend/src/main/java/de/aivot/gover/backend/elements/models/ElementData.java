@@ -41,7 +41,7 @@ public class ElementData {
                 .stream()
                 .anyMatch(elementState -> elementState.getError() != null || (
                         elementState.getSubStates() != null &&
-                                elementState.getSubStates().stream().anyMatch(ElementData::hasAnyErrorRecursive)
+                                elementState.getSubStates().stream().anyMatch(subState -> hasAnyErrorRecursive(subState.getStates()))
                 ));
     }
 

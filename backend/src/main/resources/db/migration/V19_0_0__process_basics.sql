@@ -53,6 +53,9 @@ create table process_versions
     -- This is used to generate the case number for process instances of this process definition version.
     case_number_template varchar(96)  null,
 
+    -- Additional notes for this process definition version.
+    notes                text         null,
+
     -- Timestamps for creation and last update
     created              timestamptz  not null default now(),
     updated              timestamptz  not null default now(),

@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.config.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -34,10 +33,5 @@ public class ConfigPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(USER_CONFIG_UPDATE, "Benutzerkonfiguration bearbeiten", "Erlaubt das Bearbeiten von Benutzerkonfigurationen."),
                 PermissionEntry.of(USER_CONFIG_DELETE, "Benutzerkonfiguration löschen", "Erlaubt das Löschen von Benutzerkonfigurationen."),
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }

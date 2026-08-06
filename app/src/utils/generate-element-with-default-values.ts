@@ -56,6 +56,7 @@ import {ProcessInstanceAttachmentSetSelectElement} from '../models/elements/form
 import {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
 import {getDefaultElementWeight} from './element-widths';
 import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
+import {StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 import {PaymentConfigElement} from '../models/elements/form/input/payment-config-element';
 
@@ -142,6 +143,7 @@ const elementConstructors: {
     [ElementType.ProcessInstanceAttachmentSetSelect]: (id: string) => ProcessInstanceAttachmentSetSelectElement;
     [ElementType.ProcessIdentityIdInput]: (id: string) => ProcessIdentityIdInputElement;
     [ElementType.HtmlTemplateInput]: (id: string) => HtmlTemplateInputElement;
+    [ElementType.StoragePathSelector]: (id: string) => StoragePathSelectorInputElement;
     [ElementType.PaymentConfigElement]: (id: string) => PaymentConfigElement;
     [ElementType.ProcessAttachmentDisplay]: (id: string) => ProcessAttachmentDisplayElement;
 } = {
@@ -383,7 +385,7 @@ const elementConstructors: {
         isMultifile: undefined,
         maxFiles: undefined,
         minFiles: undefined,
-        submittedFileName: undefined,
+        submittedFileName: 'Anlage',
     }),
     [ElementType.DialogLayout]: (id) => ({}),
     [ElementType.StepperLayout]: (id) => ({}),
@@ -501,6 +503,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.ProcessDataKeyInput, id),
         label: 'Prozessdaten-Schlüssel',
         disableWildCards: false,
+        scopeProcessDataKeyInputElementId: undefined,
     }),
     [ElementType.ProcessInstanceAttachmentSetSelect]: (id) => ({
         ...makeInputBase(ElementType.ProcessInstanceAttachmentSetSelect, id),
@@ -521,6 +524,14 @@ const elementConstructors: {
     [ElementType.HtmlTemplateInput]: (id) => ({
         ...makeInputBase(ElementType.HtmlTemplateInput, id),
         label: 'HTML-Vorlage',
+    }),
+    [ElementType.StoragePathSelector]: (id) => ({
+        ...makeInputBase(ElementType.StoragePathSelector, id),
+        label: 'Speicherpfad',
+        placeholder: 'Ordner auswählen',
+        storageProviderSelectHint: undefined,
+        allowedStorageProviderTypes: undefined,
+        allowReadOnlyStorageProviders: false,
     }),
     [ElementType.PaymentConfigElement]: (id) => ({
         ...makeInputBase(ElementType.PaymentConfigElement, id),

@@ -52,6 +52,18 @@ jobs:
     with:
       build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
 
+  testFrontend:
+    name: Test Frontend
+    # Run if the pr is not a draft and the trigger is a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
+    if: github.event.pull_request.draft == false && (github.event.action != 'edited' || github.event.changes.base)
+    needs:
+      - prepareBuildVars
+    uses: ./.github/workflows/test-frontend.yml
+    permissions:
+      contents: read
+    with:
+      build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
+
   generateSbom:
     name: SBOM
     # Run if the pr is not a draft and the trigger is a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
@@ -62,6 +74,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      pull-requests: write
     with:
       build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
       build_date: ${{ needs.prepareBuildVars.outputs.build_date }}
@@ -74,6 +87,7 @@ jobs:
     needs:
       - prepareBuildVars
       - testBackend
+      - testFrontend
       - generateSbom
     uses: ./.github/workflows/generate-library.yml
     permissions:
@@ -90,6 +104,7 @@ jobs:
     needs:
       - prepareBuildVars
       - testBackend
+      - testFrontend
       - generateSbom
     uses: ./.github/workflows/generate-image.yml
     permissions:

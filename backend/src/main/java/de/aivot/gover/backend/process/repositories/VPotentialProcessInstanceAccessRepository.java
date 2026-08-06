@@ -45,4 +45,45 @@ public interface VPotentialProcessInstanceAccessRepository extends
             @Nonnull @Param("processId") Integer processId,
             @Nonnull @Param("processVersion") Integer processVersion
     );
+
+    @Query(
+            value = """
+                    SELECT
+                        p.department_id,
+                        CASE
+                            WHEN dpt.id IS NULL THEN p.department_name
+                            WHEN cardinality(dpt.parent_names) > 0 THEN array_to_string(dpt.parent_names, ' › ') || ' › ' || dpt.name
+                            ELSE dpt.name
+                        END AS department_label,
+                        dpt.depth AS department_depth,
+                        p.team_id,
+                        coalesce(tm.name, p.team_name) AS team_label,
+                        p.user_id,
+                        p.user_is_enabled,
+                        coalesce(
+                            nullif(concat_ws(', ', nullif(trim(usr.last_name), ''), nullif(trim(usr.first_name), '')), ''),
+                            nullif(trim(usr.full_name), ''),
+                            nullif(trim(p.user_full_name), '')
+                        ) AS user_label,
+                        usr.email AS user_sub_label,
+                        p.user_via_department_id,
+                        p.user_via_team_id,
+                        p.user_is_direct_member,
+                        p.permissions
+                    FROM v_potential_process_instance_access p
+                             LEFT JOIN v_departments_shadowed dpt
+                                       ON p.department_id = dpt.id
+                             LEFT JOIN teams tm
+                                       ON p.team_id = tm.id
+                             LEFT JOIN users usr
+                                       ON p.user_id = usr.id
+                    WHERE p.process_id = :processId
+                      AND p.process_version = :processVersion
+                    """,
+            nativeQuery = true
+    )
+    List<Object[]> findSelectableRowsByProcessIdAndProcessVersion(
+            @Nonnull @Param("processId") Integer processId,
+            @Nonnull @Param("processVersion") Integer processVersion
+    );
 }

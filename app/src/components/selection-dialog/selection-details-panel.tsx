@@ -1,5 +1,6 @@
 import React, {type ReactNode} from 'react';
-import {Box, Button, Tooltip, Typography} from '@mui/material';
+import {Box, Button, Typography} from '@mui/material';
+import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
 
 interface SelectionDetailsPanelProps {
     icon: ReactNode;
@@ -146,11 +147,12 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
                 }}
             >
                 {
-                    props.primaryActionDisabledTooltip != null ?
-                        <Tooltip title={props.primaryActionDisabledTooltip}>
-                            <span>{primaryAction}</span>
-                        </Tooltip> :
-                        primaryAction
+                    <DisabledTooltip
+                        disabled={props.primaryActionDisabled}
+                        title={props.primaryActionDisabledTooltip}
+                    >
+                        {primaryAction}
+                    </DisabledTooltip>
                 }
                 <Button
                     variant="text"

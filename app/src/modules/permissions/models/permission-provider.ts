@@ -1,9 +1,10 @@
-import {type PermissionScope} from '../enums/permission-scope';
-
 export interface PermissionProvider {
     contextLabel: string;
     permissions: PermissionEntry[];
-    scope: PermissionScope;
+    supportsDomainRoleAssignment: boolean;
+    excludedFromDomainRoleAssignment: string[];
+    domainRoleAssignmentHint?: string | null;
+    systemRoleAssignmentHint?: string | null;
 }
 
 export interface PermissionEntry {

@@ -1,5 +1,5 @@
-import {StorageProviderEntity} from '../../storage/entities/storage-provider-entity';
+import {type AssetStorageProvider} from '../models/asset-storage-provider';
 
 export interface AssetDetailsPageAdditionalData {
-    storageProvider: StorageProviderEntity;
+    storageProvider: AssetStorageProvider;
 }

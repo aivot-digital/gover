@@ -1,9 +1,12 @@
 package de.aivot.gover.backend.teams.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+import java.util.Set;
 
 @Component
 public class TeamPermissionProvider implements PermissionProvider {
@@ -37,7 +40,26 @@ public class TeamPermissionProvider implements PermissionProvider {
     }
 
     @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
+    public boolean supportsDomainRoleAssignment() {
+        return true;
+    }
+
+    @Override
+    public Set<String> getExcludedFromDomainRoleAssignment() {
+        return Set.of(TEAM_CREATE);
+    }
+
+    @Override
+    public String getDomainRoleAssignmentHint() {
+        return "Das Erstellen von Teams ist systemweit geregelt und kann nicht über Domänenrollen vergeben werden.";
+    }
+
+    @Nonnull
+    @Override
+    public Optional<SearchPermission> getSearchPermission() {
+        return Optional.of(new PermissionProvider.SearchPermission(
+                "teams",
+                TEAM_READ
+        ));
     }
 }

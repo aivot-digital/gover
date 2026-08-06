@@ -68,9 +68,40 @@ public class ProcessChangeController {
             description = "List all process definition changes with optional filtering and pagination."
     )
     public Page<ProcessChangeEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessDefinitionChangeFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.hasSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_AUDIT)) {
+            if (filter.getProcessDefinitionId() != null) {
+                permissionService.requireProcessPermission(
+                        user.getId(),
+                        filter.getProcessDefinitionId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_AUDIT
+                );
+            } else {
+                var accessibleProcessIds = permissionService
+                        .getProcessesWithPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_AUDIT);
+
+                if (filter.getProcessDefinitionIds() != null) {
+                    accessibleProcessIds = filter.getProcessDefinitionIds()
+                            .stream()
+                            .filter(accessibleProcessIds::contains)
+                            .toList();
+                }
+
+                if (accessibleProcessIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setProcessDefinitionIds(accessibleProcessIds);
+            }
+        }
+
         return processDefinitionChangeService
                 .list(pageable, filter);
     }
@@ -78,7 +109,9 @@ public class ProcessChangeController {
     @PostMapping("")
     @Operation(
             summary = "Create Process Definition Change",
-            description = "Create a new process definition change. Requires super admin privileges or a user role with create process permissions."
+            description = "Create a new process definition change. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessChangeEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -88,19 +121,11 @@ public class ProcessChangeController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var processDefinition = processDefinitionService
-                .retrieve(newChange.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
-        var department = departmentService
-                .retrieve(processDefinition.getDepartmentId())
-                .orElseThrow(ResponseException::badRequest);
-
         permissionService
-                .testDepartmentPermission(
+                .requireProcessPermission(
                         execUser.getId(),
-                        department.getId(),
-                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
+                        newChange.getProcessId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
                 );
 
         var result = processDefinitionChangeService
@@ -127,17 +152,32 @@ public class ProcessChangeController {
             description = "Retrieve a process definition change by its ID."
     )
     public ProcessChangeEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long id
     ) throws ResponseException {
-        return processDefinitionChangeService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var change = processDefinitionChangeService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireProcessPermission(
+                user.getId(),
+                change.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_AUDIT
+        );
+
+        return change;
     }
 
     @PutMapping("{id}/")
     @Operation(
             summary = "Update Process Definition Change",
-            description = "Update an existing process definition change. Requires super admin privileges or a user role with edit process permissions."
+            description = "Update an existing process definition change. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessChangeEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -152,19 +192,11 @@ public class ProcessChangeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var processDefinition = processDefinitionService
-                .retrieve(existing.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
-        var department = departmentService
-                .retrieve(processDefinition.getDepartmentId())
-                .orElseThrow(ResponseException::badRequest);
-
         permissionService
-                .testDepartmentPermission(
+                .requireProcessPermission(
                         execUser.getId(),
-                        department.getId(),
-                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
+                        existing.getProcessId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
                 );
 
         updateDTO.setId(existing.getId());
@@ -190,7 +222,9 @@ public class ProcessChangeController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete Process Definition Change",
-            description = "Delete a process definition change by its ID. Requires super admin privileges."
+            description = "Delete a process definition change by its ID. Requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -198,9 +232,17 @@ public class ProcessChangeController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        var existing = processDefinitionChangeService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireProcessPermission(
+                user.getId(),
+                existing.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         var deleted = processDefinitionChangeService
                 .delete(id);

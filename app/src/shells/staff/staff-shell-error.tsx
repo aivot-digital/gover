@@ -45,7 +45,8 @@ export function StaffShellError(props: StaffShellErrorProps) {
                         actionReload={false}
                         actionDashboard={true}
                     >
-                        Sie haben keine Berechtigung, auf diese Seite zuzugreifen.
+                        <AccessDeniedMessage message={error.message} />
+                        {' '}
                         Bitte wenden Sie sich an Ihre Administratorin oder Ihren Administrator, wenn Sie glauben, dass es sich um einen Fehler handelt.
                     </ErrorDetails>
                 }
@@ -82,6 +83,47 @@ export function StaffShellError(props: StaffShellErrorProps) {
                     </ErrorDetails>
                 }
             </Box>
+        </Box>
+    );
+}
+
+function AccessDeniedMessage(props: {
+    message?: string;
+}): ReactNode {
+    const message = props.message ?? 'Sie haben keine Berechtigung, auf diese Seite zuzugreifen.';
+    const parts = message.split(/([a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]+)+)/g);
+
+    if (parts.length === 1) {
+        return message;
+    }
+
+    return (
+        <>
+            {
+                parts.map((part, index) => (
+                    index % 2 === 1
+                        ? <PermissionCode key={`${part}-${index}`}>{part}</PermissionCode>
+                        : part
+                ))
+            }
+        </>
+    );
+}
+
+function PermissionCode(props: PropsWithChildren): ReactNode {
+    return (
+        <Box
+            component="code"
+            sx={{
+                px: 0.5,
+                py: 0.125,
+                borderRadius: 0.5,
+                bgcolor: 'action.hover',
+                fontFamily: 'monospace',
+                fontSize: '0.95em',
+            }}
+        >
+            {props.children}
         </Box>
     );
 }

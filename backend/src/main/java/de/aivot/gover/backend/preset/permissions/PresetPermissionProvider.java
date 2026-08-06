@@ -1,9 +1,11 @@
 package de.aivot.gover.backend.preset.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 public class PresetPermissionProvider implements PermissionProvider {
@@ -31,8 +33,12 @@ public class PresetPermissionProvider implements PermissionProvider {
         };
     }
 
+    @Nonnull
     @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
+    public Optional<SearchPermission> getSearchPermission() {
+        return Optional.of(new PermissionProvider.SearchPermission(
+                "presets",
+                PRESET_READ
+        ));
     }
 }

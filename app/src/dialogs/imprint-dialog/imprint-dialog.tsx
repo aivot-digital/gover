@@ -16,27 +16,35 @@ export function ImprintDialog(props: ImprintDialogProps) {
 
     const [department, setDepartment] = useState<PublicDepartmentResponseDTO>();
     const imprintDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.imprintDepartmentId));
+    const parsedImprintDepartmentId = imprintDepartmentId != null && imprintDepartmentId !== '' && !Number.isNaN(parseInt(imprintDepartmentId)) ?
+        parseInt(imprintDepartmentId) :
+        null;
+    const selectedImprintDepartmentId = props.isListingPage ?
+        parsedImprintDepartmentId :
+        application.imprintDepartmentId ?? null;
 
     useEffect(() => {
-        if (
-            !props.isListingPage &&
-            application.imprintDepartmentId != null &&
-            (department == null || department.id !== application.imprintDepartmentId)
-        ) {
-            new DepartmentApiService()
-                .retrievePublic(application.imprintDepartmentId)
-                .then(setDepartment);
-        } else if (
-            props.isListingPage &&
-            imprintDepartmentId != null &&
-            imprintDepartmentId != '' &&
-            (department == null || department.id !== parseInt(imprintDepartmentId))
-        ) {
-            new DepartmentApiService()
-                .retrievePublic(parseInt(imprintDepartmentId))
-                .then(setDepartment);
+        if (selectedImprintDepartmentId == null) {
+            setDepartment(undefined);
+            return;
         }
-    }, [imprintDepartmentId, application, department]);
+
+        let isCancelled = false;
+
+        // Clear stale department data immediately when the configured source is removed or changed.
+        setDepartment(undefined);
+        new DepartmentApiService()
+            .retrievePublic(selectedImprintDepartmentId)
+            .then((department) => {
+                if (!isCancelled) {
+                    setDepartment(department);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [selectedImprintDepartmentId]);
 
     return (
         <Dialog

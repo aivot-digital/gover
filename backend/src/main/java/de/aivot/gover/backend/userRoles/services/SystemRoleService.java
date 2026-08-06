@@ -4,6 +4,7 @@ import de.aivot.gover.backend.config.services.SystemConfigService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.lib.services.EntityService;
+import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import de.aivot.gover.backend.user.configs.DefaultUserSystemRoleSystemConfigDefinition;
 import de.aivot.gover.backend.user.repositories.UserRepository;
 import de.aivot.gover.backend.userRoles.entities.SystemRoleEntity;
@@ -17,24 +18,30 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class SystemRoleService implements EntityService<SystemRoleEntity, Integer> {
     private final SystemRoleRepository repository;
     private final SystemConfigService systemConfigService;
     private final UserRepository userRepository;
+    private final List<PermissionProvider> permissionProviders;
 
     @Autowired
     public SystemRoleService(
             SystemRoleRepository repository,
             SystemConfigService systemConfigService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            List<PermissionProvider> permissionProviders
     ) {
         this.repository = repository;
         this.systemConfigService = systemConfigService;
         this.userRepository = userRepository;
+        this.permissionProviders = permissionProviders;
     }
 
     public record DeleteSystemRoleResult(
@@ -56,6 +63,8 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
     @Nonnull
     @Override
     public SystemRoleEntity create(@Nonnull SystemRoleEntity entity) throws ResponseException {
+        validateSystemRolePermissionsForCreate(entity.getPermissions());
+
         // Force the generation of a new id
         entity.setId(null);
         // Directly save the entity
@@ -153,6 +162,8 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
     @Nonnull
     @Override
     public SystemRoleEntity performUpdate(@Nonnull Integer id, @Nonnull SystemRoleEntity entity, @Nonnull SystemRoleEntity existingEntity) throws ResponseException {
+        validateSystemRolePermissionsForUpdate(entity.getPermissions(), existingEntity.getPermissions());
+
         // Update fields
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
@@ -184,5 +195,46 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
     @Override
     public boolean exists(@Nonnull Specification<SystemRoleEntity> specification) {
         return repository.exists(specification);
+    }
+
+    private void validateSystemRolePermissionsForCreate(@Nonnull List<String> permissions) throws ResponseException {
+        var unknownPermissions = new HashSet<>(permissions);
+        unknownPermissions.removeAll(getKnownPermissions());
+
+        if (!unknownPermissions.isEmpty()) {
+            throwUnknownSystemRolePermissions(unknownPermissions);
+        }
+    }
+
+    private void validateSystemRolePermissionsForUpdate(@Nonnull List<String> permissions,
+                                                        @Nonnull List<String> existingPermissions) throws ResponseException {
+        var unknownNewPermissions = new HashSet<>(permissions);
+        unknownNewPermissions.removeAll(getKnownPermissions());
+
+        // Existing unknown grants are tolerated on update so users can still save the role
+        // while incrementally removing legacy permissions that no provider exposes anymore.
+        unknownNewPermissions.removeAll(existingPermissions);
+
+        if (!unknownNewPermissions.isEmpty()) {
+            throwUnknownSystemRolePermissions(unknownNewPermissions);
+        }
+    }
+
+    private Set<String> getKnownPermissions() {
+        var knownPermissions = new HashSet<String>();
+        permissionProviders
+                .stream()
+                .flatMap(provider -> Arrays.stream(provider.getPermissions()))
+                .map(permission -> permission.permission())
+                .forEach(knownPermissions::add);
+
+        return knownPermissions;
+    }
+
+    private void throwUnknownSystemRolePermissions(@Nonnull Set<String> unknownPermissions) throws ResponseException {
+        throw ResponseException.badRequest(
+                "Die folgenden Berechtigungen sind im System nicht bekannt: %s.",
+                String.join(", ", unknownPermissions)
+        );
     }
 }

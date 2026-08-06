@@ -1,10 +1,12 @@
-import {Box, Stack, Typography, Grid} from '@mui/material';
+import {Typography, Grid} from '@mui/material';
 import React from 'react';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
-import {StorageProviderEntity} from '../entities/storage-provider-entity';
+import {type StorageProviderMetadataAttribute} from '../entities/storage-provider-entity';
 
 interface StorageMetadataAttributesEditorProps {
-    storageProvider: StorageProviderEntity;
+    storageProvider: {
+        metadataAttributes: StorageProviderMetadataAttribute[];
+    };
     metadata: Record<string, string>;
     onChange: (metadata: Record<string, string>) => void;
     disabled?: boolean;

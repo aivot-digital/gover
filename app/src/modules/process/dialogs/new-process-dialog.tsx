@@ -25,13 +25,11 @@ import Draft from '@aivot/mui-material-symbols-400-n25-outlined/Draft';
 import LinkIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
 import {uploadObjectFile} from '../../../utils/download-utils';
 import {type ProcessExport} from '../entities/process-export';
-import {
-    VDepartmentMembershipWithDetailsService,
-} from '../../departments/services/v-department-membership-with-details-service';
+import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
 import {getDepartmentPath, getDepartmentTypeIcons} from '../../departments/utils/department-utils';
 import {showApiErrorSnackbar, showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useAppSelector} from '../../../hooks/use-app-selector';
-import {selectUser} from '../../../slices/user-slice';
+import {selectPermissions, selectUser} from '../../../slices/user-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import ArrowBack from '@aivot/mui-material-symbols-400-n25-outlined/ArrowBack';
@@ -52,6 +50,9 @@ import Label from '@aivot/mui-material-symbols-400-n25-outlined/Label';
 import {DepartmentSelectField} from '../../departments/components/department-select-field';
 import {type VDepartmentShadowedEntityWithChildren} from '../../departments/entities/v-department-shadowed-entity';
 import {normalizeProcessSlugInput, PROCESS_SLUG_MAX_LENGTH, validateProcessSlug} from '../utils/process-slug-utils';
+import {useRefreshPermissionSet} from '../../permissions/hooks/use-permissions';
+import {Permission} from '../../../data/permissions/permission';
+import {hasDepartmentPermission, formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
 
 interface NewProcessDialogProps {
     open: boolean;
@@ -69,6 +70,7 @@ interface SelectedStartPoint {
 export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const {
         open,
@@ -77,6 +79,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     } = props;
 
     const user = useAppSelector(selectUser);
+    const permissions = useAppSelector(selectPermissions);
 
     const [availableDepartments, setAvailableDepartments] = useState<VDepartmentShadowedEntityWithChildren[]>();
     const [nameOverride, setNameOverride] = useState<string | null>(null);
@@ -104,7 +107,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     } : null);
 
     const selectedDepartment = useMemo(() => (
-        availableDepartments?.find((department) => department.id === departmentOverride) ?? null
+        findDepartmentInTree(availableDepartments, departmentOverride)
     ), [availableDepartments, departmentOverride]);
     const selectedDepartmentPath = selectedDepartment != null && (selectedDepartment.parentNames?.length ?? 0) > 0 ?
         getDepartmentPath(selectedDepartment) :
@@ -186,24 +189,9 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
         setAvailableDepartments(undefined);
 
-        new VDepartmentMembershipWithDetailsService()
-            .listAll({
-                userId: user.id,
-            })
-            .then(({content}) => {
-                const departments: VDepartmentShadowedEntityWithChildren[] = content
-                    .map((membership) => ({
-                        id: membership.departmentId,
-                        name: membership.departmentName,
-                        postalAddress: membership.departmentPostalAddress,
-                        depth: membership.departmentDepth,
-                        parentNames: membership.departmentParentNames,
-                        created: '',
-                        updated: '',
-                        children: [],
-                    }));
-                setAvailableDepartments(departments);
-            })
+        new VDepartmentShadowedApiService()
+            .retrieveOrgTree()
+            .then(setAvailableDepartments)
             .catch((err) => {
                 setAvailableDepartments([]);
                 dispatch(showApiErrorSnackbar(err, 'Die Organisationseinheiten konnten nicht geladen werden. Bitte versuchen Sie es erneut.'));
@@ -452,7 +440,14 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
         new ProcessDefinitionApiService()
             .import(data)
-            .then((createdProcess) => {
+            .then(async (createdProcess) => {
+                try {
+                    // Newly created processes may receive permissions through database views immediately.
+                    await refreshPermissionSet({broadcast: true});
+                } catch (err) {
+                    dispatch(showApiErrorSnackbar(err, 'Die Berechtigungen konnten nach dem Erstellen des Prozesses nicht aktualisiert werden.'));
+                }
+
                 setIsLoading(false);
                 handleClose();
 
@@ -773,6 +768,12 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                     label="Verwaltende Organisationseinheit"
                                     value={selectedDepartment}
                                     departments={availableDepartments}
+                                    isDepartmentSelectable={(department) => (
+                                        hasDepartmentPermission(permissions, department.id, Permission.PROCESS_DEFINITION_CREATE)
+                                    )}
+                                    getDepartmentDisabledTooltip={() => (
+                                        formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_CREATE)
+                                    )}
                                     dialogTitle="Organisationseinheit auswählen"
                                     onChange={(department) => {
                                         setDepartmentOverride(department?.id ?? null);
@@ -1121,6 +1122,28 @@ function getStartPointIcon(type: StartPointType | undefined): ReactNode {
     }
 }
 
+function findDepartmentInTree(
+    departments: VDepartmentShadowedEntityWithChildren[] | undefined,
+    departmentId: number | null,
+): VDepartmentShadowedEntityWithChildren | null {
+    if (departments == null || departmentId == null) {
+        return null;
+    }
+
+    for (const department of departments) {
+        if (department.id === departmentId) {
+            return department;
+        }
+
+        const childMatch = findDepartmentInTree(department.children, departmentId);
+        if (childMatch != null) {
+            return childMatch;
+        }
+    }
+
+    return null;
+}
+
 const EmptyProcess: ProcessExport = {
     appBuildNumber: '',
     appVersion: '',
@@ -1146,6 +1169,7 @@ const EmptyProcess: ProcessExport = {
         status: ProcessStatus.Drafted,
         publicTitle: 'Neuer Prozess',
         caseNumberTemplate: null,
+        notes: null,
         crated: '',
         updated: '',
         published: null,

@@ -29,7 +29,7 @@ public class ComputedElementState implements Serializable {
     private EffectiveValueSource valueSource = EffectiveValueSource.Authored;
 
     @Nullable
-    private List<ComputedElementStates> subStates = null;
+    private List<ComputedElementSubState> subStates = null;
 
     // region Constructors
 
@@ -115,11 +115,11 @@ public class ComputedElementState implements Serializable {
     }
 
     @Nullable
-    public List<ComputedElementStates> getSubStates() {
+    public List<ComputedElementSubState> getSubStates() {
         return subStates;
     }
 
-    public ComputedElementState setSubStates(@Nullable List<ComputedElementStates> subStates) {
+    public ComputedElementState setSubStates(@Nullable List<ComputedElementSubState> subStates) {
         this.subStates = subStates;
         return this;
     }

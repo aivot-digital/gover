@@ -3,6 +3,7 @@ package de.aivot.gover.backend.userRoles.services;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.lib.services.EntityService;
+import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import de.aivot.gover.backend.userRoles.entities.UserRoleEntity;
 import de.aivot.gover.backend.userRoles.repositories.UserRoleRepository;
 import jakarta.annotation.Nonnull;
@@ -13,20 +14,29 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class UserRoleService implements EntityService<UserRoleEntity, Integer> {
     private final UserRoleRepository repository;
+    private final List<PermissionProvider> permissionProviders;
 
     @Autowired
-    public UserRoleService(UserRoleRepository repository) {
+    public UserRoleService(UserRoleRepository repository,
+                           List<PermissionProvider> permissionProviders) {
         this.repository = repository;
+        this.permissionProviders = permissionProviders;
     }
 
     @Nonnull
     @Override
     public UserRoleEntity create(@Nonnull UserRoleEntity entity) throws ResponseException {
+        validateDomainRolePermissionsForCreate(entity.getPermissions());
+
         // Force the generation of a new id
         entity.setId(null);
         // Directly save the entity
@@ -49,6 +59,8 @@ public class UserRoleService implements EntityService<UserRoleEntity, Integer> {
     @Nonnull
     @Override
     public UserRoleEntity performUpdate(@Nonnull Integer id, @Nonnull UserRoleEntity entity, @Nonnull UserRoleEntity existingEntity) throws ResponseException {
+        validateDomainRolePermissionsForUpdate(entity.getPermissions(), existingEntity.getPermissions());
+
         // Update fields
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
@@ -80,5 +92,52 @@ public class UserRoleService implements EntityService<UserRoleEntity, Integer> {
     @Override
     public boolean exists(@Nonnull Specification<UserRoleEntity> specification) {
         return repository.exists(specification);
+    }
+
+    private void validateDomainRolePermissionsForCreate(@Nonnull List<String> permissions) throws ResponseException {
+        var unsupportedPermissions = new HashSet<>(permissions);
+        unsupportedPermissions.removeAll(getDomainRoleAssignablePermissions());
+
+        if (!unsupportedPermissions.isEmpty()) {
+            throwUnsupportedDomainRolePermissions(unsupportedPermissions);
+        }
+    }
+
+    private void validateDomainRolePermissionsForUpdate(@Nonnull List<String> permissions,
+                                                        @Nonnull List<String> existingPermissions) throws ResponseException {
+        var unsupportedNewPermissions = new HashSet<>(permissions);
+        unsupportedNewPermissions.removeAll(getDomainRoleAssignablePermissions());
+
+        // Existing unsupported grants are tolerated on update so users can still save the role
+        // while incrementally removing legacy permissions that are no longer domain-assignable.
+        unsupportedNewPermissions.removeAll(existingPermissions);
+
+        if (!unsupportedNewPermissions.isEmpty()) {
+            throwUnsupportedDomainRolePermissions(unsupportedNewPermissions);
+        }
+    }
+
+    private Set<String> getDomainRoleAssignablePermissions() {
+        var supportedPermissions = new HashSet<String>();
+        permissionProviders
+                .stream()
+                .filter(PermissionProvider::supportsDomainRoleAssignment)
+                .flatMap(provider -> {
+                    var excludedPermissions = provider.getExcludedFromDomainRoleAssignment();
+
+                    return Arrays.stream(provider.getPermissions())
+                            .filter(permission -> !excludedPermissions.contains(permission.permission()));
+                })
+                .map(permission -> permission.permission())
+                .forEach(supportedPermissions::add);
+
+        return supportedPermissions;
+    }
+
+    private void throwUnsupportedDomainRolePermissions(@Nonnull Set<String> unsupportedPermissions) throws ResponseException {
+        throw ResponseException.badRequest(
+                "Die folgenden Berechtigungen können keiner Domänenrolle zugewiesen werden: %s.",
+                String.join(", ", unsupportedPermissions)
+        );
     }
 }

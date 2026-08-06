@@ -364,7 +364,7 @@ class ProcessNodeExecutionResultHandlerTest {
         private final Map<String, UserEntity> users;
 
         private TestUserService(Map<String, UserEntity> users) {
-            super(null, null, null, null);
+            super(null, null, null, null, null);
             this.users = users;
         }
 

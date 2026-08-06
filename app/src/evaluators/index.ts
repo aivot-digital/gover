@@ -20,6 +20,7 @@ import {AssignmentContextFieldEvaluator} from './assignment-context-field-evalua
 import {NoCodeInputEvaluator} from './no-code-input-evaluator';
 import {UiDefinitionInputEvaluator} from './ui-definition-input-evaluator';
 import {HtmlTemplateInputEvaluator} from './html-template-input-evaluator';
+import {StoragePathSelectorInputEvaluator} from './storage-path-selector-input-evaluator';
 
 export const evaluators: {
     [key in ElementType]: BaseEvaluator<any> | null;
@@ -73,5 +74,6 @@ export const evaluators: {
     [ElementType.ProcessInstanceAttachmentSetSelect]: ChipInputEvaluator,
     [ElementType.ProcessIdentityIdInput]: ChipInputEvaluator,
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputEvaluator,
+    [ElementType.StoragePathSelector]: StoragePathSelectorInputEvaluator,
     [ElementType.ProcessAttachmentDisplay]: null,
 };

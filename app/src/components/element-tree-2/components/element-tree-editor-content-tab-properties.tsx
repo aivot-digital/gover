@@ -358,6 +358,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     editable={editable}
                     scope={'application' /* TODO: remove this */}
                     hasSummaryLayoutParent={hasSummaryLayoutParent}
+                    hasReplicatingContainerParent={replicatingParents.length > 0}
                 />
             }
 
@@ -467,7 +468,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 id: id ?? '',
                             });
                         }}
-                        disabled={!allowElementIdEditing && displayContext != ElementDisplayContext.DataObjectSchema}
+                        disabled={!editable || (!allowElementIdEditing && displayContext != ElementDisplayContext.DataObjectSchema)}
                         endAction={{
                             icon: <ContentPasteIcon/>,
                             onClick: async () => {

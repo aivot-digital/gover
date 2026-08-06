@@ -17,6 +17,10 @@ import {GenericList} from "../../../../components/generic-list/generic-list";
 import {
     VDepartmentMembershipWithDetailsService
 } from "../../../departments/services/v-department-membership-with-details-service";
+import {Permission} from '../../../../data/permissions/permission';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {requireAnyDepartmentPermission} from '../../../permissions/utils/permission-utils';
 
 const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
     {
@@ -48,6 +52,7 @@ const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
 ];
 
 export function UserRolesDetailsPageDepartmentMemberships() {
+    const permissions = useAppSelector(selectPermissions);
     const {
         item: userRole,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<UserRoleResponseDTO, undefined>;
@@ -57,6 +62,8 @@ export function UserRolesDetailsPageDepartmentMemberships() {
             <GenericDetailsSkeleton />
         );
     }
+
+    requireAnyDepartmentPermission(permissions, Permission.DEPARTMENT_MEMBERSHIP_READ);
 
     return (
         <>

@@ -1,3 +1,4 @@
+import {describe, expect, it} from 'vitest';
 import {ElementType} from '../data/element-type/element-type';
 import {type TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {type FileUploadElement} from '../models/elements/form/input/file-upload-element';
@@ -20,9 +21,9 @@ describe('generateElementWithDefaultValues', () => {
         expect(element.hint).toBeUndefined();
     });
 
-    it('should initialize file upload elements without a submitted file name override', () => {
+    it('should initialize file upload elements with a submitted file name', () => {
         const element = generateElementWithDefaultValues(ElementType.FileUpload) as FileUploadElement;
 
-        expect(element.submittedFileName).toBeUndefined();
+        expect(element.submittedFileName).toBe('Anlage');
     });
 });

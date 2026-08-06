@@ -1,5 +1,5 @@
 import {Button, Container, Paper, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
@@ -10,19 +10,26 @@ import {GenericPageHeader} from '../../../../components/generic-page-header/gene
 import {type Action} from '../../../../components/actions/actions-props';
 import {EmptyStateSection} from '../../../../components/empty-state-section/empty-state-section';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import {DepartmentBrowser} from '../../components/department-browser';
 import {NewParentIdQueryParam} from '../details/departments-details-page';
 import {type VDepartmentShadowedEntityWithChildren} from '../../entities/v-department-shadowed-entity';
 import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {Permission} from '../../../../data/permissions/permission';
+import {
+    hasDepartmentPermission,
+    hasSystemPermission,
+    formatMissingPermissionTooltip,
+} from '../../../permissions/utils/permission-utils';
+import {type PermissionSet} from '../../../permissions/models/permission-set';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {getDepartmentTypeLabel, getMaxDepartmentDepth} from '../../utils/department-utils';
 
 export function DepartmentsListPage(): React.ReactElement {
     const rootDepartmentTypeLabel = getDepartmentTypeLabel(0);
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    const permissions = useAppSelector(selectPermissions);
+    const canCreateRootDepartment = hasSystemPermission(permissions, Permission.DEPARTMENT_CREATE);
 
     const [
         rootDepartments,
@@ -47,6 +54,16 @@ export function DepartmentsListPage(): React.ReactElement {
             });
     }, []);
 
+    const getDepartmentHref = useCallback((department: VDepartmentShadowedEntityWithChildren) => {
+        return hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ)
+            ? `/departments/${department.id}`
+            : undefined;
+    }, [permissions]);
+
+    const getActions = useCallback((department: VDepartmentShadowedEntityWithChildren) => {
+        return getDepartmentActions(department, permissions);
+    }, [permissions]);
+
     return (
         <PageWrapper
             title="Organisationseinheiten"
@@ -63,7 +80,8 @@ export function DepartmentsListPage(): React.ReactElement {
                             icon: <Add />,
                             to: '/departments/new',
                             variant: 'contained',
-                            disabled: !hasAccess,
+                            disabled: !canCreateRootDepartment,
+                            disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_CREATE),
                         },
                     ]}
                     helpDialog={{
@@ -100,9 +118,9 @@ export function DepartmentsListPage(): React.ReactElement {
                     <DepartmentBrowser
                         departments={rootDepartments}
                         loadError={loadError}
-                        emptyState={<DepartmentsListEmptyState rootDepartmentTypeLabel={rootDepartmentTypeLabel} hasAccess={hasAccess} />}
-                        getActions={(department) => getDepartmentActions(department, hasAccess)}
-                        getDepartmentHref={(department) => `/departments/${department.id}`}
+                        emptyState={<DepartmentsListEmptyState canCreateRootDepartment={canCreateRootDepartment} rootDepartmentTypeLabel={rootDepartmentTypeLabel} />}
+                        getActions={getActions}
+                        getDepartmentHref={getDepartmentHref}
                     />
                 </Paper>
             </Container>
@@ -110,72 +128,92 @@ export function DepartmentsListPage(): React.ReactElement {
     );
 }
 
-function getDepartmentActions(department: VDepartmentShadowedEntityWithChildren, hasAccess: boolean): Action[] {
+function getDepartmentActions(
+    department: VDepartmentShadowedEntityWithChildren,
+    permissions: PermissionSet | undefined,
+): Action[] {
     const maxDepartmentDepth = getMaxDepartmentDepth();
     const canAddChildDepartment = department.depth < maxDepartmentDepth;
-    const canCreateChildDepartment = hasAccess && canAddChildDepartment;
+    const canCreateChildDepartment = hasSystemPermission(permissions, Permission.DEPARTMENT_CREATE) && canAddChildDepartment;
+    const canReadDepartment = hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ);
+    const canUpdateDepartment = hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_UPDATE);
+    const canReadMemberships = hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_MEMBERSHIP_READ);
+    const canReadProcesses = hasDepartmentPermission(permissions, department.id, Permission.PROCESS_DEFINITION_READ);
 
     return [
         {
             tooltip: `${getDepartmentTypeLabel(department.depth + 1)} hinzufügen`,
-            disabledTooltip: hasAccess
-                ? `Organisationseinheiten sind auf ${maxDepartmentDepth + 1} Ebenen beschränkt.`
-                : 'Dieser Bereich kann nur von Administrator:innen bearbeitet werden.',
+            disabledTooltip: canAddChildDepartment
+                ? formatMissingPermissionTooltip(Permission.DEPARTMENT_CREATE)
+                : `Organisationseinheiten sind auf ${maxDepartmentDepth + 1} Ebenen beschränkt.`,
             icon: <Add />,
             to: `/departments/new?${NewParentIdQueryParam}=${department.id}`,
             variant: 'contained',
             disabled: !canCreateChildDepartment,
         },
         {
-            tooltip: hasAccess ? 'Bearbeiten' : 'Ansehen',
-            icon: hasAccess ? <EditOutlined /> : <Visibility />,
+            tooltip: canUpdateDepartment ? 'Bearbeiten' : 'Ansehen',
+            disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_READ),
+            icon: canUpdateDepartment ? <EditOutlined /> : <Visibility />,
             to: `/departments/${department.id}`,
             variant: 'contained',
+            disabled: !canReadDepartment,
         },
         {
-            tooltip: hasAccess ? 'Mitarbeiter:innen verwalten' : 'Mitarbeiter:innen ansehen',
+            tooltip: 'Mitarbeiter:innen ansehen',
+            disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_READ),
             icon: <GroupOutlined />,
             to: `/departments/${department.id}/members`,
+            disabled: !canReadMemberships,
         },
         {
             tooltip: 'Prozesse der Organisationseinheit ansehen',
+            disabledTooltip: !canReadDepartment
+                ? formatMissingPermissionTooltip(Permission.DEPARTMENT_READ)
+                : formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_READ),
             icon: ModuleIcons.processes,
             to: `/departments/${department.id}/processes`,
+            disabled: !canReadDepartment || !canReadProcesses,
         },
     ];
 }
 
 function DepartmentsListEmptyState(props: {
+    canCreateRootDepartment: boolean;
     rootDepartmentTypeLabel: string;
-    hasAccess: boolean;
 }): React.ReactElement {
     const {
+        canCreateRootDepartment,
         rootDepartmentTypeLabel,
-        hasAccess,
     } = props;
 
     return (
         <EmptyStateSection
-            title="Noch keine Organisationseinheiten angelegt"
+            title="Keine Organisationseinheiten im Zugriff"
             description={(
                 <>
-                    Organisationseinheiten bilden die fachliche Struktur in Gover ab.
-                    Legen Sie zuerst Ihre oberste Organisationseinheit an, um Hierarchien und Zugehörigkeiten zentral zu verwalten.
+                    Es wurden keine Organisationseinheiten gefunden, auf die Sie Zugriff haben.
+                    Möglicherweise wurden noch keine Organisationseinheiten angelegt oder Ihnen fehlen
+                    die erforderlichen Leseberechtigungen.
                 </>
             )}
-            actions={
-                hasAccess ? (
+            actions={(
+                <DisabledTooltip
+                    title={!canCreateRootDepartment ? formatMissingPermissionTooltip(Permission.DEPARTMENT_CREATE) : ''}
+                    disabled={!canCreateRootDepartment}
+                >
                     <Button
                         component={Link}
                         to="/departments/new"
                         variant="contained"
                         size="small"
                         startIcon={<Add />}
+                        disabled={!canCreateRootDepartment}
                     >
                         Erste {rootDepartmentTypeLabel} anlegen
                     </Button>
-                ) : undefined
-            }
+                </DisabledTooltip>
+            )}
         />
     );
 }

@@ -13,6 +13,10 @@ import {GenericList} from "../../../../components/generic-list/generic-list";
 import {User} from "../../../users/models/user";
 import {UsersApiService} from "../../../users/users-api-service";
 import {SystemRoleEntity} from "../../entities/system-role-entity";
+import {Permission} from '../../../../data/permissions/permission';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {requireSystemPermission} from '../../../permissions/utils/permission-utils';
 
 const columns: Array<GridColDef<User>> = [
     {
@@ -31,6 +35,7 @@ const columns: Array<GridColDef<User>> = [
 ];
 
 export function SystemRolesDetailsPageMembers() {
+    const permissions = useAppSelector(selectPermissions);
     const {
         item: systemRole,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<SystemRoleEntity, undefined>;
@@ -40,6 +45,8 @@ export function SystemRolesDetailsPageMembers() {
             <GenericDetailsSkeleton/>
         );
     }
+
+    requireSystemPermission(permissions, Permission.USER_READ);
 
     return (
         <>

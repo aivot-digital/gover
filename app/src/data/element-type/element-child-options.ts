@@ -191,6 +191,7 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.ProcessIdentityIdInput,
             ElementType.HtmlTemplateInput,
             ElementType.PaymentConfigElement,
+            ElementType.StoragePathSelector,
         ],
         [ElementType.GroupLayout]: [
             ElementType.Alert,
@@ -220,6 +221,7 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.DataObjectSelect,
             ElementType.SummaryLayout,
             ElementType.ProcessAttachmentDisplay,
+            ElementType.StoragePathSelector,
         ],
         [ElementType.ReplicatingContainer]: [
             ElementType.Alert,

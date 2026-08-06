@@ -5,11 +5,9 @@ import PaletteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Pa
 import {type Theme} from '../../models/theme';
 import {ThemesApiService} from '../../themes-api-service';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {Permission} from '../../../../data/permissions/permission';
 
 export function ThemeDetailsPage() {
-    const userIsAdmin = useUserIsAdmin();
-
     return (
         <PageWrapper
             title="Erscheinungsbild bearbeiten"
@@ -17,7 +15,14 @@ export function ThemeDetailsPage() {
             background
         >
             <GenericDetailsPage<Theme, number, undefined>
-                isEditable={() => userIsAdmin}
+                permissionCheck={{
+                    create: Permission.THEME_CREATE,
+                    read: Permission.THEME_READ,
+                    update: Permission.THEME_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={{
                     icon: <PaletteOutlinedIcon />,
                     title: 'Erscheinungsbild bearbeiten',
@@ -45,7 +50,7 @@ export function ThemeDetailsPage() {
                     {
                         path: '/themes/:id/departments',
                         label: 'Organisationseinheiten',
-                        isDisabled: (item) => !item?.id,
+                        onlyExisting: true,
                     },
                 ]}
                 initializeItem={(api) => new ThemesApiService(api).initialize()}

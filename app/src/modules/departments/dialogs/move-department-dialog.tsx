@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {
+    Alert,
     Autocomplete,
     Box,
     Button,
@@ -20,6 +21,7 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {DepartmentApiService} from '../services/department-api-service';
 import {setLoadingMessage} from '../../../slices/shell-slice';
+import {normalizePhoneNumberForTelLink} from '../../../utils/phone-number-utils';
 
 interface MoveDepartmentOption {
     value: number | null;
@@ -27,12 +29,44 @@ interface MoveDepartmentOption {
     subLabel?: string;
     icon?: React.ReactNode;
     disabled?: boolean;
+    disabledReason?: string;
 }
 
 interface MoveDepartmentDialogProps {
     department: DepartmentEntity;
     onClose: () => void;
     onMoved: (updatedDepartment: DepartmentEntity) => void;
+}
+
+function createDepartmentUpdateForMove(
+    latestDepartment: DepartmentEntity,
+    parentDepartmentId: number | null,
+    shadowedDepartment?: VDepartmentShadowedEntity,
+): DepartmentEntity {
+    if (parentDepartmentId != null || shadowedDepartment == null) {
+        return {
+            ...latestDepartment,
+            parentDepartmentId,
+        };
+    }
+
+    // Moving to root removes inheritance; materialize effective values so the department remains valid as a top-level organization.
+    return {
+        ...latestDepartment,
+        parentDepartmentId,
+        postalAddress: latestDepartment.postalAddress ?? shadowedDepartment.postalAddress,
+        technicalSupportEmail: latestDepartment.technicalSupportEmail ?? shadowedDepartment.technicalSupportEmail,
+        technicalSupportPhone: latestDepartment.technicalSupportPhone ?? normalizePhoneNumberForTelLink(shadowedDepartment.technicalSupportPhone),
+        technicalSupportInfo: latestDepartment.technicalSupportInfo ?? shadowedDepartment.technicalSupportInfo,
+        specialSupportEmail: latestDepartment.specialSupportEmail ?? shadowedDepartment.specialSupportEmail,
+        specialSupportPhone: latestDepartment.specialSupportPhone ?? normalizePhoneNumberForTelLink(shadowedDepartment.specialSupportPhone),
+        specialSupportInfo: latestDepartment.specialSupportInfo ?? shadowedDepartment.specialSupportInfo,
+        imprint: latestDepartment.imprint ?? shadowedDepartment.imprint,
+        commonPrivacy: latestDepartment.commonPrivacy ?? shadowedDepartment.commonPrivacy,
+        commonAccessibility: latestDepartment.commonAccessibility ?? shadowedDepartment.commonAccessibility,
+        defaultMailSignature: latestDepartment.defaultMailSignature ?? shadowedDepartment.defaultMailSignature,
+        themeId: latestDepartment.themeId ?? shadowedDepartment.themeId,
+    };
 }
 
 export function MoveDepartmentDialog(props: MoveDepartmentDialogProps) {
@@ -74,58 +108,58 @@ export function MoveDepartmentDialog(props: MoveDepartmentDialogProps) {
         }, 0);
     }, [availableDepartments, department.depth, department.id]);
 
-    const selectableParents = useMemo(() => {
-        if (availableDepartments == null) {
-            return [];
-        }
-
-        return availableDepartments
-            .filter((candidate) => {
-                if (candidate.id === department.id) {
-                    return false;
-                }
-
-                if (candidate.depth + 1 + departmentSubtreeHeight > maxDepartmentDepth) {
-                    return false;
-                }
-
-                const parentIds = candidate.parentIds ?? [];
-                return !parentIds.includes(department.id);
-            });
-    }, [availableDepartments, department.id, departmentSubtreeHeight, maxDepartmentDepth]);
-
     const parentOptions = useMemo<MoveDepartmentOption[]>(() => {
+        const rootDisabledReason = department.parentDepartmentId == null ?
+            'Bereits auf der höchsten Ebene.' :
+            departmentSubtreeHeight > maxDepartmentDepth ?
+                'Die Unterstruktur wäre für die höchste Ebene zu tief.' :
+                undefined;
         const rootOption: MoveDepartmentOption = {
             value: null,
             label: 'Keine übergeordnete Organisationseinheit (höchste Ebene)',
-            subLabel: 'Die Organisationseinheit wird zur Wurzelebene verschoben.',
-            disabled: department.parentDepartmentId == null || departmentSubtreeHeight > maxDepartmentDepth,
+            subLabel: rootDisabledReason ?? 'Die Organisationseinheit wird zur Wurzelebene verschoben.',
+            disabled: rootDisabledReason != null,
+            disabledReason: rootDisabledReason,
         };
 
         return [
             rootOption,
-            ...selectableParents.map((candidate): MoveDepartmentOption => ({
-                value: candidate.id,
-                label: getDepartmentPath(candidate),
-                subLabel: getDepartmentTypeLabel(candidate.depth),
-                icon: getDepartmentTypeIcons(candidate.depth),
-                disabled: candidate.id === department.parentDepartmentId,
-            })),
+            ...(availableDepartments ?? []).map((candidate): MoveDepartmentOption => {
+                const parentIds = candidate.parentIds ?? [];
+                const disabledReason = candidate.id === department.id ?
+                    'Diese Organisationseinheit kann nicht ihr eigenes Ziel sein.' :
+                    parentIds.includes(department.id) ?
+                        'Diese Untereinheit liegt innerhalb der zu verschiebenden Struktur.' :
+                        candidate.depth + 1 + departmentSubtreeHeight > maxDepartmentDepth ?
+                            'Die maximale Hierarchietiefe würde überschritten.' :
+                            candidate.id === department.parentDepartmentId ?
+                                'Bereits die aktuelle übergeordnete Organisationseinheit.' :
+                                undefined;
+
+                return {
+                    value: candidate.id,
+                    label: getDepartmentPath(candidate),
+                    subLabel: disabledReason ?? getDepartmentTypeLabel(candidate.depth),
+                    icon: getDepartmentTypeIcons(candidate.depth),
+                    disabled: disabledReason != null,
+                    disabledReason,
+                };
+            }),
         ];
-    }, [department.parentDepartmentId, departmentSubtreeHeight, maxDepartmentDepth, selectableParents]);
+    }, [availableDepartments, department.id, department.parentDepartmentId, departmentSubtreeHeight, maxDepartmentDepth]);
 
     const currentParentLabel = useMemo(() => {
         if (department.parentDepartmentId == null) {
             return 'Höchste Ebene (keine übergeordnete Organisationseinheit)';
         }
 
-        const currentParent = selectableParents.find((candidate) => candidate.id === department.parentDepartmentId);
+        const currentParent = availableDepartments?.find((candidate) => candidate.id === department.parentDepartmentId);
         return currentParent != null
             ? getDepartmentPath(currentParent)
             : `ID ${department.parentDepartmentId}`;
-    }, [department.parentDepartmentId, selectableParents]);
+    }, [availableDepartments, department.parentDepartmentId]);
 
-    const handleMove = () => {
+    const handleMove = async () => {
         if (targetParentOption == null) {
             dispatch(showErrorSnackbar('Bitte wählen Sie eine neue übergeordnete Organisationseinheit aus.'));
             return;
@@ -151,23 +185,22 @@ export function MoveDepartmentDialog(props: MoveDepartmentDialogProps) {
 
         const apiService = new DepartmentApiService();
 
-        apiService
-            .retrieve(department.id)
-            .then((latestDepartment) => apiService.update(department.id, {
-                ...latestDepartment,
-                parentDepartmentId: resolvedParentId,
-            }))
-            .then((updatedDepartment) => {
-                dispatch(showSuccessSnackbar('Die Organisationseinheit wurde erfolgreich verschoben.'));
-                onMoved(updatedDepartment);
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Die Organisationseinheit konnte nicht verschoben werden.'));
-                console.error(err);
-            })
-            .finally(() => {
-                dispatch(setLoadingMessage(undefined));
-            });
+        try {
+            const latestDepartment = await apiService.retrieve(department.id);
+            const shadowedDepartment = resolvedParentId == null ?
+                await new VDepartmentShadowedApiService().retrieve(department.id) :
+                undefined;
+            const departmentUpdate = createDepartmentUpdateForMove(latestDepartment, resolvedParentId, shadowedDepartment);
+            const updatedDepartment = await apiService.update(department.id, departmentUpdate);
+
+            dispatch(showSuccessSnackbar('Die Organisationseinheit wurde erfolgreich verschoben.'));
+            onMoved(updatedDepartment);
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Die Organisationseinheit konnte nicht verschoben werden.'));
+            console.error(err);
+        } finally {
+            dispatch(setLoadingMessage(undefined));
+        }
     };
 
     return (
@@ -197,8 +230,10 @@ export function MoveDepartmentDialog(props: MoveDepartmentDialogProps) {
                     </Typography>
 
                     <Typography variant="body2" sx={{mb: 2}}>
-                        Folgen der Verschiebung: Alle untergeordneten Organisationseinheiten werden mit verschoben,
-                        die Ebenentiefe wird neu berechnet und bestehende Zuordnungen bleiben erhalten.
+                        Die Organisationseinheit wird mit allen Untereinheiten verschoben. Als Ziel sind nur Positionen
+                        möglich, bei denen die maximale Hierarchietiefe eingehalten wird. Die Einheit selbst und ihre
+                        Untereinheiten sind ausgeschlossen. Soll eine Untereinheit das neue Ziel werden, verschieben Sie
+                        diese zuerst an eine andere Stelle.
                     </Typography>
 
                     <Typography variant="body2" sx={{mb: 2}}>
@@ -283,6 +318,17 @@ export function MoveDepartmentDialog(props: MoveDepartmentDialogProps) {
                             />
                         )}
                     />
+
+                    {
+                        targetParentOption?.value === null &&
+                        <Alert
+                            severity="info"
+                            sx={{mt: 2}}
+                        >
+                            Beim Verschieben auf die höchste Ebene werden bisher geerbte Pflichtangaben als eigene
+                            Angaben übernommen.
+                        </Alert>
+                    }
                 </DialogContent>
             }
 

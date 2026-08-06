@@ -999,9 +999,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                                 id: 'user_123',
                             },
                         ],
-                        preferPreviousTaskAssignee: true,
-                        preferUninvolvedUser: false,
-                        preferProcessInstanceAssignee: false,
+                        generalAssigneePreference: 'previousProcessStepAssignee',
+                        repeatExecutionAssigneePreference: 'previousIterationAssignee',
                     }}
                     onChange={() => {
                     }}
@@ -1217,6 +1216,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ProcessInstanceAttachmentSetSelect]: null,
     [ElementType.ProcessIdentityIdInput]: null,
     [ElementType.HtmlTemplateInput]: null,
+    [ElementType.StoragePathSelector]: null,
     [ElementType.CodeInput]: (
         <Box>
             <Typography>

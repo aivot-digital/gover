@@ -85,8 +85,8 @@ public class ProcessExportService {
                             node.getProcessNodeDefinitionVersion(), // processNodeDefinitionVersion
                             cleanedConfiguration, // configuration
                             node.getOutputMappings(), // outputMappings
-                            null, // timeLimitDays
-                            null, // requirements
+                            node.getTimeLimitDays(), // timeLimitDays
+                            node.getRequirements(), // requirements
                             null, // notes
                             false // savedWithErrors
                     );
@@ -125,6 +125,7 @@ public class ProcessExportService {
     private static void cleanProcessVersionDataForExport(ProcessVersionEntity processVersion) {
         processVersion.setPublished(null);
         processVersion.setRevoked(null);
+        processVersion.setNotes(null);
         processVersion.setStatus(ProcessVersionStatus.Drafted);
     }
 

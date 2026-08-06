@@ -1,3 +1,4 @@
+import {describe, expect, it} from 'vitest';
 import {getLeafDiffPathSegment, splitDiffPath} from './resolve-element-path';
 
 describe('splitDiffPath', () => {

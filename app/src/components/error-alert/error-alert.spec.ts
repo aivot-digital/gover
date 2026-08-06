@@ -1,3 +1,4 @@
+import {describe, expect, it} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
 import {createDerivedRuntimeElementData} from '../../models/element-data';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
@@ -46,6 +47,54 @@ describe('collectErrors', () => {
                 id: 'intro',
                 label: 'Datenschutzrechtliche Einwilligung',
                 error: 'Bitte akzeptieren Sie die Hinweise zum Datenschutz.',
+            },
+        ]);
+    });
+
+    it('should collect errors from replicating container row values', () => {
+        const element = {
+            id: 'rows',
+            type: ElementType.ReplicatingContainer,
+            label: 'Rows',
+            children: [
+                {
+                    id: 'street',
+                    type: ElementType.Text,
+                    label: 'Street',
+                },
+            ],
+        } as any;
+        const derivedData = createDerivedRuntimeElementData({
+            elementStates: {
+                rows: {
+                    subStates: [
+                        {
+                            id: 'row-1',
+                            states: {
+                                street: {
+                                    error: 'Street is required',
+                                },
+                            },
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(collectErrors(element, {
+            rows: [
+                {
+                    id: 'row-1',
+                    values: {
+                        street: '',
+                    },
+                },
+            ],
+        }, derivedData)).toEqual([
+            {
+                id: 'street',
+                label: 'Street',
+                error: 'Street is required',
             },
         ]);
     });

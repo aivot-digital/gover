@@ -7,9 +7,11 @@ import de.aivot.gover.backend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
+import java.util.List;
 
 public class ProcessVersionFilter implements Filter<ProcessVersionEntity> {
     private Integer processId;
+    private List<Integer> processIds;
     private Integer processVersion;
     private ProcessVersionStatus status;
 
@@ -23,6 +25,7 @@ public class ProcessVersionFilter implements Filter<ProcessVersionEntity> {
         var builder = SpecificationBuilder
                 .create(ProcessVersionEntity.class)
                 .withEquals("processId", processId)
+                .withInList("processId", processIds)
                 .withEquals("processVersion", processVersion)
                 .withEquals("status", status);
 
@@ -35,6 +38,15 @@ public class ProcessVersionFilter implements Filter<ProcessVersionEntity> {
 
     public ProcessVersionFilter setProcessId(Integer processId) {
         this.processId = processId;
+        return this;
+    }
+
+    public List<Integer> getProcessIds() {
+        return processIds;
+    }
+
+    public ProcessVersionFilter setProcessIds(List<Integer> processIds) {
+        this.processIds = processIds;
         return this;
     }
 
@@ -56,4 +68,3 @@ public class ProcessVersionFilter implements Filter<ProcessVersionEntity> {
         return this;
     }
 }
-

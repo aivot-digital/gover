@@ -1,7 +1,7 @@
 package de.aivot.gover.backend.services.pdf;
 
-import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.elements.models.ComputedElementState;
+import de.aivot.gover.backend.elements.models.ComputedElementSubState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
@@ -11,6 +11,7 @@ import de.aivot.gover.backend.elements.models.elements.form.input.TableInputElem
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.gover.backend.elements.models.elements.steps.IntroductionStepElement;
 import jakarta.annotation.Nonnull;
@@ -58,6 +59,56 @@ public class PdfElementsGenerator {
             amountOfPlaceholderDatasets = replicatingContainerLayout.getMinimumRequiredSets();
         }
         return amountOfPlaceholderDatasets;
+    }
+
+    @Nullable
+    private static EffectiveElementValues resolveReplicatingContainerRowValues(@Nullable Object row) {
+        if (!(row instanceof ReplicatingContainerLayoutElementValue) && !(row instanceof Map<?, ?>)) {
+            return null;
+        }
+
+        var rows = ReplicatingContainerLayoutElement._formatValue(List.of(row));
+        if (rows == null || rows.isEmpty()) {
+            return null;
+        }
+
+        var authoredValues = rows.getFirst().getValues();
+        var effectiveValues = new EffectiveElementValues();
+        if (authoredValues != null) {
+            effectiveValues.putAll(authoredValues);
+        }
+        return effectiveValues;
+    }
+
+    @Nullable
+    private static String resolveReplicatingContainerRowId(@Nullable Object row) {
+        if (row == null) {
+            return null;
+        }
+
+        var rows = ReplicatingContainerLayoutElement._formatValue(List.of(row));
+        return rows == null || rows.isEmpty() ? null : rows.getFirst().getId();
+    }
+
+    @Nonnull
+    private static ComputedElementStates resolveReplicatingContainerRowStates(@Nullable ComputedElementState elementState,
+                                                                              @Nullable Object row,
+                                                                              int index) {
+        var subStates = elementState != null ? elementState.getSubStates() : null;
+        if (subStates == null) {
+            return new ComputedElementStates();
+        }
+
+        var rowId = resolveReplicatingContainerRowId(row);
+        if (rowId != null) {
+            for (ComputedElementSubState subState : subStates) {
+                if (rowId.equals(subState.getId())) {
+                    return subState.getStates();
+                }
+            }
+        }
+
+        return index >= 0 && index < subStates.size() ? subStates.get(index).getStates() : new ComputedElementStates();
     }
 
     @Nullable
@@ -145,11 +196,7 @@ public class PdfElementsGenerator {
                 var placeholderValues = new LinkedList<DerivedRuntimeElementData>();
                 var amountOfPlaceholderDatasets = getBlankPrintPlaceholderCount(replicatingContainerLayout);
                 for (int i = 0; i < amountOfPlaceholderDatasets; i++) {
-                    var childStates = elementState != null &&
-                            elementState.getSubStates() != null &&
-                            i < elementState.getSubStates().size()
-                            ? elementState.getSubStates().get(i)
-                            : new ComputedElementStates();
+                    var childStates = resolveReplicatingContainerRowStates(elementState, null, i);
                     placeholderValues.add(new DerivedRuntimeElementData(new EffectiveElementValues(), childStates));
                 }
                 value = placeholderValues;
@@ -162,19 +209,14 @@ public class PdfElementsGenerator {
                     final DerivedRuntimeElementData childElementData;
                     if (val instanceof DerivedRuntimeElementData derivedRuntimeElementData) {
                         childElementData = derivedRuntimeElementData;
-                    } else if (val instanceof Map<?, ?> childValueMap) {
-                        var childEffectiveValues = ObjectMapperFactory
-                                .getInstance()
-                                .convertValue(childValueMap, EffectiveElementValues.class);
-                        var childStates = elementState != null &&
-                                elementState.getSubStates() != null &&
-                                index < elementState.getSubStates().size()
-                                ? elementState.getSubStates().get(index)
-                                : new ComputedElementStates();
-                        childElementData = new DerivedRuntimeElementData(childEffectiveValues, childStates);
                     } else {
-                        index++;
-                        continue;
+                        var childEffectiveValues = resolveReplicatingContainerRowValues(val);
+                        if (childEffectiveValues == null) {
+                            index++;
+                            continue;
+                        }
+                        var childStates = resolveReplicatingContainerRowStates(elementState, val, index);
+                        childElementData = new DerivedRuntimeElementData(childEffectiveValues, childStates);
                     }
 
                     var children = replicatingContainerLayout

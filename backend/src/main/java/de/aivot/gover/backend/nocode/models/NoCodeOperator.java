@@ -2,6 +2,7 @@ package de.aivot.gover.backend.nocode.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.nocode.exceptions.NoCodeException;
 import de.aivot.gover.backend.nocode.exceptions.NoCodeWrongArgumentCountException;
@@ -18,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import de.aivot.gover.backend.utils.IsoTimestampUtils;
 
@@ -366,7 +368,16 @@ public abstract class NoCodeOperator {
                     yield Map.of();
                 }
             }
-            default -> Map.of();
+            default -> {
+                try {
+                    var res = (Map<String, Object>) ObjectMapperFactory
+                            .getInstance()
+                            .convertValue(value, Map.class);
+                    yield Objects.requireNonNullElse(res, Map.of());
+                } catch (ClassCastException | IllegalArgumentException e) {
+                    yield Map.of();
+                }
+            }
         };
     }
 

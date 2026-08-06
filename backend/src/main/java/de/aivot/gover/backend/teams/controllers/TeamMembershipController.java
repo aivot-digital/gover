@@ -6,11 +6,13 @@ import de.aivot.gover.backend.audit.services.ScopedAuditService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
+import de.aivot.gover.backend.teams.dtos.TeamMembershipCreateRequestDTO;
 import de.aivot.gover.backend.teams.entities.TeamMembershipEntity;
 import de.aivot.gover.backend.teams.filters.TeamMembershipFilter;
+import de.aivot.gover.backend.teams.permissions.TeamPermissionProvider;
 import de.aivot.gover.backend.teams.services.TeamMembershipService;
 import de.aivot.gover.backend.user.services.UserService;
-import de.aivot.gover.backend.userRoles.data.PermissionLabels;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -41,14 +43,17 @@ public class TeamMembershipController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final TeamMembershipService teamMembershipService;
+    private final PermissionService permissionService;
 
     @Autowired
     public TeamMembershipController(AuditService auditService,
                                     UserService userService,
-                                    TeamMembershipService teamMembershipService) {
+                                    TeamMembershipService teamMembershipService,
+                                    PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(TeamMembershipController.class, "Teams");
         this.userService = userService;
         this.teamMembershipService = teamMembershipService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -58,9 +63,40 @@ public class TeamMembershipController {
                     "You can filter the results using various criteria."
     )
     public Page<TeamMembershipEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid TeamMembershipFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.hasSystemPermission(user.getId(), TeamPermissionProvider.TEAM_MEMBERSHIP_READ)) {
+            if (filter.getTeamId() != null) {
+                permissionService.requireTeamPermission(
+                        user.getId(),
+                        filter.getTeamId(),
+                        TeamPermissionProvider.TEAM_MEMBERSHIP_READ
+                );
+            } else {
+                var accessibleTeamIds = permissionService
+                        .getTeamsWithPermission(user.getId(), TeamPermissionProvider.TEAM_MEMBERSHIP_READ);
+
+                if (filter.getTeamIds() != null) {
+                    accessibleTeamIds = filter.getTeamIds()
+                            .stream()
+                            .filter(accessibleTeamIds::contains)
+                            .toList();
+                }
+
+                if (accessibleTeamIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setTeamIds(accessibleTeamIds);
+            }
+        }
+
         return teamMembershipService
                 .list(pageable, filter);
     }
@@ -69,23 +105,33 @@ public class TeamMembershipController {
     @Operation(
             summary = "Create Team Membership",
             description = "Create a new team membership to assign a user to a team. " +
-                    "You need the „" + PermissionLabels.TeamPermissionEdit + "“ permission for the team to create a membership."
+                    "Requires the permission `" + TeamPermissionProvider.TEAM_MEMBERSHIP_CREATE +
+                    "` for the target team or at system level."
     )
     public TeamMembershipEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @RequestBody @Valid TeamMembershipEntity createDTO
+            @Nonnull @RequestBody @Valid TeamMembershipCreateRequestDTO createDTO
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
+        permissionService.requireTeamPermission(
+                execUser.getId(),
+                createDTO.teamId(),
+                TeamPermissionProvider.TEAM_MEMBERSHIP_CREATE
+        );
+
+        var roleIds = createDTO.roleIdsOrEmpty();
+
         var result = teamMembershipService
-                .create(createDTO);
+                .createWithRoles(createDTO.toEntity(), roleIds);
 
         auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, TeamMembershipEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "teamId", result.getTeamId(),
-                "userId", result.getUserId()
+                "userId", result.getUserId(),
+                "roleIds", roleIds
         )).withMessage(
                 "Die Teamzugehörigkeit mit der ID %s für das Team %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s erstellt.",
                 StringUtils.quote(String.valueOf(result.getId())),
@@ -103,18 +149,32 @@ public class TeamMembershipController {
             description = "Retrieve a specific team membership by its ID."
     )
     public TeamMembershipEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
-        return teamMembershipService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var membership = teamMembershipService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireTeamPermission(
+                user.getId(),
+                membership.getTeamId(),
+                TeamPermissionProvider.TEAM_MEMBERSHIP_READ
+        );
+
+        return membership;
     }
 
     @PutMapping("{id}/")
     @Operation(
             summary = "Update Team Membership",
             description = "Update an existing team membership. " +
-                    "You need the „" + PermissionLabels.TeamPermissionEdit + "“ permission for the team to update a membership."
+                    "Requires the permission `" + TeamPermissionProvider.TEAM_MEMBERSHIP_UPDATE +
+                    "` for the membership's team or at system level."
     )
     public TeamMembershipEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -124,6 +184,16 @@ public class TeamMembershipController {
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        var existing = teamMembershipService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireTeamPermission(
+                execUser.getId(),
+                existing.getTeamId(),
+                TeamPermissionProvider.TEAM_MEMBERSHIP_UPDATE
+        );
 
         var result = teamMembershipService
                 .update(id, updateDTO);
@@ -147,7 +217,8 @@ public class TeamMembershipController {
     @Operation(
             summary = "Delete Team Membership",
             description = "Delete a team membership by its ID. " +
-                    "You need the „" + PermissionLabels.TeamPermissionEdit + "“ permission for the team to delete a membership."
+                    "Requires the permission `" + TeamPermissionProvider.TEAM_MEMBERSHIP_DELETE +
+                    "` for the membership's team or at system level."
     )
     public void delete(
             @AuthenticationPrincipal Jwt jwt,
@@ -160,6 +231,12 @@ public class TeamMembershipController {
         var entity = teamMembershipService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireTeamPermission(
+                execUser.getId(),
+                entity.getTeamId(),
+                TeamPermissionProvider.TEAM_MEMBERSHIP_DELETE
+        );
 
         var deleted = teamMembershipService
                 .delete(id);

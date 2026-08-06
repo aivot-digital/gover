@@ -1,4 +1,8 @@
-import {GenericListPage} from '../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../components/generic-list-page/generic-list-page';
 import {EmptyDataListPlaceholder} from '../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
@@ -15,7 +19,6 @@ import {getFileTypeLabel} from '../../../utils/file-type-label';
 import Chip from '@mui/material/Chip';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 import {useParams, useSearchParams, useNavigate} from 'react-router-dom';
-import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
 import {useApi} from '../../../hooks/use-api';
 import {ListControlRef} from '../../../components/generic-list/generic-list-props';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
@@ -24,6 +27,16 @@ import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
 import {usePrompt} from '../../../providers/prompt-provider';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {VStorageIndexItemWithAssetEntity} from '../../storage/entities/storage-index-item-entity';
+import {Permission} from '../../../data/permissions/permission';
+
+const assetListPermissionCheck: GenericListPagePermissionConfig<VStorageIndexItemWithAssetEntity> = {
+    scope: {
+        type: 'system',
+    },
+    read: Permission.ASSET_READ,
+    create: Permission.ASSET_CREATE,
+    update: Permission.ASSET_UPDATE,
+};
 
 export function AssetListPage() {
     const navigate = useNavigate();
@@ -63,8 +76,8 @@ export function AssetListPage() {
             return;
         }
 
-        new StorageProvidersApiService()
-            .retrieve(parsedStorageProviderId)
+        new AssetsApiService()
+            .retrieveStorageProvider(parsedStorageProviderId)
             .then((provider) => {
                 setStorageProviderName(provider.name);
                 setStorageProviderReadOnly(provider.readOnlyStorage);
@@ -88,8 +101,8 @@ export function AssetListPage() {
         listControlRef.current?.refresh();
     }, []);
 
-    const handleCreateFolder = useCallback(() => {
-        if (parsedStorageProviderId == null || storageProviderReadOnly) {
+    const handleCreateFolder = useCallback((canCreateAsset: boolean) => {
+        if (parsedStorageProviderId == null || !canCreateAsset || storageProviderReadOnly) {
             return;
         }
 
@@ -137,54 +150,63 @@ export function AssetListPage() {
         storageProviderReadOnly,
     ]);
 
-    const header = useMemo(() => ({
-        icon: <DriveFolderUploadOutlinedIcon/>,
-        title: headerTitle,
-        actions: [
-            {
-                icon: <CreateNewFolderOutlined/>,
-                tooltip: 'Neuen Ordner anlegen',
-                disabledTooltip: parsedStorageProviderId == null
-                    ? 'Wählen Sie zuerst einen Speicheranbieter aus.'
-                    : 'Der ausgewählte Speicheranbieter ist schreibgeschützt.',
-                disabled: parsedStorageProviderId == null || storageProviderReadOnly,
-                onClick: handleCreateFolder,
+    const header = useCallback((permissions: GenericListPagePermissionState<VStorageIndexItemWithAssetEntity>) => {
+        const createAssetDisabledTooltip = resolveCreateAssetDisabledTooltip(
+            permissions,
+            parsedStorageProviderId,
+            storageProviderReadOnly,
+        );
+        const canCreateAssetInCurrentProvider = canCreateAssetForCurrentProvider(
+            permissions,
+            parsedStorageProviderId,
+            storageProviderReadOnly,
+        );
+
+        return ({
+            icon: <DriveFolderUploadOutlinedIcon/>,
+            title: headerTitle,
+            actions: [
+                {
+                    icon: <CreateNewFolderOutlined/>,
+                    tooltip: 'Neuen Ordner anlegen',
+                    disabledTooltip: createAssetDisabledTooltip,
+                    disabled: !canCreateAssetInCurrentProvider,
+                    onClick: () => handleCreateFolder(permissions.canCreate),
+                },
+                'separator' as const,
+                {
+                    label: 'Datei hochladen',
+                    icon: <AddOutlinedIcon/>,
+                    tooltip: 'Neues Dokument oder Medieninhalt anlegen',
+                    disabledTooltip: createAssetDisabledTooltip,
+                    disabled: !canCreateAssetInCurrentProvider,
+                    to: uploadRoute,
+                    variant: 'contained' as const,
+                },
+            ],
+            helpDialog: {
+                title: 'Hilfe zu Dokumenten & Medieninhalten',
+                tooltip: 'Hilfe anzeigen',
+                content: (
+                    <>
+                        <Typography>
+                            Dateien und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und
+                            verwaltet werden können.
+                            In dieser Oberfläche können Sie die im System verfügbaren Dateien einsehen und
+                            bearbeiten.
+                        </Typography>
+                        <Typography sx={{mt: 2}}>
+                            Sie können die hochgeladenen Dateien u.A. in Formularen verwenden, um z.B. Bilder
+                            oder PDFs einzubinden.
+                            Darüber hinaus können Systemdateien (wie Zertifikate oder Templates) z.B. für die
+                            Konfiguration von
+                            Zahlungsdienstleistern oder der Dokumentengenerierung genutzt werden.
+                        </Typography>
+                    </>
+                ),
             },
-            'separator' as const,
-            {
-                label: 'Datei hochladen',
-                icon: <AddOutlinedIcon/>,
-                tooltip: 'Neues Dokument oder Medieninhalt anlegen',
-                disabledTooltip: parsedStorageProviderId == null
-                    ? 'Wählen Sie zuerst einen Speicheranbieter aus.'
-                    : 'Der ausgewählte Speicheranbieter ist schreibgeschützt.',
-                disabled: parsedStorageProviderId == null || storageProviderReadOnly,
-                to: uploadRoute,
-                variant: 'contained' as const,
-            },
-        ],
-        helpDialog: {
-            title: 'Hilfe zu Dokumenten & Medieninhalten',
-            tooltip: 'Hilfe anzeigen',
-            content: (
-                <>
-                    <Typography>
-                        Dateien und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und
-                        verwaltet werden können.
-                        In dieser Oberfläche können Sie die im System verfügbaren Dateien einsehen und
-                        bearbeiten.
-                    </Typography>
-                    <Typography sx={{mt: 2}}>
-                        Sie können die hochgeladenen Dateien u.A. in Formularen verwenden, um z.B. Bilder
-                        oder PDFs einzubinden.
-                        Darüber hinaus können Systemdateien (wie Zertifikate oder Templates) z.B. für die
-                        Konfiguration von
-                        Zahlungsdienstleistern oder der Dokumentengenerierung genutzt werden.
-                    </Typography>
-                </>
-            ),
-        },
-    }), [
+        });
+    }, [
         handleCreateFolder,
         headerTitle,
         parsedStorageProviderId,
@@ -253,7 +275,7 @@ export function AssetListPage() {
             });
     }, [currentFolderPath, parsedStorageProviderId]);
 
-    const columnDefinitions = useMemo(() => [
+    const columnDefinitions = useCallback((permissions: GenericListPagePermissionState<VStorageIndexItemWithAssetEntity>) => [
         {
             field: 'icon',
             headerName: '',
@@ -290,7 +312,9 @@ export function AssetListPage() {
                 return (
                     <CellLink
                         to={targetPath}
-                        title={isDirectory ? 'Ordner öffnen' : (storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten')}
+                        title={isDirectory ? 'Ordner öffnen' : (
+                            permissions.canUpdate(params.row) && !storageProviderReadOnly ? 'Datei bearbeiten' : 'Datei ansehen'
+                        )}
                     >
                         {String(params.value)}
                     </CellLink>
@@ -347,51 +371,87 @@ export function AssetListPage() {
         row.directory ? `dir:${row.pathFromRoot}` : (row.assetKey || `file:${row.pathFromRoot}`)
     ), []);
 
-    const rowActions = useCallback((item: VStorageIndexItemWithAssetEntity) => item.directory ? [
-        {
-            icon: <Delete/>,
-            tooltip: 'Ordner löschen',
-            disabled: storageProviderReadOnly,
-            onClick: async () => {
-                const providerId = item.storageProviderId ?? parsedStorageProviderId;
-                if (providerId == null || storageProviderReadOnly) {
-                    return;
-                }
+    const rowActions = useCallback((
+        item: VStorageIndexItemWithAssetEntity,
+        permissions: GenericListPagePermissionState<VStorageIndexItemWithAssetEntity>,
+    ) => {
+        if (!item.directory) {
+            return [];
+        }
 
-                confirm({
-                    title: `Ordner ${item.filename} löschen`,
-                    children: (
-                        <Typography>
-                            Soll der Ordner <strong>{item.filename}</strong> wirklich gelöscht werden?
-                            Alle darin enthaltenen Dateien und Unterordner werden ebenfalls gelöscht und
-                            können nicht wiederhergestellt werden.
-                            Dies kann nicht rückgängig gemacht werden.
-                        </Typography>
-                    ),
-                    confirmationText: item.filename,
-                    confirmButtonText: 'Löschen',
-                })
-                    .then((confirmed) => {
-                        if (!confirmed) {
-                            return;
-                        }
+        const canDeleteAsset = permissions.hasPermission(Permission.ASSET_DELETE);
+        const deleteAssetDisabledTooltip = resolveDeleteAssetDisabledTooltip(
+            permissions,
+            canDeleteAsset,
+            storageProviderReadOnly,
+        );
 
-                        return new AssetsApiService(api)
-                            .deleteFolder(
-                                providerId,
-                                AssetsApiService.normalizeFolderPath(item.pathFromRoot),
-                            );
+        return [
+            {
+                icon: <Delete/>,
+                tooltip: 'Ordner löschen',
+                disabled: !canDeleteAsset || storageProviderReadOnly,
+                disabledTooltip: deleteAssetDisabledTooltip,
+                onClick: async () => {
+                    const providerId = item.storageProviderId ?? parsedStorageProviderId;
+                    if (providerId == null || !canDeleteAsset || storageProviderReadOnly) {
+                        return;
+                    }
+
+                    confirm({
+                        title: `Ordner ${item.filename} löschen`,
+                        children: (
+                            <Typography>
+                                Soll der Ordner <strong>{item.filename}</strong> wirklich gelöscht werden?
+                                Alle darin enthaltenen Dateien und Unterordner werden ebenfalls gelöscht und
+                                können nicht wiederhergestellt werden.
+                                Dies kann nicht rückgängig gemacht werden.
+                            </Typography>
+                        ),
+                        confirmationText: item.filename,
+                        confirmButtonText: 'Löschen',
                     })
-                    .then(() => {
-                        dispatch(showSuccessSnackbar('Ordner erfolgreich gelöscht.'));
-                        handleListRefresh();
-                    })
-                    .catch((err) => {
-                        dispatch(showApiErrorSnackbar(err, 'Der Ordner konnte nicht gelöscht werden.'));
-                    });
+                        .then((confirmed) => {
+                            if (!confirmed) {
+                                return;
+                            }
+
+                            return new AssetsApiService(api)
+                                .deleteFolder(
+                                    providerId,
+                                    AssetsApiService.normalizeFolderPath(item.pathFromRoot),
+                                );
+                        })
+                        .then(() => {
+                            dispatch(showSuccessSnackbar('Ordner erfolgreich gelöscht.'));
+                            handleListRefresh();
+                        })
+                        .catch((err) => {
+                            dispatch(showApiErrorSnackbar(err, 'Der Ordner konnte nicht gelöscht werden.'));
+                        });
+                },
             },
-        },
-    ] : [], [api, confirm, dispatch, handleListRefresh, parsedStorageProviderId, storageProviderReadOnly]);
+        ];
+    }, [api, confirm, dispatch, handleListRefresh, parsedStorageProviderId, storageProviderReadOnly]);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<VStorageIndexItemWithAssetEntity>) => {
+        const createAssetDisabledTooltip = resolveCreateAssetDisabledTooltip(
+            permissions,
+            parsedStorageProviderId,
+            storageProviderReadOnly,
+        );
+
+        return (
+            <EmptyDataListPlaceholder
+                title="Keine Dateien vorhanden"
+                description="Dateien sind hochgeladene Anlagen und Medien, die in Formularen, Prozessen oder Konfigurationen verwendet werden können."
+                addText={parsedStorageProviderId != null ? "Datei hochladen" : undefined}
+                onAdd={parsedStorageProviderId != null ? () => navigate(uploadRoute) : undefined}
+                addDisabled={!canCreateAssetForCurrentProvider(permissions, parsedStorageProviderId, storageProviderReadOnly)}
+                addDisabledTooltip={createAssetDisabledTooltip}
+            />
+        );
+    }, [navigate, parsedStorageProviderId, storageProviderReadOnly, uploadRoute]);
 
     return (
         <PageWrapper
@@ -401,20 +461,14 @@ export function AssetListPage() {
         >
             <GenericListPage<VStorageIndexItemWithAssetEntity>
                 header={header}
+                permissionCheck={assetListPermissionCheck}
                 searchLabel="Datei suchen"
                 searchPlaceholder="Name der Datei eingeben…"
                 preSearchElements={preSearchElements}
                 fetch={fetchAssets}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={
-                    <EmptyDataListPlaceholder
-                        title="Noch keine Dateien hochgeladen"
-                        description="Dateien sind hochgeladene Anlagen und Medien, die in Formularen, Prozessen oder Konfigurationen verwendet werden können."
-                        addText={parsedStorageProviderId != null && !storageProviderReadOnly ? "Datei hochladen" : undefined}
-                        onAdd={parsedStorageProviderId != null && !storageProviderReadOnly ? () => navigate(uploadRoute) : undefined}
-                    />
-                }
+                noDataPlaceholder={noDataPlaceholder}
                 noSearchResultsPlaceholder="Keine Dateien gefunden"
                 rowActionsCount={1}
                 rowActions={rowActions}
@@ -424,4 +478,48 @@ export function AssetListPage() {
             />
         </PageWrapper>
     );
+}
+
+function canCreateAssetForCurrentProvider(
+    permissions: GenericListPagePermissionState<VStorageIndexItemWithAssetEntity>,
+    parsedStorageProviderId: number | undefined,
+    storageProviderReadOnly: boolean,
+): boolean {
+    return parsedStorageProviderId != null && permissions.canCreate && !storageProviderReadOnly;
+}
+
+function resolveCreateAssetDisabledTooltip(
+    permissions: GenericListPagePermissionState<VStorageIndexItemWithAssetEntity>,
+    parsedStorageProviderId: number | undefined,
+    storageProviderReadOnly: boolean,
+): string | undefined {
+    if (parsedStorageProviderId == null) {
+        return 'Wählen Sie zuerst einen Speicheranbieter aus.';
+    }
+
+    if (!permissions.canCreate) {
+        return permissions.createDisabledTooltip;
+    }
+
+    if (storageProviderReadOnly) {
+        return 'Der ausgewählte Speicheranbieter ist schreibgeschützt.';
+    }
+
+    return undefined;
+}
+
+function resolveDeleteAssetDisabledTooltip(
+    permissions: GenericListPagePermissionState<VStorageIndexItemWithAssetEntity>,
+    canDeleteAsset: boolean,
+    storageProviderReadOnly: boolean,
+): string | undefined {
+    if (!canDeleteAsset) {
+        return permissions.getMissingPermissionTooltip(Permission.ASSET_DELETE);
+    }
+
+    if (storageProviderReadOnly) {
+        return 'Der ausgewählte Speicheranbieter ist schreibgeschützt.';
+    }
+
+    return undefined;
 }

@@ -6,4 +6,6 @@ export interface EmptyDataListPlaceholderProps {
     helperText?: ReactNode;
     addText?: ReactNode;
     onAdd?: () => void;
+    addDisabled?: boolean;
+    addDisabledTooltip?: string;
 }

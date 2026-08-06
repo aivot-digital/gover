@@ -2,6 +2,7 @@ import {Box, Button, Typography} from '@mui/material';
 import React from 'react';
 import {EmptyDataListPlaceholderProps} from './empty-data-list-placeholder-props';
 import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
 
 export function EmptyDataListPlaceholder(props: EmptyDataListPlaceholderProps) {
     return (
@@ -46,14 +47,20 @@ export function EmptyDataListPlaceholder(props: EmptyDataListPlaceholderProps) {
             {
                 props.addText != null &&
                 props.onAdd != null &&
-                <Button
-                    sx={{mt: 2.5}}
-                    startIcon={<AddOutlinedIcon/>}
-                    variant="outlined"
-                    onClick={props.onAdd}
+                <DisabledTooltip
+                    title={props.addDisabled ? props.addDisabledTooltip : ''}
+                    disabled={props.addDisabled}
                 >
-                    {props.addText}
-                </Button>
+                    <Button
+                        sx={{mt: 2.5}}
+                        startIcon={<AddOutlinedIcon/>}
+                        variant="outlined"
+                        onClick={props.onAdd}
+                        disabled={props.addDisabled}
+                    >
+                        {props.addText}
+                    </Button>
+                </DisabledTooltip>
             }
         </Box>
     );

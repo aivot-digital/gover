@@ -1,4 +1,8 @@
-import {GenericListPage} from '../../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../../components/generic-list-page/generic-list-page';
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../../components/page-wrapper/page-wrapper';
@@ -8,7 +12,6 @@ import MailOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Mail';
 import PeopleOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Group';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
-import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import {UserFilter, UsersApiService} from '../../../users-api-service';
 import {type User} from '../../../../../models/entities/user';
 import Chip from '@mui/material/Chip';
@@ -21,6 +24,9 @@ import {SystemRolesApiService} from '../../../../system/services/system-roles-ap
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../../slices/snackbar-slice';
 import {GenericListPropsFetchOptions} from '../../../../../components/generic-list/generic-list-props';
+import {useHasSystemPermission} from '../../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../../data/permissions/permission';
+import {isApiError} from '../../../../../models/api-error';
 
 const Filters = [
     {
@@ -37,19 +43,36 @@ const Filters = [
     },
 ];
 
+const usersListPermissionCheck: GenericListPagePermissionConfig<User> = {
+    scope: {
+        type: 'system',
+    },
+    read: Permission.USER_READ,
+    create: Permission.USER_CREATE,
+    update: Permission.USER_UPDATE,
+};
+
 export function UserListPage() {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
     const systemRolesApiService = useMemo(() => new SystemRolesApiService(), []);
+    const canReadSystemRoles = useHasSystemPermission(Permission.SYSTEM_ROLE_READ);
     const [systemRoleNamesById, setSystemRoleNamesById] = useState<Record<number, string>>({});
     const [isSystemRolesLoading, setIsSystemRolesLoading] = useState(true);
+    const [systemRolesAccessDenied, setSystemRolesAccessDenied] = useState(false);
 
     useEffect(() => {
         let isCancelled = false;
+
+        setSystemRolesAccessDenied(false);
+
+        if (!canReadSystemRoles) {
+            setSystemRoleNamesById({});
+            setIsSystemRolesLoading(false);
+            return () => {
+                isCancelled = true;
+            };
+        }
 
         setIsSystemRolesLoading(true);
 
@@ -68,7 +91,11 @@ export function UserListPage() {
                 }
 
                 setSystemRoleNamesById({});
-                dispatch(showApiErrorSnackbar(err, 'Die Systemrollen konnten nicht geladen werden.'));
+                if (isApiError(err) && err.status === 403) {
+                    setSystemRolesAccessDenied(true);
+                } else {
+                    dispatch(showApiErrorSnackbar(err, 'Die Systemrollen konnten nicht geladen werden.'));
+                }
             })
             .finally(() => {
                 if (!isCancelled) {
@@ -79,7 +106,7 @@ export function UserListPage() {
         return () => {
             isCancelled = true;
         };
-    }, [dispatch, systemRolesApiService]);
+    }, [canReadSystemRoles, dispatch, systemRolesApiService]);
 
     const columns = useMemo<GenericListColDef<User>[]>(() => [
         {
@@ -138,6 +165,8 @@ export function UserListPage() {
                 let roleLabel: string;
                 if (systemRoleId == null) {
                     roleLabel = 'Keine Systemrolle';
+                } else if (!canReadSystemRoles || systemRolesAccessDenied) {
+                    roleLabel = 'Keine Berechtigung zur Einsicht';
                 } else if (systemRoleNamesById[systemRoleId] != null) {
                     roleLabel = systemRoleNamesById[systemRoleId];
                 } else if (isSystemRolesLoading) {
@@ -151,6 +180,11 @@ export function UserListPage() {
                         label={roleLabel}
                         size="small"
                         variant="outlined"
+                        title={
+                            systemRoleId != null && (!canReadSystemRoles || systemRolesAccessDenied)
+                                ? 'Für die Anzeige der Systemrolle ist die Berechtigung system_role.read erforderlich.'
+                                : undefined
+                        }
                     />
                 );
             },
@@ -166,9 +200,9 @@ export function UserListPage() {
                 />
             ),
         },
-    ], [isSystemRolesLoading, systemRoleNamesById]);
+    ], [canReadSystemRoles, isSystemRolesLoading, systemRoleNamesById, systemRolesAccessDenied]);
 
-    const header = useMemo(() => ({
+    const header = useCallback((permissions: GenericListPagePermissionState<User>) => ({
         icon: <PeopleOutlined/>,
         title: 'Mitarbeiter:innen',
         actions: [
@@ -177,7 +211,8 @@ export function UserListPage() {
                 icon: <Add/>,
                 to: "/users/new",
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -200,7 +235,7 @@ export function UserListPage() {
                 </>
             ),
         },
-    }), [hasAccess]);
+    }), []);
 
     const fetchUsers = useCallback((options: GenericListPropsFetchOptions<User>) => {
         const filters: Partial<UserFilter> = {
@@ -236,20 +271,35 @@ export function UserListPage() {
 
     const getRowIdentifier = useCallback((row: User) => row.id.toString(), []);
 
-    const rowActions = useCallback((item: User) => [
-        {
-            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
-            to: `/users/${item.id}`,
-            tooltip: hasAccess ? 'Mitarbeiter:in bearbeiten' : 'Mitarbeiter:in anzeigen',
-        },
-        {
-            icon: <MailOutlined/>,
-            href: `mailto:${item.email}`,
-            tooltip: 'E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)',
-            disabled: item.deletedInIdp,
-            disabledTooltip: 'Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden.',
-        },
-    ], [hasAccess]);
+    const rowActions = useCallback((item: User, permissions: GenericListPagePermissionState<User>) => {
+        const canUpdateUser = permissions.canUpdate(item);
+
+        return [
+            {
+                icon: canUpdateUser ? <EditOutlined/> : <Visibility/>,
+                to: `/users/${item.id}`,
+                tooltip: canUpdateUser ? 'Mitarbeiter:in bearbeiten' : 'Mitarbeiter:in anzeigen',
+            },
+            {
+                icon: <MailOutlined/>,
+                href: `mailto:${item.email}`,
+                tooltip: 'E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)',
+                disabled: item.deletedInIdp,
+                disabledTooltip: 'Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden.',
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<User>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Mitarbeiter:innen vorhanden"
+            description="Mitarbeiter:innen sind Benutzerkonten für Personen, die Gover verwalten oder Aufgaben in Vorgängen bearbeiten."
+            addText="Mitarbeiter:in anlegen"
+            onAdd={() => navigate('/users/new')}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [navigate]);
 
     return (
         <PageWrapper
@@ -261,20 +311,14 @@ export function UserListPage() {
                 filters={Filters}
                 defaultFilter="active"
                 header={header}
+                permissionCheck={usersListPermissionCheck}
                 searchLabel="Mitarbeiter:in suchen"
                 searchPlaceholder="Name der Mitarbeiter:in eingeben…"
                 fetch={fetchUsers}
                 columnIcon={columnIcon}
                 columnDefinitions={columns}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={
-                    <EmptyDataListPlaceholder
-                        title="Noch keine Mitarbeiter:innen angelegt"
-                        description="Mitarbeiter:innen sind Benutzerkonten für Personen, die Gover verwalten oder Aufgaben in Vorgängen bearbeiten."
-                        addText={hasAccess ? "Mitarbeiter:in anlegen" : undefined}
-                        onAdd={hasAccess ? () => navigate('/users/new') : undefined}
-                    />
-                }
+                noDataPlaceholder={noDataPlaceholder}
                 noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
                 rowActionsCount={2}
                 rowActions={rowActions}

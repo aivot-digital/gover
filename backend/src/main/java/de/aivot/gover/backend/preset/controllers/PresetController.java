@@ -7,9 +7,11 @@ import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.preset.dtos.PresetCreateRequestDTO;
 import de.aivot.gover.backend.preset.entities.PresetEntity;
 import de.aivot.gover.backend.preset.filters.PresetFilter;
+import de.aivot.gover.backend.preset.permissions.PresetPermissionProvider;
 import de.aivot.gover.backend.preset.repositories.PresetRepository;
 import de.aivot.gover.backend.preset.repositories.PresetVersionRepository;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,26 +46,35 @@ public class PresetController {
     private final ScopedAuditService auditService;
     private final PresetVersionRepository presetVersionRepository;
     private final UserService userService;
+    private final PermissionService permissionService;
 
     @Autowired
     public PresetController(PresetRepository presetRepository,
                             AuditService auditService,
-                            PresetVersionRepository presetVersionRepository, UserService userService) {
+                            PresetVersionRepository presetVersionRepository,
+                            UserService userService,
+                            PermissionService permissionService) {
         this.presetRepository = presetRepository;
         this.auditService = auditService.createScopedAuditService(PresetController.class, "Vorlagen");
         this.presetVersionRepository = presetVersionRepository;
         this.userService = userService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
     @Operation(
             summary = "List Presets",
-            description = "Retrieve a paginated list of presets with optional filtering."
+            description = "Retrieve a paginated list of presets with optional filtering. " +
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_READ + "`."
     )
     public Page<PresetEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid PresetFilter filter
     ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
+
         return presetRepository
                 .findAll(filter.build(), pageable);
     }
@@ -72,7 +83,8 @@ public class PresetController {
     @PostMapping("")
     @Operation(
             summary = "Create Preset",
-            description = "Create a new preset."
+            description = "Create a new preset. " +
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_CREATE + "`."
     )
     public PresetEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -81,6 +93,9 @@ public class PresetController {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_CREATE);
 
         var newEntity = requestDTO
                 .toEntity();
@@ -114,11 +129,16 @@ public class PresetController {
     @GetMapping("{key}/")
     @Operation(
             summary = "Retrieve Preset",
-            description = "Retrieve a specific preset by its unique key."
+            description = "Retrieve a specific preset by its unique key. " +
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_READ + "`."
     )
     public PresetEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID key
     ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
+
         return presetRepository
                 .findById(key)
                 .orElseThrow(ResponseException::notFound);
@@ -135,7 +155,8 @@ public class PresetController {
     @PutMapping("{key}/")
     @Operation(
             summary = "Update Preset",
-            description = "Update an existing preset."
+            description = "Update an existing preset. " +
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_UPDATE + "`."
     )
     public PresetEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -145,6 +166,9 @@ public class PresetController {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_UPDATE);
 
         var preset = presetRepository
                 .findById(key)
@@ -178,7 +202,8 @@ public class PresetController {
     @DeleteMapping("{key}/")
     @Operation(
             summary = "Delete Preset",
-            description = "Delete an existing preset."
+            description = "Delete an existing preset. " +
+                    "Requires the system-level permission `" + PresetPermissionProvider.PRESET_DELETE + "`."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -188,6 +213,9 @@ public class PresetController {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_DELETE);
 
         var preset = presetRepository
                 .findById(key)

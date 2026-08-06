@@ -12,6 +12,7 @@ public class VDepartmentShadowedFilter implements Filter<VDepartmentShadowedEnti
     private List<Integer> ids;
     private String name;
     private Integer themeId;
+    private Boolean includeAncestors;
 
     public static VDepartmentShadowedFilter create() {
         return new VDepartmentShadowedFilter();
@@ -61,6 +62,15 @@ public class VDepartmentShadowedFilter implements Filter<VDepartmentShadowedEnti
 
     public VDepartmentShadowedFilter setThemeId(Integer themeId) {
         this.themeId = themeId;
+        return this;
+    }
+
+    public Boolean getIncludeAncestors() {
+        return includeAncestors;
+    }
+
+    public VDepartmentShadowedFilter setIncludeAncestors(Boolean includeAncestors) {
+        this.includeAncestors = includeAncestors;
         return this;
     }
 }

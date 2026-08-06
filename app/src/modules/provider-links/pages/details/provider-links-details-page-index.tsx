@@ -1,5 +1,5 @@
 import {Box, Button, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {useContext, useMemo, useState} from 'react';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
@@ -14,8 +14,11 @@ import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save'
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const ProviderLinkSchema = yup.object({
     text: yup.string()
@@ -41,24 +44,9 @@ export function ProviderLinksDetailsPageIndex() {
         isBusy,
         setIsBusy,
         isEditable,
+        isNewItem,
     } = useContext(GenericDetailsPageContext);
-
-    useEffect(() => {
-        if (isEditable) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            key: 'provider-links-no-access',
-            message: 'Die Links können nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            type: SnackbarType.Dismissable,
-            severity: SnackbarSeverity.Warning,
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('provider-links-no-access'));
-        };
-    }, [isEditable]);
+    const canDeleteProviderLink = useHasSystemPermission(Permission.SYSTEM_CONFIG_DELETE);
 
     const {
         currentItem,
@@ -75,6 +63,16 @@ export function ProviderLinksDetailsPageIndex() {
     const link = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const isNewProviderLink = isNewItem === true;
+    const editPermission = isNewProviderLink
+        ? Permission.SYSTEM_CONFIG_CREATE
+        : Permission.SYSTEM_CONFIG_UPDATE;
+    const editDisabledTooltip = !isEditable
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledTooltip = !canDeleteProviderLink
+        ? formatMissingPermissionTooltip(Permission.SYSTEM_CONFIG_DELETE)
+        : undefined;
 
     if (link == null) {
         return (
@@ -94,7 +92,7 @@ export function ProviderLinksDetailsPageIndex() {
 
             setIsBusy(true);
 
-            if (link.id === 0) {
+            if (isNewProviderLink) {
                 apiService
                     .create(link)
                     .then((newProviderLink) => {
@@ -136,7 +134,7 @@ export function ProviderLinksDetailsPageIndex() {
     };
 
     const handleDelete = () => {
-        if (link.id !== 0) {
+        if (!isNewProviderLink) {
             setIsBusy(true);
 
             apiService
@@ -188,43 +186,56 @@ export function ProviderLinksDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
+                <DisabledTooltip
+                    title={editDisabledTooltip}
                     disabled={isBusy || hasNotChanged || !isEditable}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon />}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon />}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
-                    link.id !== 0 &&
-                    <Button
-                        onClick={() => {
-                            reset();
-                        }}
+                    !isNewProviderLink &&
+                    <DisabledTooltip
+                        title={editDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
-                        color="error"
                     >
-                        Zurücksetzen
-                    </Button>
+                        <Button
+                            onClick={() => {
+                                reset();
+                            }}
+                            disabled={isBusy || hasNotChanged || !isEditable}
+                            color="error"
+                        >
+                            Zurücksetzen
+                        </Button>
+                    </DisabledTooltip>
                 }
 
                 {
-                    link.id !== 0 &&
-                    <Button
-                        variant={'outlined'}
-                        onClick={() => setShowConfirmDialog(true)}
-                        disabled={isBusy || !isEditable}
-                        color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete />}
+                    !isNewProviderLink &&
+                    <DisabledTooltip
+                        title={deleteDisabledTooltip}
+                        disabled={isBusy || !canDeleteProviderLink}
+                        wrapperSx={{marginLeft: 'auto'}}
                     >
-                        Löschen
-                    </Button>
+                        <Button
+                            variant="outlined"
+                            onClick={() => setShowConfirmDialog(true)}
+                            disabled={isBusy || !canDeleteProviderLink}
+                            color="error"
+                            startIcon={<Delete />}
+                        >
+                            Löschen
+                        </Button>
+                    </DisabledTooltip>
                 }
             </Box>
 

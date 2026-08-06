@@ -1,3 +1,4 @@
+import {describe, expect, it, vi} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {ElementType} from '../data/element-type/element-type';
@@ -7,9 +8,39 @@ import {ProcessNodeEditorProvider} from '../modules/process/pages/details/compon
 import type {ProcessNodeDefinitionMetadata} from '../modules/process/entities/process-node-definition-metadata';
 import type {ProcessNodeEntity} from '../modules/process/entities/process-node-entity';
 
+// This spec verifies the editor patch wiring. Mock the nested input controls so the
+// test does not depend on MUI Autocomplete/Popper behavior in jsdom.
+vi.mock('../components/process-instance-attachment-set-select/process-instance-attachment-set-select', () => ({
+    ProcessInstanceAttachmentSetSelect: (props: {
+        label: string;
+        onChange: (value: string[] | null) => void;
+    }) => (
+        <button
+            type="button"
+            onClick={() => props.onChange(['case_documents'])}
+        >
+            {props.label}
+        </button>
+    ),
+}));
+
+vi.mock('../components/text-field/text-field-component', () => ({
+    TextFieldComponent: (props: {
+        label: string;
+        value?: string | null;
+        onChange: (value: string | null) => void;
+    }) => (
+        <input
+            aria-label={props.label}
+            value={props.value ?? ''}
+            onChange={(event) => props.onChange(event.target.value.length > 0 ? event.target.value : null)}
+        />
+    ),
+}));
+
 describe('ProcessAttachmentDisplayEditor', () => {
-    it('should suggest and patch the configured attachment set key', async () => {
-        const onPatch = jest.fn();
+    it('should suggest and patch the configured attachment set key', () => {
+        const onPatch = vi.fn();
 
         renderWithEditorMetadata(
             <ProcessAttachmentDisplayEditor
@@ -21,8 +52,7 @@ describe('ProcessAttachmentDisplayEditor', () => {
             />,
         );
 
-        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Schlüssel des Anlagensatzes'}));
-        fireEvent.click(await screen.findByText('Fallunterlagen'));
+        fireEvent.click(screen.getByText('Schlüssel des Anlagensatzes'));
 
         expect(onPatch).toHaveBeenCalledWith({
             attachmentSetKey: 'case_documents',
@@ -30,7 +60,7 @@ describe('ProcessAttachmentDisplayEditor', () => {
     });
 
     it('should patch the configured label and hint', () => {
-        const onPatch = jest.fn();
+        const onPatch = vi.fn();
 
         renderWithEditorMetadata(
             <ProcessAttachmentDisplayEditor
@@ -42,19 +72,19 @@ describe('ProcessAttachmentDisplayEditor', () => {
             />,
         );
 
-        fireEvent.change(screen.getByRole('textbox', {name: 'Beschriftung'}), {
+        fireEvent.change(screen.getByLabelText('Beschriftung'), {
             target: {
-                value: 'Fallunterlagen',
+                value: 'Neue Fallunterlagen',
             },
         });
-        fireEvent.change(screen.getByRole('textbox', {name: 'Hinweis'}), {
+        fireEvent.change(screen.getByLabelText('Hinweis'), {
             target: {
                 value: 'Bitte prüfen Sie den Anhang sorgfältig.',
             },
         });
 
         expect(onPatch).toHaveBeenCalledWith({
-            label: 'Fallunterlagen',
+            label: 'Neue Fallunterlagen',
         });
         expect(onPatch).toHaveBeenCalledWith({
             hint: 'Bitte prüfen Sie den Anhang sorgfältig.',
@@ -70,7 +100,7 @@ function renderWithEditorMetadata(children: React.ReactElement, metadata: Proces
                 layout: {} as any,
                 testClaim: null,
                 node: createNode(10, 'E-Mail'),
-                setNode: jest.fn(),
+                setNode: vi.fn(),
                 isEditable: true,
                 problems: null,
                 incomingMetadata: metadata,

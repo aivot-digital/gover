@@ -200,11 +200,12 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
                 .retrieve(itemid)
                 .orElseThrow(ResponseException::notFound);
 
-        var canPublishTestAsDomainMember = processTestClaimRepository.hasProcessPermission(
-                execUser.getId(),
-                entity.getProcessId(),
-                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_TEST
-        );
+        var canPublishTestAsDomainMember = processTestClaimRepository
+                .hasProcessPermission(
+                        execUser.getId(),
+                        entity.getProcessId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_TEST
+                );
 
         if (canPublishTestAsDomainMember) {
             return;

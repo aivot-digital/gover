@@ -169,6 +169,8 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
     const markerLon = props.value?.longitude ?? undefined;
     const isMapDisabled = props.disabled === true || props.busy === true;
     const hasPointValue = props.value != null && normalizePoint(props.value) != null;
+    const canClearSearchInput = searchQuery.trim().length > 0 || (hasPointValue && props.required !== true);
+    const clearSearchInputLabel = hasPointValue && props.required !== true ? 'Kartenpunkt-Auswahl löschen' : 'Suche löschen';
 
     const configuredCenter = useMemo(() => {
         if (props.centerLatitude != null && props.centerLongitude != null) {
@@ -404,6 +406,32 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
         mapRef.current?.setView(configuredCenter, zoom);
     }, [configuredCenter.lat, configuredCenter.lon, props.onChange, zoom]);
 
+    const handleClearSearchInput = useCallback(() => {
+        if (hasPointValue && props.required !== true) {
+            handleClear();
+            return;
+        }
+
+        setSearchQuery('');
+        setAddressResolveError(undefined);
+    }, [handleClear, hasPointValue, props.required]);
+
+    const handleLatitudeInputChange = useCallback((nextLatitudeInput: string) => {
+        setLatitudeInput(nextLatitudeInput);
+
+        if (nextLatitudeInput.trim().length === 0 && longitudeInput.trim().length === 0 && hasPointValue) {
+            handleClear();
+        }
+    }, [handleClear, hasPointValue, longitudeInput]);
+
+    const handleLongitudeInputChange = useCallback((nextLongitudeInput: string) => {
+        setLongitudeInput(nextLongitudeInput);
+
+        if (latitudeInput.trim().length === 0 && nextLongitudeInput.trim().length === 0 && hasPointValue) {
+            handleClear();
+        }
+    }, [handleClear, hasPointValue, latitudeInput]);
+
     return (
         <Stack spacing={1.5}>
             <Stack
@@ -470,15 +498,34 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
                         input: {
                             endAdornment: (
                                 <InputAdornment position="end">
-                                    <IconButton
-                                        onClick={() => {
-                                            void handleSearch();
-                                        }}
-                                        disabled={props.disabled || props.busy || isSearching || searchQuery.trim().length < 3}
-                                        aria-label="Ort suchen"
+                                    <Stack
+                                        direction="row"
+                                        spacing={0.25}
+                                        alignItems="center"
                                     >
-                                        {isSearching ? <CircularProgress size={18} /> : <SearchOutlinedIcon />}
-                                    </IconButton>
+                                        {
+                                            canClearSearchInput &&
+                                            <IconButton
+                                                size="small"
+                                                onClick={handleClearSearchInput}
+                                                disabled={props.disabled || props.busy}
+                                                aria-label={clearSearchInputLabel}
+                                            >
+                                                <ClearOutlinedIcon fontSize="small" />
+                                            </IconButton>
+                                        }
+
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                                void handleSearch();
+                                            }}
+                                            disabled={props.disabled || props.busy || isSearching || searchQuery.trim().length < 3}
+                                            aria-label="Ort suchen"
+                                        >
+                                            {isSearching ? <CircularProgress size={18} /> : <SearchOutlinedIcon />}
+                                        </IconButton>
+                                    </Stack>
                                 </InputAdornment>
                             ),
                         },
@@ -500,7 +547,7 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
                             label="Breitengrad"
                             value={latitudeInput}
                             onChange={(event) => {
-                                setLatitudeInput(event.target.value);
+                                handleLatitudeInputChange(event.target.value);
                             }}
                             onKeyDown={(event) => {
                                 if (event.key === 'Enter') {
@@ -516,7 +563,7 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
                             label="Längengrad"
                             value={longitudeInput}
                             onChange={(event) => {
-                                setLongitudeInput(event.target.value);
+                                handleLongitudeInputChange(event.target.value);
                             }}
                             onKeyDown={(event) => {
                                 if (event.key === 'Enter') {
@@ -593,6 +640,7 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
                                     size="small"
                                     onClick={handleClear}
                                     disabled={isMapDisabled}
+                                    aria-label="Kartenpunkt leeren"
                                     sx={{
                                         bgcolor: 'background.paper',
                                         border: '1px solid',

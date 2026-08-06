@@ -5,11 +5,11 @@ import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
-import de.aivot.gover.backend.permissions.entities.VUserTeamPermissionEntityId;
-import de.aivot.gover.backend.permissions.repositories.VUserTeamPermissionRepository;
+import de.aivot.gover.backend.permissions.services.PermissionService;
+import de.aivot.gover.backend.teams.permissions.TeamPermissionProvider;
+import de.aivot.gover.backend.teams.repositories.TeamMembershipRepository;
 import de.aivot.gover.backend.teams.services.TeamMembershipService;
 import de.aivot.gover.backend.user.services.UserService;
-import de.aivot.gover.backend.userRoles.data.PermissionLabels;
 import de.aivot.gover.backend.userRoles.entities.UserRoleAssignmentEntity;
 import de.aivot.gover.backend.userRoles.filters.UserRoleAssignmentFilter;
 import de.aivot.gover.backend.userRoles.services.UserRoleAssignmentService;
@@ -41,28 +41,28 @@ import java.util.Objects;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class VTeamUserRoleAssignmentWithDetailsController {
-    private static final String TEAM_PERMISSION_UPDATE = "team.update";
-    private static final String TEAM_MEMBERSHIP_PERMISSION_UPDATE = "team_membership.update";
-
     private final ScopedAuditService auditService;
 
     private final UserRoleAssignmentService userRoleAssignmentService;
     private final UserService userService;
     private final TeamMembershipService teamMembershipService;
-    private final VUserTeamPermissionRepository vUserTeamPermissionRepository;
+    private final TeamMembershipRepository teamMembershipRepository;
+    private final PermissionService permissionService;
 
     @Autowired
     public VTeamUserRoleAssignmentWithDetailsController(AuditService auditService,
                                                         UserRoleAssignmentService userRoleAssignmentService,
                                                         UserService userService,
                                                         TeamMembershipService teamMembershipService,
-                                                        VUserTeamPermissionRepository vUserTeamPermissionRepository) {
+                                                        TeamMembershipRepository teamMembershipRepository,
+                                                        PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(VTeamUserRoleAssignmentWithDetailsController.class, "Teams");
 
         this.userRoleAssignmentService = userRoleAssignmentService;
         this.userService = userService;
         this.teamMembershipService = teamMembershipService;
-        this.vUserTeamPermissionRepository = vUserTeamPermissionRepository;
+        this.teamMembershipRepository = teamMembershipRepository;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -72,12 +72,54 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                           "Supports filtering based on various criteria."
     )
     public Page<UserRoleAssignmentEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid UserRoleAssignmentFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
         filter
                 .setTeamAssignment(true)
                 .setOrgUnitAssignment(false);
+
+        if (!permissionService.hasSystemPermission(user.getId(), TeamPermissionProvider.TEAM_MEMBERSHIP_READ)) {
+            if (filter.getTeamMembershipId() != null) {
+                var membership = teamMembershipService
+                        .retrieve(filter.getTeamMembershipId())
+                        .orElseThrow(ResponseException::notFound);
+
+                permissionService.requireTeamPermission(
+                        user.getId(),
+                        membership.getTeamId(),
+                        TeamPermissionProvider.TEAM_MEMBERSHIP_READ
+                );
+            } else {
+                var accessibleTeamIds = permissionService
+                        .getTeamsWithPermission(user.getId(), TeamPermissionProvider.TEAM_MEMBERSHIP_READ);
+
+                if (accessibleTeamIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                var accessibleMembershipIds = teamMembershipRepository
+                        .findIdsByTeamIdIn(accessibleTeamIds);
+
+                if (filter.getTeamMembershipIds() != null) {
+                    accessibleMembershipIds = filter.getTeamMembershipIds()
+                            .stream()
+                            .filter(accessibleMembershipIds::contains)
+                            .toList();
+                }
+
+                if (accessibleMembershipIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setTeamMembershipIds(accessibleMembershipIds);
+            }
+        }
 
         return userRoleAssignmentService
                 .list(pageable, filter);
@@ -87,7 +129,8 @@ public class VTeamUserRoleAssignmentWithDetailsController {
     @Operation(
             summary = "Create Team User Role Assignment",
             description = "Create a new user role assignment within a team membership. " +
-                          "Requires super admin privileges or appropriate team edit permissions."
+                    "Requires the permission `" + TeamPermissionProvider.TEAM_MEMBERSHIP_UPDATE +
+                    "` for the membership's team or at system level."
     )
     public UserRoleAssignmentEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -105,10 +148,11 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                 .retrieve(newAssignment.getTeamMembershipId())
                 .orElseThrow(ResponseException::badRequest);
 
-        if (!user.getIsSuperAdmin() && !hasTeamEditPermission(user.getId(), membership.getTeamId())) {
-            throw ResponseException
-                    .noPermission(PermissionLabels.TeamPermissionEdit);
-        }
+        permissionService.requireTeamPermission(
+                user.getId(),
+                membership.getTeamId(),
+                TeamPermissionProvider.TEAM_MEMBERSHIP_UPDATE
+        );
 
         newAssignment.setDepartmentMembershipId(null);
         var created = userRoleAssignmentService
@@ -139,8 +183,13 @@ public class VTeamUserRoleAssignmentWithDetailsController {
             description = "Retrieve detailed information about a specific team user role assignment by its ID."
     )
     public UserRoleAssignmentEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
         var assignment = userRoleAssignmentService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
@@ -149,6 +198,16 @@ public class VTeamUserRoleAssignmentWithDetailsController {
             throw ResponseException.notFound();
         }
 
+        var membership = teamMembershipService
+                .retrieve(assignment.getTeamMembershipId())
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireTeamPermission(
+                user.getId(),
+                membership.getTeamId(),
+                TeamPermissionProvider.TEAM_MEMBERSHIP_READ
+        );
+
         return assignment;
     }
 
@@ -156,7 +215,8 @@ public class VTeamUserRoleAssignmentWithDetailsController {
     @Operation(
             summary = "Delete Team User Role Assignment",
             description = "Delete a user role assignment from a team membership. " +
-                          "Requires super admin privileges or appropriate team edit permissions."
+                    "Requires the permission `" + TeamPermissionProvider.TEAM_MEMBERSHIP_UPDATE +
+                    "` for the membership's team or at system level."
     )
     public void destroy(
             @AuthenticationPrincipal Jwt jwt,
@@ -178,10 +238,11 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                 .retrieve(entity.getTeamMembershipId())
                 .orElseThrow(ResponseException::badRequest);
 
-        if (!user.getIsSuperAdmin() && !hasTeamEditPermission(user.getId(), membership.getTeamId())) {
-            throw ResponseException
-                    .noPermission(PermissionLabels.TeamPermissionEdit);
-        }
+        permissionService.requireTeamPermission(
+                user.getId(),
+                membership.getTeamId(),
+                TeamPermissionProvider.TEAM_MEMBERSHIP_UPDATE
+        );
 
         userRoleAssignmentService
                 .deleteEntity(entity);
@@ -203,11 +264,4 @@ public class VTeamUserRoleAssignmentWithDetailsController {
         ).log();
     }
 
-    private boolean hasTeamEditPermission(@Nonnull String userId, @Nonnull Integer teamId) {
-        return vUserTeamPermissionRepository
-                .findById(VUserTeamPermissionEntityId.of(userId, teamId))
-                .map(entry -> entry.getPermissions().contains(TEAM_PERMISSION_UPDATE)
-                              || entry.getPermissions().contains(TEAM_MEMBERSHIP_PERMISSION_UPDATE))
-                .orElse(false);
-    }
 }

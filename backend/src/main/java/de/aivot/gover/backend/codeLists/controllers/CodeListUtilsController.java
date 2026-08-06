@@ -43,7 +43,7 @@ public class CodeListUtilsController {
             @Nonnull @PathVariable UUID assetKey
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
         return service.getAssetColumns(assetKey);
     }
 
@@ -57,7 +57,7 @@ public class CodeListUtilsController {
             @Nonnull @PathVariable String urn
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
         return service.getXRepositoryColumns(urn);
     }
 }

@@ -7,8 +7,12 @@ import {
     type ExtensionsDetailsPageItem,
     loadExtensionsDetailsPageItem,
 } from '../../../../pages/staff-pages/settings/components/extensions/extensions';
+import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
 
 export function ExtensionsPage() {
+    useRequireSystemPermission(Permission.PLUGIN_READ);
+
     return (
         <PageWrapper
             title="Erweiterungen"
