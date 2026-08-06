@@ -100,15 +100,12 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
             if (filter.getTargetProcessInstanceId() != null) {
                 permissionService.requireProcessInstancePermission(
                         user.getId(),
-                        filter.getTargetProcessInstanceId().longValue(),
+                        filter.getTargetProcessInstanceId(),
                         ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
                 );
             } else {
                 var accessibleProcessInstanceIds = permissionService
-                        .getProcessInstancesWithPermission(user.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE)
-                        .stream()
-                        .map(Long::intValue)
-                        .toList();
+                        .getProcessInstancesWithPermission(user.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE);
 
                 if (filter.getTargetProcessInstanceIds() != null) {
                     // Keep requested targets, but only where the user may administer instance access rules.
@@ -134,7 +131,7 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
                                           @Nonnull ProcessInstanceAccessControlEntity newItem) throws ResponseException {
         permissionService.requireProcessInstancePermission(
                 execUser.getId(),
-                newItem.getTargetProcessInstanceId().longValue(),
+                newItem.getTargetProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
         );
     }
@@ -148,7 +145,7 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
 
         permissionService.requireProcessInstancePermission(
                 execUser.getId(),
-                existing.getTargetProcessInstanceId().longValue(),
+                existing.getTargetProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
         );
     }

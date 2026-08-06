@@ -73,7 +73,7 @@ public class IdentityProviderController {
     @Operation(
             summary = "List Identity Providers",
             description = "Retrieves a paginated list of identity providers based on the provided filters. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ + "“."
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ + "`."
     )
     public Page<IdentityProviderListDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -92,7 +92,9 @@ public class IdentityProviderController {
     @Operation(
             summary = "Prepare Identity Provider",
             description = "Prepares an identity provider by validating the provided endpoint and retrieving necessary metadata. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE + "“ or „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE + "“."
+                    "Requires at least one of the system-level permissions `" +
+                    IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE + "` or `" +
+                    IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE + "`."
     )
     public IdentityProviderDetailsDTO prepare(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -122,7 +124,7 @@ public class IdentityProviderController {
     @Operation(
             summary = "Create Identity Provider",
             description = "Creates a new identity provider with the provided configuration. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE + "“."
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE + "`."
     )
     public IdentityProviderDetailsDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -156,7 +158,7 @@ public class IdentityProviderController {
     @Operation(
             summary = "Retrieve Identity Provider",
             description = "Retrieves the details of a specific identity provider by its unique key. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ + "“."
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ + "`."
     )
     public IdentityProviderDetailsDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -176,7 +178,7 @@ public class IdentityProviderController {
             summary = "Update Identity Provider",
             description = "Updates the configuration of an existing identity provider. " +
                     "If the provider is disabled, it will be unlinked from all forms that use it. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE + "“."
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE + "`."
     )
     public IdentityProviderDetailsDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -213,7 +215,7 @@ public class IdentityProviderController {
     @Operation(
             summary = "Start Identity Provider Test",
             description = "Creates the authorization redirect URL for testing an identity provider. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE + "“."
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE + "`."
     )
     public IdentityProviderTestStartResponseDTO startTest(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -240,7 +242,7 @@ public class IdentityProviderController {
     @Operation(
             summary = "Delete Identity Provider",
             description = "Deletes an identity provider if it is disabled and not linked to any published forms. " +
-                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_DELETE + "“."
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_DELETE + "`."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,

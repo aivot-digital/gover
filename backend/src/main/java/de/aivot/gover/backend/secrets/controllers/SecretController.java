@@ -65,7 +65,7 @@ public class SecretController {
             summary = "List Secrets",
             description = "Retrieve a paginated list of secrets. " +
                           "Supports filtering by various criteria. " +
-                          "This requires the permission „" + SecretPermissionProvider.SECRET_READ + "“."
+                          "Requires the system-level permission `" + SecretPermissionProvider.SECRET_READ + "`."
     )
     public Page<SecretEntityResponseDTO> list(
             @AuthenticationPrincipal Jwt jwt,
@@ -98,7 +98,7 @@ public class SecretController {
             summary = "Create Secret",
             description = "Create a new secret. The secret is encrypted and stored securely. " +
                           "The response contains the key of the created secret. " +
-                          "This requires the permission „" + SecretPermissionProvider.SECRET_CREATE + "“."
+                          "Requires the system-level permission `" + SecretPermissionProvider.SECRET_CREATE + "`."
     )
     public SecretEntityResponseDTO create(
             @AuthenticationPrincipal Jwt jwt,
@@ -147,7 +147,7 @@ public class SecretController {
             summary = "Retrieve Secret",
             description = "Retrieve a secret by its unique key. " +
                           "The response contains the secret data excluding the encrypted value. " +
-                          "This requires the permission „" + SecretPermissionProvider.SECRET_READ + "“."
+                          "Requires the system-level permission `" + SecretPermissionProvider.SECRET_READ + "`."
     )
     public SecretEntityResponseDTO retrieve(
             @AuthenticationPrincipal Jwt jwt,
@@ -184,7 +184,7 @@ public class SecretController {
             summary = "Update Secret",
             description = "Update an existing secret identified by its unique key. " +
                           "To preserve the old value, set the new value to a string of asterisks. " +
-                          "This requires the permission „" + SecretPermissionProvider.SECRET_UPDATE + "“."
+                          "Requires the system-level permission `" + SecretPermissionProvider.SECRET_UPDATE + "`."
     )
     public SecretEntityResponseDTO update(
             @AuthenticationPrincipal Jwt jwt,
@@ -218,7 +218,7 @@ public class SecretController {
     @Operation(
             summary = "Delete Secret",
             description = "Delete an existing secret identified by its unique key. " +
-                          "This requires the permission „" + SecretPermissionProvider.SECRET_DELETE + "“."
+                          "Requires the system-level permission `" + SecretPermissionProvider.SECRET_DELETE + "`."
     )
     public void delete(
             @AuthenticationPrincipal Jwt jwt,

@@ -69,6 +69,11 @@ public class ListingPageAccesibilitySystemConfigDefinition implements SystemConf
     @Nullable
     @Override
     public String parseValueFromDB(@Nonnull String value) throws ResponseException {
+        // Optional references use an empty string to represent "not configured" in system_configs.
+        if (value.isEmpty()) {
+            return value;
+        }
+
         try {
             Integer.parseInt(value);
         } catch (NumberFormatException e) {

@@ -243,9 +243,19 @@ class WebhookTriggerControllerV1Test {
         assertEquals(fixture.createdAttachmentSets().get(0).getId(), fixture.createdAttachments().get(0).getAttachmentSetId());
         assertEquals(fixture.createdAttachmentSets().get(0).getId(), fixture.createdAttachments().get(1).getAttachmentSetId());
         assertEquals(fixture.createdAttachmentSets().get(1).getId(), fixture.createdAttachments().get(2).getAttachmentSetId());
+        assertEquals("first.pdf", fixture.createdAttachments().get(0).getOriginalFileName());
+        assertEquals("second.pdf", fixture.createdAttachments().get(1).getOriginalFileName());
+        assertEquals("other.pdf", fixture.createdAttachments().get(2).getOriginalFileName());
 
         var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
         verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        @SuppressWarnings("unchecked")
+        var attachments = (List<Map<String, Object>>) updatedInstanceCaptor
+                .getValue()
+                .getInitialPayload()
+                .get(WebhookTriggerNodeV1.INITIAL_DATA_KEY_ATTACHMENTS);
+        assertEquals("first.pdf", attachments.getFirst().get("originalFilename"));
+
         @SuppressWarnings("unchecked")
         var fileItems = (List<FileUploadInputElementItem>) updatedInstanceCaptor
                 .getValue()

@@ -1,22 +1,23 @@
 package de.aivot.gover.backend.config.dtos;
 
 import de.aivot.gover.backend.config.entities.SystemConfigEntity;
-import de.aivot.gover.backend.config.models.SystemConfigDefinition;
-import de.aivot.gover.backend.lib.exceptions.ResponseException;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotNull;
 
 public record SystemConfigRequestDto(
-        @Nullable
-        Object value,
+        @Nonnull
+        @NotNull(message = "Der Wert darf nicht null sein.")
+        String value,
         @Nullable
         Boolean changeConfirmed
 ) {
     @Nonnull
-    public SystemConfigEntity toEntity(@Nonnull SystemConfigDefinition definition) throws ResponseException {
+    public SystemConfigEntity toEntity() {
         var entity = new SystemConfigEntity();
-        entity.setValue(definition.serializeValueToDB(value));
+        // Requests carry the persisted string format; SystemConfigService parses and validates it via the definition.
+        entity.setValue(value);
         return entity;
     }
 }

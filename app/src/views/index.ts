@@ -44,6 +44,7 @@ import {ProcessAttachmentDisplayView} from './process-attachment-display-view';
 import {ProcessInstanceAttachmentSetSelectFieldView} from './process-instance-attachment-set-select-field-view';
 import {ProcessIdentityIdInputFieldView} from './process-identity-id-input-field-view';
 import {HtmlTemplateInputView} from './html-template-input-view';
+import {StoragePathSelectorInputView} from './storage-path-selector-input-view';
 
 export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.FormLayout]: RootComponentView,
@@ -94,5 +95,6 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.ProcessInstanceAttachmentSetSelect]: ProcessInstanceAttachmentSetSelectFieldView,
     [ElementType.ProcessIdentityIdInput]: ProcessIdentityIdInputFieldView,
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputView,
+    [ElementType.StoragePathSelector]: StoragePathSelectorInputView,
     [ElementType.ProcessAttachmentDisplay]: ProcessAttachmentDisplayView,
 };

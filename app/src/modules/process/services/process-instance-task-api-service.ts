@@ -1,4 +1,4 @@
-import {BaseCrudApiService} from "../../../services/base-crud-api-service";
+import {BaseReadApiService} from '../../../services/base-read-api-service';
 import {ProcessInstanceTaskEntity} from "../entities/process-instance-task-entity";
 import {ProcessTaskStatus} from "../enums/process-task-status";
 import {GroupLayout} from "../../../models/elements/form/layout/group-layout";
@@ -66,9 +66,7 @@ async function appendTaskViewFiles(formData: FormData, value: unknown): Promise<
     }
 }
 
-export class ProcessInstanceTaskApiService extends BaseCrudApiService<
-    ProcessInstanceTaskEntity,
-    ProcessInstanceTaskEntity,
+export class ProcessInstanceTaskApiService extends BaseReadApiService<
     ProcessInstanceTaskEntity,
     ProcessInstanceTaskEntity,
     number,

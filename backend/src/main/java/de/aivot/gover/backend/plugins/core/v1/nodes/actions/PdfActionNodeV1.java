@@ -229,7 +229,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                 new ProcessNodeOutput(
                         OUTPUT_NAME_FILES,
                         "Dateien",
-                        "Die erzeugten Dateien im Format des Datei-Upload-Feldes."
+                        "Die erzeugten Dateien im Format des Datei-Anlagen-Feldes."
                 )
         );
     }
@@ -325,6 +325,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
             attachment = processInstanceAttachmentService.create(
                     ProcessInstanceAttachmentEntity.of(
                             fileName,
+                            1,
                             context.getThisProcessInstance().getId(),
                             context.getThisTask().getId(),
                             pdfBytes

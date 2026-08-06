@@ -7,11 +7,17 @@ import de.aivot.gover.backend.permissions.entities.VUserDepartmentPermissionEnti
 import de.aivot.gover.backend.permissions.entities.VUserSystemPermissionEntity;
 import de.aivot.gover.backend.permissions.entities.VUserTeamPermissionEntity;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
+import de.aivot.gover.backend.permissions.projections.DomainPermissionProjection;
+import de.aivot.gover.backend.permissions.projections.ProcessInstancePermissionProjection;
+import de.aivot.gover.backend.permissions.projections.ProcessPermissionProjection;
 import de.aivot.gover.backend.permissions.repositories.VUserDepartmentPermissionRepository;
+import de.aivot.gover.backend.permissions.repositories.VUserDomainPermissionRepository;
 import de.aivot.gover.backend.permissions.repositories.VUserSystemPermissionRepository;
 import de.aivot.gover.backend.permissions.repositories.VUserTeamPermissionRepository;
 import de.aivot.gover.backend.permissions.permissions.PermissionSetPermissionProvider;
 import de.aivot.gover.backend.permissions.services.PermissionService;
+import de.aivot.gover.backend.process.repositories.VUserProcessAccessPermissionsRepository;
+import de.aivot.gover.backend.process.repositories.VUserProcessInstanceAccessPermissionsRepository;
 import de.aivot.gover.backend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -19,7 +25,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,9 +32,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.sql.Array;
-import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -45,25 +47,31 @@ public class PermissionsController {
     private final VUserDepartmentPermissionRepository vUserDepartmentPermissionRepository;
     private final VUserTeamPermissionRepository vUserTeamPermissionRepository;
     private final VUserSystemPermissionRepository vUserSystemPermissionRepository;
+    private final VUserDomainPermissionRepository vUserDomainPermissionRepository;
+    private final VUserProcessAccessPermissionsRepository vUserProcessAccessPermissionsRepository;
+    private final VUserProcessInstanceAccessPermissionsRepository vUserProcessInstanceAccessPermissionsRepository;
     private final PermissionService permissionService;
     private final UserService userService;
-    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
     public PermissionsController(List<PermissionProvider> permissionProviders,
                                  VUserDepartmentPermissionRepository vUserDepartmentPermissionRepository,
                                  VUserTeamPermissionRepository vUserTeamPermissionRepository,
                                  VUserSystemPermissionRepository vUserSystemPermissionRepository,
+                                 VUserDomainPermissionRepository vUserDomainPermissionRepository,
+                                 VUserProcessAccessPermissionsRepository vUserProcessAccessPermissionsRepository,
+                                 VUserProcessInstanceAccessPermissionsRepository vUserProcessInstanceAccessPermissionsRepository,
                                  PermissionService permissionService,
-                                 UserService userService,
-                                 JdbcTemplate jdbcTemplate) {
+                                 UserService userService) {
         this.permissionProviders = permissionProviders;
         this.vUserDepartmentPermissionRepository = vUserDepartmentPermissionRepository;
         this.vUserTeamPermissionRepository = vUserTeamPermissionRepository;
         this.vUserSystemPermissionRepository = vUserSystemPermissionRepository;
+        this.vUserDomainPermissionRepository = vUserDomainPermissionRepository;
+        this.vUserProcessAccessPermissionsRepository = vUserProcessAccessPermissionsRepository;
+        this.vUserProcessInstanceAccessPermissionsRepository = vUserProcessInstanceAccessPermissionsRepository;
         this.permissionService = permissionService;
         this.userService = userService;
-        this.jdbcTemplate = jdbcTemplate;
     }
 
     @GetMapping("")
@@ -112,22 +120,28 @@ public class PermissionsController {
 
     private PermissionSet buildPermissionSet(@Nonnull String userId) {
         var teamPermissions = vUserTeamPermissionRepository
-                .findAllByUserId(userId)
-                .stream()
-                .filter(PermissionsController::hasConcreteTeamPermission)
-                .toList();
+                .findAllByUserId(userId);
 
         var departmentPermissions = vUserDepartmentPermissionRepository
-                .findAllByUserId(userId)
+                .findAllByUserId(userId);
+
+        var domainPermissions = vUserDomainPermissionRepository
+                .findAllConcreteByUserId(userId)
                 .stream()
-                .filter(PermissionsController::hasConcreteDepartmentPermission)
+                .map(DomainPermission::from)
                 .toList();
 
-        var domainPermissions = listDomainPermissions(userId);
+        var processPermissions = vUserProcessAccessPermissionsRepository
+                .findAllConcreteByUserId(userId)
+                .stream()
+                .map(ProcessPermission::from)
+                .toList();
 
-        var processPermissions = listProcessPermissions(userId);
-
-        var processInstancePermissions = listProcessInstancePermissions(userId);
+        var processInstancePermissions = vUserProcessInstanceAccessPermissionsRepository
+                .findAllConcreteByUserId(userId)
+                .stream()
+                .map(ProcessInstancePermission::from)
+                .toList();
 
         var systemPermissions = vUserSystemPermissionRepository
                 .findAllByUserId(userId);
@@ -142,129 +156,11 @@ public class PermissionsController {
         );
     }
 
-    private static boolean hasConcreteTeamPermission(@Nullable VUserTeamPermissionEntity permission) {
-        return permission != null && permission.getTeamId() != null && hasPermissionEntries(permission.getPermissions());
-    }
-
-    private static boolean hasConcreteDepartmentPermission(@Nullable VUserDepartmentPermissionEntity permission) {
-        return permission != null && permission.getDepartmentId() != null && hasPermissionEntries(permission.getPermissions());
-    }
-
-    private static boolean hasPermissionEntries(@Nullable List<String> permissions) {
-        return permissions != null && !permissions.isEmpty();
-    }
-
-    private List<DomainPermission> listDomainPermissions(@Nonnull String userId) {
-        // The view may contain structural rows without effective grants, so the API exposes only non-empty permission arrays.
-        return jdbcTemplate.query(
-                """
-                        SELECT user_id, department_id, team_id, permissions
-                        FROM v_user_domain_permissions
-                        WHERE user_id = ?
-                          AND (department_id IS NOT NULL OR team_id IS NOT NULL)
-                          AND array_length(permissions, 1) > 0
-                        """,
-                (rs, rowNum) -> {
-                    var departmentId = (Integer) rs.getObject("department_id");
-                    var teamId = (Integer) rs.getObject("team_id");
-                    return new DomainPermission(
-                            domainPermissionId(departmentId, teamId),
-                            rs.getString("user_id"),
-                            departmentId,
-                            teamId,
-                            toStringList(rs.getArray("permissions"))
-                    );
-                },
-                userId
-        );
-    }
-
-    private List<ProcessPermission> listProcessPermissions(@Nonnull String userId) {
-        // Process permissions keep their source context so the frontend can distinguish direct and inherited grants.
-        return jdbcTemplate.query(
-                """
-                        SELECT user_id, via_source_team_id, via_source_department_id, target_process_id, permissions
-                        FROM v_user_process_access_permissions
-                        WHERE user_id = ?
-                          AND target_process_id IS NOT NULL
-                          AND array_length(permissions, 1) > 0
-                        """,
-                (rs, rowNum) -> {
-                    var processId = (Integer) rs.getObject("target_process_id");
-                    var viaSourceTeamId = (Integer) rs.getObject("via_source_team_id");
-                    var viaSourceDepartmentId = (Integer) rs.getObject("via_source_department_id");
-                    return new ProcessPermission(
-                            "process:%d:team:%s:department:%s".formatted(
-                                    processId,
-                                    viaSourceTeamId == null ? "" : viaSourceTeamId,
-                                    viaSourceDepartmentId == null ? "" : viaSourceDepartmentId
-                            ),
-                            rs.getString("user_id"),
-                            viaSourceTeamId,
-                            viaSourceDepartmentId,
-                            processId,
-                            toStringList(rs.getArray("permissions"))
-                    );
-                },
-                userId
-        );
-    }
-
-    private List<ProcessInstancePermission> listProcessInstancePermissions(@Nonnull String userId) {
-        // Process-instance access can change when instances are created or removed, hence it is part of the runtime permission set.
-        return jdbcTemplate.query(
-                """
-                        SELECT user_id, via_source_team_id, via_source_department_id, target_process_instance_id, permissions
-                        FROM v_user_process_instance_access_permissions
-                        WHERE user_id = ?
-                          AND target_process_instance_id IS NOT NULL
-                          AND array_length(permissions, 1) > 0
-                        """,
-                (rs, rowNum) -> {
-                    var processInstanceId = ((Number) rs.getObject("target_process_instance_id")).longValue();
-                    var viaSourceTeamId = (Integer) rs.getObject("via_source_team_id");
-                    var viaSourceDepartmentId = (Integer) rs.getObject("via_source_department_id");
-                    return new ProcessInstancePermission(
-                            "process-instance:%d:team:%s:department:%s".formatted(
-                                    processInstanceId,
-                                    viaSourceTeamId == null ? "" : viaSourceTeamId,
-                                    viaSourceDepartmentId == null ? "" : viaSourceDepartmentId
-                            ),
-                            rs.getString("user_id"),
-                            viaSourceTeamId,
-                            viaSourceDepartmentId,
-                            processInstanceId,
-                            toStringList(rs.getArray("permissions"))
-                    );
-                },
-                userId
-        );
-    }
-
     private static String domainPermissionId(Integer departmentId, Integer teamId) {
         if (departmentId != null) {
             return "department:" + departmentId;
         }
         return "team:" + teamId;
-    }
-
-    private static List<String> toStringList(Array array) throws SQLException {
-        if (array == null) {
-            return List.of();
-        }
-
-        var value = array.getArray();
-        if (value instanceof String[] stringArray) {
-            return Arrays.asList(stringArray);
-        }
-        if (value instanceof Object[] objectArray) {
-            return Arrays
-                    .stream(objectArray)
-                    .map(String::valueOf)
-                    .toList();
-        }
-
-        return List.of();
     }
 
     public record PermissionSet(
@@ -282,7 +178,17 @@ public class PermissionsController {
             Integer departmentId,
             Integer teamId,
             List<String> permissions
-    ) { }
+    ) {
+        private static DomainPermission from(DomainPermissionProjection projection) {
+            return new DomainPermission(
+                    domainPermissionId(projection.getDepartmentId(), projection.getTeamId()),
+                    projection.getUserId(),
+                    projection.getDepartmentId(),
+                    projection.getTeamId(),
+                    projection.getPermissions()
+            );
+        }
+    }
 
     public record ProcessPermission(
             String id,
@@ -291,7 +197,22 @@ public class PermissionsController {
             Integer viaSourceDepartmentId,
             Integer processId,
             List<String> permissions
-    ) { }
+    ) {
+        private static ProcessPermission from(ProcessPermissionProjection projection) {
+            return new ProcessPermission(
+                    "process:%d:team:%s:department:%s".formatted(
+                            projection.getProcessId(),
+                            projection.getViaSourceTeamId() == null ? "" : projection.getViaSourceTeamId(),
+                            projection.getViaSourceDepartmentId() == null ? "" : projection.getViaSourceDepartmentId()
+                    ),
+                    projection.getUserId(),
+                    projection.getViaSourceTeamId(),
+                    projection.getViaSourceDepartmentId(),
+                    projection.getProcessId(),
+                    projection.getPermissions()
+            );
+        }
+    }
 
     public record ProcessInstancePermission(
             String id,
@@ -300,5 +221,20 @@ public class PermissionsController {
             Integer viaSourceDepartmentId,
             Long processInstanceId,
             List<String> permissions
-    ) { }
+    ) {
+        private static ProcessInstancePermission from(ProcessInstancePermissionProjection projection) {
+            return new ProcessInstancePermission(
+                    "process-instance:%d:team:%s:department:%s".formatted(
+                            projection.getProcessInstanceId(),
+                            projection.getViaSourceTeamId() == null ? "" : projection.getViaSourceTeamId(),
+                            projection.getViaSourceDepartmentId() == null ? "" : projection.getViaSourceDepartmentId()
+                    ),
+                    projection.getUserId(),
+                    projection.getViaSourceTeamId(),
+                    projection.getViaSourceDepartmentId(),
+                    projection.getProcessInstanceId(),
+                    projection.getPermissions()
+            );
+        }
+    }
 }

@@ -58,6 +58,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
+    const mostPrivilegedSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.systemRoles.mostPrivilegedRole));
 
     const {
         item: systemRole,
@@ -113,8 +114,13 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
         defaultSystemRoleId != null &&
         defaultSystemRoleId.trim().length > 0 &&
         String(currentSystemRoleId) === defaultSystemRoleId.trim();
+    const isMostPrivilegedSystemRole =
+        currentSystemRoleId !== 0 &&
+        mostPrivilegedSystemRoleId != null &&
+        mostPrivilegedSystemRoleId.trim().length > 0 &&
+        String(currentSystemRoleId) === mostPrivilegedSystemRoleId.trim();
     const hasAssignedUsers = (assignedUsersCount ?? 0) > 0;
-    const requiresReplacementSystemRole = isDefaultSystemRole || hasAssignedUsers;
+    const requiresReplacementSystemRole = isDefaultSystemRole || isMostPrivilegedSystemRole || hasAssignedUsers;
 
     useEffect(() => {
         if (currentSystemRoleId === 0 || !canDeleteSystemRole) {
@@ -286,6 +292,11 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
             'Diese Rolle ist aktuell als Standard-Systemrolle für automatische Benutzerimporte konfiguriert. Beim Löschen wird diese Einstellung ebenfalls auf die ausgewählte Ersatz-Systemrolle geändert.',
         );
     }
+    if (isMostPrivilegedSystemRole) {
+        deleteImpactTexts.push(
+            'Diese Rolle ist aktuell als Systemrolle mit der höchsten Berechtigungsstufe konfiguriert. Beim Löschen wird diese Einstellung auf die ausgewählte Ersatz-Systemrolle geändert.',
+        );
+    }
     const saveDisabledByPermission = !isEditable;
     const saveDisabledTooltip = saveDisabledByPermission
         ? formatMissingPermissionTooltip(editPermission)
@@ -364,6 +375,10 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
         const migratedUsersCount = hasAssignedUsers ? (assignedUsersCount ?? 0) : 0;
         const defaultSystemRoleWillBeUpdated = isDefaultSystemRole && replacementSystemRoleId != null;
         const newDefaultSystemRoleId = defaultSystemRoleWillBeUpdated ? Number(replacementSystemRoleId) : null;
+        const mostPrivilegedSystemRoleWillBeUpdated = isMostPrivilegedSystemRole && replacementSystemRoleId != null;
+        const newMostPrivilegedSystemRoleId = mostPrivilegedSystemRoleWillBeUpdated
+            ? Number(replacementSystemRoleId)
+            : null;
 
         setIsBusy(true);
 
@@ -380,6 +395,13 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                         publicConfig: false,
                     }));
                 }
+                if (mostPrivilegedSystemRoleWillBeUpdated && newMostPrivilegedSystemRoleId != null) {
+                    dispatch(setSystemConfig({
+                        key: SystemConfigKeys.systemRoles.mostPrivilegedRole,
+                        value: String(newMostPrivilegedSystemRoleId),
+                        publicConfig: false,
+                    }));
+                }
 
                 const successMessages = ['Die Systemrolle wurde erfolgreich gelöscht.'];
                 if (migratedUsersCount > 0 && replacementRole != null) {
@@ -390,6 +412,11 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                 if (defaultSystemRoleWillBeUpdated && replacementRole != null) {
                     successMessages.push(
                         `Die Standard-Systemrolle für automatische Benutzerimporte wurde auf „${replacementRole.label}“ gesetzt.`,
+                    );
+                }
+                if (mostPrivilegedSystemRoleWillBeUpdated && replacementRole != null) {
+                    successMessages.push(
+                        `Die Systemrolle mit der höchsten Berechtigungsstufe wurde auf „${replacementRole.label}“ gesetzt.`,
                     );
                 }
 
@@ -576,14 +603,14 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                             options={systemRoleOptions}
                             required
                             disabled={isBusy || isSystemRolesLoading}
-                            hint="Alle betroffenen Mitarbeiter:innen und gegebenenfalls die Systemeinstellung für automatische Benutzerimporte werden auf diese Rolle umgestellt."
+                            hint="Alle betroffenen Mitarbeiter:innen und Systemeinstellungen werden auf diese Rolle umgestellt."
                             emptyStatePlaceholder="Keine Ersatz-Systemrolle verfügbar"
                         />
                     </>
                 ) : (
                     <AlertComponent color="info">
-                        Diese Systemrolle ist aktuell keiner Mitarbeiter:in zugeordnet und nicht als Standard-Systemrolle
-                        für automatische Benutzerimporte konfiguriert.
+                        Diese Systemrolle ist aktuell keiner Mitarbeiter:in zugeordnet und in keiner Rolleneinstellung
+                        konfiguriert.
                     </AlertComponent>
                 )}
             </ConfirmDialog>

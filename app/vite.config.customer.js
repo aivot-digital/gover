@@ -6,12 +6,7 @@ import checker from 'vite-plugin-checker';
 export default defineConfig(() => {
     return {
         plugins: [
-            react({
-                jsxImportSource: '@emotion/react',
-                babel: {
-                    plugins: ['@emotion/babel-plugin'],
-                },
-            }),
+            react(),
             svgr(),
             checker({
                 typescript: true,
@@ -22,6 +17,10 @@ export default defineConfig(() => {
             host: '0.0.0.0',
         },
         build: {
+            // Publicly communicated compatibility covers the latest three versions of
+            // Chrome, Edge, Firefox, and Safari. Builds use Vite's Baseline target,
+            // which may change with Vite upgrades.
+            target: 'baseline-widely-available',
             outDir: './build/customer',
         },
     };

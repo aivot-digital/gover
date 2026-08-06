@@ -112,7 +112,8 @@ public class DepartmentController {
     @PostMapping("")
     @Operation(
             summary = "Create department",
-            description = "Create a new department. This requires the system-level department create permission."
+            description = "Create a new department. Requires the system-level permission `" +
+                    DepartmentPermissionProvider.DEPARTMENT_CREATE + "`."
     )
     public DepartmentEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -177,7 +178,9 @@ public class DepartmentController {
     @PutMapping("{id}/")
     @Operation(
             summary = "Update department",
-            description = "Update a department. Requires super admin permissions or department edit permissions."
+            description = "Update a department. Requires the permission `" +
+                    DepartmentPermissionProvider.DEPARTMENT_UPDATE +
+                    "` for the affected organisation unit or at system level."
     )
     public DepartmentEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -228,7 +231,9 @@ public class DepartmentController {
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete department",
-            description = "Delete a department. Requires super admin permissions."
+            description = "Delete a department. Requires the permission `" +
+                    DepartmentPermissionProvider.DEPARTMENT_DELETE +
+                    "` for the affected organisation unit or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,

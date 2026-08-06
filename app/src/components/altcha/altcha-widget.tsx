@@ -3,6 +3,7 @@ import type {CSSProperties, HTMLAttributes, Ref} from 'react';
 
 // Importing the altcha package introduces the <altcha-widget> element
 import 'altcha';
+import type {AltchaWidgetElement} from 'altcha';
 import {useLocalStorageEffect} from '../../hooks/use-local-storage-effect';
 import {StorageKey} from '../../data/storage-key';
 import {createApiPath} from '../../utils/url-path-utils';
@@ -34,18 +35,6 @@ interface AltchaStrings {
     waitAlert: string;
 }
 
-interface AltchaGlobal {
-    i18n: {
-        set: (language: string, translation: AltchaStrings) => void;
-    };
-}
-
-interface AltchaWidgetElement extends HTMLElement {
-    getState: () => string;
-    reset: (newState?: string, err?: string | null) => void;
-    verify: () => Promise<unknown>;
-}
-
 type AltchaWidgetElementProps = HTMLAttributes<HTMLElement> & {
     challenge?: string;
     configuration?: string;
@@ -55,12 +44,6 @@ type AltchaWidgetElementProps = HTMLAttributes<HTMLElement> & {
 };
 
 declare global {
-    var $altcha: AltchaGlobal | undefined;
-
-    interface HTMLElementTagNameMap {
-        'altcha-widget': AltchaWidgetElement;
-    }
-
     namespace JSX {
         interface IntrinsicElements {
             'altcha-widget': AltchaWidgetElementProps;
@@ -76,7 +59,7 @@ declare global {
     }
 }
 
-const localization: AltchaStrings = {
+const localization: AltchaStrings & Record<string, string> = {
     'ariaLinkLabel': 'Webseite von Altcha (altcha.org) aufrufen',
     'enterCode': 'Code eingeben',
     'enterCodeAria': 'Code eingeben',

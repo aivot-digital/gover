@@ -57,7 +57,7 @@ public class ThemeController {
     @Operation(
             summary = "List themes",
             description = "Retrieve a paginated list of themes. Supports filtering. " +
-                    "This requires the permission „" + ThemePermissionProvider.THEME_READ + "“."
+                    "Requires the system-level permission `" + ThemePermissionProvider.THEME_READ + "`."
     )
     public Page<ThemeResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -80,7 +80,7 @@ public class ThemeController {
     @Operation(
             summary = "Create theme",
             description = "Create a new theme. " +
-                    "This requires the permission „" + ThemePermissionProvider.THEME_CREATE + "“."
+                    "Requires the system-level permission `" + ThemePermissionProvider.THEME_CREATE + "`."
     )
     public ThemeResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -127,7 +127,7 @@ public class ThemeController {
     @Operation(
             summary = "Retrieve theme",
             description = "Retrieve a specific theme by its ID. " +
-                    "This requires the permission „" + ThemePermissionProvider.THEME_READ + "“."
+                    "Requires the system-level permission `" + ThemePermissionProvider.THEME_READ + "`."
     )
     public ThemeResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -151,7 +151,7 @@ public class ThemeController {
     @Operation(
             summary = "Update theme",
             description = "Update an existing theme. " +
-                    "This requires the permission „" + ThemePermissionProvider.THEME_UPDATE + "“."
+                    "Requires the system-level permission `" + ThemePermissionProvider.THEME_UPDATE + "`."
     )
     public ThemeResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -199,7 +199,7 @@ public class ThemeController {
     @Operation(
             summary = "Delete theme",
             description = "Delete an existing theme. " +
-                    "This requires the permission „" + ThemePermissionProvider.THEME_DELETE + "“."
+                    "Requires the system-level permission `" + ThemePermissionProvider.THEME_DELETE + "`."
     )
     public void destroy(
             @Nullable @AuthenticationPrincipal Jwt jwt,

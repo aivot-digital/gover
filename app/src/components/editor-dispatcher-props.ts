@@ -12,4 +12,5 @@ export interface EditorDispatcherProps<T extends AnyElement> {
     scope: ElementTreeScope;
 
     hasSummaryLayoutParent: boolean;
+    hasReplicatingContainerParent?: boolean;
 }

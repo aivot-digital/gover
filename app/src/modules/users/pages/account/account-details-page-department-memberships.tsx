@@ -7,7 +7,6 @@ import {GenericList} from '../../../../components/generic-list/generic-list';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import {isAdmin} from '../../../../utils/is-admin';
 import {UserRoleChips} from '../../../user-roles/components/user-role-chips';
 import {
     VDepartmentMembershipWithDetailsEntity

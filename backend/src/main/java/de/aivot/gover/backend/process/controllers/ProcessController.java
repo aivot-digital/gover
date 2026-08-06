@@ -149,7 +149,8 @@ public class ProcessController {
     @Operation(
             summary = "Create Process Definition",
             description = "Create a new process definition. " +
-                    "Requires super admin privileges or a user role with create process permissions."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_CREATE +
+                    "` for the target organisation unit or at system level."
     )
     public ProcessEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -191,7 +192,8 @@ public class ProcessController {
     @Operation(
             summary = "Import Process Definition",
             description = "Import a process definition from exported data. " +
-                    "Requires super admin privileges or a user role with create process permissions."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_CREATE +
+                    "` for the target organisation unit or at system level."
     )
     public ProcessEntity importProc(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -351,7 +353,8 @@ public class ProcessController {
     @Operation(
             summary = "Update Process Definition",
             description = "Update an existing process definition. " +
-                    "Requires super admin privileges or a user role with edit process permissions."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -404,7 +407,8 @@ public class ProcessController {
     @Operation(
             summary = "List Process Slug History",
             description = "List previous public URL namespaces for a process definition. " +
-                    "Requires edit permissions for the process definition."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public List<ProcessSlugHistoryEntity> listSlugHistory(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -431,7 +435,8 @@ public class ProcessController {
     @Operation(
             summary = "Clear Process Slug History",
             description = "Delete previous public URL namespaces for a process definition. " +
-                    "Requires edit permissions for the process definition."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public void clearSlugHistory(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -469,7 +474,8 @@ public class ProcessController {
     @Operation(
             summary = "Delete Process Definition",
             description = "Delete a process definition by its ID. " +
-                    "Requires super admin privileges."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_DELETE +
+                    "` for the affected process or at system level."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -504,7 +510,9 @@ public class ProcessController {
     @Operation(
             summary = "Move Process",
             description = "Move a process to another department. " +
-                    "The user must be a super admin or have edit permission in the current managing department of the process."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process and `" + ProcessPermissionProvider.PROCESS_DEFINITION_CREATE +
+                    "` for the target organisation unit. System-level grants satisfy the corresponding requirement."
     )
     @SecurityRequirement(name = OpenApiConfiguration.Security)
     public ProcessEntity move(
@@ -567,9 +575,10 @@ public class ProcessController {
 
     @PostMapping("{id}/new-version/latest/")
     @Operation(
-            summary = "Export Latest Process Definition Version",
-            description = "Export the latest version of a process definition. " +
-                    "Requires read permissions for the process definition."
+            summary = "Create Process Definition Version from Latest",
+            description = "Create a new draft from the latest version of a process definition. " +
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessVersionEntity newVersionFromLatest(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -584,9 +593,10 @@ public class ProcessController {
 
     @PostMapping("{id}/new-version/{version}/")
     @Operation(
-            summary = "Export Latest Process Definition Version",
-            description = "Export the latest version of a process definition. " +
-                    "Requires read permissions for the process definition."
+            summary = "Create Process Definition Version from Existing",
+            description = "Create a new draft from a specific version of a process definition. " +
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
+                    "` for the affected process or at system level."
     )
     public ProcessVersionEntity newVersionFromExisting(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -721,7 +731,8 @@ public class ProcessController {
     @Operation(
             summary = "Export Latest Process Definition Version",
             description = "Export the latest version of a process definition. " +
-                    "Requires read permissions for the process definition."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_READ +
+                    "` for the affected process or at system level."
     )
     public ProcessExportService.ProcessExport exportVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -739,7 +750,8 @@ public class ProcessController {
     @Operation(
             summary = "Export Specific Process Definition Version",
             description = "Export a specific version of a process definition. " +
-                    "Requires read permissions for the process definition."
+                    "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_READ +
+                    "` for the affected process or at system level."
     )
     public ProcessExportService.ProcessExport exportVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,

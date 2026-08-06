@@ -31,6 +31,7 @@ import {ProcessInstanceAttachmentSetSelectElement} from './process-instance-atta
 import {ProcessIdentityIdInputElement} from './process-identity-id-input-element';
 import {ElementIsInput} from '../../../../data/element-type/element-is-input';
 import {HtmlTemplateInputElement} from './html-template-input-element';
+import {StoragePathSelectorInputElement} from './storage-path-selector-input-element';
 
 export type AnyInputElement = (
     CheckboxFieldElement |
@@ -61,6 +62,7 @@ export type AnyInputElement = (
     ProcessInstanceAttachmentSetSelectElement |
     ProcessIdentityIdInputElement |
     HtmlTemplateInputElement |
+    StoragePathSelectorInputElement |
     UiDefinitionInputFieldElement |
     IdentityConfigElement |
     NoCodeInputFieldElement |

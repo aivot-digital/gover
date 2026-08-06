@@ -4,7 +4,9 @@ import de.aivot.gover.backend.config.entities.SystemConfigEntity;
 import de.aivot.gover.backend.config.repositories.SystemConfigRepository;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
-import de.aivot.gover.backend.lib.services.EntityService;
+import de.aivot.gover.backend.lib.services.CreateEntityService;
+import de.aivot.gover.backend.lib.services.DeleteEntityService;
+import de.aivot.gover.backend.lib.services.ReadEntityService;
 import de.aivot.gover.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEventEntity;
@@ -32,7 +34,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class ProcessInstanceAttachmentService implements EntityService<ProcessInstanceAttachmentEntity, UUID> {
+public class ProcessInstanceAttachmentService implements ReadEntityService<ProcessInstanceAttachmentEntity, UUID>,
+        CreateEntityService<ProcessInstanceAttachmentEntity>,
+        DeleteEntityService<ProcessInstanceAttachmentEntity, UUID> {
     private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceAttachmentService.class);
 
     private final ProcessInstanceAttachmentRepository processInstanceAttachmentRepository;
@@ -67,6 +71,9 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
     public ProcessInstanceAttachmentEntity create(@Nonnull ProcessInstanceAttachmentEntity entity) throws ResponseException {
         // Set the key to a new random UUID, to ensure that the client cannot specify the key and that it is always unique.
         entity.setKey(UUID.randomUUID());
+        if (StringUtils.isNullOrEmpty(entity.getOriginalFileName())) {
+            entity.setOriginalFileName(entity.getFileName());
+        }
 
         // region Store the attachment in the default storage provider
 
@@ -138,6 +145,9 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
         var details = new LinkedHashMap<String, Object>();
         details.put("attachmentKey", attachment.getKey());
         details.put("fileName", attachment.getFileName());
+        details.put("originalFileName", attachment.getOriginalFileName());
+        details.put("group", attachment.getGroup());
+        details.put("position", attachment.getPosition());
         details.put("attachmentSetId", attachment.getAttachmentSetId());
         details.put("processInstanceId", attachment.getProcessInstanceId());
         details.put("processInstanceTaskId", attachment.getProcessInstanceTaskId());
@@ -201,7 +211,7 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
     @Nonnull
     public List<ProcessInstanceAttachmentEntity> findAllByAttachmentSetId(@Nonnull Integer attachmentSetId) {
         return processInstanceAttachmentRepository
-                .findAllByAttachmentSetId(attachmentSetId);
+                .findAllByAttachmentSetIdOrderByPositionAscKeyAsc(attachmentSetId);
     }
 
     @Override
@@ -212,18 +222,6 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
     @Override
     public boolean exists(@Nonnull Specification<ProcessInstanceAttachmentEntity> specification) {
         return processInstanceAttachmentRepository.exists(specification);
-    }
-
-    @Nonnull
-    @Override
-    public ProcessInstanceAttachmentEntity performUpdate(@Nonnull UUID key,
-                                                         @Nonnull ProcessInstanceAttachmentEntity entity,
-                                                         @Nonnull ProcessInstanceAttachmentEntity existingEntity) throws ResponseException {
-        existingEntity.setProcessInstanceId(entity.getProcessInstanceId());
-        existingEntity.setProcessInstanceTaskId(entity.getProcessInstanceTaskId());
-        existingEntity.setAttachmentSetId(entity.getAttachmentSetId());
-        existingEntity.setUploadedByUserId(entity.getUploadedByUserId());
-        return processInstanceAttachmentRepository.save(existingEntity);
     }
 
     @Override

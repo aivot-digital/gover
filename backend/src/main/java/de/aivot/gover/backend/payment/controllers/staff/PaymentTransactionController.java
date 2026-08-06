@@ -60,7 +60,7 @@ public class PaymentTransactionController {
     @Operation(
             summary = "List Payment Transactions",
             description = "Retrieve a paginated list of payment transactions with optional filtering. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“."
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "`."
     )
     public Page<PaymentTransactionResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -79,7 +79,7 @@ public class PaymentTransactionController {
     @Operation(
             summary = "Retrieve Payment Transaction",
             description = "Retrieve a specific payment transaction by its unique key. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“."
+                    "Requires the system-level permission `" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "`."
     )
     public PaymentTransactionResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,

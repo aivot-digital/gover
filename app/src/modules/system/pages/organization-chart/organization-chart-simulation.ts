@@ -1,5 +1,4 @@
 import {stringToPastelColor} from '../../../../components/avatar/string-avatar';
-import {SystemUserRole} from '../../../users/models/user';
 import {
     type OrganizationChartDepartmentItem,
     type OrganizationChartTeamItem,
@@ -264,9 +263,6 @@ function createSimulatedMembers(
             fullName,
             enabled,
             verified: true,
-            globalRole: SystemUserRole.Default,
-            isSuperAdmin: false,
-            isSystemAdmin: false,
             deletedInIdp: false,
             systemRoleId: null,
         };

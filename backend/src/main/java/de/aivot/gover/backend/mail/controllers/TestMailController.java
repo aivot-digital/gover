@@ -50,7 +50,8 @@ public class TestMailController {
     @PostMapping("")
     @Operation(
             summary = "Send Test Mail",
-            description = "Send a test mail to the specified email address. This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE + "“."
+            description = "Send a test mail to the specified email address. Requires the system-level permission `" +
+                    ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE + "`."
     )
     public TestMailResponseDTO test(
             @Nullable @AuthenticationPrincipal Jwt jwt,

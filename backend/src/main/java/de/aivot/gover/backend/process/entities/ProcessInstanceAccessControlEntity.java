@@ -25,7 +25,7 @@ public class ProcessInstanceAccessControlEntity {
     private Integer sourceDepartmentId;
 
     @Nonnull
-    private Integer targetProcessInstanceId;
+    private Long targetProcessInstanceId;
 
     @Nonnull
     private List<String> permissions;
@@ -84,11 +84,11 @@ public class ProcessInstanceAccessControlEntity {
     }
 
     @Nullable
-    public Integer getTargetProcessInstanceId() {
+    public Long getTargetProcessInstanceId() {
         return targetProcessInstanceId;
     }
 
-    public ProcessInstanceAccessControlEntity setTargetProcessInstanceId(@Nullable Integer targetProcessInstanceId) {
+    public ProcessInstanceAccessControlEntity setTargetProcessInstanceId(@Nullable Long targetProcessInstanceId) {
         this.targetProcessInstanceId = targetProcessInstanceId;
         return this;
     }

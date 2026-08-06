@@ -284,6 +284,7 @@ public class WebhookTriggerControllerV1 {
                         createdInstance.getId()
                 );
 
+                var filePosition = 1;
                 for (var file : fileEntry.getValue()) {
                     byte[] bytes;
                     try {
@@ -294,6 +295,7 @@ public class WebhookTriggerControllerV1 {
 
                     var attachment = ProcessInstanceAttachmentEntity.of(
                             file.getOriginalFilename() != null ? file.getOriginalFilename() : "Unbenannte Datei.dat",
+                            filePosition++,
                             createdInstance.getId(),
                             null,
                             bytes
@@ -309,12 +311,16 @@ public class WebhookTriggerControllerV1 {
 
             var initialPayload = new HashMap<String, Object>();
             initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_PAYLOAD, payload);
-            initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> Map.<String, Object>of(
-                    "key", a.getKey(),
-                    "filename", a.getFileName(),
-                    "storageProviderId", a.getStorageProviderId(),
-                    "storagePathFromRoot", a.getStoragePathFromRoot()
-            )).toList());
+            initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> {
+                var attachmentData = new LinkedHashMap<String, Object>();
+                attachmentData.put("key", a.getKey());
+                attachmentData.put("filename", a.getFileName());
+                attachmentData.put("originalFilename", a.getOriginalFileName());
+                attachmentData.put("group", a.getGroup());
+                attachmentData.put("storageProviderId", a.getStorageProviderId());
+                attachmentData.put("storagePathFromRoot", a.getStoragePathFromRoot());
+                return attachmentData;
+            }).toList());
             initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_FILES, List.copyOf(fileItems));
 
             var requestData = new HashMap<String, Object>();

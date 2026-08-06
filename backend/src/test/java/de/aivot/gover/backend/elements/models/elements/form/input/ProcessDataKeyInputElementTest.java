@@ -31,14 +31,18 @@ class ProcessDataKeyInputElementTest {
 
     @Test
     void shouldRoundTripThroughBaseElementSerialization() throws Exception {
+        var element = new ProcessDataKeyInputElement()
+                .setScopeProcessDataKeyInputElementId("containerKey");
+
         var serialized = ObjectMapperFactory
                 .getInstance()
-                .writeValueAsString(new ProcessDataKeyInputElement());
+                .writeValueAsString(element);
 
         var deserialized = ObjectMapperFactory
                 .getInstance()
                 .readValue(serialized, BaseElement.class);
 
-        assertInstanceOf(ProcessDataKeyInputElement.class, deserialized);
+        var processDataKeyInputElement = assertInstanceOf(ProcessDataKeyInputElement.class, deserialized);
+        assertEquals("containerKey", processDataKeyInputElement.getScopeProcessDataKeyInputElementId());
     }
 }

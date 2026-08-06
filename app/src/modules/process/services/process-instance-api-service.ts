@@ -1,4 +1,5 @@
-import {BaseCrudApiService} from '../../../services/base-crud-api-service';
+import {RequestOptions} from '../../../services/base-api-service';
+import {BaseReadApiService} from '../../../services/base-read-api-service';
 import {type ProcessInstanceEntity} from '../entities/process-instance-entity';
 import {ProcessInstanceStatus} from '../enums/process-instance-status';
 
@@ -15,9 +16,7 @@ interface ProcessInstanceFilter {
     tag: string;
 }
 
-export class ProcessInstanceApiService extends BaseCrudApiService<
-    ProcessInstanceEntity,
-    ProcessInstanceEntity,
+export class ProcessInstanceApiService extends BaseReadApiService<
     ProcessInstanceEntity,
     ProcessInstanceEntity,
     number,
@@ -52,5 +51,16 @@ export class ProcessInstanceApiService extends BaseCrudApiService<
 
     public restartFailedInstance(id: number): Promise<ProcessInstanceEntity> {
         return this.put<any, ProcessInstanceEntity>(this.buildPath(id) + 'restart-failed/', {});
+    }
+
+    public reassign(id: number, assignedUserId: string | null): Promise<ProcessInstanceEntity> {
+        return this.put<{ assignedUserId: string | null }, ProcessInstanceEntity>(
+            this.buildPath(id) + 'reassign/',
+            {assignedUserId},
+        );
+    }
+
+    public async destroy(id: number, options?: RequestOptions): Promise<void> {
+        return await this.delete(this.buildPath(id), options);
     }
 }

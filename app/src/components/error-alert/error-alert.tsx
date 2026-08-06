@@ -5,7 +5,11 @@ import {Link, Typography} from '@mui/material';
 import {SummaryAttachmentsTooLargeKey} from '../summary/summary.component.view';
 import {ElementType} from '../../data/element-type/element-type';
 import EditOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
-import {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';
+import {
+    AuthoredElementValues,
+    DerivedRuntimeElementData,
+    resolveReplicatingContainerElementValues,
+} from '../../models/element-data';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
@@ -88,14 +92,14 @@ export function _collectErrors(
 
             if (Array.isArray(childElementValues)) {
                 for (let index = 0; index < childElementValues.length; index++) {
-                    const currentChildElementValues = childElementValues[index];
-                    if (currentChildElementValues == null || typeof currentChildElementValues !== 'object') {
+                    const currentChildElementValues = resolveReplicatingContainerElementValues(childElementValues[index]);
+                    if (currentChildElementValues == null) {
                         continue;
                     }
 
                     const childDerivedData = resolveReplicatingContainerItemDerivedData(element, derivedData, index);
                     for (const child of element.children) {
-                        const childErrors = _collectErrors(child, currentChildElementValues as AuthoredElementValues, childDerivedData);
+                        const childErrors = _collectErrors(child, currentChildElementValues, childDerivedData);
                         if (childErrors.length > 0) {
                             col.push(...childErrors);
                         }

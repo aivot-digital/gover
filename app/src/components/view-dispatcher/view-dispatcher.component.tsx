@@ -153,7 +153,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
             (element.override?.referencedIds?.some(refId => derivationTriggerIdQueue.includes(refId)) ?? false) ||
             (isAnyInputElement(element) && (element.value?.referencedIds?.some(refId => derivationTriggerIdQueue.includes(refId)) ?? false))
         );
-    }, [baseIsBusy, baseIsDeriving, element]);
+    }, [baseIsBusy, baseIsDeriving, derivationTriggerIdQueue, element]);
 
     const isHighlightedInPreview = highlightedElementId === elementId &&
         !isSectionElementType(element.type);

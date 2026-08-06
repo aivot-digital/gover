@@ -48,7 +48,8 @@ public class AuditLogController {
     @GetMapping("")
     @Operation(
             summary = "List Audit Logs",
-            description = "Retrieve a paginated list of audit logs with optional filtering. Requires the permission " + AuditPermissionProvider.AUDIT_LOG_READ + "."
+            description = "Retrieve a paginated list of audit logs with optional filtering. Requires the system-level permission `" +
+                    AuditPermissionProvider.AUDIT_LOG_READ + "`."
     )
     public Page<AuditLogEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -65,7 +66,8 @@ public class AuditLogController {
     @GetMapping("filter-options/")
     @Operation(
             summary = "List Audit Log Filter Options",
-            description = "Retrieve all existing filter options for audit logs. Requires the permission " + AuditPermissionProvider.AUDIT_LOG_READ + "."
+            description = "Retrieve all existing filter options for audit logs. Requires the system-level permission `" +
+                    AuditPermissionProvider.AUDIT_LOG_READ + "`."
     )
     public AuditLogFilterOptions filterOptions(
             @Nullable @AuthenticationPrincipal Jwt jwt
@@ -79,7 +81,8 @@ public class AuditLogController {
     @GetMapping("{id}/")
     @Operation(
             summary = "Retrieve Audit Log",
-            description = "Retrieve a specific audit log by id. Requires the permission " + AuditPermissionProvider.AUDIT_LOG_READ + "."
+            description = "Retrieve a specific audit log by id. Requires the system-level permission `" +
+                    AuditPermissionProvider.AUDIT_LOG_READ + "`."
     )
     public AuditLogEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,

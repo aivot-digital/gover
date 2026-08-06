@@ -129,7 +129,8 @@ public class VTeamUserRoleAssignmentWithDetailsController {
     @Operation(
             summary = "Create Team User Role Assignment",
             description = "Create a new user role assignment within a team membership. " +
-                          "Requires super admin privileges or appropriate team edit permissions."
+                    "Requires the permission `" + TeamPermissionProvider.TEAM_MEMBERSHIP_UPDATE +
+                    "` for the membership's team or at system level."
     )
     public UserRoleAssignmentEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -214,7 +215,8 @@ public class VTeamUserRoleAssignmentWithDetailsController {
     @Operation(
             summary = "Delete Team User Role Assignment",
             description = "Delete a user role assignment from a team membership. " +
-                          "Requires super admin privileges or appropriate team edit permissions."
+                    "Requires the permission `" + TeamPermissionProvider.TEAM_MEMBERSHIP_UPDATE +
+                    "` for the membership's team or at system level."
     )
     public void destroy(
             @AuthenticationPrincipal Jwt jwt,

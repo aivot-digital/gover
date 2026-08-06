@@ -1,7 +1,7 @@
 import {ConditionOperator} from '../data/condition-operator';
 import {BaseEvaluator} from './base-evaluator';
 
-function resolveValueA(valueA: string[] | undefined) {
+function resolveValueA(valueA: unknown[] | undefined) {
     return valueA != null ? valueA.length : 0;
 }
 
@@ -19,7 +19,7 @@ function resolveValueB(valueB: any) {
     }
 }
 
-export const ReplicatingContainerEvaluator: BaseEvaluator<string[]> = {
+export const ReplicatingContainerEvaluator: BaseEvaluator<unknown[]> = {
     [ConditionOperator.Empty]: (valueA, _) => {
         return valueA == null || valueA.length === 0;
     },

@@ -45,7 +45,9 @@ public class PaymentProviderDefinitionController {
     @Operation(
             summary = "List Payment Provider Definitions",
             description = "Retrieve a list of all available payment provider definitions. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“ or „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "“."
+                    "Requires at least one of the system-level permissions `" +
+                    PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "` or `" +
+                    PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "`."
     )
     public List<PaymentProviderDefinitionResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt
@@ -68,7 +70,9 @@ public class PaymentProviderDefinitionController {
     @Operation(
             summary = "Retrieve Payment Provider Definition",
             description = "Retrieve a specific payment provider definition by its unique key. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“ or „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "“."
+                    "Requires at least one of the system-level permissions `" +
+                    PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "` or `" +
+                    PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "`."
     )
     public PaymentProviderDefinitionResponseDTO retrieveLatest(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -90,7 +94,9 @@ public class PaymentProviderDefinitionController {
     @Operation(
             summary = "Retrieve Payment Provider Definition",
             description = "Retrieve a specific payment provider definition by its unique key and version. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“ or „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "“."
+                    "Requires at least one of the system-level permissions `" +
+                    PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "` or `" +
+                    PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "`."
     )
     public PaymentProviderDefinitionResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,

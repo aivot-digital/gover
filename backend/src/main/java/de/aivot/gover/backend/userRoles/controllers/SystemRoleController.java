@@ -62,7 +62,7 @@ public class SystemRoleController {
     @Operation(
             summary = "List System Roles",
             description = "Retrieve a paginated list of system roles. Supports filtering and pagination. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "`."
     )
     public Page<SystemRoleEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -84,7 +84,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Create System Role",
             description = "Create a new system role. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_CREATE + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_CREATE + "`."
     )
     public SystemRoleEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -127,7 +127,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Retrieve System Role",
             description = "Retrieve a system role by its ID. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "`."
     )
     public SystemRoleEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -149,7 +149,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Update System Role",
             description = "Update an existing system role. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE + "`."
     )
     public SystemRoleEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -158,9 +158,7 @@ public class SystemRoleController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
 
         permissionService
                 .requireSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE);
@@ -195,7 +193,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Delete System Role",
             description = "Delete a system role by its ID. " +
-                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_DELETE + "“."
+                    "Requires the system-level permission `" + SystemRolePermissionProvider.SYSTEM_ROLE_DELETE + "`."
     )
     public DeleteSystemRoleResponseDto destroy(
             @AuthenticationPrincipal Jwt jwt,
@@ -204,9 +202,7 @@ public class SystemRoleController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
 
         permissionService
                 .requireSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_DELETE);
@@ -239,12 +235,19 @@ public class SystemRoleController {
                 "defaultSystemRoleForAutomaticImportsUpdated",
                 deleteResult.defaultSystemRoleForAutomaticImportsUpdated()
         );
+        auditMetadata.put(
+                "mostPrivilegedSystemRoleUpdated",
+                deleteResult.mostPrivilegedSystemRoleUpdated()
+        );
         if (deleteResult.replacementRole() != null) {
             auditMetadata.put("replacementRoleId", deleteResult.replacementRole().getId());
             auditMetadata.put("replacementRoleName", deleteResult.replacementRole().getName());
         }
         if (deleteResult.newDefaultSystemRoleId() != null) {
             auditMetadata.put("newDefaultSystemRoleId", deleteResult.newDefaultSystemRoleId());
+        }
+        if (deleteResult.newMostPrivilegedSystemRoleId() != null) {
+            auditMetadata.put("newMostPrivilegedSystemRoleId", deleteResult.newMostPrivilegedSystemRoleId());
         }
 
         var auditMessage = new StringBuilder(String.format(
@@ -266,6 +269,12 @@ public class SystemRoleController {
                     StringUtils.quote(deleteResult.replacementRole().getName())
             ));
         }
+        if (deleteResult.mostPrivilegedSystemRoleUpdated() && deleteResult.replacementRole() != null) {
+            auditMessage.append(String.format(
+                    " Die Systemrolle mit der höchsten Berechtigungsstufe wurde auf %s gesetzt.",
+                    StringUtils.quote(deleteResult.replacementRole().getName())
+            ));
+        }
 
         auditService
                 .create()
@@ -282,7 +291,9 @@ public class SystemRoleController {
         return new DeleteSystemRoleResponseDto(
                 deleteResult.migratedUsersCount(),
                 deleteResult.defaultSystemRoleForAutomaticImportsUpdated(),
-                deleteResult.newDefaultSystemRoleId()
+                deleteResult.newDefaultSystemRoleId(),
+                deleteResult.mostPrivilegedSystemRoleUpdated(),
+                deleteResult.newMostPrivilegedSystemRoleId()
         );
     }
 }

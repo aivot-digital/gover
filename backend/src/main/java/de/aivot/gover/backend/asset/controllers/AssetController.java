@@ -302,12 +302,15 @@ public class AssetController {
             throw new RuntimeException(e);
         }
 
-        var asset = new AssetEntity()
-                .setKey(UUID.randomUUID())
+        var asset = assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), storedDocument.getPathFromRoot())
+                .orElseGet(() -> new AssetEntity()
+                        .setKey(UUID.randomUUID())
+                        .setStorageProviderId(storageProvider.getId())
+                        .setStoragePathFromRoot(storedDocument.getPathFromRoot()));
+        asset
                 .setUploaderId(execUser.getId())
-                .setPrivate(newAsset.isPrivate() != null && newAsset.isPrivate())
-                .setStorageProviderId(storageProvider.getId())
-                .setStoragePathFromRoot(storedDocument.getPathFromRoot());
+                .setPrivate(newAsset.isPrivate() != null && newAsset.isPrivate());
         assetRepository.save(asset);
 
         auditService
@@ -674,7 +677,8 @@ public class AssetController {
     @Operation(
             summary = "Copy an asset",
             description = "Copy an asset file from a source path to a target path in the same storage provider. " +
-                    "This requires the permissions " + AssetPermissionProvider.ASSET_READ + " and " + AssetPermissionProvider.ASSET_CREATE + "."
+                    "Requires both system-level permissions `" + AssetPermissionProvider.ASSET_READ + "` and `" +
+                    AssetPermissionProvider.ASSET_CREATE + "`."
     )
     public VStorageIndexItemWithAssetEntity copyFile(
             @Nullable @AuthenticationPrincipal Jwt jwt,
