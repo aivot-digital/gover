@@ -49,7 +49,7 @@ public class UserSyncService {
         var totalUsersFromIdp = 0;
         var importedOrUpdatedCount = 0;
         var deletedInIdpCount = 0;
-        var promotedToSuperAdminCount = 0;
+        var promotedToMostPrivilegedRoleCount = 0;
 
         var success = true;
         String failureMessage = null;
@@ -57,8 +57,9 @@ public class UserSyncService {
 
         try {
             var defaultSystemRoleId = importedUserSystemRoleService.getDefaultSystemRoleId();
-            var superRoleId = importedUserSystemRoleService.getSuperAdminRoleId();
-            var hasSuperAdmin = importedUserSystemRoleService.hasSuperAdminUser(superRoleId);
+            var mostPrivilegedSystemRoleId = importedUserSystemRoleService.getMostPrivilegedSystemRoleId();
+            var hasActiveUserWithMostPrivilegedRole = importedUserSystemRoleService
+                    .hasActiveUserWithMostPrivilegedRole(mostPrivilegedSystemRoleId);
 
             var alreadyImportedUsers = userRepository
                     .findAll();
@@ -108,15 +109,15 @@ public class UserSyncService {
                         userEntity.getEmail(),
                         userEntity.getSystemRoleId(),
                         defaultSystemRoleId,
-                        superRoleId,
-                        hasSuperAdmin
+                        mostPrivilegedSystemRoleId,
+                        hasActiveUserWithMostPrivilegedRole
                 );
                 var systemRoleChanged = !Objects.equals(userEntity.getSystemRoleId(), roleResolution.systemRoleId());
                 userEntity.setSystemRoleId(roleResolution.systemRoleId());
 
-                if (roleResolution.promotedToSuperAdmin()) {
-                    promotedToSuperAdminCount++;
-                    hasSuperAdmin = true;
+                if (roleResolution.promotedToMostPrivilegedRole()) {
+                    promotedToMostPrivilegedRoleCount++;
+                    hasActiveUserWithMostPrivilegedRole = true;
                 }
 
                 var hasChanged = isCreate || dataChanged || systemRoleChanged;
@@ -133,7 +134,7 @@ public class UserSyncService {
                             "verified", userEntity.getVerified(),
                             "deletedInIdp", userEntity.getDeletedInIdp(),
                             "action", isCreate ? "imported" : "updated",
-                            "promotedToSuperAdmin", roleResolution.promotedToSuperAdmin()
+                            "promotedToMostPrivilegedRole", roleResolution.promotedToMostPrivilegedRole()
                     ));
                 }
 
@@ -167,7 +168,7 @@ public class UserSyncService {
                         "verified", false,
                         "deletedInIdp", true,
                         "action", "deleted_in_idp",
-                        "promotedToSuperAdmin", false
+                        "promotedToMostPrivilegedRole", false
                 ));
             }
         } catch (Exception e) {
@@ -183,7 +184,7 @@ public class UserSyncService {
                 metadata.put("totalUsersFromIdp", totalUsersFromIdp);
                 metadata.put("importedOrUpdatedCount", importedOrUpdatedCount);
                 metadata.put("deletedInIdpCount", deletedInIdpCount);
-                metadata.put("promotedToSuperAdminCount", promotedToSuperAdminCount);
+                metadata.put("promotedToMostPrivilegedRoleCount", promotedToMostPrivilegedRoleCount);
                 metadata.put("failureMessage", failureMessage != null ? failureMessage : "");
                 metadata.put("syncedUsers", syncedUsers);
 
@@ -192,11 +193,11 @@ public class UserSyncService {
                         .setTriggerType("UserSync")
                         .setMessage(success
                                 ? String.format(
-                                "Die Benutzersynchronisierung wurde erfolgreich abgeschlossen: %d von %d Benutzer:innen importiert oder aktualisiert, %d als im IdP gelöscht markiert, %d zu Super-Admin befördert.",
+                                "Die Benutzersynchronisierung wurde erfolgreich abgeschlossen: %d von %d Benutzer:innen importiert oder aktualisiert, %d als im IdP gelöscht markiert, %d zur Systemrolle mit höchster Berechtigungsstufe befördert.",
                                 importedOrUpdatedCount,
                                 totalUsersFromIdp,
                                 deletedInIdpCount,
-                                promotedToSuperAdminCount
+                                promotedToMostPrivilegedRoleCount
                         )
                                 : String.format(
                                 "Die Benutzersynchronisierung ist fehlgeschlagen: %s",

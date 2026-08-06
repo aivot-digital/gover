@@ -8,6 +8,7 @@ import de.aivot.gover.backend.permissions.permissions.PermissionSetPermissionPro
 import de.aivot.gover.backend.user.configs.DefaultUserSystemRoleSystemConfigDefinition;
 import de.aivot.gover.backend.user.entities.UserEntity;
 import de.aivot.gover.backend.user.repositories.UserRepository;
+import de.aivot.gover.backend.userRoles.configs.MostPrivilegedSystemRoleSystemConfigDefinition;
 import de.aivot.gover.backend.userRoles.entities.SystemRoleEntity;
 import de.aivot.gover.backend.userRoles.repositories.SystemRoleRepository;
 import org.junit.jupiter.api.Test;
@@ -36,17 +37,28 @@ class SystemRoleServiceTest {
         ));
     }
 
+    private static void mockConfiguredSystemRoles(SystemConfigService systemConfigService,
+                                                  int defaultSystemRoleId,
+                                                  int mostPrivilegedSystemRoleId) throws ResponseException {
+        when(systemConfigService.retrieve(DefaultUserSystemRoleSystemConfigDefinition.KEY))
+                .thenReturn(new SystemConfigEntity()
+                        .setKey(DefaultUserSystemRoleSystemConfigDefinition.KEY)
+                        .setValue(String.valueOf(defaultSystemRoleId))
+                        .setPublicConfig(false));
+        when(systemConfigService.retrieve(MostPrivilegedSystemRoleSystemConfigDefinition.KEY))
+                .thenReturn(new SystemConfigEntity()
+                        .setKey(MostPrivilegedSystemRoleSystemConfigDefinition.KEY)
+                        .setValue(String.valueOf(mostPrivilegedSystemRoleId))
+                        .setPublicConfig(false));
+    }
+
     @Test
     void performDeleteShouldRejectDeletingRoleWithAssignedUsersWithoutReplacement() throws ResponseException {
         var repository = mock(SystemRoleRepository.class);
         var systemConfigService = mock(SystemConfigService.class);
         var userRepository = mock(UserRepository.class);
 
-        when(systemConfigService.retrieve(DefaultUserSystemRoleSystemConfigDefinition.KEY))
-                .thenReturn(new SystemConfigEntity()
-                        .setKey(DefaultUserSystemRoleSystemConfigDefinition.KEY)
-                        .setValue("3")
-                        .setPublicConfig(false));
+        mockConfiguredSystemRoles(systemConfigService, 3, 1);
         when(userRepository.existsBySystemRoleId(4)).thenReturn(true);
 
         var service = createService(repository, systemConfigService, userRepository);
@@ -71,11 +83,7 @@ class SystemRoleServiceTest {
         var systemConfigService = mock(SystemConfigService.class);
         var userRepository = mock(UserRepository.class);
 
-        when(systemConfigService.retrieve(DefaultUserSystemRoleSystemConfigDefinition.KEY))
-                .thenReturn(new SystemConfigEntity()
-                        .setKey(DefaultUserSystemRoleSystemConfigDefinition.KEY)
-                        .setValue("3")
-                        .setPublicConfig(false));
+        mockConfiguredSystemRoles(systemConfigService, 3, 1);
         when(userRepository.existsBySystemRoleId(4)).thenReturn(false);
         when(userRepository.findAllBySystemRoleIdOrderByFullNameAsc(4)).thenReturn(List.of());
 
@@ -92,8 +100,10 @@ class SystemRoleServiceTest {
         verify(systemConfigService, never()).save(eq(DefaultUserSystemRoleSystemConfigDefinition.KEY), any());
         assertEquals(0, result.migratedUsersCount());
         assertEquals(false, result.defaultSystemRoleForAutomaticImportsUpdated());
+        assertEquals(false, result.mostPrivilegedSystemRoleUpdated());
         assertNull(result.replacementRole());
         assertNull(result.newDefaultSystemRoleId());
+        assertNull(result.newMostPrivilegedSystemRoleId());
         assertEquals(List.of(), result.migratedUsers());
     }
 
@@ -110,6 +120,11 @@ class SystemRoleServiceTest {
 
         when(systemConfigService.retrieve(DefaultUserSystemRoleSystemConfigDefinition.KEY))
                 .thenReturn(defaultSystemRoleConfig);
+        when(systemConfigService.retrieve(MostPrivilegedSystemRoleSystemConfigDefinition.KEY))
+                .thenReturn(new SystemConfigEntity()
+                        .setKey(MostPrivilegedSystemRoleSystemConfigDefinition.KEY)
+                        .setValue("1")
+                        .setPublicConfig(false));
         when(userRepository.existsBySystemRoleId(3)).thenReturn(true);
         when(userRepository.findAllBySystemRoleIdOrderByFullNameAsc(3)).thenReturn(List.of(
                 new UserEntity()
@@ -142,12 +157,102 @@ class SystemRoleServiceTest {
         verify(repository).delete(entity);
         assertEquals(5, result.migratedUsersCount());
         assertEquals(true, result.defaultSystemRoleForAutomaticImportsUpdated());
+        assertEquals(false, result.mostPrivilegedSystemRoleUpdated());
         assertEquals(7, result.replacementRole().getId());
         assertEquals(7, result.newDefaultSystemRoleId());
+        assertNull(result.newMostPrivilegedSystemRoleId());
         assertEquals(2, result.migratedUsers().size());
         assertEquals("user-1", result.migratedUsers().get(0).id());
         assertEquals("Erika Musterfrau", result.migratedUsers().get(0).fullName());
         assertEquals("erika.musterfrau@example.org", result.migratedUsers().get(0).email());
+    }
+
+    @Test
+    void deleteAndMigrateUsersShouldUpdateMostPrivilegedSystemRoleWhenDeletingConfiguredRole() throws ResponseException {
+        var repository = mock(SystemRoleRepository.class);
+        var systemConfigService = mock(SystemConfigService.class);
+        var userRepository = mock(UserRepository.class);
+
+        var mostPrivilegedSystemRoleConfig = new SystemConfigEntity()
+                .setKey(MostPrivilegedSystemRoleSystemConfigDefinition.KEY)
+                .setValue("1")
+                .setPublicConfig(false);
+        when(systemConfigService.retrieve(DefaultUserSystemRoleSystemConfigDefinition.KEY))
+                .thenReturn(new SystemConfigEntity()
+                        .setKey(DefaultUserSystemRoleSystemConfigDefinition.KEY)
+                        .setValue("3")
+                        .setPublicConfig(false));
+        when(systemConfigService.retrieve(MostPrivilegedSystemRoleSystemConfigDefinition.KEY))
+                .thenReturn(mostPrivilegedSystemRoleConfig);
+        when(userRepository.existsBySystemRoleId(1)).thenReturn(false);
+
+        var replacementRole = new SystemRoleEntity()
+                .setId(7)
+                .setName("Notfalladministration")
+                .setPermissions(List.of());
+        when(repository.findById(7)).thenReturn(Optional.of(replacementRole));
+
+        var service = createService(repository, systemConfigService, userRepository);
+        var entity = new SystemRoleEntity()
+                .setId(1)
+                .setName("Superadministrator:in")
+                .setPermissions(List.of());
+
+        var result = service.deleteAndMigrateUsers(entity, 7);
+
+        verify(systemConfigService).save(
+                MostPrivilegedSystemRoleSystemConfigDefinition.KEY,
+                mostPrivilegedSystemRoleConfig
+        );
+        verify(repository).delete(entity);
+        assertEquals(false, result.defaultSystemRoleForAutomaticImportsUpdated());
+        assertEquals(true, result.mostPrivilegedSystemRoleUpdated());
+        assertEquals(7, result.newMostPrivilegedSystemRoleId());
+    }
+
+    @Test
+    void deleteAndMigrateUsersShouldUpdateBothRoleConfigsWhenTheyReferenceDeletedRole() throws ResponseException {
+        var repository = mock(SystemRoleRepository.class);
+        var systemConfigService = mock(SystemConfigService.class);
+        var userRepository = mock(UserRepository.class);
+
+        var defaultSystemRoleConfig = new SystemConfigEntity()
+                .setKey(DefaultUserSystemRoleSystemConfigDefinition.KEY)
+                .setValue("3")
+                .setPublicConfig(false);
+        var mostPrivilegedSystemRoleConfig = new SystemConfigEntity()
+                .setKey(MostPrivilegedSystemRoleSystemConfigDefinition.KEY)
+                .setValue("3")
+                .setPublicConfig(false);
+        when(systemConfigService.retrieve(DefaultUserSystemRoleSystemConfigDefinition.KEY))
+                .thenReturn(defaultSystemRoleConfig);
+        when(systemConfigService.retrieve(MostPrivilegedSystemRoleSystemConfigDefinition.KEY))
+                .thenReturn(mostPrivilegedSystemRoleConfig);
+        when(userRepository.existsBySystemRoleId(3)).thenReturn(false);
+
+        var replacementRole = new SystemRoleEntity()
+                .setId(7)
+                .setName("Ersatzrolle")
+                .setPermissions(List.of());
+        when(repository.findById(7)).thenReturn(Optional.of(replacementRole));
+
+        var service = createService(repository, systemConfigService, userRepository);
+        var entity = new SystemRoleEntity()
+                .setId(3)
+                .setName("Gemeinsame Systemrolle")
+                .setPermissions(List.of());
+
+        var result = service.deleteAndMigrateUsers(entity, 7);
+
+        verify(systemConfigService).save(DefaultUserSystemRoleSystemConfigDefinition.KEY, defaultSystemRoleConfig);
+        verify(systemConfigService).save(
+                MostPrivilegedSystemRoleSystemConfigDefinition.KEY,
+                mostPrivilegedSystemRoleConfig
+        );
+        assertEquals(true, result.defaultSystemRoleForAutomaticImportsUpdated());
+        assertEquals(true, result.mostPrivilegedSystemRoleUpdated());
+        assertEquals(7, result.newDefaultSystemRoleId());
+        assertEquals(7, result.newMostPrivilegedSystemRoleId());
     }
 
     @Test

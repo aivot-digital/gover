@@ -24,6 +24,10 @@ import {
 } from '../../components/default-user-system-role-badge';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 import {Permission} from '../../../../data/permissions/permission';
+import {
+    isMostPrivilegedSystemRole,
+    MostPrivilegedSystemRoleBadge,
+} from '../../components/most-privileged-system-role-badge';
 
 const systemRolesListPermissionCheck: GenericListPagePermissionConfig<SystemRoleEntity> = {
     scope: {
@@ -37,6 +41,7 @@ const systemRolesListPermissionCheck: GenericListPagePermissionConfig<SystemRole
 export function SystemRolesListPage() {
     const navigate = useNavigate();
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
+    const mostPrivilegedSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.systemRoles.mostPrivilegedRole));
 
     const header = useCallback((permissions: GenericListPagePermissionState<SystemRoleEntity>) => ({
         icon: ModuleIcons.roles,
@@ -98,16 +103,16 @@ export function SystemRolesListPage() {
             headerName: 'Name',
             flex: 1,
             renderCell: (params: any) => {
-                const badge = isDefaultUserSystemRole(params.row.id, defaultSystemRoleId) &&
-                    <DefaultUserSystemRoleBadge sx={{ml: 1}} />;
-
                 return (
                     <CellLink
                         to={`/system-roles/${params.id}`}
                         title={permissions.canUpdate(params.row) ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen'}
                     >
                         {String(params.value)}
-                        {badge}
+                        {isDefaultUserSystemRole(params.row.id, defaultSystemRoleId) &&
+                            <DefaultUserSystemRoleBadge sx={{ml: 1}}/>}
+                        {isMostPrivilegedSystemRole(params.row.id, mostPrivilegedSystemRoleId) &&
+                            <MostPrivilegedSystemRoleBadge sx={{ml: 1}}/>}
                     </CellLink>
                 );
             },
@@ -117,7 +122,7 @@ export function SystemRolesListPage() {
             headerName: 'Beschreibung',
             flex: 2,
         },
-    ], [defaultSystemRoleId]);
+    ], [defaultSystemRoleId, mostPrivilegedSystemRoleId]);
 
     const getRowIdentifier = useCallback((row: SystemRoleEntity) => row.id.toString(), []);
 

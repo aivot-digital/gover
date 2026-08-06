@@ -73,7 +73,7 @@ docker compose up -d
 Gover staff users are managed in Keycloak and imported into Gover when they log in for the first time.
 The Keycloak admin account from the Docker Compose configuration is only used to manage Keycloak; it is not automatically a Gover administrator.
 
-Before the first Gover login, decide which staff user should become the initial Gover super administrator.
+Before the first Gover login, decide which staff user should receive Gover's system role with the highest permission level.
 Add that user's e-mail address to the `gover` service environment in your `compose.yml`:
 
 ```yaml
@@ -92,7 +92,8 @@ After saving the user, open the "Credentials" tab and set a password.
 Disable "Temporary" if the user should keep this password after the first login.
 
 When this user logs into Gover for the first time, Gover imports the Keycloak user.
-If no Gover super administrator exists yet and the e-mail address matches `GOVER_BOOTSTRAP_ADMIN_MAIL`, the user receives the `Superadministrator:in` system role.
+If no active Gover user holds the configured system role with the highest permission level and the e-mail address matches `GOVER_BOOTSTRAP_ADMIN_MAIL`, the user receives that role.
+The role defaults to `Superadministrator:in` and can later be changed under the general application settings.
 
 #### Logging into Gover
 
@@ -101,7 +102,7 @@ Gover redirects staff logins to the Keycloak `staff` realm.
 Sign in with the staff user created above and complete any required Keycloak actions, such as changing a temporary password.
 
 After the Keycloak login succeeds, you are redirected back to the Gover staff application.
-If the user can log in but does not have administrator permissions, verify that the user was created in the `staff` realm, that the user's e-mail address matches `GOVER_BOOTSTRAP_ADMIN_MAIL`, and that no other Gover super administrator existed before this user was imported.
+If the user can log in but does not have administrator permissions, verify that the user was created in the `staff` realm, that the user's e-mail address matches `GOVER_BOOTSTRAP_ADMIN_MAIL`, and that no other active Gover user already holds the configured system role with the highest permission level.
 
 ## Development Setup
 Refer to the [development setup instructions](./development/README.md) for setting up Gover for development.
