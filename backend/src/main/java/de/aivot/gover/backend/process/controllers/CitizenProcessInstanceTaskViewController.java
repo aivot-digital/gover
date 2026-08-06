@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -78,6 +79,7 @@ public class CitizenProcessInstanceTaskViewController {
     public TaskViewResponse retrieve(
             @Nonnull @PathVariable UUID procAccess,
             @Nonnull @PathVariable UUID taskAccess,
+            @RequestParam(required=false) Map<String, List<String>> queryParameters,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(
@@ -99,7 +101,8 @@ public class CitizenProcessInstanceTaskViewController {
                 taskViewData.instance,
                 taskViewData.task,
                 new ProcessTestClaimEntity(), // TODO: Get Test Claim
-                identitySessionId
+                identitySessionId,
+                queryParameters
         );
 
         var layout = taskViewData
@@ -134,6 +137,7 @@ public class CitizenProcessInstanceTaskViewController {
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @RequestParam(value = "fileUris", required = false) List<String> fileUris,
             @Nullable @RequestParam(value = "event", required = false) String rawEvent,
+            @RequestParam(required=false) Map<String, List<String>> queryParameters,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(
@@ -155,7 +159,8 @@ public class CitizenProcessInstanceTaskViewController {
                 taskViewData.instance,
                 taskViewData.task,
                 new ProcessTestClaimEntity(), // TODO: Get Test Claim
-                identitySessionId
+                identitySessionId,
+                queryParameters
         );
 
         ProcessInstanceTaskEntity previousTask;

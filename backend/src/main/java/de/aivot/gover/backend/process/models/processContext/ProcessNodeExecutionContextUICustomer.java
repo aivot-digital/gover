@@ -8,23 +8,36 @@ import de.aivot.gover.backend.process.models.ProcessNodeExecutionLogger;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
+import java.util.Map;
+
 
 public class ProcessNodeExecutionContextUICustomer extends ProcessNodeExecutionContextBase {
     @Nullable
     private final String identityId;
+
+    @Nullable
+    private final Map<String, List<String>> queryParameters;
 
     public ProcessNodeExecutionContextUICustomer(@Nonnull ProcessNodeExecutionLogger logger,
                                                  @Nonnull ProcessNodeEntity thisNode,
                                                  @Nonnull ProcessInstanceEntity thisProcessInstance,
                                                  @Nonnull ProcessInstanceTaskEntity thisTask,
                                                  @Nullable ProcessTestClaimEntity testClaim,
-                                                 @Nullable String identityId) {
+                                                 @Nullable String identityId,
+                                                 @Nullable Map<String, List<String>> queryParameters) {
         super(logger, thisNode, thisProcessInstance, thisTask, testClaim);
         this.identityId = identityId;
+        this.queryParameters = queryParameters;
     }
 
     @Nullable
     public String getIdentityId() {
         return identityId;
+    }
+
+    @Nullable
+    public Map<String, List<String>> getQueryParameters() {
+        return queryParameters;
     }
 }
