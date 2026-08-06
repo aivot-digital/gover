@@ -8,12 +8,16 @@ import de.aivot.gover.backend.elements.models.elements.form.input.TextInputEleme
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
+import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.pdf.enums.FormPdfScope;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
+import de.aivot.gover.backend.payment.services.PaymentPayloadCreationService;
+import de.aivot.gover.backend.payment.services.PaymentTransactionService;
 import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.entities.ProcessVersionEntity;
@@ -46,7 +50,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -77,13 +80,7 @@ class FormTriggerNodeV1Test {
         pdfService = mock(PdfService.class);
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
         processInstanceAttachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
-        node = new FormTriggerNodeV1(
-                mock(PublicUrlService.class),
-                processNodeRepository,
-                pdfService,
-                processInstanceAttachmentService,
-                processInstanceAttachmentSetService
-        );
+        node = createNode(mock(PublicUrlService.class));
     }
 
     @Test
@@ -144,13 +141,7 @@ class FormTriggerNodeV1Test {
     @Test
     void getConfigurationLayout_ShouldExposeCopyableSlugUrlTemplate() throws Exception {
         var publicUrlService = new PublicUrlService(goverConfig());
-        var node = new FormTriggerNodeV1(
-                publicUrlService,
-                processNodeRepository,
-                pdfService,
-                processInstanceAttachmentService,
-                processInstanceAttachmentSetService
-        );
+        var node = createNode(publicUrlService);
 
         var layout = node.getConfigurationLayout(configurationLayoutContext());
         var slugField = layout
@@ -164,13 +155,7 @@ class FormTriggerNodeV1Test {
     @Test
     void getConfigurationLayout_ShouldExposePaymentConfigBelowIdentityConfig() throws Exception {
         var publicUrlService = new PublicUrlService(goverConfig());
-        var node = new FormTriggerNodeV1(
-                publicUrlService,
-                processNodeRepository,
-                pdfService,
-                processInstanceAttachmentService,
-                processInstanceAttachmentSetService
-        );
+        var node = createNode(publicUrlService);
 
         var layout = node.getConfigurationLayout(configurationLayoutContext());
         var children = layout.getChildren();
@@ -473,6 +458,21 @@ class FormTriggerNodeV1Test {
                 .setProcessVersion(PROCESS_VERSION)
                 .setStatus(ProcessVersionStatus.Drafted)
                 .setPublicTitle("Antrag");
+    }
+
+    private FormTriggerNodeV1 createNode(PublicUrlService publicUrlService) {
+        return new FormTriggerNodeV1(
+                publicUrlService,
+                processNodeRepository,
+                mock(PaymentPayloadCreationService.class),
+                mock(ElementDerivationService.class),
+                mock(PaymentTransactionService.class),
+                mock(PaymentProviderRepository.class),
+                mock(GoverConfig.class),
+                pdfService,
+                processInstanceAttachmentService,
+                processInstanceAttachmentSetService
+        );
     }
 
     private static GoverConfig goverConfig() {

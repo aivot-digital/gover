@@ -12,33 +12,41 @@ import de.aivot.gover.backend.elements.models.elements.form.input.UiDefinitionIn
 import de.aivot.gover.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.gover.backend.elements.utils.ElementStreamUtils;
 import de.aivot.gover.backend.enums.ElementType;
+import de.aivot.gover.backend.enums.XBezahldienstStatus;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.models.config.GoverConfig;
+import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.gover.backend.payment.exceptions.PaymentException;
+import de.aivot.gover.backend.payment.models.PaymentPayload;
+import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
+import de.aivot.gover.backend.payment.services.PaymentPayloadCreationService;
+import de.aivot.gover.backend.payment.services.PaymentTransactionService;
 import de.aivot.gover.backend.pdf.enums.FormPdfScope;
 import de.aivot.gover.backend.plugin.models.PluginComponent;
 import de.aivot.gover.backend.plugins.form.FormPlugin;
 import de.aivot.gover.backend.plugins.form.v1.services.FormLayoutCleanerService;
+import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
-import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
+import de.aivot.gover.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.gover.backend.process.enums.ProcessNodeType;
-import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionException;
-import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
-import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
-import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
-import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.gover.backend.process.exceptions.*;
 import de.aivot.gover.backend.process.filters.ProcessNodeFilter;
 import de.aivot.gover.backend.process.models.ProcessNodeDefinition;
 import de.aivot.gover.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.gover.backend.process.models.ProcessNodeOutput;
 import de.aivot.gover.backend.process.models.ProcessNodePort;
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
+import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.gover.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.gover.backend.process.services.FileUploadMultipartInputService;
@@ -46,14 +54,17 @@ import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.PublicUrlService;
 import de.aivot.gover.backend.services.PdfService;
+import de.aivot.gover.backend.utils.NumberUtils;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfigV1>, PluginComponent {
@@ -62,20 +73,34 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     private static final String COPY_VALUE_TEMPLATE_PATH_SEGMENT = "__copy_value__";
     private static final String CUSTOMER_SUMMARY_FILE_NAME = "Formularausdruck.pdf";
 
+    public static final String DATA_KEY_PAYMENT_PAYLOAD = "paymentPayload";
+    public static final String DATA_KEY_PAYMENT_TRANSACTION_KEY = "paymentTransaction";
+
     public static final String DATA_KEY_PAYLOAD = "payload";
     public static final String DATA_KEY_UNMAPPED = "unmapped";
+    public static final String DATA_KEY_AUTHORED = "authored";
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
     public static final String DATA_KEY_STARTED = "started";
     public static final String DATA_KEY_CUSTOMER_SUMMARY_FILES = "customerSummaryFiles";
 
     private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processNodeRepository;
+    private final PaymentPayloadCreationService paymentRequestCreationService;
+    private final ElementDerivationService elementDerivationService;
+    private final PaymentTransactionService paymentTransactionService;
+    private final PaymentProviderRepository paymentProviderRepository;
+    private final GoverConfig goverConfig;
     private final PdfService pdfService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
 
     public FormTriggerNodeV1(PublicUrlService publicUrlService,
                              ProcessNodeRepository processNodeRepository,
+                             PaymentPayloadCreationService paymentRequestCreationService,
+                             ElementDerivationService elementDerivationService,
+                             PaymentTransactionService paymentTransactionService,
+                             PaymentProviderRepository paymentProviderRepository,
+                             GoverConfig goverConfig,
                              PdfService pdfService,
                              ProcessInstanceAttachmentService processInstanceAttachmentService,
                              ProcessInstanceAttachmentSetService processInstanceAttachmentSetService) {
@@ -84,6 +109,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         this.pdfService = pdfService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
+        this.paymentRequestCreationService = paymentRequestCreationService;
+        this.elementDerivationService = elementDerivationService;
+        this.paymentTransactionService = paymentTransactionService;
+        this.paymentProviderRepository = paymentProviderRepository;
+        this.goverConfig = goverConfig;
     }
 
     @Nonnull
@@ -385,6 +415,84 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             );
         }
 
+        var formLayout = configuration.formLayout;
+
+        var authoredValues = ObjectMapperFactory
+                .getInstance()
+                .convertValue(
+                        context
+                                .getThisProcessInstance()
+                                .getInitialPayload()
+                                .get(DATA_KEY_AUTHORED),
+                        AuthoredElementValues.class
+                );
+
+        var derived = elementDerivationService
+                .derive(formLayout, authoredValues);
+
+        var paymentConfig = context
+                .getConfigurationOfExecutingNode()
+                .payment;
+
+        if (paymentConfig != null && paymentConfig.paymentProviderKey() != null) {
+            var paymentProvider = paymentProviderRepository
+                    .findById(paymentConfig.paymentProviderKey())
+                    .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
+                            "Der Zahlungsanbieter mit dem Schlüssel %s konnte nicht gefunden werden",
+                            StringUtils.quote(paymentConfig.paymentProviderKey().toString())
+                    ));
+
+            Optional<PaymentPayload> paymentRequest;
+            try {
+                paymentRequest = paymentRequestCreationService
+                        .createRequest(paymentConfig,
+                                derived,
+                                context.getCurrentProcessExecutionData());
+            } catch (PaymentException e) {
+                throw new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Fehler beim Erstellen der Zahlungsanforderung: %s",
+                        e.getMessage()
+                );
+            }
+
+            if (paymentRequest.isEmpty()) {
+                context
+                        .getLogger()
+                        .logf(
+                                ProcessNodeExecutionLogLevel.Info,
+                                false,
+                                true,
+                                "Keine Zahlungsanforderung erstellt",
+                                "Es wurde keine Zahlungsanforderung erstellt, da keine Zahlungspositionen mit einem Gesamtwert größer als 0 gefunden wurden."
+                        );
+            } else {
+                PaymentTransactionEntity transaction;
+                try {
+                    transaction = paymentTransactionService.create(
+                            paymentProvider,
+                            paymentRequest.get(),
+                            goverConfig.createUrl("/process/", context.getThisProcessInstance().getAccessKey(), "tasks", context.getThisTask().getAccessKey())
+                    );
+                } catch (PaymentException e) {
+                    throw new ProcessNodeExecutionExceptionUnknown(
+                            e,
+                            "Fehler beim Absenden der Zahlungsanforderung: %s",
+                            e.getMessage()
+                    );
+                }
+
+                return new ProcessNodeExecutionResultPaymentRequested(
+                        transaction.getKey(),
+                        paymentProvider.getName()
+                )
+                        .setRuntimeData(Map.of(
+                                DATA_KEY_PAYMENT_PAYLOAD, paymentRequest.get(),
+                                DATA_KEY_PAYMENT_TRANSACTION_KEY, transaction.getKey()
+                        ));
+            }
+        }
+
         var processInstanceInitialPayload = context
                 .getThisProcessInstance()
                 .getInitialPayload();
@@ -490,6 +598,108 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                     "Die Formular-Rohdaten konnten nicht für die PDF-Zusammenfassung verarbeitet werden."
             );
         }
+    }
+
+    @Nonnull
+    @Override
+    public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+        var paymentTransactionKey = context
+                .getThisTask()
+                .getRuntimeData()
+                .get(DATA_KEY_PAYMENT_TRANSACTION_KEY);
+
+        if (paymentTransactionKey == null) {
+            return ProcessNodeDefinition.super.getCustomerTaskView(context);
+        }
+
+        var transaction = paymentTransactionService
+                .retrieve(String.valueOf(paymentTransactionKey));
+
+        if (transaction.isEmpty()) {
+            return ProcessNodeDefinition.super.getCustomerTaskView(context);
+        }
+
+        var paymentPayloadRawData = context
+                .getThisTask()
+                .getRuntimeData()
+                .get(DATA_KEY_PAYMENT_PAYLOAD);
+        var paymentPayload = ObjectMapperFactory
+                .getInstance()
+                .convertValue(paymentPayloadRawData, PaymentPayload.class);
+
+        var paymentProvider = paymentProviderRepository
+                .findById(transaction.get().getPaymentProviderKey())
+                .orElseThrow(() -> ResponseException.internalServerError(
+                        "Der Zahlungsanbieter mit dem Schlüssel %s konnte nicht gefunden werden".formatted(
+                                StringUtils.quote(transaction.get().getPaymentProviderKey().toString())
+                        )
+                ));
+
+        String content = switch (transaction.get().getStatus()) {
+            case XBezahldienstStatus.INITIAL -> {
+                yield """
+                        # Zahlung ausstehend
+                        Um Ihre Einreichung bearbeiten zu können, ist eine Zahlung von Gebühren erforderlich.
+                        Die Zahlung wird durch den **%s** abgewickelt.
+                        Bitte achten Sie darauf, dass Sie die Zahlungsinformationen korrekt eingeben und den Vorgang abschließen.
+
+                        Für Ihre Einreichung sind folgende Gebühren zu zahlen:
+                        %s
+
+                        Insgesamt zu entrichtende Gebühr: %s Euro inkl. Steuern.
+
+                        Sie können den Betrag über den folgenden Link zahlen: [%s](%s)
+                        """
+                        .formatted(
+                                StringUtils.quote(paymentProvider.getName()),
+                                paymentPayload
+                                        .getPaymentItems()
+                                        .stream()
+                                        .map(item -> "- %s: %s Euro%s\n".formatted(
+                                                item.getDescription(),
+                                                NumberUtils.formatGermanNumber(item.getTotalPrice(), 2),
+                                                item.getTaxRate().compareTo(BigDecimal.ZERO) > 0
+                                                        ? " inkl. %s Steuern".formatted(NumberUtils.formatGermanNumber(item.getTaxRate(), 2))
+                                                        : ""
+                                        ))
+                                        .collect(Collectors.joining()),
+                                NumberUtils.formatGermanNumber(paymentPayload.getTotal(), 2),
+                                transaction.get().getPaymentInformation().getTransactionRedirectUrl(),
+                                transaction.get().getPaymentInformation().getTransactionRedirectUrl()
+                        );
+            }
+            case XBezahldienstStatus.FAILED -> {
+                yield """
+                        # Zahlung fehlgeschlagen
+                        Die Zahlung konnte nicht erfolgreich abgeschlossen werden.
+                        Bitte wenden Sie sich an den Support, um weitere Informationen zu erhalten und die Zahlung erneut zu versuchen.
+                        """;
+            }
+            case XBezahldienstStatus.CANCELED -> {
+                yield """
+                        # Zahlung abgebrochen
+                        Die Zahlung wurde abgebrochen.
+                        Bitte wenden Sie sich an den Support, um weitere Informationen zu erhalten und die Zahlung erneut zu versuchen.
+                        """;
+            }
+            case XBezahldienstStatus.PAYED -> {
+                yield """
+                        # Zahlung erfolgreich
+                        Die Zahlung wurde erfolgreich abgeschlossen.
+                        Vielen Dank für Ihre Einreichung.
+                        """;
+            }
+        };
+
+        var richtext = new RichTextContentElement();
+        richtext.setId("rtx");
+        richtext.setContent(content);
+
+        var layout = new GroupLayoutElement();
+        layout.setId("grp");
+        layout.addChild(richtext);
+
+        return layout;
     }
 
     @Nonnull
