@@ -526,6 +526,7 @@ class ProcessNodeDefinitionTest {
                 new ProcessInstanceEntity(),
                 task,
                 null,
+                null,
                 null
         );
     }

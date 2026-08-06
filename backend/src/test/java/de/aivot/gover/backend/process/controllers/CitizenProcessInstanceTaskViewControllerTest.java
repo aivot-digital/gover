@@ -131,6 +131,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -228,6 +229,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 "submit",
+                null,
                 null
         );
 
