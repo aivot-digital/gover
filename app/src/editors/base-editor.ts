@@ -6,6 +6,7 @@ export interface BaseEditorProps<T extends AnyElement> {
     onPatch: (patch: Partial<T>) => void;
     editable: boolean;
     hasSummaryLayoutParent: boolean;
+    hasReplicatingContainerParent?: boolean;
     scope: ElementTreeScope;
 }
 

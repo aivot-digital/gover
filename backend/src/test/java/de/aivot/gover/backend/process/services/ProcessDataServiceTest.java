@@ -22,6 +22,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -81,6 +82,9 @@ class ProcessDataServiceTest {
         var firstAttachment = new ProcessInstanceAttachmentEntity(
                 UUID.randomUUID(),
                 "first.pdf",
+                "uploaded-first.pdf",
+                "person-1",
+                1,
                 1,
                 42L,
                 null,
@@ -92,6 +96,9 @@ class ProcessDataServiceTest {
         var thirdAttachment = new ProcessInstanceAttachmentEntity(
                 UUID.randomUUID(),
                 "third.pdf",
+                "uploaded-third.pdf",
+                "person-2",
+                3,
                 2,
                 42L,
                 99L,
@@ -103,6 +110,9 @@ class ProcessDataServiceTest {
         var secondAttachment = new ProcessInstanceAttachmentEntity(
                 UUID.randomUUID(),
                 "second.pdf",
+                "uploaded-second.pdf",
+                null,
+                2,
                 1,
                 42L,
                 null,
@@ -120,7 +130,7 @@ class ProcessDataServiceTest {
         when(nodeRepository.findById(11)).thenReturn(Optional.of(initialNode));
 
         var attachmentRepository = mock(ProcessInstanceAttachmentRepository.class);
-        when(attachmentRepository.findAllByProcessInstanceId(42L)).thenReturn(List.of(firstAttachment, secondAttachment, thirdAttachment));
+        when(attachmentRepository.findAllByProcessInstanceId(42L)).thenReturn(List.of(secondAttachment, thirdAttachment, firstAttachment));
 
         var attachmentSetRepository = mock(ProcessInstanceAttachmentSetRepository.class);
         when(attachmentSetRepository.findAllByProcessInstanceId(42L)).thenReturn(List.of(attachmentSet, taskAttachmentSet));
@@ -136,6 +146,7 @@ class ProcessDataServiceTest {
 
         var metadata = data.getProcessMetadata();
         assertFalse(metadata.containsKey("attachments"));
+        assertEquals(42L, metadata.get("processInstanceId"));
         assertEquals(99L, metadata.get("currentTaskId"));
 
         @SuppressWarnings("unchecked")
@@ -149,11 +160,24 @@ class ProcessDataServiceTest {
         var attachments = (List<Map<String, Object>>) documentsSet.get("attachments");
         assertEquals(3, attachments.size());
         assertEquals("first.pdf", attachments.get(0).get("filename"));
+        assertEquals("uploaded-first.pdf", attachments.get(0).get("originalFilename"));
+        assertEquals("person-1", attachments.get(0).get("group"));
+        assertNull(attachments.get(1).get("group"));
         assertEquals("/attachments/second.pdf", attachments.get(1).get("storagePathFromRoot"));
+        assertEquals("third.pdf", attachments.get(2).get("filename"));
+        assertEquals("uploaded-third.pdf", attachments.get(2).get("originalFilename"));
+        assertEquals("person-2", attachments.get(2).get("group"));
 
         @SuppressWarnings("unchecked")
         var sets = (List<Map<String, Object>>) documentsSet.get("sets");
         assertEquals(2, sets.size());
         assertEquals(99L, sets.get(1).get("processInstanceTaskId"));
+
+        @SuppressWarnings("unchecked")
+        var firstSetAttachments = (List<Map<String, Object>>) sets.getFirst().get("attachments");
+        assertEquals("first.pdf", firstSetAttachments.get(0).get("filename"));
+        assertEquals("uploaded-first.pdf", firstSetAttachments.get(0).get("originalFilename"));
+        assertEquals("person-1", firstSetAttachments.get(0).get("group"));
+        assertEquals("second.pdf", firstSetAttachments.get(1).get("filename"));
     }
 }

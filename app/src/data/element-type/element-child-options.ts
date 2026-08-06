@@ -190,6 +190,7 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.ProcessInstanceAttachmentSetSelect,
             ElementType.ProcessIdentityIdInput,
             ElementType.HtmlTemplateInput,
+            ElementType.StoragePathSelector,
         ],
         [ElementType.GroupLayout]: [
             ElementType.Alert,
@@ -219,6 +220,7 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.DataObjectSelect,
             ElementType.SummaryLayout,
             ElementType.ProcessAttachmentDisplay,
+            ElementType.StoragePathSelector,
         ],
         [ElementType.ReplicatingContainer]: [
             ElementType.Alert,

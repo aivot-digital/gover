@@ -428,7 +428,7 @@ class LocalDiskStorageProviderDefinitionTest {
 
         // Test filename with unicode characters
         result = LocalDiskStorageProviderDefinitionV1.sanitizeFilename("döcümént.txt");
-        assertEquals("d_c_m_nt.txt", result);
+        assertEquals("doecuem_nt.txt", result);
     }
 
     private LocalDiskStorageProviderDefinitionV1 createProvider(List<String> allowedLocalRoots) {

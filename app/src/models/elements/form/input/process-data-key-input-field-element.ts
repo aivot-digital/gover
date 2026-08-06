@@ -3,4 +3,5 @@ import {ElementType} from '../../../../data/element-type/element-type';
 
 export interface ProcessDataKeyInputFieldElement extends BaseInputElement<ElementType.ProcessDataKeyInput> {
     disableWildCards: boolean | null | undefined;
+    scopeProcessDataKeyInputElementId: string | null | undefined;
 }

@@ -53,7 +53,11 @@ interface StorageExplorerProps {
     filterMimeTypes?: string[];
     filterItem?: (item: StorageIndexItem) => boolean;
     loadFolderItems?: (providerId: number, path: string) => Promise<StorageIndexItem[]>;
+    initialPath?: string | null;
+    onFolderSelect?: (path: string) => void;
+    folderSelectLabel?: string;
     onFileSelect?: (item: StorageIndexItem) => void;
+    disableFileDialog?: boolean;
     allowFileDownload?: boolean;
     showContainerBorder?: boolean;
     showTopNavigationBar?: boolean;
@@ -221,7 +225,11 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
         filterMimeTypes,
         filterItem,
         loadFolderItems,
+        initialPath,
+        onFolderSelect,
+        folderSelectLabel,
         onFileSelect,
+        disableFileDialog = false,
         allowFileDownload = false,
         showContainerBorder = false,
         showTopNavigationBar = false,
@@ -299,7 +307,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
     }, [fetchFolderItems, folderCache, treeLoadingPaths]);
 
     useEffect(() => {
-        setCurrentPath(ROOT_PATH);
+        setCurrentPath(normalizeDirectoryPath(initialPath ?? ROOT_PATH));
         setDialogItem(undefined);
         setFolderCache({});
         setExpandedPaths([ROOT_PATH]);
@@ -314,7 +322,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Der Speicheranbieter konnte nicht geladen werden.'));
             });
-    }, [providerId]);
+    }, [initialPath, providerId]);
 
     useEffect(() => {
         setIsLoading(true);
@@ -724,6 +732,15 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
         '& .MuiDataGrid-row': {
             cursor: 'pointer',
         },
+        '& .storage-explorer-row--file-dialog-disabled': {
+            cursor: 'default',
+        },
+        '& .storage-explorer-row--file-dialog-disabled .MuiDataGrid-cell': {
+            opacity: 0.55,
+        },
+        '& .storage-explorer-row--file-dialog-disabled .MuiChip-root': {
+            opacity: 1,
+        },
         '& .MuiDataGrid-row:last-of-type .MuiDataGrid-cell': {
             borderBottom: '1px solid',
             borderBottomColor: 'divider',
@@ -749,22 +766,25 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
             sx={sx}
         >
             {showTopNavigationBar && (
-                <Stack
-                    direction="row"
-                    spacing={0.5}
-                    alignItems="center"
-                    sx={{
-                        px: 1,
-                        py: 0.5,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                    }}
-                >
-                    <Tooltip
-                        title="Zum Wurzelordner"
-                        arrow={true}
+                <Stack direction="row">
+                    <Stack
+                        direction="row"
+                        spacing={0.5}
+                        alignItems="center"
+                        sx={{
+                            px: 1,
+                            py: 0.5,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            flex: 1,
+                            mr: 2,
+                        }}
                     >
+                        <Tooltip
+                            title="Zum Wurzelordner"
+                            arrow={true}
+                        >
                         <span>
                             <IconButton
                                 size="small"
@@ -776,12 +796,12 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 <HomeOutlinedIcon fontSize="small"/>
                             </IconButton>
                         </span>
-                    </Tooltip>
+                        </Tooltip>
 
-                    <Tooltip
-                        title="Eine Ebene nach oben"
-                        arrow={true}
-                    >
+                        <Tooltip
+                            title="Eine Ebene nach oben"
+                            arrow={true}
+                        >
                         <span>
                             <IconButton
                                 size="small"
@@ -793,79 +813,99 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 <ArrowUpwardOutlinedIcon fontSize="small"/>
                             </IconButton>
                         </span>
-                    </Tooltip>
+                        </Tooltip>
 
-                    <Divider
-                        orientation="vertical"
-                        flexItem={true}
-                        sx={{mx: 0.5}}
-                    />
+                        <Divider
+                            orientation="vertical"
+                            flexItem={true}
+                            sx={{mx: 0.5}}
+                        />
 
-                    <Breadcrumbs
-                        separator="›"
-                        aria-label="Ordnerpfad"
-                        maxItems={6}
-                        itemsBeforeCollapse={2}
-                        itemsAfterCollapse={2}
-                        sx={{
-                            flexWrap: 'nowrap',
-                            overflow: 'hidden',
-                            '& .MuiBreadcrumbs-ol': {
+                        <Breadcrumbs
+                            separator="›"
+                            aria-label="Ordnerpfad"
+                            maxItems={6}
+                            itemsBeforeCollapse={2}
+                            itemsAfterCollapse={2}
+                            sx={{
                                 flexWrap: 'nowrap',
                                 overflow: 'hidden',
-                            },
-                        }}
-                    >
-                        <Button
-                            size="small"
-                            onClick={() => {
-                                navigateToFolder(ROOT_PATH);
+                                '& .MuiBreadcrumbs-ol': {
+                                    flexWrap: 'nowrap',
+                                    overflow: 'hidden',
+                                },
                             }}
-                            sx={{minWidth: 'auto', px: 0.75}}
                         >
-                            {provider.name}
-                        </Button>
+                            <Button
+                                size="small"
+                                onClick={() => {
+                                    navigateToFolder(ROOT_PATH);
+                                }}
+                                sx={{minWidth: 'auto', px: 0.75}}
+                            >
+                                {provider.name}
+                            </Button>
 
-                        {breadcrumbParts.map((part, index) => {
-                            const fullPath = normalizeDirectoryPath(`/${breadcrumbParts.slice(0, index + 1).join('/')}`);
+                            {breadcrumbParts.map((part, index) => {
+                                const fullPath = normalizeDirectoryPath(`/${breadcrumbParts.slice(0, index + 1).join('/')}`);
 
-                            return (
-                                <Button
-                                    key={fullPath}
-                                    size="small"
-                                    onClick={() => {
-                                        navigateToFolder(fullPath);
-                                    }}
-                                    sx={{
-                                        minWidth: 'auto',
-                                        px: 0.75,
-                                        maxWidth: 220,
-                                        overflow: 'hidden',
-                                    }}
-                                    title={part}
-                                >
-                                    <Typography
-                                        variant="body2"
-                                        noWrap={true}
-                                        sx={{
-                                            width: '100%',
-                                            maxWidth: '100%',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap',
+                                return (
+                                    <Button
+                                        key={fullPath}
+                                        size="small"
+                                        onClick={() => {
+                                            navigateToFolder(fullPath);
                                         }}
+                                        sx={{
+                                            minWidth: 'auto',
+                                            px: 0.75,
+                                            maxWidth: 220,
+                                            overflow: 'hidden',
+                                        }}
+                                        title={part}
                                     >
-                                        {part}
-                                    </Typography>
-                                </Button>
-                            );
-                        })}
-                    </Breadcrumbs>
+                                        <Typography
+                                            variant="body2"
+                                            noWrap={true}
+                                            sx={{
+                                                width: '100%',
+                                                maxWidth: '100%',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            {part}
+                                        </Typography>
+                                    </Button>
+                                );
+                            })}
+                        </Breadcrumbs>
+                    </Stack>
+
+                    {onFolderSelect != null && (
+                        <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<FolderOutlinedIcon/>}
+                            onClick={() => {
+                                onFolderSelect(currentPath);
+                            }}
+                            disabled={isLoading}
+                            sx={{
+                                ml: 'auto',
+                            }}
+                        >
+                            {folderSelectLabel ?? 'Ordner auswählen'}
+                        </Button>
+                    )}
                 </Stack>
             )}
 
-            <Grid container
-                  sx={{alignItems: 'flex-start'}}>
+            <Grid
+                container
+                sx={{alignItems: 'flex-start'}}
+            >
                 <Grid
                     size={{xs: 12, md: 3}}
                     sx={{
@@ -1025,6 +1065,13 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                     },
                                 },
                             }}
+                            getRowClassName={(params) => {
+                                if (!isDirectory(params.row) && disableFileDialog) {
+                                    return 'storage-explorer-row--file-dialog-disabled';
+                                }
+
+                                return '';
+                            }}
                             onRowClick={(params) => {
                                 const item = params.row;
 
@@ -1033,6 +1080,10 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                     const pathFromRoot = normalizeDirectoryPath(item.pathFromRoot);
                                     setExpandedPaths((prev) => (prev.includes(pathFromRoot) ? prev : [...prev, pathFromRoot]));
                                     loadTreeChildren(item.pathFromRoot);
+                                    return;
+                                }
+
+                                if (disableFileDialog) {
                                     return;
                                 }
 

@@ -10,9 +10,11 @@ import de.aivot.gover.backend.nocode.models.NoCodeSignatur;
 import jakarta.annotation.Nullable;
 
 public class NoCodeObjectGetOperator extends NoCodeOperator {
+    public static final String OPERATOR_ID = "object-get";
+
     @Override
     public String getIdentifier() {
-        return "object-get";
+        return OPERATOR_ID;
     }
 
     @Override

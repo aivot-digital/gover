@@ -39,7 +39,7 @@ import {
 import {UsersApiService} from '../../modules/users/users-api-service';
 import {PermissionApiService} from '../../modules/permissions/permission-api-service';
 import {PermissionSet} from '../../modules/permissions/models/permission-set';
-import {AlphaVersionNoticeDialog} from '../../dialogs/alpha-version-notice-dialog/alpha-version-notice-dialog';
+import {PreReleaseVersionNoticeDialog} from '../../dialogs/pre-release-version-notice-dialog/pre-release-version-notice-dialog';
 import {DuplicatePageWarning} from '../../components/duplicate-page-warning/duplicate-page-warning';
 import {isApiError} from '../../models/api-error';
 import {useCrossTabInvalidation} from '../../hooks/use-cross-tab-invalidation';
@@ -215,7 +215,7 @@ export function StaffShell(): ReactNode {
                     <ShellSessionEndWarnPopup/>
                     <ShellSessionExpiredDialog/>
                     <ShellResolutionOverlay/>
-                    <AlphaVersionNoticeDialog/>
+                    <PreReleaseVersionNoticeDialog/>
                     <DuplicatePageWarning/>
                 </>
             }

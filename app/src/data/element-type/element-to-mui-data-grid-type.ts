@@ -51,5 +51,6 @@ export const ElementToMuiDataGridType: Record<ElementType, GridColDef['type'] | 
     [ElementType.ProcessInstanceAttachmentSetSelect]: 'string',
     [ElementType.ProcessIdentityIdInput]: 'string',
     [ElementType.HtmlTemplateInput]: null,
+    [ElementType.StoragePathSelector]: 'string',
     [ElementType.ProcessAttachmentDisplay]: null,
 };

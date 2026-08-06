@@ -20,7 +20,7 @@ import {StorageScope, StorageService} from '../../services/storage-service';
 import {addDays} from 'date-fns/addDays'
 import {isBefore} from 'date-fns/isBefore'
 
-const alphaVersionRiskHints = [
+const preReleaseVersionRiskHints = [
     'Funktionen können unvollständig sein, sich ändern oder noch nicht wie erwartet funktionieren.',
     'Inhalte und Verhalten können sich in zukünftigen Versionen ohne Vorankündigung ändern.',
 ];
@@ -30,14 +30,14 @@ function storeDismissFlag() {
     tomorrow.setHours(1, 0, 0, 0);
 
     StorageService.storeString(
-        StorageKey.AlphaVersionNoticeDismissed,
+        StorageKey.PreReleaseVersionNoticeDismissed,
         tomorrow.toISOString(),
         StorageScope.Local,
     );
 }
 
 function loadDismissFlag(): boolean {
-    const dismissedUntil = StorageService.loadString(StorageKey.AlphaVersionNoticeDismissed);
+    const dismissedUntil = StorageService.loadString(StorageKey.PreReleaseVersionNoticeDismissed);
 
     if (dismissedUntil == null) {
         return false;
@@ -51,7 +51,7 @@ function loadDismissFlag(): boolean {
     return isBefore(new Date(), dismissedUntilDate);
 }
 
-export function AlphaVersionNoticeDialog(): React.ReactElement {
+export function PreReleaseVersionNoticeDialog(): React.ReactElement {
     const [
         open,
         setOpen,
@@ -151,7 +151,7 @@ export function AlphaVersionNoticeDialog(): React.ReactElement {
                                 lineHeight: 1.2,
                             }}
                         >
-                            Alpha-Version
+                            Vorabversion
                         </Typography>
 
                         <Typography
@@ -196,12 +196,12 @@ export function AlphaVersionNoticeDialog(): React.ReactElement {
                                 }}
                             >
                                 {
-                                    alphaVersionRiskHints.map((riskHint, index) => (
+                                    preReleaseVersionRiskHints.map((riskHint, index) => (
                                         <Typography
                                             component="li"
                                             key={riskHint}
                                             sx={{
-                                                mb: index < alphaVersionRiskHints.length - 1 ? 1 : 0,
+                                                mb: index < preReleaseVersionRiskHints.length - 1 ? 1 : 0,
                                             }}
                                         >
                                             {riskHint}

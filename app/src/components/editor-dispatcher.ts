@@ -22,6 +22,7 @@ export function EditorDispatcher<T extends AnyElement>(props: EditorDispatcherPr
         onPatch: props.onPatch,
         editable: props.editable,
         hasSummaryLayoutParent: props.hasSummaryLayoutParent,
+        hasReplicatingContainerParent: props.hasReplicatingContainerParent,
         scope: props.scope,
     };
 

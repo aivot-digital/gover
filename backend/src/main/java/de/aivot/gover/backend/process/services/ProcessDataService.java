@@ -123,6 +123,7 @@ public class ProcessDataService {
 
         Map<String, Object> instanceData = new HashMap<>();
 
+        instanceData.put("processInstanceId", instance.getId());
         instanceData.put("accessKey", instance.getAccessKey());
         instanceData.put("caseNumber", instance.getCaseNumber());
         instanceData.put("started", instance.getStarted());
@@ -159,6 +160,10 @@ public class ProcessDataService {
             var attachmentData = attachmentsBySetId
                     .getOrDefault(attachmentSet.getId(), List.of())
                     .stream()
+                    .sorted((a, b) -> {
+                        var positionComparison = a.getPosition().compareTo(b.getPosition());
+                        return positionComparison == 0 ? a.getKey().compareTo(b.getKey()) : positionComparison;
+                    })
                     .map(this::getAttachmentData)
                     .toList();
 
@@ -197,11 +202,13 @@ public class ProcessDataService {
 
     @Nonnull
     private Map<String, Object> getAttachmentData(@Nonnull ProcessInstanceAttachmentEntity attachment) {
-        return Map.of(
-                "filename", attachment.getFileName(),
-                "storageProviderId", attachment.getStorageProviderId(),
-                "storagePathFromRoot", attachment.getStoragePathFromRoot()
-        );
+        var attachmentData = new LinkedHashMap<String, Object>();
+        attachmentData.put("filename", attachment.getFileName());
+        attachmentData.put("originalFilename", attachment.getOriginalFileName());
+        attachmentData.put("group", attachment.getGroup());
+        attachmentData.put("storageProviderId", attachment.getStorageProviderId());
+        attachmentData.put("storagePathFromRoot", attachment.getStoragePathFromRoot());
+        return attachmentData;
     }
 
     @Nonnull
