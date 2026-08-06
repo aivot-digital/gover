@@ -13,11 +13,7 @@ import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.gover.backend.payment.exceptions.PaymentException;
 import de.aivot.gover.backend.payment.filters.PaymentTransactionFilter;
-import de.aivot.gover.backend.payment.models.PaymentItem;
-import de.aivot.gover.backend.payment.models.PaymentProviderDefinition;
-import de.aivot.gover.backend.payment.models.PaymentTransactionChangeListener;
-import de.aivot.gover.backend.payment.models.XBezahldienstePaymentRequest;
-import de.aivot.gover.backend.payment.models.XBezahldienstePaymentTransaction;
+import de.aivot.gover.backend.payment.models.*;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.gover.backend.payment.repositories.PaymentTransactionRepository;
 import jakarta.annotation.Nullable;
@@ -82,10 +78,8 @@ public class PaymentTransactionService implements
     @Nonnull
     public PaymentTransactionEntity create(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull String purpose,
-            @Nonnull String description,
-            @Nonnull String finalRedirectUrl,
-            @Nonnull List<PaymentItem> paymentItems
+            @Nonnull PaymentPayload payload,
+            @Nonnull String finalRedirectUrl
     ) throws PaymentException {
         // Fetch corresponding payment provider definition
         var paymentProviderDefinition = paymentProviderDefinitionsService
@@ -118,18 +112,16 @@ public class PaymentTransactionService implements
             paymentRequest = paymentProviderDefinition.createPaymentRequest(
                     paymentProviderEntity,
                     derivedConfiguration,
-                    purpose,
-                    description,
-                    paymentItems,
+                    payload,
                     initialRedirectUrl
             );
         } catch (PaymentException e) {
             // Log exception and rethrow
             var metadata = new HashMap<String, Object>(Map.of(
                     "paymentProviderKey", paymentProviderEntity.getKey(),
-                    "purpose", purpose,
-                    "description", description,
-                    "paymentItems", paymentItems
+                    "purpose", payload.getPurpose(),
+                    "description", payload.getDescription(),
+                    "paymentItems", payload.getPaymentItems()
             ));
             metadata.put("exceptionType", e.getClass().getName());
             auditService.create()
@@ -152,9 +144,9 @@ public class PaymentTransactionService implements
             // Log exception and rethrow
             var metadata = new HashMap<String, Object>(Map.of(
                     "paymentProviderKey", paymentProviderEntity.getKey(),
-                    "purpose", purpose,
-                    "description", description,
-                    "paymentItems", paymentItems
+                    "purpose", payload.getPurpose(),
+                    "description", payload.getDescription(),
+                    "paymentItems", payload.getPaymentItems()
             ));
             metadata.put("exceptionType", e.getClass().getName());
             auditService.create()

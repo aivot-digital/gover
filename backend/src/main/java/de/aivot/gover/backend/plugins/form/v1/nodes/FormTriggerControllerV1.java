@@ -33,9 +33,10 @@ import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.models.dtos.MaxFileSizeDto;
 import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.gover.backend.payment.exceptions.PaymentException;
+import de.aivot.gover.backend.payment.models.PaymentPayload;
 import de.aivot.gover.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
-import de.aivot.gover.backend.payment.services.PaymentRequestCreationService;
+import de.aivot.gover.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.gover.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.gover.backend.process.entities.*;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
@@ -96,7 +97,7 @@ public class FormTriggerControllerV1 {
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final FormTriggerNodeV1 formTriggerNodeV1;
     private final IdentityService identityService;
-    private final PaymentRequestCreationService paymentRequestCreationService;
+    private final PaymentPayloadCreationService paymentRequestCreationService;
     private final PaymentProviderRepository paymentProviderRepository;
 
     @Autowired
@@ -122,7 +123,7 @@ public class FormTriggerControllerV1 {
                                    ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
                                    FormTriggerNodeV1 formTriggerNodeV1,
                                    IdentityService identityService,
-                                   PaymentRequestCreationService paymentRequestCreationService,
+                                   PaymentPayloadCreationService paymentRequestCreationService,
                                    PaymentProviderRepository paymentProviderRepository) {
         this.goverConfig = goverConfig;
         this.identityProviderService = identityProviderService;
@@ -413,17 +414,16 @@ public class FormTriggerControllerV1 {
         ProcessExecutionData execData = new ProcessExecutionData();
         execData.addProcessData(payloadInstanceData);
 
-        Optional<XBezahldienstePaymentRequest> paymentRequest = paymentRequestCreationService.createRequest(
+        Optional<PaymentPayload> paymentRequest = paymentRequestCreationService.createRequest(
                 paymentConfig,
                 derivedElementData,
-                execData,
-                "https://example.com"
+                execData
         );
 
         // No payment required
         return paymentRequest
-                .map(xBezahldienstePaymentRequest -> FormTriggerCostCalculationResponseV1.of(
-                        xBezahldienstePaymentRequest,
+                .map(paymentPayload -> FormTriggerCostCalculationResponseV1.of(
+                        paymentPayload,
                         paymentProvider
                 ))
                 .orElseGet(FormTriggerCostCalculationResponseV1::empty);

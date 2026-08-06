@@ -10,7 +10,6 @@ import type {ProcessVersionEntity} from '../../process/entities/process-version-
 import type {Theme} from '../../themes/models/theme';
 import type {FormTriggerIdentityDetailsDTO} from '../dtos/form-trigger-identity-details-dto';
 import type {PaymentConfigElementValue} from '../../../models/elements/form/input/payment-config-element';
-import {XBezahldienstePaymentItem} from '../../../models/xbezahldienste/x-bezahldienste-payment-item';
 
 export interface FormTriggerFilter {
     id: number;
@@ -48,7 +47,20 @@ export interface FormTriggerSubmissionStatusResponseV1 {
 
 export interface FormTriggerCostCalculationResponseV1 {
     totalCost: number;
-    paymentItems: XBezahldienstePaymentItem[];
+    paymentItems: {
+        id: string;
+        reference: string;
+        description: string;
+        quantity: number;
+        taxRate: number;
+        netPrice: number;
+        totalPrice: number;
+        bookingData: {
+            key: string;
+            value: string;
+        }[];
+        taxInformation: string;
+    }[];
     paymentProviderName: string;
 }
 

@@ -12,7 +12,7 @@ import de.aivot.gover.backend.identity.services.IdentityProviderService;
 import de.aivot.gover.backend.identity.services.IdentityService;
 import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
-import de.aivot.gover.backend.payment.services.PaymentRequestCreationService;
+import de.aivot.gover.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.entities.ProcessTestClaimEntity;
@@ -275,7 +275,7 @@ class FormTriggerControllerV1Test {
                 mock(ProcessNodeExecutionLoggerFactory.class),
                 provider,
                 mock(IdentityService.class),
-                mock(PaymentRequestCreationService.class),
+                mock(PaymentPayloadCreationService.class),
                 mock(PaymentProviderRepository.class)
         );
 

@@ -8,12 +8,13 @@ import de.aivot.gover.backend.enums.XBezahldienstGender;
 import de.aivot.gover.backend.javascript.exceptions.JavascriptException;
 import de.aivot.gover.backend.javascript.models.JavascriptCode;
 import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.gover.backend.models.payment.PaymentProduct;
 import de.aivot.gover.backend.nocode.models.NoCodeOperand;
 import de.aivot.gover.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.gover.backend.payment.exceptions.PaymentException;
+import de.aivot.gover.backend.payment.models.PaymentItem;
+import de.aivot.gover.backend.payment.models.PaymentPayload;
 import de.aivot.gover.backend.payment.models.XBezahldiensteAddress;
-import de.aivot.gover.backend.payment.models.XBezahldienstePaymentItem;
-import de.aivot.gover.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.gover.backend.payment.models.XBezahldiensteRequestor;
 import de.aivot.gover.backend.process.models.ProcessDataValueUtils;
 import de.aivot.gover.backend.process.models.ProcessExecutionData;
@@ -29,7 +30,7 @@ import java.math.RoundingMode;
 import java.util.*;
 
 @Service
-public class PaymentRequestCreationService {
+public class PaymentPayloadCreationService {
     private static final int MONEY_SCALE = 2;
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
 
@@ -37,7 +38,7 @@ public class PaymentRequestCreationService {
     private final NoCodeEvaluationService noCodeEvaluationService;
     private final JavascriptEngineFactoryService javascriptEngineFactoryService;
 
-    public PaymentRequestCreationService(TemplateRenderService templateRenderService,
+    public PaymentPayloadCreationService(TemplateRenderService templateRenderService,
                                          NoCodeEvaluationService noCodeEvaluationService,
                                          JavascriptEngineFactoryService javascriptEngineFactoryService) {
         this.templateRenderService = templateRenderService;
@@ -46,50 +47,43 @@ public class PaymentRequestCreationService {
     }
 
     @Nonnull
-    public Optional<XBezahldienstePaymentRequest> createRequest(
+    public Optional<PaymentPayload> createRequest(
             @Nonnull PaymentConfigElementValue paymentConfigElementValue,
-            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
-            @Nullable ProcessExecutionData processExecutionData,
-            @Nonnull String redirectUrl
+            @Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nonnull ProcessExecutionData processExecutionData
     ) throws PaymentException {
-        if (StringUtils.isNullOrEmpty(redirectUrl)) {
-            throw new PaymentException("Die Redirect-URL für die Zahlungsanfrage darf nicht leer sein.");
-        }
-
         var items = createItems(paymentConfigElementValue, derivedRuntimeElementData, processExecutionData);
 
-        var request = new XBezahldienstePaymentRequest();
-        request.setRandomRequestId();
-        request.setRequestTimestampNow();
-        request.setPurpose(renderRequired(paymentConfigElementValue.purpose(), processExecutionData, "Verwendungszweck"));
-        request.setDescription(renderRequired(paymentConfigElementValue.description(), processExecutionData, "Beschreibung"));
-        request.setRedirectUrl(redirectUrl);
-        request.setRequestor(createRequestor(paymentConfigElementValue, processExecutionData));
-        request.setItemsAndCalculateGrosAmount(items);
+        var payload = new PaymentPayload()
+                .setPurpose(renderRequired(paymentConfigElementValue.purpose(), processExecutionData, "Verwendungszweck"))
+                .setDescription(renderRequired(paymentConfigElementValue.description(), processExecutionData, "Beschreibung"))
+                .setRequestor(createRequestor(paymentConfigElementValue, processExecutionData))
+                .setPaymentItems(items)
+                .setTotal(calculateTotal(items));
 
-        if (request.getGrosAmount() == null || request.getGrosAmount().compareTo(BigDecimal.ZERO) == 0) {
+        if (payload.getTotal().compareTo(BigDecimal.ZERO) == 0) {
             return Optional.empty();
         }
 
-        if (request.getGrosAmount().compareTo(BigDecimal.ZERO) < 0) {
+        if (payload.getTotal().compareTo(BigDecimal.ZERO) < 0) {
             throw new PaymentException("Die Zahlungsanfrage darf keine negativen Gesamtkosten enthalten.");
         }
 
-        return Optional.of(request);
+        return Optional.of(payload);
     }
 
     @Nonnull
-    private List<XBezahldienstePaymentItem> createItems(
+    private List<PaymentItem> createItems(
             @Nonnull PaymentConfigElementValue paymentConfigElementValue,
-            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
-            @Nullable ProcessExecutionData processExecutionData
+            @Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nonnull ProcessExecutionData processExecutionData
     ) throws PaymentException {
         var configItems = paymentConfigElementValue.items();
         if (configItems == null || configItems.isEmpty()) {
             throw new PaymentException("Die Zahlungsanfrage muss mindestens eine Zahlungsposition enthalten.");
         }
 
-        var items = new LinkedList<XBezahldienstePaymentItem>();
+        var items = new LinkedList<PaymentItem>();
         for (var i = 0; i < configItems.size(); i++) {
             var item = createItem(configItems.get(i), derivedRuntimeElementData, processExecutionData, i);
             if (item != null) {
@@ -105,10 +99,10 @@ public class PaymentRequestCreationService {
     }
 
     @Nullable
-    private XBezahldienstePaymentItem createItem(
+    private PaymentItem createItem(
             @Nonnull PaymentConfigElementValueItem itemConfig,
-            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
-            @Nullable ProcessExecutionData processExecutionData,
+            @Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nonnull ProcessExecutionData processExecutionData,
             int index
     ) throws PaymentException {
         var quantity = resolveQuantity(itemConfig, derivedRuntimeElementData, processExecutionData, index);
@@ -131,24 +125,26 @@ public class PaymentRequestCreationService {
 
         var normalizedSingleNetAmount = singleNetAmount.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
         var normalizedTaxRate = taxRate.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
-        var singleTaxAmount = normalizedSingleNetAmount
-                .multiply(normalizedTaxRate)
-                .divide(ONE_HUNDRED, MONEY_SCALE, RoundingMode.HALF_UP);
-        var quantityAsDecimal = BigDecimal.valueOf(quantity);
 
-        var paymentItem = new XBezahldienstePaymentItem();
+        var paymentItem = new PaymentItem();
         paymentItem.setId(resolveItemId(itemConfig, index));
         paymentItem.setReference(renderRequired(itemConfig.reference(), processExecutionData, "Referenz der Zahlungsposition " + (index + 1)));
         paymentItem.setDescription(renderRequired(itemConfig.description(), processExecutionData, "Beschreibung der Zahlungsposition " + (index + 1)));
         paymentItem.setQuantity(quantity);
         paymentItem.setTaxRate(normalizedTaxRate);
-        paymentItem.setSingleNetAmount(normalizedSingleNetAmount);
-        paymentItem.setSingleTaxAmount(singleTaxAmount);
-        paymentItem.setTotalNetAmount(normalizedSingleNetAmount.multiply(quantityAsDecimal).setScale(MONEY_SCALE, RoundingMode.HALF_UP));
-        paymentItem.setTotalTaxAmount(singleTaxAmount.multiply(quantityAsDecimal).setScale(MONEY_SCALE, RoundingMode.HALF_UP));
+        paymentItem.setNetPrice(normalizedSingleNetAmount);
         paymentItem.setBookingData(renderBookingData(itemConfig, processExecutionData));
 
         return paymentItem;
+    }
+
+    @Nonnull
+    private BigDecimal calculateTotal(@Nonnull List<PaymentItem> items) {
+        return items
+                .stream()
+                .map(PaymentItem::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
     }
 
     @Nonnull
@@ -168,8 +164,8 @@ public class PaymentRequestCreationService {
     @Nonnull
     private BigDecimal resolveCosts(
             @Nonnull PaymentConfigElementValueItem itemConfig,
-            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
-            @Nullable ProcessExecutionData processExecutionData,
+            @Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nonnull ProcessExecutionData processExecutionData,
             int index
     ) throws PaymentException {
         return switch (itemConfig.costType()) {
@@ -188,8 +184,8 @@ public class PaymentRequestCreationService {
 
     private long resolveQuantity(
             @Nonnull PaymentConfigElementValueItem itemConfig,
-            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
-            @Nullable ProcessExecutionData processExecutionData,
+            @Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nonnull ProcessExecutionData processExecutionData,
             int index
     ) throws PaymentException {
         var quantity = switch (itemConfig.quantityType()) {
@@ -213,8 +209,8 @@ public class PaymentRequestCreationService {
             @Nullable PaymentConfigElementValueItem.VariableValueCalculationType calculationType,
             @Nullable NoCodeOperand noCodeCalculation,
             @Nullable JavascriptCode lowCodeCalculation,
-            @Nullable DerivedRuntimeElementData derivedRuntimeElementData,
-            @Nullable ProcessExecutionData processExecutionData,
+            @Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nonnull ProcessExecutionData processExecutionData,
             @Nonnull String fieldName
     ) throws PaymentException {
         return switch (calculationType) {
@@ -244,9 +240,13 @@ public class PaymentRequestCreationService {
             @Nonnull String fieldName
     ) throws PaymentException {
         try (var javascriptEngine = javascriptEngineFactoryService.getEngine()) {
+            if (derivedRuntimeElementData != null) {
+                javascriptEngine.registerGlobalContextObject(derivedRuntimeElementData);
+            }
+            if (processExecutionData != null) {
+                javascriptEngine.registerProcessExecutionData(processExecutionData);
+            }
             var result = javascriptEngine
-                    .registerGlobalContextObject(derivedRuntimeElementData)
-                    .registerProcessExecutionData(processExecutionData)
                     .evaluateCode(lowCodeCalculation);
             return requireNumber(result.asNumber(), fieldName);
         } catch (JavascriptException e) {
@@ -257,11 +257,11 @@ public class PaymentRequestCreationService {
     }
 
     @Nonnull
-    private LinkedHashMap<String, String> renderBookingData(
+    private List<PaymentProduct.BookingDataItem> renderBookingData(
             @Nonnull PaymentConfigElementValueItem itemConfig,
             @Nonnull ProcessExecutionData processExecutionData
     ) throws PaymentException {
-        var bookingData = new LinkedHashMap<String, String>();
+        var bookingData = new LinkedList<PaymentProduct.BookingDataItem>();
         if (itemConfig.additionalBookingData() == null) {
             return bookingData;
         }
@@ -273,7 +273,7 @@ public class PaymentRequestCreationService {
 
             var value = render(entry.getValue(), processExecutionData);
             if (value != null) {
-                bookingData.put(entry.getKey(), value);
+                bookingData.add(new PaymentProduct.BookingDataItem(entry.getKey(), value));
             }
         }
 

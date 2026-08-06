@@ -6,6 +6,7 @@ import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.payment.exceptions.PaymentException;
 import de.aivot.gover.backend.payment.models.PaymentItem;
+import de.aivot.gover.backend.payment.models.PaymentPayload;
 import de.aivot.gover.backend.payment.models.PaymentProviderTestResult;
 import de.aivot.gover.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.gover.backend.payment.models.XBezahldienstePaymentTransaction;
@@ -80,15 +81,19 @@ public class PaymentProviderTestService {
         paymentItem.setBookingData(List.of());
         paymentItem.setTaxInformation("19% MwSt.");
 
+        var payload = new PaymentPayload()
+                .setPurpose(purpose)
+                .setDescription(description)
+                .setPaymentItems(List.of(paymentItem))
+                .setTotal(paymentItem.getTotalPrice());
+
         XBezahldienstePaymentRequest paymentRequest;
         try {
             paymentRequest = paymentProviderDefinition
                     .createPaymentRequest(
                             paymentProviderEntity,
                             derivedConfiguration,
-                            purpose,
-                            description,
-                            List.of(paymentItem),
+                            payload,
                             goverConfig.createUrl("/api/public/payment-transaction-callback/", TestRedirectID) + "/redirect/"
                     );
         } catch (PaymentException e) {

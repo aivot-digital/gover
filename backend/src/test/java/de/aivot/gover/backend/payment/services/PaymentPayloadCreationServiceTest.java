@@ -20,7 +20,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class PaymentRequestCreationServiceTest {
+class PaymentPayloadCreationServiceTest {
     @Test
     void shouldCreatePaymentRequestFromFixedItemAndRequestorMapping() throws PaymentException {
         var processData = new ProcessExecutionData().addProcessData(Map.of(
@@ -72,27 +72,24 @@ class PaymentRequestCreationServiceTest {
                 ))
         );
 
-        var request = createService().createRequest(config, processData, "/return");
+        var request = createService().createRequest(config, null, processData).orElseThrow();
 
         assertEquals("PAY AZ-1", request.getPurpose());
         assertEquals("Fee for Ada", request.getDescription());
-        assertEquals("/return", request.getRedirectUrl());
-        assertEquals(new BigDecimal("23.80"), request.getGrosAmount());
+        assertEquals(new BigDecimal("23.80"), request.getTotal());
         assertEquals("Lovelace", request.getRequestor().getLastName());
         assertEquals(XBezahldienstGender.FEMALE, request.getRequestor().getGender());
         assertEquals("London", request.getRequestor().getAddress().getCity());
         assertEquals("GB", request.getRequestor().getAddress().getCountry());
 
-        var item = request.getItems().getFirst();
+        var item = request.getPaymentItems().getFirst();
         assertEquals("fee-1", item.getId());
         assertEquals("REF-AZ-1", item.getReference());
         assertEquals("Description Ada", item.getDescription());
         assertEquals(2L, item.getQuantity());
-        assertEquals(new BigDecimal("10.00"), item.getSingleNetAmount());
-        assertEquals(new BigDecimal("1.90"), item.getSingleTaxAmount());
-        assertEquals(new BigDecimal("20.00"), item.getTotalNetAmount());
-        assertEquals(new BigDecimal("3.80"), item.getTotalTaxAmount());
-        assertEquals("AZ-1", item.getBookingData().get("case"));
+        assertEquals(new BigDecimal("10.00"), item.getNetPrice());
+        assertEquals(new BigDecimal("23.80"), item.getTotalPrice());
+        assertEquals("AZ-1", item.getBookingData().getFirst().value());
     }
 
     @Test
@@ -124,11 +121,45 @@ class PaymentRequestCreationServiceTest {
                 ))
         );
 
-        var request = createService().createRequest(config, processData, "/return");
+        var request = createService().createRequest(config, null, processData).orElseThrow();
 
-        assertEquals(1, request.getItems().size());
-        assertEquals(3L, request.getItems().getFirst().getQuantity());
-        assertEquals(new BigDecimal("22.50"), request.getGrosAmount());
+        assertEquals(1, request.getPaymentItems().size());
+        assertEquals(3L, request.getPaymentItems().getFirst().getQuantity());
+        assertEquals(new BigDecimal("22.50"), request.getTotal());
+    }
+
+    @Test
+    void shouldCalculateTotalWithPerItemTaxRounding() throws PaymentException {
+        var config = new PaymentConfigElementValue(
+                null,
+                "Purpose",
+                "Description",
+                false,
+                null,
+                List.of(new PaymentConfigElementValueItem(
+                        PaymentConfigElementValueItem.IdType.Predefined,
+                        "rounding",
+                        "Rounding",
+                        "ROUND",
+                        PaymentConfigElementValueItem.CostType.FixedCosts,
+                        new BigDecimal("0.01"),
+                        null,
+                        null,
+                        null,
+                        PaymentConfigElementValueItem.QuantityType.FixedQuantity,
+                        3L,
+                        null,
+                        null,
+                        null,
+                        new BigDecimal("19.00"),
+                        null
+                ))
+        );
+
+        var request = createService().createRequest(config, null, new ProcessExecutionData()).orElseThrow();
+
+        assertEquals(new BigDecimal("0.03"), request.getPaymentItems().getFirst().getTotalPrice());
+        assertEquals(new BigDecimal("0.03"), request.getTotal());
     }
 
     @Test
@@ -161,13 +192,13 @@ class PaymentRequestCreationServiceTest {
 
         assertThrows(
                 PaymentException.class,
-                () -> createService().createRequest(config, new ProcessExecutionData(), "/return")
+                () -> createService().createRequest(config, null, new ProcessExecutionData())
         );
     }
 
-    private static PaymentRequestCreationService createService() {
+    private static PaymentPayloadCreationService createService() {
         var javascriptEngineFactoryService = new JavascriptEngineFactoryService(List.of());
-        return new PaymentRequestCreationService(
+        return new PaymentPayloadCreationService(
                 new TemplateRenderService(javascriptEngineFactoryService),
                 new NoCodeEvaluationService(List.of()),
                 javascriptEngineFactoryService

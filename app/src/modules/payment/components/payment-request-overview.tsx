@@ -52,7 +52,7 @@ export function PaymentRequestOverview(props: PaymentRequestOverviewProps) {
                     {
                         request.paymentItems.map((item, index) => (
                             <li key={index}>
-                                {item.description}: {formatNumToGermanNum((item.totalNetAmount ?? 0) + (item.totalTaxAmount ?? 0), 2)} Euro {
+                                {item.description}: {formatNumToGermanNum(item.totalPrice, 2)} Euro {
                                 item.taxRate != null &&
                                 item.taxRate > 0 &&
                                 <>

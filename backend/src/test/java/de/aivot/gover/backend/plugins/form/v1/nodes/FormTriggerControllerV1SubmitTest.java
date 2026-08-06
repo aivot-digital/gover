@@ -19,7 +19,7 @@ import de.aivot.gover.backend.identity.services.IdentityService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
-import de.aivot.gover.backend.payment.services.PaymentRequestCreationService;
+import de.aivot.gover.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
@@ -250,7 +250,7 @@ class FormTriggerControllerV1SubmitTest {
                 mock(ProcessNodeExecutionLoggerFactory.class),
                 provider,
                 identityService,
-                mock(PaymentRequestCreationService.class),
+                mock(PaymentPayloadCreationService.class),
                 mock(PaymentProviderRepository.class)
         );
 

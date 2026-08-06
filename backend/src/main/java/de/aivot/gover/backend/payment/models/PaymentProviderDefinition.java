@@ -36,24 +36,22 @@ public interface PaymentProviderDefinition extends PluginComponent {
     default XBezahldienstePaymentRequest createPaymentRequest(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
             @Nonnull DerivedRuntimeElementData config,
-            @Nonnull String purpose,
-            @Nonnull String description,
-            @Nonnull List<PaymentItem> paymentItems,
+            @Nonnull PaymentPayload payload,
             @Nonnull String redirectURL
     ) throws PaymentException {
         // Check that the purpose is not empty
-        if (StringUtils.isNullOrEmpty(purpose)) {
+        if (StringUtils.isNullOrEmpty(payload.getPurpose())) {
             throw new PaymentException("Failed to create payment request. Purpose is empty");
         }
 
         // Check that the list of paymentItems is not empty
-        if (paymentItems.isEmpty()) {
+        if (payload.getPaymentItems().isEmpty()) {
             throw new PaymentException("Failed to create payment request. Products are empty");
         }
 
         // Transform the list of paymentItems to a list of XBezahldienstePaymentItem
         var xBezahldienstePaymentItems = new LinkedList<XBezahldienstePaymentItem>();
-        for (var product : paymentItems) {
+        for (var product : payload.getPaymentItems()) {
             product
                     .toXBezahldienstePaymentItem()
                     .ifPresent(xBezahldienstePaymentItems::add);
@@ -67,12 +65,11 @@ public interface PaymentProviderDefinition extends PluginComponent {
         // Construct the payment request
         var request = new XBezahldienstePaymentRequest();
         request.setRandomRequestId();
-        request.setDescription(description);
-        request.setPurpose(purpose);
+        request.setDescription(payload.getDescription());
+        request.setPurpose(payload.getPurpose());
         request.setRequestTimestampNow();
         request.setItemsAndCalculateGrosAmount(xBezahldienstePaymentItems);
-
-        request.setRequestor(null); // TODO: Set requester correct on a higher level
+        request.setRequestor(payload.getRequestor());
 
         request.setRedirectUrl(redirectURL);
 
