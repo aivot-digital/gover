@@ -1,6 +1,7 @@
 package de.aivot.gover.backend.process.entities;
 
 import de.aivot.gover.backend.core.converters.JsonObjectConverter;
+import de.aivot.gover.backend.process.converters.ProcessTaskStatusConverter;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -58,6 +59,7 @@ public class ProcessInstanceTaskEntity {
     @Nonnull
     @NotNull(message = "Der Aufgaben-Status darf nicht null sein.")
     @Column(columnDefinition = "int2")
+    @Convert(converter = ProcessTaskStatusConverter.class)
     private ProcessTaskStatus status;
 
     @Nullable
