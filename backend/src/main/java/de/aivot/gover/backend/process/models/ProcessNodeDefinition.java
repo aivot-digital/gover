@@ -18,7 +18,6 @@ import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.core.io.Resource;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import java.io.IOException;
 import java.util.*;
@@ -194,6 +193,17 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<NodeConfig> context) throws ProcessNodeExecutionException;
+
+    /**
+     * Resume a task by this node provider during process instance execution.
+     * @param context
+     * @return
+     * @throws ProcessNodeExecutionException
+     */
+    @Nullable
+    default ProcessNodeExecutionResult resume(@Nonnull ProcessNodeExecutionInitContext<NodeConfig> context) throws ProcessNodeExecutionException {
+        return null;
+    }
 
     /**
      * Get the task status layout for nodes of this provider type. This layout is used to display the status of the task in task lists and overviews. It is optional and can be
