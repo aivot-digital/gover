@@ -1001,7 +1001,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
         @InputElementPOJOBinding(id = ATTACHMENT_SET_DATA_KEYS_FIELD_ID, type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensatz"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensatz der Prozessinstanz, dessen Anhänge gespeichert werden sollen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensatz des Vorgangs, dessen Anhänge gespeichert werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "minItems", intValue = 1),
                 @ElementPOJOBindingProperty(key = "maxItems", intValue = 1),
