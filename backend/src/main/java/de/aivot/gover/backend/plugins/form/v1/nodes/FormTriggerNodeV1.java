@@ -82,6 +82,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
     public static final String DATA_KEY_STARTED = "started";
     public static final String DATA_KEY_CUSTOMER_SUMMARY_FILES = "customerSummaryFiles";
+    public static final String DATA_KEY_PAYMENT_DETAILS =  "paymentDetails";
 
     private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processNodeRepository;
@@ -192,6 +193,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                         DATA_KEY_CUSTOMER_SUMMARY_FILES,
                         "PDF-Zusammenfassung",
                         "Die erzeugte PDF-Zusammenfassung der eingereichten Formulardaten im Format des Datei-Anlagen-Feldes."
+                ),
+                new ProcessNodeOutput(
+                        DATA_KEY_PAYMENT_DETAILS,
+                        "Zahlungsdetails",
+                        "Enthält die Zahlungsdetails, falls eine Zahlung durchgeführt wurde."
                 )
         );
     }
@@ -493,6 +499,19 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             }
         }
 
+        return resume(context);
+    }
+
+    @Nullable
+    @Override
+    public ProcessNodeExecutionResult resume(@Nonnull ProcessNodeExecutionInitContext<FormTriggerConfigV1> context) throws ProcessNodeExecutionException {
+        var configuration = context.getConfigurationOfExecutingNode();
+        if (configuration.formLayout == null) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die Konfiguration des Formulareingangs enthält kein Formular."
+            );
+        }
+
         var processInstanceInitialPayload = context
                 .getThisProcessInstance()
                 .getInitialPayload();
@@ -510,6 +529,51 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         if (nodeInitialPayloadRaw instanceof Map<?, ?> mInitialPayload) {
             for (var key : mInitialPayload.keySet()) {
                 nodeInitialPayload.put(String.valueOf(key), mInitialPayload.get(key));
+            }
+        }
+
+        if (context.getThisTask().getRuntimeData().containsKey(DATA_KEY_PAYMENT_TRANSACTION_KEY)) {
+            var txKey = context
+                    .getThisTask()
+                    .getRuntimeData()
+                    .get(DATA_KEY_PAYMENT_TRANSACTION_KEY)
+                    .toString();
+
+            var tx = paymentTransactionService
+                    .retrieve(txKey)
+                    .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
+                            "Die Zahlungsanforderung mit dem Schlüssel %s konnte nicht gefunden werden.",
+                            StringUtils.quote(txKey)
+                    ));
+
+            if (tx.getStatus() != XBezahldienstStatus.PAYED) {
+                if (StringUtils.isNotNullOrEmpty(tx.getPaymentError())) {
+                    throw new ProcessNodeExecutionExceptionIO(
+                            "Die Zahlungsanforderung mit dem Schlüssel %s ist nicht abgeschlossen. Aktueller Status: %s. Der folgende Fehler wurde gemeldet: %s",
+                            StringUtils.quote(txKey),
+                            StringUtils.quote(tx.getStatus().getKey()),
+                            StringUtils.quote(tx.getPaymentError())
+                    );
+                } else {
+                    throw new ProcessNodeExecutionExceptionIO(
+                            "Die Zahlungsanforderung mit dem Schlüssel %s ist nicht abgeschlossen. Aktueller Status: %s.",
+                            StringUtils.quote(txKey),
+                            StringUtils.quote(tx.getStatus().getKey())
+                    );
+                }
+            } else {
+                context
+                        .getLogger()
+                        .logf(
+                                ProcessNodeExecutionLogLevel.Info,
+                                false,
+                                true,
+                                "Zahlungsanforderung abgeschlossen",
+                                "Die Zahlungsanforderung mit dem Schlüssel %s wurde erfolgreich abgeschlossen.",
+                                StringUtils.quote(txKey)
+                        );
+
+                nodeData.put(DATA_KEY_PAYMENT_DETAILS, tx.getPaymentInformation());
             }
         }
 
@@ -642,12 +706,12 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                         Um Ihre Einreichung bearbeiten zu können, ist eine Zahlung von Gebühren erforderlich.
                         Die Zahlung wird durch den **%s** abgewickelt.
                         Bitte achten Sie darauf, dass Sie die Zahlungsinformationen korrekt eingeben und den Vorgang abschließen.
-
+                        
                         Für Ihre Einreichung sind folgende Gebühren zu zahlen:
                         %s
-
+                        
                         Insgesamt zu entrichtende Gebühr: %s Euro inkl. Steuern.
-
+                        
                         Sie können den Betrag über den folgenden Link zahlen: [%s](%s)
                         """
                         .formatted(
