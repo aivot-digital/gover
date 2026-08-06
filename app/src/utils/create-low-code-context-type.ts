@@ -143,7 +143,7 @@ function elementToValueType(element: AnyElement): string {
         case ElementType.PaymentConfigElement:
             return 'Record<string, unknown>';
         case ElementType.FileUpload:
-            return '{name: string; uri: string; size: number;}[]';
+            return '{name: string; originalFileName?: string | null; uri: string; size: number;}[]';
         case ElementType.IntroductionStep:
         case ElementType.SummaryStep:
             return 'boolean';

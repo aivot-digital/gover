@@ -1362,6 +1362,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     {
                         key: 'example',
                         fileName: 'Erfolgsbescheid.pdf',
+                        originalFileName: 'Bescheid.pdf',
                     },
                 ]}
             />

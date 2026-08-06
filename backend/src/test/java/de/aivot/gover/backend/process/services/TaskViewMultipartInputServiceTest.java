@@ -42,6 +42,7 @@ class FileUploadMultipartInputServiceTest {
                 ),
                 Map.of(
                         "name", "existing.pdf",
+                        "originalFileName", "original-existing.pdf",
                         "uri", "process-instance-attachment:existing",
                         "size", 7
                 )
@@ -69,11 +70,13 @@ class FileUploadMultipartInputServiceTest {
         var documents = (List<Map<String, Object>>) normalized.get("documents");
         assertEquals(2, documents.size());
         assertEquals("report.pdf", documents.get(0).get("name"));
+        assertEquals("report.pdf", documents.get(0).get("originalFileName"));
         assertEquals(3, documents.get(0).get("size"));
         assertEquals(
                 FileUploadMultipartInputService.buildAttachmentUri(attachmentService.createdAttachments().getFirst().getKey()),
                 documents.get(0).get("uri")
         );
+        assertEquals("original-existing.pdf", documents.get(1).get("originalFileName"));
         assertEquals("process-instance-attachment:existing", documents.get(1).get("uri"));
 
         assertEquals(1, attachmentService.createdAttachments().size());
@@ -85,6 +88,7 @@ class FileUploadMultipartInputServiceTest {
         assertNull(createdAttachment.getGroup());
         assertEquals(1, normalizationResult.createdFileItems().size());
         assertEquals("report.pdf", normalizationResult.createdFileItems().getFirst().getName());
+        assertEquals("report.pdf", normalizationResult.createdFileItems().getFirst().getOriginalFileName());
         assertEquals(3, normalizationResult.createdFileItems().getFirst().getSize());
         assertEquals(
                 FileUploadMultipartInputService.buildAttachmentUri(createdAttachment.getKey()),
@@ -169,6 +173,8 @@ class FileUploadMultipartInputServiceTest {
         var documents = (List<Map<String, Object>>) normalized.get("documents");
         assertEquals("evidence-1.pdf", documents.get(0).get("name"));
         assertEquals("evidence-2.pdf", documents.get(1).get("name"));
+        assertEquals("report.pdf", documents.get(0).get("originalFileName"));
+        assertEquals("invoice.pdf", documents.get(1).get("originalFileName"));
         assertEquals("evidence-1.pdf", attachmentService.createdAttachments().get(0).getFileName());
         assertEquals("evidence-2.pdf", attachmentService.createdAttachments().get(1).getFileName());
         assertEquals("report.pdf", attachmentService.createdAttachments().get(0).getOriginalFileName());

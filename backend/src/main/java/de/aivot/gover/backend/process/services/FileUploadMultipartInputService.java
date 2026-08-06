@@ -232,6 +232,7 @@ public class FileUploadMultipartInputService {
             if (!requiresUpload(item)) {
                 normalizedItems.add(createFileUploadItemMap(
                         item.getName(),
+                        item.getOriginalFileName(),
                         item.getUri(),
                         item.getSize()
                 ));
@@ -571,6 +572,7 @@ public class FileUploadMultipartInputService {
                                                                 long fileSize) throws ResponseException {
         return new FileUploadInputElementItem()
                 .setName(attachment.getFileName())
+                .setOriginalFileName(attachment.getOriginalFileName())
                 .setUri(buildAttachmentUri(attachment.getKey()))
                 .setSize(safeFileSize(fileSize, attachment.getFileName()));
     }
@@ -589,10 +591,12 @@ public class FileUploadMultipartInputService {
 
     @Nonnull
     private static Map<String, Object> createFileUploadItemMap(@Nullable String name,
+                                                               @Nullable String originalFileName,
                                                                @Nullable String uri,
                                                                @Nullable Integer size) {
         var itemMap = new LinkedHashMap<String, Object>();
         itemMap.put("name", name);
+        itemMap.put("originalFileName", originalFileName);
         itemMap.put("uri", uri);
         itemMap.put("size", size);
         return itemMap;
@@ -602,6 +606,7 @@ public class FileUploadMultipartInputService {
     private static Map<String, Object> createFileUploadItemMap(@Nonnull FileUploadInputElementItem item) {
         return createFileUploadItemMap(
                 item.getName(),
+                item.getOriginalFileName(),
                 item.getUri(),
                 item.getSize()
         );

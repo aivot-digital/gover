@@ -1,5 +1,19 @@
 import React, {useMemo, useRef, useState} from 'react';
-import {Box, Button, FormLabel, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useMediaQuery, useTheme} from '@mui/material';
+import {
+    Box,
+    Button,
+    FormLabel,
+    IconButton,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Typography,
+    useMediaQuery,
+    useTheme,
+} from '@mui/material';
 import {FileUploadElement, FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar} from '../../slices/snackbar-slice';
@@ -128,6 +142,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
             const file = cleanedFiles[i];
             fileUploadItems.push({
                 name: file.name,
+                originalFileName: file.name,
                 uri: URL.createObjectURL(file),
                 size: file.size,
             });
@@ -196,6 +211,15 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                                         >
                                             <TableCell>
                                                 {file.name}
+                                                {
+                                                    isPersistedAttachment &&
+                                                    <Typography
+                                                        variant="caption"
+                                                        component="div"
+                                                    >
+                                                        Hochgeladen als: {file.originalFileName}
+                                                    </Typography>
+                                                }
                                             </TableCell>
                                             <TableCell align="right">
                                                 {humanizeFileSize(file.size)}
@@ -210,8 +234,8 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                                                         >
                                                             {
                                                                 isPersistedAttachment ?
-                                                                    <Download fontSize="small" /> :
-                                                                    <Delete fontSize="small" />
+                                                                    <Download fontSize="small"/> :
+                                                                    <Delete fontSize="small"/>
                                                             }
                                                         </IconButton> :
                                                         <Button
@@ -220,8 +244,8 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                                                             disabled={!isPersistedAttachment && (isDisabled || isBusy)}
                                                             startIcon={
                                                                 isPersistedAttachment ?
-                                                                    <Download fontSize="small" /> :
-                                                                    <Delete fontSize="small" />
+                                                                    <Download fontSize="small"/> :
+                                                                    <Delete fontSize="small"/>
                                                             }
                                                         >
                                                             {isPersistedAttachment ? 'Herunterladen' : 'Entfernen'}
