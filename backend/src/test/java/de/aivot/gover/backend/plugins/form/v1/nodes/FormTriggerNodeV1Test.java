@@ -164,7 +164,13 @@ class FormTriggerNodeV1Test {
     @Test
     void getConfigurationLayout_ShouldExposePaymentConfigBelowIdentityConfig() throws Exception {
         var publicUrlService = new PublicUrlService(goverConfig());
-        var node = new FormTriggerNodeV1(publicUrlService, processNodeRepository);
+        var node = new FormTriggerNodeV1(
+                publicUrlService,
+                processNodeRepository,
+                pdfService,
+                processInstanceAttachmentService,
+                processInstanceAttachmentSetService
+        );
 
         var layout = node.getConfigurationLayout(configurationLayoutContext());
         var children = layout.getChildren();
