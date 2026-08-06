@@ -211,12 +211,15 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                                         >
                                             <TableCell>
                                                 {file.name}
-                                                <Typography
-                                                    variant="caption"
-                                                    component="div"
-                                                >
-                                                    {file.originalFileName}
-                                                </Typography>
+                                                {
+                                                    isPersistedAttachment &&
+                                                    <Typography
+                                                        variant="caption"
+                                                        component="div"
+                                                    >
+                                                        Hochgeladen als: {file.originalFileName}
+                                                    </Typography>
+                                                }
                                             </TableCell>
                                             <TableCell align="right">
                                                 {humanizeFileSize(file.size)}
