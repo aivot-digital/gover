@@ -128,7 +128,7 @@ public class SystemConfigController {
                 .orElseThrow(() -> ResponseException.notFound("Für den Schlüssel \"" + key + "\" wurde keine Systemkonfiguration gefunden."));
 
         var entity = updateRequest
-                .toEntity(def);
+                .toEntity();
 
         var config = systemConfigService
                 .save(key, entity, Boolean.TRUE.equals(updateRequest.changeConfirmed()));
