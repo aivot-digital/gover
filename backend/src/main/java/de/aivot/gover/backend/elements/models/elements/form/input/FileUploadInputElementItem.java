@@ -10,6 +10,9 @@ public class FileUploadInputElementItem implements Serializable {
     private String name;
 
     @Nullable
+    private String originalFileName;
+
+    @Nullable
     private String uri;
 
     @Nullable
@@ -26,12 +29,15 @@ public class FileUploadInputElementItem implements Serializable {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         FileUploadInputElementItem that = (FileUploadInputElementItem) o;
-        return Objects.equals(name, that.name) && Objects.equals(uri, that.uri) && Objects.equals(size, that.size);
+        return Objects.equals(name, that.name) &&
+               Objects.equals(originalFileName, that.originalFileName) &&
+               Objects.equals(uri, that.uri) &&
+               Objects.equals(size, that.size);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, uri, size);
+        return Objects.hash(name, originalFileName, uri, size);
     }
 
     // endregion
@@ -40,6 +46,16 @@ public class FileUploadInputElementItem implements Serializable {
 
     public FileUploadInputElementItem setName(@Nullable String name) {
         this.name = name;
+        return this;
+    }
+
+    @Nullable
+    public String getOriginalFileName() {
+        return originalFileName;
+    }
+
+    public FileUploadInputElementItem setOriginalFileName(@Nullable String originalFileName) {
+        this.originalFileName = originalFileName;
         return this;
     }
 

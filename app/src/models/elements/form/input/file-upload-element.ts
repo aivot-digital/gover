@@ -11,6 +11,7 @@ export interface FileUploadElement extends BaseInputElement<ElementType.FileUplo
 
 export interface FileUploadElementItem {
     name: string;
+    originalFileName?: string | null;
     uri: string;
     size: number;
 }

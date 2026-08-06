@@ -1,5 +1,17 @@
 import React, {type ReactNode} from 'react';
-import {Box, ButtonBase, CircularProgress, FormControl, FormHelperText, FormLabel, IconButton, Stack, Tooltip, Typography} from '@mui/material';
+import {
+    Box,
+    ButtonBase,
+    CircularProgress,
+    FormControl,
+    FormHelperText,
+    FormLabel,
+    IconButton,
+    Paper,
+    Stack,
+    Tooltip,
+    Typography,
+} from '@mui/material';
 import type {SxProps, Theme} from '@mui/material';
 import AttachFile from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
 import Description from '@aivot/mui-material-symbols-400-n25-outlined/Description';
@@ -9,6 +21,8 @@ import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 export interface ProcessAttachmentDisplayItem {
     key: string;
     fileName: string;
+    originalFileName: string;
+    group?: string | undefined | null;
     onView?: () => void;
     onDownload?: () => void;
 }
@@ -34,58 +48,145 @@ export function ProcessAttachmentDisplayComponent(props: ProcessAttachmentDispla
             <Box sx={{containerType: 'inline-size'}}>
                 {
                     items.length > 0 &&
-                        <Box
-                            sx={{
-                                'display': 'grid',
-                                'gridTemplateColumns': 'minmax(0, 1fr)',
-                                'gap': 1,
-                                '@container (min-width: 720px)': {
-                                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                                },
-                            }}
-                        >
-                            {
-                                items.map((item) => (
-                                    <AttachmentItem
-                                        key={item.key}
-                                        item={item}
-                                    />
-                                ))
-                            }
-                        </Box>
+                    <Box
+                        sx={{
+                            'display': 'grid',
+                            'gridTemplateColumns': 'minmax(0, 1fr)',
+                            'gap': 1,
+                            '@container (min-width: 720px)': {
+                                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                            },
+                        }}
+                    >
+                        <AttachmentItems items={items}/>
+                    </Box>
                 }
                 {
                     items.length === 0 &&
-                        <AttachmentStatus loading={props.loading}>
-                            {props.statusText}
-                        </AttachmentStatus>
+                    <AttachmentStatus loading={props.loading}>
+                        {props.statusText}
+                    </AttachmentStatus>
                 }
             </Box>
 
             {
                 props.hintText != null && props.hintText.trim().length > 0 &&
-                    <FormHelperText
-                        sx={{
-                            ml: 0,
-                            mt: 0.75,
-                        }}
-                    >
-                        {props.hintText}
-                    </FormHelperText>
+                <FormHelperText
+                    sx={{
+                        ml: 0,
+                        mt: 0.75,
+                    }}
+                >
+                    {props.hintText}
+                </FormHelperText>
             }
 
             {
                 props.previewText != null &&
-                    <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{mt: 0.75}}
-                    >
-                        {props.previewText}
-                    </Typography>
+                <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{mt: 0.75}}
+                >
+                    {props.previewText}
+                </Typography>
             }
         </FormControl>
     );
+}
+
+interface AttachmentItemsProps {
+    items: ProcessAttachmentDisplayItem[];
+}
+
+function AttachmentItems(props: AttachmentItemsProps): React.JSX.Element {
+    const itemsByGroup = new Map<string, ProcessAttachmentDisplayItem[]>();
+    for (const item of props.items) {
+        const group = normalizeAttachmentGroup(item.group);
+        if (group == null) {
+            continue;
+        }
+
+        const groupItems = itemsByGroup.get(group) ?? [];
+        groupItems.push(item);
+        itemsByGroup.set(group, groupItems);
+    }
+
+    if (itemsByGroup.size === 0) {
+        return (
+            <>
+                {
+                    props.items.map((item) => (
+                        <AttachmentItem
+                            key={item.key}
+                            item={item}
+                        />
+                    ))
+                }
+            </>
+        );
+    }
+
+    const renderedGroups = new Set<string>();
+
+    return (
+        <>
+            {
+                props.items.map((item) => {
+                    const group = normalizeAttachmentGroup(item.group);
+
+                    if (group == null) {
+                        return (
+                            <AttachmentItem
+                                key={item.key}
+                                item={item}
+                            />
+                        );
+                    }
+
+                    if (renderedGroups.has(group)) {
+                        return null;
+                    }
+
+                    renderedGroups.add(group);
+
+                    return (
+                        <Paper
+                            key={`group:${group}`}
+                            aria-label="Anlagengruppe"
+                            role="group"
+                            variant="outlined"
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 1,
+                                minWidth: 0,
+                                p: 1,
+                            }}
+                        >
+                            <Typography variant="caption" color="textSecondary">
+                                Gruppenkennzeichnung: {group}
+                            </Typography>
+
+                            {
+                                itemsByGroup.get(group)?.map((groupedItem) => (
+                                    <AttachmentItem
+                                        key={groupedItem.key}
+                                        item={groupedItem}
+                                    />
+                                ))
+                            }
+                        </Paper>
+                    );
+                })
+            }
+        </>
+    );
+}
+
+function normalizeAttachmentGroup(group: string | null | undefined): string | null {
+    const normalizedGroup = group?.trim();
+    return normalizedGroup == null || normalizedGroup.length === 0 ? null : normalizedGroup;
 }
 
 interface AttachmentItemProps {
@@ -101,6 +202,7 @@ function AttachmentItem(props: AttachmentItemProps): React.JSX.Element {
         justifyContent: 'flex-start',
         textAlign: 'left',
         borderRadius: 0.5,
+        py: 1,
     };
 
     return (
@@ -118,7 +220,10 @@ function AttachmentItem(props: AttachmentItemProps): React.JSX.Element {
                 backgroundColor: 'background.paper',
             }}
         >
-            <Description color="primary" sx={{flexShrink: 0}} />
+            <Description
+                color="primary"
+                sx={{flexShrink: 0}}
+            />
             <Box
                 sx={{
                     display: 'flex',
@@ -128,29 +233,41 @@ function AttachmentItem(props: AttachmentItemProps): React.JSX.Element {
             >
                 {
                     props.item.onView != null ?
-                        <Tooltip title="In neuem Tab ansehen" arrow>
+                        <Tooltip
+                            title="In neuem Tab ansehen"
+                            arrow
+                        >
                             <ButtonBase
                                 aria-label={`${props.item.fileName} ansehen`}
                                 onClick={props.item.onView}
                                 sx={fileNameActionSx}
                             >
-                                <FileName fileName={props.item.fileName} />
+                                <FileName
+                                    fileName={props.item.fileName}
+                                    original={props.item.originalFileName}
+                                />
                             </ButtonBase>
                         </Tooltip> :
-                        <FileName fileName={props.item.fileName} />
+                        <FileName
+                            fileName={props.item.fileName}
+                            original={props.item.originalFileName}
+                        />
                 }
             </Box>
 
             {
                 props.item.onView != null ?
-                    <Tooltip title="In neuem Tab ansehen" arrow>
+                    <Tooltip
+                        title="In neuem Tab ansehen"
+                        arrow
+                    >
                         <IconButton
                             aria-label={`${props.item.fileName} in neuem Tab ansehen`}
                             onClick={props.item.onView}
                             size="small"
                             color="primary"
                         >
-                            <OpenInNew fontSize="small" />
+                            <OpenInNew fontSize="small"/>
                         </IconButton>
                     </Tooltip> :
                     <Box
@@ -161,20 +278,23 @@ function AttachmentItem(props: AttachmentItemProps): React.JSX.Element {
                             color: 'text.disabled',
                         }}
                     >
-                        <OpenInNew fontSize="small" />
+                        <OpenInNew fontSize="small"/>
                     </Box>
             }
 
             {
                 props.item.onDownload != null ?
-                    <Tooltip title="Herunterladen" arrow>
+                    <Tooltip
+                        title="Herunterladen"
+                        arrow
+                    >
                         <IconButton
                             aria-label={`${props.item.fileName} herunterladen`}
                             onClick={props.item.onDownload}
                             size="small"
                             sx={{color: 'text.secondary'}}
                         >
-                            <Download fontSize="small" />
+                            <Download fontSize="small"/>
                         </IconButton>
                     </Tooltip> :
                     <Box
@@ -185,30 +305,39 @@ function AttachmentItem(props: AttachmentItemProps): React.JSX.Element {
                             color: 'text.disabled',
                         }}
                     >
-                        <Download fontSize="small" />
+                        <Download fontSize="small"/>
                     </Box>
             }
         </Box>
     );
 }
 
-function FileName(props: {fileName: string}): React.JSX.Element {
+function FileName(props: { fileName: string, original: string }): React.JSX.Element {
     return (
-        <Typography
-            component="span"
-            variant="body2"
-            sx={{
-                display: 'block',
-                maxWidth: '100%',
-                minWidth: 0,
-                fontWeight: 500,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-            }}
-        >
-            {props.fileName}
-        </Typography>
+        <Stack direction="column" spacing={0.25}>
+            <Typography
+                component="span"
+                variant="body2"
+                sx={{
+                    display: 'block',
+                    maxWidth: '100%',
+                    minWidth: 0,
+                    fontWeight: 500,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                }}
+            >
+                {props.fileName}
+            </Typography>
+
+            <Typography
+                variant="caption"
+                color="textSecondary"
+            >
+                Hochgeladen als: {props.original}
+            </Typography>
+        </Stack>
     );
 }
 
@@ -236,10 +365,13 @@ function AttachmentStatus(props: AttachmentStatusProps): React.JSX.Element {
         >
             {
                 props.loading === true ?
-                    <CircularProgress size={20} /> :
-                    <AttachFile color="disabled" />
+                    <CircularProgress size={20}/> :
+                    <AttachFile color="disabled"/>
             }
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+                variant="body2"
+                color="text.secondary"
+            >
                 {props.children}
             </Typography>
         </Stack>

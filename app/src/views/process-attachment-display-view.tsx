@@ -60,6 +60,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
                     {
                         key: 'preview',
                         fileName: element.label ?? configuredAttachmentSetKey,
+                        originalFileName: element.label ?? configuredAttachmentSetKey,
                     },
                 ]}
                 previewText="Dies ist eine Vorschau. Anhänge können im Modellierungsmodus nicht angesehen oder heruntergeladen werden."
@@ -115,6 +116,8 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
             items={matchingAttachments.map((attachment) => ({
                 key: attachment.key,
                 fileName: attachment.fileName,
+                originalFileName: attachment.originalFileName,
+                group: attachment.group,
                 onView: () => {
                     void attachmentContext.viewAttachment(attachment);
                 },

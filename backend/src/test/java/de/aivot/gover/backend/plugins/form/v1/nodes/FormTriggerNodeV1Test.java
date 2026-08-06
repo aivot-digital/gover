@@ -120,7 +120,7 @@ class FormTriggerNodeV1Test {
                 .orElse(null);
 
         assertNotNull(output);
-        assertEquals("PDF-Zusammenfassung", output.label());
+        assertEquals("Formularzusammenfassung", output.label());
     }
 
     @Test
@@ -135,7 +135,7 @@ class FormTriggerNodeV1Test {
 
         var attachmentSet = metadata.forwardedAttachmentSets().getFirst();
         assertEquals("formNode", attachmentSet.dataKey());
-        assertEquals("PDF-Zusammenfassung", attachmentSet.label());
+        assertEquals("Formularzusammenfassung", attachmentSet.label());
         assertFalse(attachmentSet.isMultifile());
     }
 
@@ -278,7 +278,7 @@ class FormTriggerNodeV1Test {
                         .getArgument(0, ProcessInstanceAttachmentEntity.class)
                         .setKey(UUID.randomUUID())
                         .setStorageProviderId(7)
-                        .setStoragePathFromRoot("attachments/Formularausdruck.pdf"));
+                        .setStoragePathFromRoot("attachments/Formularzusammenfassung.pdf"));
 
         var started = Instant.now();
         var mappedPayload = Map.<String, Object>of("person", Map.of("name", "Ada"));
@@ -316,21 +316,22 @@ class FormTriggerNodeV1Test {
 
         var attachmentSetCaptor = ArgumentCaptor.forClass(ProcessInstanceAttachmentSetEntity.class);
         verify(processInstanceAttachmentSetService).create(attachmentSetCaptor.capture());
-        assertEquals("Formularausdruck.pdf", attachmentSetCaptor.getValue().getName());
+        assertEquals("Formularzusammenfassung.pdf", attachmentSetCaptor.getValue().getName());
         assertEquals("formNode", attachmentSetCaptor.getValue().getDataKey());
         assertEquals(PROCESS_INSTANCE_ID, attachmentSetCaptor.getValue().getProcessInstanceId());
         assertEquals(TASK_ID, attachmentSetCaptor.getValue().getProcessInstanceTaskId());
 
         var attachmentCaptor = ArgumentCaptor.forClass(ProcessInstanceAttachmentEntity.class);
         verify(processInstanceAttachmentService).create(attachmentCaptor.capture());
-        assertEquals("Formularausdruck.pdf", attachmentCaptor.getValue().getFileName());
+        assertEquals("Formularzusammenfassung.pdf", attachmentCaptor.getValue().getFileName());
         assertEquals(321, attachmentCaptor.getValue().getAttachmentSetId());
         Assertions.assertArrayEquals(pdfBytes, attachmentCaptor.getValue().getFileBytes());
 
         @SuppressWarnings("unchecked")
         var files = (List<FileUploadInputElementItem>) result.getNodeData().get(FormTriggerNodeV1.DATA_KEY_CUSTOMER_SUMMARY_FILES);
         assertEquals(1, files.size());
-        assertEquals("Formularausdruck.pdf", files.getFirst().getName());
+        assertEquals("Formularzusammenfassung.pdf", files.getFirst().getName());
+        assertEquals("Formularzusammenfassung.pdf", files.getFirst().getOriginalFileName());
         assertEquals(pdfBytes.length, files.getFirst().getSize());
         assertTrue(files.getFirst().getUri().startsWith(FileUploadMultipartInputService.PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX));
     }

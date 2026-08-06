@@ -141,7 +141,7 @@ function elementToValueType(element: AnyElement): string {
         case ElementType.IdentityConfigElement:
             return '{identityProviderKey: string | null | undefined; identityAttributes: Record<string, unknown> | null | undefined}';
         case ElementType.FileUpload:
-            return '{name: string; uri: string; size: number;}[]';
+            return '{name: string; originalFileName?: string | null; uri: string; size: number;}[]';
         case ElementType.IntroductionStep:
         case ElementType.SummaryStep:
             return 'boolean';

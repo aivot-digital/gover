@@ -60,7 +60,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public static final String NODE_KEY = "form";
     private static final String PORT_NAME = "input";
     private static final String COPY_VALUE_TEMPLATE_PATH_SEGMENT = "__copy_value__";
-    private static final String CUSTOMER_SUMMARY_FILE_NAME = "Formularausdruck.pdf";
+    private static final String CUSTOMER_SUMMARY_FILE_NAME = "Formularzusammenfassung";
+    private static final String CUSTOMER_SUMMARY_FILE_NAME_EXT = CUSTOMER_SUMMARY_FILE_NAME + ".pdf";
 
     public static final String DATA_KEY_PAYLOAD = "payload";
     public static final String DATA_KEY_UNMAPPED = "unmapped";
@@ -160,8 +161,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_CUSTOMER_SUMMARY_FILES,
-                        "PDF-Zusammenfassung",
-                        "Die erzeugte PDF-Zusammenfassung der eingereichten Formulardaten im Format des Datei-Anlagen-Feldes."
+                        CUSTOMER_SUMMARY_FILE_NAME,
+                        "Die erzeugte Formularzusammenfassung der eingereichten Formulardaten im Format des Datei-Anlagen-Feldes."
                 )
         );
     }
@@ -192,7 +193,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
         pdm.addForwardedAttachmentSet(
                 processNodeEntity.getDataKey(),
-                "PDF-Zusammenfassung",
+                CUSTOMER_SUMMARY_FILE_NAME,
                 "Zusammenfassung der eingereichten Formulardaten.",
                 false,
                 processNodeEntity
@@ -442,7 +443,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         try {
             var attachmentSet = processInstanceAttachmentSetService.create(
                     new ProcessInstanceAttachmentSetEntity()
-                            .setName(CUSTOMER_SUMMARY_FILE_NAME)
+                            .setName(CUSTOMER_SUMMARY_FILE_NAME_EXT)
                             .setDataKey(context.getThisNode().getDataKey())
                             .setProcessInstanceId(context.getThisProcessInstance().getId())
                             .setProcessInstanceTaskId(context.getThisTask().getId())
@@ -450,7 +451,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
             attachment = processInstanceAttachmentService.create(
                     ProcessInstanceAttachmentEntity.of(
-                            CUSTOMER_SUMMARY_FILE_NAME,
+                            CUSTOMER_SUMMARY_FILE_NAME_EXT,
                             1,
                             context.getThisProcessInstance().getId(),
                             context.getThisTask().getId(),
@@ -473,7 +474,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         var rawSubmission = initialPayload.get(DATA_KEY_UNMAPPED);
         if (rawSubmission == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die Formular-Rohdaten für die PDF-Zusammenfassung fehlen."
+                    "Die Formular-Rohdaten für die Formularzusammenfassung fehlen."
             );
         }
 
@@ -484,7 +485,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     e,
-                    "Die Formular-Rohdaten konnten nicht für die PDF-Zusammenfassung verarbeitet werden."
+                    "Die Formular-Rohdaten konnten nicht für die Formularzusammenfassung verarbeitet werden."
             );
         }
     }
