@@ -120,7 +120,7 @@ class FormTriggerNodeV1Test {
                 .orElse(null);
 
         assertNotNull(output);
-        assertEquals("PDF-Zusammenfassung", output.label());
+        assertEquals("Formularzusammenfassung", output.label());
     }
 
     @Test
@@ -135,7 +135,7 @@ class FormTriggerNodeV1Test {
 
         var attachmentSet = metadata.forwardedAttachmentSets().getFirst();
         assertEquals("formNode", attachmentSet.dataKey());
-        assertEquals("PDF-Zusammenfassung", attachmentSet.label());
+        assertEquals("Formularzusammenfassung", attachmentSet.label());
         assertFalse(attachmentSet.isMultifile());
     }
 
