@@ -65,8 +65,8 @@ import java.util.Objects;
 import java.util.Set;
 
 @Component
-public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig> {
-    public static final String NODE_KEY = "store_attachment_set";
+public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig> {
+    public static final String NODE_KEY = "write_external_storage";
 
     private static final String PORT_NAME = "output";
 
@@ -84,12 +84,12 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     private final StorageProviderRepository storageProviderRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
 
-    public StoreAttachmentSetActionNodeV1(TemplateRenderService templateRenderService,
-                                          ProcessInstanceAttachmentService processInstanceAttachmentService,
-                                          ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
-                                          StorageService storageService,
-                                          StorageProviderRepository storageProviderRepository,
-                                          StorageProviderDefinitionService storageProviderDefinitionService) {
+    public WriteExternalStorageActionNodeV1(TemplateRenderService templateRenderService,
+                                            ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                            ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
+                                            StorageService storageService,
+                                            StorageProviderRepository storageProviderRepository,
+                                            StorageProviderDefinitionService storageProviderDefinitionService) {
         this.templateRenderService = templateRenderService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
@@ -140,7 +140,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         ConfigLayoutElement layout;
         try {
-            layout = ElementPOJOMapper.createFromPOJO(StoreAttachmentSetActionNodeConfig.class);
+            layout = ElementPOJOMapper.createFromPOJO(WriteExternalStorageActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
                     "Fehler beim Erstellen des Konfigurations-Layouts für das Speichern eines Anlagensatzes: %s",
@@ -149,24 +149,24 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
         }
 
         layout
-                .findChild(AttachmentSetStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, ProcessInstanceAttachmentSetSelectElement.class)
+                .findChild(WriteExternalStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, ProcessInstanceAttachmentSetSelectElement.class)
                 .ifPresent(field -> field
                         .setMinItems(1)
                         .setMaxItems(1));
 
         layout
-                .findChild(AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, StoragePathSelectorInputElement.class)
+                .findChild(WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, StoragePathSelectorInputElement.class)
                 .ifPresent(field -> field.setAllowedStorageProviderTypes(List.of(
                         StorageProviderType.Assets,
                         StorageProviderType.External
                 )));
 
         layout
-                .findChild(AttachmentSetStorageConfig.FILE_NAME_FIELD_ID, TextInputElement.class)
+                .findChild(WriteExternalStorageConfig.FILE_NAME_FIELD_ID, TextInputElement.class)
                 .ifPresent(field -> field.setVisibility(ElementVisibilityFunctions
                         .of(NoCodeExpression.of(
                                 NoCodeEqualsOperator.OPERATOR_ID,
-                                NoCodeReference.of(AttachmentSetStorageConfig.CUSTOMIZE_FILE_NAME_FIELD_ID),
+                                NoCodeReference.of(WriteExternalStorageConfig.CUSTOMIZE_FILE_NAME_FIELD_ID),
                                 NoCodeStaticValue.of(true)
                         ))
                         .recalculateReferencedIds()));
@@ -175,7 +175,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 .findAllByMetadataAttributesNotEmptyAndReadOnlyStorageIsFalseAndTypeIsIn(List.of(StorageProviderType.Assets, StorageProviderType.External));
 
         layout
-                .findChild(StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, ReplicatingContainerLayoutElement.class)
+                .findChild(WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, ReplicatingContainerLayoutElement.class)
                 .ifPresent(container -> {
                     allStorageProvidersWithMetadata
                             .stream()
@@ -193,7 +193,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                                                                         NoCodeExpression
                                                                                 .of(
                                                                                         NoCodeObjectGetOperator.OPERATOR_ID,
-                                                                                        NoCodeReference.of(AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID),
+                                                                                        NoCodeReference.of(WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID),
                                                                                         NoCodeStaticValue.of("storageProviderId")
                                                                                 ),
                                                                         NoCodeStaticValue.of(provider.getId())
@@ -252,19 +252,19 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
     @Nonnull
     @Override
-    public Class<StoreAttachmentSetActionNodeConfig> getNodeConfigurationClass() {
-        return StoreAttachmentSetActionNodeConfig.class;
+    public Class<WriteExternalStorageActionNodeConfig> getNodeConfigurationClass() {
+        return WriteExternalStorageActionNodeConfig.class;
     }
 
     @Nullable
     @Override
     public Map<String, List<String>> validateConfiguration(@Nonnull de.aivot.gover.backend.process.entities.ProcessNodeEntity processNodeEntity,
-                                                           @Nonnull StoreAttachmentSetActionNodeConfig configuration) {
+                                                           @Nonnull WriteExternalStorageActionNodeConfig configuration) {
         var errors = new HashMap<String, List<String>>();
 
-        var attachmentSetConfigs = configuration.attachmentSets == null ? List.<AttachmentSetStorageConfig>of() : configuration.attachmentSets;
+        var attachmentSetConfigs = configuration.attachmentSets == null ? List.<WriteExternalStorageConfig>of() : configuration.attachmentSets;
         if (attachmentSetConfigs.isEmpty()) {
-            addError(errors, StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, "Es muss mindestens ein Anlagensatz konfiguriert werden.");
+            addError(errors, WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, "Es muss mindestens ein Anlagensatz konfiguriert werden.");
         }
 
         for (var i = 0; i < attachmentSetConfigs.size(); i++) {
@@ -272,34 +272,34 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
             var attachmentSetConfig = attachmentSetConfigs.get(i);
 
             if (resolveSingleAttachmentSetDataKey(attachmentSetConfig.attachmentSetDataKeys) == null) {
-                addError(errors, AttachmentSetStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, "Eintrag %d: Es muss genau ein Anlagensatz ausgewählt werden.".formatted(rowIndex));
+                addError(errors, WriteExternalStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, "Eintrag %d: Es muss genau ein Anlagensatz ausgewählt werden.".formatted(rowIndex));
             }
 
             var storageProviderId = resolveStorageProviderId(attachmentSetConfig.storagePath);
             StorageProviderEntity storageProvider = null;
             if (storageProviderId == null) {
-                addError(errors, AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Es muss ein Speicheranbieter ausgewählt werden.".formatted(rowIndex));
+                addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Es muss ein Speicheranbieter ausgewählt werden.".formatted(rowIndex));
             } else {
                 storageProvider = storageProviderRepository.findById(storageProviderId).orElse(null);
                 if (storageProvider == null) {
-                    addError(errors, AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter wurde nicht gefunden.".formatted(rowIndex));
+                    addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter wurde nicht gefunden.".formatted(rowIndex));
                 } else if (Boolean.TRUE.equals(storageProvider.getReadOnlyStorage())) {
-                    addError(errors, AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter ist schreibgeschützt.".formatted(rowIndex));
+                    addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter ist schreibgeschützt.".formatted(rowIndex));
                 } else if (StorageProviderType.Attachments.equals(storageProvider.getType())) {
-                    addError(errors, AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter ist ein Speicher für Prozessanlagen und kann nicht als Ziel verwendet werden.".formatted(rowIndex));
+                    addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter ist ein Speicher für Prozessanlagen und kann nicht als Ziel verwendet werden.".formatted(rowIndex));
                 }
             }
 
             var targetPath = resolveConfiguredPath(attachmentSetConfig.storagePath);
             if (targetPath == null) {
-                addError(errors, AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der Zielpfad muss angegeben werden.".formatted(rowIndex));
+                addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der Zielpfad muss angegeben werden.".formatted(rowIndex));
             } else {
                 var diagnostics = templateRenderService.validateInterpolationSyntax(targetPath);
                 if (!diagnostics.isEmpty()) {
                     for (var diagnostic : diagnostics) {
                         addError(
                                 errors,
-                                AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID,
+                                WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID,
                                 "Eintrag %d, Zeile %d: %s".formatted(rowIndex, diagnostic.lineNumber(), diagnostic.message())
                         );
                     }
@@ -313,13 +313,13 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
             if (Boolean.TRUE.equals(attachmentSetConfig.customizeFileName)) {
                 var fileNameTemplate = StringUtils.toNullableTrimmedString(attachmentSetConfig.fileName);
                 if (fileNameTemplate == null) {
-                    addError(errors, AttachmentSetStorageConfig.FILE_NAME_FIELD_ID, "Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
+                    addError(errors, WriteExternalStorageConfig.FILE_NAME_FIELD_ID, "Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
                 } else {
                     var diagnostics = templateRenderService.validateInterpolationSyntax(fileNameTemplate);
                     for (var diagnostic : diagnostics) {
                         addError(
                                 errors,
-                                AttachmentSetStorageConfig.FILE_NAME_FIELD_ID,
+                                WriteExternalStorageConfig.FILE_NAME_FIELD_ID,
                                 "Eintrag %d, Zeile %d: %s".formatted(rowIndex, diagnostic.lineNumber(), diagnostic.message())
                         );
                     }
@@ -333,14 +333,14 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     @Nonnull
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
-        var attachmentSets = configuration.get(StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID);
+        var attachmentSets = configuration.get(WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID);
         if (attachmentSets instanceof List<?> attachmentSetList) {
             for (var attachmentSet : attachmentSetList) {
                 if (!(attachmentSet instanceof Map<?, ?> attachmentSetMap)) {
                     continue;
                 }
 
-                var storagePath = attachmentSetMap.get(AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID);
+                var storagePath = attachmentSetMap.get(WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID);
                 if (storagePath instanceof Map<?, ?> storagePathMap) {
                     storagePathMap.remove("storageProviderId");
                 }
@@ -350,9 +350,9 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context) throws ProcessNodeExecutionException {
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeConfig> context) throws ProcessNodeExecutionException {
         var configuration = context.getConfigurationOfExecutingNode();
-        var attachmentSetConfigs = configuration.attachmentSets == null ? List.<AttachmentSetStorageConfig>of() : configuration.attachmentSets;
+        var attachmentSetConfigs = configuration.attachmentSets == null ? List.<WriteExternalStorageConfig>of() : configuration.attachmentSets;
         if (attachmentSetConfigs.isEmpty()) {
             throw new ProcessNodeExecutionExceptionMissingValue("Es muss mindestens ein Anlagensatz konfiguriert werden.");
         }
@@ -492,7 +492,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     }
 
     @Nonnull
-    private List<ProcessInstanceAttachmentEntity> resolveProcessAttachmentsBySetDataKey(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
+    private List<ProcessInstanceAttachmentEntity> resolveProcessAttachmentsBySetDataKey(@Nonnull ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeConfig> context,
                                                                                         @Nonnull String attachmentSetDataKey,
                                                                                         boolean ignoreEmptyAttachmentSet) throws ProcessNodeExecutionException {
         var attachmentSets = processInstanceAttachmentSetService
@@ -552,7 +552,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 .orElse(fallback);
     }
 
-    private static void logSkippedOptionalAttachmentSet(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
+    private static void logSkippedOptionalAttachmentSet(@Nonnull ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeConfig> context,
                                                         @Nonnull String attachmentSetName) {
         context.getLogger().logf(
                 ProcessNodeExecutionLogLevel.Info,
@@ -565,7 +565,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     }
 
     @Nonnull
-    private String interpolateTargetPath(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
+    private String interpolateTargetPath(@Nonnull ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeConfig> context,
                                          @Nullable String targetPath,
                                          int rowIndex) throws ProcessNodeExecutionException {
         try {
@@ -584,8 +584,8 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     }
 
     @Nonnull
-    private String resolveStoredFileName(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
-                                         @Nonnull AttachmentSetStorageConfig attachmentSetConfig,
+    private String resolveStoredFileName(@Nonnull ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeConfig> context,
+                                         @Nonnull WriteExternalStorageConfig attachmentSetConfig,
                                          @Nonnull String originalFileName,
                                          int attachmentIndex,
                                          @Nonnull Set<String> usedCustomFileNames,
@@ -619,7 +619,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     }
 
     @Nonnull
-    private String interpolateFileName(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
+    private String interpolateFileName(@Nonnull ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeConfig> context,
                                        @Nonnull String fileName,
                                        int rowIndex) throws ProcessNodeExecutionException {
         try {
@@ -779,7 +779,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     }
 
     @Nonnull
-    private StorageItemMetadata resolveStorageItemMetadata(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
+    private StorageItemMetadata resolveStorageItemMetadata(@Nonnull ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeConfig> context,
                                                            @Nonnull StorageProviderEntity storageProvider,
                                                            int rowIndex) throws ProcessNodeExecutionException {
         var metadataAttributes = resolveStorageProviderMetadataAttributes(storageProvider);
@@ -827,7 +827,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
             return null;
         }
 
-        var attachmentSetValues = ReplicatingContainerLayoutElement._formatValue(configuration.get(StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID));
+        var attachmentSetValues = ReplicatingContainerLayoutElement._formatValue(configuration.get(WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID));
         if (attachmentSetValues == null || rowIndex < 0 || rowIndex >= attachmentSetValues.size()) {
             return null;
         }
@@ -836,7 +836,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     }
 
     @Nonnull
-    private String interpolateMetadataValue(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
+    private String interpolateMetadataValue(@Nonnull ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeConfig> context,
                                             @Nonnull String metadataValue,
                                             int rowIndex,
                                             @Nonnull String metadataKey) throws ProcessNodeExecutionException {
@@ -978,13 +978,13 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     }
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
-    public static class StoreAttachmentSetActionNodeConfig {
+    public static class WriteExternalStorageActionNodeConfig {
         public static final String ATTACHMENT_SETS_FIELD_ID = "attachment_sets";
 
-        public List<AttachmentSetStorageConfig> attachmentSets;
+        public List<WriteExternalStorageConfig> attachmentSets;
     }
 
-    @ReplicatingContainerLayoutElementElementPOJOBinding(id = StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, properties = {
+    @ReplicatingContainerLayoutElementElementPOJOBinding(id = WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Konfigurieren Sie alle Anlagensätze, die gespeichert werden sollen."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
@@ -992,7 +992,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
             @ElementPOJOBindingProperty(key = "addLabel", strValue = "Anlagensatz hinzufügen"),
             @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Anlagensatz entfernen")
     })
-    public static class AttachmentSetStorageConfig {
+    public static class WriteExternalStorageConfig {
         public static final String ATTACHMENT_SET_DATA_KEYS_FIELD_ID = "attachment_set_data_keys";
         public static final String STORAGE_PATH_FIELD_ID = "storage_path";
         public static final String IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID = "ignore_empty_attachment_set";

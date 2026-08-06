@@ -67,7 +67,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class StoreAttachmentSetActionNodeV1Test {
+class WriteExternalStorageActionNodeV1Test {
     private static final Integer PROCESS_ID = 42;
     private static final Integer PROCESS_VERSION = 3;
     private static final Integer NODE_ID = 123;
@@ -84,7 +84,7 @@ class StoreAttachmentSetActionNodeV1Test {
     private StorageService storageService;
     private StorageProviderRepository storageProviderRepository;
     private StorageProviderDefinitionService storageProviderDefinitionService;
-    private StoreAttachmentSetActionNodeV1 node;
+    private WriteExternalStorageActionNodeV1 node;
     private List<StoredDocument> storedDocuments;
     private List<StorageItemMetadata> storedDocumentMetadata;
 
@@ -134,7 +134,7 @@ class StoreAttachmentSetActionNodeV1Test {
             );
         });
 
-        node = new StoreAttachmentSetActionNodeV1(
+        node = new WriteExternalStorageActionNodeV1(
                 new CaseIdTemplateRenderService(),
                 processInstanceAttachmentService,
                 processInstanceAttachmentSetService,
@@ -149,29 +149,29 @@ class StoreAttachmentSetActionNodeV1Test {
         var layout = node.getConfigurationLayout(null);
 
         var attachmentSets = layout
-                .findChild(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, ReplicatingContainerLayoutElement.class)
+                .findChild(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, ReplicatingContainerLayoutElement.class)
                 .orElseThrow();
         assertEquals("Anlagensatz #", attachmentSets.getHeadlineTemplate());
 
         var attachmentSetField = layout
-                .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, ProcessInstanceAttachmentSetSelectElement.class)
+                .findChild(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, ProcessInstanceAttachmentSetSelectElement.class)
                 .orElseThrow();
         assertEquals(1, attachmentSetField.getMinItems());
         assertEquals(1, attachmentSetField.getMaxItems());
 
         var storagePathField = layout
-                .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, StoragePathSelectorInputElement.class)
+                .findChild(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, StoragePathSelectorInputElement.class)
                 .orElseThrow();
         assertEquals(List.of(StorageProviderType.Assets, StorageProviderType.External), storagePathField.getAllowedStorageProviderTypes());
         assertEquals("Speicheranbieter, bei welchem der Anlagensatz gespeichert wird.", storagePathField.getStorageProviderSelectHint());
 
         var ignoreEmptyAttachmentSetField = layout
-                .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID, CheckboxInputElement.class)
+                .findChild(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID, CheckboxInputElement.class)
                 .orElseThrow();
         assertEquals("Optionaler Anlagensatz", ignoreEmptyAttachmentSetField.getLabel());
 
         var fileNameField = layout
-                .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.FILE_NAME_FIELD_ID, TextInputElement.class)
+                .findChild(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.FILE_NAME_FIELD_ID, TextInputElement.class)
                 .orElseThrow();
         assertNotNull(fileNameField.getVisibility());
     }
@@ -443,7 +443,7 @@ class StoreAttachmentSetActionNodeV1Test {
         var errors = node.validateConfiguration(processNode(), configuration);
 
         assertNotNull(errors);
-        assertTrue(errors.get(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID).getFirst().contains("Zeile"));
+        assertTrue(errors.get(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID).getFirst().contains("Zeile"));
     }
 
     @Test
@@ -453,7 +453,7 @@ class StoreAttachmentSetActionNodeV1Test {
         var errors = node.validateConfiguration(processNode(), configuration);
 
         assertNotNull(errors);
-        assertTrue(errors.get(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.FILE_NAME_FIELD_ID).getFirst().contains("Zeile"));
+        assertTrue(errors.get(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.FILE_NAME_FIELD_ID).getFirst().contains("Zeile"));
     }
 
     @Test
@@ -494,18 +494,18 @@ class StoreAttachmentSetActionNodeV1Test {
         storagePath.put("path", "/case/{{caseId}}/");
 
         var attachmentSet = new LinkedHashMap<String, Object>();
-        attachmentSet.put(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, storagePath);
-        attachmentSet.put(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, List.of("documents"));
+        attachmentSet.put(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, storagePath);
+        attachmentSet.put(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, List.of("documents"));
 
         var configuration = new AuthoredElementValues();
-        configuration.put(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, List.of(attachmentSet));
+        configuration.put(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, List.of(attachmentSet));
 
         var cleaned = node.cleanConfigurationForExport(configuration);
 
         @SuppressWarnings("unchecked")
-        var cleanedAttachmentSets = (List<Map<String, Object>>) cleaned.get(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID);
+        var cleanedAttachmentSets = (List<Map<String, Object>>) cleaned.get(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID);
         @SuppressWarnings("unchecked")
-        var cleanedStoragePath = (Map<String, Object>) cleanedAttachmentSets.getFirst().get(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID);
+        var cleanedStoragePath = (Map<String, Object>) cleanedAttachmentSets.getFirst().get(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID);
         assertNull(cleanedStoragePath.get("storageProviderId"));
         assertEquals("/case/{{caseId}}/", cleanedStoragePath.get("path"));
     }
@@ -540,32 +540,32 @@ class StoreAttachmentSetActionNodeV1Test {
                 .setStoragePathFromRoot(storagePathFromRoot);
     }
 
-    private static StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig configuration(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig... attachmentSets) {
-        var configuration = new StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig();
+    private static WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig configuration(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig... attachmentSets) {
+        var configuration = new WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig();
         configuration.attachmentSets = List.of(attachmentSets);
         return configuration;
     }
 
-    private static StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig attachmentSetConfig(String attachmentSetDataKey,
-                                                                                                Integer storageProviderId,
-                                                                                                String targetPath) {
+    private static WriteExternalStorageActionNodeV1.WriteExternalStorageConfig attachmentSetConfig(String attachmentSetDataKey,
+                                                                                                   Integer storageProviderId,
+                                                                                                   String targetPath) {
         return attachmentSetConfig(attachmentSetDataKey, storageProviderId, targetPath, false, null);
     }
 
-    private static StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig optionalAttachmentSetConfig(String attachmentSetDataKey,
-                                                                                                        Integer storageProviderId,
-                                                                                                        String targetPath) {
+    private static WriteExternalStorageActionNodeV1.WriteExternalStorageConfig optionalAttachmentSetConfig(String attachmentSetDataKey,
+                                                                                                           Integer storageProviderId,
+                                                                                                           String targetPath) {
         var config = attachmentSetConfig(attachmentSetDataKey, storageProviderId, targetPath);
         config.ignoreEmptyAttachmentSet = true;
         return config;
     }
 
-    private static StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig attachmentSetConfig(String attachmentSetDataKey,
-                                                                                                Integer storageProviderId,
-                                                                                                String targetPath,
-                                                                                                boolean customizeFileName,
-                                                                                                String fileName) {
-        var config = new StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig();
+    private static WriteExternalStorageActionNodeV1.WriteExternalStorageConfig attachmentSetConfig(String attachmentSetDataKey,
+                                                                                                   Integer storageProviderId,
+                                                                                                   String targetPath,
+                                                                                                   boolean customizeFileName,
+                                                                                                   String fileName) {
+        var config = new WriteExternalStorageActionNodeV1.WriteExternalStorageConfig();
         config.attachmentSetDataKeys = List.of(attachmentSetDataKey);
         config.storagePath = new StoragePathSelectorInputElementValue()
                 .setStorageProviderId(storageProviderId)
@@ -575,28 +575,28 @@ class StoreAttachmentSetActionNodeV1Test {
         return config;
     }
 
-    private static ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig> context(
-            StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig configuration
+    private static ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig> context(
+            WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig configuration
     ) {
         return context(configuration, mock(ProcessInstanceHistoryEventRepository.class));
     }
 
-    private static ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig> context(
-            StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig configuration,
+    private static ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig> context(
+            WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig configuration,
             AuthoredElementValues nodeConfiguration
     ) {
         return context(configuration, mock(ProcessInstanceHistoryEventRepository.class), nodeConfiguration);
     }
 
-    private static ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig> context(
-            StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig configuration,
+    private static ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig> context(
+            WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig configuration,
             ProcessInstanceHistoryEventRepository eventRepository
     ) {
         return context(configuration, eventRepository, new AuthoredElementValues());
     }
 
-    private static ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig> context(
-            StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig configuration,
+    private static ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig> context(
+            WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig configuration,
             ProcessInstanceHistoryEventRepository eventRepository,
             AuthoredElementValues nodeConfiguration
     ) {
@@ -713,7 +713,7 @@ class StoreAttachmentSetActionNodeV1Test {
 
     private static AuthoredElementValues authoredConfiguration(AuthoredElementValues... attachmentSets) {
         var configuration = new AuthoredElementValues();
-        configuration.put(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, List.of(attachmentSets));
+        configuration.put(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, List.of(attachmentSets));
         return configuration;
     }
 
