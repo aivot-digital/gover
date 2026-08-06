@@ -13,5 +13,5 @@ public interface ProcessInstanceAttachmentRepository extends JpaRepository<Proce
     List<ProcessInstanceAttachmentEntity> findAllByProcessInstanceIdAndFileName(Long processInstanceId,
                                                                                  String fileName);
 
-    List<ProcessInstanceAttachmentEntity> findAllByAttachmentSetId(Integer attachmentSetId);
+    List<ProcessInstanceAttachmentEntity> findAllByAttachmentSetIdOrderByPositionAscKeyAsc(Integer attachmentSetId);
 }

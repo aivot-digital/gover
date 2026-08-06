@@ -4,7 +4,6 @@ import {isAnyElementWithChildren} from '../models/elements/any-element-with-chil
 import {type ConditionSet} from '../models/functions/conditions/condition-set';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {generateComponentTitle} from './generate-component-title';
-import {ElementType} from '../data/element-type/element-type';
 import {isNoCodeExpression, isNoCodeReference, NoCodeOperand} from '../models/functions/no-code-expression';
 
 export function cloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean): T {
@@ -17,7 +16,11 @@ export function cloneElement<T extends AnyElement>(element: T, skipSuffix?: bool
 
 type IdMap = Record<string, string>;
 
-function deepCloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean): { clone: T, idMap: IdMap } {
+function deepCloneElement<T extends AnyElement>(
+    element: T,
+    skipSuffix?: boolean,
+    preserveName: boolean = false,
+): { clone: T, idMap: IdMap } {
     const newId = generateElementIdForType(element.type);
 
     const idMap = {
@@ -26,15 +29,16 @@ function deepCloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean
 
     const clone: T = JSON.parse(JSON.stringify(element));
     clone.id = newId;
-    clone.name = generateComponentTitle(element) + (skipSuffix === true ? '' : ' (Kopie)');
+    if (!preserveName) {
+        clone.name = generateComponentTitle(element) + (skipSuffix === true ? '' : ' (Kopie)');
+    }
 
     if (isAnyElementWithChildren(clone)) {
         const clonedChildren = [];
-
-        const isStoreElement = clone.type === ElementType.GroupLayout && clone.storeLink != null;
+        const preserveChildNames = preserveName || skipSuffix !== true;
 
         for (const child of clone.children ?? []) {
-            const res = deepCloneElement(child, skipSuffix || isStoreElement);
+            const res = deepCloneElement(child, true, preserveChildNames);
             for (const key of Object.keys(res.idMap)) {
                 idMap[key] = res.idMap[key];
             }

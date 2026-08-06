@@ -8,10 +8,14 @@ import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import React from 'react';
 import {type BaseSummaryProps} from '../../summaries/base-summary';
 import SubdirectoryArrowLeftOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SubdirectoryArrowLeft';
-import {type AuthoredElementValues} from '../../models/element-data';
+import {
+    type ReplicatingContainerElementValue,
+    type ReplicatingContainerElementValues,
+    resolveReplicatingContainerElementValues,
+} from '../../models/element-data';
 import {resolveReplicatingContainerItemDerivedData} from '../../utils/element-data-utils';
 
-export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingContainerLayout, AuthoredElementValues[]>) {
+export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingContainerLayout, ReplicatingContainerElementValues>) {
     const {
         model,
         showTechnical,
@@ -25,7 +29,7 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
         children,
     } = model;
 
-    const values = (value ?? []) as AuthoredElementValues[];
+    const values = (value ?? []) as ReplicatingContainerElementValues;
 
     const theme = useTheme();
 
@@ -77,82 +81,86 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                 }
             </Grid>
             {
-                values.map((val, index) => (
-                    <Box
-                        key={`${model.id}-${index}`}
-                        sx={{
-                            border: '1px solid #D4D4D4',
-                            mb: 2,
-                            px: 2,
-                            [theme.breakpoints.up('md')]: {
-                                px: 0,
-                            },
-                        }}
-                    >
-                        <Grid
-                            container
+                values.map((val: ReplicatingContainerElementValue, index) => {
+                    const rowValues = resolveReplicatingContainerElementValues(val) ?? {};
+
+                    return (
+                        <Box
+                            key={val.id ?? `${model.id}-${index}`}
                             sx={{
-                                borderBottom: '1px solid #D4D4D4',
-                                py: 1,
+                                border: '1px solid #D4D4D4',
+                                mb: 2,
+                                px: 2,
+                                [theme.breakpoints.up('md')]: {
+                                    px: 0,
+                                },
                             }}
                         >
                             <Grid
+                                container
                                 sx={{
-                                    textAlign: 'left',
-                                    pr: 5,
-                                    [theme.breakpoints.up('md')]: {
-                                        textAlign: 'right',
-                                    },
+                                    borderBottom: '1px solid #D4D4D4',
+                                    py: 1,
                                 }}
-                                size={{
-                                    xs: 12,
-                                    md: 4
-                                }}>
-                                <Typography
-                                    variant="body2"
+                            >
+                                <Grid
                                     sx={{
-                                        fontWeight: 'bold',
+                                        textAlign: 'left',
+                                        pr: 5,
+                                        [theme.breakpoints.up('md')]: {
+                                            textAlign: 'right',
+                                        },
                                     }}
-                                >
-                                    {
-                                        (props.model.headlineTemplate ?? '').replace('#', (index + 1).toFixed())
-                                    } <SubdirectoryArrowLeftOutlinedIcon
-                                    sx={{
-                                        marginLeft: '6px',
-                                        fontSize: '1rem',
-                                        transform: 'translateY(2px)',
-                                    }}
-                                />
-                                </Typography>
-                            </Grid>
-                            <Grid
-                                size={{
-                                    xs: 12,
-                                    md: 8
-                                }}>
-                                <Chip
-                                    sx={{ml: -1}}
-                                    size="small"
-                                    label="Datensatz"
-                                    variant="outlined"
-                                />
-                            </Grid>
-                        </Grid>
-                        {
-                            (children ?? [])
-                                .map(child => (
-                                    <SummaryDispatcherComponent
-                                        key={child.id}
-                                        element={child}
-                                        showTechnical={showTechnical}
-                                        allowStepNavigation={allowStepNavigation}
-                                        authoredElementValues={val}
-                                        derivedData={resolveReplicatingContainerItemDerivedData(model, derivedData, index)}
+                                    size={{
+                                        xs: 12,
+                                        md: 4
+                                    }}>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            fontWeight: 'bold',
+                                        }}
+                                    >
+                                        {
+                                            (props.model.headlineTemplate ?? '').replace('#', (index + 1).toFixed())
+                                        } <SubdirectoryArrowLeftOutlinedIcon
+                                        sx={{
+                                            marginLeft: '6px',
+                                            fontSize: '1rem',
+                                            transform: 'translateY(2px)',
+                                        }}
                                     />
-                                ))
-                        }
-                    </Box>
-                ))
+                                    </Typography>
+                                </Grid>
+                                <Grid
+                                    size={{
+                                        xs: 12,
+                                        md: 8
+                                    }}>
+                                    <Chip
+                                        sx={{ml: -1}}
+                                        size="small"
+                                        label="Datensatz"
+                                        variant="outlined"
+                                    />
+                                </Grid>
+                            </Grid>
+                            {
+                                (children ?? [])
+                                    .map(child => (
+                                        <SummaryDispatcherComponent
+                                            key={child.id}
+                                            element={child}
+                                            showTechnical={showTechnical}
+                                            allowStepNavigation={allowStepNavigation}
+                                            authoredElementValues={rowValues}
+                                            derivedData={resolveReplicatingContainerItemDerivedData(model, derivedData, index)}
+                                        />
+                                    ))
+                            }
+                        </Box>
+                    );
+                })
             }
         </>
     );

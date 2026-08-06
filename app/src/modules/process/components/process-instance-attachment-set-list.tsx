@@ -1,6 +1,6 @@
 import React, {type ReactNode} from 'react';
-import {Box, IconButton, Tooltip, Typography} from '@mui/material';
 import type {SxProps, Theme} from '@mui/material';
+import {Box, IconButton, Paper, Stack, Tooltip, Typography} from '@mui/material';
 import Description from '@aivot/mui-material-symbols-400-n25-outlined/Description';
 import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import type {ProcessInstanceAttachmentEntity} from '../entities/process-instance-attachment-entity';
@@ -72,7 +72,10 @@ export function ProcessInstanceAttachmentSetList(props: ProcessInstanceAttachmen
         <Box sx={props.sx}>
             {
                 props.title !== null &&
-                <Typography variant="h6" sx={{mb: 1}}>
+                <Typography
+                    variant="h6"
+                    sx={{mb: 1}}
+                >
                     {props.title ?? 'Anlagensätze'}
                 </Typography>
             }
@@ -142,7 +145,8 @@ function AttachmentSetItem(props: AttachmentSetItemProps): React.JSX.Element {
                         overflowWrap: 'anywhere',
                     }}
                 >
-                    Erstellt durch: {props.item.createdByLabel}{props.item.createdBySubLabel == null ? '' : ` · ${props.item.createdBySubLabel}`}
+                    Erstellt
+                    durch: {props.item.createdByLabel}{props.item.createdBySubLabel == null ? '' : ` · ${props.item.createdBySubLabel}`}
                 </Typography>
             }
 
@@ -162,17 +166,111 @@ function AttachmentSetItem(props: AttachmentSetItemProps): React.JSX.Element {
                         >
                             Keine Anhänge
                         </Typography> :
-                        props.item.attachments.map((attachment) => (
+                        <AttachmentItems
+                            attachments={props.item.attachments}
+                            onDownload={props.onDownload}
+                        />
+                }
+            </Box>
+        </Box>
+    );
+}
+
+interface AttachmentItemsProps {
+    attachments: ProcessInstanceAttachmentEntity[];
+    onDownload?: (attachment: ProcessInstanceAttachmentEntity) => void;
+}
+
+function AttachmentItems(props: AttachmentItemsProps): React.JSX.Element {
+    const attachmentsByGroup = new Map<string, ProcessInstanceAttachmentEntity[]>();
+    for (const attachment of props.attachments) {
+        const group = normalizeAttachmentGroup(attachment.group);
+        if (group == null) {
+            continue;
+        }
+
+        const groupAttachments = attachmentsByGroup.get(group) ?? [];
+        groupAttachments.push(attachment);
+        attachmentsByGroup.set(group, groupAttachments);
+    }
+
+    if (attachmentsByGroup.size === 0) {
+        return (
+            <>
+                {
+                    props.attachments.map((attachment) => (
+                        <AttachmentItem
+                            key={attachment.key}
+                            attachment={attachment}
+                            onDownload={props.onDownload}
+                        />
+                    ))
+                }
+            </>
+        );
+    }
+
+    const renderedGroups = new Set<string>();
+
+    return (
+        <>
+            {
+                props.attachments.map((attachment) => {
+                    const group = normalizeAttachmentGroup(attachment.group);
+
+                    if (group == null) {
+                        return (
                             <AttachmentItem
                                 key={attachment.key}
                                 attachment={attachment}
                                 onDownload={props.onDownload}
                             />
-                        ))
-                }
-            </Box>
-        </Box>
+                        );
+                    }
+
+                    if (renderedGroups.has(group)) {
+                        return null;
+                    }
+
+                    renderedGroups.add(group);
+
+                    return (
+                        <Paper
+                            key={`group:${group}`}
+                            aria-label="Anlagengruppe"
+                            role="group"
+                            variant="outlined"
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 0.75,
+                                p: 1,
+                            }}
+                        >
+                            <Typography variant="caption" color="textSecondary">
+                                Gruppenkennzeichnung: {group}
+                            </Typography>
+
+                            {
+                                attachmentsByGroup.get(group)?.map((groupedAttachment) => (
+                                    <AttachmentItem
+                                        key={groupedAttachment.key}
+                                        attachment={groupedAttachment}
+                                        onDownload={props.onDownload}
+                                    />
+                                ))
+                            }
+                        </Paper>
+                    );
+                })
+            }
+        </>
     );
+}
+
+function normalizeAttachmentGroup(group: string | null | undefined): string | null {
+    const normalizedGroup = group?.trim();
+    return normalizedGroup == null || normalizedGroup.length === 0 ? null : normalizedGroup;
 }
 
 interface AttachmentItemProps {
@@ -191,29 +289,52 @@ function AttachmentItem(props: AttachmentItemProps): React.JSX.Element {
                 minWidth: 0,
             }}
         >
-            <Description color="primary" sx={{fontSize: 20, flexShrink: 0}} />
+            <Description
+                color="primary"
+                sx={{fontSize: 20, flexShrink: 0}}
+            />
 
-            <Typography
-                sx={{
-                    flex: 1,
-                    minWidth: 0,
-                    fontSize: '0.875rem',
-                    overflowWrap: 'anywhere',
-                }}
+            <Stack
+                direction="column"
+                sx={{flex: 1, minWidth: 0}}
             >
-                {props.attachment.fileName}
-            </Typography>
+                <Typography
+                    sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontSize: '0.875rem',
+                        overflowWrap: 'anywhere',
+                    }}
+                >
+                    {props.attachment.fileName}
+                </Typography>
+
+                <Typography
+                    sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontSize: '0.75rem',
+                        overflowWrap: 'anywhere',
+                    }}
+                    color="textSecondary"
+                >
+                    Hochgeladen als: {props.attachment.originalFileName}
+                </Typography>
+            </Stack>
 
             {
                 props.onDownload != null &&
-                <Tooltip title="Herunterladen" arrow>
+                <Tooltip
+                    title="Herunterladen"
+                    arrow
+                >
                     <IconButton
                         aria-label={`${props.attachment.fileName} herunterladen`}
                         onClick={() => props.onDownload?.(props.attachment)}
                         size="small"
                         sx={{color: 'text.secondary'}}
                     >
-                        <Download fontSize="small" />
+                        <Download fontSize="small"/>
                     </IconButton>
                 </Tooltip>
             }

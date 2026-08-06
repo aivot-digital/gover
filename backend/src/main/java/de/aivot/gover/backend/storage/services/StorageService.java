@@ -1,12 +1,15 @@
 package de.aivot.gover.backend.storage.services;
 
 import com.beust.jcommander.Strings;
+import de.aivot.gover.backend.asset.entities.AssetEntity;
+import de.aivot.gover.backend.asset.repositories.AssetRepository;
 import de.aivot.gover.backend.av.services.AVService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.storage.exceptions.StorageException;
 import de.aivot.gover.backend.storage.entities.StorageIndexItemEntity;
 import de.aivot.gover.backend.storage.entities.StorageIndexItemEntityId;
 import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
+import de.aivot.gover.backend.storage.enums.StorageProviderType;
 import de.aivot.gover.backend.storage.models.StorageDocument;
 import de.aivot.gover.backend.storage.models.StorageFolder;
 import de.aivot.gover.backend.storage.models.StorageItemMetadata;
@@ -26,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -38,6 +42,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class StorageService {
@@ -48,6 +53,7 @@ public class StorageService {
     private final StorageProviderDefinitionService storageProviderDefinitionService;
     private final StorageProviderConfigurationService storageProviderConfigurationService;
     private final StorageIndexItemRepository storageIndexItemRepository;
+    private final AssetRepository assetRepository;
     private final KnownExtensionsService knownExtensionsService;
     private final AVService avService;
 
@@ -56,12 +62,14 @@ public class StorageService {
                           StorageProviderDefinitionService storageProviderDefinitionService,
                           StorageProviderConfigurationService storageProviderConfigurationService,
                           StorageIndexItemRepository storageIndexItemRepository,
+                          AssetRepository assetRepository,
                           KnownExtensionsService knownExtensionsService,
                           AVService avService) {
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.storageProviderConfigurationService = storageProviderConfigurationService;
         this.storageIndexItemRepository = storageIndexItemRepository;
+        this.assetRepository = assetRepository;
         this.knownExtensionsService = knownExtensionsService;
         this.avService = avService;
     }
@@ -360,6 +368,7 @@ public class StorageService {
         }
     }
 
+    @Transactional
     public StorageDocument storeDocument(@Nonnull Integer providerId,
                                          @Nonnull String path,
                                          @Nonnull InputStream content,
@@ -430,10 +439,12 @@ public class StorageService {
 
         // Index the effective persisted path returned by the provider.
         upsertDocumentIndexItem(provider, createdDocument);
+        ensureAssetForDocument(provider, createdDocument);
 
         return createdDocument;
     }
 
+    @Transactional
     public StorageDocument storeDocument(@Nonnull Integer providerId,
                                          @Nonnull String path,
                                          @Nonnull byte[] content,
@@ -608,6 +619,29 @@ public class StorageService {
                 Instant.now()
         );
         storageIndexItemRepository.save(indexItem);
+    }
+
+    private void ensureAssetForDocument(@Nonnull StorageProviderEntity provider,
+                                        @Nonnull StorageDocument document) throws ResponseException {
+        if (provider.getType() != StorageProviderType.Assets) {
+            return;
+        }
+
+        var normalizedPath = normalizeInputDocumentPath(document.getPathFromRoot());
+        var asset = assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(provider.getId(), normalizedPath)
+                .orElseGet(() -> new AssetEntity()
+                        .setKey(UUID.randomUUID())
+                        .setUploaderId(null)
+                        .setPrivate(true)
+                        .setStorageProviderId(provider.getId())
+                        .setStoragePathFromRoot(normalizedPath));
+
+        asset
+                .setStorageProviderId(provider.getId())
+                .setStoragePathFromRoot(normalizedPath);
+
+        assetRepository.save(asset);
     }
 
     private void upsertFolderTreeIndex(@Nonnull StorageProviderEntity provider,

@@ -302,12 +302,15 @@ public class AssetController {
             throw new RuntimeException(e);
         }
 
-        var asset = new AssetEntity()
-                .setKey(UUID.randomUUID())
+        var asset = assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), storedDocument.getPathFromRoot())
+                .orElseGet(() -> new AssetEntity()
+                        .setKey(UUID.randomUUID())
+                        .setStorageProviderId(storageProvider.getId())
+                        .setStoragePathFromRoot(storedDocument.getPathFromRoot()));
+        asset
                 .setUploaderId(execUser.getId())
-                .setPrivate(newAsset.isPrivate() != null && newAsset.isPrivate())
-                .setStorageProviderId(storageProvider.getId())
-                .setStoragePathFromRoot(storedDocument.getPathFromRoot());
+                .setPrivate(newAsset.isPrivate() != null && newAsset.isPrivate());
         assetRepository.save(asset);
 
         auditService

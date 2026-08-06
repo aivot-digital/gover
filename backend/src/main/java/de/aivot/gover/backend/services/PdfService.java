@@ -16,6 +16,7 @@ import de.aivot.gover.backend.elements.models.elements.BaseElement;
 import de.aivot.gover.backend.elements.models.elements.LayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.elements.services.ElementDerivationLogger;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.elements.utils.ElementFlattenUtils;
@@ -31,9 +32,15 @@ import de.aivot.gover.backend.payment.services.PaymentProviderDefinitionsService
 import de.aivot.gover.backend.pdf.enums.FormPdfScope;
 import de.aivot.gover.backend.pdf.models.FormPdfContext;
 import de.aivot.gover.backend.pdf.models.PrintableFormPdfData;
+import de.aivot.gover.backend.plugins.form.v1.nodes.FormTriggerConfigV1;
+import de.aivot.gover.backend.process.entities.ProcessEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
+import de.aivot.gover.backend.process.repositories.ProcessRepository;
 import de.aivot.gover.backend.services.pdf.PdfElementsGenerator;
 import de.aivot.gover.backend.theme.entities.ThemeEntity;
 import de.aivot.gover.backend.theme.services.ThemeService;
+import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import de.aivot.gover.backend.utils.MultipartUtils;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -49,10 +56,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -72,12 +81,14 @@ public class PdfService {
     private final HttpService httpService;
     private final ElementDerivationService elementDerivationService;
     private final VDepartmentShadowedRepository vDepartmentShadowedRepository;
+    private final ProcessRepository processRepository;
     private final ThemeService themeService;
 
     @Autowired
     public PdfService(GotenbergConfig gotenbergConfig,
                       SystemConfigService systemConfigService,
                       VDepartmentShadowedRepository vDepartmentShadowedRepository,
+                      ProcessRepository processRepository,
                       AssetRepository assetRepository,
                       GoverConfig goverConfig,
                       PaymentTransactionRepository paymentTransactionRepository,
@@ -97,6 +108,7 @@ public class PdfService {
         this.httpService = httpService;
         this.elementDerivationService = elementDerivationService;
         this.vDepartmentShadowedRepository = vDepartmentShadowedRepository;
+        this.processRepository = processRepository;
         this.themeService = themeService;
     }
 
@@ -113,29 +125,6 @@ public class PdfService {
         if (response.statusCode() != 200) {
             throw new IOException("Failed to connect to Gotenberg. Status code: " + response.statusCode());
         }
-    }
-
-    public byte[] generatePrintableForm(FormLayoutElement form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
-        var allElements = ElementFlattenUtils.flattenElements(form);
-        var derivedRuntimeElementData = deriveBlankPrintableElementData(form);
-
-        var dto = new HashMap<String, Object>();
-        dto.put("elements", PdfElementsGenerator.generatePdfElements(
-                form,
-                derivedRuntimeElementData,
-                true,
-                true
-        ));
-        dto.put("form", form);
-        dto.put("attachments", allElements.stream().filter(e -> e.getType() == ElementType.FileUpload).toList());
-
-        return generatePdf(form, dto, FormPdfScope.Blank);
-    }
-
-    public byte[] generatePrintableForm(@Nonnull PrintableFormPdfData form,
-                                        @Nonnull ThemeEntity theme,
-                                        @Nonnull VDepartmentShadowedEntity department) throws IOException, URISyntaxException, InterruptedException, ResponseException {
-        return generatePrintableForm(form, theme, department, null, null);
     }
 
     public byte[] generatePrintableForm(@Nonnull PrintableFormPdfData form,
@@ -169,12 +158,17 @@ public class PdfService {
         return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
     }
 
-    public byte[] generateCustomerSummary(FormLayoutElement form, AuthoredElementValues submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
+    public byte[] generateCustomerSummary(FormLayoutElement formLayoutElement,
+                                          AuthoredElementValues submission,
+                                          FormPdfScope scope,
+                                          ProcessInstanceEntity processInstance,
+                                          FormTriggerConfigV1 formTriggerConfig,
+                                          ProcessNodeEntity processNode) throws IOException, InterruptedException, URISyntaxException, ResponseException {
         var dto = new HashMap<String, Object>();
         var derivedRuntimeElementData = elementDerivationService
                 .derive(
                         new ElementDerivationRequest(
-                                form,
+                                formLayoutElement,
                                 submission,
                                 new ElementDerivationOptions()
                                         .setSkipErrorsForElementIds(java.util.List.of(ElementDerivationOptions.ALL_ELEMENTS))
@@ -183,14 +177,24 @@ public class PdfService {
                         new ElementDerivationLogger()
                 );
 
+
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
-                form,
+                formLayoutElement,
                 derivedRuntimeElementData,
                 scope != FormPdfScope.Staff,
                 false
         ));
-        dto.put("form", form);
-        dto.put("submission", submission);
+        dto.put("form", new PrintableFormPdfData()
+                .setSlug(formTriggerConfig.formSlug)
+                .setInternalTitle(processNode.getName())
+                .setVersion(processInstance.getInitialProcessVersion())
+                .setPublicTitle(formLayoutElement.getPublicTitle())
+                .setRootElement(formLayoutElement)
+                .setPdfTemplateKey(formLayoutElement.getPdfTemplateKey())
+        );
+        dto.put("submission", Map.of(
+                "created", processInstance.getStarted().atZone(ApplicationTimeZone.getZoneId())
+        ));
 
         /* TODO: Resolve Identity
         var authData = submission
@@ -242,7 +246,7 @@ public class PdfService {
         }
          */
 
-        return generatePdf(form, dto, scope);
+        return generatePdf(formLayoutElement, dto, scope, processInstance.getProcessId());
     }
 
     private DerivedRuntimeElementData deriveBlankPrintableElementData(FormLayoutElement form) {
@@ -276,10 +280,11 @@ public class PdfService {
     private void collectBlankPrintableElementValues(BaseElement element, AuthoredElementValues values) {
         if (element instanceof ReplicatingContainerLayoutElement replicatingContainer) {
             if (replicatingContainer.getId() != null) {
-                var rows = new ArrayList<AuthoredElementValues>();
+                var rows = new ArrayList<ReplicatingContainerLayoutElementValue>();
                 var rowCount = PdfElementsGenerator.getBlankPrintPlaceholderCount(replicatingContainer);
                 for (var i = 0; i < rowCount; i++) {
-                    rows.add(createBlankPrintableElementValues(replicatingContainer.getChildren()));
+                    rows.add(new ReplicatingContainerLayoutElementValue()
+                            .setValues(createBlankPrintableElementValues(replicatingContainer.getChildren())));
                 }
                 values.put(replicatingContainer.getId(), rows);
             }
@@ -293,22 +298,47 @@ public class PdfService {
         }
     }
 
-    private byte[] generatePdf(FormLayoutElement form, Map<String, Object> dto, FormPdfScope scope) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+    private byte[] generatePdf(FormLayoutElement form, Map<String, Object> dto, FormPdfScope scope, @Nullable Integer processId) throws IOException, URISyntaxException, InterruptedException, ResponseException {
         var formTheme = themeService
                 .getFormThemesInOrderOfImportance(form)
                 .getFirst();
 
         dto.put("base", createBaseContext(formTheme, scope));
-        dto.put("department",
-                vDepartmentShadowedRepository
-                        .findById(form.getRelevantDepartmentId())
-                        .orElseThrow(() -> new RuntimeException("Department not found"))
-        );
+        dto.put("department", resolvePdfDepartment(form, processId));
         dto.put("responsibleDepartment", findDepartment(form.getResponsibleDepartmentId()));
         dto.put("managingDepartment", findDepartment(form.getManagingDepartmentId()));
         dto.put("theme", formTheme);
 
         return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
+    }
+
+    @Nonnull
+    private VDepartmentShadowedEntity resolvePdfDepartment(@Nonnull FormLayoutElement form,
+                                                           @Nullable Integer processId) {
+        return findDepartmentById(form.getRelevantDepartmentId())
+                .or(() -> findProcessOwningDepartment(processId))
+                .orElseThrow(() -> new RuntimeException("Department not found"));
+    }
+
+    @Nonnull
+    private Optional<VDepartmentShadowedEntity> findDepartmentById(@Nullable Integer departmentId) {
+        if (departmentId == null) {
+            return Optional.empty();
+        }
+
+        return vDepartmentShadowedRepository.findById(departmentId);
+    }
+
+    @Nonnull
+    private Optional<VDepartmentShadowedEntity> findProcessOwningDepartment(@Nullable Integer processId) {
+        if (processId == null) {
+            return Optional.empty();
+        }
+
+        return processRepository
+                .findById(processId)
+                .map(ProcessEntity::getDepartmentId)
+                .flatMap(vDepartmentShadowedRepository::findById);
     }
 
     @Nullable

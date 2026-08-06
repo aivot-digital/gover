@@ -138,7 +138,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_FILES,
                         "Dateien",
-                        "Die übermittelten Anlagen im Format des Datei-Upload-Feldes"
+                        "Die übermittelten Anlagen im Format des Datei-Anlagen-Feldes"
                 ),
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_REQUEST,

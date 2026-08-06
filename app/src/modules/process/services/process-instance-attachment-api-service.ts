@@ -23,6 +23,7 @@ export class ProcessInstanceAttachmentApiService extends BaseReadApiService<
         return {
             key: '',
             fileName: '',
+            originalFileName: '',
             attachmentSetId: 0,
             processInstanceId: 0,
             processInstanceTaskId: null,

@@ -21,6 +21,23 @@ describe('hasAuthoredElementValuesSomeInput', () => {
 });
 
 describe('hasAnyErrorRecursivelyInParent', () => {
+    it.each([
+        ElementType.SummaryStep,
+        ElementType.SubmitStep,
+    ])('should detect an error on a childless form step of type %s', (type) => {
+        const step = {
+            id: 'childless-step',
+            type,
+        } as any;
+        const elementStates: ComputedElementStates = {
+            'childless-step': {
+                error: 'Step error',
+            },
+        };
+
+        expect(hasAnyErrorRecursivelyInParent(step, elementStates)).toBe(true);
+    });
+
     it('should detect an error on the parent itself', () => {
         const parent = {
             id: 'parent',
@@ -89,8 +106,11 @@ describe('hasAnyErrorRecursivelyInParent', () => {
             list: {
                 subStates: [
                     {
-                        rowField: {
-                            error: 'Row field error',
+                        id: 'row-1',
+                        states: {
+                            rowField: {
+                                error: 'Row field error',
+                            },
                         },
                     },
                 ],
@@ -218,16 +238,22 @@ describe('applyComputedErrors', () => {
                 error: null,
                 subStates: [
                     {
-                        child: {
-                            error: 'Updated nested error',
-                            errorDetails: {
-                                error: 'Updated nested operand error',
+                        id: 'row-1',
+                        states: {
+                            child: {
+                                error: 'Updated nested error',
+                                errorDetails: {
+                                    error: 'Updated nested operand error',
+                                },
                             },
                         },
                     },
                     {
-                        created: {
-                            error: 'Created nested error',
+                        id: 'row-2',
+                        states: {
+                            created: {
+                                error: 'Created nested error',
+                            },
                         },
                     },
                 ],
@@ -238,18 +264,24 @@ describe('applyComputedErrors', () => {
                 error: 'Container error',
                 subStates: [
                     {
-                        child: {
-                            visible: true,
-                            error: 'Old nested error',
-                            errorDetails: {
-                                error: 'Old nested operand error',
+                        id: 'row-1',
+                        states: {
+                            child: {
+                                visible: true,
+                                error: 'Old nested error',
+                                errorDetails: {
+                                    error: 'Old nested operand error',
+                                },
+                                valueSource: ComputedElementValueSource.Authored,
                             },
-                            valueSource: ComputedElementValueSource.Authored,
                         },
                     },
                     {
-                        retained: {
-                            error: 'Retained sibling error',
+                        id: 'row-2',
+                        states: {
+                            retained: {
+                                error: 'Retained sibling error',
+                            },
                         },
                     },
                 ],
@@ -261,21 +293,27 @@ describe('applyComputedErrors', () => {
                 error: null,
                 subStates: [
                     {
-                        child: {
-                            visible: true,
-                            error: 'Updated nested error',
-                            errorDetails: {
-                                error: 'Updated nested operand error',
+                        id: 'row-1',
+                        states: {
+                            child: {
+                                visible: true,
+                                error: 'Updated nested error',
+                                errorDetails: {
+                                    error: 'Updated nested operand error',
+                                },
+                                valueSource: ComputedElementValueSource.Authored,
                             },
-                            valueSource: ComputedElementValueSource.Authored,
                         },
                     },
                     {
-                        retained: {
-                            error: 'Retained sibling error',
-                        },
-                        created: {
-                            error: 'Created nested error',
+                        id: 'row-2',
+                        states: {
+                            retained: {
+                                error: 'Retained sibling error',
+                            },
+                            created: {
+                                error: 'Created nested error',
+                            },
                         },
                     },
                 ],
@@ -293,8 +331,11 @@ describe('applyComputedErrors', () => {
             list: {
                 subStates: [
                     {
-                        child: {
-                            error: 'Nested error',
+                        id: 'row-1',
+                        states: {
+                            child: {
+                                error: 'Nested error',
+                            },
                         },
                     },
                 ],

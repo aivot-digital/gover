@@ -49,5 +49,6 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.ProcessInstanceAttachmentSetSelect]: true,
     [ElementType.ProcessIdentityIdInput]: true,
     [ElementType.HtmlTemplateInput]: true,
+    [ElementType.StoragePathSelector]: true,
     [ElementType.ProcessAttachmentDisplay]: false,
 };

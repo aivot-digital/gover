@@ -13,6 +13,7 @@ import de.aivot.gover.backend.elements.models.elements.form.input.DomainAndUserS
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
@@ -358,8 +359,8 @@ class DataChangeActionNodeV1Test {
                 ),
                 authored(
                         "membersEditor", List.of(
-                                authored("memberName", "Grace"),
-                                authored("memberName", "Bob")
+                                new ReplicatingContainerLayoutElementValue().setValues(authored("memberName", "Grace")),
+                                new ReplicatingContainerLayoutElementValue().setValues(authored("memberName", "Bob"))
                         )
                 ),
                 "complete"

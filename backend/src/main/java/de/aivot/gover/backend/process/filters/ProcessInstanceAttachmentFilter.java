@@ -13,6 +13,7 @@ public class ProcessInstanceAttachmentFilter implements Filter<ProcessInstanceAt
     private List<Long> processInstanceIds;
     private Long processInstanceTaskId;
     private String fileName;
+    private String group;
     private String mimeType;
     private String uploadedByUserId;
 
@@ -29,6 +30,7 @@ public class ProcessInstanceAttachmentFilter implements Filter<ProcessInstanceAt
                 .withInList("processInstanceId", processInstanceIds)
                 .withEquals("processInstanceTaskId", processInstanceTaskId)
                 .withContains("fileName", fileName)
+                .withEquals("group", group)
                 .withEquals("mimeType", mimeType)
                 .withEquals("uploadedByUserId", uploadedByUserId);
 
@@ -68,6 +70,15 @@ public class ProcessInstanceAttachmentFilter implements Filter<ProcessInstanceAt
 
     public ProcessInstanceAttachmentFilter setFileName(String fileName) {
         this.fileName = fileName;
+        return this;
+    }
+
+    public String getGroup() {
+        return group;
+    }
+
+    public ProcessInstanceAttachmentFilter setGroup(String group) {
+        this.group = group;
         return this;
     }
 

@@ -25,7 +25,6 @@ import {useRootStructureActionsContext} from './root-structure-actions-context';
 import {UiDefinitionEmptyState} from '../ui-definition-empty-state/ui-definition-empty-state';
 import {useViewDispatcherContext, ViewDispatcherMode} from '../view-dispatcher/view-dispatcher.context';
 import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
-import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 
 export const SUBMIT_EVENT = 'submit';
 
@@ -141,8 +140,10 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
             (children ?? []).filter((step) => step.id !== currentStepElement.id).map((step) => step.id),
         );
 
-        const currentPageHasErrors = isAnyElementWithChildren(currentStepElement) &&
-            hasAnyErrorRecursivelyInParent(currentStepElement, derivationData.elementStates);
+        const currentPageHasErrors = hasAnyErrorRecursivelyInParent(
+            currentStepElement,
+            derivationData.elementStates,
+        );
         if (currentPageHasErrors) {
             setIsBusyNavigating(false);
             setHasSteppedOnce(true);

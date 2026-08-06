@@ -13,6 +13,7 @@ public class CodeListFilter implements Filter<CodeListEntity>, Serializable {
     private String key;
     private String name;
     private CodeListSourceType sourceType;
+    private String sourceRef;
 
     public static CodeListFilter create() {
         return new CodeListFilter();
@@ -26,6 +27,7 @@ public class CodeListFilter implements Filter<CodeListEntity>, Serializable {
                 .withContains("key", key)
                 .withContains("name", name)
                 .withEquals("sourceType", sourceType)
+                .withEquals("sourceRef", sourceRef)
                 .build();
     }
 
@@ -53,6 +55,15 @@ public class CodeListFilter implements Filter<CodeListEntity>, Serializable {
 
     public CodeListFilter setSourceType(CodeListSourceType sourceType) {
         this.sourceType = sourceType;
+        return this;
+    }
+
+    public String getSourceRef() {
+        return sourceRef;
+    }
+
+    public CodeListFilter setSourceRef(String sourceRef) {
+        this.sourceRef = sourceRef;
         return this;
     }
 }

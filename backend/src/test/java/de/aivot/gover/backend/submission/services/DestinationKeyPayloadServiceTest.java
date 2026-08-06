@@ -2,6 +2,7 @@ package de.aivot.gover.backend.submission.services;
 
 import de.aivot.gover.backend.elements.models.ComputedElementState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
+import de.aivot.gover.backend.elements.models.ComputedElementSubState;
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
 import de.aivot.gover.backend.elements.models.elements.BaseElement;
 import de.aivot.gover.backend.elements.models.elements.BaseFormElement;
@@ -10,9 +11,9 @@ import de.aivot.gover.backend.elements.models.elements.form.input.TextInputEleme
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
-import de.aivot.gover.backend.submission.services.ElementDataTransformService;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -20,7 +21,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class DestinationKeyPayloadServiceTest {
     private final ElementDataTransformService service = new ElementDataTransformService();
@@ -114,8 +115,8 @@ class DestinationKeyPayloadServiceTest {
         effectiveValues.put("people", List.of(firstPerson, secondPerson));
 
         var peopleState = new ComputedElementState().setSubStates(List.of(
-                elementStatesWithOverride("rowFirstName", firstNameOverride),
-                elementStatesWithOverride("rowFirstName", firstNameOverride)
+                ComputedElementSubState.of("row-1", elementStatesWithOverride("rowFirstName", firstNameOverride)),
+                ComputedElementSubState.of("row-2", elementStatesWithOverride("rowFirstName", firstNameOverride))
         ));
         var elementStates = new ComputedElementStates();
         elementStates.put("people", peopleState);
@@ -408,10 +409,12 @@ class DestinationKeyPayloadServiceTest {
                 "payload", Map.of(
                         "people", List.of(
                                 Map.of(
+                                        "id", "person-1",
                                         "first_name", "Ada",
                                         "address", Map.of("street", "Main Street 1")
                                 ),
                                 Map.of(
+                                        "id", "person-2",
                                         "first_name", "Grace",
                                         "address", Map.of("street", "Side Alley 2")
                                 )
@@ -421,19 +424,18 @@ class DestinationKeyPayloadServiceTest {
 
         var effectiveValues = service.buildEffectiveValues(createRoot(people), payload);
 
-        assertEquals(
-                List.of(
-                        Map.of(
-                                "rowFirstName", "Ada",
-                                "rowStreet", "Main Street 1"
-                        ),
-                        Map.of(
-                                "rowFirstName", "Grace",
-                                "rowStreet", "Side Alley 2"
-                        )
-                ),
-                effectiveValues.get("people")
-        );
+        var rows = assertInstanceOf(List.class, effectiveValues.get("people"));
+        assertEquals(2, rows.size());
+        var firstRow = assertReplicatingRowValues(rows.get(0), Map.of(
+                "rowFirstName", "Ada",
+                "rowStreet", "Main Street 1"
+        ));
+        assertEquals("person-1", firstRow.getId());
+        var secondRow = assertReplicatingRowValues(rows.get(1), Map.of(
+                "rowFirstName", "Grace",
+                "rowStreet", "Side Alley 2"
+        ));
+        assertEquals("person-2", secondRow.getId());
     }
 
     @Test
@@ -465,19 +467,23 @@ class DestinationKeyPayloadServiceTest {
 
         var effectiveValues = service.buildEffectiveValues(createRoot(people), payload);
 
-        assertEquals(
-                List.of(
-                        Map.of(
-                                "rowFirstName", "Ada",
-                                "rowTag", "founder"
-                        ),
-                        Map.of(
-                                "rowFirstName", "Grace",
-                                "rowTag", "admiral"
-                        )
-                ),
-                effectiveValues.get("people")
-        );
+        var rows = assertInstanceOf(List.class, effectiveValues.get("people"));
+        assertEquals(2, rows.size());
+        assertReplicatingRowValues(rows.get(0), Map.of(
+                "rowFirstName", "Ada",
+                "rowTag", "founder"
+        ));
+        assertReplicatingRowValues(rows.get(1), Map.of(
+                "rowFirstName", "Grace",
+                "rowTag", "admiral"
+        ));
+    }
+
+    private static ReplicatingContainerLayoutElementValue assertReplicatingRowValues(Object row, Map<?, ?> expectedValues) {
+        var rowValue = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, row);
+        assertNotNull(rowValue.getId());
+        assertEquals(expectedValues, rowValue.getValues());
+        return rowValue;
     }
 
     private static FormLayoutElement createRoot(BaseFormElement child) {

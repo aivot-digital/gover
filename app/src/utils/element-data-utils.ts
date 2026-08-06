@@ -1,12 +1,20 @@
 import {
     AuthoredElementValues,
     ComputedElementState,
+    ComputedElementSubState,
     ComputedElementStates,
     ComputedElementValueSource,
+    createComputedElementSubState,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
     EffectiveElementValues,
     isAuthoredElementValues,
+    isReplicatingContainerElementValue,
+    resolveReplicatingContainerElementValues,
+    resolveComputedElementSubState,
+    resolveComputedElementSubStateStates,
+    type ReplicatingContainerElementValue,
+    updateReplicatingContainerElementValues,
 } from '../models/element-data';
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
@@ -95,14 +103,16 @@ export function resolveReplicatingContainerItemDerivedData(
 ): DerivedRuntimeElementData {
     const rowEffectiveValues = derivedData.effectiveValues[element.id];
     const rowElementStates = resolveElementState(element, derivedData)?.subStates;
+    const rowValue = Array.isArray(rowEffectiveValues) ? rowEffectiveValues[index] : null;
+    const rowId = isReplicatingContainerElementValue(rowValue) ? rowValue.id : null;
+    const rowValues = Array.isArray(rowEffectiveValues) ?
+        resolveReplicatingContainerElementValues(rowValue) :
+        null;
+    const rowSubState = resolveComputedElementSubState(rowElementStates, rowId, index);
 
     return createDerivedRuntimeElementData({
-        effectiveValues: Array.isArray(rowEffectiveValues) && isAuthoredElementValues(rowEffectiveValues[index]) ?
-            rowEffectiveValues[index] as EffectiveElementValues :
-            {},
-        elementStates: Array.isArray(rowElementStates) && isAuthoredElementValues(rowElementStates[index]) ?
-            rowElementStates[index] as ComputedElementStates :
-            {},
+        effectiveValues: rowValues != null ? rowValues as EffectiveElementValues : {},
+        elementStates: resolveComputedElementSubStateStates(rowSubState),
     });
 }
 
@@ -116,8 +126,9 @@ export function walkAuthoredElementValues(
 
     if (isReplicatingContainerLayout(currentElement)) {
         if (Array.isArray(value)) {
-            for (const childElementValues of value) {
-                if (!isAuthoredElementValues(childElementValues)) {
+            for (const row of value) {
+                const childElementValues = resolveReplicatingContainerElementValues(row);
+                if (childElementValues == null) {
                     continue;
                 }
 
@@ -160,9 +171,10 @@ export function mapAuthoredElementValues(
 
     if (isReplicatingContainerLayout(currentElement)) {
         if (Array.isArray(nextCurrentValue)) {
-            const mappedChildValues = nextCurrentValue.map((childValues, index) => {
+            const mappedChildValues = nextCurrentValue.map((row, index) => {
+                const childValues = resolveReplicatingContainerElementValues(row);
                 if (!isAuthoredElementValues(childValues)) {
-                    return childValues;
+                    return row;
                 }
 
                 let updatedChildValues = {
@@ -173,7 +185,7 @@ export function mapAuthoredElementValues(
                     updatedChildValues = mapAuthoredElementValues(child, updatedChildValues, callback, [...parents, currentElement, index]);
                 }
 
-                return updatedChildValues;
+                return updateReplicatingContainerElementValues(row, updatedChildValues);
             });
 
             mappedElementValues = {
@@ -212,7 +224,8 @@ export function filterAuthoredElementValues(
     if (isReplicatingContainerLayout(currentElement)) {
         if (Array.isArray(currentValue)) {
             const filteredChildValues = currentValue
-                .map((childValues, index) => {
+                .map((row, index) => {
+                    const childValues = resolveReplicatingContainerElementValues(row);
                     if (!isAuthoredElementValues(childValues)) {
                         return undefined;
                     }
@@ -225,9 +238,11 @@ export function filterAuthoredElementValues(
                         };
                     }
 
-                    return Object.keys(filteredChildValue).length > 0 ? filteredChildValue : undefined;
+                    return Object.keys(filteredChildValue).length > 0 ?
+                        updateReplicatingContainerElementValues(row, filteredChildValue) :
+                        undefined;
                 })
-                .filter((childValues): childValues is AuthoredElementValues => childValues != null);
+                .filter((childValues): childValues is ReplicatingContainerElementValue => childValues != null);
 
             if (filteredChildValues.length > 0) {
                 filteredValues[currentElement.id] = filteredChildValues;
@@ -267,6 +282,10 @@ export function cleanAuthoredElementValues(rootElement: AnyElement, authoredElem
     });
 }
 
+export function normalizeReplicatingContainerValues(rootElement: AnyElement, authoredElementValues: AuthoredElementValues): AuthoredElementValues {
+    return mapAuthoredElementValues(rootElement, authoredElementValues, (_, value) => value);
+}
+
 
 export function filterComputedElementStates(
     currentElement: AnyElement,
@@ -285,7 +304,8 @@ export function filterComputedElementStates(
 
     if (isReplicatingContainerLayout(currentElement)) {
         const filteredSubStates = (currentElementState?.subStates ?? [])
-            .map((childValues, index) => {
+            .map((subState, index) => {
+                const childValues = resolveComputedElementSubStateStates(subState);
                 let filteredChildValue: ComputedElementStates = {};
 
                 for (const child of currentElement.children || []) {
@@ -295,9 +315,9 @@ export function filterComputedElementStates(
                     };
                 }
 
-                return Object.keys(filteredChildValue).length > 0 ? filteredChildValue : undefined;
+                return Object.keys(filteredChildValue).length > 0 ? createComputedElementSubState(subState.id, filteredChildValue) : undefined;
             })
-            .filter((childValues): childValues is AuthoredElementValues => childValues != null);
+            .filter((childValues): childValues is ComputedElementSubState => childValues != null);
 
         if (filteredSubStates.length > 0) {
             filteredValues[currentElement.id] = {

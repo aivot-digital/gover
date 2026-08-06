@@ -220,6 +220,7 @@ function createAttachment(key: string, fileName: string, attachmentSetId: number
         key,
         fileName,
         attachmentSetId,
+        originalFileName: fileName,
         processInstanceId: 42,
         processInstanceTaskId: null,
         storageProviderId: 7,

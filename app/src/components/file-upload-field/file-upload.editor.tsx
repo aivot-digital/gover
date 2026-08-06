@@ -12,6 +12,7 @@ import {TextFieldComponent} from '../text-field/text-field-component';
 export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
     const {
         hasSummaryLayoutParent,
+        hasReplicatingContainerParent = false,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -31,6 +32,15 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
         props.element.minFiles != null && props.element.minFiles > 0 &&
         props.element.maxFiles != null && props.element.maxFiles > 0 &&
         props.element.minFiles > props.element.maxFiles;
+    const requiresSubmittedFileNameIndex = props.element.isMultifile === true || hasReplicatingContainerParent;
+    const submittedFileNameError = props.element.submittedFileName == null || props.element.submittedFileName.trim().length === 0 ?
+        'Bitte geben Sie einen Dateinamen bei Einreichung an.' :
+        undefined;
+    const submittedFileNameHint = !requiresSubmittedFileNameIndex
+        ? 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei.'
+        : hasReplicatingContainerParent
+            ? 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei. Mit "#" können Sie den Index angeben. Ist "#" nicht vorhanden, wird der Index automatisch am Ende angefügt, zum Beispiel DATEINAME-1.pdf.'
+            : 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei. Mit "#" können Sie den Index angeben. Ist "#" nicht vorhanden, wird der Index automatisch am Ende angefügt, zum Beispiel DATEINAME-1.pdf.';
 
     if (hasSummaryLayoutParent) {
         return null;
@@ -121,7 +131,9 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                             submittedFileName: val,
                         });
                     }}
-                    hint="Optional. Wenn gesetzt, wird dieser Wert als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei. Werden mehrere Dateien hochgeladen, wird ab der zweiten Datei ein Index angehängt, zum Beispiel DATEINAME-2.pdf."
+                    hint={submittedFileNameHint}
+                    error={submittedFileNameError}
+                    required
                     disabled={!props.editable}
                 />
             </Grid>

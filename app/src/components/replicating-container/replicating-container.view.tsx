@@ -14,12 +14,18 @@ import AddCircleOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-ou
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {flattenElements} from '../../utils/flatten-elements';
-import {type AuthoredElementValues} from '../../models/element-data';
+import {
+    type ReplicatingContainerElementValue,
+    type ReplicatingContainerElementValues,
+    resolveReplicatingContainerElementValues,
+    updateReplicatingContainerElementValues,
+} from '../../models/element-data';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {resolveReplicatingContainerItemDerivedData} from '../../utils/element-data-utils';
 import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
+import {generateUUIDv7} from '../../utils/id-utils';
 
-export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, AuthoredElementValues[]>) {
+export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, ReplicatingContainerElementValues>) {
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
 
     const {
@@ -60,9 +66,12 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
     const shouldShowEmptyState = !hasEntries;
 
     const handleAdd = useCallback(() => {
-        const updatedValue: AuthoredElementValues[] = [
+        const updatedValue: ReplicatingContainerElementValues = [
             ...(value ?? []),
-            {},
+            {
+                id: generateUUIDv7(),
+                values: {},
+            },
         ];
 
         const allChildIds = flattenElements(element, false)
@@ -71,16 +80,16 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         setValue(updatedValue, allChildIds);
     }, [element, setValue, value]);
 
-    const handleDelete = useCallback((_: AuthoredElementValues, index: number) => {
+    const handleDelete = useCallback((_: ReplicatingContainerElementValue, index: number) => {
         const newValue = (value ?? [])
-            .filter((_: AuthoredElementValues, i: number) => i !== index);
+            .filter((_: ReplicatingContainerElementValue, i: number) => i !== index);
 
         const allChildIds = flattenElements(element, false)
             .map(child => child.id);
 
         setValue(newValue.length === 0 ? null : newValue, allChildIds);
         setConfirmDelete(undefined);
-    }, [setValue, value]);
+    }, [element, setValue, value]);
 
     return (
         <Box sx={{mt: 2}}>
@@ -111,103 +120,108 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
             {
                 value != null &&
                 value
-                    .map((val: AuthoredElementValues, valueIndex: number) => derivationTriggerIdQueue.includes(`${element.id}.${valueIndex}`) ? ( /* TODO: Fix skeletons */
-                        // Skeleton
-                        <DatasetSkeleton
-                            key={valueIndex}
-                            size={children?.length}
-                        />
-                    ) : (
-                        <Box
-                            key={valueIndex}
-                            sx={{
-                                my: 2,
-                                px: 3,
-                                py: 2.4,
-                                border: '1px solid #D4D4D4',
-                                borderRadius: 1,
-                            }}
-                        >
+                    .map((val: ReplicatingContainerElementValue, valueIndex: number) => {
+                        const rowValues = resolveReplicatingContainerElementValues(val) ?? {};
+                        const rowKey = val.id ?? valueIndex;
+
+                        return derivationTriggerIdQueue.includes(`${element.id}.${valueIndex}`) ? ( /* TODO: Fix skeletons */
+                            // Skeleton
+                            <DatasetSkeleton
+                                key={rowKey}
+                                size={children?.length}
+                            />
+                        ) : (
                             <Box
+                                key={rowKey}
                                 sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    flexWrap: 'wrap',
-                                    rowGap: '10px',
+                                    my: 2,
+                                    px: 3,
+                                    py: 2.4,
+                                    border: '1px solid #D4D4D4',
+                                    borderRadius: 1,
                                 }}
                             >
-                                <Typography
-                                    component={'p'}
-                                    variant="h6"
-                                    sx={{fontSize: '1.125rem'}}
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        flexWrap: 'wrap',
+                                        rowGap: '10px',
+                                    }}
+                                >
+                                    <Typography
+                                        component={'p'}
+                                        variant="h6"
+                                        sx={{fontSize: '1.125rem'}}
+                                    >
+                                        {
+                                            (element.headlineTemplate ?? '').replace('#', (valueIndex + 1).toFixed())
+                                        }
+                                    </Typography>
+
+                                    {
+                                        (minRequiredSets === 0 || valueIndex >= minRequiredSets) &&
+                                        <Box
+                                            sx={{
+                                                ml: 'auto',
+                                                cursor: (isDisabled || isBusy) ? 'not-allowed' : undefined,
+                                            }}
+                                        >
+                                            <Button
+                                                color="error"
+                                                size="small"
+                                                endIcon={
+                                                    <Delete
+                                                        sx={{
+                                                            marginTop: '-4px',
+                                                        }}
+                                                    />
+                                                }
+                                                onClick={() => {
+                                                    setConfirmDelete(() => () => handleDelete(val, valueIndex));
+                                                }}
+                                                disabled={isDisabled || (minRequiredSets > 0 && (value ?? []).length <= minRequiredSets)}
+                                            >
+                                                {
+                                                    stringOrDefault(element.removeLabel, 'Datensatz löschen')
+                                                }
+                                            </Button>
+                                        </Box>
+                                    }
+                                </Box>
+                                <Grid
+                                    container
+                                    spacing={2}
+                                    sx={{mt: 0}}
                                 >
                                     {
-                                        (element.headlineTemplate ?? '').replace('#', (valueIndex + 1).toFixed())
-                                    }
-                                </Typography>
-
-                                {
-                                    (minRequiredSets === 0 || valueIndex >= minRequiredSets) &&
-                                    <Box
-                                        sx={{
-                                            ml: 'auto',
-                                            cursor: (isDisabled || isBusy) ? 'not-allowed' : undefined,
-                                        }}
-                                    >
-                                        <Button
-                                            color="error"
-                                            size="small"
-                                            endIcon={
-                                                <Delete
-                                                    sx={{
-                                                        marginTop: '-4px',
+                                        children != null &&
+                                        children
+                                            .map((child, childIndex) => (
+                                                <ViewDispatcherComponent
+                                                    {...props}
+                                                    key={child.id}
+                                                    element={child}
+                                                    isBusy={isBusy}
+                                                    authoredElementValues={rowValues}
+                                                    derivedData={resolveReplicatingContainerItemDerivedData(element, derivedData, valueIndex)}
+                                                    onAuthoredElementValuesChange={(data, triggeringElementIds) => {
+                                                        const newValue = (value ?? [])
+                                                            .map((v, i) => i === valueIndex ? updateReplicatingContainerElementValues(v, data) : v);
+                                                        setValue(newValue, triggeringElementIds);
+                                                    }}
+                                                    onElementBlur={(data, triggeringElementIds) => {
+                                                        const newValue = (value ?? [])
+                                                            .map((v, i) => i === valueIndex ? updateReplicatingContainerElementValues(v, data) : v);
+                                                        onBlur(newValue, triggeringElementIds);
                                                     }}
                                                 />
-                                            }
-                                            onClick={() => {
-                                                setConfirmDelete(() => () => handleDelete(val, valueIndex));
-                                            }}
-                                            disabled={isDisabled || (minRequiredSets > 0 && (value ?? []).length <= minRequiredSets)}
-                                        >
-                                            {
-                                                stringOrDefault(element.removeLabel, 'Datensatz löschen')
-                                            }
-                                        </Button>
-                                    </Box>
-                                }
+                                            ))
+                                    }
+                                </Grid>
                             </Box>
-                            <Grid
-                                container
-                                spacing={2}
-                                sx={{mt: 0}}
-                            >
-                                {
-                                    children != null &&
-                                    children
-                                        .map((child, childIndex) => (
-                                            <ViewDispatcherComponent
-                                                {...props}
-                                                key={childIndex}
-                                                element={child}
-                                                isBusy={isBusy}
-                                                authoredElementValues={val}
-                                                derivedData={resolveReplicatingContainerItemDerivedData(element, derivedData, valueIndex)}
-                                                onAuthoredElementValuesChange={(data, triggeringElementIds) => {
-                                                    const newValue = (value ?? [])
-                                                        .map((v, i) => i === valueIndex ? data : v);
-                                                    setValue(newValue, triggeringElementIds);
-                                                }}
-                                                onElementBlur={(data, triggeringElementIds) => {
-                                                    const newValue = (value ?? [])
-                                                        .map((v, i) => i === valueIndex ? data : v);
-                                                    onBlur(newValue, triggeringElementIds);
-                                                }}
-                                            />
-                                        ))
-                                }
-                            </Grid>
-                        </Box>
-                    ))
+                        );
+                    })
             }
             {
                 shouldShowEmptyState &&

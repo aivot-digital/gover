@@ -16,6 +16,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -52,7 +53,11 @@ public class CodeListStartupService implements ApplicationListener<ApplicationRe
         }
 
         for (var codeList : codeLists) {
-            if (existingPluginKeys.contains(codeList.getSourceRef())) {
+            var sourceRefPluginKey = codeList
+                    .getSourceRef()
+                    .replaceAll("\\.[^.]*$", "");
+
+            if (existingPluginKeys.contains(sourceRefPluginKey)) {
                 continue;
             }
 
