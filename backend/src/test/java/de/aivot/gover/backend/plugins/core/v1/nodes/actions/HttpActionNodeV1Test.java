@@ -202,6 +202,7 @@ class HttpActionNodeV1Test {
         var files = (List<FileUploadInputElementItem>) result.getNodeData().get("files");
         assertEquals(1, files.size());
         assertEquals("document.pdf", files.getFirst().getName());
+        assertEquals("document.pdf", files.getFirst().getOriginalFileName());
         assertEquals(3, files.getFirst().getSize());
         assertTrue(files.getFirst().getUri().startsWith("process-instance-attachment:"));
     }

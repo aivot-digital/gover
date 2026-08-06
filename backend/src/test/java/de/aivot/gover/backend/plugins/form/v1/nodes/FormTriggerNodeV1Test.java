@@ -331,6 +331,7 @@ class FormTriggerNodeV1Test {
         var files = (List<FileUploadInputElementItem>) result.getNodeData().get(FormTriggerNodeV1.DATA_KEY_CUSTOMER_SUMMARY_FILES);
         assertEquals(1, files.size());
         assertEquals("Formularzusammenfassung.pdf", files.getFirst().getName());
+        assertEquals("Formularzusammenfassung.pdf", files.getFirst().getOriginalFileName());
         assertEquals(pdfBytes.length, files.getFirst().getSize());
         assertTrue(files.getFirst().getUri().startsWith(FileUploadMultipartInputService.PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX));
     }

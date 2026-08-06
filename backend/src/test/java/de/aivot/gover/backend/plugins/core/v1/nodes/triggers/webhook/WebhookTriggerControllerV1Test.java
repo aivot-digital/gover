@@ -263,6 +263,7 @@ class WebhookTriggerControllerV1Test {
                 .get(WebhookTriggerNodeV1.INITIAL_DATA_KEY_FILES);
         assertEquals(3, fileItems.size());
         assertEquals("first.pdf", fileItems.getFirst().getName());
+        assertEquals("first.pdf", fileItems.getFirst().getOriginalFileName());
         assertEquals(1, fileItems.getFirst().getSize());
         assertTrue(fileItems.getFirst().getUri().startsWith("process-instance-attachment:"));
     }

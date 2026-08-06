@@ -114,6 +114,7 @@ class PdfActionNodeV1Test {
         var files = (List<FileUploadInputElementItem>) result.getNodeData().get("files");
         assertEquals(1, files.size());
         assertEquals("report.pdf", files.getFirst().getName());
+        assertEquals("report.pdf", files.getFirst().getOriginalFileName());
         assertEquals(9, files.getFirst().getSize());
         assertTrue(files.getFirst().getUri().startsWith("process-instance-attachment:"));
     }
