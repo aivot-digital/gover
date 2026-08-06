@@ -31,6 +31,7 @@ import {DepartmentSelectField} from '../../../../../modules/departments/componen
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 import Label from '@aivot/mui-material-symbols-400-n25-outlined/Label';
 import SupervisedUserCircle from '@aivot/mui-material-symbols-400-n25-outlined/SupervisedUserCircle';
+import AdminPanelSettings from '@aivot/mui-material-symbols-400-n25-outlined/AdminPanelSettings';
 import {
     SystemConfigDefinitionResponseDTO,
 } from '../../../../../modules/configs/dtos/system-config-definition-response-dto';
@@ -88,9 +89,11 @@ export function ApplicationSettings() {
 
     const hasNotChanged = Object.keys(editedConfig).length === 0;
     const configuredDefaultSystemRole = config[SystemConfigKeys.users.defaultSystemRole];
+    const configuredMostPrivilegedSystemRole = config[SystemConfigKeys.systemRoles.mostPrivilegedRole];
     const configuredAssetStorageProvider = config[SystemConfigKeys.storage.assets.default_storage_provider];
     const configuredAttachmentStorageProvider = config[SystemConfigKeys.storage.attachments.default_storage_provider];
     const defaultSystemRoleValue = editedConfig[SystemConfigKeys.users.defaultSystemRole] ?? configuredDefaultSystemRole;
+    const mostPrivilegedSystemRoleValue = editedConfig[SystemConfigKeys.systemRoles.mostPrivilegedRole] ?? configuredMostPrivilegedSystemRole;
     const assetStorageProviderValue = editedConfig[SystemConfigKeys.storage.assets.default_storage_provider] ?? configuredAssetStorageProvider;
     const attachmentStorageProviderValue = editedConfig[SystemConfigKeys.storage.attachments.default_storage_provider] ?? configuredAttachmentStorageProvider;
     const getConfiguredDepartment = (key: string): VDepartmentShadowedEntity | null => {
@@ -112,6 +115,14 @@ export function ApplicationSettings() {
                 ? 'Es ist keine Systemrolle vorhanden. Legen Sie zuerst eine Systemrolle an.'
                 : isStringNullOrEmpty(defaultSystemRoleValue)
                     ? 'Bitte wählen Sie eine Standard-Systemrolle aus.'
+                    : undefined
+            : undefined;
+    const mostPrivilegedSystemRoleError =
+        canReadSystemRoles && !isLoadingSystemRoles
+            ? systemRoleOptions.length === 0
+                ? 'Es ist keine Systemrolle vorhanden. Legen Sie zuerst eine Systemrolle an.'
+                : isStringNullOrEmpty(mostPrivilegedSystemRoleValue)
+                    ? 'Bitte wählen Sie die Systemrolle mit der höchsten Berechtigungsstufe aus.'
                     : undefined
             : undefined;
     const assetStorageProviderError =
@@ -383,6 +394,20 @@ export function ApplicationSettings() {
                 }
 
                 dispatch(showErrorSnackbar('Bitte wählen Sie eine Standard-Systemrolle für automatische Benutzerimporte aus.'));
+                return;
+            }
+
+            const currentMostPrivilegedSystemRole =
+                normalizedEditedConfig[SystemConfigKeys.systemRoles.mostPrivilegedRole] ??
+                config[SystemConfigKeys.systemRoles.mostPrivilegedRole];
+
+            if (canReadSystemRoles && isStringNullOrEmpty(currentMostPrivilegedSystemRole)) {
+                if (systemRoleOptions.length === 0) {
+                    dispatch(showErrorSnackbar('Für die höchste Berechtigungsstufe muss mindestens eine Systemrolle vorhanden sein. Legen Sie zuerst eine Systemrolle an.'));
+                    return;
+                }
+
+                dispatch(showErrorSnackbar('Bitte wählen Sie die Systemrolle mit der höchsten Berechtigungsstufe aus.'));
                 return;
             }
 
@@ -796,7 +821,7 @@ export function ApplicationSettings() {
                         mt: 4,
                     }}
                 >
-                    Automatische Rollenzuweisung
+                    Systemrollen
                 </Typography>
                 <Typography
                     sx={{
@@ -804,9 +829,8 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Wählen Sie hier die Systemrolle aus, die Mitarbeiter:innen automatisch erhalten sollen, wenn sie neu
-                    in
-                    Gover synchronisiert oder anderweitig importiert werden.
+                    Legen Sie fest, welche Systemrollen bei automatischen Benutzerimporten verwendet werden und welche
+                    Rolle systemweit als höchste Berechtigungsstufe gilt.
                 </Typography>
                 <Grid
                     container
@@ -848,6 +872,44 @@ export function ApplicationSettings() {
                                         : 'Keine Systemrollen vorhanden'
                             }
                             startIcon={<SupervisedUserCircle/>}
+                        />
+                    </Grid>
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                        }}
+                    >
+                        <SelectFieldComponent
+                            label="Systemrolle mit höchster Berechtigungsstufe"
+                            hint={
+                                !canReadSystemRoles
+                                    ? systemRoleReadHint
+                                    : hasSystemRolesLoadingError
+                                    ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
+                                    : 'Diese Systemrolle gilt in Gover als höchste Berechtigungsstufe. Besitzt keine aktive Mitarbeiter:in diese Rolle, wird sie automatisch dem Administrationskonto zugewiesen, dessen E-Mail-Adresse über die Umgebungsvariable GOVER_BOOTSTRAP_ADMIN_MAIL konfiguriert ist.'
+                            }
+                            value={mostPrivilegedSystemRoleValue}
+                            onChange={(val) => {
+                                setEditedConfig({
+                                    ...editedConfig,
+                                    [SystemConfigKeys.systemRoles.mostPrivilegedRole]: val ?? '',
+                                });
+                            }}
+                            required
+                            error={mostPrivilegedSystemRoleError}
+                            disabled={!canUpdateSystemConfig || !canReadSystemRoles || isLoadingSystemRoles}
+                            options={systemRoleOptions}
+                            emptyStatePlaceholder={
+                                !canReadSystemRoles
+                                    ? 'Keine Berechtigung zur Einsicht'
+                                    : isLoadingSystemRoles
+                                    ? 'Systemrollen werden geladen…'
+                                    : hasSystemRolesLoadingError
+                                        ? 'Systemrollen konnten nicht geladen werden'
+                                        : 'Keine Systemrollen vorhanden'
+                            }
+                            startIcon={<AdminPanelSettings/>}
                         />
                     </Grid>
                 </Grid>

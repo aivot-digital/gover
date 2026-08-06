@@ -2,7 +2,6 @@ import {Box, FormHelperText, FormLabel, SxProps} from '@mui/material';
 import {DataGrid, GridColDef, GridFooter, GridFooterContainer, GridPaginationModel, GridRowId, GridRowSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
 import React, {ReactNode, useMemo, useState} from 'react';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
-import {GridColType} from '@mui/x-data-grid/models/colDef/gridColType';
 import {Actions} from '../actions/actions';
 import AddIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import HelpOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
@@ -17,7 +16,7 @@ interface TableField<T extends GridValidRowModel, K extends keyof T & string> {
     placeholder?: string;
     required?: boolean;
     disabled?: boolean;
-    type?: GridColType;
+    type?: GridColDef['type'];
     renderCell?: (value: T[K]) => ReactNode;
 }
 

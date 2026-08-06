@@ -21,6 +21,9 @@ export const SystemConfigKeys = {
     users: {
         defaultSystemRole: 'users.default_system_role',
     },
+    systemRoles: {
+        mostPrivilegedRole: 'system_roles.most_privileged_role',
+    },
     storage: {
         assets: {
             default_storage_provider: 'storage.assets.default_storage_provider',

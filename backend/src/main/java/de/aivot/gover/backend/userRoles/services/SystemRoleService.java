@@ -7,6 +7,7 @@ import de.aivot.gover.backend.lib.services.EntityService;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import de.aivot.gover.backend.user.configs.DefaultUserSystemRoleSystemConfigDefinition;
 import de.aivot.gover.backend.user.repositories.UserRepository;
+import de.aivot.gover.backend.userRoles.configs.MostPrivilegedSystemRoleSystemConfigDefinition;
 import de.aivot.gover.backend.userRoles.entities.SystemRoleEntity;
 import de.aivot.gover.backend.userRoles.repositories.SystemRoleRepository;
 import jakarta.annotation.Nonnull;
@@ -49,7 +50,9 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
             int migratedUsersCount,
             @Nonnull List<MigratedUserAuditInfo> migratedUsers,
             boolean defaultSystemRoleForAutomaticImportsUpdated,
-            @Nullable Integer newDefaultSystemRoleId
+            @Nullable Integer newDefaultSystemRoleId,
+            boolean mostPrivilegedSystemRoleUpdated,
+            @Nullable Integer newMostPrivilegedSystemRoleId
     ) {
     }
 
@@ -95,9 +98,20 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
                         "Die konfigurierte Standard-Systemrolle für automatische Benutzerimporte ist ungültig."
                 ));
 
+        var mostPrivilegedSystemRoleConfig = systemConfigService
+                .retrieve(MostPrivilegedSystemRoleSystemConfigDefinition.KEY);
+        var mostPrivilegedSystemRoleId = mostPrivilegedSystemRoleConfig
+                .getValueAsInteger()
+                .orElseThrow(() -> ResponseException.internalServerError(
+                        "Die konfigurierte Systemrolle mit der höchsten Berechtigungsstufe ist ungültig."
+                ));
+
         var affectsDefaultSystemRoleForAutomaticImports = roleToDeleteId.equals(defaultSystemRoleId);
+        var affectsMostPrivilegedSystemRole = roleToDeleteId.equals(mostPrivilegedSystemRoleId);
         var hasAssignedUsers = Boolean.TRUE.equals(userRepository.existsBySystemRoleId(roleToDeleteId));
-        var replacementRoleRequired = affectsDefaultSystemRoleForAutomaticImports || hasAssignedUsers;
+        var replacementRoleRequired = affectsDefaultSystemRoleForAutomaticImports ||
+                                      affectsMostPrivilegedSystemRole ||
+                                      hasAssignedUsers;
 
         if (replacementSystemRoleId != null && roleToDeleteId.equals(replacementSystemRoleId)) {
             throw ResponseException.badRequest("Bitte wählen Sie eine andere Systemrolle als Ersatz aus.");
@@ -141,6 +155,18 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
             newDefaultSystemRoleId = replacementRole.getId();
         }
 
+        var mostPrivilegedSystemRoleUpdated = false;
+        Integer newMostPrivilegedSystemRoleId = null;
+        if (affectsMostPrivilegedSystemRole && replacementRole != null) {
+            mostPrivilegedSystemRoleConfig.setValue(String.valueOf(replacementRole.getId()));
+            systemConfigService.save(
+                    MostPrivilegedSystemRoleSystemConfigDefinition.KEY,
+                    mostPrivilegedSystemRoleConfig
+            );
+            mostPrivilegedSystemRoleUpdated = true;
+            newMostPrivilegedSystemRoleId = replacementRole.getId();
+        }
+
         repository.delete(roleToDelete);
 
         return new DeleteSystemRoleResult(
@@ -148,7 +174,9 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
                 migratedUsersCount,
                 migratedUsers,
                 defaultSystemRoleForAutomaticImportsUpdated,
-                newDefaultSystemRoleId
+                newDefaultSystemRoleId,
+                mostPrivilegedSystemRoleUpdated,
+                newMostPrivilegedSystemRoleId
         );
     }
 

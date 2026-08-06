@@ -11,6 +11,7 @@ import {ProviderTypeStyles} from '../../../data/provider-type-styles';
 import {KnownProviderIcons} from '../../../data/known-provider-icons';
 import {getProcessNodeProviderKey} from './process-flow-editor/utils/process-flow-graph-utils';
 import {getNodeName} from './process-flow-editor/utils/node-utils';
+import {type SvgIconComponent} from '../../../../../types/svg-icon-component';
 
 interface ProcessNotesOverviewDialogProps {
     open: boolean;
@@ -137,7 +138,7 @@ function ProcessNotesOverviewDialogEntry(props: ProcessNotesOverviewDialogEntryP
 
     const providerTypeStyle = provider == null ? null : ProviderTypeStyles[provider.type];
     const typeLabel = providerTypeStyle?.label ?? 'Prozesselement';
-    const ProviderIcon = provider == null ?
+    const ProviderIcon: SvgIconComponent = provider == null ?
         Assignment :
         KnownProviderIcons[provider.componentKey] ?? KnownProviderIcons[provider.key] ?? providerTypeStyle?.Icon ?? Assignment;
     const nodeName = provider == null ? (node.name ?? node.processNodeDefinitionKey) : getNodeName(node, provider);

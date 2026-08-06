@@ -7,8 +7,8 @@ import {CodeEditorProps} from './code-editor-props';
 import {ActionsProps} from '../actions/actions-props';
 import {Actions} from '../actions/actions';
 import {AlertComponent} from '../alert/alert-component';
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
+import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker.js?worker';
+import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker.js?worker';
 import {JavascriptApiService} from '../../modules/javascript/javascript-api-service';
 
 self.MonacoEnvironment = {
