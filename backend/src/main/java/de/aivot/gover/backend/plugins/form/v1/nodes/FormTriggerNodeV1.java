@@ -1,5 +1,6 @@
 package de.aivot.gover.backend.plugins.form.v1.nodes;
 
+import com.google.zxing.WriterException;
 import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.elements.enums.ElementDisplayContext;
 import de.aivot.gover.backend.elements.exceptions.ElementDataConversionException;
@@ -13,6 +14,7 @@ import de.aivot.gover.backend.elements.models.elements.layout.ConfigLayoutElemen
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
+import de.aivot.gover.backend.elements.uiPresets.PaymentGroupPreset;
 import de.aivot.gover.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.gover.backend.elements.utils.ElementStreamUtils;
 import de.aivot.gover.backend.enums.ElementType;
@@ -54,17 +56,14 @@ import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.PublicUrlService;
 import de.aivot.gover.backend.services.PdfService;
-import de.aivot.gover.backend.utils.NumberUtils;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfigV1>, PluginComponent {
@@ -83,7 +82,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
     public static final String DATA_KEY_STARTED = "started";
     public static final String DATA_KEY_CUSTOMER_SUMMARY_FILES = "customerSummaryFiles";
-    public static final String DATA_KEY_PAYMENT_DETAILS =  "paymentDetails";
+    public static final String DATA_KEY_PAYMENT_DETAILS = "paymentDetails";
 
     private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processNodeRepository;
@@ -668,6 +667,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Nonnull
     @Override
     public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+        return createPaymentView(context);
+    }
+
+    @Nonnull
+    private GroupLayoutElement createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
         var paymentTransactionKey = context
                 .getThisTask()
                 .getRuntimeData()
@@ -700,71 +704,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                         )
                 ));
 
-        String content = switch (transaction.get().getStatus()) {
-            case XBezahldienstStatus.INITIAL -> {
-                yield """
-                        # Zahlung ausstehend
-                        Um Ihre Einreichung bearbeiten zu können, ist eine Zahlung von Gebühren erforderlich.
-                        Die Zahlung wird durch den **%s** abgewickelt.
-                        Bitte achten Sie darauf, dass Sie die Zahlungsinformationen korrekt eingeben und den Vorgang abschließen.
-                        
-                        Für Ihre Einreichung sind folgende Gebühren zu zahlen:
-                        %s
-                        
-                        Insgesamt zu entrichtende Gebühr: %s Euro inkl. Steuern.
-                        
-                        Sie können den Betrag über den folgenden Link zahlen: [%s](%s)
-                        """
-                        .formatted(
-                                StringUtils.quote(paymentProvider.getName()),
-                                paymentPayload
-                                        .getPaymentItems()
-                                        .stream()
-                                        .map(item -> "- %s: %s Euro%s\n".formatted(
-                                                item.getDescription(),
-                                                NumberUtils.formatGermanNumber(item.getTotalPrice(), 2),
-                                                item.getTaxRate().compareTo(BigDecimal.ZERO) > 0
-                                                        ? " inkl. %s Steuern".formatted(NumberUtils.formatGermanNumber(item.getTaxRate(), 2))
-                                                        : ""
-                                        ))
-                                        .collect(Collectors.joining()),
-                                NumberUtils.formatGermanNumber(paymentPayload.getTotal(), 2),
-                                transaction.get().getPaymentInformation().getTransactionRedirectUrl(),
-                                transaction.get().getPaymentInformation().getTransactionRedirectUrl()
-                        );
-            }
-            case XBezahldienstStatus.FAILED -> {
-                yield """
-                        # Zahlung fehlgeschlagen
-                        Die Zahlung konnte nicht erfolgreich abgeschlossen werden.
-                        Bitte wenden Sie sich an den Support, um weitere Informationen zu erhalten und die Zahlung erneut zu versuchen.
-                        """;
-            }
-            case XBezahldienstStatus.CANCELED -> {
-                yield """
-                        # Zahlung abgebrochen
-                        Die Zahlung wurde abgebrochen.
-                        Bitte wenden Sie sich an den Support, um weitere Informationen zu erhalten und die Zahlung erneut zu versuchen.
-                        """;
-            }
-            case XBezahldienstStatus.PAYED -> {
-                yield """
-                        # Zahlung erfolgreich
-                        Die Zahlung wurde erfolgreich abgeschlossen.
-                        Vielen Dank für Ihre Einreichung.
-                        """;
-            }
-        };
-
-        var richtext = new RichTextContentElement();
-        richtext.setId("rtx");
-        richtext.setContent(content);
-
-        var layout = new GroupLayoutElement();
-        layout.setId("grp");
-        layout.addChild(richtext);
-
-        return layout;
+        try {
+            return new PaymentGroupPreset(paymentProvider, paymentPayload, transaction.get());
+        } catch (IOException | WriterException e) {
+            throw ResponseException.internalServerError(e);
+        }
     }
 
     @Nonnull
