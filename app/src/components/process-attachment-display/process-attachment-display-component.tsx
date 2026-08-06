@@ -7,6 +7,7 @@ import {
     FormHelperText,
     FormLabel,
     IconButton,
+    Paper,
     Stack,
     Tooltip,
     Typography,
@@ -57,14 +58,7 @@ export function ProcessAttachmentDisplayComponent(props: ProcessAttachmentDispla
                             },
                         }}
                     >
-                        {
-                            items.map((item) => (
-                                <AttachmentItem
-                                    key={item.key}
-                                    item={item}
-                                />
-                            ))
-                        }
+                        <AttachmentItems items={items}/>
                     </Box>
                 }
                 {
@@ -99,6 +93,100 @@ export function ProcessAttachmentDisplayComponent(props: ProcessAttachmentDispla
             }
         </FormControl>
     );
+}
+
+interface AttachmentItemsProps {
+    items: ProcessAttachmentDisplayItem[];
+}
+
+function AttachmentItems(props: AttachmentItemsProps): React.JSX.Element {
+    const itemsByGroup = new Map<string, ProcessAttachmentDisplayItem[]>();
+    for (const item of props.items) {
+        const group = normalizeAttachmentGroup(item.group);
+        if (group == null) {
+            continue;
+        }
+
+        const groupItems = itemsByGroup.get(group) ?? [];
+        groupItems.push(item);
+        itemsByGroup.set(group, groupItems);
+    }
+
+    if (itemsByGroup.size === 0) {
+        return (
+            <>
+                {
+                    props.items.map((item) => (
+                        <AttachmentItem
+                            key={item.key}
+                            item={item}
+                        />
+                    ))
+                }
+            </>
+        );
+    }
+
+    const renderedGroups = new Set<string>();
+
+    return (
+        <>
+            {
+                props.items.map((item) => {
+                    const group = normalizeAttachmentGroup(item.group);
+
+                    if (group == null) {
+                        return (
+                            <AttachmentItem
+                                key={item.key}
+                                item={item}
+                            />
+                        );
+                    }
+
+                    if (renderedGroups.has(group)) {
+                        return null;
+                    }
+
+                    renderedGroups.add(group);
+
+                    return (
+                        <Paper
+                            key={`group:${group}`}
+                            aria-label="Anlagengruppe"
+                            role="group"
+                            variant="outlined"
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 1,
+                                minWidth: 0,
+                                p: 1,
+                            }}
+                        >
+                            <Typography variant="caption" color="textSecondary">
+                                Gruppenkennzeichnung: {group}
+                            </Typography>
+
+                            {
+                                itemsByGroup.get(group)?.map((groupedItem) => (
+                                    <AttachmentItem
+                                        key={groupedItem.key}
+                                        item={groupedItem}
+                                    />
+                                ))
+                            }
+                        </Paper>
+                    );
+                })
+            }
+        </>
+    );
+}
+
+function normalizeAttachmentGroup(group: string | null | undefined): string | null {
+    const normalizedGroup = group?.trim();
+    return normalizedGroup == null || normalizedGroup.length === 0 ? null : normalizedGroup;
 }
 
 interface AttachmentItemProps {
