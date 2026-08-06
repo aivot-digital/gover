@@ -2,7 +2,7 @@ name: gover
 
 services:
   gover_api:
-    image: ghcr.io/aivot-digital/gover-next:5.0.0-alpha-117
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
     restart: unless-stopped
     command: serve
     depends_on:
@@ -55,7 +55,7 @@ services:
       - proxy
 
   gover_app:
-    image: ghcr.io/aivot-digital/gover-next:5.0.0-alpha-117
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
     restart: unless-stopped
     command: web
     network_mode: "service:gover_api"
@@ -108,7 +108,7 @@ services:
       - proxy
 
   keycloak_setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.20
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.23
     restart: on-failure
     depends_on:
       - keycloak

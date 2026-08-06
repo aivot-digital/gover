@@ -2,7 +2,7 @@ import {createTheme, type Theme as MuiTheme} from '@mui/material';
 import {deDE as datePickerLocale} from '@mui/x-date-pickers/locales';
 import {deDE as coreLocale} from '@mui/material/locale';
 import {type Theme} from '../modules/themes/models/theme';
-import {type PaletteOptions} from '@mui/material/styles/createPalette';
+import {type PaletteOptions} from '@mui/material/styles';
 
 const softShadows = [
     'none',

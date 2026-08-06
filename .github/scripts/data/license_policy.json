@@ -506,6 +506,14 @@
     "logback-core": {
       "versions": ["1.5.32"],
       "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
+    },
+    "lightningcss": {
+      "versions": ["1.33.0"],
+      "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
+    },
+    "lightningcss-linux-x64-gnu": {
+      "versions": ["1.33.0"],
+      "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
     }
   },
   "ignoredNoLicense": {},

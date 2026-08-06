@@ -235,12 +235,19 @@ public class SystemRoleController {
                 "defaultSystemRoleForAutomaticImportsUpdated",
                 deleteResult.defaultSystemRoleForAutomaticImportsUpdated()
         );
+        auditMetadata.put(
+                "mostPrivilegedSystemRoleUpdated",
+                deleteResult.mostPrivilegedSystemRoleUpdated()
+        );
         if (deleteResult.replacementRole() != null) {
             auditMetadata.put("replacementRoleId", deleteResult.replacementRole().getId());
             auditMetadata.put("replacementRoleName", deleteResult.replacementRole().getName());
         }
         if (deleteResult.newDefaultSystemRoleId() != null) {
             auditMetadata.put("newDefaultSystemRoleId", deleteResult.newDefaultSystemRoleId());
+        }
+        if (deleteResult.newMostPrivilegedSystemRoleId() != null) {
+            auditMetadata.put("newMostPrivilegedSystemRoleId", deleteResult.newMostPrivilegedSystemRoleId());
         }
 
         var auditMessage = new StringBuilder(String.format(
@@ -262,6 +269,12 @@ public class SystemRoleController {
                     StringUtils.quote(deleteResult.replacementRole().getName())
             ));
         }
+        if (deleteResult.mostPrivilegedSystemRoleUpdated() && deleteResult.replacementRole() != null) {
+            auditMessage.append(String.format(
+                    " Die Systemrolle mit der höchsten Berechtigungsstufe wurde auf %s gesetzt.",
+                    StringUtils.quote(deleteResult.replacementRole().getName())
+            ));
+        }
 
         auditService
                 .create()
@@ -278,7 +291,9 @@ public class SystemRoleController {
         return new DeleteSystemRoleResponseDto(
                 deleteResult.migratedUsersCount(),
                 deleteResult.defaultSystemRoleForAutomaticImportsUpdated(),
-                deleteResult.newDefaultSystemRoleId()
+                deleteResult.newDefaultSystemRoleId(),
+                deleteResult.mostPrivilegedSystemRoleUpdated(),
+                deleteResult.newMostPrivilegedSystemRoleId()
         );
     }
 }

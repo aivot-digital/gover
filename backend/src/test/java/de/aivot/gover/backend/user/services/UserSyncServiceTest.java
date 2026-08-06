@@ -60,8 +60,8 @@ class UserSyncServiceTest {
                 .setEmailVerified(true);
 
         when(importedUserSystemRoleService.getDefaultSystemRoleId()).thenReturn(3);
-        when(importedUserSystemRoleService.getSuperAdminRoleId()).thenReturn(1);
-        when(importedUserSystemRoleService.hasSuperAdminUser(1)).thenReturn(true);
+        when(importedUserSystemRoleService.getMostPrivilegedSystemRoleId()).thenReturn(1);
+        when(importedUserSystemRoleService.hasActiveUserWithMostPrivilegedRole(1)).thenReturn(true);
         when(importedUserSystemRoleService.resolveSystemRoleId("user@example.org", null, 3, 1, true))
                 .thenReturn(new ImportedUserSystemRoleService.ImportedUserSystemRoleResolution(3, false));
 

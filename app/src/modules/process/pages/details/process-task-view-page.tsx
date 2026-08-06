@@ -25,6 +25,7 @@ import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../enums/process-ta
 import {getNodeDescription, getNodeName} from './components/process-flow-editor/utils/node-utils';
 import {createStaffPath} from '../../../../utils/url-path-utils';
 import {KnownProviderIcons} from '../../data/known-provider-icons';
+import {type SvgIconComponent} from '../../../../types/svg-icon-component';
 
 export interface ProcessTaskDetailsPageItem {
     task: ProcessInstanceTaskEntity;
@@ -149,7 +150,7 @@ function getProcessTaskStatusIcon(item?: ProcessTaskDetailsPageItem | null): Rea
 }
 
 export function getProcessTaskNodeIcon(item?: ProcessTaskDetailsPageItem | null): ReactElement {
-    const ProviderIcon = (
+    const ProviderIcon: SvgIconComponent = (
         (item?.provider != null && (
             KnownProviderIcons[item.provider.componentKey] ||
             KnownProviderIcons[item.provider.key]

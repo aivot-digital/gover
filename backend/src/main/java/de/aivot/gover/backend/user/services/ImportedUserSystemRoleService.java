@@ -5,7 +5,7 @@ import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.user.configs.DefaultUserSystemRoleSystemConfigDefinition;
 import de.aivot.gover.backend.user.repositories.UserRepository;
-import de.aivot.gover.backend.userRoles.entities.SystemRoleEntity;
+import de.aivot.gover.backend.userRoles.configs.MostPrivilegedSystemRoleSystemConfigDefinition;
 import de.aivot.gover.backend.userRoles.repositories.SystemRoleRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
  * <p>This keeps the import policy in one place so the scheduled sync and the
  * first-login import use the same rules:
  * <ul>
- *   <li>promote the configured bootstrap admin mail to super-admin if none exists yet</li>
+ *   <li>promote the configured bootstrap admin mail to the most privileged role if no active user holds it</li>
  *   <li>otherwise keep an already assigned system role</li>
  *   <li>otherwise assign the configured default imported-user role</li>
  * </ul>
@@ -51,17 +51,17 @@ public class ImportedUserSystemRoleService {
      * Result of resolving the target system role for an imported user.
      *
      * @param systemRoleId The role that should be stored on the user.
-     * @param promotedToSuperAdmin Whether the resolution newly promoted the user to super-admin.
+     * @param promotedToMostPrivilegedRole Whether the resolution newly promoted the user to the most privileged role.
      */
     public record ImportedUserSystemRoleResolution(
             @Nullable Integer systemRoleId,
-            boolean promotedToSuperAdmin
+            boolean promotedToMostPrivilegedRole
     ) {
     }
 
     /**
      * Resolves the imported user's target role using the currently configured default role,
-     * the current super-admin role, and the current super-admin presence in the database.
+     * the most privileged role, and whether an active user currently holds that role.
      */
     @Nonnull
     public ImportedUserSystemRoleResolution resolveSystemRoleId(
@@ -69,28 +69,37 @@ public class ImportedUserSystemRoleService {
             @Nullable Integer currentSystemRoleId
     ) throws ResponseException {
         var defaultSystemRoleId = getDefaultSystemRoleId();
-        var superAdminRoleId = getSuperAdminRoleId();
-        var hasSuperAdmin = hasSuperAdminUser(superAdminRoleId);
+        var mostPrivilegedSystemRoleId = getMostPrivilegedSystemRoleId();
+        var hasActiveUserWithMostPrivilegedRole = hasActiveUserWithMostPrivilegedRole(mostPrivilegedSystemRoleId);
 
-        return resolveSystemRoleId(email, currentSystemRoleId, defaultSystemRoleId, superAdminRoleId, hasSuperAdmin);
+        return resolveSystemRoleId(
+                email,
+                currentSystemRoleId,
+                defaultSystemRoleId,
+                mostPrivilegedSystemRoleId,
+                hasActiveUserWithMostPrivilegedRole
+        );
     }
 
     /**
      * Resolves the imported user's target role from already prepared inputs.
      *
      * <p>This overload is primarily useful for sync flows and tests that already know
-     * the default role id, the super-admin role id, and whether a super-admin exists.
+     * the default role id, the most privileged role id, and whether an active user holds that role.
      */
     @Nonnull
     public ImportedUserSystemRoleResolution resolveSystemRoleId(
             @Nullable String email,
             @Nullable Integer currentSystemRoleId,
             @Nonnull Integer defaultSystemRoleId,
-            @Nullable Integer superAdminRoleId,
-            boolean hasSuperAdmin
+            @Nonnull Integer mostPrivilegedSystemRoleId,
+            boolean hasActiveUserWithMostPrivilegedRole
     ) {
-        if (!hasSuperAdmin && superAdminRoleId != null && isBootstrapAdmin(email)) {
-            return new ImportedUserSystemRoleResolution(superAdminRoleId, !superAdminRoleId.equals(currentSystemRoleId));
+        if (!hasActiveUserWithMostPrivilegedRole && isBootstrapAdmin(email)) {
+            return new ImportedUserSystemRoleResolution(
+                    mostPrivilegedSystemRoleId,
+                    !mostPrivilegedSystemRoleId.equals(currentSystemRoleId)
+            );
         }
 
         if (currentSystemRoleId != null) {
@@ -121,22 +130,31 @@ public class ImportedUserSystemRoleService {
     }
 
     /**
-     * Returns the role currently treated as super-admin, based on the role with the
-     * largest permission set.
+     * Reads the system role configured as the highest permission level and ensures
+     * that it still references an existing role.
      */
-    @Nullable
-    public Integer getSuperAdminRoleId() {
-        return systemRoleRepository
-                .findByMaxPermissions()
-                .map(SystemRoleEntity::getId)
-                .orElse(null);
+    @Nonnull
+    public Integer getMostPrivilegedSystemRoleId() throws ResponseException {
+        var configEntity = systemConfigService
+                .retrieve(MostPrivilegedSystemRoleSystemConfigDefinition.KEY);
+
+        var systemRoleId = configEntity
+                .getValueAsInteger()
+                .orElseThrow(() -> ResponseException.internalServerError("Die konfigurierte Systemrolle mit der höchsten Berechtigungsstufe ist ungültig."));
+
+        if (!systemRoleRepository.existsById(systemRoleId)) {
+            throw ResponseException.internalServerError("Die konfigurierte Systemrolle mit der höchsten Berechtigungsstufe existiert nicht.");
+        }
+
+        return systemRoleId;
     }
 
     /**
-     * Checks whether any user currently holds the resolved super-admin role.
+     * Checks whether an enabled user that still exists in the identity provider
+     * currently holds the most privileged role.
      */
-    public boolean hasSuperAdminUser(@Nullable Integer superAdminRoleId) {
-        return superAdminRoleId != null && userRepository.existsBySystemRoleId(superAdminRoleId);
+    public boolean hasActiveUserWithMostPrivilegedRole(@Nonnull Integer mostPrivilegedSystemRoleId) {
+        return userRepository.existsActiveUserBySystemRoleId(mostPrivilegedSystemRoleId);
     }
 
     private boolean isBootstrapAdmin(@Nullable String email) {

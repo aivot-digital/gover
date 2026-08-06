@@ -14,6 +14,15 @@ public interface UserRepository extends JpaRepository<UserEntity, String>, JpaSp
 
     Boolean existsBySystemRoleId(Integer systemRoleId);
 
+    @Query("""
+            SELECT CASE WHEN COUNT(u) > 0 THEN TRUE ELSE FALSE END
+            FROM UserEntity u
+            WHERE u.systemRoleId = :systemRoleId
+              AND u.enabled = TRUE
+              AND u.deletedInIdp = FALSE
+            """)
+    boolean existsActiveUserBySystemRoleId(@Param("systemRoleId") Integer systemRoleId);
+
     boolean existsByEmail(String email);
 
     List<UserEntity> findAllBySystemRoleIdOrderByFullNameAsc(Integer systemRoleId);
