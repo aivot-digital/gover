@@ -22,7 +22,6 @@ import {Actions} from '../actions/actions';
 import {withAsyncWrapper} from '../../utils/with-async-wrapper';
 import {GenericListProps} from './generic-list-props';
 import {useSearchParams} from 'react-router-dom';
-import {GridSortItem} from '@mui/x-data-grid/models/gridSortModel';
 import {CellContentWrapper} from "../cell-content-wrapper/cell-content-wrapper";
 import WidthWide from '@aivot/mui-material-symbols-400-n25-outlined/WidthWide';
 import FitPageWidth from '@aivot/mui-material-symbols-400-n25-outlined/FitPageWidth';
@@ -112,7 +111,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
      * @param newSortModel The new sorting model.
      */
     const handleSortModelChange = (newSortModel: GridSortModel) => {
-        const sortItem = newSortModel[0] as GridSortItem | undefined;
+        const sortItem = newSortModel[0] as GridSortModel[number] | undefined;
 
         const field = sortItem?.field ?? defaultSortField?.toString();
         const order = sortItem?.sort ?? 'asc';
