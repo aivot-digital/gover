@@ -1,7 +1,6 @@
 package de.aivot.gover.backend.plugins.form.v1.nodes;
 
 import de.aivot.gover.backend.asset.services.AssetService;
-import de.aivot.gover.backend.av.services.AVService;
 import de.aivot.gover.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.gover.backend.config.services.SystemConfigService;
 import de.aivot.gover.backend.department.services.VDepartmentShadowedService;
@@ -13,14 +12,14 @@ import de.aivot.gover.backend.elements.models.ElementDerivationRequest;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.services.ElementDerivationLogger;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
-import de.aivot.gover.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.gover.backend.identity.controllers.IdentityController;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.identity.services.IdentityProviderService;
 import de.aivot.gover.backend.identity.services.IdentityService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.models.config.GoverConfig;
-import de.aivot.gover.backend.plugins.form.v1.services.FormPaymentService;
+import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
+import de.aivot.gover.backend.payment.services.PaymentRequestCreationService;
 import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
@@ -31,7 +30,6 @@ import de.aivot.gover.backend.process.filters.ProcessTestClaimFilter;
 import de.aivot.gover.backend.process.filters.ProcessVersionFilter;
 import de.aivot.gover.backend.process.services.*;
 import de.aivot.gover.backend.storage.services.StorageProviderService;
-import de.aivot.gover.backend.payment.services.PaymentProviderService;
 import de.aivot.gover.backend.submission.services.ElementDataTransformService;
 import de.aivot.gover.backend.system.services.SystemService;
 import de.aivot.gover.backend.theme.services.ThemeService;
@@ -231,10 +229,7 @@ class FormTriggerControllerV1SubmitTest {
 
         var controller = new FormTriggerControllerV1(
                 mock(GoverConfig.class),
-                mock(FormPaymentService.class),
-                mock(PaymentProviderService.class),
                 mock(IdentityProviderService.class),
-                mock(IdentityCacheRepository.class),
                 elementDerivationService,
                 mock(AssetService.class),
                 mock(ThemeService.class),
@@ -248,15 +243,15 @@ class FormTriggerControllerV1SubmitTest {
                 processNodeDefinitionService,
                 mock(SystemConfigService.class),
                 mock(StorageProviderService.class),
-                mock(AVService.class),
                 mock(CaptchaReplayGuard.class),
                 processInstanceService,
-                mock(ProcessInstanceAttachmentService.class),
                 fileUploadMultipartInputService,
                 elementDataTransformService,
                 mock(ProcessNodeExecutionLoggerFactory.class),
                 provider,
-                identityService
+                identityService,
+                mock(PaymentRequestCreationService.class),
+                mock(PaymentProviderRepository.class)
         );
 
         return new SubmitFixture(

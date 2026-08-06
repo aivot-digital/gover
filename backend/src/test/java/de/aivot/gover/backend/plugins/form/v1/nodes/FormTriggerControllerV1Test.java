@@ -1,7 +1,6 @@
 package de.aivot.gover.backend.plugins.form.v1.nodes;
 
 import de.aivot.gover.backend.asset.services.AssetService;
-import de.aivot.gover.backend.av.services.AVService;
 import de.aivot.gover.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.gover.backend.config.services.SystemConfigService;
 import de.aivot.gover.backend.department.entities.VDepartmentShadowedEntity;
@@ -9,11 +8,11 @@ import de.aivot.gover.backend.department.services.VDepartmentShadowedService;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
-import de.aivot.gover.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.gover.backend.identity.services.IdentityProviderService;
 import de.aivot.gover.backend.identity.services.IdentityService;
 import de.aivot.gover.backend.models.config.GoverConfig;
-import de.aivot.gover.backend.plugins.form.v1.services.FormPaymentService;
+import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
+import de.aivot.gover.backend.payment.services.PaymentRequestCreationService;
 import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.entities.ProcessTestClaimEntity;
@@ -23,7 +22,6 @@ import de.aivot.gover.backend.process.filters.ProcessVersionFilter;
 import de.aivot.gover.backend.process.filters.ProcessNodeFilter;
 import de.aivot.gover.backend.process.services.*;
 import de.aivot.gover.backend.storage.services.StorageProviderService;
-import de.aivot.gover.backend.payment.services.PaymentProviderService;
 import de.aivot.gover.backend.submission.services.ElementDataTransformService;
 import de.aivot.gover.backend.system.services.SystemService;
 import de.aivot.gover.backend.theme.entities.ThemeEntity;
@@ -256,10 +254,7 @@ class FormTriggerControllerV1Test {
 
         var controller = new FormTriggerControllerV1(
                 goverConfig,
-                mock(FormPaymentService.class),
-                mock(PaymentProviderService.class),
                 mock(IdentityProviderService.class),
-                mock(IdentityCacheRepository.class),
                 mock(ElementDerivationService.class),
                 assetService,
                 themeService,
@@ -273,15 +268,15 @@ class FormTriggerControllerV1Test {
                 processNodeDefinitionService,
                 mock(SystemConfigService.class),
                 mock(StorageProviderService.class),
-                mock(AVService.class),
                 mock(CaptchaReplayGuard.class),
                 mock(ProcessInstanceService.class),
-                mock(ProcessInstanceAttachmentService.class),
                 mock(FileUploadMultipartInputService.class),
                 mock(ElementDataTransformService.class),
                 mock(ProcessNodeExecutionLoggerFactory.class),
                 provider,
-                mock(IdentityService.class)
+                mock(IdentityService.class),
+                mock(PaymentRequestCreationService.class),
+                mock(PaymentProviderRepository.class)
         );
 
         return new TestFixture(
