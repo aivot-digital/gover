@@ -1,6 +1,7 @@
 package de.aivot.gover.backend.xrepository.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import de.aivot.gover.backend.core.exceptions.HttpConnectionException;
 import de.aivot.gover.backend.core.services.HttpService;
@@ -23,6 +24,9 @@ import java.util.Map;
 @Service
 public class XRepositoryCodeListService {
     private static final String XREPOSITORY_API_URL = "https://www.xrepository.de/api/xrepository/";
+    private static final XmlMapper XML_MAPPER = XmlMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
     private final HttpService httpService;
 
     public XRepositoryCodeListService(HttpService httpService) {
@@ -47,8 +51,7 @@ public class XRepositoryCodeListService {
         switch (response.statusCode()) {
             case 200:
                 try {
-                    return new XmlMapper()
-                            .readValue(response.body(), XRepositoryCodeList.class);
+                    return XML_MAPPER.readValue(response.body(), XRepositoryCodeList.class);
                 } catch (JsonProcessingException e) {
                     throw ResponseException.internalServerError(e, "Fehler beim Parsen der Codeliste mit der URN %s: %s", codeListUrn, e.getMessage());
                 }
