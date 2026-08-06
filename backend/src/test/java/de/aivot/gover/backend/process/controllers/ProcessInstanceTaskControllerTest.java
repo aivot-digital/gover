@@ -2,7 +2,6 @@ package de.aivot.gover.backend.process.controllers;
 
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.permissions.services.PermissionService;
-import de.aivot.gover.backend.process.controllers.ProcessInstanceTaskController;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import de.aivot.gover.backend.process.services.ProcessInstanceTaskService;
@@ -79,7 +78,7 @@ class ProcessInstanceTaskControllerTest {
         assertEquals(ProcessTaskStatus.Restarted, result.getStatus());
         assertNotNull(result.getUpdated());
 
-        var payloadCaptor = ArgumentCaptor.forClass(ProcessWorker.WorkerPayload.class);
+        var payloadCaptor = ArgumentCaptor.forClass(ProcessWorker.DoWorkWorkerPayload.class);
         verify(processInstanceTaskService).update(task.getId(), task);
         verify(rabbitTemplate).convertAndSend(
                 org.mockito.ArgumentMatchers.eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE),

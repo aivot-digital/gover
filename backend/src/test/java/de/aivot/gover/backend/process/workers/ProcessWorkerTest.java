@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ProcessWorkerTest {
     @Test
-    void listen_MarksProcessInstanceFailed_WhenInitThrowsRuntimeException() {
+    void doWork_MarksProcessInstanceFailed_WhenInitThrowsRuntimeException() {
         var processInstance = new ProcessInstanceEntity(
                 42L,
                 null,
@@ -128,7 +128,7 @@ class ProcessWorkerTest {
                 new TestProcessNodeService()
         );
 
-        worker.listen(new ProcessWorker.WorkerPayload(42L, null, null, null, 11));
+        worker.doWork(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11));
 
         assertEquals(ProcessInstanceStatus.Failed, processInstance.getStatus());
         assertEquals(1, savedProcessInstances.size());

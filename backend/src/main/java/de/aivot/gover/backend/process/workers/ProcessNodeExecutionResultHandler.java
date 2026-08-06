@@ -428,7 +428,7 @@ public class ProcessNodeExecutionResultHandler {
             processInstanceRepository.save(processInstance);
         }
 
-        var nextPayload = new ProcessWorker.WorkerPayload(
+        var nextPayload = new ProcessWorker.DoWorkWorkerPayload(
                 processInstance.getId(),
                 processInstanceTask.getId(),
                 currentNode.getId(),

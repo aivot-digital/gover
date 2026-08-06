@@ -75,7 +75,7 @@ public class ProcessWorker {
     }
 
     @RabbitListener(queues = DO_WORK_ON_INSTANCE_QUEUE)
-    public void listen(WorkerPayload payload) {
+    public void doWork(DoWorkWorkerPayload payload) {
         var logger = processNodeExecutionLoggerFactory
                 .create(payload.processInstanceId(), null, null, null);
 
@@ -139,7 +139,7 @@ public class ProcessWorker {
                         currentNode.getProcessNodeDefinitionVersion()
                 ));
 
-        dodo(
+        processWithTypedNodeConfig(
                 currentNode,
                 currentNodeProvider,
                 logger,
@@ -150,13 +150,13 @@ public class ProcessWorker {
         );
     }
 
-    private <NodeConfig> void dodo(@Nonnull ProcessNodeEntity currentNode,
-                                   @Nonnull ProcessNodeDefinition<NodeConfig> currentNodeProvider,
-                                   @Nonnull ProcessNodeExecutionLogger logger,
-                                   @Nonnull ProcessInstanceEntity processInstance,
-                                   @Nullable Long previousTaskId,
-                                   @Nullable Integer previousNodeId,
-                                   @Nullable String previousNodePortKey) throws ProcessNodeExecutionException {
+    private <NodeConfig> void processWithTypedNodeConfig(@Nonnull ProcessNodeEntity currentNode,
+                                                         @Nonnull ProcessNodeDefinition<NodeConfig> currentNodeProvider,
+                                                         @Nonnull ProcessNodeExecutionLogger logger,
+                                                         @Nonnull ProcessInstanceEntity processInstance,
+                                                         @Nullable Long previousTaskId,
+                                                         @Nullable Integer previousNodeId,
+                                                         @Nullable String previousNodePortKey) throws ProcessNodeExecutionException {
         var deadline = currentNode.getTimeLimitDays() != null ?
                 // Preserve the local same-wall-clock-time behavior when task deadlines cross DST changes.
                 ZonedDateTime.now(ApplicationTimeZone.getZoneId()).plusDays(currentNode.getTimeLimitDays()).toInstant() :
@@ -310,7 +310,7 @@ public class ProcessWorker {
         }
     }
 
-    public record WorkerPayload(
+    public record DoWorkWorkerPayload(
             @Nonnull Long processInstanceId,
             @Nullable Long previousTaskId,
             @Nullable Integer previousNodeId,

@@ -59,7 +59,7 @@ public class ProcessStarter {
                         .findById(processInstance.getInitialNodeId())
                         .orElseThrow(RuntimeException::new);
 
-                var payload = new ProcessWorker.WorkerPayload(
+                var payload = new ProcessWorker.DoWorkWorkerPayload(
                         processInstance.getId(),
                         null,
                         null,
