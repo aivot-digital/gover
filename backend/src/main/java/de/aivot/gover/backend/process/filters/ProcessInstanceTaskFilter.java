@@ -6,6 +6,7 @@ import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import de.aivot.gover.backend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
 
+import java.util.List;
 import java.util.UUID;
 
 public class ProcessInstanceTaskFilter extends EntityFilter<ProcessInstanceTaskEntity> {
@@ -16,6 +17,7 @@ public class ProcessInstanceTaskFilter extends EntityFilter<ProcessInstanceTaskE
     private Integer processNodeId;
     private String assignedUserId;
     private ProcessTaskStatus status;
+    private List<ProcessTaskStatus> anyStatus;
 
     public static ProcessInstanceTaskFilter create() {
         return new ProcessInstanceTaskFilter();
@@ -32,7 +34,8 @@ public class ProcessInstanceTaskFilter extends EntityFilter<ProcessInstanceTaskE
                 .withEquals("processVersion", processVersion)
                 .withEquals("processNodeId", processNodeId)
                 .withEquals("status", status)
-                .withContains("assignedUserId", assignedUserId);
+                .withContains("assignedUserId", assignedUserId)
+                .withInList("status", anyStatus);
     }
 
     public UUID getAccessKey() {
@@ -95,6 +98,15 @@ public class ProcessInstanceTaskFilter extends EntityFilter<ProcessInstanceTaskE
 
     public ProcessInstanceTaskFilter setStatus(ProcessTaskStatus status) {
         this.status = status;
+        return this;
+    }
+
+    public List<ProcessTaskStatus> getAnyStatus() {
+        return anyStatus;
+    }
+
+    public ProcessInstanceTaskFilter setAnyStatus(List<ProcessTaskStatus> anyStatus) {
+        this.anyStatus = anyStatus;
         return this;
     }
 }

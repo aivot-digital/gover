@@ -7,6 +7,8 @@ import PauseCircle from '@aivot/mui-material-symbols-400-n25-outlined/PauseCircl
 import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 import Cancel from '@aivot/mui-material-symbols-400-n25-outlined/Cancel';
 import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
+import PaymentArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/PaymentArrowDown';
+import ContractEdit from '@aivot/mui-material-symbols-400-n25-outlined/ContractEdit';
 
 interface ProcessInstanceTaskStatusIconProps {
     status: ProcessTaskStatus;
@@ -37,6 +39,22 @@ export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIc
                     title="Wird ausgeführt"
                 >
                     <PlayCircle color="info"/>
+                </Tooltip>
+            );
+        case ProcessTaskStatus.AwaitingPayment:
+            return (
+                <Tooltip
+                    title="Wartet auf Zahlungsbestätigung"
+                >
+                    <PaymentArrowDown color="info"/>
+                </Tooltip>
+            );
+        case ProcessTaskStatus.AwaitingCitizen:
+            return (
+                <Tooltip
+                    title="Wartet auf Bürger"
+                >
+                    <ContractEdit color="info"/>
                 </Tooltip>
             );
         case ProcessTaskStatus.Paused:

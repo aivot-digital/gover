@@ -47,6 +47,7 @@ const PROCESS_TASK_STATUS_COLORS: Record<ProcessTaskStatus, 'default' | 'info' |
     [ProcessTaskStatus.Running]: 'info',
     [ProcessTaskStatus.Paused]: 'warning',
     [ProcessTaskStatus.AwaitingPayment]: 'warning',
+    [ProcessTaskStatus.AwaitingCitizen]: 'warning',
     [ProcessTaskStatus.Completed]: 'success',
     [ProcessTaskStatus.Aborted]: 'error',
     [ProcessTaskStatus.Failed]: 'error',

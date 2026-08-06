@@ -314,7 +314,11 @@ public class CitizenProcessInstanceTaskViewController {
                 )
                 .orElseThrow(ResponseException::notFound);
 
-        if (task.getStatus() != ProcessTaskStatus.Running) {
+        if (
+                task.getStatus() != ProcessTaskStatus.Running &&
+                        task.getStatus() != ProcessTaskStatus.AwaitingPayment &&
+                        task.getStatus() != ProcessTaskStatus.AwaitingCitizen
+        ) {
             throw ResponseException.forbidden();
         }
 
