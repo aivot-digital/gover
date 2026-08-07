@@ -34,7 +34,7 @@ export function DashboardProviderLinks(props: DashboardProviderLinksProps) {
                 }}
             >
                 <BoxLink
-                    link="https://docs.gover.digital"
+                    link="https://docs.prosuna.de"
                     text={'Hilfen, Anleitungen und Häufig gestellte Fragen'}
                 />
             </Grid>

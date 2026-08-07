@@ -56,7 +56,7 @@ export function DataObjectSchemaDetailsPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Ein Datenmodell beschreibt die Struktur eines Datenobjekts in Gover und legt fest, welche Datenfelder existieren, welche Datentypen sie haben, welche Standardwerte gelten und wie Werte geprüft werden. Es
+                                    Ein Datenmodell beschreibt die Struktur eines Datenobjekts in Prosuna und legt fest, welche Datenfelder existieren, welche Datentypen sie haben, welche Standardwerte gelten und wie Werte geprüft werden. Es
                                     sorgt dafür, dass Daten aus Formularen, Prozessen und Schnittstellen konsistent, valide und eindeutig interpretierbar sind.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>

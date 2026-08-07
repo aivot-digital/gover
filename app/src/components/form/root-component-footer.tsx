@@ -185,7 +185,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                     variant="caption"
                     color="#444444"
                 >
-                    Dieses Formular wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen
+                    Dieses Formular wurde umgesetzt mit Prosuna – dem Fundament für moderne digitale Verwaltungsleistungen
                     von Aivot
                 </Typography>
             </Box>

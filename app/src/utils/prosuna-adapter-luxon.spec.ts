@@ -1,9 +1,9 @@
 import {describe, expect, it} from 'vitest';
 import {DateTime} from 'luxon';
-import {GoverAdapterLuxon, NONEXISTENT_LOCAL_DATETIME_REASON} from './gover-adapter-luxon';
+import {ProsunaAdapterLuxon, NONEXISTENT_LOCAL_DATETIME_REASON} from './prosuna-adapter-luxon';
 
-describe('GoverAdapterLuxon', () => {
-    const adapter = new GoverAdapterLuxon({locale: 'de'});
+describe('ProsunaAdapterLuxon', () => {
+    const adapter = new ProsunaAdapterLuxon({locale: 'de'});
 
     it('should reject selecting an hour in the spring DST gap', () => {
         const value = DateTime.fromISO('2026-03-29T01:30:00', {zone: 'Europe/Berlin'});

@@ -724,7 +724,7 @@ export function ApplicationSettings() {
                                 mt: 4,
                             }}
                         >
-                            Erscheinungsbild der Gover-Instanz
+                            Erscheinungsbild der Prosuna-Instanz
                         </Typography>
 
                         <Typography
@@ -733,7 +733,7 @@ export function ApplicationSettings() {
                                 mb: 1.6,
                             }}
                         >
-                            Sie können ein eigenes Erscheinungsbild für die Benutzeroberfläche auswählen, um Gover an
+                            Sie können ein eigenes Erscheinungsbild für die Benutzeroberfläche auswählen, um Prosuna an
                             Ihr
                             Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die
                             Index-Seite der veröffentlichten
@@ -775,7 +775,7 @@ export function ApplicationSettings() {
                         mt: 4,
                     }}
                 >
-                    Gover Store
+                    Prosuna Store
                 </Typography>
                 <Typography
                     sx={{
@@ -783,9 +783,9 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Im Gover Store finden Sie Bausteine und Formulare zur Nachnutzung. Wenn Sie eigene Formulare
+                    Im Prosuna Store finden Sie Bausteine und Formulare zur Nachnutzung. Wenn Sie eigene Formulare
                     und/oder
-                    Bausteine im Gover Store zur Verfügung stellen möchten, benötigen Sie einen eigenen Schlüssel
+                    Bausteine im Prosuna Store zur Verfügung stellen möchten, benötigen Sie einen eigenen Schlüssel
                     (API-Key).
                 </Typography>
                 <Grid
@@ -799,14 +799,14 @@ export function ApplicationSettings() {
                         }}
                     >
                         <TextFieldComponent
-                            label="Schlüssel für den Gover Store"
+                            label="Schlüssel für den Prosuna Store"
                             placeholder="b721fe43-5800-40a3-ae7f-d19274dd72f1"
-                            hint="Geben Sie hier Ihren Schlüssel für den Gover Store ein, wenn Sie eigene Formulare und/oder Vorlagen im Gover Store veröffentlichen wollen."
-                            value={editedConfig[SystemConfigKeys.gover.storeKey] ?? config[SystemConfigKeys.gover.storeKey]}
+                            hint="Geben Sie hier Ihren Schlüssel für den Prosuna Store ein, wenn Sie eigene Formulare und/oder Vorlagen im Prosuna Store veröffentlichen wollen."
+                            value={editedConfig[SystemConfigKeys.prosuna.storeKey] ?? config[SystemConfigKeys.prosuna.storeKey]}
                             onChange={(val) => {
                                 setEditedConfig({
                                     ...editedConfig,
-                                    [SystemConfigKeys.gover.storeKey]: val ?? '',
+                                    [SystemConfigKeys.prosuna.storeKey]: val ?? '',
                                 });
                             }}
                             disabled={!canUpdateSystemConfig}
@@ -887,7 +887,7 @@ export function ApplicationSettings() {
                                     ? systemRoleReadHint
                                     : hasSystemRolesLoadingError
                                     ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
-                                    : 'Diese Systemrolle gilt in Gover als höchste Berechtigungsstufe. Besitzt keine aktive Mitarbeiter:in diese Rolle, wird sie automatisch dem Administrationskonto zugewiesen, dessen E-Mail-Adresse über die Umgebungsvariable PROSUNA_BOOTSTRAP_ADMIN_MAIL konfiguriert ist.'
+                                    : 'Diese Systemrolle gilt in Prosuna als höchste Berechtigungsstufe. Besitzt keine aktive Mitarbeiter:in diese Rolle, wird sie automatisch dem Administrationskonto zugewiesen, dessen E-Mail-Adresse über die Umgebungsvariable PROSUNA_BOOTSTRAP_ADMIN_MAIL konfiguriert ist.'
                             }
                             value={mostPrivilegedSystemRoleValue}
                             onChange={(val) => {
@@ -1099,11 +1099,11 @@ export function ApplicationSettings() {
                         </Typography>
                         <CheckboxFieldComponent
                             label="Öffentliche Auflistung der veröffentlichten Formulare (in Form einer Index-Seite) vollständig deaktivieren"
-                            value={(editedConfig[SystemConfigKeys.provider.listingPage.disableGoverListingPage] ?? config[SystemConfigKeys.provider.listingPage.disableGoverListingPage]) == 'true'}
+                            value={(editedConfig[SystemConfigKeys.provider.listingPage.disableProsunaListingPage] ?? config[SystemConfigKeys.provider.listingPage.disableProsunaListingPage]) == 'true'}
                             onChange={(checked) => {
                                 setEditedConfig({
                                     ...editedConfig,
-                                    [SystemConfigKeys.provider.listingPage.disableGoverListingPage]: checked ? 'true' : '',
+                                    [SystemConfigKeys.provider.listingPage.disableProsunaListingPage]: checked ? 'true' : '',
                                 });
                             }}
                             hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."

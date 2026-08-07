@@ -44,7 +44,7 @@ public class XdfTransformService {
     }
 
     @Nullable
-    public FormLayoutElement transformToGover(@Nonnull XdfStammdatenschema0102 xdfStammdatenschema0102) {
+    public FormLayoutElement transformToProsuna(@Nonnull XdfStammdatenschema0102 xdfStammdatenschema0102) {
         var sd = xdfStammdatenschema0102
                 .getStammdatenschema();
 

@@ -67,7 +67,7 @@ export function SystemRolesDetailsPage() {
                                     component="p"
                                 >
                                     Konfigurieren Sie hier eine Systemrolle, die Berechtigungen auf
-                                    Systemebene und damit für die gesamte Gover-Anwendung festlegt.
+                                    Systemebene und damit für die gesamte Prosuna-Anwendung festlegt.
                                 </Typography>
                                 <Typography
                                     variant="body1"

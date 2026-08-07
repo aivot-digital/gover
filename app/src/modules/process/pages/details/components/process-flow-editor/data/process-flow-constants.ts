@@ -1,5 +1,5 @@
-export const DEFAULT_FLOW_NODE_TYPE = 'gover';
-export const DEFAULT_FLOW_EDGE_TYPE = 'gover';
+export const DEFAULT_FLOW_NODE_TYPE = 'prosuna';
+export const DEFAULT_FLOW_EDGE_TYPE = 'prosuna';
 
 export const PROCESS_FLOW_NODE_Z_INDEX = 90;
 export const PROCESS_FLOW_EDGE_Z_INDEX = 91;

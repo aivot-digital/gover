@@ -80,7 +80,7 @@ export function Dashboard() {
                     <Divider sx={{borderColor: 'rgba(0, 0, 0, 0.15)', mx: -2}}/>
                     <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2}}>
                         <Typography sx={{fontSize: '0.8125rem', color: 'rgba(0, 0, 0, 0.6)'}}>
-                            Gover – Die quelloffene Plattform für Ende-zu-Ende digitalisierte Antragsprozesse.
+                            Prosuna – Die quelloffene Plattform für Ende-zu-Ende digitalisierte Antragsprozesse.
                         </Typography>
                         <Typography
                             sx={{

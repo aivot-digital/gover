@@ -22,7 +22,7 @@ class JavascriptEngineTest {
 
         try (var service = new JavascriptEngine(serviceProviders)) {
             var res = service
-                    .evaluateCode(new JavascriptCode().setCode("de_aivot_gover_test.getValue();"));
+                    .evaluateCode(new JavascriptCode().setCode("de_aivot_prosuna_test.getValue();"));
             assertEquals("value", res.asString());
         } catch (Exception e) {
             fail(e);
@@ -30,7 +30,7 @@ class JavascriptEngineTest {
 
         try (var service = new JavascriptEngine(serviceProviders)) {
             var res = service
-                    .evaluateCode(new JavascriptCode().setCode("de_aivot_gover_test.echoValue('value');"));
+                    .evaluateCode(new JavascriptCode().setCode("de_aivot_prosuna_test.echoValue('value');"));
             assertEquals("value", res.asString());
         } catch (Exception e) {
             fail(e);
@@ -141,7 +141,7 @@ class JavascriptEngineTest {
 
         @Override
         public String getObjectName() {
-            return "de_aivot_gover_test";
+            return "de_aivot_prosuna_test";
         }
 
         @Override

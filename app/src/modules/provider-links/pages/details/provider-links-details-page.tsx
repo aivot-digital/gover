@@ -36,7 +36,7 @@ export function ProviderLinksDetailsPage() {
                                     variant="body1"
                                     paragraph
                                 >
-                                    Hier können Sie Verlinkungen anlegen, welche anschließend auf der Startseite der Gover-Instanz für angemeldete Nutzer:innen angezeigt werden.
+                                    Hier können Sie Verlinkungen anlegen, welche anschließend auf der Startseite der Prosuna-Instanz für angemeldete Nutzer:innen angezeigt werden.
                                     Diese Funktion kann z. B. dafür genutzt werden, um auf externe Seiten oder interne Inhalte zu verweisen, die wichtig für Ihr Team sein könnten.
                                 </Typography>
                                 <Typography

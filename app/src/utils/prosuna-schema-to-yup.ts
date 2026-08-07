@@ -55,7 +55,7 @@ import {
 import {DateFieldComponentModelMode} from '../models/elements/form/input/date-field-element';
 
 
-export function goverSchemaToYup(elem: AnyElement, states: ComputedElementStates): Record<string, Schema> {
+export function prosunaSchemaToYup(elem: AnyElement, states: ComputedElementStates): Record<string, Schema> {
     // Invisible elements will not be validated
     if (states[elem.id]?.visible === false) {
         return {};
@@ -80,7 +80,7 @@ export function goverSchemaToYup(elem: AnyElement, states: ComputedElementStates
     // If element has children, recursively generate schema. Omit children of replicating containers because they were handled previously.
     if (isAnyElementWithChildren(elem) && !isReplicatingContainerLayout(elem)) {
         for (const child of elem.children ?? []) {
-            const childSchema = goverSchemaToYup(child, states);
+            const childSchema = prosunaSchemaToYup(child, states);
 
             elementDataShape = {
                 ...elementDataShape,
@@ -292,7 +292,7 @@ function replicatingContainerToYup(elem: ReplicatingContainerLayout, states: Com
         let childShape: Record<string, Schema> = {};
 
         for (const child of elem.children ?? []) {
-            const childSchema = goverSchemaToYup(child, rowStates);
+            const childSchema = prosunaSchemaToYup(child, rowStates);
             childShape = {
                 ...childShape,
                 ...childSchema,
@@ -848,6 +848,6 @@ export function applyYupErrorsToElementData(
 }
 
 /**
- * @deprecated use goverSchemaToYup
+ * @deprecated use prosunaSchemaToYup
  */
-export const goverSchemaToYup2 = goverSchemaToYup;
+export const prosunaSchemaToYup2 = prosunaSchemaToYup;

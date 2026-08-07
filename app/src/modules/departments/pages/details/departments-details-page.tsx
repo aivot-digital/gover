@@ -113,7 +113,7 @@ const HelpDialogContent: GenericPageHeaderPropsHelpDialog = {
     content: (
         <>
             <Typography>
-                Eine Organisationseinheit ist eine zentrale Verwaltungseinheit in Gover und essenziell für den Betrieb der Anwendung. Sie speichert wichtige Stammdaten wie Adress- und Kontaktdaten sowie rechtliche Informationen (z.
+                Eine Organisationseinheit ist eine zentrale Verwaltungseinheit in Prosuna und essenziell für den Betrieb der Anwendung. Sie speichert wichtige Stammdaten wie Adress- und Kontaktdaten sowie rechtliche Informationen (z.
                 B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden können.
             </Typography>
             <Typography sx={{mt: 2}}>

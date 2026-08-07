@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {type BaseEditorProps} from './base-editor';
 import {type GroupLayout} from '../models/elements/form/layout/group-layout';
 import {type StoreDetailModule} from '../models/entities/store-detail-module';
-import {GoverStoreService} from '../services/gover-store.service';
+import {ProsunaStoreService} from '../services/prosuna-store.service';
 import {Button, Grid, Paper} from '@mui/material';
 import {AlertComponent} from '../components/alert/alert-component';
 import LinkOffOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/LinkOff';
@@ -18,11 +18,11 @@ import {TextFieldComponent} from '../components/text-field/text-field-component'
 export function ContainerEditor(props: BaseEditorProps<GroupLayout>) {
     const [storeModule, setStoreModule] = useState<StoreDetailModule>();
     const [confirmRemoveStore, setConfirmRemoveStore] = useState<() => void>();
-    const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
+    const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.prosuna.storeKey));
 
     useEffect(() => {
         if (props.element.storeLink != null && (storeModule == null || storeModule.id !== props.element.storeLink.storeId)) {
-            GoverStoreService
+            ProsunaStoreService
                 .fetchModule(props.element.storeLink.storeId, storeKey)
                 .then((module) => {
                     setStoreModule(module);

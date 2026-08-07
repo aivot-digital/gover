@@ -7,7 +7,7 @@ export const SystemConfigKeys = {
             accessibilityDepartmentId: 'ProviderListingPageAccessibilityDepartmentId',
             customListingPageLink: 'ProviderListingPageCustomLink',
             disableListingPageLink: 'ProviderListingPageDisableLink',
-            disableGoverListingPage: 'ProviderListingPageDisablePublicListingPage',
+            disableProsunaListingPage: 'ProviderListingPageDisablePublicListingPage',
         },
     },
     system: {
@@ -15,8 +15,8 @@ export const SystemConfigKeys = {
         logo: 'SystemLogo',
         favicon: 'SystemFavicon',
     },
-    gover: {
-        storeKey: 'GoverStoreKey',
+    prosuna: {
+        storeKey: 'ProsunaStoreKey',
     },
     users: {
         defaultSystemRole: 'users.default_system_role',

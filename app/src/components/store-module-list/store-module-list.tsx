@@ -3,7 +3,7 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import React, {useEffect, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
 import {type StoreListModule} from '../../models/entities/store-list-module';
-import {GoverStoreService} from '../../services/gover-store.service';
+import {ProsunaStoreService} from '../../services/prosuna-store.service';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {LoadingPlaceholder} from '../loading-placeholder/loading-placeholder';
 import {Link} from 'react-router-dom';
@@ -20,7 +20,7 @@ export function StoreModuleList(props: StoreModuleListProps) {
     const [search, setSearch] = useState('');
 
     useEffect(() => {
-        GoverStoreService
+        ProsunaStoreService
             .listModules(0, '', props.storeKey)
             .then((res) => {
                 setModules(res.items);
@@ -53,8 +53,8 @@ export function StoreModuleList(props: StoreModuleListProps) {
 
     const addModuleElement = (module: StoreListModule): void => {
         Promise.all([
-            GoverStoreService.fetchModuleCode(module.id, module.current_version, props.storeKey),
-            GoverStoreService.fetchModule(module.id, props.storeKey),
+            ProsunaStoreService.fetchModuleCode(module.id, module.current_version, props.storeKey),
+            ProsunaStoreService.fetchModule(module.id, props.storeKey),
         ])
             .then(([element, detailedModule]) => {
                 props.onSelect(detailedModule, element);
@@ -80,11 +80,11 @@ export function StoreModuleList(props: StoreModuleListProps) {
                 }}
             >
                 <Alert severity="info">
-                    Im Gover Marktplatz wurden keine Bausteine gefunden.
+                    Im Prosuna Marktplatz wurden keine Bausteine gefunden.
                 </Alert>
 
                 <Typography>
-                    Sie können neue Bausteine für den Gover Marktplatz erstellen, indem Sie bestehende Vorlagen im
+                    Sie können neue Bausteine für den Prosuna Marktplatz erstellen, indem Sie bestehende Vorlagen im
                     Bereich <Link to="/presets" target="_blank" rel="noreferrer noopener">Vorlagen</Link> veröffentlichen.
                 </Typography>
             </Box>

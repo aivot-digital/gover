@@ -32,7 +32,7 @@ export function ExtensionsPage() {
                                     variant="body1"
                                     paragraph
                                 >
-                                    Auf dieser Seite finden Sie alle auf Ihrer Gover-Instanz installierten Erweiterungen.
+                                    Auf dieser Seite finden Sie alle auf Ihrer Prosuna-Instanz installierten Erweiterungen.
                                     Erweiterungen stellen zusätzliche Komponenten wie Prozesselemente, Operatoren,
                                     Speicheranbieter oder Integrationen bereit.
                                 </Typography>

@@ -67,7 +67,7 @@ export function PaymentProvidersListPage() {
                         variant="body1"
                         paragraph
                     >
-                        Konfigurieren Sie hier Zahlungsdienstleister, die in Ihrer Gover-Instanz global
+                        Konfigurieren Sie hier Zahlungsdienstleister, die in Ihrer Prosuna-Instanz global
                         verfügbar sein sollen.
                         Die erforderlichen Konfigurationsdaten erhalten Sie vom Zahlungsdienstleister
                         oder finden Sie in dessen Dokumentation.

@@ -138,7 +138,7 @@ export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
                     variant="caption"
                     color="#444444"
                 >
-                    Dieses Angebot wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen
+                    Dieses Angebot wurde umgesetzt mit Prosuna – dem Fundament für moderne digitale Verwaltungsleistungen
                     von Aivot
                 </Typography>
             </Box>

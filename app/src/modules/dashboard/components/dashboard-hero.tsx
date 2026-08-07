@@ -12,13 +12,13 @@ interface DashboardHeroProps {
 const Links = [
     {
         Icon: NorthWest,
-        text: 'Neu in Gover 5: Einfacher. Schneller. Intelligenter. Jetzt die neuen Möglichkeiten für Prozesse entdecken.',
-        href: 'https://docs.gover.digital',
+        text: 'Neu in Prosuna 5: Einfacher. Schneller. Intelligenter. Jetzt die neuen Möglichkeiten für Prozesse entdecken.',
+        href: 'https://docs.prosuna.de',
     },
     {
         Icon: ArrowForward,
-        text: 'Neu hier? Gover in kurzer Einführung kennenlernen.',
-        href: 'https://docs.gover.digital',
+        text: 'Neu hier? Prosuna in kurzer Einführung kennenlernen.',
+        href: 'https://docs.prosuna.de',
     },
 ];
 

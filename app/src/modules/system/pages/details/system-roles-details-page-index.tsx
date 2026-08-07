@@ -457,7 +457,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                 title="Hinweis zum aktuellen Entwicklungsstand von Rollen und Berechtigungen"
                 sx={{mb: 3}}
             >
-                Rollen und die damit verbundenen Berechtigungen werden in Gover derzeit noch nicht überall vollständig
+                Rollen und die damit verbundenen Berechtigungen werden in Prosuna derzeit noch nicht überall vollständig
                 berücksichtigt.
                 Funktionen können unvollständig sein, sich ändern oder sich in einzelnen Bereichen noch nicht wie
                 erwartet verhalten.

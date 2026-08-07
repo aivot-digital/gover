@@ -40,10 +40,10 @@ export function UserDetailsPage() {
                         content: isNewItem ? (
                             <>
                                 <Typography>
-                                    Legen Sie hier neue Mitarbeiter:innen für Gover an und vergeben Sie die passende Systemrolle.
+                                    Legen Sie hier neue Mitarbeiter:innen für Prosuna an und vergeben Sie die passende Systemrolle.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Für neue Konten wird ein temporäres Passwort gesetzt. Optional können die initialen Zugangsdaten direkt von Gover per E-Mail versendet werden.
+                                    Für neue Konten wird ein temporäres Passwort gesetzt. Optional können die initialen Zugangsdaten direkt von Prosuna per E-Mail versendet werden.
                                     Beim ersten Login muss die Mitarbeiter:in ein neues Passwort vergeben, die eigene E-Mail-Adresse bestätigen und gegebenenfalls eine Zwei-Faktor-Authentifizierung einrichten, sofern dies in der System-Konfiguration vorgesehen ist.
                                 </Typography>
                             </>

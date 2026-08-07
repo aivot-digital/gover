@@ -21,7 +21,7 @@ export function DashboardNotificationsPanel() {
                         mt: 1,
                     }}
                 >
-                    Hier finden Sie alle wichtigen Benachrichtigungen und Updates zu Ihrer Gover-Instanz.
+                    Hier finden Sie alle wichtigen Benachrichtigungen und Updates zu Ihrer Prosuna-Instanz.
                 </Typography>
             </CardContent>
         </Card>

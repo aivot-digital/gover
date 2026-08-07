@@ -407,7 +407,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                                             <li>Das Erscheinungsbild der zuständigen Organisationseinheit</li>
                                             <li>Das Erscheinungsbild der bewirtschaftenden Organisationseinheit</li>
                                             <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
-                                            <li>Das globale Erscheinungsbild der Gover-Instanz</li>
+                                            <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
                                         </ol>
                                     </p>
                                     <p>

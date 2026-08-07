@@ -31,7 +31,7 @@ function rejectClockShift(
     return updated;
 }
 
-export class GoverAdapterLuxon extends AdapterLuxon {
+export class ProsunaAdapterLuxon extends AdapterLuxon {
     setYear = (value: DateTime, year: number): DateTime => {
         return rejectClockShift(value, value.set({year}), value);
     };

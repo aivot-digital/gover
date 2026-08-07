@@ -1,8 +1,8 @@
-interface GoverProps {
+interface ProsunaProps {
     small?: boolean;
 }
 
-export function Gover(props: GoverProps) {
+export function Prosuna(props: ProsunaProps) {
     return (
         <svg
             width={ props.small ? "90" : "334" }

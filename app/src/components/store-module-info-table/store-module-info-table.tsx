@@ -30,7 +30,7 @@ export function StoreModuleInfoTable(props: StoreModuleInfoTableProps) {
                             component="a"
                             target="_blank"
                             rel="noopener noreferrer"
-                            href={`https://store.gover.digital/modules/${props.module.id}`}
+                            href={`https://store.prosuna.de/modules/${props.module.id}`}
                         >
                             <OpenInNewIcon/>
                         </IconButton>
@@ -49,7 +49,7 @@ export function StoreModuleInfoTable(props: StoreModuleInfoTableProps) {
                                 <a
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    href={`https://store.gover.digital/organizations/${props.module.organization_id}/`}
+                                    href={`https://store.prosuna.de/organizations/${props.module.organization_id}/`}
                                 >
                                     @{props.module.organization}
                                 </a>

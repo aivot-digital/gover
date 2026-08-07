@@ -7,5 +7,5 @@ export interface StoreCreateModule {
     description_short: string;
     is_public: boolean;
     datenfeld_id: string;
-    gover_root: GroupLayout;
+    prosuna_root: GroupLayout;
 }

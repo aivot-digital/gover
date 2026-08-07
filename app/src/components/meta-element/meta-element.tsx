@@ -13,9 +13,9 @@ export function MetaElement({faviconUrl, title, titlePrefix}: MetaElementProps) 
 
     useEffect(() => {
         const root = document.documentElement;
-        root.style.setProperty('--gover-theme-primary', theme.palette.primary.main);
-        root.style.setProperty('--gover-theme-primary-dark', theme.palette.primary.dark);
-        root.style.setProperty('--gover-theme-secondary', theme.palette.secondary.main);
+        root.style.setProperty('--prosuna-theme-primary', theme.palette.primary.main);
+        root.style.setProperty('--prosuna-theme-primary-dark', theme.palette.primary.dark);
+        root.style.setProperty('--prosuna-theme-secondary', theme.palette.secondary.main);
     }, [theme]);
 
     const favicon = useMemo(() => {
@@ -26,7 +26,7 @@ export function MetaElement({faviconUrl, title, titlePrefix}: MetaElementProps) 
         <>
             <meta charSet="utf-8" />
             <title>
-                {(titlePrefix ?? 'Gover') + (title ? ` - ${title}` : '')}
+                {(titlePrefix ?? 'Prosuna') + (title ? ` - ${title}` : '')}
             </title>
             <meta
                 name="robots"
@@ -34,7 +34,7 @@ export function MetaElement({faviconUrl, title, titlePrefix}: MetaElementProps) 
             />
             <meta
                 name="generator"
-                content="Gover – Die quelloffene Plattform für Ende-zu-Ende digitalisierte Antragsprozesse. (gover.digital)"
+                content="Prosuna – Die quelloffene Plattform für Ende-zu-Ende digitalisierte Antragsprozesse. (prosuna.digital)"
             />
 
             <link

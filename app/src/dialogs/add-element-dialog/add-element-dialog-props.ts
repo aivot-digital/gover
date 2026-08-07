@@ -15,6 +15,6 @@ export interface AddElementDialogProps {
     primaryActionIcon?: ReactNode;
     limitElementTypes?: ElementType[];
     hidePresets?: boolean;
-    hideGoverStore?: boolean;
+    hideProsunaStore?: boolean;
     displayContext: ElementDisplayContext;
 }

@@ -29,6 +29,6 @@ public class XdfTransformController {
             @Nonnull @RequestBody @Valid XdfStammdatenschema0102 request
     ) throws ResponseException {
         return xdfTransformService
-                .transformToGover(request);
+                .transformToProsuna(request);
     }
 }

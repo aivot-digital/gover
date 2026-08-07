@@ -13,7 +13,7 @@ describe('generateComponentStructureFilename', () => {
             label: undefined,
         } as TextFieldElement;
 
-        expect(generateComponentStructureFilename(element)).toBe('text-input-id.uielement.gover.json');
+        expect(generateComponentStructureFilename(element)).toBe('text-input-id.uielement.prosuna.json');
     });
 
     it('should keep using the label when a text input has one', () => {
@@ -24,7 +24,7 @@ describe('generateComponentStructureFilename', () => {
             label: 'Applicant name',
         } as TextFieldElement;
 
-        expect(generateComponentStructureFilename(element)).toBe('Applicant name.uielement.gover.json');
+        expect(generateComponentStructureFilename(element)).toBe('Applicant name.uielement.prosuna.json');
     });
 
     it('should keep using the internal name when one is configured', () => {
@@ -35,7 +35,7 @@ describe('generateComponentStructureFilename', () => {
             label: undefined,
         } as TextFieldElement;
 
-        expect(generateComponentStructureFilename(element)).toBe('Internal applicant name.uielement.gover.json');
+        expect(generateComponentStructureFilename(element)).toBe('Internal applicant name.uielement.prosuna.json');
     });
 
     it('should use the element id instead of generic section fallback text', () => {
@@ -46,6 +46,6 @@ describe('generateComponentStructureFilename', () => {
             title: undefined,
         } as StepElement;
 
-        expect(generateComponentStructureFilename(element)).toBe('step-id.uielement.gover.json');
+        expect(generateComponentStructureFilename(element)).toBe('step-id.uielement.prosuna.json');
     });
 });

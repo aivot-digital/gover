@@ -7,9 +7,9 @@ import {type StoreUpdateModule} from '../models/entities/store-update-module';
 
 import {createApiError} from '../models/api-error';
 
-export const storeBaseUrl = 'https://store.gover.digital/api/';
+export const storeBaseUrl = 'https://store.prosuna.de/api/';
 
-class _GoverStoreService {
+class _ProsunaStoreService {
     async listModules(page: number, search?: string, key?: string): Promise<StoreListResponse<StoreListModule>> {
         const resp = await fetch(
             `${storeBaseUrl}modules/?page=${page}&size=999&search=${search ?? ''}`,
@@ -109,4 +109,4 @@ class _GoverStoreService {
 }
 
 
-export const GoverStoreService = new _GoverStoreService();
+export const ProsunaStoreService = new _ProsunaStoreService();

@@ -9,12 +9,12 @@ import {createApiPath} from '../../../utils/url-path-utils';
 import {DebugInformationDialog} from '../../../dialogs/debug-information-dialog/debug-information-dialog';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
 
-interface AboutGoverDialogProps {
+interface AboutProsunaDialogProps {
     open: boolean;
     onClose: () => void;
 }
 
-export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps): React.ReactElement {
+export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): React.ReactElement {
     const theme = useTheme();
     const [
         isDebugInformationDialogOpen,
@@ -45,7 +45,7 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps): Reac
                     sx={{
                         position: 'relative',
                         height: 280,
-                        backgroundImage: 'url("/staff/assets/images/about-gover-bg.jpg")',
+                        backgroundImage: 'url("/staff/assets/images/about-prosuna-bg.jpg")',
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         display: 'flex',
@@ -56,8 +56,8 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps): Reac
                 >
                     <Box
                         component="img"
-                        src="/staff/assets/images/about-gover-logo.svg"
-                        alt="Gover Logo"
+                        src="/staff/assets/images/about-prosuna-logo.svg"
+                        alt="Prosuna Logo"
                         sx={{
                             width: 250, height: 'auto', zIndex: 2, mb: 3.5,
                         }}
@@ -100,7 +100,7 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps): Reac
                     p: 4, textAlign: 'center',
                 }}>
                     <Typography variant="h2" fontWeight={600} sx={{ mb: 2 }}>
-                        Über Gover Version {AppInfo.version === '@buildVersion' ? '5.x (DEV)' : AppInfo.version}
+                        Über Prosuna Version {AppInfo.version === '@buildVersion' ? '5.x (DEV)' : AppInfo.version}
                     </Typography>
 
                     <Typography
@@ -109,7 +109,7 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps): Reac
                             color: theme.palette.text.secondary, mb: 4,
                         }}
                     >
-                        Gover ist die quelloffene Software-Plattform für Ende-zu-Ende digitalisierte Antragsprozesse.
+                        Prosuna ist die quelloffene Software-Plattform für Ende-zu-Ende digitalisierte Antragsprozesse.
                         Einfach bedienbar und flexibel einsetzbar für Verwaltungen jeder Größe.
                         Entwickelt von Aivot und{' '}
                         <abbr
@@ -135,7 +135,7 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps): Reac
                         <Button
                             variant="contained"
                             color="primary"
-                            href="https://www.gover.digital"
+                            href="https://prosuna.de"
                             target="_blank"
                             rel="noopener noreferrer"
                             startIcon={<OpenInNewIcon />}

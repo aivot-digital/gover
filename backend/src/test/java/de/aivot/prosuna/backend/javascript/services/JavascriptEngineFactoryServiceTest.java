@@ -31,7 +31,7 @@ class JavascriptEngineFactoryServiceTest {
 
         @Override
         public String getObjectName() {
-            return "de_aivot_gover_test";
+            return "de_aivot_prosuna_test";
         }
 
         @Override

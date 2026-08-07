@@ -4,9 +4,9 @@ import {applyComputedErrors, type ComputedElementStates} from '../models/element
 import * as yup from 'yup';
 import {
     applyYupErrorsToElementData,
-    goverSchemaToYup,
+    prosunaSchemaToYup,
     mapFormManagerErrorsToComputedErrors,
-} from './gover-schema-to-yup';
+} from './prosuna-schema-to-yup';
 import {DateFieldComponentModelMode} from '../models/elements/form/input/date-field-element';
 
 describe('mapFormManagerErrorsToComputedErrors', () => {
@@ -18,7 +18,7 @@ describe('mapFormManagerErrorsToComputedErrors', () => {
                 street,
             ]),
         ]);
-        const schema = yup.object().shape(goverSchemaToYup(rootElement, {}));
+        const schema = yup.object().shape(prosunaSchemaToYup(rootElement, {}));
 
         await expect(schema.validate({
             addresses: [
@@ -195,8 +195,8 @@ describe('applyYupErrorsToElementData', () => {
 
 describe('temporal range validation', () => {
     it('should validate canonical local date and time ranges', async () => {
-        const dateSchema = goverSchemaToYup(createRangeField('date', ElementType.DateRange), {}).date;
-        const timeSchema = goverSchemaToYup(createRangeField('time', ElementType.TimeRange), {}).time;
+        const dateSchema = prosunaSchemaToYup(createRangeField('date', ElementType.DateRange), {}).date;
+        const timeSchema = prosunaSchemaToYup(createRangeField('time', ElementType.TimeRange), {}).time;
 
         await expect(dateSchema.validate({
             start: '2026-07-29',
@@ -213,7 +213,7 @@ describe('temporal range validation', () => {
     });
 
     it('should compare datetime ranges as explicit instants', async () => {
-        const schema = goverSchemaToYup(createRangeField('dateTime', ElementType.DateTimeRange), {}).dateTime;
+        const schema = prosunaSchemaToYup(createRangeField('dateTime', ElementType.DateTimeRange), {}).dateTime;
 
         await expect(schema.validate({
             start: '2026-07-29T09:30:00+02:00',
@@ -226,11 +226,11 @@ describe('temporal range validation', () => {
     });
 
     it('should validate date ranges according to their configured precision', async () => {
-        const monthSchema = goverSchemaToYup(
+        const monthSchema = prosunaSchemaToYup(
             createRangeField('month', ElementType.DateRange, DateFieldComponentModelMode.Month),
             {},
         ).month;
-        const yearSchema = goverSchemaToYup(
+        const yearSchema = prosunaSchemaToYup(
             createRangeField('year', ElementType.DateRange, DateFieldComponentModelMode.Year),
             {},
         ).year;
@@ -254,7 +254,7 @@ describe('temporal range validation', () => {
     });
 
     it('should compare datetime range boundaries below millisecond precision', async () => {
-        const schema = goverSchemaToYup(createRangeField('dateTime', ElementType.DateTimeRange), {}).dateTime;
+        const schema = prosunaSchemaToYup(createRangeField('dateTime', ElementType.DateTimeRange), {}).dateTime;
 
         await expect(schema.validate({
             start: '2026-07-29T07:30:00.000000002Z',

@@ -5,7 +5,7 @@ import OpenInNewOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';
-import {GoverStoreService} from '../../../services/gover-store.service';
+import {ProsunaStoreService} from '../../../services/prosuna-store.service';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
 import {type StoreDetailModule} from '../../../models/entities/store-detail-module';
@@ -28,14 +28,14 @@ export function ModuleInfoTab({
     onClose: () => void,
 }) {
     const [module, setModule] = useState<StoreDetailModule>();
-    const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
+    const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.prosuna.storeKey));
 
     useEffect(() => {
         if (moduleId == null) {
             return;
         }
 
-        GoverStoreService.fetchModule(moduleId, storeKey)
+        ProsunaStoreService.fetchModule(moduleId, storeKey)
             .then(setModule)
             .catch((err) => {
                 console.error(err);
@@ -48,8 +48,8 @@ export function ModuleInfoTab({
         }
 
         Promise.all([
-            GoverStoreService.fetchModuleCode(module.id, module.current_version, storeKey),
-            GoverStoreService.fetchModule(module.id, storeKey),
+            ProsunaStoreService.fetchModuleCode(module.id, module.current_version, storeKey),
+            ProsunaStoreService.fetchModule(module.id, storeKey),
         ])
             .then(([element, detailedModule]) => {
                 const elementToAdd = cloneElement(element, true);
@@ -76,7 +76,7 @@ export function ModuleInfoTab({
     return (
         <SelectionDetailsPanel
             icon={<ExtensionOutlinedIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
-            label="Gover Marktplatz"
+            label="Prosuna Marktplatz"
             title={module.title}
             titleAdornment={(
                 <Chip
@@ -121,7 +121,7 @@ export function ModuleInfoTab({
                     <Typography
                         component="a"
                         variant="body2"
-                        href={`https://store.gover.digital/modules/${module.id}/`}
+                        href={`https://store.prosuna.de/modules/${module.id}/`}
                         target="_blank"
                         rel="noreferrer noopener"
                         sx={{
@@ -140,7 +140,7 @@ export function ModuleInfoTab({
                 <Typography
                     component="a"
                     variant="body2"
-                    href={`https://store.gover.digital/organizations/${module.organization_id}/`}
+                    href={`https://store.prosuna.de/organizations/${module.organization_id}/`}
                     target="_blank"
                     rel="noreferrer noopener"
                     sx={{

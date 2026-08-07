@@ -34,7 +34,7 @@ Object.defineProperty(window, 'localStorage', {
 Object.defineProperty(globalThis, 'AppConfig', {
     value: {
         knownFileExtensions: [],
-        providerName: 'Gover',
+        providerName: 'Prosuna',
         systemTheme: {
             id: 1,
             name: 'Default',
@@ -49,7 +49,7 @@ Object.defineProperty(globalThis, 'AppConfig', {
             logoKey: null,
         },
         systemConfigs: {
-            ProviderName: 'Gover',
+            ProviderName: 'Prosuna',
             SystemTheme: 'Default',
         },
         faviconUrl: '',
@@ -62,7 +62,7 @@ Object.defineProperty(globalThis, 'AppConfig', {
         oidc: {
             hostname: 'http://localhost',
             realm: 'test',
-            clientId: 'gover',
+            clientId: 'prosuna',
         },
         moduleFlags: [],
         processNodeLimits: {},

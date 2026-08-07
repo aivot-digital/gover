@@ -3,7 +3,7 @@ import {DatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {DateTime} from 'luxon';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
-import {GoverAdapterLuxon} from '../../utils/gover-adapter-luxon';
+import {ProsunaAdapterLuxon} from '../../utils/prosuna-adapter-luxon';
 import {
     CalendarDatePrecision,
     dateTimeToDateValueIso,
@@ -193,7 +193,7 @@ export function DateFieldComponent({
 
     return (
         <LocalizationProvider
-            dateAdapter={GoverAdapterLuxon}
+            dateAdapter={ProsunaAdapterLuxon}
             adapterLocale="de"
         >
             <DatePicker

@@ -11,7 +11,7 @@ export function StoreTab(props: BaseTabProps & {
     showModuleId: (id: string) => void;
     highlightedModuleId?: string;
 }) {
-    const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
+    const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.prosuna.storeKey));
 
     return (
         <StoreModuleList

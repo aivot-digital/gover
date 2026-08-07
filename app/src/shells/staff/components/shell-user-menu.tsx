@@ -16,7 +16,7 @@ import Logout from '@aivot/mui-material-symbols-400-n25-outlined/Logout';
 import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {AppInfo} from '../../../app-info';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {setShowAboutGoverDialog} from '../../../slices/shell-slice';
+import {setShowAboutProsunaDialog} from '../../../slices/shell-slice';
 import {StringAvatar} from '../../../components/avatar/string-avatar';
 
 interface ShellUserMenuProps {
@@ -149,7 +149,7 @@ export function ShellUserMenu({
                 </MenuItem>
 
                 {/* Handbuch */}
-                <MenuItem onClick={() => handleExternalLink('https://docs.gover.digital')}>
+                <MenuItem onClick={() => handleExternalLink('https://docs.prosuna.de')}>
                     <ListItemIcon>
                         <DescriptionOutlined fontSize="small"/>
                     </ListItemIcon>
@@ -186,17 +186,17 @@ export function ShellUserMenu({
                     </Box>
                 </MenuItem>
 
-                {/* Über Gover */}
+                {/* Über Prosuna */}
                 <MenuItem
                     onClick={() => {
-                        dispatch(setShowAboutGoverDialog(true));
+                        dispatch(setShowAboutProsunaDialog(true));
                         onClose();
                     }}
                 >
                     <ListItemIcon>
                         <InfoOutlined fontSize="small"/>
                     </ListItemIcon>
-                    <Typography variant="body1">Über Gover
+                    <Typography variant="body1">Über Prosuna
                                                 v{AppInfo.version === '@buildVersion' ? '5.x (DEV)' : AppInfo.version}</Typography>
                 </MenuItem>
 
