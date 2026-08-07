@@ -655,6 +655,7 @@ public class FormTriggerControllerV1 {
                 attachmentData.put("storagePathFromRoot", a.getStoragePathFromRoot());
                 return attachmentData;
             }).toList());
+            // TODO: Apply TimeZone here
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_STARTED, startedAt);
 
             createdInstance
