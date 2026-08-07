@@ -16,9 +16,11 @@ import {alpha} from '@mui/material/styles';
 import {AppInfo} from '../../app-info';
 import {StorageKey} from '../../data/storage-key';
 import {StorageScope, StorageService} from '../../services/storage-service';
-import {addDays} from 'date-fns/addDays'
-import {isBefore} from 'date-fns/isBefore'
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
+import {
+    getPreReleaseNoticeDismissalExpiry,
+    isPreReleaseNoticeDismissalActive,
+} from './pre-release-version-notice-time';
 
 const preReleaseVersionRiskHints = [
     'Funktionen können unvollständig sein, sich ändern oder noch nicht wie erwartet funktionieren.',
@@ -26,12 +28,9 @@ const preReleaseVersionRiskHints = [
 ];
 
 function storeDismissFlag() {
-    const tomorrow = addDays(new Date(), 1);
-    tomorrow.setHours(1, 0, 0, 0);
-
     StorageService.storeString(
         StorageKey.PreReleaseVersionNoticeDismissed,
-        tomorrow.toISOString(),
+        getPreReleaseNoticeDismissalExpiry(),
         StorageScope.Local,
     );
 }
@@ -39,16 +38,7 @@ function storeDismissFlag() {
 function loadDismissFlag(): boolean {
     const dismissedUntil = StorageService.loadString(StorageKey.PreReleaseVersionNoticeDismissed);
 
-    if (dismissedUntil == null) {
-        return false;
-    }
-
-    const dismissedUntilDate = new Date(dismissedUntil);
-    if (Number.isNaN(dismissedUntilDate.getTime())) {
-        return false;
-    }
-
-    return isBefore(new Date(), dismissedUntilDate);
+    return isPreReleaseNoticeDismissalActive(dismissedUntil);
 }
 
 export function PreReleaseVersionNoticeDialog(): React.ReactElement {

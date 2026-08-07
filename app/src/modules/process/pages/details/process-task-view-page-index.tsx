@@ -10,8 +10,6 @@ import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Sc
 import EditOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import AssignmentIndOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AssignmentInd';
 import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
-import {formatDistanceToNowStrict} from 'date-fns';
-import {de} from 'date-fns/locale';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../components/status-table/status-table-props';
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
@@ -29,7 +27,7 @@ import Acute from '@aivot/mui-material-symbols-400-n25-outlined/Acute';
 import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import {
     formatInstantInApplicationTimeZone,
-    instantToEpochMillis,
+    formatRelativeInstantInApplicationTimeZone,
 } from '../../../../utils/temporal-utils';
 
 function formatDateTimeWithRelative(value?: string | null, fallback = 'Nicht hinterlegt'): ReactNode {
@@ -37,12 +35,11 @@ function formatDateTimeWithRelative(value?: string | null, fallback = 'Nicht hin
         return fallback;
     }
 
-    const epochMillis = instantToEpochMillis(value);
     const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy – HH:mm');
-    if (epochMillis == null || formatted == null) {
+    const relative = formatRelativeInstantInApplicationTimeZone(value);
+    if (formatted == null || relative == null) {
         return fallback;
     }
-    const parsed = new Date(epochMillis);
 
     return (
         <Box component="span">
@@ -53,7 +50,7 @@ function formatDateTimeWithRelative(value?: string | null, fallback = 'Nicht hin
                     color: 'text.secondary',
                 }}
             >
-                ({formatDistanceToNowStrict(parsed, {addSuffix: true, locale: de})})
+                ({relative})
             </Box>
         </Box>
     );

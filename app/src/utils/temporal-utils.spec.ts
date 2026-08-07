@@ -7,6 +7,8 @@ import {
     dateValueToDateTime,
     formatEpochMillisInApplicationTimeZone,
     formatInstantInApplicationTimeZone,
+    formatRelativeEpochMillisInApplicationTimeZone,
+    formatRelativeInstantInApplicationTimeZone,
     getCurrentApplicationDate,
     instantToEpochMillis,
     isInstantIso,
@@ -129,6 +131,33 @@ describe('temporal-utils', () => {
             'HH:mm:ss',
         )).toBe('09:00:00');
         expect(formatEpochMillisInApplicationTimeZone(Number.NaN, 'HH:mm:ss')).toBeNull();
+    });
+
+    it('should format relative instants with German labels and rounded distances', () => {
+        const base = Date.parse('2026-08-07T10:30:00Z');
+
+        expect(formatRelativeInstantInApplicationTimeZone(
+            '2026-07-18T22:00:00Z',
+            base,
+        )).toBe('vor 20 Tagen');
+        expect(formatRelativeEpochMillisInApplicationTimeZone(
+            base - 30_000,
+            base,
+        )).toBe('vor 30 Sekunden');
+        expect(formatRelativeEpochMillisInApplicationTimeZone(
+            base - 90 * 60_000,
+            base,
+        )).toBe('vor 2 Stunden');
+        expect(formatRelativeEpochMillisInApplicationTimeZone(
+            base + 60 * 60_000,
+            base,
+        )).toBe('in 1 Stunde');
+    });
+
+    it('should reject invalid values for relative formatting', () => {
+        expect(formatRelativeInstantInApplicationTimeZone('2026-08-07T10:30:00')).toBeNull();
+        expect(formatRelativeEpochMillisInApplicationTimeZone(Number.NaN)).toBeNull();
+        expect(formatRelativeEpochMillisInApplicationTimeZone(0, Number.NaN)).toBeNull();
     });
 
     it('should parse and format calendar values without creating an instant', () => {

@@ -262,6 +262,38 @@ export function formatEpochMillisInApplicationTimeZone(
     return dateTime.isValid ? dateTime.setLocale('de').toFormat(format) : null;
 }
 
+export function formatRelativeEpochMillisInApplicationTimeZone(
+    value: number,
+    base: number = Date.now(),
+): string | null {
+    if (!Number.isFinite(value) || !Number.isFinite(base)) {
+        return null;
+    }
+
+    const zone = getApplicationTimeZone();
+    const dateTime = DateTime.fromMillis(value, {zone});
+    const baseDateTime = DateTime.fromMillis(base, {zone});
+
+    if (!dateTime.isValid || !baseDateTime.isValid) {
+        return null;
+    }
+
+    return dateTime
+        .setLocale('de')
+        // Move exact half-unit values across the boundary so past and future values round symmetrically.
+        .toRelative({base: baseDateTime, rounding: 'round', padding: 1});
+}
+
+export function formatRelativeInstantInApplicationTimeZone(
+    value: unknown,
+    base: number = Date.now(),
+): string | null {
+    const epochMillis = instantToEpochMillis(value);
+    return epochMillis == null
+        ? null
+        : formatRelativeEpochMillisInApplicationTimeZone(epochMillis, base);
+}
+
 export function dateTimeToLocalDateTimeIso(
     value: DateTime,
     precision: TemporalPrecision,

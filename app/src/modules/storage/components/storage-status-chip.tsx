@@ -11,10 +11,9 @@ import Autoplay from '@aivot/mui-material-symbols-400-n25-outlined/Autoplay';
 import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 import { Chip } from '../../../components/chip/chip';
 
-import {formatDistanceToNowStrict} from 'date-fns';
-import { de } from 'date-fns/locale';
 import {
     formatInstantInApplicationTimeZone,
+    formatRelativeEpochMillisInApplicationTimeZone,
     instantToEpochMillis,
 } from '../../../utils/temporal-utils';
 
@@ -36,42 +35,39 @@ export function StorageStatusChip(props: StorageStatusChipProps): ReactNode {
 
     const Icon = useMemo(() => iconMap[status], [status]);
 
-    const lastSyncDate = useMemo(() => {
+    const lastSyncEpochMillis = useMemo(() => {
         if (!lastSync) return null;
-        const epochMillis = instantToEpochMillis(lastSync);
-        return epochMillis != null ? new Date(epochMillis) : null;
+        return instantToEpochMillis(lastSync);
     }, [lastSync]);
 
     const [minuteTick, setMinuteTick] = useState(0);
 
     useEffect(() => {
         if (status !== StorageProviderStatus.Synced) return;
-        if (!lastSyncDate) return;
+        if (lastSyncEpochMillis == null) return;
 
         const id = window.setInterval(() => setMinuteTick((t) => t + 1), 60_000);
         return () => window.clearInterval(id);
-    }, [status, lastSyncDate]);
+    }, [status, lastSyncEpochMillis]);
 
     const label = useMemo(() => {
         const base = StorageProviderStatusLabels[status];
 
         if (status !== StorageProviderStatus.Synced) return base;
-        if (!lastSyncDate) return base;
+        if (lastSyncEpochMillis == null) return base;
 
-        const diffMs = Date.now() - lastSyncDate.getTime();
+        const now = Date.now();
+        const diffMs = now - lastSyncEpochMillis;
         const underOneMinute = diffMs >= 0 && diffMs < 60_000;
 
         if (underOneMinute) {
             return `${base} vor weniger als einer Minute`;
         }
 
-        const rel = formatDistanceToNowStrict(lastSyncDate, {
-            addSuffix: true,
-            locale: de,
-        });
+        const relative = formatRelativeEpochMillisInApplicationTimeZone(lastSyncEpochMillis, now);
 
-        return `${base} ${rel}`;
-    }, [status, lastSyncDate, minuteTick]);
+        return relative == null ? base : `${base} ${relative}`;
+    }, [status, lastSyncEpochMillis, minuteTick]);
 
     const formattedLastSync = useMemo(() => {
         return formatInstantInApplicationTimeZone(lastSync, 'dd.MM.yyyy – HH:mm:ss') ?? undefined;
