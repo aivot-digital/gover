@@ -8,6 +8,7 @@ import de.aivot.gover.backend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -57,6 +58,7 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
             case String sValue -> sValue;
             case Number nValue -> NumberInputElement
                     .formatGermanNumber(nValue);
+            case ZonedDateTime zValue -> new DateInputElement().toDisplayValue(zValue);
             default -> null;
         };
     }

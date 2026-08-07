@@ -26,9 +26,11 @@ import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.javascript.models.JavascriptCode;
 import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.gover.backend.nocode.models.NoCodeExpression;
 import de.aivot.gover.backend.nocode.models.NoCodeReference;
 import de.aivot.gover.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.gover.backend.nocode.services.NoCodeEvaluationService;
+import de.aivot.gover.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import de.aivot.gover.backend.submission.services.ElementDataTransformService;
 import org.junit.jupiter.api.Test;
 
@@ -88,6 +90,37 @@ class ElementDerivationServiceTest {
 
         assertEquals("copied value", result.getEffectiveValues().get("source"));
         assertEquals("copied value", result.getEffectiveValues().get("derived"));
+        assertEquals(
+                EffectiveValueSource.Derived,
+                result.getElementStates().get("derived").getValueSource()
+        );
+    }
+
+    @Test
+    void shouldFormatNoCodeDateDerivedTextValue() {
+        var derivedField = new TextInputElement();
+        derivedField.setId("derived");
+        derivedField.setValue(new ElementValueFunctions().setNoCode(
+                NoCodeExpression.of(
+                        "add-to-date",
+                        NoCodeExpression.of(
+                                "create-date",
+                                NoCodeStaticValue.of(7),
+                                NoCodeStaticValue.of(8),
+                                NoCodeStaticValue.of(2026)
+                        ),
+                        NoCodeStaticValue.of(2),
+                        NoCodeStaticValue.of("jahre")
+                )
+        ));
+
+        var result = derive(
+                createRoot(List.of(derivedField)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("07.08.2028", result.getEffectiveValues().get("derived"));
         assertEquals(
                 EffectiveValueSource.Derived,
                 result.getElementStates().get("derived").getValueSource()
@@ -521,7 +554,7 @@ class ElementDerivationServiceTest {
     private static ElementDerivationService createService() {
         return new ElementDerivationService(
                 new JavascriptEngineFactoryService(List.of()),
-                new NoCodeEvaluationService(List.of()),
+                new NoCodeEvaluationService(List.of(new CommonOperatorsV1(null, null))),
                 new ElementDataTransformService(),
                 new CodeListElementOptionsService(null, null)
         );
