@@ -257,8 +257,8 @@ public class DataObjectJavascriptV1 implements JavascriptFunctionProvider {
     private static Map<String, Object> getItemData(@Nonnull DataObjectItemEntity entity) {
         var data = entity.getData();
         data.put("$id", entity.getId());
-        data.put("$created", entity.getCreated().toString());
-        data.put("$updated", entity.getUpdated().toString());
+        data.put("$created", entity.getCreated());
+        data.put("$updated", entity.getUpdated());
         return data;
     }
 

@@ -9,7 +9,7 @@ import de.aivot.gover.backend.nocode.models.NoCodeResult;
 import de.aivot.gover.backend.nocode.models.NoCodeSignatur;
 import jakarta.annotation.Nullable;
 
-import java.time.ZonedDateTime;
+import java.time.LocalTime;
 
 public class NoCodeCreateTimeOperator extends NoCodeOperator {
     @Override
@@ -24,14 +24,14 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Erstellt eine Zeit basierend auf den angegebenen Stunden und Minuten.";
+        return "Erstellt eine lokale Uhrzeit aus Stunde, Minute und optional Sekunde.";
     }
 
     @Override
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Erstelle Zeit“** erstellt eine Zeit basierend auf den angegebenen Stunden und Minuten. \s
+                Der Operator **„Erstelle Zeit“** erstellt eine lokale Uhrzeit aus Stunde, Minute und optional Sekunde. \s
                 Er wird verwendet, um eine Zeit aus einzelnen Komponenten zu erstellen.
                 
                 # Anwendungsbeispiel:
@@ -43,11 +43,11 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
                 ```
                 
                 **Ergebnis:** \s
-                Die erstellte Zeit ist: `YYYY-MM-DDT14:30:00Z`.
+                Die erstellte Zeit ist: `14:30:00`.
                 
                 # Wann verwenden Sie den Operator „Erstelle Zeit“?
                 Verwenden Sie **„Erstelle Zeit“**, wenn Sie:
-                - Eine Zeit aus einzelnen Komponenten (Stunden, Minuten) erstellen möchten. \s
+                - Eine Zeit aus einzelnen Komponenten (Stunden, Minuten und optional Sekunden) erstellen möchten. \s
                 - Zeiten in einem bestimmten Format benötigen. \s
                 - Eine Zeit für Berechnungen oder Vergleiche erstellen möchten.
                 """;
@@ -55,7 +55,27 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
 
     @Override
     public NoCodeSignatur[] getSignatures() {
+        // Empty expressions use the first signature, so new expressions expose seconds.
+        // Stored two-operand expressions still resolve the second signature by operand count.
         return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Time,
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Stunde",
+                                "Die Stunde der Zeit (0-23)."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Minute",
+                                "Die Minute der Zeit (0-59)."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Sekunde",
+                                "Die Sekunde der Zeit (0-59)."
+                        )
+                ),
                 NoCodeSignatur.of(
                         NoCodeDataType.Time,
                         new NoCodeParameter(
@@ -75,13 +95,19 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "erstelle eine Zeit mit Stunde „#0“ und Minute „#1“";
+        // Templates are defined per operator, not per signature. A shared template would
+        // either hide seconds from new expressions or leak a placeholder into legacy ones.
+        // The generic humanizer lists exactly the operands of the resolved signature.
+        return null;
     }
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        int hour = castToNumber(args[0]).intValue();
-        int minute = castToNumber(args[1]).intValue();
+        int hour = requireInteger(args[0], "Die Stunde muss eine ganze Zahl sein.");
+        int minute = requireInteger(args[1], "Die Minute muss eine ganze Zahl sein.");
+        int second = args.length >= 3
+                ? requireInteger(args[2], "Die Sekunde muss eine ganze Zahl sein.")
+                : 0;
 
         if (hour < 0 || hour > 23) {
             throw new NoCodeException("Ungültige Stunde: " + hour + ". Erwartet 0-23.");
@@ -91,12 +117,11 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
             throw new NoCodeException("Ungültige Minute: " + minute + ". Erwartet 0-59.");
         }
 
-        var time = ZonedDateTime
-                .now()
-                .withHour(hour)
-                .withMinute(minute)
-                .withSecond(0)
-                .withNano(0);
+        if (second < 0 || second > 59) {
+            throw new NoCodeException("Ungültige Sekunde: " + second + ". Erwartet 0-59.");
+        }
+
+        var time = LocalTime.of(hour, minute, second);
 
         return new NoCodeResult(time);
     }

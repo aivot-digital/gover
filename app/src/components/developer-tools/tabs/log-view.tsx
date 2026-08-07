@@ -3,11 +3,11 @@ import TableBody from '@mui/material/TableBody';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import {LogLevelIcon} from '../../log-level-icon/log-level-icon';
-import {format} from 'date-fns';
 import TableContainer from '@mui/material/TableContainer';
 import React from 'react';
 import {selectLogLevel, selectLogs} from '../../../slices/logging-slice';
 import {useAppSelector} from '../../../hooks/use-app-selector';
+import {formatEpochMillisInApplicationTimeZone} from '../../../utils/temporal-utils';
 
 export function LogView() {
     const logLevel = useAppSelector(selectLogLevel);
@@ -39,7 +39,7 @@ export function LogView() {
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    {format(log.timestamp, 'HH:mm:ss')}
+                                    {formatEpochMillisInApplicationTimeZone(log.timestamp, 'HH:mm:ss') ?? '-'}
                                 </TableCell>
                                 <TableCell>
                                     {log.source}

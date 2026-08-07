@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Button, Dialog, DialogActions, DialogContent, Stack, Typography} from '@mui/material';
 import ContentCopyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
 import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Download';
-import {format} from 'date-fns';
+import {DateTime} from 'luxon';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type HealthData, type HealthDataComponents} from '../../models/dtos/health-data';
 import {SystemApiService} from '../../modules/system/system-api-service';
@@ -435,7 +435,7 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
     };
 
     const handleDownload = (): void => {
-        const filename = `gover-debug-info-${format(new Date(), 'yyyyMMdd-HHmmss')}.txt`;
+        const filename = `gover-debug-info-${DateTime.now().toFormat('yyyyMMdd-HHmmss')}.txt`;
         downloadTextFile(filename, debugInfoText, 'text/plain;charset=utf-8');
         dispatch(showSuccessSnackbar('Debug-Informationen wurden heruntergeladen.'));
     };

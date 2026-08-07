@@ -7,8 +7,11 @@ import org.thymeleaf.dialect.IExpressionObjectDialect;
 import org.thymeleaf.expression.IExpressionObjectFactory;
 
 import java.text.NumberFormat;
+import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Set;
@@ -40,14 +43,28 @@ public class NumberFormatDialect extends AbstractDialect implements IExpressionO
     }
 
     public String formatISOTimestamp(String timestamp, String format) {
+        return formatInstant(timestamp, format);
+    }
+
+    public String formatInstant(@Nullable Object value, String format) {
+        if (value == null) {
+            return "";
+        }
+
         try {
             var displayZone = ApplicationTimeZone.getZoneId();
-            var instant = IsoTimestampUtils.parseIsoTimestamp(timestamp, displayZone);
+            var instant = switch (value) {
+                case Instant instantValue -> instantValue;
+                case OffsetDateTime offsetDateTime -> offsetDateTime.toInstant();
+                case ZonedDateTime zonedDateTime -> zonedDateTime.toInstant();
+                case String stringValue -> IsoTimestampUtils.parseIsoInstant(stringValue);
+                default -> throw new DateTimeException("Unsupported instant value: " + value.getClass().getName());
+            };
             return instant
                     .atZone(displayZone)
                     .format(DateTimeFormatter.ofPattern(format));
-        } catch (DateTimeParseException ex) {
-            return timestamp;
+        } catch (DateTimeException ex) {
+            return value.toString();
         }
     }
 

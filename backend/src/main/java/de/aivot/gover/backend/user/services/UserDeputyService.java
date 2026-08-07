@@ -4,6 +4,7 @@ import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.lib.services.EntityService;
 import de.aivot.gover.backend.user.entities.UserDeputyEntity;
+import de.aivot.gover.backend.user.models.DeputyDateRange;
 import de.aivot.gover.backend.user.repositories.UserDeputyRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -12,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -69,8 +69,8 @@ public class UserDeputyService implements EntityService<UserDeputyEntity, Intege
         // Updating a deputy relation only changes its validity period. Changing either user
         // would create a different relation.
         existingEntity
-                .setFromTimestamp(entity.getFromTimestamp())
-                .setUntilTimestamp(entity.getUntilTimestamp());
+                .setFromDate(entity.getFromDate())
+                .setUntilDate(entity.getUntilDate());
 
         validateDateRange(existingEntity);
         return repository.save(existingEntity);
@@ -82,14 +82,8 @@ public class UserDeputyService implements EntityService<UserDeputyEntity, Intege
     }
 
     private void validateDateRange(@Nonnull UserDeputyEntity entity) throws ResponseException {
-        var untilTimestamp = entity.getUntilTimestamp();
-        if (untilTimestamp == null) {
-            return;
-        }
-
-        LocalDateTime fromTimestamp = entity.getFromTimestamp();
-        if (!fromTimestamp.isBefore(untilTimestamp)) {
-            throw ResponseException.badRequest("Das Ende der Vertretung muss nach dem Start der Vertretung liegen.");
+        if (!DeputyDateRange.isValid(entity.getFromDate(), entity.getUntilDate())) {
+            throw ResponseException.badRequest("Das Ende der Vertretung darf nicht vor dem Start der Vertretung liegen.");
         }
     }
 }

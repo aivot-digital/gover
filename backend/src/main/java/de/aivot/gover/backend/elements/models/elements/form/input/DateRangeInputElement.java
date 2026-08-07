@@ -7,15 +7,14 @@ import de.aivot.gover.backend.enums.DateType;
 import de.aivot.gover.backend.enums.ElementType;
 import de.aivot.gover.backend.exceptions.RequiredValidationException;
 import de.aivot.gover.backend.exceptions.ValidationException;
-import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.Map;
 import java.util.Objects;
 
-public class DateRangeInputElement extends BaseInputElement<RangeInputElementValue> implements PrintableElement<RangeInputElementValue> {
+public class DateRangeInputElement extends BaseInputElement<RangeInputElementValue<TemporalAccessor>> implements PrintableElement<RangeInputElementValue<TemporalAccessor>> {
     @Nullable
     private String placeholder;
 
@@ -28,12 +27,12 @@ public class DateRangeInputElement extends BaseInputElement<RangeInputElementVal
 
     @Nullable
     @Override
-    public RangeInputElementValue formatValue(@Nullable Object value) {
-        return _formatValue(value);
+    public RangeInputElementValue<TemporalAccessor> formatValue(@Nullable Object value) {
+        return _formatValue(value, mode);
     }
 
     @Override
-    public void performValidation(@Nullable RangeInputElementValue value) throws ValidationException {
+    public void performValidation(@Nullable RangeInputElementValue<TemporalAccessor> value) throws ValidationException {
         if (value == null || value.isEmpty()) {
             if (Boolean.TRUE.equals(getRequired())) {
                 throw new RequiredValidationException(this);
@@ -51,38 +50,30 @@ public class DateRangeInputElement extends BaseInputElement<RangeInputElementVal
             throw new ValidationException(this, "Bitte geben Sie sowohl den Start- als auch den Endwert an.");
         }
 
-        if (value.getStart() != null && value.getEnd() != null && value.getStart().isAfter(value.getEnd())) {
+        var start = DateInputElement.toLocalDate(value.getStart());
+        var end = DateInputElement.toLocalDate(value.getEnd());
+        if (start != null && end != null && start.isAfter(end)) {
             throw new ValidationException(this, "Der Startwert darf nicht größer als der Endwert sein.");
         }
     }
 
     @Nonnull
     @Override
-    public String toDisplayValue(@Nullable RangeInputElementValue value) {
+    public String toDisplayValue(@Nullable RangeInputElementValue<TemporalAccessor> value) {
         if (value == null || value.isEmpty()) {
             return "Keine Angabe";
         }
 
-        var pattern = "dd.MM.yyyy";
-        if (mode == DateType.Year) {
-            pattern = "yyyy";
-        } else if (mode == DateType.Month) {
-            pattern = "MM.yyyy";
-        }
-
-        var formatter = DateTimeFormatter
-                .ofPattern(pattern)
-                .withZone(ApplicationTimeZone.getZoneId());
-
-        var start = value.getStart() == null ? "Keine Angabe" : value.getStart().format(formatter);
-        var end = value.getEnd() == null ? "Keine Angabe" : value.getEnd().format(formatter);
+        var formatter = new DateInputElement().setMode(mode);
+        var start = formatter.toDisplayValue(value.getStart());
+        var end = formatter.toDisplayValue(value.getEnd());
         return start + " bis " + end;
     }
 
     @Nonnull
     @Override
     public Boolean evaluate(ConditionOperator operator, Object referencedValue, Object comparedValue) {
-        var valA = _formatValue(referencedValue);
+        var valA = _formatValue(referencedValue, mode);
         if (valA == null || valA.isEmpty()) {
             return operator == ConditionOperator.Empty;
         }
@@ -91,7 +82,7 @@ public class DateRangeInputElement extends BaseInputElement<RangeInputElementVal
             return true;
         }
 
-        var valB = _formatValue(comparedValue);
+        var valB = _formatValue(comparedValue, mode);
         if (valB == null) {
             return false;
         }
@@ -104,16 +95,25 @@ public class DateRangeInputElement extends BaseInputElement<RangeInputElementVal
     }
 
     @Nullable
-    public static RangeInputElementValue _formatValue(@Nullable Object value) {
+    public static RangeInputElementValue<TemporalAccessor> _formatValue(
+            @Nullable Object value,
+            @Nullable DateType mode
+    ) {
+        var formatter = new DateInputElement().setMode(mode);
+
         switch (value) {
             case null:
                 return null;
-            case RangeInputElementValue val:
-                return val.isEmpty() ? null : val;
+            case RangeInputElementValue<?> val:
+                var normalizedRange = new RangeInputElementValue<TemporalAccessor>(
+                        formatter.formatValue(val.getStart()),
+                        formatter.formatValue(val.getEnd())
+                );
+                return normalizedRange.isEmpty() ? null : normalizedRange;
             case Map<?, ?> map:
-                var start = DateInputElement._formatValue(map.get("start"));
-                var end = DateInputElement._formatValue(map.get("end"));
-                var range = new RangeInputElementValue(start, end);
+                var start = formatter.formatValue(map.get("start"));
+                var end = formatter.formatValue(map.get("end"));
+                var range = new RangeInputElementValue<TemporalAccessor>(start, end);
                 return range.isEmpty() ? null : range;
             default:
                 return null;

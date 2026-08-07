@@ -1,6 +1,7 @@
 package de.aivot.gover.backend.audit.models;
 
 import de.aivot.gover.backend.audit.models.AuditLogPayload;
+import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -232,7 +233,13 @@ class AuditLogPayloadTest {
 
         var result = AuditLogPayload.toMap(new EntityWithTimestamp(timestamp));
 
-        assertEquals(Map.of("timestamp", "2026-03-24T10:15:00Z"), result);
+        assertEquals(
+                Map.of(
+                        "timestamp",
+                        IsoTimestampUtils.toOffsetString(timestamp)
+                ),
+                result
+        );
     }
 
     private record NestedSettings(String mode, List<Object> items) {

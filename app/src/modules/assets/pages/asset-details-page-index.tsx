@@ -22,7 +22,6 @@ import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbo
 import {GenericDetailsSkeleton} from '../../../components/generic-details-page/generic-details-skeleton';
 import {UsersApiService} from '../../users/users-api-service';
 import {resolveUserName} from '../../users/utils/resolve-user-name';
-import {format} from 'date-fns';
 import {StatusTable} from '../../../components/status-table/status-table';
 import BadgeOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Badge';
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
@@ -41,6 +40,7 @@ import {Permission} from '../../../data/permissions/permission';
 import {useHasSystemPermission} from '../../permissions/hooks/use-permissions';
 import {formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../components/disabled-tooltip/disabled-tooltip';
+import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
 
 export const AssetSchema = yup.object({
     filename: yup.string()
@@ -140,12 +140,7 @@ export function AssetDetailsPageIndex() {
     }, [item]);
 
 
-    const uploadedDate = useMemo(() => {
-        if (item == null) {
-            return new Date();
-        }
-        return new Date(item.created);
-    }, [item]);
+    const uploadedDate = formatInstantInApplicationTimeZone(item?.created, 'dd.MM.yyyy – HH:mm');
     const storageProvider = additionalData?.storageProvider;
     const assetMetadata = (asset?.metadata ?? {}) as Record<string, string>;
     const hasSelectedFile = file != null && file.length > 0;
@@ -452,7 +447,8 @@ export function AssetDetailsPageIndex() {
                             {
                                 label: 'Hochgeladen von',
                                 icon: <BadgeOutlined/>,
-                                children: uploader + ' am ' + format(uploadedDate, 'dd.MM.yyyy') + ' – ' + format(uploadedDate, 'HH:mm') + ' Uhr',
+                                children: `${uploader} am ${uploadedDate ?? 'unbekannt'}` +
+                                    (uploadedDate != null ? ' Uhr' : ''),
                             },
                             {
                                 label: 'Zugriffsberechtigung',

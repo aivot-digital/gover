@@ -4,6 +4,7 @@ import {DateTimeFieldElement} from '../models/elements/form/input/date-time-fiel
 import {DateTimeFieldComponent} from '../components/date-time-field/date-time-field-component';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {TimeFieldComponentModelMode} from '../models/elements/form/input/time-field-element';
+import {isInstantIso} from '../utils/temporal-utils';
 
 export function DateTimeFieldView(props: BaseViewProps<DateTimeFieldElement, string>) {
     const {
@@ -28,8 +29,7 @@ export function DateTimeFieldView(props: BaseViewProps<DateTimeFieldElement, str
             return value;
         }
 
-        const date = new Date(value);
-        return isNaN(date.getTime()) ? null : value;
+        return isInstantIso(value) ? value : null;
     }, [value]);
 
     return (

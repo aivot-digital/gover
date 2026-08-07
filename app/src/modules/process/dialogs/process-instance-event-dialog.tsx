@@ -25,7 +25,6 @@ import {getNodeName} from '../pages/details/components/process-flow-editor/utils
 import {UsersApiService} from '../../users/users-api-service';
 import {User} from '../../users/models/user';
 import {resolveUserName} from '../../users/utils/resolve-user-name';
-import {format} from 'date-fns/format';
 import Typography from '@mui/material/Typography';
 import AccountBox from '@aivot/mui-material-symbols-400-n25-outlined/AccountBox';
 import Memory from '@aivot/mui-material-symbols-400-n25-outlined/Memory';
@@ -41,12 +40,18 @@ import {ProcessInstanceEntity} from '../entities/process-instance-entity';
 import {StatusTable} from '../../../components/status-table/status-table';
 import {StatusTablePropsItem} from '../../../components/status-table/status-table-props';
 import {humanizeMillisecondsDuration} from '../../../utils/duration-utils';
+import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
 
 interface ProcessInstanceEventDialogProps {
     open: boolean;
     onClose: () => void;
     instanceId: number;
     taskId: number | null;
+}
+
+function formatEventTimestamp(value: unknown): string {
+    const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy HH:mm:ss');
+    return formatted != null ? `${formatted} Uhr` : '-';
 }
 
 export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProps) {
@@ -83,14 +88,14 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
         const info: StatusTablePropsItem[] = [
             {
                 label: 'Start',
-                children: format(new Date(eventsData.instance.started), 'dd.MM.yyyy HH:mm:ss') + ' Uhr',
+                children: formatEventTimestamp(eventsData.instance.started),
             },
         ];
 
         if (eventsData.instance.finished != null) {
             info.push({
                 label: 'Ende',
-                children: format(new Date(eventsData.instance.finished), 'dd.MM.yyyy HH:mm:ss') + ' Uhr',
+                children: formatEventTimestamp(eventsData.instance.finished),
             });
         } else {
             info.push({
@@ -122,14 +127,14 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
         const info: StatusTablePropsItem[] = [
             {
                 label: 'Start',
-                children: format(new Date(eventsData.task.started), 'dd.MM.yyyy HH:mm:ss') + ' Uhr',
+                children: formatEventTimestamp(eventsData.task.started),
             },
         ];
 
         if (eventsData.task.finished != null) {
             info.push({
                 label: 'Ende',
-                children: format(new Date(eventsData.task.finished), 'dd.MM.yyyy HH:mm:ss') + ' Uhr',
+                children: formatEventTimestamp(eventsData.task.finished),
             });
         } else {
             info.push({
@@ -458,7 +463,7 @@ function EventTableRow(props: { event: Item }) {
                         alignItems="center"
                         height="100%"
                     >
-                        {format(new Date(event.timestamp), 'dd.MM.yyyy HH:mm:ss')}
+                        {formatInstantInApplicationTimeZone(event.timestamp, 'dd.MM.yyyy HH:mm:ss') ?? '-'}
                     </Box>
                 </TableCell>
                 <TableCell
@@ -625,7 +630,7 @@ function EventTableRow(props: { event: Item }) {
                                     </Typography>
 
                                     <Typography>
-                                        Zeitstempel: {format(new Date(event.timestamp), 'dd.MM.yyyy HH:mm:ss')} Uhr
+                                        Zeitstempel: {formatEventTimestamp(event.timestamp)}
                                     </Typography>
                                 </Box>
                             }

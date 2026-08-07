@@ -4,15 +4,15 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "v_user_deputy_with_details")
 public class VUserDeputyWithDetailsEntity {
     @Id
     private Integer id;
-    private LocalDateTime fromTimestamp;
-    private LocalDateTime untilTimestamp;
+    private LocalDate fromDate;
+    private LocalDate untilDate;
     private Boolean active;
 
     private String originalUserId;
@@ -44,21 +44,21 @@ public class VUserDeputyWithDetailsEntity {
         return this;
     }
 
-    public LocalDateTime getFromTimestamp() {
-        return fromTimestamp;
+    public LocalDate getFromDate() {
+        return fromDate;
     }
 
-    public VUserDeputyWithDetailsEntity setFromTimestamp(LocalDateTime fromTimestamp) {
-        this.fromTimestamp = fromTimestamp;
+    public VUserDeputyWithDetailsEntity setFromDate(LocalDate fromDate) {
+        this.fromDate = fromDate;
         return this;
     }
 
-    public LocalDateTime getUntilTimestamp() {
-        return untilTimestamp;
+    public LocalDate getUntilDate() {
+        return untilDate;
     }
 
-    public VUserDeputyWithDetailsEntity setUntilTimestamp(LocalDateTime untilTimestamp) {
-        this.untilTimestamp = untilTimestamp;
+    public VUserDeputyWithDetailsEntity setUntilDate(LocalDate untilDate) {
+        this.untilDate = untilDate;
         return this;
     }
 

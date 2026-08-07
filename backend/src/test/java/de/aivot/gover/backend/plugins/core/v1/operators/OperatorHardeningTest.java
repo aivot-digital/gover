@@ -12,7 +12,7 @@ import de.aivot.gover.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOpe
 import de.aivot.gover.backend.plugins.core.v1.operators.text.NoCodeSplitOperator;
 import org.junit.jupiter.api.Test;
 
-import java.time.ZonedDateTime;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -81,7 +81,7 @@ class OperatorHardeningTest {
         var data = runtime();
 
         var validResult = operator.performEvaluation(data, 13, 45);
-        var time = assertInstanceOf(ZonedDateTime.class, validResult.getValue());
+        var time = assertInstanceOf(LocalTime.class, validResult.getValue());
         assertEquals(0, time.getSecond());
         assertEquals(0, time.getNano());
 

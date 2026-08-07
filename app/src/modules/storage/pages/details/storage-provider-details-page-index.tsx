@@ -28,7 +28,6 @@ import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {bytesToMegabytes, megabytesToBytes} from '../../../../utils/bytes-megabytes-conversion';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
-import {format} from 'date-fns';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import Sync from '@aivot/mui-material-symbols-400-n25-outlined/Sync';
 import {
@@ -46,6 +45,7 @@ import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 
 const DefaultStorageProcessAttachmentsSystemConfigDefinitionKey = 'storage.attachments.default_storage_provider';
 const DefaultStorageAssetsSystemConfigDefinitionKey = 'storage.assets.default_storage_provider';
@@ -435,12 +435,18 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         });
     }
 
+    const formattedLastSync = formatInstantInApplicationTimeZone(
+        editedStorageProvider.lastSync,
+        'dd.MM.yyyy – HH:mm:ss',
+    );
     statusTableItems.push({
         label: 'Zuletzt synchronisiert',
         icon: <Sync/>,
-        children: editedStorageProvider.lastSync
-            ? format(new Date(editedStorageProvider.lastSync), 'dd.MM.yyyy – HH:mm:ss') + ' Uhr'
-            : 'Noch nicht synchronisiert',
+        children: editedStorageProvider.lastSync == null
+            ? 'Noch nicht synchronisiert'
+            : formattedLastSync != null
+                ? `${formattedLastSync} Uhr`
+                : 'Unbekannt',
     });
 
     return (

@@ -1,5 +1,6 @@
 package de.aivot.gover.backend.plugins.core.v1.operators;
 
+import de.aivot.gover.backend.core.services.BusinessTime;
 import de.aivot.gover.backend.nocode.models.NoCodeOperator;
 import de.aivot.gover.backend.nocode.providers.NoCodeOperatorsProvider;
 import de.aivot.gover.backend.plugins.core.CorePlugin;
@@ -32,11 +33,17 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
     private final UserRepository userRepository;
     @Nullable
     private final SecretService secretService;
+    private final BusinessTime businessTime;
 
     @Autowired
-    public CommonOperatorsV1(@Nullable UserRepository userRepository, @Nullable SecretService secretService) {
+    public CommonOperatorsV1(
+            @Nullable UserRepository userRepository,
+            @Nullable SecretService secretService,
+            BusinessTime businessTime
+    ) {
         this.userRepository = userRepository;
         this.secretService = secretService;
+        this.businessTime = businessTime;
     }
 
     @Override
@@ -92,11 +99,20 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
 
                 // Date
                 new NoCodeAddToDateOperator(),
+                new NoCodeCombineDateAndTimeOperator(businessTime),
                 new NoCodeCreateDateOperator(),
+                new NoCodeCreateNowOperator(businessTime),
                 new NoCodeCreateTimeOperator(),
-                new NoCodeCreateTodayOperator(),
-                new NoCodeFormatDateOperator(),
+                new NoCodeCreateTodayOperator(businessTime),
+                new NoCodeExtractDateTimePartOperator(NoCodeExtractDateTimePartOperator.Part.DATE, businessTime),
+                new NoCodeExtractDateTimePartOperator(NoCodeExtractDateTimePartOperator.Part.TIME, businessTime),
+                new NoCodeFormatDateOperator(businessTime),
+                new NoCodeFormatDateTimeOperator(businessTime),
+                new NoCodeFormatTimeOperator(),
                 new NoCodeSubtractFromDateOperator(),
+                new NoCodeTemporalCompareOperator(NoCodeTemporalCompareOperator.TemporalType.DATE),
+                new NoCodeTemporalCompareOperator(NoCodeTemporalCompareOperator.TemporalType.TIME),
+                new NoCodeTemporalCompareOperator(NoCodeTemporalCompareOperator.TemporalType.DATETIME),
 
                 // List
                 new NoCodeListAvgOperator(),

@@ -46,10 +46,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static de.aivot.gover.backend.TestData.authored;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -216,10 +214,7 @@ class ApprovalActionNodeV1Test {
         assertEquals("approved", completed.getNodeData().get("decision"));
         assertEquals("<p>Passt</p>", completed.getNodeData().get("remark"));
         assertEquals("staff-1", completed.getNodeData().get("processedByUserId"));
-        var processedAt = completed.getNodeData().get("processedAt");
-        assertNotNull(processedAt);
-        assertTrue(processedAt.toString().endsWith("Z"));
-        assertDoesNotThrow(() -> Instant.parse(processedAt.toString()));
+        assertInstanceOf(Instant.class, completed.getNodeData().get("processedAt"));
     }
 
     private static AuthoredElementValues dataModeConfiguration() {

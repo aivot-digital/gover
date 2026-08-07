@@ -1,8 +1,8 @@
 import {Grid, Typography, useTheme} from '@mui/material';
-import {format} from 'date-fns';
 import {BaseSummaryProps} from './base-summary';
 import {DateFieldComponentModelMode, DateFieldElement} from '../models/elements/form/input/date-field-element';
 import React from 'react';
+import {dateValueToDateTime} from '../utils/temporal-utils';
 
 export function DateFieldSummary(props: BaseSummaryProps<DateFieldElement, string>) {
     const {
@@ -10,7 +10,10 @@ export function DateFieldSummary(props: BaseSummaryProps<DateFieldElement, strin
         model,
     } = props;
 
-    const date = value != null && value.length > 0 && new Date(value);
+    const precision = model.mode ?? DateFieldComponentModelMode.Day;
+    const date = value != null && value.length > 0
+        ? dateValueToDateTime(value, precision)
+        : null;
 
     let formatting = 'dd.MM.yyyy';
     switch (model.mode) {
@@ -65,7 +68,7 @@ export function DateFieldSummary(props: BaseSummaryProps<DateFieldElement, strin
                 }}>
                 <Typography variant={"body2"}>
                     {
-                        date ? format(date, formatting) : 'Keine Angabe'
+                        date?.toFormat(formatting) ?? 'Keine Angabe'
                     }
                 </Typography>
             </Grid>

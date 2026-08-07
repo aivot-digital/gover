@@ -27,7 +27,7 @@
                         <b th:if="${#strings.isEmpty(paymentTransaction.paymentError)}">Unbekannter Fehler</b>
                         <b th:unless="${#strings.isEmpty(paymentTransaction.paymentError)}" th:text="${paymentTransaction.paymentError}">Beispiel-Fehlermeldung</b>
                         <br/>
-                        Zeitpunkt des Fehlers: <b th:text="${#temporals.format(paymentTransaction.updated, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54:34</b> Uhr
+                        Zeitpunkt des Fehlers: <b th:text="${#numberformat.formatInstant(paymentTransaction.updated, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54:34</b> Uhr
                     </p>
 
                     <p>

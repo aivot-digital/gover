@@ -1,13 +1,15 @@
 import {BaseCrudApiService} from "../../../services/base-crud-api-service";
 import {VUserDeputyWithDetailsEntity} from "../entities/v-user-deputy-with-details-entity";
+import {LocalDateIso} from '../../../utils/temporal-types';
+import {getCurrentApplicationDate} from '../../../utils/temporal-utils';
 
 export interface VUserDeputyWithDetailsFilter {
     originalUserId: string;
     originalUserFullName: string;
-    deputyUserId: boolean;
+    deputyUserId: string;
     deputyUserFullName: string;
-    fromTimestamp: string;
-    untilTimestampIsNull: boolean;
+    fromDate: LocalDateIso;
+    untilDateIsNull: boolean;
 }
 
 export class VUserDeputyWithDetailsApiService extends BaseCrudApiService<
@@ -33,7 +35,7 @@ export class VUserDeputyWithDetailsApiService extends BaseCrudApiService<
             deputyUserLastName: "",
             deputyUserSystemRoleId: 0,
             deputyUserVerified: false,
-            fromTimestamp: new Date().toISOString(),
+            fromDate: getCurrentApplicationDate(),
             id: 0,
             originalUserId: "",
             originalUserDeletedInIdp: false,
@@ -44,7 +46,7 @@ export class VUserDeputyWithDetailsApiService extends BaseCrudApiService<
             originalUserLastName: "",
             originalUserSystemRoleId: 0,
             originalUserVerified: false,
-            untilTimestamp: null,
+            untilDate: null,
             active: false,
         };
     }

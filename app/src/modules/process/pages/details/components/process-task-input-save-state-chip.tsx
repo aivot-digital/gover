@@ -2,8 +2,7 @@ import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import {Box, Chip as MuiChip, CircularProgress, Tooltip} from '@mui/material';
 import CloudAlert from '@aivot/mui-material-symbols-400-n25-outlined/CloudAlert';
 import CloudDone from '@aivot/mui-material-symbols-400-n25-outlined/CloudDone';
-import {formatDistanceToNowStrict} from 'date-fns';
-import {de} from 'date-fns/locale';
+import {formatRelativeEpochMillisInApplicationTimeZone} from '../../../../../utils/temporal-utils';
 
 export enum ProcessTaskInputSaveState {
     Saved,
@@ -18,18 +17,16 @@ interface ProcessTaskInputSaveStateChipProps {
     lastSavedAt?: Date | null;
 }
 
-function getRelativeLastSavedAt(lastSavedAt: Date): string {
-    const diffMs = Date.now() - lastSavedAt.getTime();
+function getRelativeLastSavedAt(lastSavedAt: Date): string | null {
+    const now = Date.now();
+    const diffMs = now - lastSavedAt.getTime();
     const underOneMinute = diffMs >= 0 && diffMs < 60_000;
 
     if (underOneMinute) {
         return 'vor weniger als einer Minute';
     }
 
-    return formatDistanceToNowStrict(lastSavedAt, {
-        addSuffix: true,
-        locale: de,
-    });
+    return formatRelativeEpochMillisInApplicationTimeZone(lastSavedAt.getTime(), now);
 }
 
 export function ProcessTaskInputSaveStateChip(props: ProcessTaskInputSaveStateChipProps): ReactNode {

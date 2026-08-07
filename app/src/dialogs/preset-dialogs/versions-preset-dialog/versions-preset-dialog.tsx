@@ -5,7 +5,6 @@ import {Box, Dialog, DialogContent, List, ListItem, Skeleton, Typography} from '
 import React, {useEffect, useMemo, useState} from 'react';
 import {type PresetVersion} from '../../../models/entities/preset-version';
 import {Link} from 'react-router-dom';
-import {format} from 'date-fns';
 import {useApi} from '../../../hooks/use-api';
 import {PresetVersionApiService} from '../../../modules/presets/preset-version-api-service';
 import {FormStatus, FormVersionStatusIcons} from '../../../modules/forms/enums/form-status';
@@ -18,6 +17,7 @@ import {withDelay} from '../../../utils/with-delay';
 import {isApiError} from '../../../models/api-error';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
 
 export function VersionsPresetDialog(props: DialogProps & VersionsPresetDialogProps) {
     const api = useApi();
@@ -134,8 +134,8 @@ function VersionListItem(props: VersionListItemProps) {
 
     const subtext = useMemo(() => {
         const _format = (val: string | null | undefined) => {
-            const fallback = updated != null ? new Date(updated) : new Date();
-            return format(val ?? fallback, 'dd.MM.yyyy – HH:mm') + ' Uhr';
+            const formatted = formatInstantInApplicationTimeZone(val ?? updated, 'dd.MM.yyyy – HH:mm');
+            return formatted != null ? `${formatted} Uhr` : '—';
         };
 
         switch (status) {

@@ -3,6 +3,7 @@ import {SxProps, TextFieldProps, Theme} from '@mui/material';
 import {ReactNode} from 'react';
 import {EndAction} from '../text-field/text-field-component-props';
 import {DateFieldProps} from '@mui/x-date-pickers';
+import {DateValueIso} from '../../utils/temporal-types';
 
 export interface DateFieldComponentProps {
     label: string;
@@ -14,11 +15,11 @@ export interface DateFieldComponentProps {
     disabled?: boolean;
     busy?: boolean;
     value?: string | null;
-    minDate?: Date;
-    maxDate?: Date;
+    minDate?: string;
+    maxDate?: string;
     mode: DateFieldComponentModelMode;
-    onChange: (val: string | null) => void;
-    onBlur?: (val: string | null) => void;
+    onChange: (val: DateValueIso | null) => void;
+    onBlur?: (val: DateValueIso | null) => void;
     sx?: SxProps<Theme>;
     bufferInputUntilBlur?: boolean;
     debounce?: number;

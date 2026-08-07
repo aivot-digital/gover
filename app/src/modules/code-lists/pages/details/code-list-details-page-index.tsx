@@ -6,8 +6,6 @@ import {useNavigate} from 'react-router-dom';
 import * as yup from 'yup';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
-import {format} from 'date-fns';
-import {de} from 'date-fns/locale';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType,
@@ -35,6 +33,7 @@ import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 
 const SourceTypeOptions = Object.values(CodeListSourceType).map((value) => ({
     value,
@@ -178,24 +177,13 @@ async function fetchMetadataColumns(
     }
 }
 
-function parseIsoLocal(value: string): Date | null {
-    // JS Date supports milliseconds only; trim potential microseconds (e.g. .718476 -> .718).
-    const normalized = value.replace(/(\.\d{3})\d+/, '$1');
-    const date = new Date(normalized);
-    return Number.isNaN(date.getTime()) ? null : date;
-}
-
 function formatSyncTimestamp(value: string | null | undefined): string {
     if (value == null || value.length === 0) {
         return 'Noch nicht synchronisiert';
     }
 
-    const date = parseIsoLocal(value);
-    if (date == null) {
-        return 'Zeitpunkt konnte nicht gelesen werden';
-    }
-
-    return `${format(date, 'dd.MM.yyyy – HH:mm:ss', {locale: de})} Uhr`;
+    const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy – HH:mm:ss');
+    return formatted != null ? `${formatted} Uhr` : 'Zeitpunkt konnte nicht gelesen werden';
 }
 
 export function CodeListDetailsPageIndex() {

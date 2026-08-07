@@ -135,8 +135,8 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
         data.put("$id", item.getId());
         data.put("$value", item.getValue());
         data.put("$label", item.getLabel());
-        data.put("$created", item.getCreated().toString());
-        data.put("$updated", item.getUpdated().toString());
+        data.put("$created", item.getCreated());
+        data.put("$updated", item.getUpdated());
 
         return data;
     }

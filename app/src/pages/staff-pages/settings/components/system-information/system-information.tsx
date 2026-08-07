@@ -12,7 +12,6 @@ import {
     TableRow,
     Typography,
 } from '@mui/material';
-import {format} from 'date-fns';
 import {type HealthData, type HealthDataComponents, type Status} from '../../../../../models/dtos/health-data';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import CheckCircleOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
@@ -36,6 +35,11 @@ import {ModuleFlag, ModuleFlagLabels} from '../../../../../utils/module-flags';
 import {ProcessNodeType} from '../../../../../modules/process/services/process-node-provider-api-service';
 import {humanizeFileSize, humanizeNumber} from '../../../../../utils/humanization-utils';
 import {ProviderTypeStyles} from '../../../../../modules/process/data/provider-type-styles';
+import {
+    formatInstantInApplicationTimeZone,
+    getCurrentApplicationDate,
+} from '../../../../../utils/temporal-utils';
+import {formatLocalDate} from '../../../../../utils/date-utils';
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
     return value != null && typeof value === 'object';
@@ -316,13 +320,13 @@ export function SystemInformation(): React.ReactElement {
 
     const hasBuildVersion = AppInfo.version !== '@buildVersion';
     const hasBuildNumber = AppInfo.number !== '@buildNumber';
-    const parsedBuildDate = new Date(AppInfo.date);
-    const hasBuildDate = AppInfo.date !== '@buildTimestamp' && !Number.isNaN(parsedBuildDate.getTime());
+    const formattedBuildDate = formatInstantInApplicationTimeZone(AppInfo.date, 'dd.MM.yyyy');
+    const hasBuildDate = AppInfo.date !== '@buildTimestamp' && formattedBuildDate != null;
 
     const versionLabel = hasBuildVersion ?
         (hasBuildNumber ? `${AppInfo.version} (Build ${AppInfo.number})` : AppInfo.version) :
         '5.x (DEV)';
-    const compileDate = hasBuildDate ? parsedBuildDate : new Date();
+    const compileDate = formattedBuildDate ?? formatLocalDate(getCurrentApplicationDate());
     const knownFileExtensions = useMemo(() => Array.from(
         new Set(AppConfig
             .knownFileExtensions
@@ -342,7 +346,7 @@ export function SystemInformation(): React.ReactElement {
             {
                 label: 'Compile-Datum',
                 icon: <EventIcon/>,
-                children: format(compileDate, 'dd.MM.yyyy'),
+                children: compileDate,
             },
         ];
     }, [

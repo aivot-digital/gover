@@ -3,35 +3,16 @@ import {Box, Button, Chip, Typography} from '@mui/material';
 import {AuditLogEntity} from '../../models/audit-log-entity';
 import {getActorTypeColor, getActorTypeIcon, getActorTypeLabel} from '../../data/actor-type';
 import {getTriggerTypeColor, getTriggerTypeIcon, getTriggerTypeLabel} from '../../data/trigger-type';
+import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 
 interface AuditLogDetailsDialogContentProps {
     row: AuditLogEntity;
     actorLabelsById: Record<string, string | undefined>;
 }
 
-function parseDate(value: string): Date | undefined {
-    if (value.trim().length === 0) {
-        return undefined;
-    }
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return undefined;
-    }
-
-    return date;
-}
-
 function formatDateTime(value: string): string {
-    const date = parseDate(value);
-    if (date == null) {
-        return '-';
-    }
-
-    return `${new Intl.DateTimeFormat('de-DE', {
-        dateStyle: 'medium',
-        timeStyle: 'medium',
-    }).format(date)} Uhr`;
+    const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy, HH:mm:ss');
+    return formatted != null ? `${formatted} Uhr` : '-';
 }
 
 function prettyJson(value: Record<string, unknown> | null | undefined): string {

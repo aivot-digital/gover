@@ -13,12 +13,14 @@ import {
 } from '@mui/material';
 import ReportOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Report';
 import {alpha} from '@mui/material/styles';
-import {format} from 'date-fns/format';
 import {AppInfo} from '../../app-info';
 import {StorageKey} from '../../data/storage-key';
 import {StorageScope, StorageService} from '../../services/storage-service';
-import {addDays} from 'date-fns/addDays'
-import {isBefore} from 'date-fns/isBefore'
+import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
+import {
+    getPreReleaseNoticeDismissalExpiry,
+    isPreReleaseNoticeDismissalActive,
+} from './pre-release-version-notice-time';
 
 const preReleaseVersionRiskHints = [
     'Funktionen können unvollständig sein, sich ändern oder noch nicht wie erwartet funktionieren.',
@@ -26,12 +28,9 @@ const preReleaseVersionRiskHints = [
 ];
 
 function storeDismissFlag() {
-    const tomorrow = addDays(new Date(), 1);
-    tomorrow.setHours(1, 0, 0, 0);
-
     StorageService.storeString(
         StorageKey.PreReleaseVersionNoticeDismissed,
-        tomorrow.toISOString(),
+        getPreReleaseNoticeDismissalExpiry(),
         StorageScope.Local,
     );
 }
@@ -39,16 +38,7 @@ function storeDismissFlag() {
 function loadDismissFlag(): boolean {
     const dismissedUntil = StorageService.loadString(StorageKey.PreReleaseVersionNoticeDismissed);
 
-    if (dismissedUntil == null) {
-        return false;
-    }
-
-    const dismissedUntilDate = new Date(dismissedUntil);
-    if (Number.isNaN(dismissedUntilDate.getTime())) {
-        return false;
-    }
-
-    return isBefore(new Date(), dismissedUntilDate);
+    return isPreReleaseNoticeDismissalActive(dismissedUntil);
 }
 
 export function PreReleaseVersionNoticeDialog(): React.ReactElement {
@@ -63,16 +53,16 @@ export function PreReleaseVersionNoticeDialog(): React.ReactElement {
     ] = useState(false);
 
     const buildInfo = useMemo(() => {
-        const parsedBuildDate = new Date(AppInfo.date);
         const hasBuildVersion = AppInfo.version !== '@buildVersion';
         const hasBuildNumber = AppInfo.number !== '@buildNumber';
-        const hasBuildDate = AppInfo.date !== '@buildTimestamp' && !Number.isNaN(parsedBuildDate.getTime());
+        const formattedBuildDate = formatInstantInApplicationTimeZone(AppInfo.date, 'dd.MM.yyyy');
+        const hasBuildDate = AppInfo.date !== '@buildTimestamp' && formattedBuildDate != null;
 
         return {
             versionLabel: hasBuildVersion ? AppInfo.version : '5.x (DEV)',
             buildLabel: hasBuildNumber ? AppInfo.number : 'Entwicklungsbuild',
             buildDateLabel: hasBuildDate ?
-                `${format(parsedBuildDate, 'dd.MM.yyyy')}` :
+                formattedBuildDate :
                 'Nicht im Build hinterlegt',
         };
     }, []);

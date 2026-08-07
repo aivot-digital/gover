@@ -12,7 +12,10 @@ import {useMemo} from 'react';
 import {SelectFieldComponentOption} from '../../../components/select-field/select-field-component-option';
 import {DateFieldComponent} from '../../../components/date-field/date-field-component';
 import {DateFieldComponentModelMode} from '../../../models/elements/form/input/date-field-element';
+import {TimeFieldComponentModelMode} from '../../../models/elements/form/input/time-field-element';
 import Typography from '@mui/material/Typography';
+import {DateTimeFieldComponent} from '../../../components/date-time-field/date-time-field-component';
+import {TimeFieldComponent} from '../../../components/time-field/time-field-component';
 
 interface NoCodeOperandEditorStaticValueProps {
     label: string;
@@ -33,6 +36,10 @@ export const BOOL_DEFAULT_OPTIONS: NoCodeParameterOption[] = [
 const staticValueOptionFilter = createFilterOptions<SelectFieldComponentOption>({
     stringify: (option) => `${option.label} ${option.value}`,
 });
+
+// No-code types do not carry an originating field's precision. Expose seconds
+// so a static Time or DateTime operand can represent the complete public value.
+const noCodeTemporalMode = TimeFieldComponentModelMode.Second;
 
 export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     const {
@@ -100,6 +107,50 @@ export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticV
         return (
             <>
                 <DateStaticValue {...props} />
+
+                {
+                    operandError != null &&
+                    operandError.error != null &&
+                    <Typography
+                        color="error"
+                        variant="caption"
+                        sx={{
+                            mt: 1,
+                        }}
+                    >
+                        {operandError.error}
+                    </Typography>
+                }
+            </>
+        );
+    }
+
+    if (desiredType === NoCodeDataType.DateTime) {
+        return (
+            <>
+                <DateTimeStaticValue {...props}/>
+
+                {
+                    operandError != null &&
+                    operandError.error != null &&
+                    <Typography
+                        color="error"
+                        variant="caption"
+                        sx={{
+                            mt: 1,
+                        }}
+                    >
+                        {operandError.error}
+                    </Typography>
+                }
+            </>
+        );
+    }
+
+    if (desiredType === NoCodeDataType.Time) {
+        return (
+            <>
+                <TimeStaticValue {...props}/>
 
                 {
                     operandError != null &&
@@ -320,6 +371,38 @@ function DateStaticValue(props: NoCodeOperandEditorStaticValueProps) {
                 margin: 'none',
             }}
             mode={DateFieldComponentModelMode.Day}
+        />
+    );
+}
+
+function DateTimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
+    return (
+        <DateTimeFieldComponent
+            label={getStaticValueLabel(props.label)}
+            hint={props.hint}
+            value={props.value.value ?? undefined}
+            onChange={(value) => {
+                updateStaticValue(props, value);
+            }}
+            mode={noCodeTemporalMode}
+            startIcon={<Article/>}
+            endAction={getStaticValueActions(props)}
+        />
+    );
+}
+
+function TimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
+    return (
+        <TimeFieldComponent
+            label={getStaticValueLabel(props.label)}
+            hint={props.hint}
+            value={props.value.value ?? undefined}
+            onChange={(value) => {
+                updateStaticValue(props, value);
+            }}
+            mode={noCodeTemporalMode}
+            startIcon={<Article/>}
+            endAction={getStaticValueActions(props)}
         />
     );
 }

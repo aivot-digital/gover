@@ -10,23 +10,20 @@ import {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
 
+const noCodeReturnTypeMap: Record<NoCodeInputFieldReturnType, NoCodeDataType> = {
+    [NoCodeInputFieldReturnType.RUNTIME]: NoCodeDataType.Runtime,
+    [NoCodeInputFieldReturnType.BOOLEAN]: NoCodeDataType.Boolean,
+    [NoCodeInputFieldReturnType.NUMBER]: NoCodeDataType.Number,
+    [NoCodeInputFieldReturnType.DATE]: NoCodeDataType.Date,
+    [NoCodeInputFieldReturnType.STRING]: NoCodeDataType.String,
+    [NoCodeInputFieldReturnType.DATETIME]: NoCodeDataType.DateTime,
+    [NoCodeInputFieldReturnType.TIME]: NoCodeDataType.Time,
+};
+
 function mapReturnTypeToNoCodeDataType(returnType: NoCodeInputFieldReturnType | null | undefined): NoCodeDataType {
-    switch (returnType) {
-        case NoCodeInputFieldReturnType.RUNTIME:
-            return NoCodeDataType.Runtime;
-        case NoCodeInputFieldReturnType.BOOLEAN:
-            return NoCodeDataType.Boolean;
-        case NoCodeInputFieldReturnType.NUMBER:
-            return NoCodeDataType.Number;
-        case NoCodeInputFieldReturnType.DATE:
-            return NoCodeDataType.Date;
-        case NoCodeInputFieldReturnType.STRING:
-            return NoCodeDataType.String;
-        case NoCodeInputFieldReturnType.DATETIME:
-            return NoCodeDataType.Date;
-        default:
-            return NoCodeDataType.Runtime;
-    }
+    return returnType == null
+        ? NoCodeDataType.Runtime
+        : noCodeReturnTypeMap[returnType] ?? NoCodeDataType.Runtime;
 }
 
 export function NoCodeInputFieldView(props: BaseViewProps<NoCodeInputFieldElement, NoCodeInputFieldElementItem>) {

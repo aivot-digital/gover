@@ -19,6 +19,10 @@ import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {type ProcessInstanceEntity} from '../entities/process-instance-entity';
 import {ProcessInstanceStatusLabels} from '../enums/process-instance-status';
 import {ProcessInstanceApiService} from '../services/process-instance-api-service';
+import {
+    formatInstantInApplicationTimeZone,
+    instantToEpochMillis,
+} from '../../../utils/temporal-utils';
 
 interface ProcessTestClaimProcessInstancesDialogProps {
     open: boolean;
@@ -33,19 +37,8 @@ function formatStartedAt(value: string | null | undefined): string {
         return '—';
     }
 
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return '—';
-    }
-
-    return new Intl.DateTimeFormat('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-    }).format(date).replace(',', ' –') + ' Uhr';
+    const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy – HH:mm');
+    return formatted != null ? `${formatted} Uhr` : '—';
 }
 
 function getInstanceStateLabel(instance: ProcessInstanceEntity): string {
@@ -90,7 +83,7 @@ export function ProcessTestClaimProcessInstancesDialog(props: ProcessTestClaimPr
             );
 
             const sortedItems = [...response.content].sort((leftItem, rightItem) => (
-                new Date(rightItem.started).getTime() - new Date(leftItem.started).getTime()
+                (instantToEpochMillis(rightItem.started) ?? 0) - (instantToEpochMillis(leftItem.started) ?? 0)
             ));
 
             if (loadRequestRef.current !== requestId) {

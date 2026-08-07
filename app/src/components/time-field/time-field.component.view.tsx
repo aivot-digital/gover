@@ -27,12 +27,6 @@ export function TimeFieldComponentView(props: BaseViewProps<TimeFieldElement, st
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
-    const dateValue = useMemo(() => {
-        if (value == null) return value;
-        const date = new Date(value);
-        return isNaN(date.getTime()) ? null : value;
-    }, [value]);
-
     const handleChange = useCallback((changedValue: string | null) => {
         setValue(changedValue);
     }, [setValue]);
@@ -40,7 +34,7 @@ export function TimeFieldComponentView(props: BaseViewProps<TimeFieldElement, st
     return (
         <TimeFieldComponent
             label={element.label ?? ''}
-            value={dateValue}
+            value={value}
             onChange={handleChange}
             autocomplete="off"
             hint={element.hint ?? undefined}

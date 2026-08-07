@@ -5,10 +5,13 @@ import SyncProblem from '@aivot/mui-material-symbols-400-n25-outlined/SyncProble
 import SyncArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/SyncArrowDown';
 import Autoplay from '@aivot/mui-material-symbols-400-n25-outlined/Autoplay';
 import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
-import {format, formatDistanceToNowStrict} from 'date-fns';
-import {de} from 'date-fns/locale';
 import {SvgIconComponent} from '../../../types/svg-icon-component';
 import {CodeListSourceType, CodeListSourceTypeLabels, isCodeListSyncable} from '../enums/code-list-source-type';
+import {
+    formatInstantInApplicationTimeZone,
+    formatRelativeEpochMillisInApplicationTimeZone,
+    instantToEpochMillis,
+} from '../../../utils/temporal-utils';
 
 interface CodeListStatusChipProps {
     status: CodeListStatus;
@@ -24,13 +27,6 @@ const iconMap: Record<CodeListStatus, SvgIconComponent> = {
     [CodeListStatus.SyncFailed]: SyncProblem,
 };
 
-function parseIsoLocal(value: string): Date | null {
-    // JS Date supports milliseconds only; trim potential microseconds (e.g. .718476 -> .718).
-    const normalized = value.replace(/(\.\d{3})\d+/, '$1');
-    const date = new Date(normalized);
-    return Number.isNaN(date.getTime()) ? null : date;
-}
-
 export function CodeListStatusChip(props: CodeListStatusChipProps): ReactNode {
     const {
         status,
@@ -42,20 +38,20 @@ export function CodeListStatusChip(props: CodeListStatusChipProps): ReactNode {
     const Icon = useMemo(() => iconMap[status], [status]);
     const isSyncable = sourceType == null || isCodeListSyncable(sourceType);
 
-    const lastSyncDate = useMemo(() => {
+    const lastSyncEpochMillis = useMemo(() => {
         if (!lastSync) return null;
-        return parseIsoLocal(lastSync);
+        return instantToEpochMillis(lastSync);
     }, [lastSync]);
 
     const [minuteTick, setMinuteTick] = useState(0);
 
     useEffect(() => {
         if (status !== CodeListStatus.Synced) return;
-        if (!lastSyncDate) return;
+        if (lastSyncEpochMillis == null) return;
 
         const id = window.setInterval(() => setMinuteTick((current) => current + 1), 60_000);
         return () => window.clearInterval(id);
-    }, [status, lastSyncDate]);
+    }, [status, lastSyncEpochMillis]);
 
     const label = useMemo(() => {
         if (!isSyncable && sourceType != null) {
@@ -65,27 +61,24 @@ export function CodeListStatusChip(props: CodeListStatusChipProps): ReactNode {
         const base = CodeListStatusLabels[status];
 
         if (status !== CodeListStatus.Synced) return base;
-        if (!lastSyncDate) return base;
+        if (lastSyncEpochMillis == null) return base;
 
-        const diffMs = Date.now() - lastSyncDate.getTime();
+        const now = Date.now();
+        const diffMs = now - lastSyncEpochMillis;
         const underOneMinute = diffMs >= 0 && diffMs < 60_000;
 
         if (underOneMinute) {
             return `${base} vor weniger als einer Minute`;
         }
 
-        const rel = formatDistanceToNowStrict(lastSyncDate, {
-            addSuffix: true,
-            locale: de,
-        });
+        const relative = formatRelativeEpochMillisInApplicationTimeZone(lastSyncEpochMillis, now);
 
-        return `${base} ${rel}`;
-    }, [isSyncable, lastSyncDate, minuteTick, sourceType, status]);
+        return relative == null ? base : `${base} ${relative}`;
+    }, [isSyncable, lastSyncEpochMillis, minuteTick, sourceType, status]);
 
     const formattedLastSync = useMemo(() => {
-        if (!lastSyncDate) return undefined;
-        return format(lastSyncDate, 'dd.MM.yyyy – HH:mm:ss', {locale: de});
-    }, [lastSyncDate]);
+        return formatInstantInApplicationTimeZone(lastSync, 'dd.MM.yyyy – HH:mm:ss') ?? undefined;
+    }, [lastSync]);
 
     const title = useMemo(() => {
         if (!isSyncable) {

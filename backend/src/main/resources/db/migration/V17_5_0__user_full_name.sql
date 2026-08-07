@@ -10,10 +10,10 @@ alter table users
 -- create a view with details for users and their deputies
 create view v_user_deputy_with_details as
 select udep.id                                                                                        as id,
-       udep.from_timestamp                                                                            as from_timestamp,
-       udep.until_timestamp                                                                           as until_timestamp,
-       udep.until_timestamp is null or
-       (udep.from_timestamp < localtimestamp and udep.until_timestamp > localtimestamp)                as active,
+       udep.from_date                                                                                 as from_date,
+       udep.until_date                                                                                as until_date,
+       udep.from_date <= current_date and
+       (udep.until_date is null or current_date <= udep.until_date)                                   as active,
 
        ou.id                                                                                          as original_user_id,
        ou.email                                                                                       as original_user_email,
