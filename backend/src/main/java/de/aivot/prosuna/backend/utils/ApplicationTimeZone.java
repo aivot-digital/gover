@@ -41,7 +41,7 @@ public final class ApplicationTimeZone {
         }
 
         // Keep the non-Spring fallback aligned with application.yml. The host/JVM
-        // timezone is intentionally ignored because Gover's business timezone is
+        // timezone is intentionally ignored because Prosuna's business timezone is
         // configured explicitly and must not depend on the runtime environment.
         return ZoneId.of(DEFAULT_TIMEZONE);
     }

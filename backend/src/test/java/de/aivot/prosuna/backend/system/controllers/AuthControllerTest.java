@@ -56,12 +56,12 @@ class AuthControllerTest {
         MockitoAnnotations.openMocks(this);
         when(redis.opsForValue()).thenReturn(valueOperations);
         controller = new AuthController(httpService, csrfTokenRepository, redis);
-        ReflectionTestUtils.setField(controller, "hostname", "https://gover.example.com");
+        ReflectionTestUtils.setField(controller, "hostname", "https://prosuna.example.com");
         ReflectionTestUtils.setField(controller, "oidcHostname", "https://auth.example.com");
         ReflectionTestUtils.setField(controller, "oidcInternalHostname", "https://auth.example.com");
-        ReflectionTestUtils.setField(controller, "oidcRealm", "gover");
-        ReflectionTestUtils.setField(controller, "oidcClientId", "gover-client");
-        ReflectionTestUtils.setField(controller, "oidcClientSecret", "gover-secret");
+        ReflectionTestUtils.setField(controller, "oidcRealm", "prosuna");
+        ReflectionTestUtils.setField(controller, "oidcClientId", "prosuna-client");
+        ReflectionTestUtils.setField(controller, "oidcClientSecret", "prosuna-secret");
     }
 
     @Test
@@ -83,8 +83,8 @@ class AuthControllerTest {
         var state = params.getFirst("state");
         assertNotNull(state);
         assertFalse(state.isBlank());
-        assertEquals("gover-client", params.getFirst("client_id"));
-        assertEquals("https://gover.example.com/api/auth/oidc-callback", params.getFirst("redirect_uri"));
+        assertEquals("prosuna-client", params.getFirst("client_id"));
+        assertEquals("https://prosuna.example.com/api/auth/oidc-callback", params.getFirst("redirect_uri"));
         assertEquals("code", params.getFirst("response_type"));
         assertEquals("openid profile email", URLDecoder.decode(params.getFirst("scope"), StandardCharsets.UTF_8));
         assertEquals("S256", params.getFirst("code_challenge_method"));
@@ -101,7 +101,7 @@ class AuthControllerTest {
         verify(valueOperations).set(
                 eq("auth:pkce:" + state),
                 argThat(value ->
-                        value.contains("\"redirectUri\":\"https://gover.example.com/api/auth/oidc-callback\"") &&
+                        value.contains("\"redirectUri\":\"https://prosuna.example.com/api/auth/oidc-callback\"") &&
                                 value.contains("\"appUri\":\"/staff/dashboard\"") &&
                                 value.contains("\"codeVerifier\":")
                 ),
@@ -110,17 +110,17 @@ class AuthControllerTest {
     }
 
     @Test
-    void loginShouldAllowGoverHostnameAppRedirectOrigin() throws Exception {
+    void loginShouldAllowProsunaHostnameAppRedirectOrigin() throws Exception {
         var request = new MockHttpServletRequest();
         request.setServletPath("/api/auth/login");
         var response = new MockHttpServletResponse();
 
-        controller.login(request, response, "https://gover.example.com/staff/dashboard");
+        controller.login(request, response, "https://prosuna.example.com/staff/dashboard");
 
         assertNotNull(response.getRedirectedUrl());
         verify(valueOperations).set(
                 anyString(),
-                argThat(value -> value.contains("\"appUri\":\"https://gover.example.com/staff/dashboard\"")),
+                argThat(value -> value.contains("\"appUri\":\"https://prosuna.example.com/staff/dashboard\"")),
                 eq(Duration.ofMinutes(10))
         );
     }
@@ -141,7 +141,7 @@ class AuthControllerTest {
     @Test
     void callbackShouldValidateStateAndUseCodeVerifierWithClientSecret() throws Exception {
         when(valueOperations.getAndDelete("auth:pkce:state")).thenReturn("""
-                {"codeVerifier":"verifier","redirectUri":"https://gover.example.com/api/auth/oidc-callback","appUri":"/staff/dashboard"}
+                {"codeVerifier":"verifier","redirectUri":"https://prosuna.example.com/api/auth/oidc-callback","appUri":"/staff/dashboard"}
                 """);
 
         var tokenResponse = mock(HttpResponse.class);
@@ -150,13 +150,13 @@ class AuthControllerTest {
                 {"access_token":"access-token","refresh_token":"refresh-token","expires_in":60,"refresh_expires_in":120}
                 """);
         when(httpService.postFormUrlEncoded(
-                eq(URI.create("https://auth.example.com/realms/gover/protocol/openid-connect/token")),
+                eq(URI.create("https://auth.example.com/realms/prosuna/protocol/openid-connect/token")),
                 argThat(payload ->
                         "authorization_code".equals(payload.get("grant_type")) &&
-                                "gover-client".equals(payload.get("client_id")) &&
-                                "gover-secret".equals(payload.get("client_secret")) &&
+                                "prosuna-client".equals(payload.get("client_id")) &&
+                                "prosuna-secret".equals(payload.get("client_secret")) &&
                                 "authorization-code".equals(payload.get("code")) &&
-                                "https://gover.example.com/api/auth/oidc-callback".equals(payload.get("redirect_uri")) &&
+                                "https://prosuna.example.com/api/auth/oidc-callback".equals(payload.get("redirect_uri")) &&
                                 "verifier".equals(payload.get("code_verifier"))
                 )
         )).thenReturn(tokenResponse);
@@ -174,7 +174,7 @@ class AuthControllerTest {
     @Test
     void callbackShouldRejectDisallowedStoredAppRedirectWithoutTokenRequest() {
         when(valueOperations.getAndDelete("auth:pkce:state")).thenReturn("""
-                {"codeVerifier":"verifier","redirectUri":"https://gover.example.com/api/auth/oidc-callback","appUri":"https://evil.example/dashboard"}
+                {"codeVerifier":"verifier","redirectUri":"https://prosuna.example.com/api/auth/oidc-callback","appUri":"https://evil.example/dashboard"}
                 """);
 
         var response = new MockHttpServletResponse();
@@ -216,11 +216,11 @@ class AuthControllerTest {
                 {"access_token":"access-token","refresh_token":"refresh-token","expires_in":60,"refresh_expires_in":120}
                 """);
         when(httpService.postFormUrlEncoded(
-                eq(URI.create("https://auth.example.com/realms/gover/protocol/openid-connect/token")),
+                eq(URI.create("https://auth.example.com/realms/prosuna/protocol/openid-connect/token")),
                 argThat(payload ->
                         "refresh_token".equals(payload.get("grant_type")) &&
-                                "gover-client".equals(payload.get("client_id")) &&
-                                "gover-secret".equals(payload.get("client_secret")) &&
+                                "prosuna-client".equals(payload.get("client_id")) &&
+                                "prosuna-secret".equals(payload.get("client_secret")) &&
                                 "refresh-token".equals(payload.get("refresh_token"))
                 )
         )).thenReturn(tokenResponse);
@@ -246,11 +246,11 @@ class AuthControllerTest {
         var logoutResponse = mock(HttpResponse.class);
         when(logoutResponse.statusCode()).thenReturn(204);
         when(httpService.postFormUrlEncoded(
-                eq(URI.create("https://auth.example.com/realms/gover/protocol/openid-connect/logout")),
+                eq(URI.create("https://auth.example.com/realms/prosuna/protocol/openid-connect/logout")),
                 argThat(payload ->
-                        "gover-client".equals(payload.get("client_id")) &&
+                        "prosuna-client".equals(payload.get("client_id")) &&
                                 "refresh-token".equals(payload.get("refresh_token")) &&
-                                "gover-secret".equals(payload.get("client_secret"))
+                                "prosuna-secret".equals(payload.get("client_secret"))
                 )
         )).thenReturn(logoutResponse);
 
@@ -264,11 +264,11 @@ class AuthControllerTest {
         assertClearsCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/");
         verify(csrfTokenRepository).saveToken(null, request, response);
         verify(httpService).postFormUrlEncoded(
-                eq(URI.create("https://auth.example.com/realms/gover/protocol/openid-connect/logout")),
+                eq(URI.create("https://auth.example.com/realms/prosuna/protocol/openid-connect/logout")),
                 argThat(payload ->
-                        "gover-client".equals(payload.get("client_id")) &&
+                        "prosuna-client".equals(payload.get("client_id")) &&
                                 "refresh-token".equals(payload.get("refresh_token")) &&
-                                "gover-secret".equals(payload.get("client_secret"))
+                                "prosuna-secret".equals(payload.get("client_secret"))
                 )
         );
     }
@@ -292,7 +292,7 @@ class AuthControllerTest {
         var logoutResponse = mock(HttpResponse.class);
         when(logoutResponse.statusCode()).thenReturn(400);
         when(httpService.postFormUrlEncoded(
-                eq(URI.create("https://auth.example.com/realms/gover/protocol/openid-connect/logout")),
+                eq(URI.create("https://auth.example.com/realms/prosuna/protocol/openid-connect/logout")),
                 argThat(payload -> "refresh-token".equals(payload.get("refresh_token")))
         )).thenReturn(logoutResponse);
 

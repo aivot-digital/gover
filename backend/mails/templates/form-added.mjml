@@ -15,7 +15,7 @@
                     <p>
                         Hallo,
                         <br/>
-                        es wurde ein neues Formular in Gover erstellt.
+                        es wurde ein neues Formular in Prosuna erstellt.
                         <br/>
                         <br/>
                         Formular: <b th:text="${form.internalTitle}">Beispielformular</b>

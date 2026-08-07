@@ -1,6 +1,6 @@
 Hallo,
 
-ein neuer Antrag ist in Gover eingegangen.
+ein neuer Antrag ist in Prosuna eingegangen.
 Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
 Antragseingang: [(${#numberformat.formatInstant(submission.created, 'dd.MM.yyyy HH:mm')})] Uhr
 

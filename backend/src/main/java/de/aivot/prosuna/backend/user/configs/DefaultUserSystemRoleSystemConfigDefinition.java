@@ -60,7 +60,7 @@ public class DefaultUserSystemRoleSystemConfigDefinition implements SystemConfig
     @Nonnull
     @Override
     public String getDescription() {
-        return "Legt fest, welche Systemrolle Mitarbeiter:innen automatisch erhalten, wenn sie neu in Gover synchronisiert oder importiert werden.";
+        return "Legt fest, welche Systemrolle Mitarbeiter:innen automatisch erhalten, wenn sie neu in Prosuna synchronisiert oder importiert werden.";
     }
 
     @Override

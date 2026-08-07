@@ -471,9 +471,9 @@ public class IdentityService {
             logger
                     .atError()
                     .setCause(e)
-                    .setMessage("Der konfigurierte Gover-Hostname ist ungültig.")
+                    .setMessage("Der konfigurierte Prosuna-Hostname ist ungültig.")
                     .log();
-            throw ResponseException.internalServerError("Der konfigurierte Gover-Hostname ist ungültig.");
+            throw ResponseException.internalServerError("Der konfigurierte Prosuna-Hostname ist ungültig.");
         }
 
         if (!prosunaHostnameUri.getScheme().equalsIgnoreCase(refererURI.getScheme())

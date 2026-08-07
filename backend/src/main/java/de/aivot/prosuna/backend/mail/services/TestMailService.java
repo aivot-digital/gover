@@ -38,7 +38,7 @@ public class TestMailService {
                 to,
                 Optional.empty(),
                 Optional.empty(),
-                "[Gover] [Test] " + title,
+                "[Prosuna] [Test] " + title,
                 MailTemplate.SmtpTest,
                 context,
                 Optional.empty()

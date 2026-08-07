@@ -22,13 +22,13 @@ public class AiPlugin implements Plugin {
 
     @Override
     public @Nonnull String getName() {
-        return "Gover AI-Funktionen";
+        return "Prosuna AI-Funktionen";
     }
 
     @Override
     public @Nonnull String getDescription() {
         return """
-                Dieses Plugin enthält AI-Funktionen von Gover.
+                Dieses Plugin enthält AI-Funktionen von Prosuna.
                 """;
     }
 

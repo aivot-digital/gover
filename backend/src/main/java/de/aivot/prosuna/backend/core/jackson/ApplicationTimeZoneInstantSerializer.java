@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.time.Instant;
 
 /**
- * Serializes absolute instants with the offset that applies in Gover's application timezone.
+ * Serializes absolute instants with the offset that applies in Prosuna's application timezone.
  *
  * <p>The zone is resolved for every value instead of being captured in the constructor.
  * Jackson can instantiate this serializer before Spring has applied {@code ProsunaConfig},

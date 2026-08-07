@@ -5,7 +5,7 @@ export TZ="${PROSUNA_TIMEZONE}"
 
 export PROSUNA_PLUGINS_DIR="${PROSUNA_PLUGINS_DIR:-/app/plugins}"
 
-echo "Starting Gover version ${BUILD_VERSION} build ${BUILD_NUMBER}"
+echo "Starting Prosuna version ${BUILD_VERSION} build ${BUILD_NUMBER}"
 echo "Using runtime timezone ${TZ}"
 
 if [ "$1" = "serve" ]; then

@@ -79,7 +79,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private static final Pattern JSON_CODE_FENCE_PATTERN = Pattern.compile("^```(?:json)?\\s*(.*?)\\s*```$", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 
     private static final String SYSTEM_PROMPT = """
-            You transform Gover process data.
+            You transform Prosuna process data.
             You will receive a rendered task prompt and the full ProcessExecutionData JSON with the roots "$", "$$", and "_".
             Return exactly one valid JSON object that will become the new value of "$".
             Rules:

@@ -5,26 +5,26 @@
 </p>
 
 <h1 align="center">
-  Gover
+  Prosuna
 </h1>
 <h3 align="center">
   The open source platform for fully digital, end-to-end application processes
 </h3>
 
 <p>
-  Gover is purpose-built to help public authorities digitize administrative processes efficiently, transparently, and in full legal compliance. 
+  Prosuna is purpose-built to help public authorities digitize administrative processes efficiently, transparently, and in full legal compliance.
   As an open source low-/no-code platform, it empowers governments to deliver modern digital services at scale — without needing deep technical expertise.
 </p>
 
 [![GitHub release](https://img.shields.io/github/v/release/aivot-digital/gover)](https://github.com/aivot-digital/gover/releases)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/aivot-digital/gover/build-and-push.yml)](https://github.com/aivot-digital/gover/actions)
-[![Docker image on GHCR](https://img.shields.io/badge/image-gover-blue?logo=docker)](https://github.com/aivot-digital/gover/pkgs/container/gover)
+[![Docker image on GHCR](https://img.shields.io/badge/image-prosuna-blue?logo=docker)](https://github.com/aivot-digital/gover/pkgs/container/gover)
 [![Helm Chart](https://img.shields.io/badge/helm-chart-blue)](https://github.com/aivot-digital/gover-chart)
 [![License: Sustainable Use License](https://img.shields.io/badge/license-Sustainable%20Use%20License-blue)](https://github.com/aivot-digital/gover/blob/main/LICENSE)
 
-## What is Gover?
-Gover is a specialized software platform designed to digitize and manage public sector application processes from start to finish. 
-Unlike general-purpose software for forms and automation, Gover is tailored exclusively to the workflows and requirements of public administration.
+## What is Prosuna?
+Prosuna is a specialized software platform designed to digitize and manage public sector application processes from start to finish.
+Unlike general-purpose software for forms and automation, Prosuna is tailored exclusively to the workflows and requirements of public administration.
 
 It enables administrative teams to:
 * Easily create user-centric online applications/forms and complete workflows
@@ -33,15 +33,15 @@ It enables administrative teams to:
 * Ensure traceability through reliable documentation and change tracking
 * Stay fully compliant with all relevant legal requirements in Germany
 
-By combining powerful functionality with an intuitive user experience, Gover allows administrations to implement digital services quickly and at scale — benefiting both staff and citizens.
+By combining powerful functionality with an intuitive user experience, Prosuna allows administrations to implement digital services quickly and at scale — benefiting both staff and citizens.
 
-For more information visit <https://aivot.de/gover>
+For more information visit <https://prosuna.de>
 
-## Who uses Gover?
+## Who uses Prosuna?
 
-Gover is primarily used by public administrations at the local level – cities, municipalities, and counties. It supports authorities that aim to fully digitize their application processes end-to-end, making them more efficient and accessible for both citizens and staff.
+Prosuna is primarily used by public administrations at the local level – cities, municipalities, and counties. It supports authorities that aim to fully digitize their application processes end-to-end, making them more efficient and accessible for both citizens and staff.
 
-Gover is especially valued by administrations that want to reduce reliance on overburdened IT departments by enabling subject-matter experts in individual departments to build and manage digital processes themselves. It’s also chosen by those who care about digital sovereignty and seek to avoid vendor lock-in by using a solution that puts control back in the hands of the public sector.
+Prosuna is especially valued by administrations that want to reduce reliance on overburdened IT departments by enabling subject-matter experts in individual departments to build and manage digital processes themselves. It’s also chosen by those who care about digital sovereignty and seek to avoid vendor lock-in by using a solution that puts control back in the hands of the public sector.
 
 Want to learn more? Feel free to contact us anytime at <https://aivot.de/kontakt>.
 
@@ -60,7 +60,7 @@ The server must be reachable via a given domain name from the internet.
 
 #### Docker-Compose File
 
-Create a new file named `compose.yml` with the content of the example [compose file](./compose.yml) in the root directory of the Gover repository.
+Create a new file named `compose.yml` with the content of the example [compose file](./compose.yml) in the root directory of the Prosuna repository.
 
 After you have created the Docker Compose file, you can start the stack by running the following command:
 
@@ -70,10 +70,10 @@ docker compose up -d
 
 #### Creating your first User
 
-Gover staff users are managed in Keycloak and imported into Gover when they log in for the first time.
-The Keycloak admin account from the Docker Compose configuration is only used to manage Keycloak; it is not automatically a Gover administrator.
+Prosuna staff users are managed in Keycloak and imported into Prosuna when they log in for the first time.
+The Keycloak admin account from the Docker Compose configuration is only used to manage Keycloak; it is not automatically a Prosuna administrator.
 
-Before the first Gover login, decide which staff user should receive Gover's system role with the highest permission level.
+Before the first Prosuna login, decide which staff user should receive Prosuna's system role with the highest permission level.
 Add that user's e-mail address to the `prosuna` service environment in your `compose.yml`:
 
 ```yaml
@@ -91,28 +91,28 @@ Switch to the `staff` realm, create a new user, and set the e-mail address to th
 After saving the user, open the "Credentials" tab and set a password.
 Disable "Temporary" if the user should keep this password after the first login.
 
-When this user logs into Gover for the first time, Gover imports the Keycloak user.
-If no active Gover user holds the configured system role with the highest permission level and the e-mail address matches `PROSUNA_BOOTSTRAP_ADMIN_MAIL`, the user receives that role.
+When this user logs into Prosuna for the first time, Prosuna imports the Keycloak user.
+If no active Prosuna user holds the configured system role with the highest permission level and the e-mail address matches `PROSUNA_BOOTSTRAP_ADMIN_MAIL`, the user receives that role.
 The role defaults to `Superadministrator:in` and can later be changed under the general application settings.
 
-#### Logging into Gover
+#### Logging into Prosuna
 
 Open the staff application at `https://{{ HOSTNAME }}/staff`.
-Gover redirects staff logins to the Keycloak `staff` realm.
+Prosuna redirects staff logins to the Keycloak `staff` realm.
 Sign in with the staff user created above and complete any required Keycloak actions, such as changing a temporary password.
 
-After the Keycloak login succeeds, you are redirected back to the Gover staff application.
-If the user can log in but does not have administrator permissions, verify that the user was created in the `staff` realm, that the user's e-mail address matches `PROSUNA_BOOTSTRAP_ADMIN_MAIL`, and that no other active Gover user already holds the configured system role with the highest permission level.
+After the Keycloak login succeeds, you are redirected back to the Prosuna staff application.
+If the user can log in but does not have administrator permissions, verify that the user was created in the `staff` realm, that the user's e-mail address matches `PROSUNA_BOOTSTRAP_ADMIN_MAIL`, and that no other active Prosuna user already holds the configured system role with the highest permission level.
 
 ## Development Setup
-Refer to the [development setup instructions](./development/README.md) for setting up Gover for development.
+Refer to the [development setup instructions](./development/README.md) for setting up Prosuna for development.
 
 ## Documentation
-If you are looking for code documentation as well as end user documentation visit our [documentation overview](https://aivot.de/docs) and select
+If you are looking for code documentation as well as end user documentation visit our [documentation overview](https://docs.prosuna.de) and select
 the respective project.
 
 ## Contributing
-Anyone can support us. There are many different ways to contribute to Gover. There is certainly one for you as well.
+Anyone can support us. There are many different ways to contribute to Prosuna. There is certainly one for you as well.
 
 | Support opportunity               | Remark                                                                                                                                                                                                                                                                 |
 |-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

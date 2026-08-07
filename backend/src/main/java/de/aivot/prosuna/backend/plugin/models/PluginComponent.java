@@ -64,7 +64,7 @@ public interface PluginComponent {
 
     /**
      * Get the major version number of this plugin component.
-     * This will be used to identify the component when using it in Gover.
+     * This will be used to identify the component when using it in Prosuna.
      * The major version is the first part of the semantic version, before the first dot.
      * For example, if the component version is "2.1.0", the major version would be 2.
      *

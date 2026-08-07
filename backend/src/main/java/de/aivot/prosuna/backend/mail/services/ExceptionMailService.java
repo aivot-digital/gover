@@ -77,7 +77,7 @@ public class ExceptionMailService {
                         mail,
                         Optional.empty(),
                         Optional.empty(),
-                        "[Gover] " + title,
+                        "[Prosuna] " + title,
                         MailTemplate.UnhandledSystemException,
                         context,
                         Optional.empty()

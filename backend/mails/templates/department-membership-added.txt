@@ -1,6 +1,6 @@
 Hallo,
 
-Sie wurden in Gover einer Organisationseinheit zugeordnet.
+Sie wurden in Prosuna einer Organisationseinheit zugeordnet.
 Organisationseinheit: [(${department.name})]
 Zugeordnet durch: [(${admin.getFullName()})]
 

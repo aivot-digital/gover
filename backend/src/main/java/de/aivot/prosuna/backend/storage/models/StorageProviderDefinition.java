@@ -23,15 +23,15 @@ import java.util.Optional;
  * <p>
  * Speicheranbieter definieren ihr eigenes Dateisystem, welches innerhalb des Dateisystems des Speichersystems organisiert ist. Dieses Dateisystem besteht aus Ordnern und
  * Dokumenten, die durch Pfade identifiziert werden, die von einem Stammverzeichnis ausgehen. So ist beispielsweise ein lokaler Speicheranbieter definiert, welcher als
- * Stammverzeichnis den Ordner {@code "C:\\GoverStorage"} hat. Pfade innerhalb dieses Speicheranbieters werden mit {@code "/pfad/zum/dokument.pdf"} angegeben. Der Speicheranbieter
- * organisiert diese dann innerhalb des Ordners {@code "C:\\GoverStorage\pfad\zum\dokument.pdf"} im Dateisystem des Speichersystems.
+ * Stammverzeichnis den Ordner {@code "C:\\ProsunaStorage"} hat. Pfade innerhalb dieses Speicheranbieters werden mit {@code "/pfad/zum/dokument.pdf"} angegeben. Der Speicheranbieter
+ * organisiert diese dann innerhalb des Ordners {@code "C:\\ProsunaStorage\pfad\zum\dokument.pdf"} im Dateisystem des Speichersystems.
  * <p>
  * Jede Implementierung von StorageProviderDefinition muss die Methoden definieren, um die Verbindung zum Speichersystem zu testen, Dokumente und Ordner zu verwalten und die
  * Unterstützung von Metadatenattributen anzugeben. Darüber hinaus müssen sie die Konfigurationsklasse und das Layout für die Konfiguration bereitstellen, um die Integration in das
  * System zu ermöglichen.
  *
  * @param <T> Der Typ der Konfigurationsdaten, die für die Initialisierung und Verwaltung des Speicheranbieters verwendet werden. Diese Konfigurationsdaten werden aus
- *            Gover-UI-Definitionen abgeleitet und enthalten alle notwendigen Informationen, um eine Verbindung zum Speichersystem herzustellen und es zu verwalten.
+ *            Prosuna-UI-Definitionen abgeleitet und enthalten alle notwendigen Informationen, um eine Verbindung zum Speichersystem herzustellen und es zu verwalten.
  */
 public interface StorageProviderDefinition<T> extends PluginComponent {
     /**

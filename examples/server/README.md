@@ -1,6 +1,6 @@
-# Server Gover Setup
+# Server Prosuna Setup
 
-This example starts Gover, Keycloak, PostgreSQL, Redis, RabbitMQ, ClamAV, Gotenberg, and Caddy on one production server.
+This example starts Prosuna, Keycloak, PostgreSQL, Redis, RabbitMQ, ClamAV, Gotenberg, and Caddy on one production server.
 Caddy terminates HTTPS and requests Let's Encrypt certificates automatically.
 
 ## 1. Prepare the Server
@@ -8,7 +8,7 @@ Caddy terminates HTTPS and requests Let's Encrypt certificates automatically.
 Before starting the stack, make sure that:
 
 - Docker Engine with the Docker Compose plugin is installed.
-- The public DNS record for your Gover hostname points to this server.
+- The public DNS record for your Prosuna hostname points to this server.
 - Ports `80` and `443` are reachable from the internet.
 - No other service is already listening on ports `80` or `443`.
 - You have SMTP credentials for outbound mail.
@@ -22,10 +22,10 @@ Replace every example value before starting the stack.
 
 ```dotenv
 # Public URL
-PROSUNA_HOSTNAME=https://gover.example.org
-PROSUNA_HOSTNAME_REGEX=gover\\.example\\.org
+PROSUNA_HOSTNAME=https://prosuna.example.org
+PROSUNA_HOSTNAME_REGEX=prosuna\\.example\\.org
 
-# Gover database and application secrets
+# Prosuna database and application secrets
 PROSUNA_DB_PASSWORD=change-me
 PROSUNA_SECRETS_KEY=change-me-with-at-least-32-characters
 PROSUNA_CAPTCHA_KEY=change-me-with-at-least-32-characters
@@ -36,12 +36,12 @@ PROSUNA_SMTP_HOST=smtp.example.org
 PROSUNA_SMTP_PORT=587
 PROSUNA_SMTP_AUTH=true
 PROSUNA_SMTP_TLS=true
-PROSUNA_SMTP_USERNAME=gover@example.org
+PROSUNA_SMTP_USERNAME=prosuna@example.org
 PROSUNA_SMTP_PASSWORD=change-me
-PROSUNA_FROM_MAIL=gover@example.org
+PROSUNA_FROM_MAIL=prosuna@example.org
 PROSUNA_REPORT_MAIL=admin@example.org
 
-# Initial Gover administrator
+# Initial Prosuna administrator
 PROSUNA_BOOTSTRAP_ADMIN_MAIL=admin@example.org
 
 # Keycloak
@@ -89,22 +89,22 @@ Check the startup logs with:
 docker compose logs -f caddy keycloak keycloak_setup prosuna_api
 ```
 
-## 4. Access Gover
+## 4. Access Prosuna
 
 After startup, use these URLs:
 
-- Gover staff app: `${PROSUNA_HOSTNAME}/staff`
+- Prosuna staff app: `${PROSUNA_HOSTNAME}/staff`
 - Keycloak admin console: `${PROSUNA_HOSTNAME}/idp/admin/`
 
 Sign in to the Keycloak admin console with `KEYCLOAK_ADMIN_USERNAME` and `KEYCLOAK_ADMIN_PASSWORD`.
 The `KEYCLOAK_BOOTSTRAP_ADMIN_*` account is only used to bootstrap Keycloak.
 
-## 5. Create the First Gover Admin
+## 5. Create the First Prosuna Admin
 
-Gover staff users are managed in the Keycloak `staff` realm.
-The Keycloak admin account is not automatically a Gover administrator.
+Prosuna staff users are managed in the Keycloak `staff` realm.
+The Keycloak admin account is not automatically a Prosuna administrator.
 
-To create the initial Gover administrator:
+To create the initial Prosuna administrator:
 
 1. Open the Keycloak admin console.
 2. Switch to the `staff` realm.
@@ -114,8 +114,8 @@ To create the initial Gover administrator:
 6. Disable "Temporary" if the password should not expire after first login.
 7. Log into `${PROSUNA_HOSTNAME}/staff` with that staff user.
 
-When this user logs into Gover for the first time, Gover imports the user.
-If no active Gover user holds the configured system role with the highest permission level and the e-mail address matches `PROSUNA_BOOTSTRAP_ADMIN_MAIL`, the user receives that role.
+When this user logs into Prosuna for the first time, Prosuna imports the user.
+If no active Prosuna user holds the configured system role with the highest permission level and the e-mail address matches `PROSUNA_BOOTSTRAP_ADMIN_MAIL`, the user receives that role.
 The role defaults to `Superadministrator:in` and can later be changed under the general application settings.
 
 ## 6. Backups

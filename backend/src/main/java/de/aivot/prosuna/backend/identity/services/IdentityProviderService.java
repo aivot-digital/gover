@@ -32,7 +32,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Service for managing identity providers in the Gover system.
+ * Service for managing identity providers in the Prosuna system.
  *
  * <p>
  * Provides CRUD operations, validation, and business logic for {@link IdentityProviderEntity} objects.

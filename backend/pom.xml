@@ -13,7 +13,7 @@
     <groupId>de.aivot.prosuna</groupId>
     <artifactId>backend</artifactId>
     <version>${revision}</version>
-    <name>gover</name>
+    <name>prosuna</name>
     <description>The open source platform for fully digital, end-to-end application processes</description>
     <licenses>
         <license>

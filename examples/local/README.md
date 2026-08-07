@@ -1,4 +1,4 @@
-# Local Gover Setup
+# Local Prosuna Setup
 
 ## 1. Prepare Secrets
 
@@ -6,7 +6,7 @@ Create a file called `.env` in the directory of the `compose.yml` file and add t
 Make sure to replace the values with your own secure secrets.
 
 ```dotenv
-# Gover Passwords and Secrets
+# Prosuna Passwords and Secrets
 PROSUNA_DB_PASSWORD=password
 PROSUNA_SECRETS_KEY=Super-secret-key-with-at-least-32-characters
 PROSUNA_CAPTCHA_KEY=Super-secret-key-with-at-least-32-characters
@@ -40,7 +40,7 @@ docker compose up -d
 Once the services are up and running, you can access them using the following URLs:
 
 - Keycloak Admin Console: [http://localhost:9595/idp](http://localhost:9595/idp)
-- Gover Staff App: [http://localhost:9595/staff](http://localhost:9595/staff)
+- Prosuna Staff App: [http://localhost:9595/staff](http://localhost:9595/staff)
 - Mailpit: [http://localhost:9025](http://localhost:9025)
 
 ## 4. Next Steps
@@ -48,6 +48,6 @@ Once the services are up and running, you can access them using the following UR
 After all services are running, you need to create a new staff user in the staff realm.
 Log into the Keycloak Admin Console with the credentials from the `.env`-File and open the "Staff" realm.
 Then, create a new user in the "Users" section and assign them a password.
-You can then log into the Gover Staff App using the newly created staff user credentials.
+You can then log into the Prosuna Staff App using the newly created staff user credentials.
 
 You can use the email address `admin@example.com` for the staff user to automatically register this user as an admin.

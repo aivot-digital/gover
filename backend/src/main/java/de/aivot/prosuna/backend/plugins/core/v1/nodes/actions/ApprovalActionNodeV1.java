@@ -458,7 +458,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         public static final String DATA_CONTENT = DATA_CONTENT_FIELD_ID;
         @InputElementPOJOBinding(id = DATA_CONTENT, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zu prüfende Daten"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine Gover-UI, in der die freizugebenden Inhalte dargestellt werden."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine Prosuna-UI, in der die freizugebenden Inhalte dargestellt werden."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public GroupLayoutElement dataContent;

@@ -1,6 +1,6 @@
 Hallo,
 
-ein Antrag wurde in Gover neu zugewiesen.
+ein Antrag wurde in Prosuna neu zugewiesen.
 Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
 Aktenzeichen: [(${submission.fileNumber})]
 Neue zuständige Mitarbeiter:in: [(${newAssignee.getFullName})]

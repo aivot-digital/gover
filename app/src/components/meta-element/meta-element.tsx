@@ -34,7 +34,7 @@ export function MetaElement({faviconUrl, title, titlePrefix}: MetaElementProps) 
             />
             <meta
                 name="generator"
-                content="Prosuna – Die quelloffene Plattform für Ende-zu-Ende digitalisierte Antragsprozesse. (prosuna.digital)"
+                content="Prosuna – Die quelloffene Plattform für Ende-zu-Ende digitalisierte Antragsprozesse. (prosuna.de)"
             />
 
             <link

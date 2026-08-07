@@ -25,7 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * This class provides the common no code operators for Gover.
+ * This class provides the common no code operators for Prosuna.
  */
 @Component
 public class CommonOperatorsV1 implements NoCodeOperatorsProvider {

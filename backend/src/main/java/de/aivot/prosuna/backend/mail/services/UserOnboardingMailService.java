@@ -34,7 +34,7 @@ public class UserOnboardingMailService {
 
     public void send(UserEntity createdUser, UserInitialCredentialsDTO initialCredentials) throws MessagingException, IOException, MailException, ResponseException {
         var context = new HashMap<String, Object>();
-        context.put("title", "Ihre Zugangsdaten für Gover");
+        context.put("title", "Ihre Zugangsdaten für Prosuna");
         context.put("user", createdUser);
         context.put("initialCredentials", initialCredentials);
         context.put("loginUrl", "/staff");
@@ -47,7 +47,7 @@ public class UserOnboardingMailService {
                 createdUser.getEmail(),
                 Optional.empty(),
                 Optional.empty(),
-                "[Gover] Ihre Zugangsdaten",
+                "[Prosuna] Ihre Zugangsdaten",
                 MailTemplate.StaffAccountCredentials,
                 context,
                 Optional.empty()

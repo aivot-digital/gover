@@ -192,7 +192,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 new ProcessNodeOutput(
                         OUTPUT_DATA,
                         "Erfasste Daten",
-                        "Die über die optionale Gover-UI bestätigten oder erfassten Daten im Payload-Format."
+                        "Die über die optionale Prosuna-UI bestätigten oder erfassten Daten im Payload-Format."
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_REMARK,
@@ -406,14 +406,14 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die konfigurierte Gover-UI der manuellen Aktion ist ungültig: %s",
+                    "Die konfigurierte Prosuna-UI der manuellen Aktion ist ungültig: %s",
                     e.getMessage()
             );
         }
 
         if (!(element instanceof GroupLayoutElement uiDefinition)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die konfigurierte Gover-UI der manuellen Aktion muss mit einer Gruppe beginnen."
+                    "Die konfigurierte Prosuna-UI der manuellen Aktion muss mit einer Gruppe beginnen."
             );
         }
 
@@ -536,7 +536,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
         @InputElementPOJOBinding(id = UI_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Daten zu dieser Aufgabe"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Modellieren Sie eine Gover-UI, wenn zur Aufgabe Daten angezeigt oder erfasst werden sollen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Modellieren Sie eine Prosuna-UI, wenn zur Aufgabe Daten angezeigt oder erfasst werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         public GroupLayoutElement uiDefinition;

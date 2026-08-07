@@ -218,7 +218,7 @@ class IdentityServiceTest {
     }
 
     @Test
-    void createRedirectURL_ShouldThrowException_WhenOriginDoesNotMatchGoverHostname() throws ResponseException {
+    void createRedirectURL_ShouldThrowException_WhenOriginDoesNotMatchProsunaHostname() throws ResponseException {
         UUID providerKey = UUID.randomUUID();
 
         IdentityProviderEntity provider = new IdentityProviderEntity();

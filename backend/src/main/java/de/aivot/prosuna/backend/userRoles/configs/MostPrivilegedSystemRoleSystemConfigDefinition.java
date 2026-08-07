@@ -60,7 +60,7 @@ public class MostPrivilegedSystemRoleSystemConfigDefinition implements SystemCon
     @Nonnull
     @Override
     public String getDescription() {
-        return "Diese Systemrolle gilt in Gover als höchste Berechtigungsstufe. Besitzt keine aktive Mitarbeiter:in diese Rolle, wird sie automatisch dem Administrationskonto zugewiesen, dessen E-Mail-Adresse über die Umgebungsvariable PROSUNA_BOOTSTRAP_ADMIN_MAIL konfiguriert ist.";
+        return "Diese Systemrolle gilt in Prosuna als höchste Berechtigungsstufe. Besitzt keine aktive Mitarbeiter:in diese Rolle, wird sie automatisch dem Administrationskonto zugewiesen, dessen E-Mail-Adresse über die Umgebungsvariable PROSUNA_BOOTSTRAP_ADMIN_MAIL konfiguriert ist.";
     }
 
     @Override

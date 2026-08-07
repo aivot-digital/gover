@@ -1,5 +1,5 @@
 /**
- * This package contains all logic to handle all configurations of Gover.
+ * This package contains all logic to handle all configurations of Prosuna.
  * This includes system-wide configurations, as well as user-specific configurations.
  *
  * <p>A configuration always needs a definition class extending the interface

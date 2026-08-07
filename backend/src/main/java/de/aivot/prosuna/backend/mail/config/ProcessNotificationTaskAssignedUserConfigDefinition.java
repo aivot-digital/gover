@@ -48,7 +48,7 @@ public class ProcessNotificationTaskAssignedUserConfigDefinition implements User
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, wenn Ihnen in Gover eine Aufgabe innerhalb eines Prozesses zugewiesen oder neu zugewiesen wird.";
+        return "Erhalten Sie eine Benachrichtigung, wenn Ihnen in Prosuna eine Aufgabe innerhalb eines Prozesses zugewiesen oder neu zugewiesen wird.";
     }
 
     @Override

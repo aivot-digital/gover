@@ -96,7 +96,7 @@ class HttpActionNodeV1Test {
                 any()
         )).thenReturn(ResponseEntity.ok("ok".getBytes(StandardCharsets.UTF_8)));
 
-        var configuration = baseConfig("POST", "https://gover.test/api", "text", "200");
+        var configuration = baseConfig("POST", "https://prosuna.test/api", "text", "200");
         configuration.requestData = new HttpActionNodeV1Config.RequestData();
         configuration.requestData.requestContentType = HttpActionNodeV1Config.RequestData.REQUEST_CONTENT_TYPE_OPT_MULTIPARTFORMDATA;
         configuration.requestData.requestFormFields = List.of(
@@ -125,7 +125,7 @@ class HttpActionNodeV1Test {
         when(httpService.request(eq(HttpMethod.POST), any(), anyString(), any()))
                 .thenReturn(ResponseEntity.ok("ok".getBytes(StandardCharsets.UTF_8)));
 
-        var configuration = baseConfig("POST", "https://gover.test/api", "text", "200");
+        var configuration = baseConfig("POST", "https://prosuna.test/api", "text", "200");
         configuration.requestData = new HttpActionNodeV1Config.RequestData();
         configuration.requestData.requestContentType = HttpActionNodeV1Config.RequestData.REQUEST_CONTENT_TYPE_OPT_JSON;
         configuration.requestData.requestContentTypeJsonConfig = new HttpActionNodeV1Config.RequestData.RequestContentTypeJsonConfig();
@@ -152,7 +152,7 @@ class HttpActionNodeV1Test {
                         .header("X-Error-Code", "unprocessable")
                         .body("invalid".getBytes(StandardCharsets.UTF_8)));
 
-        var configuration = baseConfig("GET", "https://gover.test/api", "text", "200");
+        var configuration = baseConfig("GET", "https://prosuna.test/api", "text", "200");
 
         assertThrows(
                 ProcessNodeExecutionExceptionIO.class,
@@ -182,7 +182,7 @@ class HttpActionNodeV1Test {
                         .getArgument(0, ProcessInstanceAttachmentSetEntity.class)
                         .setId(321));
 
-        var configuration = baseConfig("GET", "https://gover.test/file", "file", "200");
+        var configuration = baseConfig("GET", "https://prosuna.test/file", "file", "200");
         configuration.responseConfig.responseFileName = "document.pdf";
 
         var result = assertInstanceOf(

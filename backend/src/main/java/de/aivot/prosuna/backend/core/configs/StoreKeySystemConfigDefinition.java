@@ -32,7 +32,7 @@ public class StoreKeySystemConfigDefinition implements SystemConfigDefinition<St
     @Nonnull
     @Override
     public String getCategory() {
-        return "Gover Store";
+        return "Prosuna Store";
     }
 
     @Nonnull
@@ -44,7 +44,7 @@ public class StoreKeySystemConfigDefinition implements SystemConfigDefinition<St
     @Nonnull
     @Override
     public String getDescription() {
-        return "Der Schlüssel für den Zugriff auf den Gover Store.";
+        return "Der Schlüssel für den Zugriff auf den Prosuna Store.";
     }
 
     @Nonnull

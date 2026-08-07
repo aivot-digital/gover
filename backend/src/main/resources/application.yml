@@ -180,7 +180,7 @@ secrets:
 captcha:
   key: "${PROSUNA_CAPTCHA_KEY}"
 
-# Set basic properties for the gover business case
+# Set basic properties for the prosuna business case
 prosuna:
   prosunaHostname: "${PROSUNA_HOSTNAME}"
   timezone: "${PROSUNA_TIMEZONE:Europe/Berlin}"
@@ -217,7 +217,7 @@ prosuna:
     flowControl: "${PROSUNA_PROCESS_NODE_LIMITS_FLOWS:0}"
     termination: "${PROSUNA_PROCESS_NODE_LIMITS_TERMINATIONS:-1}"
 
-# Configure the details for fetching, managing and updating the gover user data from keycloak
+# Configure the details for fetching, managing and updating the prosuna user data from keycloak
 keycloak:
   hostname: "${PROSUNA_KEYCLOAK_OIDC_HOSTNAME}"
   internalHostname: "${PROSUNA_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:${PROSUNA_KEYCLOAK_OIDC_HOSTNAME}}"

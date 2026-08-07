@@ -532,7 +532,7 @@ class TemplateLoaderServiceTest {
 
     private FormPdfContext createBaseContext(FormPdfScope scope) {
         var prosunaConfig = new ProsunaConfig();
-        prosunaConfig.setProsunaHostname("https://gover.example/");
+        prosunaConfig.setProsunaHostname("https://prosuna.example/");
         return new FormPdfContext("", "", "", prosunaConfig, scope);
     }
 }

@@ -11,7 +11,7 @@ class FormPdfContextTest {
     @Test
     void createAssetUrlCreatesPublicAssetUrlByKey() {
         var config = new ProsunaConfig();
-        config.setProsunaHostname("https://gover.example");
+        config.setProsunaHostname("https://prosuna.example");
         var context = new FormPdfContext(
                 "Provider",
                 "123e4567-e89b-12d3-a456-426614174000",
@@ -23,7 +23,7 @@ class FormPdfContextTest {
         var result = context.createAssetUrl(context.logoAssetKey(), context.logoAssetName());
 
         assertEquals(
-                "https://gover.example/api/public/assets/123e4567-e89b-12d3-a456-426614174000/",
+                "https://prosuna.example/api/public/assets/123e4567-e89b-12d3-a456-426614174000/",
                 result
         );
     }
@@ -34,7 +34,7 @@ class FormPdfContextTest {
 
         var result = context.createUrlWithQueryParameter("/form/example/", "dialog", "privacy");
 
-        assertEquals("https://gover.example/form/example/?dialog=privacy", result);
+        assertEquals("https://prosuna.example/form/example/?dialog=privacy", result);
     }
 
     @Test
@@ -43,12 +43,12 @@ class FormPdfContextTest {
 
         var result = context.createUrlWithQueryParameter("/form/example/?version=7", "dialog", "privacy");
 
-        assertEquals("https://gover.example/form/example/?version=7&dialog=privacy", result);
+        assertEquals("https://prosuna.example/form/example/?version=7&dialog=privacy", result);
     }
 
     private FormPdfContext createContext() {
         var config = new ProsunaConfig();
-        config.setProsunaHostname("https://gover.example");
+        config.setProsunaHostname("https://prosuna.example");
         return new FormPdfContext(
                 "Provider",
                 "123e4567-e89b-12d3-a456-426614174000",

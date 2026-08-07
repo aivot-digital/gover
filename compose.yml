@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Dieses Beispiel zeigt die Konfiguration für die Bereitstellung von Gover auf einem Server mit Docker-Compose.
+# Dieses Beispiel zeigt die Konfiguration für die Bereitstellung von Prosuna auf einem Server mit Docker-Compose.
 #
-# Bitte beachten Sie, dass diese Konfiguration Erklärungen für alle Konfigurationsoptionen enthält, jedoch nicht alle Zeilen angepasst werden müssen, um Gover zu starten.
+# Bitte beachten Sie, dass diese Konfiguration Erklärungen für alle Konfigurationsoptionen enthält, jedoch nicht alle Zeilen angepasst werden müssen, um Prosuna zu starten.
 #
 # Passen Sie die Werte in den geschweiften Klammern an Ihre Umgebung an und entfernen Sie die geschweiften Klammern.
 # Sollten Optionen nicht benötigt werden, können diese, inklusive der geschweiften Klammern, entfernt werden.
@@ -18,11 +18,11 @@ services:
     image: postgres:15.18
     restart: always
     environment:
-      POSTGRES_PASSWORD: "{{ PROSUNA_DB_PASSWORD }}" # Setzen Sie das Passwort für die Gover-Datenbank. Passen Sie dieses Passwort unbedingt an.
-      POSTGRES_USER: "{{ PROSUNA_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Gover-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
+      POSTGRES_PASSWORD: "{{ PROSUNA_DB_PASSWORD }}" # Setzen Sie das Passwort für die Prosuna-Datenbank. Passen Sie dieses Passwort unbedingt an.
+      POSTGRES_USER: "{{ PROSUNA_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Prosuna-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
       POSTGRES_DB: prosuna
       PGDATA: /var/lib/postgresql/data/pgdata
-      PGTZ: "{{ PROSUNA_TIMEZONE }}" # Setzen Sie die Zeitzone für PostgreSQL-Clients der Gover-Datenbank, z. B. Europe/Berlin. Passen Sie diese Zeitzone unbedingt an. Dieser Wert muss mit PROSUNA_TIMEZONE der Gover-Anwendung übereinstimmen.
+      PGTZ: "{{ PROSUNA_TIMEZONE }}" # Setzen Sie die Zeitzone für PostgreSQL-Clients der Prosuna-Datenbank, z. B. Europe/Berlin. Passen Sie diese Zeitzone unbedingt an. Dieser Wert muss mit PROSUNA_TIMEZONE der Prosuna-Anwendung übereinstimmen.
     volumes:
       - prosuna_database_data:/var/lib/postgresql/data
     networks:
@@ -63,8 +63,8 @@ services:
     environment:
       CHROMIUM_DENY_PRIVATE_IPS: "true"
       CHROMIUM_DENY_PUBLIC_IPS: "true"
-      # Die Allow-List für Gotenberg muss angepasst werden, um die Verbindung zu ihrer Gover-Instanz zu ermöglichen.
-      # Es handelt sich um einen regulären Ausdruck. Bitte achten Sie darauf, dass Punkte als "\\." geschrieben werden müssen (z.B. gover\\.aivot\\.de) und dass der Ausdruck mit ^ beginnt und mit $ endet.
+      # Die Allow-List für Gotenberg muss angepasst werden, um die Verbindung zu ihrer Prosuna-Instanz zu ermöglichen.
+      # Es handelt sich um einen regulären Ausdruck. Bitte achten Sie darauf, dass Punkte als "\\." geschrieben werden müssen (z.B. prosuna\\.aivot\\.de) und dass der Ausdruck mit ^ beginnt und mit $ endet.
       CHROMIUM_ALLOW_LIST: "^(https://{{ HOSTNAME_REGEX }}/|file:///tmp/)"
     ports:
       - "9191:3000"
@@ -145,7 +145,7 @@ services:
       SMTP_PASSWORD: "{{ SMTP_PASSWORD }}" # Setzen Sie das Passwort für den Mail-Server. Passen Sie dieses Passwort unbedingt an.
       SMTP_FROM: "{{ MAIL_SENDER_ADDRESS }}@{{ HOSTNAME }}" # Setzen Sie die Absenderadresse für E-Mails. Passen Sie diese Absenderadresse unbedingt an.
       SMTP_FROM_DISPLAY: "{{ MAIL_SENDER_NAME }}" # Setzen Sie den Anzeigenamen für die Absenderadresse. Passen Sie diesen Anzeigenamen unbedingt an.
-      HOSTNAME: "https://{{ HOSTNAME }}" # Setzen Sie den Hostnamen unter dem Gover erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
+      HOSTNAME: "https://{{ HOSTNAME }}" # Setzen Sie den Hostnamen unter dem Prosuna erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
       BACKEND_CLIENT_SECRET: "{{ KEYCLOAK_BACKEND_CLIENT_SECRET }}" # Setzen Sie das Geheimnis für den Backend-Client in Keycloak. Passen Sie dieses Geheimnis unbedingt an. Wählen Sie ein sicheres Geheimnis mit mindestens 16 Zeichen.
     networks:
       - keycloak_config_network
@@ -167,8 +167,8 @@ services:
       PROSUNA_DB_HOST: prosuna_database
       PROSUNA_DB_PORT: 5432
       PROSUNA_DB_DATABASE: prosuna
-      PROSUNA_DB_USERNAME: "{{ PROSUNA_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Gover-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
-      PROSUNA_DB_PASSWORD: "{{ PROSUNA_DB_PASSWORD }}" # Setzen Sie das Passwort für die Gover-Datenbank. Passen Sie dieses Passwort unbedingt an.
+      PROSUNA_DB_USERNAME: "{{ PROSUNA_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Prosuna-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
+      PROSUNA_DB_PASSWORD: "{{ PROSUNA_DB_PASSWORD }}" # Setzen Sie das Passwort für die Prosuna-Datenbank. Passen Sie dieses Passwort unbedingt an.
 
       PROSUNA_CLAM_HOST: clamav
       PROSUNA_CLAM_PORT: 3310
@@ -188,12 +188,12 @@ services:
       PROSUNA_FROM_MAIL: '"{{ MAIL_SENDER_NAME }}" <{{ MAIL_SENDER_ADDRESS }}@{{ HOSTNAME }}>' # Setzen Sie die Absenderadresse für E-Mails. Passen Sie diese Absenderadresse unbedingt an.
       PROSUNA_REPORT_MAIL: "{{ FALLBACK_E_MAIL }}" # Setzen Sie die E-Mail-Adresse für den Empfang von Fehlerberichten. Passen Sie diese E-Mail-Adresse unbedingt an. An diese Adresse werden Fehlerberichte gesendet.
 
-      PROSUNA_SENTRY_SERVER: "{{ SERVER_SENTRY_DSN }}" # Setzen Sie die Sentry DSN (Data Source Name) für die Gover-Backend-Anwendung. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
-      PROSUNA_SENTRY_WEB_APP: "{{ WEB_APP_SENTRY_DSN }}" # Setzen Sie die Sentry DSN (Data Source Name) für die Gover-Webanwendung. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
+      PROSUNA_SENTRY_SERVER: "{{ SERVER_SENTRY_DSN }}" # Setzen Sie die Sentry DSN (Data Source Name) für die Prosuna-Backend-Anwendung. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
+      PROSUNA_SENTRY_WEB_APP: "{{ WEB_APP_SENTRY_DSN }}" # Setzen Sie die Sentry DSN (Data Source Name) für die Prosuna-Webanwendung. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
       PROSUNA_ENVIRONMENT: "{{ SENTRY_ENVIRONMENT }}" # Setzen Sie die Umgebung für Sentry. Diese wird verwendet, um Fehlermeldungen in Sentry zu gruppieren. Passen Sie diese Umgebung unbedingt an. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
 
-      PROSUNA_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse inklusive Protokoll und Hostname unter der die Gover-Anwendung erreichbar ist. Passen Sie diese Adresse unbedingt an.
-      PROSUNA_TIMEZONE: "{{ PROSUNA_TIMEZONE }}" # Setzen Sie die fachliche Zeitzone der Gover-Anwendung, z. B. Europe/Berlin. Passen Sie diese Zeitzone unbedingt an. Dieser Wert muss mit PGTZ der Gover-Datenbank übereinstimmen.
+      PROSUNA_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse inklusive Protokoll und Hostname unter der die Prosuna-Anwendung erreichbar ist. Passen Sie diese Adresse unbedingt an.
+      PROSUNA_TIMEZONE: "{{ PROSUNA_TIMEZONE }}" # Setzen Sie die fachliche Zeitzone der Prosuna-Anwendung, z. B. Europe/Berlin. Passen Sie diese Zeitzone unbedingt an. Dieser Wert muss mit PGTZ der Prosuna-Datenbank übereinstimmen.
       PROSUNA_DEPARTMENT_LEVEL_LABELS: "Organisation, Bereich, Abteilung, Sachgebiet, Arbeitsbereich" # Setzen Sie die kommagetrennten Bezeichnungen der Hierarchieebenen für Organisationseinheiten. Die Anzahl der Einträge bestimmt die maximal mögliche Anzahl an Ebenen. Entfernen Sie diese Variable oder lassen Sie sie leer, um den Standard zu verwenden.
       PROSUNA_SECRETS_KEY: "{{ PROSUNA_SECRETS_KEY }}" # Setzen Sie den geheimen Schlüssel für die Verschlüsselung der Daten. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein.
       PROSUNA_CAPTCHA_KEY: "{{ PROSUNA_CAPTCHA_KEY }}" # Setzen Sie den geheimen Schlüssel zur Erzeugung und Verifizierung von Captcha-Challenges. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein (z. B. 32‑Byte‑Hex).
@@ -281,7 +281,7 @@ services:
 
 
 
-# Definiert die Volumes für die Datenbanken, die Daten von Gover und Traefik.
+# Definiert die Volumes für die Datenbanken, die Daten von Prosuna und Traefik.
 volumes:
   prosuna_database_data:
   prosuna_storage_data:

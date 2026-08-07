@@ -74,8 +74,8 @@ public class ProcessTaskMailService {
         var mailData = new HashMap<String, Object>();
         mailData.put("title", title);
         mailData.put("assignmentIntro", isReassignment
-                ? "Ihnen wurde in Gover eine Aufgabe neu zugewiesen."
-                : "Ihnen wurde in Gover eine Aufgabe zur Bearbeitung zugewiesen.");
+                ? "Ihnen wurde in Prosuna eine Aufgabe neu zugewiesen."
+                : "Ihnen wurde in Prosuna eine Aufgabe zur Bearbeitung zugewiesen.");
         mailData.put("assignmentSource", triggeringUser != null ? triggeringUser.getFullName() : "System");
         mailData.put("process", process);
         mailData.put("processInstance", processInstance);
@@ -92,7 +92,7 @@ public class ProcessTaskMailService {
         mailService.sendMailToUser(
                 departmentService.getDepartmentTheme(department),
                 assignedUser.getId(),
-                "[Gover] " + (processInstance.getCreatedForTestClaimId() != null ? "[Test] " : "") + title,
+                "[Prosuna] " + (processInstance.getCreatedForTestClaimId() != null ? "[Test] " : "") + title,
                 MailTemplate.ProcessTaskAssigned,
                 mailData
         );

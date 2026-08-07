@@ -27,7 +27,7 @@ public class FormPlugin implements Plugin {
 
     @Override
     public @Nonnull String getDescription() {
-        return "Die Formularerweiterung von Gover.";
+        return "Die Formularerweiterung von Prosuna.";
     }
 
     @Override

@@ -90,7 +90,7 @@ public class DashboardController {
         return new DashboardStatsItemDTO(
                 "total_users",
                 "Registrierte Mitarbeiter:innen",
-                "unterstützen mit Gover die Digitalisierung",
+                "unterstützen mit Prosuna die Digitalisierung",
                 activeUsers,
                 "/users"
         );

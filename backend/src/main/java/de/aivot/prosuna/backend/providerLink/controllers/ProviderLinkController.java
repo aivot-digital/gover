@@ -35,7 +35,7 @@ import java.util.Map;
 @RequestMapping("/api/provider-links/")
 @Tag(
         name = "Provider Links",
-        description = "Provider links can be used to link to external resources from within Gover. " +
+        description = "Provider links can be used to link to external resources from within Prosuna. " +
                 "They can be managed with the corresponding system configuration permissions and are often used to provide links to documentation, support pages, or other relevant external sites."
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)

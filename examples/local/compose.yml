@@ -130,7 +130,7 @@ services:
       SMTP_USERNAME: ""
       SMTP_PASSWORD: ""
       SMTP_FROM: mail@example.com
-      SMTP_FROM_DISPLAY: GoverIDP
+      SMTP_FROM_DISPLAY: ProsunaIDP
       BACKEND_CLIENT_SECRET: ${PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}
     networks:
       - keycloak

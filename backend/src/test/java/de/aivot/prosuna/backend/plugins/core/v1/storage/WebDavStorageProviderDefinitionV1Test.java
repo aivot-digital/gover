@@ -35,17 +35,17 @@ class WebDavStorageProviderDefinitionV1Test {
     void toWebDavUriCombinesBaseUrlBasePathAndProviderPath() throws StorageException {
         var config = createConfig();
         config.baseUrl = "https://example.test/remote.php/dav/files/user";
-        config.basePath = "/gover/documents";
+        config.basePath = "/prosuna/documents";
 
         var documentUri = WebDavStorageProviderDefinitionV1.toWebDavUri(config, "/cases/123/file name.pdf");
         assertEquals(
-                "https://example.test/remote.php/dav/files/user/gover/documents/cases/123/file%20name.pdf",
+                "https://example.test/remote.php/dav/files/user/prosuna/documents/cases/123/file%20name.pdf",
                 documentUri.toString()
         );
 
         var folderUri = WebDavStorageProviderDefinitionV1.toWebDavUri(config, "/cases/123/");
         assertEquals(
-                "https://example.test/remote.php/dav/files/user/gover/documents/cases/123/",
+                "https://example.test/remote.php/dav/files/user/prosuna/documents/cases/123/",
                 folderUri.toString()
         );
     }
@@ -53,7 +53,7 @@ class WebDavStorageProviderDefinitionV1Test {
     @Test
     void toWebDavUriRejectsTraversalInBasePath() {
         var config = createConfig();
-        config.basePath = "/gover/../documents";
+        config.basePath = "/prosuna/../documents";
 
         assertThrows(StorageException.class, () -> WebDavStorageProviderDefinitionV1.toWebDavUri(config, "/file.txt"));
     }
@@ -61,7 +61,7 @@ class WebDavStorageProviderDefinitionV1Test {
     @Test
     void toWebDavUriRejectsPercentEncodedTraversalInBasePath() {
         var config = createConfig();
-        config.basePath = "/gover/%2e%2e/documents";
+        config.basePath = "/prosuna/%2e%2e/documents";
 
         assertThrows(StorageException.class, () -> WebDavStorageProviderDefinitionV1.toWebDavUri(config, "/file.txt"));
     }
@@ -97,11 +97,11 @@ class WebDavStorageProviderDefinitionV1Test {
                 <?xml version="1.0" encoding="UTF-8"?>
                 <d:multistatus xmlns:d="DAV:">
                   <d:response>
-                    <d:href>/dav/gover/</d:href>
+                    <d:href>/dav/prosuna/</d:href>
                     <d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop></d:propstat>
                   </d:response>
                   <d:response>
-                    <d:href>/dav/gover/file.txt</d:href>
+                    <d:href>/dav/prosuna/file.txt</d:href>
                     <d:propstat><d:prop>
                       <d:getcontentlength>42</d:getcontentlength>
                       <d:creationdate>2026-01-02T03:04:05Z</d:creationdate>
@@ -114,7 +114,7 @@ class WebDavStorageProviderDefinitionV1Test {
         var resources = WebDavStorageProviderDefinitionV1.parseMultiStatus(xml.getBytes());
 
         assertEquals(2, resources.size());
-        assertEquals("/dav/gover/", resources.get(0).href());
+        assertEquals("/dav/prosuna/", resources.get(0).href());
         assertTrue(resources.get(0).collection());
         assertEquals(42L, resources.get(1).sizeInBytes());
         assertEquals(Instant.parse("2026-01-02T03:04:05Z"), resources.get(1).created());
@@ -125,15 +125,15 @@ class WebDavStorageProviderDefinitionV1Test {
     void retrieveFolderUsesBasePathAsInvisibleRoot() throws StorageException {
         var config = createConfig();
         config.baseUrl = "https://example.test/dav/";
-        config.basePath = "/gover/documents/";
+        config.basePath = "/prosuna/documents/";
 
         var client = new FakeWebDavClient();
         client.propfindResponses.put(
-                "/dav/gover/documents/",
+                "/dav/prosuna/documents/",
                 Optional.of(List.of(
-                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents", true, 0L),
-                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents/sub/", true, 0L),
-                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents/file.txt", false, 12L)
+                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/prosuna/documents", true, 0L),
+                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/prosuna/documents/sub/", true, 0L),
+                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/prosuna/documents/file.txt", false, 12L)
                 ))
         );
 
@@ -152,12 +152,12 @@ class WebDavStorageProviderDefinitionV1Test {
     void folderExistsRecognizesEncodedHrefWhenBasePathContainsSpecialCharacters() throws StorageException {
         var config = createConfig();
         config.baseUrl = "https://example.test/dav/";
-        config.basePath = "/gover/documents (old), 2026/";
+        config.basePath = "/prosuna/documents (old), 2026/";
 
         var client = new FakeWebDavClient();
         client.propfindResponses.put(
-                "/dav/gover/documents (old), 2026/",
-                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents%20%28old%29%2C%202026", true, 0L)))
+                "/dav/prosuna/documents (old), 2026/",
+                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/prosuna/documents%20%28old%29%2C%202026", true, 0L)))
         );
 
         var provider = createProvider(client, mock(KnownExtensionsService.class));
@@ -169,15 +169,15 @@ class WebDavStorageProviderDefinitionV1Test {
     void retrieveFolderMapsEncodedChildrenWhenBasePathContainsSpecialCharacters() throws StorageException {
         var config = createConfig();
         config.baseUrl = "https://example.test/dav/";
-        config.basePath = "/gover/documents (old), 2026/";
+        config.basePath = "/prosuna/documents (old), 2026/";
 
         var client = new FakeWebDavClient();
         client.propfindResponses.put(
-                "/dav/gover/documents (old), 2026/",
+                "/dav/prosuna/documents (old), 2026/",
                 Optional.of(List.of(
-                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents%20%28old%29%2C%202026/", true, 0L),
-                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents%20%28old%29%2C%202026/sub%20%28draft%29%2C%20A/", true, 0L),
-                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents%20%28old%29%2C%202026/file%20%28final%29%2C%20A.txt", false, 12L)
+                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/prosuna/documents%20%28old%29%2C%202026/", true, 0L),
+                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/prosuna/documents%20%28old%29%2C%202026/sub%20%28draft%29%2C%20A/", true, 0L),
+                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/prosuna/documents%20%28old%29%2C%202026/file%20%28final%29%2C%20A.txt", false, 12L)
                 ))
         );
 
@@ -193,16 +193,16 @@ class WebDavStorageProviderDefinitionV1Test {
     void storeDocumentRequiresParentAndPutsUnderBasePath() throws StorageException {
         var config = createConfig();
         config.baseUrl = "https://example.test/dav/";
-        config.basePath = "/gover/documents/";
+        config.basePath = "/prosuna/documents/";
 
         var client = new FakeWebDavClient();
         client.propfindResponses.put(
-                "/dav/gover/documents/folder/",
-                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents/folder/", true, 0L)))
+                "/dav/prosuna/documents/folder/",
+                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/prosuna/documents/folder/", true, 0L)))
         );
         client.propfindResponses.put(
-                "/dav/gover/documents/folder/file.txt",
-                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents/folder/file.txt", false, 5L)))
+                "/dav/prosuna/documents/folder/file.txt",
+                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/prosuna/documents/folder/file.txt", false, 5L)))
         );
 
         var knownExtensionsService = mock(KnownExtensionsService.class);
@@ -217,7 +217,7 @@ class WebDavStorageProviderDefinitionV1Test {
                 StorageItemMetadata.empty()
         );
 
-        assertEquals(URI.create("https://example.test/dav/gover/documents/folder/file.txt"), client.putUri);
+        assertEquals(URI.create("https://example.test/dav/prosuna/documents/folder/file.txt"), client.putUri);
         assertEquals("text/plain", client.putContentType);
         assertEquals("/folder/file.txt", document.getPathFromRoot());
         assertEquals(5L, document.getSizeInBytes());
@@ -264,7 +264,7 @@ class WebDavStorageProviderDefinitionV1Test {
     void retrieveDocumentContentErrorIncludesWebDavPathWithoutUrl() {
         var config = createConfig();
         config.baseUrl = "https://example.test/dav/";
-        config.basePath = "/gover/documents/";
+        config.basePath = "/prosuna/documents/";
 
         var client = new FakeWebDavClient();
         client.failGet = true;
@@ -274,7 +274,7 @@ class WebDavStorageProviderDefinitionV1Test {
         var exception = assertThrows(StorageException.class, () -> provider.retrieveDocumentContent(config, "/folder/file.txt"));
 
         assertTrue(exception.getMessage().contains("WebDAV-Pfad:"));
-        assertTrue(exception.getMessage().contains("/gover/documents/folder/file.txt"));
+        assertTrue(exception.getMessage().contains("/prosuna/documents/folder/file.txt"));
         assertFalse(exception.getMessage().contains("https://example.test"));
     }
 
@@ -282,13 +282,13 @@ class WebDavStorageProviderDefinitionV1Test {
     void createFolderErrorIncludesWebDavPathWithoutUrl() {
         var config = createConfig();
         config.baseUrl = "https://example.test/dav/";
-        config.basePath = "/gover/documents/";
+        config.basePath = "/prosuna/documents/";
 
         var client = new FakeWebDavClient();
         client.failMkcol = true;
         client.propfindResponses.put(
-                "/dav/gover/documents/",
-                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents/", true, 0L)))
+                "/dav/prosuna/documents/",
+                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/prosuna/documents/", true, 0L)))
         );
 
         var provider = createProvider(client, mock(KnownExtensionsService.class));
@@ -296,7 +296,7 @@ class WebDavStorageProviderDefinitionV1Test {
         var exception = assertThrows(StorageException.class, () -> provider.createFolder(config, "/folder/"));
 
         assertTrue(exception.getMessage().contains("WebDAV-Pfad:"));
-        assertTrue(exception.getMessage().contains("/gover/documents/folder/"));
+        assertTrue(exception.getMessage().contains("/prosuna/documents/folder/"));
         assertFalse(exception.getMessage().contains("https://example.test"));
     }
 
@@ -304,17 +304,17 @@ class WebDavStorageProviderDefinitionV1Test {
     void moveDocumentErrorIncludesSourceAndTargetWebDavPathsWithoutUrl() {
         var config = createConfig();
         config.baseUrl = "https://example.test/dav/";
-        config.basePath = "/gover/documents/";
+        config.basePath = "/prosuna/documents/";
 
         var client = new FakeWebDavClient();
         client.failMove = true;
         client.propfindResponses.put(
-                "/dav/gover/documents/source.txt",
-                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents/source.txt", false, 12L)))
+                "/dav/prosuna/documents/source.txt",
+                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/prosuna/documents/source.txt", false, 12L)))
         );
         client.propfindResponses.put(
-                "/dav/gover/documents/folder/",
-                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents/folder/", true, 0L)))
+                "/dav/prosuna/documents/folder/",
+                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/prosuna/documents/folder/", true, 0L)))
         );
 
         var provider = createProvider(client, mock(KnownExtensionsService.class));
@@ -322,9 +322,9 @@ class WebDavStorageProviderDefinitionV1Test {
         var exception = assertThrows(StorageException.class, () -> provider.moveDocument(config, "/source.txt", "/folder/target.txt"));
 
         assertTrue(exception.getMessage().contains("WebDAV-Quellpfad:"));
-        assertTrue(exception.getMessage().contains("/gover/documents/source.txt"));
+        assertTrue(exception.getMessage().contains("/prosuna/documents/source.txt"));
         assertTrue(exception.getMessage().contains("WebDAV-Zielpfad:"));
-        assertTrue(exception.getMessage().contains("/gover/documents/folder/target.txt"));
+        assertTrue(exception.getMessage().contains("/prosuna/documents/folder/target.txt"));
         assertFalse(exception.getMessage().contains("https://example.test"));
     }
 
@@ -332,14 +332,14 @@ class WebDavStorageProviderDefinitionV1Test {
     void validateConfigurationRejectsOverlappingRoots() {
         var config = createConfig();
         config.baseUrl = "https://example.test/dav/";
-        config.basePath = "/gover/documents/";
+        config.basePath = "/prosuna/documents/";
 
         var existingProvider = new StorageProviderEntity()
                 .setId(7)
                 .setName("Existing")
                 .setConfiguration(TestData.authored(
                         "base_url", "https://example.test/dav/",
-                        "base_path", "/gover/"
+                        "base_path", "/prosuna/"
                 ));
 
         var storageProviderRepository = mock(StorageProviderRepository.class);

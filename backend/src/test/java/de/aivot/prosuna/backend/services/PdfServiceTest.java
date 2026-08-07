@@ -41,7 +41,7 @@ class PdfServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         var prosunaConfig = new ProsunaConfig();
-        prosunaConfig.setProsunaHostname("https://gover.example/");
+        prosunaConfig.setProsunaHostname("https://prosuna.example/");
         vDepartmentShadowedRepository = mock(VDepartmentShadowedRepository.class);
         processRepository = mock(ProcessRepository.class);
 
@@ -75,7 +75,7 @@ class PdfServiceTest {
         var html = "<html><head><title>PDF</title></head><body><img src=\"/assets/logo.png\"/></body></html>";
 
         assertEquals(
-                "<html><head><base href=\"https://gover.example/\"/><title>PDF</title></head><body><img src=\"/assets/logo.png\"/></body></html>",
+                "<html><head><base href=\"https://prosuna.example/\"/><title>PDF</title></head><body><img src=\"/assets/logo.png\"/></body></html>",
                 invokeInjectBaseUrlIntoHTML(html)
         );
     }
@@ -85,7 +85,7 @@ class PdfServiceTest {
         var html = "<html><head><base href=\"https://old.example/\"><title>PDF</title></head><body></body></html>";
 
         assertEquals(
-                "<html><head><base href=\"https://gover.example/\"/><title>PDF</title></head><body></body></html>",
+                "<html><head><base href=\"https://prosuna.example/\"/><title>PDF</title></head><body></body></html>",
                 invokeInjectBaseUrlIntoHTML(html)
         );
     }

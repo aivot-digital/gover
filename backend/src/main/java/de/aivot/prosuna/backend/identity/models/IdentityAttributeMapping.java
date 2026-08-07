@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * Represents a mapping option between identity provider user information and fields in the Gover system's form editor.
+ * Represents a mapping option between identity provider user information and fields in the Prosuna system's form editor.
  *
  * <p>This class is used to display possible attributes of the identity provider userinfo to staff members designing forms and to map
  * identity provider data onto form input fields. It provides a user-friendly label and description

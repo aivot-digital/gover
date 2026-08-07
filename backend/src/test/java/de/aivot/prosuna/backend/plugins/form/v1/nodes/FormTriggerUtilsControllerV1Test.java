@@ -180,7 +180,7 @@ class FormTriggerUtilsControllerV1Test {
 
         var publicUrlService = mock(PublicUrlService.class);
         when(publicUrlService.createPublicFormUrl(any(ProcessEntity.class), eq(formSlug)))
-                .thenReturn("https://gover.example/form/%s/%s/".formatted(processSlug, formSlug));
+                .thenReturn("https://prosuna.example/form/%s/%s/".formatted(processSlug, formSlug));
 
         var user = new UserEntity()
                 .setId("user-1");

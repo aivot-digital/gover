@@ -83,7 +83,7 @@ jobs:
         run: |
           cat <<EOF > app/public/sbom/manifest.json
           {
-            "name": "gover",
+            "name": "prosuna",
             "version": "${{ env.BUILD_VERSION }}",
             "commit": "${{ github.sha }}",
             "buildDate": "${{ env.BUILD_DATE }}",

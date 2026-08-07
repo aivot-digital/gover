@@ -1,5 +1,5 @@
 /**
- * This package contains classes and interfaces related to the management of secrets within the GoverBackend application.
+ * This package contains classes and interfaces related to the management of secrets within the ProsunaBackend application.
  *
  * <p>
  * The main components of this package include:

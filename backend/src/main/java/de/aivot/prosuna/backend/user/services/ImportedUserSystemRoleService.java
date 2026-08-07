@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * Resolves the system role that should be assigned when a user enters Gover through
+ * Resolves the system role that should be assigned when a user enters Prosuna through
  * an automatic path such as IdP synchronization or on-demand import on first login.
  *
  * <p>This keeps the import policy in one place so the scheduled sync and the

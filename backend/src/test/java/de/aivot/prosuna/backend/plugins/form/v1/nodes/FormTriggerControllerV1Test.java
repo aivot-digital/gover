@@ -131,7 +131,7 @@ class FormTriggerControllerV1Test {
         var response = new MockHttpServletResponse();
         fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), null, null, response);
 
-        assertEquals("https://gover.example/assets/default-logo.png", response.getRedirectedUrl());
+        assertEquals("https://prosuna.example/assets/default-logo.png", response.getRedirectedUrl());
     }
 
     @Test
@@ -161,7 +161,7 @@ class FormTriggerControllerV1Test {
         var response = new MockHttpServletResponse();
         fixture.controller().getFavicon(null, fixture.processSlug(), fixture.formSlug(), null, null, response);
 
-        assertEquals("https://gover.example/assets/default-favicon.ico", response.getRedirectedUrl());
+        assertEquals("https://prosuna.example/assets/default-favicon.ico", response.getRedirectedUrl());
     }
 
     private TestFixture createFixture(FormLayoutElement formLayout) throws Exception {
@@ -181,8 +181,8 @@ class FormTriggerControllerV1Test {
         var formSlug = "example-form";
 
         var prosunaConfig = mock(ProsunaConfig.class);
-        when(prosunaConfig.getDefaultLogoUrl()).thenReturn("https://gover.example/assets/default-logo.png");
-        when(prosunaConfig.getDefaultFaviconUrl()).thenReturn("https://gover.example/assets/default-favicon.ico");
+        when(prosunaConfig.getDefaultLogoUrl()).thenReturn("https://prosuna.example/assets/default-logo.png");
+        when(prosunaConfig.getDefaultFaviconUrl()).thenReturn("https://prosuna.example/assets/default-favicon.ico");
 
         var assetService = mock(AssetService.class);
         when(assetService.createUrl(any(UUID.class))).thenAnswer(invocation -> "https://assets.example/" + invocation.getArgument(0, UUID.class));

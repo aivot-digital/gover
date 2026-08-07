@@ -115,7 +115,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erlaubt einer Mitarbeiter:in, Daten in einer Gover-UI zu ändern, hinzuzufügen oder zu entfernen.";
+        return "Erlaubt einer Mitarbeiter:in, Daten in einer Prosuna-UI zu ändern, hinzuzufügen oder zu entfernen.";
     }
 
     @Nonnull
@@ -181,7 +181,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 new ProcessNodeOutput(
                         OUTPUT_DATA,
                         "Bearbeitete Daten",
-                        "Die final übernommenen Daten aus der konfigurierten Gover-UI im Payload-Format."
+                        "Die final übernommenen Daten aus der konfigurierten Prosuna-UI im Payload-Format."
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_REMARK,
@@ -410,7 +410,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
         @InputElementPOJOBinding(id = DATA_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bearbeitbare Daten"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine Gover-UI, mit der die Mitarbeiter:in die Vorgangsdaten bearbeiten kann."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine Prosuna-UI, mit der die Mitarbeiter:in die Vorgangsdaten bearbeiten kann."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public GroupLayoutElement dataDefinition;

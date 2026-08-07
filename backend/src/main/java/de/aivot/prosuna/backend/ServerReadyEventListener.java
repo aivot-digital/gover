@@ -42,7 +42,7 @@ public class ServerReadyEventListener implements ApplicationListener<Application
     }
 
     private void logBuildInfo() {
-        var message = "Gover Version %s.%s (%s)";
+        var message = "Prosuna Version %s.%s (%s)";
         var fm = String.format(
                 message,
                 buildProperties.getBuildVersion(),

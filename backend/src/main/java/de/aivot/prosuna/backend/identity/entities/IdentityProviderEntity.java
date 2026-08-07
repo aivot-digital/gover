@@ -15,14 +15,14 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Represents an identity provider in the Gover system, used for authenticating citizens.
+ * Represents an identity provider in the Prosuna system, used for authenticating citizens.
  * This entity contains all the necessary information to connect to an OpenID Connect (OIDC)
  * authentication system and to process the data received from the OIDC API.
  *
  * <p>Key features of this entity include:</p>
  * <ul>
  *     <li>Connection details such as endpoints (authorization, token, userinfo, etc.) and client credentials.</li>
- *     <li>Configuration for mapping attributes from the OIDC API to the Gover system.</li>
+ *     <li>Configuration for mapping attributes from the OIDC API to the Prosuna system.</li>
  *     <li>Default scopes and additional parameters for customizing the OIDC connection.</li>
  *     <li>Metadata and flags to manage the identity provider, such as enabling/disabling it or marking it as a test provider.</li>
  * </ul>

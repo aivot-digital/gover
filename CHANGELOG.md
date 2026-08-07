@@ -124,7 +124,7 @@
 * **App:** Users can now customize the number of entries displayed per page in application processing.
 * **App:** Redis in-memory cache status is now displayed in the system status.
 * **App:** Authenticated user account in forms is now included in the PDF export.
-* **Export:** Gover form exports now indicate which information is excluded for technical or data privacy reasons.
+* **Export:** Prosuna form exports now indicate which information is excluded for technical or data privacy reasons.
 
 ### Important Notes
 #### User Account Migration Required
@@ -185,7 +185,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 
 **App:** Fix min height for code editor
 **App:** Fix path for element select
-**Server:** Removed test protocol from gover export
+**Server:** Removed test protocol from prosuna export
 **Server:** Prevents presets with duplicate names
 **Server:** Fix export of payment data
 **Server:** Fix typo in department delete message
@@ -253,7 +253,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 * **Server:** giropay is integrated
 * **Server:** S3 storage compatibility
 * **App:** Autocomplete attributes for browsers can be selected in elements (e.g. the browser can automatically fill in the first name)
-* **App:** Improvement of the accessibility of Gover forms and support for compliance with accessibility, e.g. through contrast checkers in the themes, references to alt attributes, etc.
+* **App:** Improvement of the accessibility of Prosuna forms and support for compliance with accessibility, e.g. through contrast checkers in the themes, references to alt attributes, etc.
 
 ## [4.1.1](https://github.com/aivot-digital/gover/compare/v4.1.0...v4.1.1) (2024-05-15)
 
@@ -366,7 +366,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 
 ### Bug Fixes
 
-* **App:** Removed unnecessary Gover from dashboard tab title
+* **App:** Removed unnecessary Prosuna from dashboard tab title
 
 
 ## [2.1.1](https://github.com/aivot-digital/gover/compare/v2.1.0...v2.1.1) (2023-04-08)
@@ -381,7 +381,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 ### Features
 
 * **Project:** Added different ports for customer and staff app in the dev environment
-* **Project:** Bump the version for the gover jar file
+* **Project:** Bump the version for the prosuna jar file
 * **App:** Add new element for file uploads
 
 ### Bug Fixes

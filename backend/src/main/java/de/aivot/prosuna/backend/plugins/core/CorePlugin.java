@@ -22,15 +22,15 @@ public class CorePlugin implements Plugin {
 
     @Override
     public @Nonnull String getName() {
-        return "Gover Kernfunktionalitäten";
+        return "Prosuna Kernfunktionalitäten";
     }
 
     @Override
     public @Nonnull String getDescription() {
         return """
-                Dieses Plugin enthält die Kernfunktionalitäten von Gover, einschließlich der standard Prozesselemente,
+                Dieses Plugin enthält die Kernfunktionalitäten von Prosuna, einschließlich der standard Prozesselemente,
                 Zahlungs- und Speicheranbieter, No-Code-Operatoren und JavaScript-Funktionsbibliotheken.
-                Es bildet die Grundlage für die meisten Funktionen von Gover und ist eine Voraussetzung für die Installation anderer Plugins.
+                Es bildet die Grundlage für die meisten Funktionen von Prosuna und ist eine Voraussetzung für die Installation anderer Plugins.
                 """;
     }
 

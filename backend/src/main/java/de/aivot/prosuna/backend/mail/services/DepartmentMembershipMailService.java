@@ -105,7 +105,7 @@ public class DepartmentMembershipMailService {
         mailService.sendMailToUser(
                 departmentTheme,
                 user,
-                "[Gover] " + title,
+                "[Prosuna] " + title,
                 template,
                 context
         );
