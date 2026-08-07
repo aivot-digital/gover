@@ -47,10 +47,10 @@ GOVER_BOOTSTRAP_ADMIN_MAIL=admin@example.org
 # Keycloak
 KEYCLOAK_DB_PASSWORD=change-me
 KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME=bootstrap-admin
-KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD=change-me
+KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD=Change-me-with-12-characters1!
 KEYCLOAK_ADMIN_EMAIL=admin@example.org
 KEYCLOAK_ADMIN_USERNAME=admin
-KEYCLOAK_ADMIN_PASSWORD=change-me
+KEYCLOAK_ADMIN_PASSWORD=Change-me-with-12-characters1!
 KEYCLOAK_DEPLOYMENT_CLIENT_SECRET=change-me-with-at-least-32-characters
 
 # RabbitMQ
@@ -65,6 +65,11 @@ Generate strong secrets, for example:
 ```bash
 openssl rand -hex 32
 ```
+
+### Keycloak Password Policy
+
+Keycloak user passwords, including staff user passwords, must be at least 12 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.
+They must not match the username or e-mail address, must not contain the username, and must not appear in the `100k_passwords.txt` password blacklist.
 
 ## 3. Start the Stack
 

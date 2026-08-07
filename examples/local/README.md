@@ -15,12 +15,17 @@ GOVER_CAPTCHA_KEY=Super-secret-key-with-at-least-32-characters
 GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET=Super-secret-key-with-at-least-32-characters
 KEYCLOAK_DB_PASSWORD=password
 KEYCLOAK_ADMIN_USERNAME=admin
-KEYCLOAK_ADMIN_PASSWORD=Super-secret-password-with-at-least-12-characters
+KEYCLOAK_ADMIN_PASSWORD=Super-secret-password-with-at-least-12-characters1!
 KEYCLOAK_DEPLOYMENT_CLIENT_SECRET=Super-secret-key-with-at-least-32-characters
 
 # RabbitMQ Password
 RABBITMQ_PASSWORD=password
 ```
+
+### Keycloak Password Policy
+
+Keycloak user passwords, including staff user passwords, must be at least 12 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.
+They must not match the username or e-mail address, must not contain the username, and must not appear in the `100k_passwords.txt` password blacklist.
 
 ## 2. Start the Services
 
