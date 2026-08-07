@@ -121,6 +121,49 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldKeepEmptyNoCodeValidationMessageAsErrorMarker() {
+        var field = new TextInputElement();
+        field.setId("field");
+        field.setValidation(new ElementValidationFunctions().setNoCodeList(List.of(
+                new ValidationNoCodeWrapper()
+                        .setNoCode(NoCodeStaticValue.of(false))
+                        .setMessage("")
+        )));
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("field", "invalid");
+
+        var result = derive(
+                createRoot(List.of(field)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("", result.getElementStates().get("field").getError());
+    }
+
+    @Test
+    void shouldNormalizeNullNoCodeValidationMessageToEmptyErrorMarker() {
+        var field = new TextInputElement();
+        field.setId("field");
+        field.setValidation(new ElementValidationFunctions().setNoCodeList(List.of(
+                new ValidationNoCodeWrapper()
+                        .setNoCode(NoCodeStaticValue.of(false))
+        )));
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("field", "invalid");
+
+        var result = derive(
+                createRoot(List.of(field)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("", result.getElementStates().get("field").getError());
+    }
+
+    @Test
     void shouldTreatPresentNullAsAuthoredClearInsteadOfDerivingValue() {
         var field = new TextInputElement();
         field.setId("field");
