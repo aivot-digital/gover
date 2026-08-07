@@ -322,7 +322,7 @@ public class CitizenProcessInstanceTaskViewController {
         if (
                 task.getStatus() != ProcessTaskStatus.Running &&
                         task.getStatus() != ProcessTaskStatus.AwaitingPayment &&
-                        task.getStatus() != ProcessTaskStatus.AwaitingCitizen
+                        task.getStatus() != ProcessTaskStatus.AwaitingCustomer
         ) {
             throw ResponseException.forbidden();
         }

@@ -10,7 +10,7 @@ public enum ProcessTaskStatus {
     Running(0),
     Paused(1),
     AwaitingPayment(6),
-    AwaitingCitizen(7),
+    AwaitingCustomer(7),
     Completed(2),
     Aborted(3),
     Failed(4),

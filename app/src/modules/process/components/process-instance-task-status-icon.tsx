@@ -49,7 +49,7 @@ export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIc
                     <PaymentArrowDown color="info"/>
                 </Tooltip>
             );
-        case ProcessTaskStatus.AwaitingCitizen:
+        case ProcessTaskStatus.AwaitingCustomer:
             return (
                 <Tooltip
                     title="Wartet auf Bürger"

@@ -157,7 +157,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             case ProcessTaskStatus.Running:
                 return theme.palette.info.main;
             case ProcessTaskStatus.AwaitingPayment:
-            case ProcessTaskStatus.AwaitingCitizen:
+            case ProcessTaskStatus.AwaitingCustomer:
                 return theme.palette.info.main;
             case ProcessTaskStatus.Paused:
                 return theme.palette.primary.main;
@@ -314,7 +314,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 });
             }
 
-            if (associatedTask.status == ProcessTaskStatus.AwaitingPayment || associatedTask.status == ProcessTaskStatus.AwaitingCitizen) {
+            if (associatedTask.status == ProcessTaskStatus.AwaitingPayment || associatedTask.status == ProcessTaskStatus.AwaitingCustomer) {
                 items.push({
                     label: 'Bürger:innen Aufgabe aufrufen',
                     icon: ModuleIcons.tasks,

@@ -68,7 +68,7 @@ public class CitizenProcessInstanceViewController {
                 .setProcessInstanceId(instance.getId())
                 .setAnyStatus(List.of(
                         ProcessTaskStatus.AwaitingPayment,
-                        ProcessTaskStatus.AwaitingCitizen
+                        ProcessTaskStatus.AwaitingCustomer
                 ));
 
         var taskPagination = Pageable

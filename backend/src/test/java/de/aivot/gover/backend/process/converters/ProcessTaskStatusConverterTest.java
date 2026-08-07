@@ -20,7 +20,7 @@ class ProcessTaskStatusConverterTest {
                 ProcessTaskStatus.Running, 0,
                 ProcessTaskStatus.Paused, 1,
                 ProcessTaskStatus.AwaitingPayment, 6,
-                ProcessTaskStatus.AwaitingCitizen, 7,
+                ProcessTaskStatus.AwaitingCustomer, 7,
                 ProcessTaskStatus.Completed, 2,
                 ProcessTaskStatus.Aborted, 3,
                 ProcessTaskStatus.Failed, 4,
