@@ -36,6 +36,11 @@ public final class IsoTimestampUtils {
     }
 
     @Nonnull
+    public static String toOffsetString(@Nonnull Instant value) {
+        return toOffsetString(value, ApplicationTimeZone.getZoneId());
+    }
+
+    @Nonnull
     public static String toOffsetString(@Nonnull Instant value, @Nonnull ZoneId zoneId) {
         return ISO_OFFSET_DATE_TIME.format(value.atZone(zoneId));
     }

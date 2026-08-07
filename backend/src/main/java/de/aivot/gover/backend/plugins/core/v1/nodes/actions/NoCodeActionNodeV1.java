@@ -630,19 +630,16 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             Object value
     ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         if (value instanceof Instant instant) {
-            return IsoTimestampUtils.toOffsetString(instant, ApplicationTimeZone.getZoneId());
+            return IsoTimestampUtils.toOffsetString(instant);
         }
         if (value instanceof OffsetDateTime dateTime) {
-            return IsoTimestampUtils.toOffsetString(dateTime.toInstant(), ApplicationTimeZone.getZoneId());
+            return IsoTimestampUtils.toOffsetString(dateTime.toInstant());
         }
         if (value instanceof ZonedDateTime dateTime) {
-            return IsoTimestampUtils.toOffsetString(dateTime.toInstant(), ApplicationTimeZone.getZoneId());
+            return IsoTimestampUtils.toOffsetString(dateTime.toInstant());
         }
         if (value instanceof LocalDateTime dateTime) {
-            return IsoTimestampUtils.toOffsetString(
-                    resolveLocalDateTime(dateTime),
-                    ApplicationTimeZone.getZoneId()
-            );
+            return IsoTimestampUtils.toOffsetString(resolveLocalDateTime(dateTime));
         }
         if (value instanceof LocalTime time) {
             return formatLocalTime(time);
@@ -767,25 +764,19 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
     @Nonnull
     private static String castToDateTime(Object value) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         if (value instanceof Instant instant) {
-            return IsoTimestampUtils.toOffsetString(instant, ApplicationTimeZone.getZoneId());
+            return IsoTimestampUtils.toOffsetString(instant);
         }
         if (value instanceof OffsetDateTime dateTime) {
-            return IsoTimestampUtils.toOffsetString(dateTime.toInstant(), ApplicationTimeZone.getZoneId());
+            return IsoTimestampUtils.toOffsetString(dateTime.toInstant());
         }
         if (value instanceof ZonedDateTime dateTime) {
-            return IsoTimestampUtils.toOffsetString(dateTime.toInstant(), ApplicationTimeZone.getZoneId());
+            return IsoTimestampUtils.toOffsetString(dateTime.toInstant());
         }
         if (value instanceof LocalDateTime dateTime) {
-            return IsoTimestampUtils.toOffsetString(
-                    resolveLocalDateTime(dateTime),
-                    ApplicationTimeZone.getZoneId()
-            );
+            return IsoTimestampUtils.toOffsetString(resolveLocalDateTime(dateTime));
         }
         if (value instanceof LocalDate date) {
-            return IsoTimestampUtils.toOffsetString(
-                    resolveLocalDateTime(date.atStartOfDay()),
-                    ApplicationTimeZone.getZoneId()
-            );
+            return IsoTimestampUtils.toOffsetString(resolveLocalDateTime(date.atStartOfDay()));
         }
         if (value instanceof String s) {
             var trimmed = s.trim();
@@ -796,15 +787,11 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             }
 
             try {
-                return IsoTimestampUtils.toOffsetString(
-                        IsoTimestampUtils.parseIsoInstant(trimmed),
-                        ApplicationTimeZone.getZoneId()
-                );
+                return IsoTimestampUtils.toOffsetString(IsoTimestampUtils.parseIsoInstant(trimmed));
             } catch (Exception ignored) {
                 try {
                     return IsoTimestampUtils.toOffsetString(
-                            resolveLocalDateTime(LocalDate.parse(trimmed).atStartOfDay()),
-                            ApplicationTimeZone.getZoneId()
+                            resolveLocalDateTime(LocalDate.parse(trimmed).atStartOfDay())
                     );
                 } catch (Exception ignored2) {
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(

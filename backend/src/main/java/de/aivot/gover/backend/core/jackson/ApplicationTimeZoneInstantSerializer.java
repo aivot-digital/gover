@@ -3,7 +3,6 @@ package de.aivot.gover.backend.core.jackson;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import de.aivot.gover.backend.utils.IsoTimestampUtils;
 
 import java.io.IOException;
@@ -24,7 +23,7 @@ public final class ApplicationTimeZoneInstantSerializer extends JsonSerializer<I
             SerializerProvider serializers
     ) throws IOException {
         generator.writeString(
-                IsoTimestampUtils.toOffsetString(value, ApplicationTimeZone.getZoneId())
+                IsoTimestampUtils.toOffsetString(value)
         );
     }
 }

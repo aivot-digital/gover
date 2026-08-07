@@ -363,11 +363,8 @@ public abstract class NoCodeOperator {
                     yield "";
                 }
             }
-            case Instant iValue -> IsoTimestampUtils.toOffsetString(iValue, ApplicationTimeZone.getZoneId());
-            case OffsetDateTime odtValue -> IsoTimestampUtils.toOffsetString(
-                    odtValue.toInstant(),
-                    ApplicationTimeZone.getZoneId()
-            );
+            case Instant iValue -> IsoTimestampUtils.toOffsetString(iValue);
+            case OffsetDateTime odtValue -> IsoTimestampUtils.toOffsetString(odtValue.toInstant());
             case LocalDate ldValue -> ldValue.toString();
             case YearMonth ymValue -> ymValue.toString();
             case Year yValue -> yValue.toString();
@@ -376,15 +373,9 @@ public abstract class NoCodeOperator {
                 var resolved = resolveLocalDateTime(ldtValue);
                 yield resolved == null
                         ? ""
-                        : IsoTimestampUtils.toOffsetString(
-                                resolved.toInstant(),
-                                ApplicationTimeZone.getZoneId()
-                        );
+                        : IsoTimestampUtils.toOffsetString(resolved.toInstant());
             }
-            case ZonedDateTime zdtValue -> IsoTimestampUtils.toOffsetString(
-                    zdtValue.toInstant(),
-                    ApplicationTimeZone.getZoneId()
-            );
+            case ZonedDateTime zdtValue -> IsoTimestampUtils.toOffsetString(zdtValue.toInstant());
             default -> "";
         };
     }

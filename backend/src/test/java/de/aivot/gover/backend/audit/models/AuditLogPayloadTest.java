@@ -1,7 +1,6 @@
 package de.aivot.gover.backend.audit.models;
 
 import de.aivot.gover.backend.audit.models.AuditLogPayload;
-import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import org.junit.jupiter.api.Test;
 
@@ -237,10 +236,7 @@ class AuditLogPayloadTest {
         assertEquals(
                 Map.of(
                         "timestamp",
-                        IsoTimestampUtils.toOffsetString(
-                                timestamp,
-                                ApplicationTimeZone.getZoneId()
-                        )
+                        IsoTimestampUtils.toOffsetString(timestamp)
                 ),
                 result
         );

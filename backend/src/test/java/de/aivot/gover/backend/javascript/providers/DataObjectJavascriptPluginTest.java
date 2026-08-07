@@ -10,7 +10,6 @@ import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement
 import de.aivot.gover.backend.javascript.models.JavascriptCode;
 import de.aivot.gover.backend.javascript.services.JavascriptEngine;
 import de.aivot.gover.backend.plugins.core.v1.javascript.DataObjectJavascriptV1;
-import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -139,7 +138,7 @@ class DataObjectJavascriptPluginTest {
     }
 
     private static String instantWithApplicationOffset(Instant value) {
-        return IsoTimestampUtils.toOffsetString(value, ApplicationTimeZone.getZoneId());
+        return IsoTimestampUtils.toOffsetString(value);
     }
 
     @Test

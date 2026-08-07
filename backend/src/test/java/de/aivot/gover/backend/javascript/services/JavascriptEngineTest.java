@@ -4,7 +4,6 @@ import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.javascript.models.JavascriptCode;
 import de.aivot.gover.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.gover.backend.javascript.services.JavascriptEngine;
-import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
@@ -86,10 +85,7 @@ class JavascriptEngineTest {
                     .registerGlobalObject("test", Map.of("timestamp", timestamp))
                     .evaluateCode(new JavascriptCode().setCode("test.timestamp;"));
             assertEquals(
-                    IsoTimestampUtils.toOffsetString(
-                            timestamp,
-                            ApplicationTimeZone.getZoneId()
-                    ),
+                    IsoTimestampUtils.toOffsetString(timestamp),
                     res.asString()
             );
         } catch (Exception e) {
