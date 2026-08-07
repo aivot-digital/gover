@@ -182,7 +182,7 @@ captcha:
 
 # Set basic properties for the gover business case
 gover:
-  goverHostname: "${GOVER_HOSTNAME}"
+  prosunaHostname: "${GOVER_HOSTNAME}"
   timezone: "${GOVER_TIMEZONE:Europe/Berlin}"
   fromMail: "${GOVER_FROM_MAIL}"
   reportMail: "${GOVER_REPORT_MAIL}"
