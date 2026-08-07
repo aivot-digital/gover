@@ -17,7 +17,6 @@ import {
 } from '@mui/material';
 import {type StepIconProps} from '@mui/material/StepIcon';
 import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
-import {type SvgIconComponent} from '../../../types/svg-icon-component';
 import Typography from '@mui/material/Typography';
 import UploadFile from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
 import Check from '@aivot/mui-material-symbols-400-n25-outlined/Check';
@@ -580,7 +579,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                     spacing={2}
                                 >
                                     <ProcessTemplateCard
-                                        Icon={AddBox}
+                                        icon={<AddBox/>}
                                         title="Leerer Prozess"
                                         description="Ein frischer Prozess ohne vordefinierte Schritte oder Logik."
                                         category="action"
@@ -593,7 +592,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                     />
 
                                     <ProcessTemplateCard
-                                        Icon={UploadFile}
+                                        icon={<UploadFile/>}
                                         title="Prozess importieren (JSON)"
                                         description="Einen bestehenden Prozess aus einer Exportdatei importieren."
                                         category="action"
@@ -617,7 +616,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                         templates.map((preset) => (
                                             <ProcessTemplateCard
                                                 key={preset.path}
-                                                Icon={Flowsheet}
+                                                icon={<Flowsheet/>}
                                                 title={preset.name}
                                                 description={preset.description}
                                                 category="template"
@@ -889,7 +888,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 }
 
 interface ProcessTemplateCardProps {
-    Icon: SvgIconComponent;
+    icon: ReactNode;
     title: string;
     description: string;
     onClick: () => void;
@@ -899,7 +898,7 @@ interface ProcessTemplateCardProps {
 
 function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
     const {
-        Icon,
+        icon,
         title,
         description,
         onClick,
@@ -954,9 +953,12 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
                             alignItems: 'center',
                             justifyContent: 'center',
                             flexShrink: 0,
+                            '& svg': {
+                                fontSize: 24,
+                            },
                         }}
                     >
-                        <Icon sx={{fontSize: 24}}/>
+                        {icon}
                     </Box>
 
                     <Box
