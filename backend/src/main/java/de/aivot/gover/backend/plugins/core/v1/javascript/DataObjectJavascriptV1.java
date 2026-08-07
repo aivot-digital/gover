@@ -10,7 +10,6 @@ import de.aivot.gover.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.gover.backend.javascript.services.JavascriptEngine;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.plugins.core.CorePlugin;
-import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
@@ -258,8 +257,8 @@ public class DataObjectJavascriptV1 implements JavascriptFunctionProvider {
     private static Map<String, Object> getItemData(@Nonnull DataObjectItemEntity entity) {
         var data = entity.getData();
         data.put("$id", entity.getId());
-        data.put("$created", IsoTimestampUtils.toOffsetString(entity.getCreated()));
-        data.put("$updated", IsoTimestampUtils.toOffsetString(entity.getUpdated()));
+        data.put("$created", entity.getCreated());
+        data.put("$updated", entity.getUpdated());
         return data;
     }
 

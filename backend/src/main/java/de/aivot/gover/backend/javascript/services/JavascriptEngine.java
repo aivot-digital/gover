@@ -8,13 +8,16 @@ import de.aivot.gover.backend.javascript.models.JavascriptCode;
 import de.aivot.gover.backend.javascript.models.JavascriptResult;
 import de.aivot.gover.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.gover.backend.process.models.ProcessExecutionData;
+import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import org.graalvm.polyglot.*;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyObject;
+
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -172,6 +175,7 @@ public class JavascriptEngine implements AutoCloseable {
                 switch (value) {
                     case Map<?, ?> childMap -> mutableMap.put(sKey, mapToProxyObject(childMap));
                     case Collection<?> childCollection -> mutableMap.put(sKey, collectionToProxyArray(childCollection));
+                    case Instant instant -> mutableMap.put(sKey, IsoTimestampUtils.toOffsetString(instant));
 
                     case BigDecimal number -> mutableMap.put(sKey, number.doubleValue());
                     case Double number -> mutableMap.put(sKey, number.doubleValue());
@@ -205,6 +209,7 @@ public class JavascriptEngine implements AutoCloseable {
             switch (value) {
                 case Map<?, ?> childMap -> mutableList.add(mapToProxyObject(childMap));
                 case Collection<?> childCollection -> mutableList.add(collectionToProxyArray(childCollection));
+                case Instant instant -> mutableList.add(IsoTimestampUtils.toOffsetString(instant));
 
                 case BigDecimal number -> mutableList.add(number.doubleValue());
                 case Double number -> mutableList.add(number.doubleValue());

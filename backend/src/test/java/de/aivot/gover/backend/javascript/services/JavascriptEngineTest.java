@@ -94,6 +94,24 @@ class JavascriptEngineTest {
     }
 
     @Test
+    void mapToProxyObject_ConvertsInstantToIsoString() {
+        var timestamp = Instant.parse("2026-04-14T08:30:00Z");
+
+        var proxy = JavascriptEngine.mapToProxyObject(Map.of("timestamp", timestamp));
+
+        assertEquals(IsoTimestampUtils.toOffsetString(timestamp), proxy.getMember("timestamp"));
+    }
+
+    @Test
+    void collectionToProxyArray_ConvertsInstantToIsoString() {
+        var timestamp = Instant.parse("2026-04-14T08:30:00Z");
+
+        var proxy = JavascriptEngine.collectionToProxyArray(List.of(timestamp));
+
+        assertEquals(IsoTimestampUtils.toOffsetString(timestamp), proxy.get(0));
+    }
+
+    @Test
     void executeCode() {
         try (var service = new JavascriptEngine(List.of())) {
             var res = service.evaluateCode(new JavascriptCode().setCode("'value'"));
