@@ -1,0 +1,11 @@
+Hallo,
+
+für den Vorgang [(${process.internalTitle})] ist eine Zahlung erforderlich.
+
+Aufgabe: [(${taskName})]
+Zahlungsanbieter: [(${paymentProviderName})]
+Zu zahlender Betrag: [(${paymentTotalLabel})] Euro
+
+Sie können die Zahlungsinformationen über den nachfolgenden Link aufrufen: [(${paymentPath})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

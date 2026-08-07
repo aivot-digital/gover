@@ -1,0 +1,46 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml"/>
+
+        <mj-preview>
+            Für Ihren Vorgang ist eine Zahlung erforderlich
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        für den Vorgang
+                        <b th:text="${process.internalTitle}">Beispielprozess</b>
+                        ist eine Zahlung erforderlich.
+                    </p>
+
+                    <p>
+                        Aufgabe:
+                        <b th:text="${taskName}">Zahlung anfordern</b>
+                        <br/>
+                        Zahlungsanbieter:
+                        <b th:text="${paymentProviderName}">Zahlungsanbieter</b>
+                        <br/>
+                        Zu zahlender Betrag:
+                        <b th:text="${paymentTotalLabel + ' Euro'}">10,00 Euro</b>
+                    </p>
+
+                    <p>
+                        Sie können die Zahlungsinformationen über den nachfolgenden Link aufrufen:
+                        <a th:href="${paymentPath}"
+                           th:text="${paymentPath}">Beispiel-Link
+                        </a>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

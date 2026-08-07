@@ -24,6 +24,7 @@ import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.gover.backend.payment.exceptions.PaymentException;
 import de.aivot.gover.backend.payment.models.PaymentPayload;
+import de.aivot.gover.backend.payment.models.PaymentTaskRuntimeDataKeys;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.gover.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.gover.backend.payment.services.PaymentTransactionService;
@@ -73,8 +74,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     private static final String CUSTOMER_SUMMARY_FILE_NAME = "Formularzusammenfassung";
     private static final String CUSTOMER_SUMMARY_FILE_NAME_EXT = CUSTOMER_SUMMARY_FILE_NAME + ".pdf";
 
-    public static final String DATA_KEY_PAYMENT_PAYLOAD = "paymentPayload";
-    public static final String DATA_KEY_PAYMENT_TRANSACTION_KEY = "paymentTransaction";
+    public static final String DATA_KEY_PAYMENT_PAYLOAD = PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD;
+    public static final String DATA_KEY_PAYMENT_TRANSACTION_KEY = PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION;
 
     public static final String DATA_KEY_PAYLOAD = "payload";
     public static final String DATA_KEY_UNMAPPED = "unmapped";
