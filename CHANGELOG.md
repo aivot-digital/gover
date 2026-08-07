@@ -218,7 +218,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 * **App:** Fix broken error page when the clamav service is not available
 * **App:** Removed payment details from public form endpoints
 * **App:** Removed unnecessary console log when navigating between segments
-* **App:** Fix naming of children of duplicated store elements
+* **App:** Fix naming of children of duplicated marketplace elements
 * **App:** Fix length limits for title and slug when creating forms
 * **App:** Fix broken imports when theme is not present in target system
 * **App:** Fix title changing in form editor

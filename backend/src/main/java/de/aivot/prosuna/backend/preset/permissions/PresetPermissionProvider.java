@@ -14,7 +14,7 @@ public class PresetPermissionProvider implements PermissionProvider {
     public static final String PRESET_UPDATE = "preset.update";
     public static final String PRESET_DELETE = "preset.delete";
     public static final String PRESET_PUBLISH_LOCAL = "preset.publish.local";
-    public static final String PRESET_PUBLISH_STORE = "preset.publish.store";
+    public static final String PRESET_PUBLISH_MARKETPLACE = "preset.publish.marketplace";
 
     @Override
     public String getContextLabel() {
@@ -29,7 +29,7 @@ public class PresetPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(PRESET_UPDATE, "Vorlage bearbeiten", "Erlaubt das Bearbeiten von Vorlagen."),
                 PermissionEntry.of(PRESET_DELETE, "Vorlage löschen", "Erlaubt das Löschen von Vorlagen."),
                 PermissionEntry.of(PRESET_PUBLISH_LOCAL, "Vorlage lokal veröffentlichen", "Erlaubt das lokale Veröffentlichen von Vorlagen."),
-                PermissionEntry.of(PRESET_PUBLISH_STORE, "Vorlage im Store veröffentlichen", "Erlaubt das Veröffentlichen von Vorlagen im Store."),
+                PermissionEntry.of(PRESET_PUBLISH_MARKETPLACE, "Vorlage im Marktplatz veröffentlichen", "Erlaubt das Veröffentlichen von Vorlagen im Marktplatz."),
         };
     }
 

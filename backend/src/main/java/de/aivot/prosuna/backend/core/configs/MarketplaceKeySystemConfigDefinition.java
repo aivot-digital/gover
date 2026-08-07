@@ -10,9 +10,9 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
-public class StoreKeySystemConfigDefinition implements SystemConfigDefinition<String> {
-    // TODO: Remove SystemConfigKey.PROSUNA_STORE_KEY and use the key directly
-    public static final String KEY = SystemConfigKey.PROSUNA_STORE_KEY.getKey();
+public class MarketplaceKeySystemConfigDefinition implements SystemConfigDefinition<String> {
+    // TODO: Remove SystemConfigKey.PROSUNA_MARKETPLACE_KEY and use the key directly
+    public static final String KEY = SystemConfigKey.PROSUNA_MARKETPLACE_KEY.getKey();
 
     @Nonnull
     @Override
@@ -32,19 +32,19 @@ public class StoreKeySystemConfigDefinition implements SystemConfigDefinition<St
     @Nonnull
     @Override
     public String getCategory() {
-        return "Prosuna Store";
+        return "Prosuna Marktplatz";
     }
 
     @Nonnull
     @Override
     public String getLabel() {
-        return "Store-Schlüssel";
+        return "Marktplatz-Schlüssel";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Der Schlüssel für den Zugriff auf den Prosuna Store.";
+        return "Der Schlüssel für den Zugriff auf den Prosuna Marktplatz.";
     }
 
     @Nonnull

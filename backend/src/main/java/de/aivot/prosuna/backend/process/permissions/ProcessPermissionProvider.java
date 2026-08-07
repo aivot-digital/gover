@@ -16,7 +16,7 @@ public class ProcessPermissionProvider implements PermissionProvider {
     public static final String PROCESS_DEFINITION_AUDIT = "process_definition.audit";
     public static final String PROCESS_DEFINITION_PUBLISH_TEST = "process_definition.publish.test";
     public static final String PROCESS_DEFINITION_PUBLISH_LOCAL = "process_definition.publish.local";
-    public static final String PROCESS_DEFINITION_PUBLISH_STORE = "process_definition.publish.store";
+    public static final String PROCESS_DEFINITION_PUBLISH_MARKETPLACE = "process_definition.publish.marketplace";
 
     @Deprecated
     public static final String PROCESS_INSTANCE_TRIGGER = ProcessInstancePermissionProvider.PROCESS_INSTANCE_TRIGGER;
@@ -47,7 +47,7 @@ public class ProcessPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(PROCESS_DEFINITION_AUDIT, "Prozess-Audit einsehen", "Erlaubt das Einsehen des Audit-Logs eines Prozesses."),
                 PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_TEST, "Prozess als Test veröffentlichen", "Erlaubt das Veröffentlichen eines Prozesses als Testversion."),
                 PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_LOCAL, "Prozess lokal veröffentlichen", "Erlaubt das Veröffentlichen eines Prozesses im lokalen System."),
-                PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_STORE, "Prozess im Store veröffentlichen", "Erlaubt das Veröffentlichen eines Prozesses im zentralen Store."),
+                PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_MARKETPLACE, "Prozess im Marktplatz veröffentlichen", "Erlaubt das Veröffentlichen eines Prozesses im zentralen Marktplatz."),
         };
     }
 

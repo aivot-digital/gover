@@ -1,6 +1,6 @@
 import {FormLayoutElement} from '../elements/form-layout-element';
 
-export interface StoreCreateForm {
+export interface MarketplaceCreateForm {
     version: string;
     title: string;
     description: string;

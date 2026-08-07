@@ -184,7 +184,7 @@ const elementConstructors: {
     [ElementType.GroupLayout]: (id) => ({
         ...makeFormBase(ElementType.GroupLayout, id),
         children: [],
-        storeLink: null,
+        marketplaceLink: null,
     }),
     [ElementType.Checkbox]: (id) => ({
         ...makeInputBase(ElementType.Checkbox, id),

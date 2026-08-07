@@ -16,7 +16,7 @@ public class GroupLayoutElement extends BaseFormElement implements LayoutElement
     private List<BaseFormElement> children = new LinkedList<>();
 
     @Nullable
-    private GroupLayoutStoreLink storeLink;
+    private GroupLayoutMarketplaceLink marketplaceLink;
 
     public GroupLayoutElement() {
         super(ElementType.GroupLayout);
@@ -29,12 +29,12 @@ public class GroupLayoutElement extends BaseFormElement implements LayoutElement
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         GroupLayoutElement that = (GroupLayoutElement) o;
-        return Objects.equals(children, that.children) && Objects.equals(storeLink, that.storeLink);
+        return Objects.equals(children, that.children) && Objects.equals(marketplaceLink, that.marketplaceLink);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), children, storeLink);
+        return Objects.hash(super.hashCode(), children, marketplaceLink);
     }
 
     // endregion
@@ -61,12 +61,12 @@ public class GroupLayoutElement extends BaseFormElement implements LayoutElement
     }
 
     @Nullable
-    public GroupLayoutStoreLink getStoreLink() {
-        return storeLink;
+    public GroupLayoutMarketplaceLink getMarketplaceLink() {
+        return marketplaceLink;
     }
 
-    public GroupLayoutElement setStoreLink(@Nullable GroupLayoutStoreLink storeLink) {
-        this.storeLink = storeLink;
+    public GroupLayoutElement setMarketplaceLink(@Nullable GroupLayoutMarketplaceLink marketplaceLink) {
+        this.marketplaceLink = marketplaceLink;
         return this;
     }
 
@@ -74,11 +74,11 @@ public class GroupLayoutElement extends BaseFormElement implements LayoutElement
 
     // region Subclasses
 
-    public static class GroupLayoutStoreLink implements Serializable {
+    public static class GroupLayoutMarketplaceLink implements Serializable {
         @Nullable
-        private String storeId;
+        private String marketplaceId;
         @Nullable
-        private String storeVersion;
+        private String marketplaceVersion;
 
         // region Hash & Equals
 
@@ -86,14 +86,14 @@ public class GroupLayoutElement extends BaseFormElement implements LayoutElement
         public boolean equals(Object o) {
             if (o == null || getClass() != o.getClass()) return false;
 
-            GroupLayoutStoreLink that = (GroupLayoutStoreLink) o;
-            return Objects.equals(storeId, that.storeId) && Objects.equals(storeVersion, that.storeVersion);
+            GroupLayoutMarketplaceLink that = (GroupLayoutMarketplaceLink) o;
+            return Objects.equals(marketplaceId, that.marketplaceId) && Objects.equals(marketplaceVersion, that.marketplaceVersion);
         }
 
         @Override
         public int hashCode() {
-            int result = Objects.hashCode(storeId);
-            result = 31 * result + Objects.hashCode(storeVersion);
+            int result = Objects.hashCode(marketplaceId);
+            result = 31 * result + Objects.hashCode(marketplaceVersion);
             return result;
         }
 
@@ -102,22 +102,22 @@ public class GroupLayoutElement extends BaseFormElement implements LayoutElement
         // region Getters & Setters
 
         @Nullable
-        public String getStoreId() {
-            return storeId;
+        public String getMarketplaceId() {
+            return marketplaceId;
         }
 
-        public GroupLayoutStoreLink setStoreId(@Nullable String storeId) {
-            this.storeId = storeId;
+        public GroupLayoutMarketplaceLink setMarketplaceId(@Nullable String marketplaceId) {
+            this.marketplaceId = marketplaceId;
             return this;
         }
 
         @Nullable
-        public String getStoreVersion() {
-            return storeVersion;
+        public String getMarketplaceVersion() {
+            return marketplaceVersion;
         }
 
-        public GroupLayoutStoreLink setStoreVersion(@Nullable String storeVersion) {
-            this.storeVersion = storeVersion;
+        public GroupLayoutMarketplaceLink setMarketplaceVersion(@Nullable String marketplaceVersion) {
+            this.marketplaceVersion = marketplaceVersion;
             return this;
         }
 

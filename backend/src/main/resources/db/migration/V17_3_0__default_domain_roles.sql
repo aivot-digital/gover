@@ -34,7 +34,7 @@ values (1,
             'process_definition.audit',
             'process_definition.publish.test',
             'process_definition.publish.local',
-            'process_definition.publish.store',
+            'process_definition.publish.marketplace',
 
             'process_instance.trigger',
             'process_instance.read',
@@ -113,7 +113,7 @@ values (1,
             'process_definition.delete',
             'process_definition.publish.test',
             'process_definition.publish.local',
-            'process_definition.publish.store',
+            'process_definition.publish.marketplace',
 
             'process_instance.read',
             'process_instance.communication.internal'

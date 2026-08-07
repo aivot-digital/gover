@@ -5,42 +5,42 @@ import OpenInNewOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';
-import {ProsunaStoreService} from '../../../services/prosuna-store.service';
+import {ProsunaMarketplaceService} from '../../../services/prosuna-marketplace.service';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
-import {type StoreDetailModule} from '../../../models/entities/store-detail-module';
+import {type MarketplaceDetailModule} from '../../../models/entities/marketplace-detail-module';
 import {type AnyElement} from '../../../models/elements/any-element';
 import {cloneElement} from '../../../utils/clone-element';
 import {type ReactNode} from 'react';
 import {SelectionDetailsPanel} from '../../../components/selection-dialog/selection-details-panel';
 
-export function ModuleInfoTab({
-    moduleId,
+export function MarketplaceModuleInfoTab({
+    marketplaceModuleId,
     onAddElement,
     primaryActionLabel,
     primaryActionIcon,
     onClose,
 }: {
-    moduleId: string,
+    marketplaceModuleId: string,
     onAddElement: (element: AnyElement) => void,
     primaryActionLabel: string,
     primaryActionIcon: ReactNode,
     onClose: () => void,
 }) {
-    const [module, setModule] = useState<StoreDetailModule>();
-    const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.prosuna.storeKey));
+    const [module, setModule] = useState<MarketplaceDetailModule>();
+    const marketplaceKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.prosuna.marketplaceKey));
 
     useEffect(() => {
-        if (moduleId == null) {
+        if (marketplaceModuleId == null) {
             return;
         }
 
-        ProsunaStoreService.fetchModule(moduleId, storeKey)
+        ProsunaMarketplaceService.fetchModule(marketplaceModuleId, marketplaceKey)
             .then(setModule)
             .catch((err) => {
                 console.error(err);
             });
-    }, [moduleId, storeKey]);
+    }, [marketplaceModuleId, marketplaceKey]);
 
     const handleAddElement = () => {
         if (module == null) {
@@ -48,14 +48,14 @@ export function ModuleInfoTab({
         }
 
         Promise.all([
-            ProsunaStoreService.fetchModuleCode(module.id, module.current_version, storeKey),
-            ProsunaStoreService.fetchModule(module.id, storeKey),
+            ProsunaMarketplaceService.fetchModuleCode(module.id, module.current_version, marketplaceKey),
+            ProsunaMarketplaceService.fetchModule(module.id, marketplaceKey),
         ])
             .then(([element, detailedModule]) => {
                 const elementToAdd = cloneElement(element, true);
-                elementToAdd.storeLink = {
-                    storeId: detailedModule.id,
-                    storeVersion: detailedModule.current_version,
+                elementToAdd.marketplaceLink = {
+                    marketplaceId: detailedModule.id,
+                    marketplaceVersion: detailedModule.current_version,
                 };
                 elementToAdd.name = detailedModule.title.substring(0, 30);
                 onAddElement(elementToAdd);
@@ -121,7 +121,7 @@ export function ModuleInfoTab({
                     <Typography
                         component="a"
                         variant="body2"
-                        href={`https://store.prosuna.de/modules/${module.id}/`}
+                        href={`https://marketplace.prosuna.de/modules/${module.id}/`}
                         target="_blank"
                         rel="noreferrer noopener"
                         sx={{
@@ -140,7 +140,7 @@ export function ModuleInfoTab({
                 <Typography
                     component="a"
                     variant="body2"
-                    href={`https://store.prosuna.de/organizations/${module.organization_id}/`}
+                    href={`https://marketplace.prosuna.de/organizations/${module.organization_id}/`}
                     target="_blank"
                     rel="noreferrer noopener"
                     sx={{

@@ -562,7 +562,7 @@ export function ApplicationSettings() {
                     type: ElementType.GroupLayout,
                     children: configsChildren,
                     name: null,
-                    storeLink: null,
+                    marketplaceLink: null,
                     testProtocolSet: null,
                     weight: null,
                     visibility: null,
@@ -775,7 +775,7 @@ export function ApplicationSettings() {
                         mt: 4,
                     }}
                 >
-                    Prosuna Store
+                    Prosuna Marktplatz
                 </Typography>
                 <Typography
                     sx={{
@@ -783,9 +783,9 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Im Prosuna Store finden Sie Bausteine und Formulare zur Nachnutzung. Wenn Sie eigene Formulare
+                    Im Prosuna Marktplatz finden Sie Bausteine und Formulare zur Nachnutzung. Wenn Sie eigene Formulare
                     und/oder
-                    Bausteine im Prosuna Store zur Verfügung stellen möchten, benötigen Sie einen eigenen Schlüssel
+                    Bausteine im Prosuna Marktplatz zur Verfügung stellen möchten, benötigen Sie einen eigenen Schlüssel
                     (API-Key).
                 </Typography>
                 <Grid
@@ -799,14 +799,14 @@ export function ApplicationSettings() {
                         }}
                     >
                         <TextFieldComponent
-                            label="Schlüssel für den Prosuna Store"
+                            label="Schlüssel für den Prosuna Marktplatz"
                             placeholder="b721fe43-5800-40a3-ae7f-d19274dd72f1"
-                            hint="Geben Sie hier Ihren Schlüssel für den Prosuna Store ein, wenn Sie eigene Formulare und/oder Vorlagen im Prosuna Store veröffentlichen wollen."
-                            value={editedConfig[SystemConfigKeys.prosuna.storeKey] ?? config[SystemConfigKeys.prosuna.storeKey]}
+                            hint="Geben Sie hier Ihren Schlüssel für den Prosuna Marktplatz ein, wenn Sie eigene Formulare und/oder Vorlagen im Prosuna Marktplatz veröffentlichen wollen."
+                            value={editedConfig[SystemConfigKeys.prosuna.marketplaceKey] ?? config[SystemConfigKeys.prosuna.marketplaceKey]}
                             onChange={(val) => {
                                 setEditedConfig({
                                     ...editedConfig,
-                                    [SystemConfigKeys.prosuna.storeKey]: val ?? '',
+                                    [SystemConfigKeys.prosuna.marketplaceKey]: val ?? '',
                                 });
                             }}
                             disabled={!canUpdateSystemConfig}

@@ -105,8 +105,8 @@ public class PresetEntity {
         return publishedVersion;
     }
 
-    public PresetEntity setPublishedVersion(@Nullable Integer currentStoreVersion) {
-        this.publishedVersion = currentStoreVersion;
+    public PresetEntity setPublishedVersion(@Nullable Integer currentMarketplaceVersion) {
+        this.publishedVersion = currentMarketplaceVersion;
         return this;
     }
 

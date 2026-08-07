@@ -1,6 +1,6 @@
 import {GroupLayout} from '../elements/form/layout/group-layout';
 
-export interface StoreCreateModule {
+export interface MarketplaceCreateModule {
     version: string;
     title: string;
     description: string;

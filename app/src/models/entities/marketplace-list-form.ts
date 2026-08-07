@@ -1,4 +1,4 @@
-export interface StoreDetailModule {
+export interface MarketplaceListForm {
     id: string;
     organization: string;
     organization_id: string;
@@ -6,8 +6,5 @@ export interface StoreDetailModule {
     description_short: string;
     is_public: boolean;
     current_version: string;
-    datenfeld_id: string;
-    description: string;
-    recent_changes: string;
-    versions: string[];
+    leika_ids: string[];
 }

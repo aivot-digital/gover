@@ -2,8 +2,8 @@ import {Alert, Box, Chip, Typography} from '@mui/material';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import React, {useEffect, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
-import {type StoreListModule} from '../../models/entities/store-list-module';
-import {ProsunaStoreService} from '../../services/prosuna-store.service';
+import {type MarketplaceListModule} from '../../models/entities/marketplace-list-module';
+import {ProsunaMarketplaceService} from '../../services/prosuna-marketplace.service';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {LoadingPlaceholder} from '../loading-placeholder/loading-placeholder';
 import {Link} from 'react-router-dom';
@@ -11,17 +11,17 @@ import {SearchInput} from '../search-input/search-input';
 import ExtensionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Extension';
 import LockOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
 import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
-import {type StoreModuleListProps} from './store-module-list-props';
+import {type MarketplaceModuleListProps} from './marketplace-module-list-props';
 import {SelectionListRow} from '../selection-dialog/selection-list-row';
 
-export function StoreModuleList(props: StoreModuleListProps) {
+export function MarketplaceModuleList(props: MarketplaceModuleListProps) {
     const dispatch = useAppDispatch();
-    const [modules, setModules] = useState<StoreListModule[]>();
+    const [modules, setModules] = useState<MarketplaceListModule[]>();
     const [search, setSearch] = useState('');
 
     useEffect(() => {
-        ProsunaStoreService
-            .listModules(0, '', props.storeKey)
+        ProsunaMarketplaceService
+            .listModules(0, '', props.marketplaceKey)
             .then((res) => {
                 setModules(res.items);
             })
@@ -29,7 +29,7 @@ export function StoreModuleList(props: StoreModuleListProps) {
                 console.error(err);
                 dispatch(showErrorSnackbar('Fehler beim Laden der Bausteine'));
             });
-    }, [dispatch, props.storeKey]);
+    }, [dispatch, props.marketplaceKey]);
 
     const filteredModules = useMemo(() => {
         const trimmedSearch = search.trim();
@@ -51,10 +51,10 @@ export function StoreModuleList(props: StoreModuleListProps) {
         return fuse.search(trimmedSearch).map((entry) => entry.item);
     }, [modules, search]);
 
-    const addModuleElement = (module: StoreListModule): void => {
+    const addModuleElement = (module: MarketplaceListModule): void => {
         Promise.all([
-            ProsunaStoreService.fetchModuleCode(module.id, module.current_version, props.storeKey),
-            ProsunaStoreService.fetchModule(module.id, props.storeKey),
+            ProsunaMarketplaceService.fetchModuleCode(module.id, module.current_version, props.marketplaceKey),
+            ProsunaMarketplaceService.fetchModule(module.id, props.marketplaceKey),
         ])
             .then(([element, detailedModule]) => {
                 props.onSelect(detailedModule, element);

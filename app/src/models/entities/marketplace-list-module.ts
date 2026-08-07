@@ -1,4 +1,4 @@
-export interface StoreListModule {
+export interface MarketplaceListModule {
     current_version: string;
     datenfeld_id: string;
     description_short: string;

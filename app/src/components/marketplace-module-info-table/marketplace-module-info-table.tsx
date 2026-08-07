@@ -1,10 +1,10 @@
-import {type StoreModuleInfoTableProps} from './store-module-info-table-props';
+import {type MarketplaceModuleInfoTableProps} from './marketplace-module-info-table-props';
 import {Box, IconButton, Table, TableBody, TableCell, TableContainer, TableRow, Tooltip, Typography} from '@mui/material';
 import React from 'react';
 import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 
-export function StoreModuleInfoTable(props: StoreModuleInfoTableProps) {
+export function MarketplaceModuleInfoTable(props: MarketplaceModuleInfoTableProps) {
     return (
 
         <Box>
@@ -21,7 +21,7 @@ export function StoreModuleInfoTable(props: StoreModuleInfoTableProps) {
                 {
                     props.module.is_public &&
                     <Tooltip
-                        title="Im Store anzeigen"
+                        title="Im Marktplatz anzeigen"
                     >
                         <IconButton
                             sx={{
@@ -30,7 +30,7 @@ export function StoreModuleInfoTable(props: StoreModuleInfoTableProps) {
                             component="a"
                             target="_blank"
                             rel="noopener noreferrer"
-                            href={`https://store.prosuna.de/modules/${props.module.id}`}
+                            href={`https://marketplace.prosuna.de/modules/${props.module.id}`}
                         >
                             <OpenInNewIcon/>
                         </IconButton>
@@ -49,7 +49,7 @@ export function StoreModuleInfoTable(props: StoreModuleInfoTableProps) {
                                 <a
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    href={`https://store.prosuna.de/organizations/${props.module.organization_id}/`}
+                                    href={`https://marketplace.prosuna.de/organizations/${props.module.organization_id}/`}
                                 >
                                     @{props.module.organization}
                                 </a>
@@ -96,7 +96,7 @@ export function StoreModuleInfoTable(props: StoreModuleInfoTableProps) {
                         </TableRow>
                         <TableRow>
                             <TableCell>
-                                Aktuelle Store-Version
+                                Aktuelle Marktplatz-Version
                             </TableCell>
                             <TableCell>
                                 {props.module.current_version}
@@ -106,7 +106,7 @@ export function StoreModuleInfoTable(props: StoreModuleInfoTableProps) {
                             props.currentVersion != null &&
                         <TableRow>
                             <TableCell>
-                                Verbaute Store-Version
+                                Verbaute Marktplatz-Version
                             </TableCell>
                             <TableCell>
                                 {props.currentVersion}
@@ -117,7 +117,7 @@ export function StoreModuleInfoTable(props: StoreModuleInfoTableProps) {
                             props.module.versions.length > 1 &&
                             <TableRow>
                                 <TableCell>
-                                    Alle Store-Versionen
+                                    Alle Marktplatz-Versionen
                                 </TableCell>
                                 <TableCell>
                                     {props.module.versions.join(', ')}

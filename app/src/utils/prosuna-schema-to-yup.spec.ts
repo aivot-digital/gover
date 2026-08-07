@@ -268,7 +268,7 @@ function createGroupLayout(children: any[]): any {
         id: 'root',
         type: ElementType.GroupLayout,
         children: children,
-        storeLink: null,
+        marketplaceLink: null,
     };
 }
 

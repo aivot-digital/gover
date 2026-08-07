@@ -16,7 +16,7 @@ export const SystemConfigKeys = {
         favicon: 'SystemFavicon',
     },
     prosuna: {
-        storeKey: 'ProsunaStoreKey',
+        marketplaceKey: 'ProsunaMarketplaceKey',
     },
     users: {
         defaultSystemRole: 'users.default_system_role',
