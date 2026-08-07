@@ -73,7 +73,7 @@ public class AuthController {
     private static final Duration AUTH_FLOW_TTL = Duration.ofMinutes(10);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    @Value("${gover.prosunaHostname}")
+    @Value("${prosuna.prosunaHostname}")
     private String hostname;
 
     @Value("${keycloak.hostname}")

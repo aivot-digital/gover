@@ -31,7 +31,7 @@ public class RedisCsrfTokenRepository implements CsrfTokenRepository {
 
     public RedisCsrfTokenRepository(
             StringRedisTemplate redis,
-            @Value("${gover.security.csrfTtlSeconds:86400}") long ttlSeconds
+            @Value("${prosuna.security.csrfTtlSeconds:86400}") long ttlSeconds
     ) {
         this.redis = redis;
         this.ttl = Duration.ofSeconds(ttlSeconds);

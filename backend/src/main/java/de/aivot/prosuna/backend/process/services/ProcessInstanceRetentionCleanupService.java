@@ -32,7 +32,7 @@ public class ProcessInstanceRetentionCleanupService {
     public ProcessInstanceRetentionCleanupService(ProcessInstanceRepository processInstanceRepository,
                                                   ProcessInstanceService processInstanceService,
                                                   ExceptionMailService exceptionMailService,
-                                                  @Value("${gover.process-instance-retention-cleanup.batch-size:500}") Integer cleanupBatchSize) {
+                                                  @Value("${prosuna.process-instance-retention-cleanup.batch-size:500}") Integer cleanupBatchSize) {
         this.processInstanceRepository = processInstanceRepository;
         this.processInstanceService = processInstanceService;
         this.exceptionMailService = exceptionMailService;
@@ -46,7 +46,7 @@ public class ProcessInstanceRetentionCleanupService {
         cleanDueProcessInstances("startup");
     }
 
-    @Scheduled(cron = "0 0 10 * * *", zone = "${gover.timezone}")
+    @Scheduled(cron = "0 0 10 * * *", zone = "${prosuna.timezone}")
     public void cleanDueProcessInstancesNightly() {
         cleanDueProcessInstances("daily-schedule");
     }

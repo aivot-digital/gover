@@ -7,12 +7,12 @@ Make sure to replace the values with your own secure secrets.
 
 ```dotenv
 # Gover Passwords and Secrets
-GOVER_DB_PASSWORD=password
-GOVER_SECRETS_KEY=Super-secret-key-with-at-least-32-characters
-GOVER_CAPTCHA_KEY=Super-secret-key-with-at-least-32-characters
+PROSUNA_DB_PASSWORD=password
+PROSUNA_SECRETS_KEY=Super-secret-key-with-at-least-32-characters
+PROSUNA_CAPTCHA_KEY=Super-secret-key-with-at-least-32-characters
 
 # Keycloak Passwords and Secrets
-GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET=Super-secret-key-with-at-least-32-characters
+PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET=Super-secret-key-with-at-least-32-characters
 KEYCLOAK_DB_PASSWORD=password
 KEYCLOAK_ADMIN_USERNAME=admin
 KEYCLOAK_ADMIN_PASSWORD=Super-secret-password-with-at-least-12-characters1!

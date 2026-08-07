@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
-@ConfigurationProperties(prefix = "gover")
+@ConfigurationProperties(prefix = "prosuna")
 public class ProsunaConfig {
     private String fromMail;
     private List<String> reportMail;

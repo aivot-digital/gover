@@ -1,20 +1,20 @@
 # -------------------------- Usage --------------------------
 # Start this with: docker compose -f ./docker-compose.yml up -d
 # -----------------------------------------------------------
-name: gover_dev_environment
+name: prosuna_dev_environment
 
 services:
 
-  gover-database:
+  prosuna-database:
     image: postgres:16.12-alpine3.23
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: gover
-      POSTGRES_USER: gover
-      POSTGRES_DB: gover
+      POSTGRES_PASSWORD: prosuna
+      POSTGRES_USER: prosuna
+      POSTGRES_DB: prosuna
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - gover_pg_data:/var/lib/postgresql/data
+      - prosuna_pg_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
@@ -58,7 +58,7 @@ services:
       /bin/sh -c "
       sleep 10 &&
       mc alias set local http://s3-object-storage:9000 admin adminpassword &&
-      mc mb --ignore-existing local/gover &&
+      mc mb --ignore-existing local/prosuna &&
       mc admin accesskey create local/ --access-key super-access-key --secret-key super-secret-key
       "
 
@@ -159,7 +159,7 @@ services:
 
 
 volumes:
-  gover_pg_data:
+  prosuna_pg_data:
   keycloak_pg_data:
   minio_data:
   mailpit_data:

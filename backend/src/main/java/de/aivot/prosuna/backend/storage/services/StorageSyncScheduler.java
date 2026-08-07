@@ -20,7 +20,7 @@ public class StorageSyncScheduler {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    @Scheduled(cron = "0 0 22 * * *", zone = "${gover.timezone}")
+    @Scheduled(cron = "0 0 22 * * *", zone = "${prosuna.timezone}")
     public void queueNightlyStorageSync() {
         var storageProviders = storageProviderRepository.findAll();
 

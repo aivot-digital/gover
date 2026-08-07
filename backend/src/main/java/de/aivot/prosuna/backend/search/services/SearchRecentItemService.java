@@ -101,7 +101,7 @@ public class SearchRecentItemService {
     }
 
     @Transactional
-    @Scheduled(cron = "0 30 3 * * *", zone = "${gover.timezone}")
+    @Scheduled(cron = "0 30 3 * * *", zone = "${prosuna.timezone}")
     public void deleteExpiredRecentItemsNightly() {
         deleteExpiredRecentItems("daily-schedule");
     }

@@ -30,12 +30,12 @@ public final class ApplicationTimeZone {
 
     @Nonnull
     private static ZoneId resolveInitialZoneId() {
-        var configuredZoneId = System.getProperty("gover.timezone");
+        var configuredZoneId = System.getProperty("prosuna.timezone");
         if (configuredZoneId != null && !configuredZoneId.isBlank()) {
             return ZoneId.of(configuredZoneId);
         }
 
-        configuredZoneId = System.getenv("GOVER_TIMEZONE");
+        configuredZoneId = System.getenv("PROSUNA_TIMEZONE");
         if (configuredZoneId != null && !configuredZoneId.isBlank()) {
             return ZoneId.of(configuredZoneId);
         }

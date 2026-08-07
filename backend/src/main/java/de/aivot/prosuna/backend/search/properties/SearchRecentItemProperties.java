@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 @Component
-@ConfigurationProperties(prefix = "gover.search.recent")
+@ConfigurationProperties(prefix = "prosuna.search.recent")
 @Validated
 public class SearchRecentItemProperties {
     @NotNull

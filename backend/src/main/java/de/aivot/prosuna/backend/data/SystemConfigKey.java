@@ -23,7 +23,7 @@ public enum SystemConfigKey implements Identifiable<String> {
     EXPERIMENTAL_FEATURES__COMPLEXITY("ExperimentalFeaturesComplexity", false), // TODO: Check usage and remove this
     EXPERIMENTAL_FEATURES__ADDITIONAL_DIALOGS("ExperimentalFeaturesAdditionalDialogs", false),  // TODO: Check usage and remove this
 
-    GOVER__STORE_KEY("GoverStoreKey", false),
+    PROSUNA_STORE_KEY("ProsunaStoreKey", false),
 
     NUTZERKONTEN__BUNDID("BundIDActive", true), // TODO: Check usage and remove this
     NUTZERKONTEN__BAYERN_ID("BayernIDActive", true), // TODO: Check usage and remove this

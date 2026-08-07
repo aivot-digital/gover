@@ -116,7 +116,7 @@ COPY container/nginx.conf /etc/nginx/http.d/default.conf
 COPY default-assets /app/default-assets
 
 # Copy app files
-COPY --from=build_server /app/target/backend-${BUILD_VERSION}-exec.jar /app/gover.jar
+COPY --from=build_server /app/target/backend-${BUILD_VERSION}-exec.jar /app/prosuna.jar
 COPY --from=build_app /app/build/customer /app/www
 COPY --from=build_app /app/build/staff /app/www/staff
 

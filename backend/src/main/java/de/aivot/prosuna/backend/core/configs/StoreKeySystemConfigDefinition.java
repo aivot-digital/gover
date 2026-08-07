@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class StoreKeySystemConfigDefinition implements SystemConfigDefinition<String> {
-    // TODO: Remove SystemConfigKey.GOVER__STORE_KEY and use the key directly
-    public static final String KEY = SystemConfigKey.GOVER__STORE_KEY.getKey();
+    // TODO: Remove SystemConfigKey.PROSUNA_STORE_KEY and use the key directly
+    public static final String KEY = SystemConfigKey.PROSUNA_STORE_KEY.getKey();
 
     @Nonnull
     @Override

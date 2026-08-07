@@ -481,7 +481,7 @@ public class PdfService {
     }
 
     /**
-     * Injects the HTML-Tag {@code <base href="{GOVER_HOSTNAME}"/>} into the Head-Tag of the given HTML.
+     * Injects the HTML-Tag {@code <base href="{PROSUNA_HOSTNAME}"/>} into the Head-Tag of the given HTML.
      *
      * @param originalHTML The original HTML content.
      * @return The injected HTML content.

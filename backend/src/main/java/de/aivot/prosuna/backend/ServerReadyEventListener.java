@@ -96,7 +96,7 @@ public class ServerReadyEventListener implements ApplicationListener<Application
         List<String> pluginFiles = List.of();
 
         var pluginsDirPath = System
-                .getenv("GOVER_PLUGINS_DIR");
+                .getenv("PROSUNA_PLUGINS_DIR");
         if (pluginsDirPath != null) {
             var pluginsDir =  new File(pluginsDirPath);
             var allPluginFiles = pluginsDir.listFiles();

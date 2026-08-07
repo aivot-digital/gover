@@ -887,7 +887,7 @@ export function ApplicationSettings() {
                                     ? systemRoleReadHint
                                     : hasSystemRolesLoadingError
                                     ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
-                                    : 'Diese Systemrolle gilt in Gover als höchste Berechtigungsstufe. Besitzt keine aktive Mitarbeiter:in diese Rolle, wird sie automatisch dem Administrationskonto zugewiesen, dessen E-Mail-Adresse über die Umgebungsvariable GOVER_BOOTSTRAP_ADMIN_MAIL konfiguriert ist.'
+                                    : 'Diese Systemrolle gilt in Gover als höchste Berechtigungsstufe. Besitzt keine aktive Mitarbeiter:in diese Rolle, wird sie automatisch dem Administrationskonto zugewiesen, dessen E-Mail-Adresse über die Umgebungsvariable PROSUNA_BOOTSTRAP_ADMIN_MAIL konfiguriert ist.'
                             }
                             value={mostPrivilegedSystemRoleValue}
                             onChange={(val) => {

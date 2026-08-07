@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
  * Configuration properties shared by the AI plugin nodes.
  */
 @Component
-@ConfigurationProperties(prefix = "gover.ai")
+@ConfigurationProperties(prefix = "prosuna.ai")
 @Validated
 public class AiPluginProperties {
     @Min(1)

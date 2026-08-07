@@ -1,90 +1,90 @@
-name: gover
+name: prosuna
 
 services:
-  gover_api:
+  prosuna_api:
     image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
     restart: unless-stopped
     command: serve
     depends_on:
-      - gover_database
+      - prosuna_database
       - keycloak
       - clamav
       - redis
       - rabbitmq
       - gotenberg
     environment:
-      GOVER_SERVER_PORT: 9595
-      GOVER_DB_HOST: gover_database
-      GOVER_DB_PORT: 5432
-      GOVER_DB_USERNAME: gover
-      GOVER_DB_PASSWORD: ${GOVER_DB_PASSWORD}
-      GOVER_DB_DATABASE: gover
-      GOVER_REDIS_HOST: redis
-      GOVER_REDIS_PORT: 6379
-      GOVER_REDIS_DATABASE: 0
-      GOVER_SMTP_HOST: ${GOVER_SMTP_HOST}
-      GOVER_SMTP_PORT: ${GOVER_SMTP_PORT}
-      GOVER_SMTP_AUTH: ${GOVER_SMTP_AUTH:-true}
-      GOVER_SMTP_TLS: ${GOVER_SMTP_TLS:-true}
-      GOVER_SMTP_USERNAME: ${GOVER_SMTP_USERNAME}
-      GOVER_SMTP_PASSWORD: ${GOVER_SMTP_PASSWORD}
-      GOVER_RABBITMQ_HOST: rabbitmq
-      GOVER_RABBITMQ_PORT: 5672
-      GOVER_RABBITMQ_USERNAME: gover
-      GOVER_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      GOVER_CLAM_HOST: clamav
-      GOVER_CLAM_PORT: 3310
-      GOVER_GOTENBERG_HOST: gotenberg
-      GOVER_GOTENBERG_PORT: 3000
-      GOVER_KEYCLOAK_OIDC_HOSTNAME: ${GOVER_HOSTNAME}/idp
-      GOVER_KEYCLOAK_OIDC_INTERNAL_HOSTNAME: http://keycloak:8080/idp
-      GOVER_KEYCLOAK_OIDC_REALM: staff
-      GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
-      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID: backend
-      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: ${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}
-      GOVER_SECRETS_KEY: ${GOVER_SECRETS_KEY}
-      GOVER_CAPTCHA_KEY: ${GOVER_CAPTCHA_KEY}
-      GOVER_HOSTNAME: ${GOVER_HOSTNAME}
-      GOVER_TIMEZONE: Europe/Berlin
-      GOVER_FROM_MAIL: ${GOVER_FROM_MAIL}
-      GOVER_REPORT_MAIL: ${GOVER_REPORT_MAIL}
-      GOVER_BOOTSTRAP_ADMIN_MAIL: ${GOVER_BOOTSTRAP_ADMIN_MAIL}
+      PROSUNA_SERVER_PORT: 9595
+      PROSUNA_DB_HOST: prosuna_database
+      PROSUNA_DB_PORT: 5432
+      PROSUNA_DB_USERNAME: prosuna
+      PROSUNA_DB_PASSWORD: ${PROSUNA_DB_PASSWORD}
+      PROSUNA_DB_DATABASE: prosuna
+      PROSUNA_REDIS_HOST: redis
+      PROSUNA_REDIS_PORT: 6379
+      PROSUNA_REDIS_DATABASE: 0
+      PROSUNA_SMTP_HOST: ${PROSUNA_SMTP_HOST}
+      PROSUNA_SMTP_PORT: ${PROSUNA_SMTP_PORT}
+      PROSUNA_SMTP_AUTH: ${PROSUNA_SMTP_AUTH:-true}
+      PROSUNA_SMTP_TLS: ${PROSUNA_SMTP_TLS:-true}
+      PROSUNA_SMTP_USERNAME: ${PROSUNA_SMTP_USERNAME}
+      PROSUNA_SMTP_PASSWORD: ${PROSUNA_SMTP_PASSWORD}
+      PROSUNA_RABBITMQ_HOST: rabbitmq
+      PROSUNA_RABBITMQ_PORT: 5672
+      PROSUNA_RABBITMQ_USERNAME: prosuna
+      PROSUNA_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      PROSUNA_CLAM_HOST: clamav
+      PROSUNA_CLAM_PORT: 3310
+      PROSUNA_GOTENBERG_HOST: gotenberg
+      PROSUNA_GOTENBERG_PORT: 3000
+      PROSUNA_KEYCLOAK_OIDC_HOSTNAME: ${PROSUNA_HOSTNAME}/idp
+      PROSUNA_KEYCLOAK_OIDC_INTERNAL_HOSTNAME: http://keycloak:8080/idp
+      PROSUNA_KEYCLOAK_OIDC_REALM: staff
+      PROSUNA_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
+      PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_ID: backend
+      PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: ${PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}
+      PROSUNA_SECRETS_KEY: ${PROSUNA_SECRETS_KEY}
+      PROSUNA_CAPTCHA_KEY: ${PROSUNA_CAPTCHA_KEY}
+      PROSUNA_HOSTNAME: ${PROSUNA_HOSTNAME}
+      PROSUNA_TIMEZONE: Europe/Berlin
+      PROSUNA_FROM_MAIL: ${PROSUNA_FROM_MAIL}
+      PROSUNA_REPORT_MAIL: ${PROSUNA_REPORT_MAIL}
+      PROSUNA_BOOTSTRAP_ADMIN_MAIL: ${PROSUNA_BOOTSTRAP_ADMIN_MAIL}
     volumes:
-      - gover_data:/app/data
+      - prosuna_data:/app/data
     networks:
-      - gover
-      - gover_keycloak
+      - prosuna
+      - prosuna_keycloak
       - proxy
 
-  gover_app:
+  prosuna_app:
     image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
     restart: unless-stopped
     command: web
     depends_on:
-      gover_api:
+      prosuna_api:
         condition: service_healthy
         restart: true
       gotenberg:
         condition: service_started
         restart: true
     environment:
-      GOVER_HOSTNAME: ${GOVER_HOSTNAME}
+      PROSUNA_HOSTNAME: ${PROSUNA_HOSTNAME}
     networks:
       - proxy
 
-  gover_database:
+  prosuna_database:
     image: docker.io/postgres:18-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: ${GOVER_DB_PASSWORD}
-      POSTGRES_USER: gover
-      POSTGRES_DB: gover
+      POSTGRES_PASSWORD: ${PROSUNA_DB_PASSWORD}
+      POSTGRES_USER: prosuna
+      POSTGRES_DB: prosuna
       PGDATA: /var/lib/postgresql/data/pgdata
       PGTZ: Europe/Berlin
     volumes:
-      - gover_database_data:/var/lib/postgresql/data
+      - prosuna_database_data:/var/lib/postgresql/data
     networks:
-      - gover
+      - prosuna
 
   keycloak:
     image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.0
@@ -93,7 +93,7 @@ services:
       - keycloak_database
     command: start
     environment:
-      KC_HOSTNAME: ${GOVER_HOSTNAME}/idp
+      KC_HOSTNAME: ${PROSUNA_HOSTNAME}/idp
       KC_HTTP_RELATIVE_PATH: /idp
       KC_HTTP_ENABLED: "true"
       KC_HTTP_PORT: "8080"
@@ -109,7 +109,7 @@ services:
       KC_FEATURES: transient-users,update-email,hostname:v2
     networks:
       - keycloak
-      - gover_keycloak
+      - prosuna_keycloak
       - proxy
 
   keycloak_setup:
@@ -119,7 +119,7 @@ services:
       - keycloak
     environment:
       KEYCLOAK_URL: http://keycloak:8080/idp
-      HOSTNAME: ${GOVER_HOSTNAME}
+      HOSTNAME: ${PROSUNA_HOSTNAME}
       KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME}
       KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD}
       KEYCLOAK_DEPLOYMENT_CLIENT_NAME: deployment
@@ -130,13 +130,13 @@ services:
       KEYCLOAK_AVAILABILITYCHECK_ENABLED: "true"
       KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 120s
       LOGGING_LEVEL_HTTP: ERROR
-      SMTP_HOST: ${GOVER_SMTP_HOST}
-      SMTP_PORT: ${GOVER_SMTP_PORT}
-      SMTP_USERNAME: ${GOVER_SMTP_USERNAME}
-      SMTP_PASSWORD: ${GOVER_SMTP_PASSWORD}
-      SMTP_FROM: ${GOVER_FROM_MAIL}
+      SMTP_HOST: ${PROSUNA_SMTP_HOST}
+      SMTP_PORT: ${PROSUNA_SMTP_PORT}
+      SMTP_USERNAME: ${PROSUNA_SMTP_USERNAME}
+      SMTP_PASSWORD: ${PROSUNA_SMTP_PASSWORD}
+      SMTP_FROM: ${PROSUNA_FROM_MAIL}
       SMTP_FROM_DISPLAY: Gover IDP
-      BACKEND_CLIENT_SECRET: ${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}
+      BACKEND_CLIENT_SECRET: ${PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}
     networks:
       - keycloak
 
@@ -157,51 +157,51 @@ services:
     image: docker.io/clamav/clamav:1.5-debian
     restart: unless-stopped
     networks:
-      - gover
+      - prosuna
 
   redis:
     image: docker.io/redis:8-alpine
     restart: unless-stopped
     networks:
-      - gover
+      - prosuna
 
   gotenberg:
     image: docker.io/gotenberg/gotenberg:8
     restart: unless-stopped
     depends_on:
-      gover_api:
+      prosuna_api:
         condition: service_started
         restart: true
     environment:
       CHROMIUM_DENY_PRIVATE_IPS: "true"
       CHROMIUM_DENY_PUBLIC_IPS: "true"
-      CHROMIUM_ALLOW_LIST: "^(https://${GOVER_HOSTNAME_REGEX}/|file:///tmp/)"
+      CHROMIUM_ALLOW_LIST: "^(https://${PROSUNA_HOSTNAME_REGEX}/|file:///tmp/)"
     networks:
-      - gover
+      - prosuna
 
   rabbitmq:
     image: docker.io/rabbitmq:4-alpine
     restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: gover
+      RABBITMQ_DEFAULT_USER: prosuna
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - gover
+      - prosuna
 
   caddy:
     image: docker.io/caddy:2-alpine
     restart: unless-stopped
     depends_on:
-      gover_api:
+      prosuna_api:
         condition: service_healthy
         restart: true
-      gover_app:
+      prosuna_app:
         condition: service_healthy
         restart: true
     environment:
-      GOVER_HOSTNAME: ${GOVER_HOSTNAME}
+      PROSUNA_HOSTNAME: ${PROSUNA_HOSTNAME}
     volumes:
       - caddy_data:/data
       - caddy_config:/config
@@ -214,8 +214,8 @@ services:
 
 
 volumes:
-  gover_data:
-  gover_database_data:
+  prosuna_data:
+  prosuna_database_data:
   keycloak_database_data:
   rabbitmq_data:
   caddy_data:
@@ -223,7 +223,7 @@ volumes:
 
 
 networks:
-  gover:
+  prosuna:
   keycloak:
-  gover_keycloak:
+  prosuna_keycloak:
   proxy:

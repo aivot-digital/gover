@@ -17,18 +17,18 @@ spring:
 
   # Set the config for the database connection
   datasource:
-    url: "jdbc:postgresql://${GOVER_DB_HOST}:${GOVER_DB_PORT}/${GOVER_DB_DATABASE}?stringtype=unspecified"
-    username: "${GOVER_DB_USERNAME}"
-    password: "${GOVER_DB_PASSWORD}"
+    url: "jdbc:postgresql://${PROSUNA_DB_HOST}:${PROSUNA_DB_PORT}/${PROSUNA_DB_DATABASE}?stringtype=unspecified"
+    username: "${PROSUNA_DB_USERNAME}"
+    password: "${PROSUNA_DB_PASSWORD}"
     driver-class-name: "org.postgresql.Driver"
 
     # Define the database connection pool properties
     hikari:
-      minimum-idle: ${GOVER_DB_MIN_IDLE:5}
-      maximum-pool-size: ${GOVER_DB_MAX_POOL_SIZE:10}
+      minimum-idle: ${PROSUNA_DB_MIN_IDLE:5}
+      maximum-pool-size: ${PROSUNA_DB_MAX_POOL_SIZE:10}
       # PostgreSQL current_date and timestamp rendering follow the session timezone.
       # Initialize every pooled connection explicitly so they cannot inherit a host default.
-      connection-init-sql: "set time zone '${GOVER_TIMEZONE:Europe/Berlin}'"
+      connection-init-sql: "set time zone '${PROSUNA_TIMEZONE:Europe/Berlin}'"
 
   jpa:
     hibernate:
@@ -51,9 +51,9 @@ spring:
           # Fix for Hibernate 6 to map Java Duration to PostgreSQL interval type
           preferred_duration_jdbc_type: INTERVAL_SECOND
         connection:
-          url: "jdbc:postgresql://${GOVER_DB_HOST}:${GOVER_DB_PORT}/${GOVER_DB_DATABASE}?stringtype=unspecified"
-          username: "${GOVER_DB_USERNAME}"
-          password: "${GOVER_DB_PASSWORD}"
+          url: "jdbc:postgresql://${PROSUNA_DB_HOST}:${PROSUNA_DB_PORT}/${PROSUNA_DB_DATABASE}?stringtype=unspecified"
+          username: "${PROSUNA_DB_USERNAME}"
+          password: "${PROSUNA_DB_PASSWORD}"
           autocommit: false
           isolation: TRANSACTION_REPEATABLE_READ
           pool_size: ${spring.datasource.hikari.maximum-pool-size}
@@ -71,51 +71,51 @@ spring:
       detection-strategy: annotated
 
     redis:
-      host: "${GOVER_REDIS_HOST}"
-      port: "${GOVER_REDIS_PORT}"
-      database: "${GOVER_REDIS_DATABASE}"
+      host: "${PROSUNA_REDIS_HOST}"
+      port: "${PROSUNA_REDIS_PORT}"
+      database: "${PROSUNA_REDIS_DATABASE}"
 
   # Set the default upload size limits
   servlet:
     multipart:
-      max-file-size: "${GOVER_MAX_UPLOAD_FILE:100MB}"
-      max-request-size: "${GOVER_MAX_UPLOAD_TOTAL:500MB}"
+      max-file-size: "${PROSUNA_MAX_UPLOAD_FILE:100MB}"
+      max-request-size: "${PROSUNA_MAX_UPLOAD_TOTAL:500MB}"
 
   flyway:
     # Enable flyway for database migrations
     enabled: true
     # Add the option to allow flyway to operate on databases with some preexisting schema
     # This is useful when working with managed Azure PostgreSQL databases
-    baselineVersion: ${GOVER_DB_BASELINE_VERSION:0}
-    baselineOnMigrate: ${GOVER_DB_BASELINE_ON_MIGRATE:false}
+    baselineVersion: ${PROSUNA_DB_BASELINE_VERSION:0}
+    baselineOnMigrate: ${PROSUNA_DB_BASELINE_ON_MIGRATE:false}
     # Add the option to allow flyway to repair the migration checksums
-    repairOnMigrate: ${GOVER_DB_REPAIR_ON_MIGRATE:false}
+    repairOnMigrate: ${PROSUNA_DB_REPAIR_ON_MIGRATE:false}
   # Set the properties for the mail server
   mail:
-    host: ${GOVER_SMTP_HOST}
-    port: ${GOVER_SMTP_PORT}
-    username: ${GOVER_SMTP_USERNAME:}
-    password: ${GOVER_SMTP_PASSWORD:}
+    host: ${PROSUNA_SMTP_HOST}
+    port: ${PROSUNA_SMTP_PORT}
+    username: ${PROSUNA_SMTP_USERNAME:}
+    password: ${PROSUNA_SMTP_PASSWORD:}
     properties:
       mail:
         smtp:
-          auth: ${GOVER_SMTP_AUTH:true}
+          auth: ${PROSUNA_SMTP_AUTH:true}
           starttls:
-            enable: ${GOVER_SMTP_TLS:true}
+            enable: ${PROSUNA_SMTP_TLS:true}
 
   security:
     # Configure oidc authentication details
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/${GOVER_KEYCLOAK_OIDC_REALM}"
-          jwk-set-uri: "${GOVER_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:${GOVER_KEYCLOAK_OIDC_HOSTNAME}}/realms/${GOVER_KEYCLOAK_OIDC_REALM}/protocol/openid-connect/certs"
+          issuer-uri: "${PROSUNA_KEYCLOAK_OIDC_HOSTNAME}/realms/${PROSUNA_KEYCLOAK_OIDC_REALM}"
+          jwk-set-uri: "${PROSUNA_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:${PROSUNA_KEYCLOAK_OIDC_HOSTNAME}}/realms/${PROSUNA_KEYCLOAK_OIDC_REALM}/protocol/openid-connect/certs"
 
   rabbitmq:
-    host: "${GOVER_RABBITMQ_HOST}"
-    port: "${GOVER_RABBITMQ_PORT}"
-    username: "${GOVER_RABBITMQ_USERNAME}"
-    password: "${GOVER_RABBITMQ_PASSWORD}"
+    host: "${PROSUNA_RABBITMQ_HOST}"
+    port: "${PROSUNA_RABBITMQ_PORT}"
+    username: "${PROSUNA_RABBITMQ_USERNAME}"
+    password: "${PROSUNA_RABBITMQ_PASSWORD}"
 
 management:
   endpoints:
@@ -144,7 +144,7 @@ management:
       enabled: true
 
 server:
-  port: "${GOVER_SERVER_PORT:8080}"
+  port: "${PROSUNA_SERVER_PORT:8080}"
   error:
     whitelabel:
       enabled: false
@@ -156,89 +156,89 @@ server:
 # Set the properties for the logging
 logging:
   level:
-    root: "${GOVER_LOG_LEVEL:INFO}"
+    root: "${PROSUNA_LOG_LEVEL:INFO}"
   structured:
     format:
-      console: "${GOVER_LOG_FORMAT:}"
+      console: "${PROSUNA_LOG_FORMAT:}"
 
 # Set the properties for the ClamAV server
 clam:
-  host: "${GOVER_CLAM_HOST}"
-  port: "${GOVER_CLAM_PORT}"
+  host: "${PROSUNA_CLAM_HOST}"
+  port: "${PROSUNA_CLAM_PORT}"
   timeout: 20000
 
 # Set the properties for the Gotenberg server
 gotenberg:
-  host: "${GOVER_GOTENBERG_HOST}"
-  port: "${GOVER_GOTENBERG_PORT}"
+  host: "${PROSUNA_GOTENBERG_HOST}"
+  port: "${PROSUNA_GOTENBERG_PORT}"
 
 # Set the encryption key for the secrets
 secrets:
-  key: "${GOVER_SECRETS_KEY}"
+  key: "${PROSUNA_SECRETS_KEY}"
 
 # Set the encryption key for captcha challenges
 captcha:
-  key: "${GOVER_CAPTCHA_KEY}"
+  key: "${PROSUNA_CAPTCHA_KEY}"
 
 # Set basic properties for the gover business case
-gover:
-  prosunaHostname: "${GOVER_HOSTNAME}"
-  timezone: "${GOVER_TIMEZONE:Europe/Berlin}"
-  fromMail: "${GOVER_FROM_MAIL}"
-  reportMail: "${GOVER_REPORT_MAIL}"
-  sentryServer: "${GOVER_SENTRY_SERVER:}"
-  sentryWebApp: "${GOVER_SENTRY_WEB_APP:}"
-  environment: "${GOVER_ENVIRONMENT:}"
-  departmentLevelLabels: "${GOVER_DEPARTMENT_LEVEL_LABELS:Organisation,Bereich,Abteilung,Sachgebiet,Arbeitsbereich}"
+prosuna:
+  prosunaHostname: "${PROSUNA_HOSTNAME}"
+  timezone: "${PROSUNA_TIMEZONE:Europe/Berlin}"
+  fromMail: "${PROSUNA_FROM_MAIL}"
+  reportMail: "${PROSUNA_REPORT_MAIL}"
+  sentryServer: "${PROSUNA_SENTRY_SERVER:}"
+  sentryWebApp: "${PROSUNA_SENTRY_WEB_APP:}"
+  environment: "${PROSUNA_ENVIRONMENT:}"
+  departmentLevelLabels: "${PROSUNA_DEPARTMENT_LEVEL_LABELS:Organisation,Bereich,Abteilung,Sachgebiet,Arbeitsbereich}"
   security:
-    csrfTtlSeconds: "${GOVER_CSRF_TTL_SECONDS:86400}"
+    csrfTtlSeconds: "${PROSUNA_CSRF_TTL_SECONDS:86400}"
   search:
     recent:
-      max-items-per-user: "${GOVER_SEARCH_RECENT_MAX_ITEMS_PER_USER:50}"
-      retention-days: "${GOVER_SEARCH_RECENT_RETENTION_DAYS:90}"
+      max-items-per-user: "${PROSUNA_SEARCH_RECENT_MAX_ITEMS_PER_USER:50}"
+      retention-days: "${PROSUNA_SEARCH_RECENT_RETENTION_DAYS:90}"
   http:
-    connectionTimeoutSeconds: "${GOVER_HTTP_CONNECTION_TIMEOUT_SECONDS:2}"
-    readTimeoutSeconds: "${GOVER_HTTP_READ_TIMEOUT_SECONDS:60}"
+    connectionTimeoutSeconds: "${PROSUNA_HTTP_CONNECTION_TIMEOUT_SECONDS:2}"
+    readTimeoutSeconds: "${PROSUNA_HTTP_READ_TIMEOUT_SECONDS:60}"
   ai:
-    defaultMaxTokens: "${GOVER_AI_DEFAULT_MAX_TOKENS:1000}"
+    defaultMaxTokens: "${PROSUNA_AI_DEFAULT_MAX_TOKENS:1000}"
     completion:
-      maxTokens: "${GOVER_AI_COMPLETION_MAX_TOKENS:1000}"
+      maxTokens: "${PROSUNA_AI_COMPLETION_MAX_TOKENS:1000}"
     processDataTransformation:
-      maxTokens: "${GOVER_AI_PROCESS_DATA_TRANSFORMATION_MAX_TOKENS:4000}"
-  fileExtensions: "${GOVER_FILE_EXTENSIONS:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,ppt,pptx,odt,fodt,ods,fods,odp,fodp,odg,fodg,odf}"
-  contentTypes: "${GOVER_CONTENT_TYPES:application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msexcel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/mspowerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation,application/vnd.oasis.opendocument.graphics,application/vnd.oasis.opendocument.formula}"
+      maxTokens: "${PROSUNA_AI_PROCESS_DATA_TRANSFORMATION_MAX_TOKENS:4000}"
+  fileExtensions: "${PROSUNA_FILE_EXTENSIONS:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,ppt,pptx,odt,fodt,ods,fods,odp,fodp,odg,fodg,odf}"
+  contentTypes: "${PROSUNA_CONTENT_TYPES:application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msexcel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/mspowerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation,application/vnd.oasis.opendocument.graphics,application/vnd.oasis.opendocument.formula}"
   maxSubmissionCopyRetryCount: 3
-  bootstrapAdminMail: "${GOVER_BOOTSTRAP_ADMIN_MAIL:}"
-  registryHostname: "${GOVER_TEMPLATE_REGISTRY_URL:}"
-  moduleFlags: "${GOVER_MODULE_FLAGS:form,process,portal}"
+  bootstrapAdminMail: "${PROSUNA_BOOTSTRAP_ADMIN_MAIL:}"
+  registryHostname: "${PROSUNA_TEMPLATE_REGISTRY_URL:}"
+  moduleFlags: "${PROSUNA_MODULE_FLAGS:form,process,portal}"
   processNodeLimits:
-    trigger: "${GOVER_PROCESS_NODE_LIMITS_TRIGGERS:1}"
-    action: "${GOVER_PROCESS_NODE_LIMITS_ACTIONS:4}"
-    flowControl: "${GOVER_PROCESS_NODE_LIMITS_FLOWS:0}"
-    termination: "${GOVER_PROCESS_NODE_LIMITS_TERMINATIONS:-1}"
+    trigger: "${PROSUNA_PROCESS_NODE_LIMITS_TRIGGERS:1}"
+    action: "${PROSUNA_PROCESS_NODE_LIMITS_ACTIONS:4}"
+    flowControl: "${PROSUNA_PROCESS_NODE_LIMITS_FLOWS:0}"
+    termination: "${PROSUNA_PROCESS_NODE_LIMITS_TERMINATIONS:-1}"
 
 # Configure the details for fetching, managing and updating the gover user data from keycloak
 keycloak:
-  hostname: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}"
-  internalHostname: "${GOVER_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:${GOVER_KEYCLOAK_OIDC_HOSTNAME}}"
-  realm: "${GOVER_KEYCLOAK_OIDC_REALM}"
-  frontendClientId: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID}"
-  frontendClientSecret: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_SECRET:}"
-  backendClientId: "${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID}"
-  backendClientSecret: "${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}"
+  hostname: "${PROSUNA_KEYCLOAK_OIDC_HOSTNAME}"
+  internalHostname: "${PROSUNA_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:${PROSUNA_KEYCLOAK_OIDC_HOSTNAME}}"
+  realm: "${PROSUNA_KEYCLOAK_OIDC_REALM}"
+  frontendClientId: "${PROSUNA_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID}"
+  frontendClientSecret: "${PROSUNA_KEYCLOAK_OIDC_FRONTEND_CLIENT_SECRET:}"
+  backendClientId: "${PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_ID}"
+  backendClientSecret: "${PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}"
 
 # Configure the storage provider plugins
 storage:
   local:
     v1:
-      allowed-local-roots: "${GOVER_STORAGE_LOCAL_ALLOWED_ROOTS:./data}"
+      allowed-local-roots: "${PROSUNA_STORAGE_LOCAL_ALLOWED_ROOTS:./data}"
 
 # Configure the openapi documentation for the backend application
 springdoc:
   apiDocs:
     path: "/api/public/docs/openapi.json"
-    enabled: "${GOVER_ENABLE_API_DOCS:false}"
+    enabled: "${PROSUNA_ENABLE_API_DOCS:false}"
   swaggerUi:
     path: "/api/public/docs/swagger.html"
-    enabled: "${GOVER_ENABLE_API_UI:false}"
+    enabled: "${PROSUNA_ENABLE_API_UI:false}"
   showActuator: true

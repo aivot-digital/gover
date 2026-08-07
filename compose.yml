@@ -14,19 +14,19 @@
 services:
 
 
-  gover_database:
+  prosuna_database:
     image: postgres:15.18
     restart: always
     environment:
-      POSTGRES_PASSWORD: "{{ GOVER_DB_PASSWORD }}" # Setzen Sie das Passwort für die Gover-Datenbank. Passen Sie dieses Passwort unbedingt an.
-      POSTGRES_USER: "{{ GOVER_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Gover-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
-      POSTGRES_DB: gover
+      POSTGRES_PASSWORD: "{{ PROSUNA_DB_PASSWORD }}" # Setzen Sie das Passwort für die Gover-Datenbank. Passen Sie dieses Passwort unbedingt an.
+      POSTGRES_USER: "{{ PROSUNA_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Gover-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
+      POSTGRES_DB: prosuna
       PGDATA: /var/lib/postgresql/data/pgdata
-      PGTZ: "{{ GOVER_TIMEZONE }}" # Setzen Sie die Zeitzone für PostgreSQL-Clients der Gover-Datenbank, z. B. Europe/Berlin. Passen Sie diese Zeitzone unbedingt an. Dieser Wert muss mit GOVER_TIMEZONE der Gover-Anwendung übereinstimmen.
+      PGTZ: "{{ PROSUNA_TIMEZONE }}" # Setzen Sie die Zeitzone für PostgreSQL-Clients der Gover-Datenbank, z. B. Europe/Berlin. Passen Sie diese Zeitzone unbedingt an. Dieser Wert muss mit PROSUNA_TIMEZONE der Gover-Anwendung übereinstimmen.
     volumes:
-      - gover_database_data:/var/lib/postgresql/data
+      - prosuna_database_data:/var/lib/postgresql/data
     networks:
-      - gover
+      - prosuna
 
 
   keycloak_database:
@@ -47,14 +47,14 @@ services:
     image: clamav/clamav-debian:1.5.2
     restart: always
     networks:
-      - gover
+      - prosuna
 
 
   redis:
     image: redis:7.4.9
     restart: always
     networks:
-      - gover
+      - prosuna
 
 
   gotenberg:
@@ -69,7 +69,7 @@ services:
     ports:
       - "9191:3000"
     networks:
-      - gover
+      - prosuna
 
 
   keycloak:
@@ -151,109 +151,109 @@ services:
       - keycloak_config_network
 
 
-  gover:
+  prosuna:
     image: ghcr.io/aivot-digital/gover:4.6.2
     depends_on:
-      - gover_database
+      - prosuna_database
       - clamav
       - redis
       - gotenberg
       - keycloak
-      - gover_customer_app
-      - gover_staff_app
+      - prosuna_customer_app
+      - prosuna_staff_app
     restart: always
     command: serve
     environment:
-      GOVER_DB_HOST: gover_database
-      GOVER_DB_PORT: 5432
-      GOVER_DB_DATABASE: gover
-      GOVER_DB_USERNAME: "{{ GOVER_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Gover-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
-      GOVER_DB_PASSWORD: "{{ GOVER_DB_PASSWORD }}" # Setzen Sie das Passwort für die Gover-Datenbank. Passen Sie dieses Passwort unbedingt an.
+      PROSUNA_DB_HOST: prosuna_database
+      PROSUNA_DB_PORT: 5432
+      PROSUNA_DB_DATABASE: prosuna
+      PROSUNA_DB_USERNAME: "{{ PROSUNA_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Gover-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
+      PROSUNA_DB_PASSWORD: "{{ PROSUNA_DB_PASSWORD }}" # Setzen Sie das Passwort für die Gover-Datenbank. Passen Sie dieses Passwort unbedingt an.
 
-      GOVER_CLAM_HOST: clamav
-      GOVER_CLAM_PORT: 3310
+      PROSUNA_CLAM_HOST: clamav
+      PROSUNA_CLAM_PORT: 3310
 
-      GOVER_GOTENBERG_HOST: gotenberg
-      GOVER_GOTENBERG_PORT: 3000
+      PROSUNA_GOTENBERG_HOST: gotenberg
+      PROSUNA_GOTENBERG_PORT: 3000
 
-      GOVER_SMTP_HOST: "{{ SMTP_HOST }}" # Setzen Sie den Hostnamen des Mail-Servers. Passen Sie diesen Hostnamen unbedingt an.
-      GOVER_SMTP_PORT: "{{ SMTP_PORT }}" # Setzen Sie den Port des Mail-Servers. Passen Sie diesen Port unbedingt an.
-      GOVER_SMTP_AUTH: "true" # Aktiviert die Authentifizierung für den Mail-Server. Setzen Sie diesen Wert auf false, wenn keine Authentifizierung benötigt wird.
-      GOVER_SMTP_TLS: "true" # Aktiviert TLS für den Mail-Server. Setzen Sie diesen Wert auf false, wenn TLS nicht benötigt wird.
-      GOVER_SMTP_USERNAME: "{{ SMTP_USERNAME }}" # Setzen Sie den Benutzernamen für den Mail-Server. Passen Sie diesen Benutzernamen unbedingt an.
-      GOVER_SMTP_PASSWORD: "{{ SMTP_PASSWORD }}" # Setzen Sie das Passwort für den Mail-Server. Passen Sie dieses Passwort unbedingt an.
+      PROSUNA_SMTP_HOST: "{{ SMTP_HOST }}" # Setzen Sie den Hostnamen des Mail-Servers. Passen Sie diesen Hostnamen unbedingt an.
+      PROSUNA_SMTP_PORT: "{{ SMTP_PORT }}" # Setzen Sie den Port des Mail-Servers. Passen Sie diesen Port unbedingt an.
+      PROSUNA_SMTP_AUTH: "true" # Aktiviert die Authentifizierung für den Mail-Server. Setzen Sie diesen Wert auf false, wenn keine Authentifizierung benötigt wird.
+      PROSUNA_SMTP_TLS: "true" # Aktiviert TLS für den Mail-Server. Setzen Sie diesen Wert auf false, wenn TLS nicht benötigt wird.
+      PROSUNA_SMTP_USERNAME: "{{ SMTP_USERNAME }}" # Setzen Sie den Benutzernamen für den Mail-Server. Passen Sie diesen Benutzernamen unbedingt an.
+      PROSUNA_SMTP_PASSWORD: "{{ SMTP_PASSWORD }}" # Setzen Sie das Passwort für den Mail-Server. Passen Sie dieses Passwort unbedingt an.
 
-      GOVER_LOG_LEVEL: "INFO"
+      PROSUNA_LOG_LEVEL: "INFO"
 
-      GOVER_FROM_MAIL: '"{{ MAIL_SENDER_NAME }}" <{{ MAIL_SENDER_ADDRESS }}@{{ HOSTNAME }}>' # Setzen Sie die Absenderadresse für E-Mails. Passen Sie diese Absenderadresse unbedingt an.
-      GOVER_REPORT_MAIL: "{{ FALLBACK_E_MAIL }}" # Setzen Sie die E-Mail-Adresse für den Empfang von Fehlerberichten. Passen Sie diese E-Mail-Adresse unbedingt an. An diese Adresse werden Fehlerberichte gesendet.
+      PROSUNA_FROM_MAIL: '"{{ MAIL_SENDER_NAME }}" <{{ MAIL_SENDER_ADDRESS }}@{{ HOSTNAME }}>' # Setzen Sie die Absenderadresse für E-Mails. Passen Sie diese Absenderadresse unbedingt an.
+      PROSUNA_REPORT_MAIL: "{{ FALLBACK_E_MAIL }}" # Setzen Sie die E-Mail-Adresse für den Empfang von Fehlerberichten. Passen Sie diese E-Mail-Adresse unbedingt an. An diese Adresse werden Fehlerberichte gesendet.
 
-      GOVER_SENTRY_SERVER: "{{ SERVER_SENTRY_DSN }}" # Setzen Sie die Sentry DSN (Data Source Name) für die Gover-Backend-Anwendung. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
-      GOVER_SENTRY_WEB_APP: "{{ WEB_APP_SENTRY_DSN }}" # Setzen Sie die Sentry DSN (Data Source Name) für die Gover-Webanwendung. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
-      GOVER_ENVIRONMENT: "{{ SENTRY_ENVIRONMENT }}" # Setzen Sie die Umgebung für Sentry. Diese wird verwendet, um Fehlermeldungen in Sentry zu gruppieren. Passen Sie diese Umgebung unbedingt an. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
+      PROSUNA_SENTRY_SERVER: "{{ SERVER_SENTRY_DSN }}" # Setzen Sie die Sentry DSN (Data Source Name) für die Gover-Backend-Anwendung. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
+      PROSUNA_SENTRY_WEB_APP: "{{ WEB_APP_SENTRY_DSN }}" # Setzen Sie die Sentry DSN (Data Source Name) für die Gover-Webanwendung. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
+      PROSUNA_ENVIRONMENT: "{{ SENTRY_ENVIRONMENT }}" # Setzen Sie die Umgebung für Sentry. Diese wird verwendet, um Fehlermeldungen in Sentry zu gruppieren. Passen Sie diese Umgebung unbedingt an. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
 
-      GOVER_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse inklusive Protokoll und Hostname unter der die Gover-Anwendung erreichbar ist. Passen Sie diese Adresse unbedingt an.
-      GOVER_TIMEZONE: "{{ GOVER_TIMEZONE }}" # Setzen Sie die fachliche Zeitzone der Gover-Anwendung, z. B. Europe/Berlin. Passen Sie diese Zeitzone unbedingt an. Dieser Wert muss mit PGTZ der Gover-Datenbank übereinstimmen.
-      GOVER_DEPARTMENT_LEVEL_LABELS: "Organisation, Bereich, Abteilung, Sachgebiet, Arbeitsbereich" # Setzen Sie die kommagetrennten Bezeichnungen der Hierarchieebenen für Organisationseinheiten. Die Anzahl der Einträge bestimmt die maximal mögliche Anzahl an Ebenen. Entfernen Sie diese Variable oder lassen Sie sie leer, um den Standard zu verwenden.
-      GOVER_SECRETS_KEY: "{{ GOVER_SECRETS_KEY }}" # Setzen Sie den geheimen Schlüssel für die Verschlüsselung der Daten. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein.
-      GOVER_CAPTCHA_KEY: "{{ GOVER_CAPTCHA_KEY }}" # Setzen Sie den geheimen Schlüssel zur Erzeugung und Verifizierung von Captcha-Challenges. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein (z. B. 32‑Byte‑Hex).
+      PROSUNA_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse inklusive Protokoll und Hostname unter der die Gover-Anwendung erreichbar ist. Passen Sie diese Adresse unbedingt an.
+      PROSUNA_TIMEZONE: "{{ PROSUNA_TIMEZONE }}" # Setzen Sie die fachliche Zeitzone der Gover-Anwendung, z. B. Europe/Berlin. Passen Sie diese Zeitzone unbedingt an. Dieser Wert muss mit PGTZ der Gover-Datenbank übereinstimmen.
+      PROSUNA_DEPARTMENT_LEVEL_LABELS: "Organisation, Bereich, Abteilung, Sachgebiet, Arbeitsbereich" # Setzen Sie die kommagetrennten Bezeichnungen der Hierarchieebenen für Organisationseinheiten. Die Anzahl der Einträge bestimmt die maximal mögliche Anzahl an Ebenen. Entfernen Sie diese Variable oder lassen Sie sie leer, um den Standard zu verwenden.
+      PROSUNA_SECRETS_KEY: "{{ PROSUNA_SECRETS_KEY }}" # Setzen Sie den geheimen Schlüssel für die Verschlüsselung der Daten. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein.
+      PROSUNA_CAPTCHA_KEY: "{{ PROSUNA_CAPTCHA_KEY }}" # Setzen Sie den geheimen Schlüssel zur Erzeugung und Verifizierung von Captcha-Challenges. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein (z. B. 32‑Byte‑Hex).
 
-      GOVER_FILE_EXTENSIONS: pdf, png, jpg, jpeg, doc, docx, xls, xlsx, ppt, pptx, odt, fodt, ods, fods, odp, fodp, odg, fodg, odf
-      GOVER_CONTENT_TYPES: application/pdf, image/png, image/jpeg, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/msexcel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/mspowerpoint, application/vnd.openxmlformats-officedocument.presentationml.presentation, application/vnd.oasis.opendocument.text, application/vnd.oasis.opendocument.spreadsheet, application/vnd.oasis.opendocument.presentation, application/vnd.oasis.opendocument.graphics, application/vnd.oasis.opendocument.formula
+      PROSUNA_FILE_EXTENSIONS: pdf, png, jpg, jpeg, doc, docx, xls, xlsx, ppt, pptx, odt, fodt, ods, fods, odp, fodp, odg, fodg, odf
+      PROSUNA_CONTENT_TYPES: application/pdf, image/png, image/jpeg, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/msexcel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/mspowerpoint, application/vnd.openxmlformats-officedocument.presentationml.presentation, application/vnd.oasis.opendocument.text, application/vnd.oasis.opendocument.spreadsheet, application/vnd.oasis.opendocument.presentation, application/vnd.oasis.opendocument.graphics, application/vnd.oasis.opendocument.formula
 
-      GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
-      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID: backend
-      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: "{{ KEYCLOAK_BACKEND_CLIENT_SECRET }}" # Setzen Sie das Geheimnis für den Backend-Client in Keycloak. Passen Sie dieses Geheimnis unbedingt an. Wählen Sie ein sicheres Geheimnis mit mindestens 16 Zeichen.
-      GOVER_KEYCLOAK_OIDC_HOSTNAME: "https://{{ HOSTNAME }}/idp" # Setzen Sie den Hostnamen unter dem Keycloak erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
-      GOVER_KEYCLOAK_OIDC_REALM: staff
+      PROSUNA_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
+      PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_ID: backend
+      PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: "{{ KEYCLOAK_BACKEND_CLIENT_SECRET }}" # Setzen Sie das Geheimnis für den Backend-Client in Keycloak. Passen Sie dieses Geheimnis unbedingt an. Wählen Sie ein sicheres Geheimnis mit mindestens 16 Zeichen.
+      PROSUNA_KEYCLOAK_OIDC_HOSTNAME: "https://{{ HOSTNAME }}/idp" # Setzen Sie den Hostnamen unter dem Keycloak erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
+      PROSUNA_KEYCLOAK_OIDC_REALM: staff
 
-      GOVER_KEYCLOAK_ID_CLIENT: app
-      GOVER_KEYCLOAK_ID_HOSTNAME: "https://{{ HOSTNAME }}/idp" # Setzen Sie den Hostnamen unter dem Keycloak erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
-      GOVER_KEYCLOAK_ID_REALM: customer
+      PROSUNA_KEYCLOAK_ID_CLIENT: app
+      PROSUNA_KEYCLOAK_ID_HOSTNAME: "https://{{ HOSTNAME }}/idp" # Setzen Sie den Hostnamen unter dem Keycloak erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
+      PROSUNA_KEYCLOAK_ID_REALM: customer
 
-      GOVER_REDIS_HOST: redis
-      GOVER_REDIS_PORT: 6379
-      GOVER_REDIS_DATABASE: 0
+      PROSUNA_REDIS_HOST: redis
+      PROSUNA_REDIS_PORT: 6379
+      PROSUNA_REDIS_DATABASE: 0
     volumes:
-      - gover_data:/app/data
+      - prosuna_data:/app/data
     networks:
-      - gover
+      - prosuna
       - common
     labels:
-      - "traefik.http.routers.gover_api.rule=Host(`{{ HOSTNAME }}`) && PathPrefix(`/api`)" # Setzen Sie die Regel für den Reverse-Proxy Traefik. Passen Sie den Hostnamen unbedingt an.
-      - "traefik.http.services.gover_api.loadbalancer.server.port=8080"
-      - "traefik.http.routers.gover_api.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
-      - "traefik.http.routers.gover_api.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+      - "traefik.http.routers.prosuna_api.rule=Host(`{{ HOSTNAME }}`) && PathPrefix(`/api`)" # Setzen Sie die Regel für den Reverse-Proxy Traefik. Passen Sie den Hostnamen unbedingt an.
+      - "traefik.http.services.prosuna_api.loadbalancer.server.port=8080"
+      - "traefik.http.routers.prosuna_api.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+      - "traefik.http.routers.prosuna_api.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
 
 
-  gover_staff_app:
+  prosuna_staff_app:
     image: ghcr.io/aivot-digital/gover:4.6.2
     restart: always
     command: staff
     environment:
-      GOVER_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse wird vom Entrypoint-Skript für den Health-Check der API benötigt. Passen Sie den Hostnamen unbedingt an.
+      PROSUNA_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse wird vom Entrypoint-Skript für den Health-Check der API benötigt. Passen Sie den Hostnamen unbedingt an.
     networks:
       - common
     labels:
-      - "traefik.http.routers.gover_staff_app.rule=Host(`{{ HOSTNAME }}`) && PathPrefix(`/staff`)" # Setzen Sie die Regel für den Reverse-Proxy Traefik. Passen Sie den Hostnamen unbedingt an.
-      - "traefik.http.services.gover_staff_app.loadbalancer.server.port=80"
-      - "traefik.http.routers.gover_staff_app.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
-      - "traefik.http.routers.gover_staff_app.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+      - "traefik.http.routers.prosuna_staff_app.rule=Host(`{{ HOSTNAME }}`) && PathPrefix(`/staff`)" # Setzen Sie die Regel für den Reverse-Proxy Traefik. Passen Sie den Hostnamen unbedingt an.
+      - "traefik.http.services.prosuna_staff_app.loadbalancer.server.port=80"
+      - "traefik.http.routers.prosuna_staff_app.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+      - "traefik.http.routers.prosuna_staff_app.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
 
 
-  gover_customer_app:
+  prosuna_customer_app:
     image: ghcr.io/aivot-digital/gover:4.6.2
     restart: always
     command: customer
     environment:
-      GOVER_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse wird vom Entrypoint-Skript für den Health-Check der API benötigt. Passen Sie den Hostnamen unbedingt an.
+      PROSUNA_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse wird vom Entrypoint-Skript für den Health-Check der API benötigt. Passen Sie den Hostnamen unbedingt an.
     networks:
       - common
     labels:
-      - "traefik.http.routers.gover_customer_app.rule=Host(`{{ HOSTNAME }}`)" # Setzen Sie die Regel für den Reverse-Proxy Traefik. Passen Sie den Hostnamen unbedingt an.
-      - "traefik.http.services.gover_customer_app.loadbalancer.server.port=80"
-      - "traefik.http.routers.gover_customer_app.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
-      - "traefik.http.routers.gover_customer_app.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+      - "traefik.http.routers.prosuna_customer_app.rule=Host(`{{ HOSTNAME }}`)" # Setzen Sie die Regel für den Reverse-Proxy Traefik. Passen Sie den Hostnamen unbedingt an.
+      - "traefik.http.services.prosuna_customer_app.loadbalancer.server.port=80"
+      - "traefik.http.routers.prosuna_customer_app.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+      - "traefik.http.routers.prosuna_customer_app.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
 
 
   traefik:
@@ -283,10 +283,10 @@ services:
 
 # Definiert die Volumes für die Datenbanken, die Daten von Gover und Traefik.
 volumes:
-  gover_database_data:
-  gover_storage_data:
+  prosuna_database_data:
+  prosuna_storage_data:
   keycloak_database_data:
-  gover_data:
+  prosuna_data:
   traefik_data:
 
 
@@ -295,5 +295,5 @@ volumes:
 networks:
   keycloak:
   keycloak_config_network:
-  gover:
+  prosuna:
   common:

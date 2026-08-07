@@ -15,8 +15,8 @@ class SearchRecentItemPropertiesTest {
     void bindsProperties() {
         contextRunner
                 .withPropertyValues(
-                        "gover.search.recent.max-items-per-user=25",
-                        "gover.search.recent.retention-days=180"
+                        "prosuna.search.recent.max-items-per-user=25",
+                        "prosuna.search.recent.retention-days=180"
                 )
                 .run(context -> {
                     assertThat(context).hasNotFailed();
@@ -29,8 +29,8 @@ class SearchRecentItemPropertiesTest {
     void rejectsNonPositiveValues() {
         contextRunner
                 .withPropertyValues(
-                        "gover.search.recent.max-items-per-user=0",
-                        "gover.search.recent.retention-days=180"
+                        "prosuna.search.recent.max-items-per-user=0",
+                        "prosuna.search.recent.retention-days=180"
                 )
                 .run(context -> assertThat(context).hasFailed());
     }
