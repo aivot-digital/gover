@@ -101,7 +101,7 @@ export function ProcessDataKeyInputFieldView(props: BaseViewProps<ProcessDataKey
     );
 }
 
-type ProcessDataKeySuggestion = {
+export type ProcessDataKeySuggestion = {
     id: string;
     label: string;
     subLabel?: string;
@@ -150,11 +150,15 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
             return [];
         }
 
-        return (opec?.incomingMetadata?.forwardedProcessDataKeys ?? [])
-            .map((hint) => createSuggestion(hint, scopeProcessDataKey))
-            .filter((suggestion): suggestion is ProcessDataKeySuggestion => suggestion != null)
-            .filter((suggestion) => !disableWildCards || !suggestion.id.includes('*'));
-    }, [disableWildCards, hasProcessDataKeyMetadata, opec, scopeProcessDataKey]);
+        return createProcessDataKeySuggestions(
+            opec?.incomingMetadata?.forwardedProcessDataKeys ?? [],
+            {
+                disableWildCards,
+                prefix,
+                scopeProcessDataKey,
+            },
+        );
+    }, [disableWildCards, hasProcessDataKeyMetadata, opec, prefix, scopeProcessDataKey]);
 
     useEffect(() => {
         if (!hasScopeProcessDataKey || !hasProcessDataKeyMetadata || value == null) {
@@ -186,11 +190,46 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
     );
 }
 
+interface CreateProcessDataKeySuggestionsOptions {
+    disableWildCards: boolean;
+    prefix?: string | null;
+    scopeProcessDataKey?: string | null;
+}
+
+export function createProcessDataKeySuggestions(
+    hints: ProcessNodeDefinitionMetadataForwardedProcessDataKey[],
+    options: CreateProcessDataKeySuggestionsOptions,
+): ProcessDataKeySuggestion[] {
+    const suggestions: ProcessDataKeySuggestion[] = [];
+    const seenIds = new Set<string>();
+
+    for (const hint of hints) {
+        const suggestion = createSuggestion(hint, options.scopeProcessDataKey, options.prefix);
+        if (suggestion == null) {
+            continue;
+        }
+
+        if (options.disableWildCards && suggestion.id.includes('*')) {
+            continue;
+        }
+
+        if (seenIds.has(suggestion.id)) {
+            continue;
+        }
+
+        seenIds.add(suggestion.id);
+        suggestions.push(suggestion);
+    }
+
+    return suggestions;
+}
+
 function createSuggestion(
     hint: ProcessNodeDefinitionMetadataForwardedProcessDataKey,
     scopeProcessDataKey: string | null | undefined,
+    prefix: string | null | undefined,
 ): ProcessDataKeySuggestion | null {
-    const processDataKey = resolveSuggestionProcessDataKey(hint.processDataKey, scopeProcessDataKey);
+    const processDataKey = resolveSuggestionProcessDataKey(hint.processDataKey, scopeProcessDataKey, prefix);
     if (processDataKey == null) {
         return null;
     }
@@ -205,9 +244,17 @@ function createSuggestion(
 function resolveSuggestionProcessDataKey(
     processDataKey: string,
     scopeProcessDataKey: string | null | undefined,
+    prefix: string | null | undefined,
 ): string | null {
     if (isStringNullOrEmpty(scopeProcessDataKey)) {
-        return processDataKey;
+        const normalizedPrefix = normalizeProcessDataKeyPrefix(prefix);
+        if (normalizedPrefix == null) {
+            return processDataKey;
+        }
+
+        return processDataKey.startsWith(normalizedPrefix)
+            ? processDataKey.substring(normalizedPrefix.length)
+            : null;
     }
 
     const scope = normalizeProcessDataKey(scopeProcessDataKey);
@@ -225,5 +272,14 @@ function resolveSuggestionProcessDataKey(
 }
 
 function normalizeProcessDataKey(processDataKey: string | null | undefined): string {
-    return (processDataKey ?? '').trim().replace(/\.\*$/, '');
+    return (processDataKey ?? '').trim().replace(/\.\*\.?$/, '');
+}
+
+function normalizeProcessDataKeyPrefix(prefix: string | null | undefined): string | null {
+    if (isStringNullOrEmpty(prefix)) {
+        return null;
+    }
+
+    const normalizedPrefix = prefix!.trim().replace(/^\$\./, '');
+    return normalizedPrefix.endsWith('.') ? normalizedPrefix : normalizedPrefix + '.';
 }

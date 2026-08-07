@@ -1,7 +1,7 @@
 import {ElementType} from '../../../data/element-type/element-type';
 import {AnyElement} from '../../../models/elements/any-element';
 import {useElementTreeEditorContext} from './element-tree-editor-context';
-import React, {ReactNode, useEffect, useMemo} from 'react';
+import React, {useEffect, useMemo} from 'react';
 import {ElementEditorSectionHeader} from '../../element-editor-section-header/element-editor-section-header';
 import {Grid, Typography} from '@mui/material';
 import {TextFieldComponent} from '../../text-field/text-field-component';
@@ -11,20 +11,18 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-s
 import {useElementTreeContext} from '../element-tree-context';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {isAnyFormElement} from '../../../models/elements/form/any-form-element';
-import {AnyInputElement, isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
+import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {editors} from '../../../editors';
 import {EditorDispatcher} from '../../editor-dispatcher';
 import {CheckboxFieldComponent} from '../../checkbox-field/checkbox-field-component';
 import {AlertComponent} from '../../alert/alert-component';
-import {ElementWithParents, generateElementNameWithParent} from '../../../utils/flatten-elements';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
-import {DefaultTabs} from '../../element-editor/default-tabs';
-import {createElementEditorNavigationLink} from '../../../hooks/use-element-editor-navigation';
 import {ElementWidthSelector} from '../../element-width-selector/element-width-selector';
 import {normalizeElementWeight} from '../../../utils/element-widths';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {ProcessDataKeyInputComponent} from '../../../views/process-data-key-input-field-view';
 import {isGroupLayout} from '../../../models/elements/form/layout/group-layout';
+import {collectHttpMappingProblems} from './element-tree-editor-content-tab-properties-utils';
 
 const summaryLayoutHiddenElementSpecificPropertyTypes = new Set<ElementType>([
     ElementType.ChipInput,
@@ -89,10 +87,10 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
 
     const httpKeyProblems = useMemo(() => {
         if (isAnyInputElement(currentElement)) {
-            return collectHttpMappingProblems(currentElement, allElements);
+            return collectHttpMappingProblems({element: currentElement, parents}, allElements);
         }
         return [];
-    }, [currentElement, allElements]);
+    }, [currentElement, parents, allElements]);
 
     const normalizedWeight = useMemo(() => {
         if (isRoot) {
@@ -542,75 +540,4 @@ function hasAvailableElementSpecificProperties(element: AnyElement, hasSummaryLa
         hasSummaryLayoutParent &&
         summaryLayoutHiddenElementSpecificPropertyTypes.has(element.type)
     );
-}
-
-function collectHttpMappingProblems(element: AnyInputElement, allElements: ElementWithParents[]): ReactNode[] {
-    if (element.destinationKey == null || isStringNullOrEmpty(element.destinationKey)) {
-        return [];
-    }
-
-    const problems: ReactNode[] = [];
-
-    for (const ot of allElements) {
-        const {
-            element: otherElement,
-        } = ot;
-
-        if (element.id === otherElement.id) {
-            continue;
-        }
-
-        if (!isAnyInputElement(otherElement)) {
-            continue;
-        }
-
-        if (otherElement.destinationKey == null || isStringNullOrEmpty(otherElement.destinationKey)) {
-            continue;
-        }
-
-        if (otherElement.destinationKey === element.destinationKey && element.destinationKey != null) {
-            const otherElementName = generateElementNameWithParent(ot);
-
-            problems.push(
-                <>
-                    <Typography>
-                        Der Datenschlüssel <strong>„{element.destinationKey}”</strong> wird bereits von
-                        dem Formularelement <a href={createElementEditorNavigationLink(otherElement.id, DefaultTabs.properties)}>„{otherElementName}”</a> verwendet.
-                        Dies führt dazu, dass die Daten gegebenenfalls überschrieben werden. Stellen Sie sicher, dass
-                        dies ein beabsichtigtes Verhalten ist.
-                    </Typography>
-                </>,
-            );
-        }
-
-        if (otherElement.destinationKey.startsWith(element.destinationKey + '.') || element.destinationKey.startsWith(otherElement.destinationKey + '.')) {
-            const otherElementName = generateElementNameWithParent(ot);
-
-            const otherElementWritesParent = otherElement
-                .destinationKey
-                .startsWith(element.destinationKey + '.');
-
-            problems.push(
-                <>
-                    <Typography gutterBottom>
-                        Der Datenschlüssel <strong>„{element.destinationKey}”</strong> überschneidet sich
-                        mit dem Datenschlüssel <strong>„{otherElement.destinationKey}”</strong> des
-                        Formularelements <a href={createElementEditorNavigationLink(otherElement.id, DefaultTabs.metadata)}>„{otherElementName}”</a>.
-                        {
-                            otherElementWritesParent ?
-                                ' Das andere Element schreibt in ein Unterattribut des aktuellen Elements.' :
-                                ' Das aktuelle Element schreibt in ein Unterattribut des anderen Elements.'
-                        }
-                    </Typography>
-                    <Typography>
-                        Dies kann zu Problemen bei der Datenverarbeitung führen. Bitte passen Sie die Schlüssel an, um
-                        Überschneidungen zu vermeiden oder stellen Sie sicher, dass nicht beide Elemente gleichzeitig
-                        verwendet werden.
-                    </Typography>
-                </>,
-            );
-        }
-    }
-
-    return problems;
 }

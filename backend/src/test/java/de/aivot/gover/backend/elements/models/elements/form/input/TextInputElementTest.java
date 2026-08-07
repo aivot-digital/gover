@@ -1,12 +1,22 @@
 package de.aivot.gover.backend.elements.models.elements.form.input;
 
-import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
 import org.junit.jupiter.api.Test;
+
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class TextInputElementTest {
+    @Test
+    void shouldFormatDateValueAsText() {
+        var element = new TextInputElement();
+        var date = ZonedDateTime.of(2028, 8, 7, 0, 0, 0, 0, ZoneId.of("Europe/Berlin"));
+
+        assertEquals("07.08.2028", element.formatValue(date));
+    }
+
     @Test
     void shouldIncludePrefixCopyableAndCopyValueTemplateInEqualityAndHashCode() {
         var reference = createElement("text_field", "Vorwahl", true, "https://example.test/{value}/");

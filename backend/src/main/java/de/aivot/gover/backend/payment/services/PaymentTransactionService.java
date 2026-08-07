@@ -303,7 +303,7 @@ public class PaymentTransactionService implements
         }
     }
 
-    @Scheduled(cron = "* 0/15 * * * *", zone = "${gover.timezone}")
+    @Scheduled(cron = "0 0/15 * * * *", zone = "${gover.timezone}")
     public void poll() {
         var spec = PaymentTransactionFilter
                 .create()

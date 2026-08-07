@@ -1,5 +1,4 @@
 import type {AnyElement} from './elements/any-element';
-import {isStringNotNullOrEmpty} from '../utils/string-utils';
 import {isAnyElementWithChildren} from './elements/any-element-with-children';
 import {isReplicatingContainerLayout} from './elements/form/layout/replicating-container-layout';
 
@@ -268,7 +267,7 @@ export function hasAnyErrorRecursively(elementStates: ComputedElementStates): bo
                 return false;
             }
 
-            if (isStringNotNullOrEmpty(state.error)) {
+            if (state.error != null) {
                 return true;
             }
 
@@ -287,7 +286,7 @@ export function hasAnyErrorRecursivelyInParent(parent: AnyElement, allElementSta
 function hasAnyErrorRecursivelyInElement(element: AnyElement, elementStates: ComputedElementStates): boolean {
     const state = elementStates[element.id];
 
-    if (isStringNotNullOrEmpty(state?.error)) {
+    if (state?.error != null) {
         return true;
     }
 

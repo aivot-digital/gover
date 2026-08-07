@@ -26,9 +26,11 @@ import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.javascript.models.JavascriptCode;
 import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.gover.backend.nocode.models.NoCodeExpression;
 import de.aivot.gover.backend.nocode.models.NoCodeReference;
 import de.aivot.gover.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.gover.backend.nocode.services.NoCodeEvaluationService;
+import de.aivot.gover.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import de.aivot.gover.backend.submission.services.ElementDataTransformService;
 import org.junit.jupiter.api.Test;
 
@@ -95,6 +97,37 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldFormatNoCodeDateDerivedTextValue() {
+        var derivedField = new TextInputElement();
+        derivedField.setId("derived");
+        derivedField.setValue(new ElementValueFunctions().setNoCode(
+                NoCodeExpression.of(
+                        "add-to-date",
+                        NoCodeExpression.of(
+                                "create-date",
+                                NoCodeStaticValue.of(7),
+                                NoCodeStaticValue.of(8),
+                                NoCodeStaticValue.of(2026)
+                        ),
+                        NoCodeStaticValue.of(2),
+                        NoCodeStaticValue.of("jahre")
+                )
+        ));
+
+        var result = derive(
+                createRoot(List.of(derivedField)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("07.08.2028", result.getEffectiveValues().get("derived"));
+        assertEquals(
+                EffectiveValueSource.Derived,
+                result.getElementStates().get("derived").getValueSource()
+        );
+    }
+
+    @Test
     void shouldSkipValidationErrorsForTechnicalFieldsButKeepEffectiveValues() {
         var technicalField = new TextInputElement();
         technicalField.setId("technical");
@@ -118,6 +151,49 @@ class ElementDerivationServiceTest {
                 EffectiveValueSource.Derived,
                 result.getElementStates().get("technical").getValueSource()
         );
+    }
+
+    @Test
+    void shouldKeepEmptyNoCodeValidationMessageAsErrorMarker() {
+        var field = new TextInputElement();
+        field.setId("field");
+        field.setValidation(new ElementValidationFunctions().setNoCodeList(List.of(
+                new ValidationNoCodeWrapper()
+                        .setNoCode(NoCodeStaticValue.of(false))
+                        .setMessage("")
+        )));
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("field", "invalid");
+
+        var result = derive(
+                createRoot(List.of(field)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("", result.getElementStates().get("field").getError());
+    }
+
+    @Test
+    void shouldNormalizeNullNoCodeValidationMessageToEmptyErrorMarker() {
+        var field = new TextInputElement();
+        field.setId("field");
+        field.setValidation(new ElementValidationFunctions().setNoCodeList(List.of(
+                new ValidationNoCodeWrapper()
+                        .setNoCode(NoCodeStaticValue.of(false))
+        )));
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("field", "invalid");
+
+        var result = derive(
+                createRoot(List.of(field)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("", result.getElementStates().get("field").getError());
     }
 
     @Test
@@ -478,7 +554,7 @@ class ElementDerivationServiceTest {
     private static ElementDerivationService createService() {
         return new ElementDerivationService(
                 new JavascriptEngineFactoryService(List.of()),
-                new NoCodeEvaluationService(List.of()),
+                new NoCodeEvaluationService(List.of(new CommonOperatorsV1(null, null))),
                 new ElementDataTransformService(),
                 new CodeListElementOptionsService(null, null)
         );
