@@ -363,7 +363,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
 
                 <Paper
                     sx={{
-                        marginTop: 3.5,
+                        marginTop: 2.75,
                     }}
                 >
                     {

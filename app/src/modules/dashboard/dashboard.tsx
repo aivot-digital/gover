@@ -44,7 +44,7 @@ export function Dashboard() {
 
                 <DashboardHero
                     sx={{
-                        mt: 2,
+                        mt: 2.75,
                         mb: 4,
                     }}
                 />

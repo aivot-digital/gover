@@ -109,7 +109,7 @@ export function DepartmentsListPage(): React.ReactElement {
 
                 <Paper
                     sx={{
-                        mt: 3.5,
+                        mt: 2.75,
                         mb: 4,
                         p: 2,
                         pb: 3.5,
