@@ -17,6 +17,10 @@ export const configsRoutes: RouteObject[] = [
         element: <EmailPage />,
     },
     {
+        path: '/mail/test',
+        element: <EmailPage />,
+    },
+    {
         path: '/settings/status',
         element: <SystemStatusPage />,
     },

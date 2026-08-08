@@ -1,5 +1,6 @@
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {MemoryRouter} from 'react-router-dom';
 import {EmailPage} from './email-page';
 import {
     MailApiService,
@@ -29,6 +30,14 @@ const configuredMailService: MailConfigurationResponseDTO = {
     configurationIssues: [],
 };
 
+function renderEmailPage(initialEntry = '/mail') {
+    return render(
+        <MemoryRouter initialEntries={[initialEntry]}>
+            <EmailPage/>
+        </MemoryRouter>,
+    );
+}
+
 describe('EmailPage', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
@@ -37,14 +46,26 @@ describe('EmailPage', () => {
     });
 
     it('renders the protected mail configuration details', async () => {
-        render(<EmailPage/>);
+        renderEmailPage();
 
+        expect(screen.getByRole('tab', {name: 'Konfiguration'})).toHaveAttribute('aria-selected', 'true');
+        expect(await screen.findByRole('heading', {name: 'E-Mail-Anbindung konfigurieren'})).toBeInTheDocument();
         expect(await screen.findByText('smtp.example.com:587')).toBeInTheDocument();
         expect(screen.queryByText('Port')).not.toBeInTheDocument();
         expect(screen.getByText('STARTTLS aktiviert')).toBeInTheDocument();
         expect(screen.getByText('prosuna@example.com')).toBeInTheDocument();
         expect(screen.getByText('Prosuna Service <service@example.com>')).toBeInTheDocument();
+        expect(screen.queryByDisplayValue('admin@example.com')).not.toBeInTheDocument();
+    });
+
+    it('switches between the configuration and test tabs', async () => {
+        renderEmailPage();
+
+        fireEvent.click(screen.getByRole('tab', {name: 'Testen'}));
+
+        expect(await screen.findByRole('heading', {name: 'E-Mail-Anbindung testen'})).toBeInTheDocument();
         expect(screen.getByDisplayValue('admin@example.com')).toBeInTheDocument();
+        expect(screen.queryByText('smtp.example.com:587')).not.toBeInTheDocument();
     });
 
     it('sends a test mail and reports SMTP acceptance', async () => {
@@ -53,7 +74,7 @@ describe('EmailPage', () => {
                 success: true,
                 errorMessage: null,
             });
-        render(<EmailPage/>);
+        renderEmailPage('/mail/test');
 
         const button = await screen.findByRole('button', {name: 'Test-E-Mail versenden'});
         fireEvent.click(button);
@@ -71,10 +92,9 @@ describe('EmailPage', () => {
             host: null,
             configurationIssues: ['Es ist kein SMTP-Server konfiguriert.'],
         });
-        render(<EmailPage/>);
+        renderEmailPage('/mail/test');
 
-        expect(await screen.findByText('Es ist kein SMTP-Server konfiguriert.')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'Test-E-Mail versenden'})).toBeDisabled();
+        expect(await screen.findByRole('button', {name: 'Test-E-Mail versenden'})).toBeDisabled();
     });
 
     it('shows the error returned by the mail server', async () => {
@@ -83,7 +103,7 @@ describe('EmailPage', () => {
                 success: false,
                 errorMessage: 'SMTP authentication failed',
             });
-        render(<EmailPage/>);
+        renderEmailPage('/mail/test');
 
         fireEvent.click(await screen.findByRole('button', {name: 'Test-E-Mail versenden'}));
 

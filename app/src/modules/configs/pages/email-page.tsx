@@ -5,6 +5,8 @@ import {
     CircularProgress,
     Paper,
     Stack,
+    Tab,
+    Tabs,
     TextField,
     Typography,
 } from '@mui/material';
@@ -12,6 +14,13 @@ import ForwardToInbox from '@aivot/mui-material-symbols-400-n25-outlined/Forward
 import SendOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Send';
 import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 import Warning from '@aivot/mui-material-symbols-400-n25-outlined/Warning';
+import Dns from '@aivot/mui-material-symbols-400-n25-outlined/Dns';
+import Security from '@aivot/mui-material-symbols-400-n25-outlined/Security';
+import Lock from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
+import Person from '@aivot/mui-material-symbols-400-n25-outlined/Person';
+import Password from '@aivot/mui-material-symbols-400-n25-outlined/Password';
+import OutgoingMail from '@aivot/mui-material-symbols-400-n25-outlined/OutgoingMail';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
 import {StatusTable} from '../../../components/status-table/status-table';
@@ -73,6 +82,8 @@ function getErrorMessage(error: unknown): string {
 export function EmailPage() {
     useRequireSystemPermission(Permission.SYSTEM_CONFIG_UPDATE);
 
+    const location = useLocation();
+    const navigate = useNavigate();
     const user = useAppSelector(selectUser);
     const [configuration, setConfiguration] = useState<MailConfigurationResponseDTO>();
     const [configurationError, setConfigurationError] = useState<string>();
@@ -80,6 +91,7 @@ export function EmailPage() {
     const [targetMail, setTargetMail] = useState(user?.email ?? '');
     const [isSending, setIsSending] = useState(false);
     const [testResult, setTestResult] = useState<DisplayedTestResult>();
+    const currentTab = location.pathname === '/mail/test' ? 1 : 0;
 
     const loadConfiguration = useCallback(async () => {
         setIsLoadingConfiguration(true);
@@ -119,30 +131,36 @@ export function EmailPage() {
             },
             {
                 label: 'SMTP-Server',
+                icon: <Dns/>,
                 children: renderOptionalValue(formatSmtpServer(configuration.host, configuration.port)),
             },
             {
                 label: 'Transportverschlüsselung',
+                icon: <Security/>,
                 children: configuration.startTlsEnabled ? 'STARTTLS aktiviert' : 'STARTTLS nicht aktiviert',
             },
             {
                 label: 'Authentifizierung',
+                icon: <Lock/>,
                 children: configuration.authenticationEnabled ? 'Aktiviert' : 'Nicht aktiviert',
             },
             ...(configuration.authenticationEnabled
                 ? [
                     {
                         label: 'Benutzername',
+                        icon: <Person/>,
                         children: renderOptionalValue(configuration.username),
                     },
                     {
                         label: 'Kennwort',
+                        icon: <Password/>,
                         children: configuration.passwordConfigured ? 'Hinterlegt' : 'Nicht hinterlegt',
                     },
                 ]
                 : []),
             {
                 label: 'Absender',
+                icon: <OutgoingMail/>,
                 children: renderOptionalValue(sender),
             },
         ];
@@ -204,78 +222,114 @@ export function EmailPage() {
 
             <Paper sx={{
                 mt: 2.75,
-                p: 2,
             }}>
-                {isLoadingConfiguration && (
-                    <Stack
-                        direction="row"
-                        spacing={1.5}
-                        alignItems="center"
+                <Box sx={{borderBottom: 1, borderBottomColor: 'divider'}}>
+                    <Tabs
+                        value={currentTab}
+                        onChange={(_, tab: number) => navigate(tab === 0 ? '/mail' : '/mail/test')}
                     >
-                        <CircularProgress size={22}/>
-                        <Typography color="text.secondary">E-Mail-Konfiguration wird geladen…</Typography>
-                    </Stack>
-                )}
+                        <Tab label="Konfiguration"/>
+                        <Tab label="Testen"/>
+                    </Tabs>
+                </Box>
 
-                {configurationError != null && (
-                    <AlertComponent
-                        color="error"
-                        title="E-Mail-Konfiguration konnte nicht geladen werden"
-                    >
-                        <Typography>{configurationError}</Typography>
-                        <Button
-                            variant="outlined"
-                            onClick={() => void loadConfiguration()}
-                            sx={{mt: 2}}
+                <Box sx={{p: 2}}>
+                    {isLoadingConfiguration && (
+                        <Stack
+                            direction="row"
+                            spacing={1.5}
+                            alignItems="center"
                         >
-                            Erneut versuchen
-                        </Button>
-                    </AlertComponent>
-                )}
+                            <CircularProgress size={22}/>
+                            <Typography color="text.secondary">E-Mail-Konfiguration wird geladen…</Typography>
+                        </Stack>
+                    )}
 
-                {configuration != null && (
-                    <>
-                        <StatusTable
-                            label="Konfiguration"
-                            description="Diese Angaben zeigen die aktuell wirksame Konfiguration der E-Mail-Anbindung."
-                            descriptionSx={{maxWidth: 900}}
-                            items={configurationItems}
-                            sx={{mt: 0}}
-                            cardSx={{mt: 3}}
-                            cardVariant="outlined"
-                        />
-
-                        {configuration.configurationIssues.length > 0 && (
-                            <AlertComponent
-                                color="warning"
-                                title="Konfiguration unvollständig"
+                    {configurationError != null && (
+                        <AlertComponent
+                            color="error"
+                            title="E-Mail-Konfiguration konnte nicht geladen werden"
+                        >
+                            <Typography>{configurationError}</Typography>
+                            <Button
+                                variant="outlined"
+                                onClick={() => void loadConfiguration()}
                                 sx={{mt: 2}}
                             >
-                                <Box
-                                    component="ul"
-                                    sx={{
-                                        my: 0,
-                                        pl: 2.5,
-                                    }}
-                                >
-                                    {configuration.configurationIssues.map((issue) => (
-                                        <li key={issue}>{issue}</li>
-                                    ))}
-                                </Box>
-                            </AlertComponent>
-                        )}
+                                Erneut versuchen
+                            </Button>
+                        </AlertComponent>
+                    )}
 
-                        <Box sx={{mt: 5}}>
+                    {configuration != null && currentTab === 0 && (
+                        <Box>
                             <Typography
-                                variant="subtitle1"
+                                variant="h5"
                                 component="h2"
+                                sx={{mt: 1.5, mb: 1}}
                             >
-                                Testversand
+                                E-Mail-Anbindung konfigurieren
                             </Typography>
                             <Typography sx={{
                                 maxWidth: 900,
-                                mb: 2,
+                                mb: 3,
                             }}>
+                                Diese Angaben zeigen die aktuell wirksame Konfiguration der E-Mail-Anbindung.
+                            </Typography>
+
+                            <StatusTable
+                                items={configurationItems}
+                                sx={{mt: 0}}
+                                cardVariant="outlined"
+                            />
+
+                            {configuration.configurationIssues.length > 0 && (
+                                <AlertComponent
+                                    color="warning"
+                                    title="Konfiguration unvollständig"
+                                    sx={{mt: 2}}
+                                >
+                                    <Box
+                                        component="ul"
+                                        sx={{
+                                            my: 0,
+                                            pl: 2.5,
+                                        }}
+                                    >
+                                        {configuration.configurationIssues.map((issue) => (
+                                            <li key={issue}>{issue}</li>
+                                        ))}
+                                    </Box>
+                                </AlertComponent>
+                            )}
+
+                            <Box sx={{mt: 3, maxWidth: 900}}>
+                                <Typography
+                                    variant="subtitle1"
+                                    component="h3"
+                                    sx={{mb: 0.5}}
+                                >
+                                    Änderungen an der Konfiguration
+                                </Typography>
+                                <Typography>
+                                    Die angezeigten Werte werden über die Betriebsumgebung der Prosuna-Instanz
+                                    verwaltet. Wenden Sie sich für Änderungen an die technische Administration und
+                                    prüfen Sie die Anbindung anschließend im Reiter „Testen“.
+                                </Typography>
+                            </Box>
+                        </Box>
+                    )}
+
+                    {configuration != null && currentTab === 1 && (
+                        <Box>
+                            <Typography
+                                variant="h5"
+                                component="h2"
+                                sx={{mt: 1.5, mb: 1}}
+                            >
+                                E-Mail-Anbindung testen
+                            </Typography>
+                            <Typography sx={{maxWidth: 900, mb: 2}}>
                                 Senden Sie eine Test-E-Mail, um die Übergabe an den konfigurierten E-Mail-Server zu
                                 prüfen.
                             </Typography>
@@ -357,13 +411,13 @@ export function EmailPage() {
                                     )}
                                 </AlertComponent>
                             )}
-                        </Box>
 
-                        <Box sx={{maxWidth: 900}}>
-                            <MailProcessingNotice/>
+                            <Box sx={{maxWidth: 900}}>
+                                <MailProcessingNotice/>
+                            </Box>
                         </Box>
-                    </>
-                )}
+                    )}
+                </Box>
             </Paper>
         </PageWrapper>
     );
