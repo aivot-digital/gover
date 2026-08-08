@@ -87,7 +87,7 @@ services:
       - prosuna
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.0
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.2
     restart: unless-stopped
     depends_on:
       - keycloak_database
@@ -113,7 +113,7 @@ services:
       - proxy
 
   keycloak_setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.23
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.24
     restart: on-failure
     depends_on:
       - keycloak
