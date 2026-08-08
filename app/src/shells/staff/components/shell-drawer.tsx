@@ -276,7 +276,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                     },
                     {
                         ...drawerModuleIcon('themes'),
-                        label: 'Erscheinungsbild',
+                        label: 'Erscheinungsbilder',
                         to: '/themes',
                         requiredSystemPermission: Permission.THEME_READ,
                     },
@@ -308,6 +308,12 @@ const BaseDrawerGroups: DrawerGroup[] = [
                                 to: '/storage-providers',
                                 requiredSystemPermission: Permission.STORAGE_PROVIDER_READ,
                             },
+                            {
+                                ...drawerIcon(<ForwardToInbox/>, <ForwardToInboxFilled/>),
+                                label: 'E-Mail',
+                                to: '/mail',
+                                requiredSystemPermission: Permission.SYSTEM_CONFIG_UPDATE,
+                            },
                         ],
                     },
                     {
@@ -315,12 +321,6 @@ const BaseDrawerGroups: DrawerGroup[] = [
                         label: 'Erweiterungen',
                         to: '/settings/extensions',
                         requiredSystemPermission: Permission.PLUGIN_READ,
-                    },
-                    {
-                        ...drawerIcon(<ForwardToInbox/>, <ForwardToInboxFilled/>),
-                        label: 'SMTP-Test (legacy)',
-                        to: '/settings/smtp',
-                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
                     },
                     {
                         ...drawerModuleIcon('providerLinks'),

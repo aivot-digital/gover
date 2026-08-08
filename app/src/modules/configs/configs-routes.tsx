@@ -1,7 +1,7 @@
 import {RouteObject} from 'react-router-dom';
 import React from 'react';
 import {CommonSettingsPage} from './pages/common-settings-page';
-import {SmtpTestPage} from './pages/smtp-test-page';
+import {EmailPage} from './pages/email-page';
 import {SystemStatusPage} from './pages/system-status-page';
 import {ExtensionsPage} from './pages/extensions-page/extensions-page';
 import {ExtensionsPageIndex} from './pages/extensions-page/extensions-page-index';
@@ -13,8 +13,8 @@ export const configsRoutes: RouteObject[] = [
         element: <CommonSettingsPage />,
     },
     {
-        path: '/settings/smtp',
-        element: <SmtpTestPage />,
+        path: '/mail',
+        element: <EmailPage />,
     },
     {
         path: '/settings/status',
