@@ -255,7 +255,7 @@ public class MailService {
             MailTemplate template,
             Map<String, Object> context
     ) throws MessagingException, IOException, ResponseException {
-        // Check if the user is deleted in the IDP
+        // Check if the user is deleted in the IdP
         if (user.getDeletedInIdp()) {
             return false;
         }

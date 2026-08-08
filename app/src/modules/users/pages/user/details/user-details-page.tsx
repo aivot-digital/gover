@@ -54,7 +54,7 @@ export function UserDetailsPage() {
                                     In dieser Oberfläche können Sie die im System verfügbaren Mitarbeiter:innen einsehen.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Die hier gepflegten Basisdaten werden mit dem Identity Provider (IDP) synchron gehalten.
+                                    Die hier gepflegten Basisdaten werden mit dem Identity Provider (IdP) synchron gehalten.
                                     Weitergehende konto- oder sicherheitsbezogene Änderungen erfolgen direkt in der Verwaltungsoberfläche von Keycloak.
                                 </Typography>
                             </>

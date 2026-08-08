@@ -48,7 +48,7 @@ export function Login() {
                     <Typography variant="body1"
                                 sx={{mt: 2}}>
                         Für die Nutzung dieser Anwendung benötigen Sie ein Mitarbeitenden-Konto. Bitte melden Sie sich
-                        über den Identity Provider (IDP) an.
+                        über den Identity Provider (IdP) an.
                     </Typography>
 
                     <Button

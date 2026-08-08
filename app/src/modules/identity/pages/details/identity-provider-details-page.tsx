@@ -53,7 +53,7 @@ export function IdentityProviderDetailsPage() {
                                                 variant="body1"
                                                 paragraph
                                             >
-                                                <strong>Direkt OpenID Connect kompatible IDPs</strong>
+                                                <strong>Direkt OpenID Connect kompatible IdPs</strong>
                                                 (z.B. BundID, BayernID, Mein Unternehmenskonto, Servicekonto SH, Keycloak, Azure AD):
                                                 <br />
                                                 → Sie können den Anbieter direkt anbinden, indem Sie die Verbindungsdaten hier hinterlegen.
@@ -65,7 +65,7 @@ export function IdentityProviderDetailsPage() {
                                                 paragraph
                                             >
                                                 <strong>Systeme ohne OpenID Connect Unterstützung</strong>
-                                                (z.B. LDAP/AD, andere IDPs):
+                                                (z.B. LDAP/AD, andere IdPs):
                                                 <br />
                                                 → Die Anbindung erfolgt über den integrierten Keycloak von Prosuna. Tragen Sie anschließend die OpenID Connect-Daten des Keycloak-Realms hier ein.
                                             </Typography>

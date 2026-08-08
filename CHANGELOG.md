@@ -58,7 +58,7 @@
 ## [4.5.4](https://github.com/aivot-digital/gover/compare/v4.5.3...v4.5.4) (2025-11-13)
 
 ### Features
-* **Server:** Add uptime check for IDP and API to container entrypoint.
+* **Server:** Add uptime check for IdP and API to container entrypoint.
 * **Server:** Add support for ePay21 payment provider.
 
 ### Bug Fixes
@@ -113,7 +113,7 @@
 ## [4.4.0](https://github.com/aivot-digital/gover/compare/v4.3.2...v4.4.0) (2025-05-14)
 
 ### Features
-* **App:** Revamped user account integration with UI management, supporting OpenID Connect and parallel pre-production/production setups for existing providers (Bund ID, Bayern ID, Mein Unternehmenskonto, Servicekonto SH). Enables integration of custom IDPs via Keycloak User Federation.
+* **App:** Revamped user account integration with UI management, supporting OpenID Connect and parallel pre-production/production setups for existing providers (Bund ID, Bayern ID, Mein Unternehmenskonto, Servicekonto SH). Enables integration of custom IdPs via Keycloak User Federation.
 * **App:** Implemented Altcha Captcha, an open-source, accessible Proof-of-Work solution for bot protection, integrated centrally without external dependencies.
 * **Forms:** Expanded section icon library and introduced a searchable selection component for easier icon discovery.
 

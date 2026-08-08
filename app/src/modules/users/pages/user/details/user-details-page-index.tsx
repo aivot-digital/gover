@@ -657,7 +657,7 @@ export function UserDetailsPageIndex() {
                                 >
                                     {editedUser.id}
                                 </Box>
-                                . Wenn die Mitarbeiter:in keinen Zugriff mehr benötigt, können Sie das Konto im IDP
+                                . Wenn die Mitarbeiter:in keinen Zugriff mehr benötigt, können Sie das Konto im IdP
                                 löschen.
                             </Typography>
 
