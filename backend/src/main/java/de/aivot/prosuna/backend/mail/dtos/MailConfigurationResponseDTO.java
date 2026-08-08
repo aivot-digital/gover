@@ -10,7 +10,7 @@ public record MailConfigurationResponseDTO(
         @Nullable String host,
         @Nullable Integer port,
         boolean authenticationEnabled,
-        @Nullable String username,
+        @Nullable String maskedUsername,
         boolean passwordConfigured,
         boolean startTlsEnabled,
         @Nullable String senderName,

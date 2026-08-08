@@ -149,10 +149,10 @@ export function EmailPage() {
                     {
                         label: 'Benutzername',
                         icon: <Person/>,
-                        children: renderOptionalValue(configuration.username),
+                        children: renderOptionalValue(configuration.maskedUsername),
                     },
                     {
-                        label: 'Kennwort',
+                        label: 'Passwort',
                         icon: <Password/>,
                         children: configuration.passwordConfigured ? 'Hinterlegt' : 'Nicht hinterlegt',
                     },

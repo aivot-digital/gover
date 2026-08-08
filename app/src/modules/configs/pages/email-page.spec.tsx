@@ -22,7 +22,7 @@ const configuredMailService: MailConfigurationResponseDTO = {
     host: 'smtp.example.com',
     port: 587,
     authenticationEnabled: true,
-    username: 'prosuna@example.com',
+    maskedUsername: 'p******@example.com',
     passwordConfigured: true,
     startTlsEnabled: true,
     senderName: 'Prosuna Service',
@@ -53,7 +53,7 @@ describe('EmailPage', () => {
         expect(await screen.findByText('smtp.example.com:587')).toBeInTheDocument();
         expect(screen.queryByText('Port')).not.toBeInTheDocument();
         expect(screen.getByText('STARTTLS aktiviert')).toBeInTheDocument();
-        expect(screen.getByText('prosuna@example.com')).toBeInTheDocument();
+        expect(screen.getByText('p******@example.com')).toBeInTheDocument();
         expect(screen.getByText('Prosuna Service <service@example.com>')).toBeInTheDocument();
         expect(screen.queryByDisplayValue('admin@example.com')).not.toBeInTheDocument();
     });

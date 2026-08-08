@@ -5,7 +5,7 @@ export interface MailConfigurationResponseDTO {
     host: string | null;
     port: number | null;
     authenticationEnabled: boolean;
-    username: string | null;
+    maskedUsername: string | null;
     passwordConfigured: boolean;
     startTlsEnabled: boolean;
     senderName: string | null;

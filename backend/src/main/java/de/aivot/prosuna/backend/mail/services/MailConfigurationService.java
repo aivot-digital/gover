@@ -72,7 +72,7 @@ public class MailConfigurationService {
                 host,
                 port,
                 authenticationEnabled,
-                username,
+                maskUsername(username),
                 passwordConfigured,
                 startTlsEnabled,
                 senderName,
@@ -91,5 +91,19 @@ public class MailConfigurationService {
 
     private static String trimToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static String maskUsername(String username) {
+        if (username == null) {
+            return null;
+        }
+
+        // Use the same recognizable shape as deleted user data without exposing the complete credential.
+        var atIndex = username.lastIndexOf('@');
+        var localPart = atIndex >= 0 ? username.substring(0, atIndex) : username;
+        var domain = atIndex >= 0 ? username.substring(atIndex) : "";
+        var visiblePrefix = localPart.isEmpty() ? "" : localPart.substring(0, 1);
+
+        return visiblePrefix + "*".repeat(6) + domain;
     }
 }

@@ -30,7 +30,7 @@ class MailConfigurationServiceTest {
         assertEquals("smtp.example.com", result.host());
         assertEquals(587, result.port());
         assertTrue(result.authenticationEnabled());
-        assertEquals("prosuna@example.com", result.username());
+        assertEquals("p******@example.com", result.maskedUsername());
         assertTrue(result.passwordConfigured());
         assertTrue(result.startTlsEnabled());
         assertEquals("Prosuna Service", result.senderName());
@@ -39,7 +39,18 @@ class MailConfigurationServiceTest {
 
         var serializedResult = new ObjectMapper().writeValueAsString(result);
         assertFalse(serializedResult.contains("top-secret"));
+        assertFalse(serializedResult.contains("prosuna@example.com"));
         assertFalse(serializedResult.contains("\"password\":"));
+    }
+
+    @Test
+    void getConfigurationMasksNonEmailUsername() {
+        var mailProperties = new MailProperties();
+        mailProperties.setUsername("service-account");
+
+        var result = new MailConfigurationService(mailProperties, new ProsunaConfig()).getConfiguration();
+
+        assertEquals("s******", result.maskedUsername());
     }
 
     @Test
