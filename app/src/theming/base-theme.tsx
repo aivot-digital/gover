@@ -6,6 +6,7 @@ import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlin
 import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import ReportOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Report';
 import type {} from '@mui/x-data-grid/themeAugmentation';
+import {getDisabledFieldBackground} from './field-state-colors';
 
 const fontStackHeadlines = ['"Public Sans"',
     '-apple-system',
@@ -220,13 +221,13 @@ export const BaseTheme = createTheme({
             styleOverrides: {
                 root: ({theme}) => ({
                     '&.Mui-disabled': {
-                        backgroundColor: theme.palette.action.disabledBackground,
+                        backgroundColor: getDisabledFieldBackground(theme),
                         cursor: 'not-allowed',
                     },
                 }),
                 input: ({theme}) => ({
                     '&.Mui-disabled': {
-                        WebkitTextFillColor: theme.palette.text.disabled,
+                        WebkitTextFillColor: theme.palette.text.secondary,
                         cursor: 'not-allowed',
                     },
                 }),

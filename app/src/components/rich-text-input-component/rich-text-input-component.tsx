@@ -24,6 +24,7 @@ import {
     UndoRedo,
 } from '@mdxeditor/editor';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 import {placeholderPlugin} from './rich-text-input-component-placeholder-plugin';
 import '@mdxeditor/editor/style.css';
 
@@ -125,16 +126,14 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
         : 'rgba(255, 255, 255, 0.23)';
     // Match the visual surface used by TextFieldComponent while the field is read-only.
     const baseBg = isReadOnly
-        ? theme.palette.action.disabledBackground
+        ? getDisabledFieldBackground(theme)
         : theme.palette.background.paper;
     const editorContentColor = isReadOnly
-        ? theme.palette.text.disabled
+        ? theme.palette.text.secondary
         : theme.palette.text.primary;
-    const editorSecondaryContentColor = isReadOnly
-        ? theme.palette.text.disabled
-        : theme.palette.text.secondary;
+    const editorSecondaryContentColor = theme.palette.text.secondary;
     const editorLinkColor = isReadOnly
-        ? theme.palette.text.disabled
+        ? theme.palette.text.secondary
         : theme.palette.primary.main;
     const toolbarBg = isReadOnly
         ? theme.palette.action.hover

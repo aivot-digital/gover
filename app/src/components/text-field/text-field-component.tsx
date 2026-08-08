@@ -4,6 +4,7 @@ import {type TextFieldComponentProps} from './text-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
 import Autocomplete from '@mui/material/Autocomplete';
 import {CopyToClipboardButton} from '../copy-to-clipboard-button/copy-to-clipboard-button';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
 const COPY_VALUE_TEMPLATE_PLACEHOLDER = '{value}';
 
@@ -404,7 +405,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
             required={props.required}
             sx={{
                 ...props.sx,
-                backgroundColor: props.busy ? '#F8F8F8' : undefined,
+                backgroundColor: props.busy ? getDisabledFieldBackground : undefined,
                 cursor: props.busy ? 'not-allowed' : undefined,
             }}
             size={props.size}

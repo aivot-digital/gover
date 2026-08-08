@@ -3,6 +3,7 @@ import {BaseViewProps} from './base-view';
 import {NumberFieldElement} from '../models/elements/form/input/number-field-element';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
+import {getDisabledFieldBackground} from '../theming/field-state-colors';
 
 export function NumberFieldView(props: BaseViewProps<NumberFieldElement, number>) {
     const {
@@ -40,7 +41,7 @@ export function NumberFieldView(props: BaseViewProps<NumberFieldElement, number>
             disabled={isDisabled}
             debounce={1000}
             sx={{
-                backgroundColor: isBusy ? '#F8F8F8' : undefined,
+                backgroundColor: isBusy ? getDisabledFieldBackground : undefined,
                 cursor: isBusy ? 'not-allowed' : undefined,
             }}
             readOnly={isBusy}

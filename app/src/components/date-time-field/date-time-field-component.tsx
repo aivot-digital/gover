@@ -14,6 +14,7 @@ import {
 import {InstantIso} from '../../utils/temporal-types';
 import {EndAction} from '../text-field/text-field-component-props';
 import {renderIconButton} from '../text-field/text-field-component';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
 interface DateTimeFieldComponentProps {
     label: string;
@@ -227,7 +228,7 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
                 }}
                 sx={{
                     '& .MuiPickersInputBase-root': {
-                        backgroundColor: (props.busy || props.disabled) ? '#F8F8F8' : undefined,
+                        backgroundColor: (props.busy || props.disabled) ? getDisabledFieldBackground : undefined,
                         cursor: (props.busy || props.disabled) ? 'not-allowed' : undefined,
                     },
                 }}
