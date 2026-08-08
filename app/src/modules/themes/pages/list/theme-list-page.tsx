@@ -8,7 +8,6 @@ import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-p
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {Box, Typography} from '@mui/material';
-import DescriptionOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Description';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {type Theme} from '../../models/theme';
@@ -20,9 +19,13 @@ import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
-import React, {useCallback} from 'react';
+import React, {useCallback, useState} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 import {Permission} from '../../../../data/permissions/permission';
+import MoreVertOutlined from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
+import {useSetDefaultTheme} from '../../hooks/use-set-default-theme';
+import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
+import {ThemeListRowMenu} from '../../components/theme-list-row-menu';
 
 const themeListPermissionCheck: GenericListPagePermissionConfig<Theme> = {
     scope: {
@@ -39,7 +42,7 @@ const activeThemeChip = (
         color="info"
         variant="outlined"
         size="small"
-        title="Aktives Erscheinungsbild der Prosuna-Instanz"
+        title="Standard-Erscheinungsbild der Prosuna-Instanz"
         sx={{
             ml: 1,
         }}
@@ -82,6 +85,13 @@ function ThemeColorSwatch({color, title}: {color: string; title: string}) {
 export function ThemeListPage() {
     const navigate = useNavigate();
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
+    const [rowMenu, setRowMenu] = useState<{anchorEl: HTMLElement; theme: Theme} | null>(null);
+    const {
+        canSetDefaultTheme,
+        setDefaultThemeDisabledTooltip,
+        isSettingDefaultTheme,
+        setDefaultTheme,
+    } = useSetDefaultTheme();
 
     const header = useCallback((permissions: GenericListPagePermissionState<Theme>) => ({
         icon: <PaletteOutlinedIcon />,
@@ -102,8 +112,9 @@ export function ThemeListPage() {
             content: (
                 <>
                     <Typography>
-                        Ein Erscheinungsbild legt Farben, Logo und Favicon für die Benutzeroberfläche von Prosuna fest. Erscheinungsbilder können global oder für einzelne Formulare verwendet werden.
-                        So können Sie z. B. für verschiedene Organisationen oder Abteilungen unterschiedliche Erscheinungsbilder anlegen und nutzen.
+                        Ein Erscheinungsbild legt Farben, Logo und Favicon für die Benutzeroberfläche von Prosuna fest.
+                        Es kann als Standard der Prosuna-Instanz oder für einzelne Organisationseinheiten verwendet
+                        werden.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         Ein Erscheinungsbild besteht aus einem Namen, Farben sowie optional einem Logo und Favicon. Bei der Auswahl der Farben sollte die Barrierefreiheit berücksichtigt werden.
@@ -220,7 +231,6 @@ export function ThemeListPage() {
 
     const rowActions = useCallback((item: Theme, permissions: GenericListPagePermissionState<Theme>) => {
         const canUpdateTheme = permissions.canUpdate(item);
-
         return [
             {
                 icon: canUpdateTheme ? <EditOutlined /> : <Visibility/>,
@@ -228,9 +238,21 @@ export function ThemeListPage() {
                 tooltip: canUpdateTheme ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen',
             },
             {
-                icon: <DescriptionOutlined />,
-                to: `/themes/${item.id}/forms`,
-                tooltip: 'Formulare mit diesem Erscheinungsbild ansehen',
+                icon: ModuleIcons.departments,
+                to: `/themes/${item.id}/departments`,
+                tooltip: 'Organisationseinheiten mit diesem Erscheinungsbild',
+                ariaLabel: 'Organisationseinheiten mit diesem Erscheinungsbild',
+            },
+            {
+                icon: <MoreVertOutlined />,
+                onClick: (event: React.MouseEvent<HTMLElement>) => {
+                    setRowMenu({
+                        anchorEl: event.currentTarget,
+                        theme: item,
+                    });
+                },
+                tooltip: 'Optionen',
+                ariaLabel: 'Optionen für dieses Erscheinungsbild',
             },
         ];
     }, []);
@@ -247,26 +269,43 @@ export function ThemeListPage() {
     ), [navigate]);
 
     return (
-        <PageWrapper
-            title="Erscheinungsbilder"
-            fullWidth
-            background
-        >
-            <GenericListPage<Theme>
-                header={header}
-                permissionCheck={themeListPermissionCheck}
-                searchLabel="Erscheinungsbild suchen"
-                searchPlaceholder="Name des Erscheinungsbildes eingeben…"
-                fetch={fetchThemes}
-                columnDefinitions={columnDefinitions}
-                getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={noDataPlaceholder}
-                noSearchResultsPlaceholder="Keine Erscheinungsbilder gefunden, die zu Ihrer Suche passen"
-                rowActionsCount={2}
-                rowActions={rowActions}
-                defaultSortField="name"
-                disableFullWidthToggle={true}
-            />
-        </PageWrapper>
+        <>
+            <PageWrapper
+                title="Erscheinungsbilder"
+                fullWidth
+                background
+            >
+                <GenericListPage<Theme>
+                    header={header}
+                    permissionCheck={themeListPermissionCheck}
+                    searchLabel="Erscheinungsbild suchen"
+                    searchPlaceholder="Name des Erscheinungsbildes eingeben…"
+                    fetch={fetchThemes}
+                    columnDefinitions={columnDefinitions}
+                    getRowIdentifier={getRowIdentifier}
+                    noDataPlaceholder={noDataPlaceholder}
+                    noSearchResultsPlaceholder="Keine Erscheinungsbilder gefunden, die zu Ihrer Suche passen"
+                    rowActions={rowActions}
+                    rowActionsCount={3}
+                    defaultSortField="name"
+                    disableFullWidthToggle={true}
+                />
+            </PageWrapper>
+
+            {rowMenu != null && (
+                <ThemeListRowMenu
+                    anchorEl={rowMenu.anchorEl}
+                    theme={rowMenu.theme}
+                    isDefaultTheme={rowMenu.theme.id === Number(appThemeId)}
+                    canSetDefaultTheme={canSetDefaultTheme}
+                    isSettingDefaultTheme={isSettingDefaultTheme}
+                    setDefaultThemeDisabledTooltip={setDefaultThemeDisabledTooltip}
+                    onClose={() => setRowMenu(null)}
+                    onSetDefaultTheme={(theme) => {
+                        void setDefaultTheme(theme);
+                    }}
+                />
+            )}
+        </>
     );
 }

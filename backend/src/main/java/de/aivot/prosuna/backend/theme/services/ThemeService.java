@@ -54,7 +54,12 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
 
     @Override
     public void performDelete(@Nonnull ThemeEntity entity) throws ResponseException {
-        // TODO: Check if the theme entity is references in any process node config
+        // TODO: Check whether the theme is referenced by any process node configuration.
+
+        var defaultTheme = systemService.retrieveDefaultTheme();
+        if (defaultTheme.getId().equals(entity.getId())) {
+            throw ResponseException.conflict("Das Standard-Erscheinungsbild der Prosuna-Instanz kann nicht gelöscht werden.");
+        }
 
         var depSpec = DepartmentFilter
                 .create()

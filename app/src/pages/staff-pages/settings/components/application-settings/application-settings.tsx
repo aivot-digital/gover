@@ -48,11 +48,15 @@ import {
 import {Permission} from '../../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../../../modules/permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
+import {useThemeReloadPrompt} from '../../../../../modules/themes/hooks/use-theme-reload-prompt';
+
+const SYSTEM_THEME_FALLBACK_OPTION_VALUE = '__prosuna_system_theme_fallback__';
 
 export function ApplicationSettings() {
     const dispatch = useAppDispatch();
     const api = useApi();
     const confirm = useConfirm();
+    const promptThemeReload = useThemeReloadPrompt();
 
     useRequireSystemPermission(Permission.SYSTEM_CONFIG_READ);
     const canUpdateSystemConfig = useHasSystemPermission(Permission.SYSTEM_CONFIG_UPDATE);
@@ -92,6 +96,10 @@ export function ApplicationSettings() {
     const configuredMostPrivilegedSystemRole = config[SystemConfigKeys.systemRoles.mostPrivilegedRole];
     const configuredAssetStorageProvider = config[SystemConfigKeys.storage.assets.default_storage_provider];
     const configuredAttachmentStorageProvider = config[SystemConfigKeys.storage.attachments.default_storage_provider];
+    const selectedSystemTheme = editedConfig[SystemConfigKeys.system.theme] ?? config[SystemConfigKeys.system.theme];
+    const systemThemeSelectValue = isStringNullOrEmpty(selectedSystemTheme)
+        ? SYSTEM_THEME_FALLBACK_OPTION_VALUE
+        : selectedSystemTheme;
     const defaultSystemRoleValue = editedConfig[SystemConfigKeys.users.defaultSystemRole] ?? configuredDefaultSystemRole;
     const mostPrivilegedSystemRoleValue = editedConfig[SystemConfigKeys.systemRoles.mostPrivilegedRole] ?? configuredMostPrivilegedSystemRole;
     const assetStorageProviderValue = editedConfig[SystemConfigKeys.storage.assets.default_storage_provider] ?? configuredAssetStorageProvider;
@@ -156,10 +164,17 @@ export function ApplicationSettings() {
             .listAll()
             .then((themes) => {
                 if (isActive) {
-                    setThemes(themes.content.map((theme) => ({
-                        value: theme.id.toString(),
-                        label: theme.name,
-                    })));
+                    setThemes([
+                        {
+                            value: SYSTEM_THEME_FALLBACK_OPTION_VALUE,
+                            label: 'Prosuna-Systemstandard',
+                            subLabel: 'Integriertes Standard-Erscheinungsbild ohne eigene Konfiguration',
+                        },
+                        ...themes.content.map((theme) => ({
+                            value: theme.id.toString(),
+                            label: theme.name,
+                        })),
+                    ]);
                 }
             })
             .catch((err) => {
@@ -493,17 +508,8 @@ export function ApplicationSettings() {
 
                 const oldThemeId = config[SystemConfigKeys.system.theme];
 
-                if (newThemeId != null && newThemeId !== oldThemeId) {
-                    confirm({
-                        title: 'Änderungen ausstehend',
-                        children: (
-                            <Typography>
-                                Die Änderungen am Erscheinungsbild werden erst nach einem "Neu Laden" der Anwendung
-                                aktiv.
-                            </Typography>
-                        ),
-                        hideCancelButton: true,
-                    });
+                if (newThemeId !== oldThemeId) {
+                    await promptThemeReload();
                 }
 
                 setEditedConfig({});
@@ -724,7 +730,7 @@ export function ApplicationSettings() {
                                 mt: 4,
                             }}
                         >
-                            Erscheinungsbild der Prosuna-Instanz
+                            Standard-Erscheinungsbild der Prosuna-Instanz
                         </Typography>
 
                         <Typography
@@ -733,11 +739,8 @@ export function ApplicationSettings() {
                                 mb: 1.6,
                             }}
                         >
-                            Sie können ein eigenes Erscheinungsbild für die Benutzeroberfläche auswählen, um Prosuna an
-                            Ihr
-                            Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die
-                            Index-Seite der veröffentlichten
-                            Formulare).
+                            Wählen Sie das Erscheinungsbild, das standardmäßig für die Prosuna-Instanz verwendet wird.
+                            Organisationseinheiten können weiterhin ein eigenes Erscheinungsbild vorgeben.
                         </Typography>
 
                         <Grid
@@ -751,18 +754,21 @@ export function ApplicationSettings() {
                                 }}
                             >
                                 <SelectFieldComponent
-                                    label="Erscheinungsbild"
+                                    label="Standard-Erscheinungsbild"
                                     options={themes}
-                                    value={editedConfig[SystemConfigKeys.system.theme] ?? config[SystemConfigKeys.system.theme]}
+                                    value={systemThemeSelectValue}
                                     onChange={(val) => {
                                         setEditedConfig({
                                             ...editedConfig,
-                                            [SystemConfigKeys.system.theme]: val ?? '',
+                                            [SystemConfigKeys.system.theme]: val === SYSTEM_THEME_FALLBACK_OPTION_VALUE
+                                                ? ''
+                                                : val ?? '',
                                         });
                                     }}
                                     disabled={!canUpdateSystemConfig || !canReadThemes}
                                     hint={!canReadThemes ? themeReadHint : undefined}
                                     startIcon={ModuleIcons.themes}
+                                    includeEmptyOption={false}
                                 />
                             </Grid>
                         </Grid>

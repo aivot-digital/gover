@@ -15,6 +15,7 @@ interface ConfirmDialogProps {
     inputPlaceholder?: string;
     isDestructive?: boolean;
     confirmButtonText?: string;
+    cancelButtonText?: string;
     confirmButtonColor?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
     hideCancelButton?: boolean;
     width?: 'sm' | 'md' | 'lg' | 'xl';
@@ -125,7 +126,7 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
                         onClick={props.onCancel}
                         variant="outlined"
                     >
-                        Abbrechen
+                        {props.cancelButtonText ?? 'Abbrechen'}
                     </Button>
                 }
             </DialogActions>

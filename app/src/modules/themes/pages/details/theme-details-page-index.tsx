@@ -20,10 +20,10 @@ import React, {useContext, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
-import {Link, useNavigate, useParams} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
@@ -44,16 +44,21 @@ import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {ImageSelector} from '../../../assets/components/image-selector';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
-import {Page} from '../../../../models/dtos/page';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {
+    useHasAnyDepartmentPermission,
+    useHasSystemPermission,
+} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {resolveAppearanceColors} from '../../../../theming/resolve-appearance-colors';
 import {createAppTheme, resolveAppBackgroundColors} from '../../../../theming/themes';
 import {BaseTheme} from '../../../../theming/base-theme';
 import {type Theme as MuiTheme} from '@mui/material/styles';
 import {ThemeColorPicker} from '../../components/theme-color-picker';
+import StarOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Star';
+import {useSetDefaultTheme} from '../../hooks/use-set-default-theme';
+import {DepartmentApiService} from '../../../departments/services/department-api-service';
 
 export const ThemeSchema = yup.object({
     name: yup.string()
@@ -91,6 +96,13 @@ export function ThemeDetailsPageIndex() {
     const isNewTheme = isNewItem === true;
     const editPermission = isNewTheme ? Permission.THEME_CREATE : Permission.THEME_UPDATE;
     const canDeleteTheme = useHasSystemPermission(Permission.THEME_DELETE);
+    const canReadDepartments = useHasAnyDepartmentPermission(Permission.DEPARTMENT_READ);
+    const {
+        canSetDefaultTheme,
+        setDefaultThemeDisabledTooltip,
+        isSettingDefaultTheme,
+        setDefaultTheme,
+    } = useSetDefaultTheme();
 
     const {
         currentItem,
@@ -115,13 +127,12 @@ export function ThemeDetailsPageIndex() {
         [theme],
     );
 
-    const themeId = useParams().id;
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
     const [showConstraintDefaultThemeDialog, setConstraintDefaultThemeDialog] = useState(false);
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
-    const [relatedApplications, setRelatedApplications] = useState<ConstraintLinkProps[] | undefined>(undefined);
+    const [relatedDepartments, setRelatedDepartments] = useState<ConstraintLinkProps[] | undefined>(undefined);
 
     if (theme == null) {
         return (
@@ -129,6 +140,7 @@ export function ThemeDetailsPageIndex() {
         );
     }
 
+    const isDefaultTheme = theme.id.toString() === appThemeId;
     const saveDisabledByPermission = !isEditable;
     const saveDisabledTooltip = saveDisabledByPermission
         ? formatMissingPermissionTooltip(editPermission)
@@ -137,6 +149,14 @@ export function ThemeDetailsPageIndex() {
     const deleteDisabledTooltip = deleteDisabledByPermission
         ? formatMissingPermissionTooltip(Permission.THEME_DELETE)
         : undefined;
+    const setDefaultThemeActionDisabled = !canSetDefaultTheme || !hasNotChanged || isBusy || isSettingDefaultTheme;
+    const setDefaultThemeActionDisabledTooltip = !canSetDefaultTheme
+        ? setDefaultThemeDisabledTooltip
+        : !hasNotChanged
+            ? 'Speichern Sie Ihre Änderungen, bevor Sie dieses Erscheinungsbild als Standard festlegen.'
+            : isBusy || isSettingDefaultTheme
+                ? 'Bitte warten Sie, bis der aktuelle Vorgang abgeschlossen ist.'
+                : undefined;
     const usesDarkModeColors = theme.primaryColorDark != null || theme.secondaryColorDark != null;
 
     const handleDarkModeColorsToggle = (enabled: boolean) => {
@@ -216,36 +236,37 @@ export function ThemeDetailsPageIndex() {
     const checkAndHandleDelete = async () => {
         if (isNewTheme) return;
 
+        if (isDefaultTheme) {
+            setConstraintDefaultThemeDialog(true);
+            return;
+        }
+
+        if (!canReadDepartments) {
+            setConfirmDeleteAction(() => confirmDelete);
+            return;
+        }
+
         setIsBusy(true);
         try {
-            const uniqueForms: Page<any> = {
-                content: [],
-                page: {
-                    size: 0,
-                    number: 0,
-                    totalElements: 0,
-                    totalPages: 0,
-                },
-            };
+            const assignedDepartments = await new DepartmentApiService()
+                .list(0, 6, 'name', 'ASC', {themeId: theme.id});
 
-            if (uniqueForms.content.length > 0) {
+            if (assignedDepartments.content.length > 0) {
                 const maxVisibleLinks = 5;
-                let processedLinks = uniqueForms.content.slice(0, maxVisibleLinks).map(f => ({
-                    label: f.internalTitle,
-                    to: `/forms/${f.id}`,
+                const processedLinks = assignedDepartments.content.slice(0, maxVisibleLinks).map(department => ({
+                    label: department.name,
+                    to: `/departments/${department.id}`,
                 }));
 
-                if (uniqueForms.content.length > maxVisibleLinks) {
+                if (assignedDepartments.page.totalElements > maxVisibleLinks) {
                     processedLinks.push({
-                        label: 'Weitere Formulare anzeigen…',
-                        to: `/themes/${theme.id}/forms`,
+                        label: 'Weitere Organisationseinheiten anzeigen…',
+                        to: `/themes/${theme.id}/departments`,
                     });
                 }
 
-                setRelatedApplications(processedLinks);
+                setRelatedDepartments(processedLinks);
                 setShowConstraintDialog(true);
-            } else if (themeId === appThemeId) {
-                setConstraintDefaultThemeDialog(true);
             } else {
                 setConfirmDeleteAction(() => confirmDelete);
             }
@@ -269,7 +290,7 @@ export function ThemeDetailsPageIndex() {
                 });
                 dispatch(showSuccessSnackbar('Das Erscheinungsbild wurde erfolgreich gelöscht.'));
             })
-            .catch(() => dispatch(showErrorSnackbar('Beim Löschen ist ein Fehler aufgetreten.')))
+            .catch((error) => dispatch(showApiErrorSnackbar(error, 'Beim Löschen ist ein Fehler aufgetreten.')))
             .finally(() => setIsBusy(false));
     };
 
@@ -367,19 +388,15 @@ export function ThemeDetailsPageIndex() {
                 </Grid>
             </Grid>
             {
-                themeId === appThemeId &&
+                !isNewTheme && isDefaultTheme &&
                 <AlertComponent
                     color="info"
-                    title="Dies ist das aktive Erscheinungsbild der Prosuna-Instanz"
+                    title="Standard-Erscheinungsbild der Prosuna-Instanz"
                     sx={{my: 4}}
                 >
-                    <Box sx={{maxWidth: 860}}>
-                        Bitte beachten Sie, dass sich Änderungen an diesem Erscheinungsbild auf die ganze Prosuna-Instanz
-                        auswirken.
-                        Sie können die Zuweisung als Standard-Erscheinungsbild für die Prosuna-Instanz in den <Link
-                        to="/settings"
-                        style={{color: 'inherit'}}
-                    >Systemeinstellungen</Link> ändern.
+                    <Box sx={{maxWidth: 700}}>
+                        Dieses Erscheinungsbild wird für die Prosuna-Instanz und überall dort verwendet, wo kein
+                        spezifischeres Erscheinungsbild einer Organisationseinheit greift.
                     </Box>
                 </AlertComponent>
             }
@@ -549,11 +566,32 @@ export function ThemeDetailsPageIndex() {
                 }
 
                 {
+                    !isNewTheme && !isDefaultTheme &&
+                    <DisabledTooltip
+                        disabled={setDefaultThemeActionDisabled}
+                        title={setDefaultThemeActionDisabledTooltip}
+                        wrapperSx={{marginLeft: 'auto'}}
+                    >
+                        <Button
+                            variant="outlined"
+                            color="info"
+                            startIcon={<StarOutlined />}
+                            disabled={setDefaultThemeActionDisabled}
+                            onClick={() => {
+                                void setDefaultTheme(theme);
+                            }}
+                        >
+                            Als Standard festlegen
+                        </Button>
+                    </DisabledTooltip>
+                }
+
+                {
                     !isNewTheme &&
                     <DisabledTooltip
                         title={deleteDisabledTooltip}
                         disabled={isBusy || deleteDisabledByPermission}
-                        wrapperSx={{marginLeft: 'auto'}}
+                        wrapperSx={{marginLeft: isDefaultTheme ? 'auto' : undefined}}
                     >
                         <Button
                             variant={'outlined'}
@@ -586,18 +624,18 @@ export function ThemeDetailsPageIndex() {
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
-                message="Dieses Erscheinungsbild kann (noch) nicht gelöscht werden, da es aktuell von einem oder mehreren Formularen verwendet wird."
-                solutionText="Bitte konfigurieren Sie für diese Formulare ein anderes Erscheinungsbild und versuchen Sie es erneut:"
-                links={relatedApplications}
+                message="Dieses Erscheinungsbild kann nicht gelöscht werden, da es von einer oder mehreren Organisationseinheiten verwendet wird."
+                solutionText="Bitte weisen Sie diesen Organisationseinheiten zunächst ein anderes Erscheinungsbild zu:"
+                links={relatedDepartments}
             />
             <ConstraintDialog
                 open={showConstraintDefaultThemeDialog}
                 onClose={() => setConstraintDefaultThemeDialog(false)}
-                message="Dieses Erscheinungsbild kann (noch) nicht gelöscht werden, da es das aktive Erscheinungsbild der Prosuna-Instanz ist."
-                solutionText="Um dieses Erscheinungsbild löschen zu können, müssen Sie zuerst in den Systemeinstellungen ein anderes Erscheinungsbild als Standard festlegen."
+                message="Dieses Erscheinungsbild kann nicht gelöscht werden, da es das Standard-Erscheinungsbild der Prosuna-Instanz ist."
+                solutionText="Legen Sie zunächst ein anderes Erscheinungsbild als Standard fest."
                 links={[{
-                    label: 'Systemeinstellungen aufrufen',
-                    to: '/settings',
+                    label: 'Erscheinungsbilder anzeigen',
+                    to: '/themes',
                 }]}
             />
         </Box>

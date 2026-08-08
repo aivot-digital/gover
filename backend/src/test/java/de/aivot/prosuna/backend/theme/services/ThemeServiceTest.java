@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -20,6 +21,48 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ThemeServiceTest {
+    @Test
+    void performDeleteShouldRejectDefaultTheme() {
+        var themeRepository = mock(ThemeRepository.class);
+        var systemService = mock(SystemService.class);
+        var theme = new ThemeEntity().setId(1);
+
+        when(systemService.retrieveDefaultTheme()).thenReturn(new ThemeEntity().setId(1));
+
+        var service = new ThemeService(
+                themeRepository,
+                mock(DepartmentRepository.class),
+                mock(AssetRepository.class),
+                mock(VDepartmentShadowedRepository.class),
+                systemService
+        );
+
+        assertThrows(ResponseException.class, () -> service.performDelete(theme));
+        verify(themeRepository, never()).delete(theme);
+    }
+
+    @Test
+    void performDeleteShouldDeleteUnassignedNonDefaultTheme() throws ResponseException {
+        var themeRepository = mock(ThemeRepository.class);
+        var departmentRepository = mock(DepartmentRepository.class);
+        var systemService = mock(SystemService.class);
+        var theme = new ThemeEntity().setId(1);
+
+        when(systemService.retrieveDefaultTheme()).thenReturn(new ThemeEntity().setId(2));
+
+        var service = new ThemeService(
+                themeRepository,
+                departmentRepository,
+                mock(AssetRepository.class),
+                mock(VDepartmentShadowedRepository.class),
+                systemService
+        );
+
+        service.performDelete(theme);
+
+        verify(themeRepository).delete(theme);
+    }
+
     @Test
     void performUpdateShouldAllowRemovingLogoAndFavicon() throws ResponseException {
         var themeRepository = mock(ThemeRepository.class);
