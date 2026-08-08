@@ -368,7 +368,7 @@ const elementConstructors: {
     [ElementType.Image]: (id) => ({
         ...makeFormBase(ElementType.Image, id),
         alt: 'Beispiel-Grafik mit weißem Prosuna Logo auf blauem Hintergrund (bitte ersetzen)',
-        src: `${AppInfo.mode == 'staff' ? '/staff' : ''}/assets/images/prosuna-beispiel-grafik.svg`,
+        src: `${AppInfo.mode == 'staff' ? '/staff' : ''}/assets/images/prosuna-beispiel-grafik.jpg`,
         height: undefined,
         width: undefined,
         caption: undefined,
