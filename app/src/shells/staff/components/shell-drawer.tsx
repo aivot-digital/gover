@@ -1504,7 +1504,6 @@ function ColorModeMenuButton({minimizeDrawer}: {minimizeDrawer: boolean}) {
                 <ListSubheader
                     disableSticky
                     sx={{
-                        pt: 1.25,
                         pb: 0.75,
                         lineHeight: 1.5,
                         fontSize: '0.75rem',
@@ -1529,7 +1528,7 @@ function ColorModeMenuButton({minimizeDrawer}: {minimizeDrawer: boolean}) {
                             <ColorModeIcon preference={option.value}/>
                         </ListItemIcon>
                         <ListItemText>{option.label}</ListItemText>
-                        {option.value === preference && <Check fontSize="small"/>}
+                        {option.value === preference && <Check fontSize="small" sx={{ml: 1.5}}/>}
                     </MenuItem>
                 ))}
             </Menu>
