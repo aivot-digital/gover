@@ -1,21 +1,38 @@
-import {Box, Button, Dialog, IconButton, Stack, Typography, useTheme} from '@mui/material';
+import {Box, Button, Dialog, IconButton, Link, Stack, Typography, useTheme} from '@mui/material';
 import CloseIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import CodeIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code';
-import ListAltIcon from '@aivot/mui-material-symbols-400-n25-outlined/ListAlt';
+import HistoryIcon from '@aivot/mui-material-symbols-400-n25-outlined/History';
+import ApiIcon from '@aivot/mui-material-symbols-400-n25-outlined/Api';
 import React from 'react';
 import {AppInfo} from '../../../app-info';
 import {createApiPath} from '../../../utils/url-path-utils';
 import {DebugInformationDialog} from '../../../dialogs/debug-information-dialog/debug-information-dialog';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
+import {getOverlayAlpha, lighten} from '@mui/material/styles';
 
 interface AboutProsunaDialogProps {
     open: boolean;
     onClose: () => void;
 }
 
+const dialogPaperElevation = 1;
+const resourceButtonSx = {
+    width: {xs: '100%', sm: 'auto'},
+    color: 'text.primary',
+    borderColor: 'divider',
+    '&:hover': {
+        borderColor: 'text.secondary',
+        backgroundColor: 'action.hover',
+    },
+};
+
 export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): React.ReactElement {
     const theme = useTheme();
+    // Match the SVG edge to MUI's elevation overlay on dark paper surfaces.
+    const dialogSurfaceColor = theme.palette.mode === 'dark'
+        ? lighten(theme.palette.background.paper, getOverlayAlpha(dialogPaperElevation))
+        : theme.palette.background.paper;
     const [
         isDebugInformationDialogOpen,
         setDebugInformationDialogOpen,
@@ -34,6 +51,7 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                 maxWidth="sm"
                 fullWidth
                 PaperProps={{
+                    elevation: dialogPaperElevation,
                     sx: {
                         borderRadius: 3,
                         overflow: 'hidden',
@@ -90,7 +108,7 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                     >
                         <path
                             d="M0,20 Q250,40 500,20 L500,40 L0,40 Z"
-                            fill="#fff"
+                            fill={dialogSurfaceColor}
                         />
                     </Box>
 
@@ -117,7 +135,16 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                             color: theme.palette.text.secondary, mb: 4,
                         }}
                     >
-                        Entwickelt von Aivot und weiteren{' '}
+                        Entwickelt von{' '}
+                        <Link
+                            href="https://aivot.de/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            color="inherit"
+                        >
+                            Aivot
+                        </Link>{' '}
+                        und weiteren{' '}
                         <abbr
                             title={[
                                 'Kontributoren im Kontext von Open Source sind Einzelpersonen und Organisationen,',
@@ -132,11 +159,8 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
 
                     <Stack
                         direction="row"
-                        spacing={2}
-                        useFlexGap
                         justifyContent="center"
-                        flexWrap="wrap"
-                        sx={{ mb: 2 }}
+                        sx={{mb: 3.5}}
                     >
                         <Button
                             variant="contained"
@@ -144,52 +168,82 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                             href="https://prosuna.de"
                             target="_blank"
                             rel="noopener noreferrer"
-                            startIcon={<OpenInNewIcon />}
+                            endIcon={<OpenInNewIcon />}
                         >
-                            Mehr erfahren
+                            Mehr über Prosuna
                         </Button>
                     </Stack>
 
+                    <Typography
+                        component="h3"
+                        variant="caption"
+                        sx={{
+                            display: 'block',
+                            mb: 1.25,
+                            color: 'text.secondary',
+                            fontWeight: 600,
+                        }}
+                    >
+                        Weiterführende Links
+                    </Typography>
+
                     <Stack
-                        direction="row"
+                        direction={{xs: 'column', sm: 'row'}}
                         spacing={2}
                         useFlexGap
                         justifyContent="center"
                         flexWrap="wrap"
-                        sx={{mb: 2}}
+                        sx={{mb: 1.5}}
                     >
                         <Button
                             variant="outlined"
+                            color="inherit"
                             href="https://github.com/aivot-digital/gover"
                             target="_blank"
                             rel="noopener noreferrer"
                             startIcon={<CodeIcon />}
+                            sx={resourceButtonSx}
                         >
-                            Quellcode einsehen
+                            Quellcode
                         </Button>
                         <Button
                             variant="outlined"
+                            color="inherit"
                             href="https://github.com/aivot-digital/gover/releases"
                             target="_blank"
                             rel="noopener noreferrer"
-                            startIcon={<ListAltIcon />}
+                            startIcon={<HistoryIcon />}
+                            sx={resourceButtonSx}
                         >
-                            Changelog ansehen
+                            Versionshinweise
                         </Button>
                         <Button
                             variant="outlined"
+                            color="inherit"
                             href={createApiPath('/api/public/docs/swagger.html')}
                             target="_blank"
                             rel="noopener noreferrer"
-                            startIcon={<ListAltIcon />}
+                            startIcon={<ApiIcon />}
+                            sx={resourceButtonSx}
                         >
-                            API-Dokumentation ansehen
+                            API-Dokumentation
                         </Button>
+                    </Stack>
+
+                    <Stack direction="row" justifyContent="center">
                         <Button
-                            variant="outlined"
+                            variant="text"
+                            color="inherit"
                             startIcon={<BugReport />}
                             onClick={() => {
                                 setDebugInformationDialogOpen(true);
+                            }}
+                            sx={{
+                                color: 'text.secondary',
+                                '&:hover': {
+                                    color: 'text.primary',
+                                    backgroundColor: 'action.hover',
+                                },
                             }}
                         >
                             Debug-Informationen
