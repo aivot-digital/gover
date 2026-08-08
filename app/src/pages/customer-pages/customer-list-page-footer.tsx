@@ -10,7 +10,7 @@ import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 
 const buttonStyle: SxProps = {
-    color: '#16191F',
+    color: 'text.primary',
     textTransform: 'none',
     ml: 1,
     fontSize: '1.225rem',
@@ -32,6 +32,7 @@ export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
             role="contentinfo"
             sx={{
                 boxShadow: 'inset 0px 10px 20px rgba(0, 0, 0, 0.06)',
+                backgroundColor: 'background.paper',
             }}
         >
             <Container>
@@ -105,7 +106,7 @@ export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
                                 component={'p'}
                                 variant="h6"
                                 sx={{
-                                    color: 'rgba(0, 0, 0, 0.55)',
+                                    color: 'text.secondary',
                                     mt: 2,
                                     ml: 2.5,
                                     textAlign: 'left',
@@ -126,7 +127,7 @@ export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
 
             <Box
                 sx={{
-                    backgroundColor: '#F2F2F2',
+                    backgroundColor: 'action.hover',
                     p: 0.5,
                     px: 2,
                     [theme.breakpoints.up('md')]: {
@@ -136,7 +137,7 @@ export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
             >
                 <Typography
                     variant="caption"
-                    color="#444444"
+                    color="text.secondary"
                 >
                     Dieses Angebot wurde umgesetzt mit Prosuna – dem Fundament für moderne digitale Verwaltungsleistungen
                     von Aivot

@@ -230,7 +230,7 @@ export function CustomerFormPage() {
             return baseTheme;
         }
 
-        return createAppTheme(theme, BaseTheme);
+        return createAppTheme(theme, BaseTheme, baseTheme.palette.mode);
     }, [baseTheme, theme]);
 
     const handleSubmitEvent = async (values: AuthoredElementValues, event: string) => {
@@ -360,7 +360,7 @@ export function CustomerFormPage() {
 
                 <Box
                     sx={{
-                        backgroundColor: 'white',
+                        backgroundColor: 'background.default',
                     }}
                 >
                     <FormHeaderComponent

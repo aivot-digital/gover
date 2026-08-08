@@ -78,8 +78,6 @@ const mdxEditorGermanTranslation: Translation = (key, defaultValue, interpolatio
     return template.replace(/\{\{\s*([^{}\s]+)\s*}}/g, (_, token: string) => String(interpolations?.[token] ?? ''));
 };
 
-const TEXT_FIELD_READ_ONLY_BG = '#F8F8F8';
-const TEXT_FIELD_DISABLED_TEXT_COLOR = 'rgba(0, 0, 0, 0.66)';
 const AUTO_REDUCED_MODE_MAX_WIDTH = 630;
 
 export interface RichTextInputComponentProps {
@@ -127,16 +125,16 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
         : 'rgba(255, 255, 255, 0.23)';
     // Match the visual surface used by TextFieldComponent while the field is read-only.
     const baseBg = isReadOnly
-        ? TEXT_FIELD_READ_ONLY_BG
+        ? theme.palette.action.disabledBackground
         : theme.palette.background.paper;
     const editorContentColor = isReadOnly
-        ? TEXT_FIELD_DISABLED_TEXT_COLOR
+        ? theme.palette.text.disabled
         : theme.palette.text.primary;
     const editorSecondaryContentColor = isReadOnly
-        ? TEXT_FIELD_DISABLED_TEXT_COLOR
+        ? theme.palette.text.disabled
         : theme.palette.text.secondary;
     const editorLinkColor = isReadOnly
-        ? TEXT_FIELD_DISABLED_TEXT_COLOR
+        ? theme.palette.text.disabled
         : theme.palette.primary.main;
     const toolbarBg = isReadOnly
         ? theme.palette.action.hover
@@ -454,7 +452,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                     '& .prosuna-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) a': {
                         color: editorLinkColor,
                         textDecorationColor: isReadOnly
-                            ? alpha('#000000', 0.2)
+                            ? alpha(theme.palette.text.disabled, 0.5)
                             : alpha(theme.palette.primary.main, 0.35),
                     },
                     ...(disabled

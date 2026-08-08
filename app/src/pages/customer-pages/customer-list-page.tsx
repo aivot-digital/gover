@@ -113,7 +113,7 @@ export function CustomerListPage() {
         return (
             <Box
                 sx={{
-                    backgroundColor: 'white',
+                    backgroundColor: 'background.default',
                 }}
             >
                 <MetaElement

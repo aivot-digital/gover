@@ -8,7 +8,8 @@ export function HeadlineComponentSummary({model}: BaseSummaryProps<HeadlineEleme
             container
             sx={{
                 mt: 2,
-                borderBottom: "1px solid #D4D4D4",
+                borderBottom: '1px solid',
+                borderBottomColor: 'divider',
                 py: 1,
             }}
         >

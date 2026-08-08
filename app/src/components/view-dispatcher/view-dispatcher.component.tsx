@@ -300,7 +300,7 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                     display: 'none',
                     height: 24,
                     width: 24,
-                    backgroundColor: 'rgb(255,255,255)',
+                    backgroundColor: 'background.paper',
                     borderRadius: '50%',
                     transform: 'scale(1.25)',
                 }}
@@ -320,7 +320,7 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                     height: 24,
                     width: 24,
                     lineHeight: '24px',
-                    backgroundColor: 'rgba(0,0,0,.05)',
+                    backgroundColor: 'action.hover',
                 }}
             >
                 <MoreVert sx={{fontSize: '1.25rem'}}/>
@@ -347,7 +347,7 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                         variant="body1"
                         sx={{
                             fontWeight: 600,
-                            color: '#111',
+                            color: 'text.primary',
                             lineHeight: 1.2,
                             maxWidth: 200,
                             overflow: 'hidden',
@@ -362,7 +362,7 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                     <Typography
                         variant="caption"
                         sx={{
-                            color: 'rgba(0,0,0,0.5)',
+                            color: 'text.secondary',
                             fontWeight: 500,
                             mb: '-2px',
                             maxWidth: 200,

@@ -44,7 +44,11 @@ export function Introductory({mode}: IntroductoryProps) {
                         py: 6,
                         mt: 5,
                         mb: 5,
-                        backgroundColor: theme.palette.primary.dark,
+                        backgroundColor: 'background.paper',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderTop: '4px solid',
+                        borderTopColor: 'primary.main',
                         borderRadius: Number(theme.shape.borderRadius) / 2,
                     }}
                 >
@@ -60,7 +64,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                 title="Diese Meldung ausblenden"
                             >
                                 <IconButton
-                                    sx={{color: theme.palette.secondary.main}}
+                                    sx={{color: 'text.secondary'}}
                                     onClick={onDismiss}
                                 >
                                     <HighlightOffOutlinedIcon sx={{fontSize: '1.75rem'}} />
@@ -73,7 +77,6 @@ export function Introductory({mode}: IntroductoryProps) {
                         <Typography
                             variant="h2"
                             fontSize="1.75rem"
-                            color="white"
                         >
                             Herzlich willkommen!
                         </Typography>
@@ -83,14 +86,11 @@ export function Introductory({mode}: IntroductoryProps) {
                             fontSize="2.5rem"
                             fontWeight={800}
                             lineHeight="2.625rem"
-                            color="white"
                             sx={{
                                 mt: 2,
                             }}
                         >
-                            <span style={{color: theme.palette.secondary.main}}>
-                                Online-Antrags-Management
-                            </span><br />
+                            Online-Antrags-Management<br />
                             {systemConfig[SystemConfigKeys.provider.name]}
                         </Typography>
 
@@ -102,14 +102,13 @@ export function Introductory({mode}: IntroductoryProps) {
                                     sx={{
                                         mt: 4,
                                         mb: 4,
-                                        borderColor: (theme) => theme.palette.secondary.main,
+                                        borderColor: 'divider',
                                     }}
                                 />
                                 <Typography
                                     variant="h4"
                                     fontSize="1.125rem"
                                     lineHeight="1.25rem"
-                                    color="white"
                                     fontWeight="normal"
                                     component="a"
                                     href="https://wiki.teamaivot.de/dokumentation/gover/benutzerhandbuch/erste-schritte/home"
@@ -124,10 +123,11 @@ export function Introductory({mode}: IntroductoryProps) {
                                             transition: '200ms all ease-in-out',
                                             cursor: 'pointer',
                                             textDecoration: 'none',
+                                            color: 'text.secondary',
                                         },
                                         {
                                             '&:hover': {
-                                                color: (theme) => theme.palette.secondary.main,
+                                                color: 'text.primary',
                                             },
                                         }]}
                                 >
@@ -145,7 +145,6 @@ export function Introductory({mode}: IntroductoryProps) {
                                     variant="h4"
                                     fontSize="1.125rem"
                                     lineHeight="1.25rem"
-                                    color="white"
                                     fontWeight="normal"
                                     component="a"
                                     href="https://wiki.teamaivot.de/dokumentation/gover/benutzerhandbuch/home"
@@ -158,10 +157,11 @@ export function Introductory({mode}: IntroductoryProps) {
                                             transition: '200ms all ease-in-out',
                                             cursor: 'pointer',
                                             textDecoration: 'none',
+                                            color: 'text.secondary',
                                         },
                                         {
                                             '&:hover': {
-                                                color: (theme) => theme.palette.secondary.main,
+                                                color: 'text.primary',
                                             },
                                         }]}
                                 >

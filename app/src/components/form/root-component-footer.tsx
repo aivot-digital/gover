@@ -17,7 +17,7 @@ import {ProcessEntity} from '../../modules/process/entities/process-entity';
 import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
 
 const buttonStyle: SxProps = {
-    color: '#16191F',
+    color: 'text.primary',
     textTransform: 'none',
     ml: 1,
     fontSize: '1.225rem',
@@ -52,6 +52,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
             role="contentinfo"
             sx={{
                 boxShadow: 'inset 0px 10px 20px rgba(0, 0, 0, 0.06)',
+                backgroundColor: 'background.paper',
             }}
         >
             <Container>
@@ -153,7 +154,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                                 component={'p'}
                                 variant="h6"
                                 sx={{
-                                    color: 'rgba(0, 0, 0, 0.55)',
+                                    color: 'text.secondary',
                                     mt: 2,
                                     ml: 2.5,
                                     textAlign: 'left',
@@ -173,7 +174,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
             </Container>
             <Box
                 sx={{
-                    backgroundColor: '#F2F2F2',
+                    backgroundColor: 'action.hover',
                     p: 0.5,
                     px: 2,
                     [theme.breakpoints.up('md')]: {
@@ -183,7 +184,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
             >
                 <Typography
                     variant="caption"
-                    color="#444444"
+                    color="text.secondary"
                 >
                     Dieses Formular wurde umgesetzt mit Prosuna – dem Fundament für moderne digitale Verwaltungsleistungen
                     von Aivot

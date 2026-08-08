@@ -25,7 +25,8 @@ export function MultiCheckboxFieldComponentSummary(props: BaseSummaryProps<Multi
         <Grid
             container
             sx={{
-                borderBottom: "1px solid #D4D4D4",
+                borderBottom: '1px solid',
+                borderBottomColor: 'divider',
                 py: 1,
             }}
         >

@@ -8,6 +8,7 @@ import {showDialog} from '../../slices/app-slice';
 import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
+import {resolveAccessibleForeground} from '../../theming/resolve-appearance-colors';
 
 interface CustomerListPageHeaderProps {
 }
@@ -25,6 +26,7 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
             <Box
                 sx={{
                     boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.06)',
+                    backgroundColor: 'background.paper',
                 }}
             >
                 <Container>
@@ -59,7 +61,7 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
                                 sx={{
                                     ml: 4,
                                     pl: 4,
-                                    borderLeft: '1px solid #E4E4E4',
+                                    borderLeft: `1px solid ${theme.palette.divider}`,
                                     [theme.breakpoints.down('md')]: {
                                         borderLeft: 'none',
                                         pl: 0,
@@ -70,8 +72,11 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
                             >
                                 <Typography
                                     variant="h1"
-                                    color="primary"
                                     sx={{
+                                        color: resolveAccessibleForeground(
+                                            theme.palette.primary.main,
+                                            theme.palette.background.paper,
+                                        ),
                                         display: 'block',
                                         maxWidth: '640px',
                                         margin: 0,
@@ -96,6 +101,7 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
                                 accessibilityDepartmentId != null &&
                                 <Tooltip
                                     title="Informationen zur Barrierefreiheit"
+                                    arrow
                                 >
                                     <IconButton
                                         color="primary"
@@ -114,5 +120,3 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
         </Box>
     );
 }
-
-
