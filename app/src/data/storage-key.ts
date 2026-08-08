@@ -4,6 +4,7 @@ export enum StorageKey {
 
     PreReleaseVersionNoticeDismissed = 'pre_release_version_notice_dismissed',
     IntroDismissed = 'intro_dismissed',
+    ColorMode = 'color_mode',
 
     SubmissionsIncludePaymentPending = 'submissions_include_payment_pending',
     SubmissionsIncludeArchived = 'submissions_include_archived',

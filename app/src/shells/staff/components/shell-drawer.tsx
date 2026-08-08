@@ -11,11 +11,13 @@ import {
     ListItemButton,
     ListItemIcon,
     ListItemText,
+    ListSubheader,
     Menu,
     MenuItem,
     Paper,
     Snackbar,
     ThemeProvider,
+    Tooltip,
     Typography,
     useTheme,
 } from '@mui/material';
@@ -46,8 +48,6 @@ import PageInfo from '@aivot/mui-material-symbols-400-n25-outlined/PageInfo';
 import ShellDrawerLogo from './shell-drawer-logo';
 import ShellDrawerUserIcon from './shell-drawer-user-icon';
 import SimpleBar from 'simplebar-react';
-import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
-import Description from '@aivot/mui-material-symbols-400-n25-outlined/Description';
 import {AboutProsunaDialog} from './about-prosuna-dialog';
 import {ShellNotificationsMenu} from './shell-notifications-menu';
 import Api from '@aivot/mui-material-symbols-400-n25-outlined/Api';
@@ -71,6 +71,17 @@ import {type PermissionSet} from '../../../modules/permissions/models/permission
 import {AssetsApiService} from '../../../modules/assets/assets-api-service';
 import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
 import {hasModuleFlag, ModuleFlag} from '../../../utils/module-flags';
+import {alpha, type Theme as MuiTheme} from '@mui/material/styles';
+import Check from '@aivot/mui-material-symbols-400-n25-outlined/Check';
+import Contrast from '@aivot/mui-material-symbols-400-n25-outlined/Contrast';
+import DarkMode from '@aivot/mui-material-symbols-400-n25-outlined/DarkMode';
+import LightMode from '@aivot/mui-material-symbols-400-n25-outlined/LightMode';
+import {
+    type ColorModePreference,
+    useColorMode,
+} from '../../../providers/color-mode-context';
+import {createAppTheme} from '../../../theming/themes';
+import {BaseTheme} from '../../../theming/base-theme';
 
 export const COLLAPSED_DRAWER_WIDTH_REM = '4.25rem';
 export const EXPANDED_DRAWER_WIDTH_REM = '16.25rem';
@@ -248,7 +259,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 children: [
                     {
                         ...drawerModuleIcon('settings'),
-                        label: 'Allgemeine Einstellungen',
+                        label: 'Allgem. Einstellungen',
                         to: '/settings/app',
                         requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
                     },
@@ -508,33 +519,32 @@ export function ShellDrawer() {
     };
 
     const drawerTheme = useMemo(
-        () =>
-            createTheme({
-                ...baseTheme,
-                palette: {
-                    ...baseTheme.palette,
-                    primary: baseTheme.palette.primary,
-                    secondary: baseTheme.palette.secondary,
-                },
+        () => {
+            // Build from the structural base theme to avoid stacking overrides from the active app theme.
+            const darkTheme = createAppTheme(AppConfig.systemTheme, BaseTheme, 'dark');
+
+            return createTheme({
+                ...darkTheme,
                 components: {
-                    ...baseTheme.components,
+                    ...darkTheme.components,
                     MuiTooltip: {
                         styleOverrides: {
                             tooltip: {
-                                backgroundColor: 'rgba(255,255,255,1)',
-                                color: '#111',
+                                backgroundColor: baseTheme.palette.background.paper,
+                                color: baseTheme.palette.text.primary,
                                 fontWeight: 500,
                                 fontSize: '0.8rem',
                                 boxShadow:
                                     '0px 2px 6px rgba(0,0,0,0.25), 0px 4px 12px rgba(0,0,0,0.15)',
                             },
                             arrow: {
-                                color: 'rgba(255,255,255,90)',
+                                color: baseTheme.palette.background.paper,
                             },
                         },
                     },
                 },
-            }),
+            });
+        },
         [baseTheme],
     );
 
@@ -549,242 +559,240 @@ export function ShellDrawer() {
     );
 
     return (
-        <ThemeProvider theme={drawerTheme}>
-            <Box sx={{display: 'block'}}>
-                <Paper
-                    sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        height: '100vh',
-                        overflowY: 'auto',
-                        py: 1.5,
-
-                        borderRadius: 0,
-                        width: minimizeDrawer ? COLLAPSED_DRAWER_WIDTH_REM : EXPANDED_DRAWER_WIDTH_REM,
-                        backgroundColor: 'primary.dark',
-                        color: 'rgba(255, 255, 255, 0.8)',
-                    }}
-                    elevation={1}
-                >
-                    <Box sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        px: 1.75,
-                    }}>
-                        {/* Header */}
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: minimizeDrawer ? 'column' : 'row',
-                            mb: 2.5,
-                        }}>
-                            <Link
-                                to="/"
-                                title="Zurück zur Übersicht"
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: minimizeDrawer ? 'center' : 'start',
-                                    textDecoration: 'none',
-                                }}
-                            >
-                                <ShellDrawerLogo minimize={minimizeDrawer}/>
-                            </Link>
-
-                            {!minimizeDrawer && (
-                                <ShellDrawerUserActions minimizeDrawer={minimizeDrawer}
-                                                        setUserMenuAnchorEl={setUserMenuAnchorEl}
-                                                        setNotificationsAnchorEl={setNotificationsAnchorEl}/>
-                            )}
-                        </Box>
-
-                        {/* Search */}
-                        <Box sx={{mb: minimizeDrawer ? 0 : 2}}>
-                            {!minimizeDrawer ? (
-                                <Button
-                                    startIcon={<SearchFilled/>}
-                                    variant="outlined"
-                                    fullWidth
-                                    onClick={handleToggleSearchDialog}
-                                    color="inherit"
-                                    sx={{
-                                        justifyContent: 'flex-start',
-                                        textAlign: 'left',
-                                        background: 'rgba(255, 255, 255, 0.15)',
-                                        borderColor: 'rgba(255, 255, 255, 0.2)',
-                                        fontWeight: 600,
-                                        fontSize: '1rem',
-                                        color: 'rgba(255, 255, 255, 0.8)',
-                                        textTransform: 'none',
-                                        '&:hover': {
-                                            background: 'rgba(255, 255, 255, 0.2)',
-                                            borderColor: 'rgba(255, 255, 255, 0.25)',
-                                            color: 'rgba(255, 255, 255, 1)',
-                                        },
-                                    }}
-                                >
-                                    <Box sx={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        width: '100%',
-                                        alignItems: 'center',
-                                    }}>
-                                        <span>Suche</span>
-                                        <Box
-                                            sx={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: 0.5,
-                                                px: 0.5,
-                                                py: 0,
-                                                borderRadius: 1,
-                                                fontSize: '0.75rem',
-                                                fontWeight: 600,
-                                                background: 'rgba(255,255,255,.15)',
-                                                color: 'rgba(255,255,255,0.8)',
-                                                transform: 'translateX(7px) translateY(-1px)',
-                                            }}
-                                            title={'Tastenkürzel zum Öffnen der Suche (' + shortcutLabel + ')'}
-                                        >
-                                            {shortcutLabel}
-                                        </Box>
-                                    </Box>
-                                </Button>
-                            ) : (
-                                <Actions
-                                    sx={{
-                                        '& .MuiIconButton-root': {
-                                            borderRadius: 1,
-                                            background: 'rgba(255, 255, 255, 0.15)',
-                                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                                            color: 'rgba(255, 255, 255, 0.8)',
-                                        },
-                                        '& .MuiIconButton-root:hover': {
-                                            background: 'rgba(255, 255, 255, 0.2)',
-                                            border: '1px solid rgba(255, 255, 255, 0.25)',
-                                            color: 'rgba(255, 255, 255, 1)',
-
-                                        },
-                                    }}
-                                    color="inherit"
-                                    direction="column"
-                                    actions={[
-                                        {
-                                            icon: <SearchFilled/>,
-                                            tooltip: 'Suche',
-                                            onClick: handleToggleSearchDialog,
-                                        },
-                                    ]}
-                                    tooltipPlacement="right"
-                                />
-                            )}
-                        </Box>
-                    </Box>
-
-                    <Box
+        <>
+            <ThemeProvider theme={drawerTheme}>
+                <Box sx={{display: 'block'}}>
+                    <Paper
                         sx={{
-                            flexGrow: 1,
                             display: 'flex',
                             flexDirection: 'column',
-                            minHeight: 0,
-                            '& .simplebar-scrollbar:before': {
-                                backgroundColor: 'rgba(255,255,255,0.4)',
-                                left: '3px',
-                                right: '3px',
-                            },
+                            height: '100vh',
+                            overflowY: 'auto',
+                            py: 1.5,
+
+                            borderRadius: 0,
+                            width: minimizeDrawer ? COLLAPSED_DRAWER_WIDTH_REM : EXPANDED_DRAWER_WIDTH_REM,
+                            backgroundColor: 'background.paper',
+                            color: 'text.secondary',
+                            borderRight: '1px solid',
+                            borderColor: 'divider',
                         }}
+                        elevation={1}
                     >
-                        <SimpleBar
-                            style={{
-                                flexGrow: 1,
-                                height: '100%',
-                                minHeight: 0,
-                                overflowX: 'hidden',
-                                padding: '0 14px 14px',
-                            }}
-                        >
-                            {/* Navigation */}
-                            {drawerGroups.map((group, index) => (
-                                <DrawerGroup
-                                    key={group.title || index}
-                                    group={group}
-                                    minimizeDrawer={minimizeDrawer}
-                                />
-                            ))}
-                        </SimpleBar>
-                    </Box>
-
-                    <Box sx={{flexGrow: 1}}></Box>
-
-                    <Box sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        px: 1.75,
-                    }}>
-                        {/* Footer */}
-                        <Divider sx={{
-                            borderColor: 'rgba(255, 255, 255, 0.1)',
-                            mx: -1.75,
-                            mb: 1.75,
-                        }}/>
                         <Box sx={{
                             display: 'flex',
-                            flexDirection: minimizeDrawer ? 'column' : 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
+                            flexDirection: 'column',
+                            px: 1.75,
                         }}>
-                            {!minimizeDrawer && (
-                                <Button
-                                    variant="contained"
-                                    size="small"
-                                    href="https://docs.prosuna.de"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    startIcon={<Description fontSize="small"/>}
-                                    endIcon={<OpenInNew sx={{
-                                        fontSize: '1rem!important',
-                                        opacity: 0.6,
-                                    }}/>}
-                                    sx={{
-                                        textTransform: 'none',
-                                        color: 'white',
-                                        backgroundColor: 'transparent',
-                                        '&:hover': {
-                                            backgroundColor: 'rgba(255,255,255,0.1)',
-                                        },
+                            {/* Header */}
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: minimizeDrawer ? 'column' : 'row',
+                                mb: 2.5,
+                            }}>
+                                <Link
+                                    to="/"
+                                    title="Zurück zur Übersicht"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: minimizeDrawer ? 'center' : 'start',
+                                        textDecoration: 'none',
                                     }}
                                 >
-                                    Dokumentation
-                                </Button>
-                            )}
-                            {minimizeDrawer && (
-                                <>
+                                    <ShellDrawerLogo
+                                        minimize={minimizeDrawer}
+                                        style={{color: drawerTheme.palette.text.primary}}
+                                    />
+                                </Link>
+
+                                {!minimizeDrawer && (
                                     <ShellDrawerUserActions minimizeDrawer={minimizeDrawer}
-                                                            setUserMenuAnchorEl={setUserMenuAnchorEl}
-                                                            setNotificationsAnchorEl={setNotificationsAnchorEl}/>
-                                    <Box sx={{height: 10}}/>
-                                </>
-                            )}
-                            <Actions
-                                sx={{
-                                    flex: 0,
-                                    display: 'flex',
-                                    justifyContent: 'right',
-                                }}
-                                color="inherit"
-                                direction={minimizeDrawer ? 'column' : 'row'}
-                                actions={[
-                                    {
-                                        tooltip: minimizeDrawer ? 'Seitenleiste maximieren' : 'Seitenleiste minimieren',
-                                        icon: minimizeDrawer ? <LeftPanelOpen /> : <LeftPanelClose />,
-                                        onClick: handleToggleDrawer,
-                                    },
-                                ]}
-                                tooltipPlacement={minimizeDrawer ? 'right' : 'top'}
-                            />
+                                        setUserMenuAnchorEl={setUserMenuAnchorEl}
+                                        setNotificationsAnchorEl={setNotificationsAnchorEl}/>
+                                )}
+                            </Box>
+
+                            {/* Search */}
+                            <Box sx={{mb: minimizeDrawer ? 0 : 2}}>
+                                {!minimizeDrawer ?
+                                    (
+                                        <Button
+                                            startIcon={<SearchFilled/>}
+                                            variant="outlined"
+                                            fullWidth
+                                            onClick={handleToggleSearchDialog}
+                                            color="inherit"
+                                            sx={{
+                                                justifyContent: 'flex-start',
+                                                textAlign: 'left',
+                                                backgroundColor: (theme: MuiTheme) => alpha(theme.palette.common.white, 0.14),
+                                                borderColor: (theme: MuiTheme) => alpha(theme.palette.common.white, 0.22),
+                                                fontWeight: 600,
+                                                fontSize: '1rem',
+                                                color: 'text.secondary',
+                                                textTransform: 'none',
+                                                '&:hover': {
+                                                    backgroundColor: (theme: MuiTheme) => alpha(theme.palette.common.white, 0.2),
+                                                    borderColor: (theme: MuiTheme) => alpha(theme.palette.common.white, 0.3),
+                                                    color: 'text.primary',
+                                                },
+                                            }}
+                                        >
+                                            <Box sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                width: '100%',
+                                                alignItems: 'center',
+                                            }}>
+                                                <span>Suche</span>
+                                                <Box
+                                                    sx={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: 0.5,
+                                                        px: 0.5,
+                                                        py: 0,
+                                                        borderRadius: 1,
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: 600,
+                                                        background: 'action.selected',
+                                                        color: 'text.secondary',
+                                                        transform: 'translateX(7px) translateY(-1px)',
+                                                    }}
+                                                    title={'Tastenkürzel zum Öffnen der Suche (' + shortcutLabel + ')'}
+                                                >
+                                                    {shortcutLabel}
+                                                </Box>
+                                            </Box>
+                                        </Button>
+                                    ) :
+                                    (
+                                        <Actions
+                                            sx={{
+                                                '& .MuiIconButton-root': {
+                                                    borderRadius: 1,
+                                                    background: (theme: MuiTheme) => theme.palette.action.hover,
+                                                    border: (theme: MuiTheme) => `1px solid ${theme.palette.divider}`,
+                                                    color: (theme: MuiTheme) => theme.palette.text.secondary,
+                                                },
+                                                '& .MuiIconButton-root:hover': {
+                                                    background: (theme: MuiTheme) => theme.palette.action.selected,
+                                                    border: (theme: MuiTheme) => `1px solid ${theme.palette.text.disabled}`,
+                                                    color: (theme: MuiTheme) => theme.palette.text.primary,
+
+                                                },
+                                            }}
+                                            color="inherit"
+                                            direction="column"
+                                            actions={[
+                                                {
+                                                    icon: <SearchFilled/>,
+                                                    tooltip: 'Suche',
+                                                    onClick: handleToggleSearchDialog,
+                                                },
+                                            ]}
+                                            tooltipPlacement="right"
+                                        />
+                                    )}
+                            </Box>
                         </Box>
-                    </Box>
-                </Paper>
-            </Box>
+
+                        <Box
+                            sx={{
+                                'flexGrow': 1,
+                                'display': 'flex',
+                                'flexDirection': 'column',
+                                'minHeight': 0,
+                                '& .simplebar-scrollbar:before': {
+                                    backgroundColor: 'text.disabled',
+                                    left: '3px',
+                                    right: '3px',
+                                },
+                            }}
+                        >
+                            <SimpleBar
+                                style={{
+                                    flexGrow: 1,
+                                    height: '100%',
+                                    minHeight: 0,
+                                    overflowX: 'hidden',
+                                    padding: '0 14px 14px',
+                                }}
+                            >
+                                {/* Navigation */}
+                                {drawerGroups.map((group, index) => (
+                                    <DrawerGroup
+                                        key={group.title || index}
+                                        group={group}
+                                        minimizeDrawer={minimizeDrawer}
+                                    />
+                                ))}
+                            </SimpleBar>
+                        </Box>
+
+                        <Box sx={{flexGrow: 1}}></Box>
+
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            px: 1.75,
+                        }}>
+                            {/* Footer */}
+                            <Divider sx={{
+                                borderColor: 'divider',
+                                mx: -1.75,
+                                mb: 1.75,
+                            }}/>
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: minimizeDrawer ? 'column' : 'row',
+                                justifyContent: 'flex-start',
+                                alignItems: 'center',
+                                width: '100%',
+                            }}>
+                                {minimizeDrawer && (
+                                    <>
+                                        <ShellDrawerUserActions minimizeDrawer={minimizeDrawer}
+                                            setUserMenuAnchorEl={setUserMenuAnchorEl}
+                                            setNotificationsAnchorEl={setNotificationsAnchorEl}/>
+                                        <Box sx={{height: 10}}/>
+                                    </>
+                                )}
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: minimizeDrawer ? 'column' : 'row',
+                                        justifyContent: minimizeDrawer ? 'flex-start' : 'space-between',
+                                        alignItems: 'center',
+                                        gap: minimizeDrawer ? 1 : 0.25,
+                                        width: minimizeDrawer ? 'auto' : '100%',
+                                    }}
+                                >
+                                    <ColorModeMenuButton minimizeDrawer={minimizeDrawer}/>
+                                    <Actions
+                                        sx={{
+                                            flex: 0,
+                                            display: 'flex',
+                                            justifyContent: 'right',
+                                        }}
+                                        color="inherit"
+                                        direction={minimizeDrawer ? 'column' : 'row'}
+                                        actions={[
+                                            {
+                                                tooltip: minimizeDrawer ? 'Seitenleiste maximieren' : 'Seitenleiste minimieren',
+                                                icon: minimizeDrawer ? <LeftPanelOpen /> : <LeftPanelClose />,
+                                                onClick: handleToggleDrawer,
+                                            },
+                                        ]}
+                                        tooltipPlacement={minimizeDrawer ? 'right' : 'top'}
+                                    />
+                                </Box>
+                            </Box>
+                        </Box>
+                    </Paper>
+                </Box>
+            </ThemeProvider>
 
             <ShellNotificationsMenu
                 minimizeDrawer={minimizeDrawer}
@@ -809,7 +817,7 @@ export function ShellDrawer() {
                 open={showAboutProsunaDialog}
                 onClose={() => dispatch(setShowAboutProsunaDialog(false))}
             />
-        </ThemeProvider>
+        </>
     );
 }
 
@@ -844,11 +852,11 @@ function DrawerGroup({
 
     if (minimizeDrawer) {
         const actionActiveStyle = {
-            color: 'primary.dark',
-            backgroundColor: 'secondary.main',
+            color: (theme: MuiTheme) => theme.palette.primary.contrastText,
+            backgroundColor: (theme: MuiTheme) => theme.palette.primary.main,
             '&.MuiIconButton-root:hover': {
-                color: 'primary.dark',
-                backgroundColor: 'secondary.main',
+                color: (theme: MuiTheme) => theme.palette.primary.contrastText,
+                backgroundColor: (theme: MuiTheme) => theme.palette.primary.main,
             },
         };
 
@@ -862,12 +870,12 @@ function DrawerGroup({
                             borderRadius: 1,
                         },
                         '& .MuiIconButton-root:hover': {
-                            color: 'white',
-                            backgroundColor: 'rgba(255,255,255,0.1)',
+                            color: (theme: MuiTheme) => theme.palette.text.primary,
+                            backgroundColor: (theme: MuiTheme) => theme.palette.action.hover,
 
                         },
                         '& .Mui-disabled.MuiIconButton-root': {
-                            color: 'rgba(255, 255, 255, 0.8)!important',
+                            color: (theme: MuiTheme) => `${theme.palette.text.disabled}!important`,
                             opacity: '0.5!important',
                         },
                     }}
@@ -916,7 +924,7 @@ function DrawerGroup({
                         fontWeight: 700,
                         fontSize: '0.75rem',
                         textTransform: 'uppercase',
-                        color: 'white',
+                        color: 'text.secondary',
                     }}
                 >
                     {group.title}
@@ -990,29 +998,45 @@ function DrawerListItem({
         level === 0
             ? {
                 backgroundColor: expanded && !isActive
-                    ? 'rgba(255,255,255,0.1)'
-                    : isActive ? 'secondary.main' : undefined,
+                    ? (theme: MuiTheme) => theme.palette.action.selected
+                    : isActive
+                        ? (theme: MuiTheme) => theme.palette.primary.main
+                        : undefined,
                 '& .MuiListItemText-primary, & .MuiListItemIcon-root, .toggle-icon': {
-                    color: isActive ? 'primary.dark' : 'rgba(255,255,255,0.8)',
+                    color: isActive
+                        ? (theme: MuiTheme) => theme.palette.primary.contrastText
+                        : (theme: MuiTheme) => theme.palette.text.secondary,
                 },
                 '&:hover': {
                     backgroundColor: expanded && !isActive
-                        ? 'rgba(255,255,255,0.1)'
-                        : isActive ? 'secondary.main' : 'rgba(255, 255, 255, 0.1)',
+                        ? (theme: MuiTheme) => theme.palette.action.selected
+                        : isActive
+                            ? (theme: MuiTheme) => theme.palette.primary.main
+                            : (theme: MuiTheme) => theme.palette.action.hover,
                     '& .MuiListItemIcon-root, .MuiListItemText-primary, .toggle-icon': {
-                        color: isActive ? 'primary.main' : 'rgba(255,255,255,1)',
+                        color: isActive
+                            ? (theme: MuiTheme) => theme.palette.primary.contrastText
+                            : (theme: MuiTheme) => theme.palette.text.primary,
                     },
                 },
             }
             : {
-                backgroundColor: isActive ? 'rgba(255,255,255,0.1)' : undefined,
+                backgroundColor: isActive
+                    ? (theme: MuiTheme) => theme.palette.primary.main
+                    : undefined,
                 '& .MuiListItemText-primary, & .MuiListItemIcon-root, .toggle-icon': {
-                    color: isActive ? 'secondary.main' : 'rgba(255,255,255,0.75)',
+                    color: isActive
+                        ? (theme: MuiTheme) => theme.palette.primary.contrastText
+                        : (theme: MuiTheme) => theme.palette.text.secondary,
                 },
                 '&:hover': {
-                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    backgroundColor: isActive
+                        ? (theme: MuiTheme) => theme.palette.primary.main
+                        : (theme: MuiTheme) => theme.palette.action.hover,
                     '& .MuiListItemIcon-root, .MuiListItemText-primary, .toggle-icon': {
-                        color: isActive ? 'secondary.main' : 'rgba(255,255,255,1)',
+                        color: isActive
+                            ? (theme: MuiTheme) => theme.palette.primary.contrastText
+                            : (theme: MuiTheme) => theme.palette.text.primary,
                     },
                 },
             };
@@ -1055,7 +1079,9 @@ function DrawerListItem({
                                     position: 'absolute',
                                     width: '14px',
                                     height: '14px',
-                                    backgroundColor: 'primary.light',
+                                    backgroundColor: (theme: MuiTheme) => theme.palette.mode === 'dark'
+                                        ? theme.palette.grey[700]
+                                        : theme.palette.grey[300],
                                     transform: 'translate(calc(13px * -1), calc(13px * -0.4))',
                                     mask: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'14\' height=\'14\' fill=\'none\' viewBox=\'0 0 14 14\'%3E%3Cpath d=\'M1 1v4a8 8 0 0 0 8 8h4\' stroke=\'%23efefef\' stroke-width=\'2\' stroke-linecap=\'round\'/%3E%3C/svg%3E") 50% 50% / 100% no-repeat',
                                 },
@@ -1072,7 +1098,7 @@ function DrawerListItem({
                                     width: '6px',
                                     content: '""',
                                     position: 'absolute',
-                                    backgroundColor: 'primary.dark',
+                                    backgroundColor: 'background.paper',
                                     pointerEvents: 'none',
                                 },
                             }
@@ -1102,11 +1128,11 @@ function DrawerListItem({
                                 borderRadius: '9999px',
                                 px: 0.75,
                                 color: isActive
-                                    ? 'primary.dark'
-                                    : 'rgba(255,255,255,0.90)',
+                                    ? (theme) => theme.palette.primary.contrastText
+                                    : (theme) => theme.palette.text.secondary,
                                 backgroundColor: isActive
-                                    ? 'rgba(0,0,0,0.10)'
-                                    : 'rgba(255,255,255,0.10)',
+                                    ? (theme) => alpha(theme.palette.primary.contrastText, 0.14)
+                                    : (theme) => theme.palette.action.selected,
                                 '& .MuiChip-label': {
                                     px: 0.75,
                                     lineHeight: '1rem',
@@ -1142,7 +1168,9 @@ function DrawerListItem({
                             width: '2px',
                             content: '""',
                             position: 'absolute',
-                            backgroundColor: 'primary.light',
+                            backgroundColor: (theme: MuiTheme) => theme.palette.mode === 'dark'
+                                ? theme.palette.grey[700]
+                                : theme.palette.grey[300],
                             bottom: 'calc(36px - 2px - 14px / 2)',
                         },
                         ...(level > 0 && isLastSibling
@@ -1156,7 +1184,7 @@ function DrawerListItem({
                                     width: '6px',
                                     content: '""',
                                     position: 'absolute',
-                                    backgroundColor: 'primary.dark',
+                                    backgroundColor: 'background.paper',
                                     bottom: 0,
                                     pointerEvents: 'none',
                                 },
@@ -1373,6 +1401,143 @@ function DrawerNavigationIcon({
 }
 
 
+const colorModeOptions: Array<{
+    value: ColorModePreference;
+    label: string;
+    shortLabel: string;
+}> = [
+    {
+        value: 'system',
+        label: 'System-Standard',
+        shortLabel: 'System',
+    },
+    {
+        value: 'light',
+        label: 'Hell',
+        shortLabel: 'Hell',
+    },
+    {
+        value: 'dark',
+        label: 'Dunkel',
+        shortLabel: 'Dunkel',
+    },
+];
+
+function ColorModeIcon({preference}: {preference: ColorModePreference}) {
+    switch (preference) {
+        case 'light':
+            return <LightMode fontSize="small"/>;
+        case 'dark':
+            return <DarkMode fontSize="small"/>;
+        default:
+            return <Contrast fontSize="small"/>;
+    }
+}
+
+function ColorModeMenuButton({minimizeDrawer}: {minimizeDrawer: boolean}) {
+    const {preference, setPreference} = useColorMode();
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const selectedOption = colorModeOptions.find((option) => option.value === preference) ?? colorModeOptions[0];
+    const open = anchorEl != null;
+
+    const button = (
+        <Button
+            id="color-mode-menu-button"
+            size="small"
+            color="inherit"
+            aria-label={`Farbmodus: ${selectedOption.label}`}
+            aria-controls={open ? 'color-mode-menu' : undefined}
+            aria-haspopup="menu"
+            aria-expanded={open ? 'true' : undefined}
+            onClick={(event) => setAnchorEl(event.currentTarget)}
+            startIcon={minimizeDrawer ? undefined : <ColorModeIcon preference={preference}/>}
+            endIcon={minimizeDrawer ? undefined : <KeyboardArrowDown/>}
+            sx={{
+                minWidth: minimizeDrawer ? 32 : 0,
+                width: minimizeDrawer ? 32 : 'auto',
+                px: minimizeDrawer ? 0 : 0.75,
+                color: 'text.secondary',
+                '& .MuiButton-startIcon': {
+                    ml: 0,
+                    mr: 0.5,
+                },
+                '& .MuiButton-endIcon': {
+                    ml: 0.25,
+                    mr: 0,
+                },
+                '&:hover': {
+                    color: 'text.primary',
+                    backgroundColor: 'action.hover',
+                },
+            }}
+        >
+            {minimizeDrawer ? <ColorModeIcon preference={preference}/> : selectedOption.shortLabel}
+        </Button>
+    );
+
+    return (
+        <>
+            {
+                minimizeDrawer
+                    ? <Tooltip title={`Farbmodus: ${selectedOption.label}`} placement="right">{button}</Tooltip>
+                    : button
+            }
+            <Menu
+                id="color-mode-menu"
+                anchorEl={anchorEl}
+                open={open}
+                onClose={() => setAnchorEl(null)}
+                anchorOrigin={minimizeDrawer
+                    ? {vertical: 'bottom', horizontal: 'right'}
+                    : {vertical: 'top', horizontal: 'right'}
+                }
+                transformOrigin={minimizeDrawer
+                    ? {vertical: 'bottom', horizontal: 'left'}
+                    : {vertical: 'bottom', horizontal: 'right'}
+                }
+                slotProps={{
+                    list: {
+                        'aria-labelledby': 'color-mode-menu-button',
+                    },
+                }}
+            >
+                <ListSubheader
+                    disableSticky
+                    sx={{
+                        pt: 1.25,
+                        pb: 0.75,
+                        lineHeight: 1.5,
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        letterSpacing: 0,
+                        color: 'text.secondary',
+                        backgroundColor: 'transparent',
+                    }}
+                >
+                    Farbmodus
+                </ListSubheader>
+                {colorModeOptions.map((option) => (
+                    <MenuItem
+                        key={option.value}
+                        selected={option.value === preference}
+                        onClick={() => {
+                            setPreference(option.value);
+                            setAnchorEl(null);
+                        }}
+                    >
+                        <ListItemIcon>
+                            <ColorModeIcon preference={option.value}/>
+                        </ListItemIcon>
+                        <ListItemText>{option.label}</ListItemText>
+                        {option.value === preference && <Check fontSize="small"/>}
+                    </MenuItem>
+                ))}
+            </Menu>
+        </>
+    );
+}
+
+
 function ShellDrawerUserActions(props: {
     minimizeDrawer: boolean,
     setUserMenuAnchorEl: (el: HTMLElement) => void,
@@ -1394,7 +1559,6 @@ function ShellDrawerUserActions(props: {
             actions={[
                 {
                     icon: <Badge
-                        color="secondary"
                         variant="dot"
                         overlap="circular"
                         badgeContent=" "
@@ -1403,7 +1567,8 @@ function ShellDrawerUserActions(props: {
                             '& .MuiBadge-badge': {
                                 top: 5,
                                 right: 5,
-                                borderColor: 'primary.dark',
+                                borderColor: 'background.paper',
+                                backgroundColor: 'secondary.main',
                                 borderWidth: 2,
                                 borderStyle: 'solid',
                                 transform: 'scale(1.5) translate(50%, -50%)',

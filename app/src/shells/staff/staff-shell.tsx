@@ -196,6 +196,7 @@ export function StaffShell(): ReactNode {
                                 flex: 1,
                                 position: 'relative',
                                 overflowY: 'auto',
+                                backgroundColor: 'background.default',
                             }}
                         >
                             <ShellProgress/>

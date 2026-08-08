@@ -72,7 +72,7 @@ export function ShellUserMenu({
                                     left: 20,
                                     width: 10,
                                     height: 10,
-                                    bgcolor: 'rgba(255,255,255,0.98)',
+                                    background: 'inherit',
                                     transform: 'translateY(-50%) translateX(-5px) rotate(45deg)',
                                     boxShadow: '-1px -1px 2px rgba(0,0,0,0.1)',
                                     zIndex: 0,
@@ -112,7 +112,7 @@ export function ShellUserMenu({
                             variant="body1"
                             sx={{
                                 fontWeight: 600,
-                                color: '#111',
+                                color: 'text.primary',
                                 lineHeight: 1,
                                 mt: 0.25,
                             }}
@@ -124,7 +124,7 @@ export function ShellUserMenu({
                         <Typography
                             variant="caption"
                             sx={{
-                                color: 'rgba(0,0,0,0.5)',
+                                color: 'text.secondary',
                                 mt: 0.25,
                                 lineHeight: 1,
                             }}
