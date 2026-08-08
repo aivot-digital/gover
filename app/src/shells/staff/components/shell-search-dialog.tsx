@@ -1,4 +1,4 @@
-import {Box, CircularProgress, Dialog, DialogContent, DialogTitle, Divider, IconButton, InputBase, List, ListItem, ListItemIcon, ListItemText, Pagination, Paper, Skeleton, Typography} from '@mui/material';
+import {Box, CircularProgress, Dialog, DialogContent, DialogTitle, Divider, IconButton, InputBase, List, ListItem, ListItemIcon, ListItemText, Pagination, Skeleton, Typography} from '@mui/material';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectShowSearchDialog, setShowSearchDialog} from '../../../slices/shell-slice';
 import {useEffect, useState} from 'react';
@@ -147,15 +147,13 @@ export function ShellSearchDialog() {
                 <span style={{display: 'none'}}>Suche</span>
             </DialogTitle>
             <DialogContent>
-                <Paper
-                    elevation={0}
+                <Box
                     sx={{
                         display: 'flex',
                         alignItems: 'center',
                         px: 1,
                         py: 0.75,
                         mb: 2,
-                        backgroundColor: 'action.hover',
                     }}
                 >
                     {isSearchBusy ? (
@@ -196,7 +194,7 @@ export function ShellSearchDialog() {
                     <IconButton onClick={handleClose}>
                         <Close />
                     </IconButton>
-                </Paper>
+                </Box>
 
                 <Box
                     sx={{
