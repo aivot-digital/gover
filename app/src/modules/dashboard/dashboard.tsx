@@ -9,7 +9,10 @@ import {useLogout} from '../../hooks/use-logout';
 import {DashboardHero} from './components/dashboard-hero';
 import {DashboardProviderLinks} from './components/dashboard-provider-links';
 import {DashboardProcessesPanel} from './components/dashboard-processes-panel';
-import {CanvasConfettiOverlay} from '../../components/confetti/canvas-confetti-overlay';
+import {
+    CanvasConfettiOverlay,
+    prosunaConfettiColors,
+} from '../../components/confetti/canvas-confetti-overlay';
 
 const germanyFlagColors = ['#213048', '#EA312A', '#EEA53C'];
 
@@ -77,15 +80,15 @@ export function Dashboard() {
                     }}
                 />
                 <Box sx={{mt: 4}}>
-                    <Divider sx={{borderColor: 'rgba(0, 0, 0, 0.15)', mx: -2}}/>
+                    <Divider sx={{borderColor: 'divider', mx: -2}}/>
                     <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2}}>
-                        <Typography sx={{fontSize: '0.8125rem', color: 'rgba(0, 0, 0, 0.6)'}}>
+                        <Typography sx={{fontSize: '0.8125rem', color: 'text.secondary'}}>
                             Prosuna – Die quelloffene Plattform für Ende-zu-Ende digitalisierte Verwaltungsprozesse.
                         </Typography>
                         <Typography
                             sx={{
                                 fontSize: '0.8125rem',
-                                color: 'rgba(0, 0, 0, 0.6)',
+                                color: 'text.secondary',
                                 display: 'flex',
                                 alignItems: 'center',
                             }}
@@ -107,15 +110,20 @@ export function Dashboard() {
                                     border: 0,
                                     background: 'transparent',
                                     cursor: 'pointer',
+                                    '& .dashboard-germany-flag-outline': {
+                                        stroke: (theme) => theme.palette.mode === 'dark'
+                                            ? 'rgba(255, 255, 255, 0.5)'
+                                            : 'transparent',
+                                    },
                                 }}
                             >
                                 <svg
                                     width="18"
                                     height="12"
-                                    style={{transform: 'translateY(2px)'}}
                                     viewBox="0 0 18 12"
                                     fill="none"
                                     xmlns="http://www.w3.org/2000/svg"
+                                    style={{transform: 'translateY(2px)'}}
                                 >
                                     <path
                                         d="M0 2C0 0.895431 0.895431 0 2 0H16C17.1046 0 18 0.895431 18 2V4H0V2Z"
@@ -131,6 +139,16 @@ export function Dashboard() {
                                         d="M0 8H18V10C18 11.1046 17.1046 12 16 12H2C0.89543 12 0 11.1046 0 10V8Z"
                                         fill={germanyFlagColors[2]}
                                     />
+                                    <rect
+                                        className="dashboard-germany-flag-outline"
+                                        x="0.5"
+                                        y="0.5"
+                                        width="17"
+                                        height="11"
+                                        rx="1.5"
+                                        fill="none"
+                                        strokeWidth="1"
+                                    />
                                 </svg>
                             </Box>
                         </Typography>
@@ -138,7 +156,7 @@ export function Dashboard() {
                 </Box>
                 <CanvasConfettiOverlay
                     playKey={flagConfettiPlayKey}
-                    colors={germanyFlagColors}
+                    colors={prosunaConfettiColors}
                 />
             </Container>
         </PageWrapper>

@@ -1,7 +1,5 @@
-import HeroDecord from './hero-decor.svg';
-import {Box, Divider, Paper, Skeleton, SxProps, Typography, useTheme} from '@mui/material';
+import {Box, Divider, Paper, SxProps, Typography} from '@mui/material';
 import React from 'react';
-import {useAppSelector} from '../../../hooks/use-app-selector';
 import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 import NorthWest from '@aivot/mui-material-symbols-400-n25-outlined/NorthWest';
 
@@ -23,13 +21,13 @@ const Links = [
 ];
 
 export function DashboardHero(props: DashboardHeroProps) {
-    const theme = useTheme();
-
     return (
         <Paper
+            variant="outlined"
             sx={{
-                display: 'flex',
-                backgroundColor: 'primary.dark',
+                backgroundColor: 'background.paper',
+                borderTop: '4px solid',
+                borderTopColor: 'primary.main',
                 ...props.sx,
             }}
         >
@@ -42,7 +40,6 @@ export function DashboardHero(props: DashboardHeroProps) {
                 <Typography
                     variant="h2"
                     fontSize="1.75rem"
-                    color="white"
                 >
                     Willkommen bei Prosuna!
                 </Typography>
@@ -52,31 +49,27 @@ export function DashboardHero(props: DashboardHeroProps) {
                     fontSize="2.5rem"
                     fontWeight={800}
                     lineHeight="2.625rem"
-                    color="white"
                     sx={{
                         mt: 2,
                     }}
                 >
-                    <span style={{color: theme.palette.secondary.main}}>
-                        {AppConfig.providerName}
-                    </span>
+                    {AppConfig.providerName}
                 </Typography>
 
                 <Divider
                     sx={{
                         my: 4,
-                        borderColor: 'rgba(255, 255, 255, 0.15)',
+                        borderColor: 'divider',
                     }}
                 />
 
                 {
                     Links.map(({Icon, text, href}) => (
                         <Typography
-                            key={href}
+                            key={text}
                             variant="h4"
                             fontSize="1.125rem"
                             lineHeight="1.25rem"
-                            color="white"
                             fontWeight="normal"
                             component="a"
                             href={href}
@@ -91,10 +84,11 @@ export function DashboardHero(props: DashboardHeroProps) {
                                     transition: '200ms all ease-in-out',
                                     cursor: 'pointer',
                                     textDecoration: 'none',
+                                    color: 'text.secondary',
                                 },
                                 {
                                     '&:hover': {
-                                        color: (theme) => theme.palette.secondary.main,
+                                        color: 'text.primary',
                                     },
                                 }]}
                         >
@@ -109,17 +103,6 @@ export function DashboardHero(props: DashboardHeroProps) {
                         </Typography>
                     ))
                 }
-            </Box>
-            <Box
-                sx={{
-                    flex: 1,
-                    backgroundImage: `url(${HeroDecord})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'right center',
-                    m: 0,
-                    p: 0,
-                }}
-            >
             </Box>
         </Paper>
     );

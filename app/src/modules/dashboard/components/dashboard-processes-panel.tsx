@@ -189,7 +189,7 @@ export function DashboardProcessesPanel() {
 
                                                     <ChevronRight
                                                         aria-hidden
-                                                        sx={{fontSize: '3rem', color: 'rgba(0,0,0,.2)'}}
+                                                        sx={{fontSize: '3rem', color: 'text.disabled'}}
                                                     />
                                                 </Box>
                                             </ListItemButton>
@@ -201,7 +201,7 @@ export function DashboardProcessesPanel() {
                             })
                             : (
                                 <Box sx={{position: 'relative'}}>
-                                    <List disablePadding>
+                                    <List disablePadding sx={{opacity: 0.4}}>
                                         {Array.from({length: fetchSize}).map((_, i) => (
                                             <React.Fragment key={i}>
                                                 <ListItem disablePadding>
@@ -235,7 +235,6 @@ export function DashboardProcessesPanel() {
                                                             variant="circular"
                                                             width={40}
                                                             height={40}
-                                                            sx={{opacity: 0.3}}
                                                             animation={false}
                                                         />
                                                     </Box>
@@ -252,7 +251,6 @@ export function DashboardProcessesPanel() {
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            bgcolor: 'rgba(255,255,255,0.6)',
                                             textAlign: 'center',
                                             px: 2,
                                         }}

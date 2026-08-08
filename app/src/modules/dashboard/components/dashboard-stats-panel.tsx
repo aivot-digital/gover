@@ -153,13 +153,13 @@ export function DashboardStatsPanel() {
                                                     variant="h5"
                                                     fontWeight={700}
                                                     fontSize={'2.8125rem'}
-                                                    sx={{mr: 2, color: 'primary.dark'}}
+                                                    sx={{mr: 2, color: 'primary.main'}}
                                                 >
                                                     {item.value}
                                                 </Typography>
                                                 <ChevronRight
                                                     aria-hidden
-                                                    sx={{fontSize: '3rem', color: 'rgba(0,0,0,.2)'}}
+                                                    sx={{fontSize: '3rem', color: 'text.disabled'}}
                                                 />
                                             </Box>
                                         </Box>
