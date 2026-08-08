@@ -48,7 +48,7 @@ export function ProviderLinksGrid() {
                         md: 6
                     }}>
                     <BoxLink
-                        link="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/home"
+                        link="https://docs.prosuna.de"
                         text={'Über Prosuna\nHilfen, Anleitungen und FAQs'}
                     />
                 </Grid>

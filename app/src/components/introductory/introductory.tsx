@@ -111,7 +111,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                     lineHeight="1.25rem"
                                     fontWeight="normal"
                                     component="a"
-                                    href="https://wiki.teamaivot.de/dokumentation/gover/benutzerhandbuch/erste-schritte/home"
+                                    href="https://docs.prosuna.de"
                                     target="_blank"
                                     sx={[
                                         {
@@ -147,7 +147,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                     lineHeight="1.25rem"
                                     fontWeight="normal"
                                     component="a"
-                                    href="https://wiki.teamaivot.de/dokumentation/gover/benutzerhandbuch/home"
+                                    href="https://docs.prosuna.de"
                                     target="_blank"
                                     sx={[
                                         {

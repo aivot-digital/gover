@@ -80,7 +80,7 @@ ARG BUILD_DATE=2025-05-24T10:15:00Z
 # Set app metadata
 LABEL org.opencontainers.image.created=$BUILD_DATE
 LABEL org.opencontainers.image.url="https://github.com/aivot-digital/gover"
-LABEL org.opencontainers.image.documentation="https://wiki.teamaivot.de/de/dokumentation/gover"
+LABEL org.opencontainers.image.documentation="https://docs.prosuna.de"
 LABEL org.opencontainers.image.source="https://github.com/aivot-digital/gover"
 LABEL org.opencontainers.image.version=$BUILD_VERSION
 LABEL org.opencontainers.image.vendor="Aivot"

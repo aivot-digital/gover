@@ -113,7 +113,7 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout>) {
                 Es kann nicht bearbeitet werden.
                 Für eine Bearbeitung müssen Sie die Verknüpfung zum Marktplatz-Baustein aufheben.
                 Mehr Informationen hierzu finden Sie in der <a
-                href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/store"
+                href="https://docs.prosuna.de"
                 target="_blank"
                 style={{color: 'inherit'}}
                 rel="noreferrer noopener"

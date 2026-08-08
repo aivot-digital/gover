@@ -169,7 +169,7 @@ export function IdentityProviderDetailsPageSetup() {
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'Leitfaden zur Anbindung der BundID',
-                            url: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/einrichten/bund-id',
+                            url: 'https://docs.prosuna.de',
                         },
                         {
                             icon: <LinkOutlinedIcon />,
@@ -198,7 +198,7 @@ export function IdentityProviderDetailsPageSetup() {
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'Leitfaden zur Anbindung der BayernID',
-                            url: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/einrichten/bayern-id',
+                            url: 'https://docs.prosuna.de',
                         },
                         {
                             icon: <LinkOutlinedIcon />,
@@ -222,7 +222,7 @@ export function IdentityProviderDetailsPageSetup() {
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'Leitfaden zur Anbindung des Servicekontos Schleswig-Holstein',
-                            url: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/einrichten/servicekonto-sh',
+                            url: 'https://docs.prosuna.de',
                         },
                         {
                             icon: <LinkOutlinedIcon />,
@@ -246,7 +246,7 @@ export function IdentityProviderDetailsPageSetup() {
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'Leitfaden zur Anbindung des Mein Unternehmenskontos',
-                            url: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/einrichten/mein-unternehmenskonto',
+                            url: 'https://docs.prosuna.de',
                         },
                         {
                             icon: <LinkOutlinedIcon />,
