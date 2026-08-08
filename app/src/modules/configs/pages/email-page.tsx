@@ -383,7 +383,8 @@ export function EmailPage() {
                                     {testResult.success ? (
                                         <Typography>
                                             Der konfigurierte E-Mail-Server hat die Test-E-Mail an
-                                            {' '}{testResult.targetMail} angenommen.
+                                            {' '}{testResult.targetMail} angenommen. Prüfen Sie nun, ob die Nachricht
+                                            im Posteingang oder Spam-Ordner eingegangen ist.
                                         </Typography>
                                     ) : (
                                         <>

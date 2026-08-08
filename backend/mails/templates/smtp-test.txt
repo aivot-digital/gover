@@ -1,5 +1,30 @@
 Hallo,
 
-der Test der SMTP-Verbindung war erfolgreich.
+diese Test-E-Mail wurde erfolgreich über die in Prosuna konfigurierte E-Mail-Anbindung versendet.
+Damit ist bestätigt, dass Prosuna die Nachricht an den konfigurierten SMTP-Server übergeben konnte
+und diese Empfängeradresse erreicht wurde.
+
+Was dieser Test nicht vollständig prüft
+
+Der erfolgreiche Empfang ist keine Garantie dafür, dass E-Mails auch alle anderen Empfänger:innen
+erreichen. Spamfilter, Graylisting sowie die Konfiguration der Absenderdomain können die Zustellung
+beeinflussen.
+
+Empfohlene weitere Prüfungen
+
+- Prüfen Sie Absendername, Absenderadresse und Darstellung dieser Nachricht.
+- Kontrollieren Sie SPF, DKIM und DMARC für die verwendete Absenderdomain.
+
+Für eine weitergehende technische Prüfung können Sie im Prosuna-Testversand auch die von einem
+externen Prüfdienst bereitgestellte Testadresse verwenden:
+
+- mail-tester.com bewertet eine tatsächlich versendete Nachricht unter anderem hinsichtlich Spam-
+  und Authentifizierungsmerkmalen: https://www.mail-tester.com/
+- MXToolbox Email Health prüft die Domain-, DNS- und Mailserver-Konfiguration:
+  https://mxtoolbox.com/emailhealth
+
+Datenschutzhinweis: Externe Prüfdienste erhalten die an ihre Testadresse gesendete E-Mail
+einschließlich ihrer technischen Header. Verwenden Sie dafür keine sensiblen oder
+personenbezogenen Inhalte.
 
 Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

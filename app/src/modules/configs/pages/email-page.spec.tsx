@@ -65,6 +65,14 @@ describe('EmailPage', () => {
 
         expect(await screen.findByRole('heading', {name: 'E-Mail-Anbindung testen'})).toBeInTheDocument();
         expect(screen.getByDisplayValue('admin@example.com')).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: 'mail-tester.com'})).toHaveAttribute(
+            'href',
+            'https://www.mail-tester.com/',
+        );
+        expect(screen.getByRole('link', {name: 'MXToolbox Email Health'})).toHaveAttribute(
+            'href',
+            'https://mxtoolbox.com/emailhealth',
+        );
         expect(screen.queryByText('smtp.example.com:587')).not.toBeInTheDocument();
     });
 
@@ -83,6 +91,7 @@ describe('EmailPage', () => {
             expect(sendTestMail).toHaveBeenCalledWith('admin@example.com');
         });
         expect(await screen.findByText(/hat die Test-E-Mail an admin@example.com/)).toBeInTheDocument();
+        expect(screen.getByText(/Posteingang oder Spam-Ordner/)).toBeInTheDocument();
     });
 
     it('disables the test for an incomplete configuration', async () => {
