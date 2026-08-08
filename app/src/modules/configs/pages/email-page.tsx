@@ -154,7 +154,7 @@ export function EmailPage() {
                     {
                         label: 'Passwort',
                         icon: <Password/>,
-                        children: configuration.passwordConfigured ? 'Hinterlegt' : 'Nicht hinterlegt',
+                        children: configuration.passwordConfigured ? '************' : 'Nicht hinterlegt',
                     },
                 ]
                 : []),
