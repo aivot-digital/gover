@@ -1,33 +1,32 @@
 package de.aivot.prosuna.backend.theme.dtos;
 
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
+import jakarta.annotation.Nullable;
 
 import java.util.UUID;
 
 public record ThemeResponseDTO(
         Integer id,
         String name,
-        String main,
-        String mainDark,
-        String accent,
-        String error,
-        String warning,
-        String info,
-        String success,
+        String primaryColor,
+        String secondaryColor,
+        @Nullable
+        String primaryColorDark,
+        @Nullable
+        String secondaryColorDark,
+        @Nullable
         UUID logoKey,
+        @Nullable
         UUID faviconKey
 ) {
     public static ThemeResponseDTO fromEntity(ThemeEntity theme) {
         return new ThemeResponseDTO(
                 theme.getId(),
                 theme.getName(),
-                theme.getMain(),
-                theme.getMainDark(),
-                theme.getAccent(),
-                theme.getError(),
-                theme.getWarning(),
-                theme.getInfo(),
-                theme.getSuccess(),
+                theme.getPrimaryColor(),
+                theme.getSecondaryColor(),
+                theme.getPrimaryColorDark(),
+                theme.getSecondaryColorDark(),
                 theme.getLogoKey(),
                 theme.getFaviconKey()
         );

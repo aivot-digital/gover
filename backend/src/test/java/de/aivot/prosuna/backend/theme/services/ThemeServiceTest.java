@@ -38,12 +38,9 @@ class ThemeServiceTest {
                 1,
                 "Theme",
                 "#253B5B",
-                "#102334",
-                "#F8D27C",
-                "#CD362D",
-                "#B55E06",
-                "#1F7894",
-                "#378550",
+                "#5F6368",
+                "#8EA9D1",
+                "#AEB3B8",
                 UUID.randomUUID(),
                 UUID.randomUUID()
         );
@@ -53,11 +50,8 @@ class ThemeServiceTest {
                 "Theme aktualisiert",
                 "#111111",
                 "#222222",
-                "#333333",
-                "#444444",
-                "#555555",
-                "#666666",
-                "#777777",
+                "#AAAAAA",
+                "#BBBBBB",
                 null,
                 null
         );
@@ -67,6 +61,10 @@ class ThemeServiceTest {
         var savedEntity = service.performUpdate(1, updatedEntity, existingEntity);
 
         assertEquals("Theme aktualisiert", savedEntity.getName());
+        assertEquals("#111111", savedEntity.getPrimaryColor());
+        assertEquals("#222222", savedEntity.getSecondaryColor());
+        assertEquals("#AAAAAA", savedEntity.getPrimaryColorDark());
+        assertEquals("#BBBBBB", savedEntity.getSecondaryColorDark());
         assertNull(savedEntity.getLogoKey());
         assertNull(savedEntity.getFaviconKey());
         verify(assetRepository, never()).existsById(any());

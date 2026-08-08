@@ -117,11 +117,7 @@ export const BaseTheme = createTheme({
         },
         MuiTooltip: {
             styleOverrides: {
-                arrow: {
-                    color: '#16191F',
-                },
                 tooltip: {
-                    backgroundColor: '#16191F',
                     fontSize: '0.8125rem',
                 },
             },
@@ -158,10 +154,10 @@ export const BaseTheme = createTheme({
         },
         MuiStepLabel: {
             styleOverrides: {
-                iconContainer: {
-                    color: 'rgba(0, 0, 0, 0.55)',
-                },
-                label: {
+                iconContainer: ({theme}) => ({
+                    color: theme.palette.text.secondary,
+                }),
+                label: ({theme}) => ({
                     'fontFamily': fontStackHeadlines,
                     'fontWeight': 500,
                     'fontSize': '1.3125rem',
@@ -175,8 +171,8 @@ export const BaseTheme = createTheme({
                     '.completed-step-suffix': {
                         display: 'none',
                     },
-                    'color': 'rgba(0, 0, 0, 0.55)',
-                },
+                    'color': theme.palette.text.secondary,
+                }),
             },
         },
         MuiTextField: {
@@ -222,19 +218,18 @@ export const BaseTheme = createTheme({
         },
         MuiOutlinedInput: {
             styleOverrides: {
-                root: {
+                root: ({theme}) => ({
                     '&.Mui-disabled': {
-                        backgroundColor: '#F8F8F8',
+                        backgroundColor: theme.palette.action.disabledBackground,
                         cursor: 'not-allowed',
                     },
-                },
-                input: {
+                }),
+                input: ({theme}) => ({
                     '&.Mui-disabled': {
-                        backgroundColor: '#F8F8F8',
-                        WebkitTextFillColor: 'rgba(0, 0, 0, 0.66)', // Make text more readable in disabled state
+                        WebkitTextFillColor: theme.palette.text.disabled,
                         cursor: 'not-allowed',
                     },
-                },
+                }),
             },
         },
         MuiFormControlLabel: {
@@ -267,6 +262,20 @@ export const BaseTheme = createTheme({
                 },
             },
         },
+        MuiDialog: {
+            defaultProps: {
+                slotProps: {
+                    paper: {
+                        elevation: 1,
+                    },
+                },
+            },
+        },
+        MuiDrawer: {
+            defaultProps: {
+                elevation: 1,
+            },
+        },
         MuiTab: {
             styleOverrides: {
                 root: {
@@ -277,14 +286,15 @@ export const BaseTheme = createTheme({
         },
         MuiDataGrid: {
             styleOverrides: {
-                root: {
-                    backgroundColor: 'white !important',
-                },
-                row: {
+                root: ({theme}) => ({
+                    backgroundColor: `${theme.palette.background.paper} !important`,
+                    borderBottom: 0,
+                }),
+                row: ({theme}) => ({
                     '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                        backgroundColor: theme.palette.action.hover,
                     },
-                },
+                }),
             },
         },
     },

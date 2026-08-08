@@ -46,6 +46,39 @@ const activeThemeChip = (
     />
 );
 
+function ThemeColorSwatch({color, title}: {color: string; title: string}) {
+    return (
+        <Box
+            role="img"
+            aria-label={`${title}: ${color}`}
+            title={title}
+            sx={{
+                position: 'relative',
+                width: 18,
+                height: 18,
+                flexShrink: 0,
+                borderRadius: '50%',
+                backgroundColor: color,
+                border: '2px solid',
+                borderColor: 'background.paper',
+                margin: '0 5px',
+                '::before': {
+                    content: '""',
+                    position: 'absolute',
+                    display: 'block',
+                    width: 20,
+                    height: 20,
+                    left: '-3px',
+                    top: '-3px',
+                    borderRadius: '50%',
+                    backgroundColor: 'divider',
+                    zIndex: -1,
+                },
+            }}
+        />
+    );
+}
+
 export function ThemeListPage() {
     const navigate = useNavigate();
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
@@ -131,44 +164,52 @@ export function ThemeListPage() {
             disableColumnMenu: true,
             sortable: false,
             renderCell: (params: any) => {
-                const colors = params.row;
-                const colorKeys = ['main', 'mainDark', 'accent', '|', 'error', 'warning', 'info', 'success'];
+                const theme = params.row as Theme;
+                const lightColors = [
+                    {color: theme.primaryColor, title: 'Primärfarbe'},
+                    {color: theme.secondaryColor, title: 'Sekundärfarbe'},
+                ];
+                const darkColors = [
+                    theme.primaryColorDark == null
+                        ? null
+                        : {color: theme.primaryColorDark, title: 'Primärfarbe im dunklen Farbschema'},
+                    theme.secondaryColorDark == null
+                        ? null
+                        : {color: theme.secondaryColorDark, title: 'Sekundärfarbe im dunklen Farbschema'},
+                ].filter((color): color is {color: string; title: string} => color != null);
 
                 return (
                     <CellContentWrapper sx={{gap: 1, position: 'relative', zIndex: 2}}>
-                        {colorKeys.map((key, index) => (
-                            key === '|' ? (
+                        {lightColors.map(({color, title}) => (
+                            <ThemeColorSwatch
+                                key={title}
+                                color={color}
+                                title={title}
+                            />
+                        ))}
+                        {darkColors.length > 0 && (
+                            <>
                                 <Box
-                                    key={index}
-                                    sx={{width: 2, height: 16, backgroundColor: '#D4D4D4', mx: 0.5}}
-                                />
-                            ) : (
-                                <Box
-                                    key={index}
+                                    aria-hidden
                                     sx={{
-                                        position: 'relative',
-                                        width: 18,
+                                        flex: '0 0 1px',
+                                        width: '1px',
+                                        minWidth: '1px',
+                                        maxWidth: '1px',
                                         height: 18,
-                                        borderRadius: '50%',
-                                        backgroundColor: colors[key as keyof typeof colors] || '#ccc',
-                                        border: '2px solid white',
-                                        margin: '0 5px 0 5px',
-                                        '::before': {
-                                            content: '""',
-                                            position: 'absolute',
-                                            display: 'block',
-                                            width: 20,
-                                            height: 20,
-                                            left: '-3px',
-                                            top: '-3px',
-                                            borderRadius: '50%',
-                                            backgroundColor: '#C0C0C0',
-                                            zIndex: -1,
-                                        },
+                                        backgroundColor: 'divider',
+                                        mx: 0.5,
                                     }}
                                 />
-                            )
-                        ))}
+                                {darkColors.map(({color, title}) => (
+                                    <ThemeColorSwatch
+                                        key={title}
+                                        color={color}
+                                        title={title}
+                                    />
+                                ))}
+                            </>
+                        )}
                     </CellContentWrapper>
                 );
             },

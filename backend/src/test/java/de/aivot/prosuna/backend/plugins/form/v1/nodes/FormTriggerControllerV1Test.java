@@ -310,11 +310,8 @@ class FormTriggerControllerV1Test {
                 name,
                 "#111111",
                 "#222222",
-                "#333333",
-                "#444444",
-                "#555555",
-                "#666666",
-                "#777777",
+                null,
+                null,
                 logoKey,
                 faviconKey
         );

@@ -78,13 +78,10 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
     @Override
     public ThemeEntity performUpdate(@Nonnull Integer id, @Nonnull ThemeEntity entity, @Nonnull ThemeEntity existingEntity) throws ResponseException {
         existingEntity.setName(entity.getName());
-        existingEntity.setMain(entity.getMain());
-        existingEntity.setMainDark(entity.getMainDark());
-        existingEntity.setAccent(entity.getAccent());
-        existingEntity.setError(entity.getError());
-        existingEntity.setWarning(entity.getWarning());
-        existingEntity.setInfo(entity.getInfo());
-        existingEntity.setSuccess(entity.getSuccess());
+        existingEntity.setPrimaryColor(entity.getPrimaryColor());
+        existingEntity.setSecondaryColor(entity.getSecondaryColor());
+        existingEntity.setPrimaryColorDark(entity.getPrimaryColorDark());
+        existingEntity.setSecondaryColorDark(entity.getSecondaryColorDark());
 
         var logoKey = entity.getLogoKey();
         if (logoKey == null) {

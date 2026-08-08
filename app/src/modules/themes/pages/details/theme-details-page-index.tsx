@@ -1,4 +1,21 @@
-import {Alert, AlertTitle, Box, Button, Divider, Grid, Typography} from '@mui/material';
+import {
+    Alert,
+    AlertTitle,
+    Box,
+    Button,
+    Divider,
+    FormControlLabel,
+    Grid,
+    IconButton,
+    Stack,
+    Switch,
+    Tab,
+    Tabs,
+    TextField,
+    ThemeProvider,
+    Tooltip,
+    Typography,
+} from '@mui/material';
 import React, {useContext, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -15,10 +32,10 @@ import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constra
 import * as yup from 'yup';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import AccessibilityNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccessibilityNew';
-import {PresetColor} from 'react-color/lib/components/sketch/Sketch';
-import {SketchPicker} from 'react-color';
-import ContrastOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Contrast';
-import {calculateContrastRatio} from '../../../../utils/calculate-contrast-ratio';
+import DashboardOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Dashboard';
+import DescriptionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Description';
+import SettingsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
+import EditOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import type {Theme} from '../../models/theme';
 import {ThemesApiService} from '../../themes-api-service';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
@@ -32,6 +49,11 @@ import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {resolveAppearanceColors} from '../../../../theming/resolve-appearance-colors';
+import {createAppTheme, resolveAppBackgroundColors} from '../../../../theming/themes';
+import {BaseTheme} from '../../../../theming/base-theme';
+import {type Theme as MuiTheme} from '@mui/material/styles';
+import {ThemeColorPicker} from '../../components/theme-color-picker';
 
 export const ThemeSchema = yup.object({
     name: yup.string()
@@ -39,6 +61,18 @@ export const ThemeSchema = yup.object({
         .min(3, 'Der Name des Erscheinungsbildes muss mindestens 3 Zeichen lang sein.')
         .max(96, 'Der Name des Erscheinungsbildes darf maximal 96 Zeichen lang sein.')
         .required('Der Name des Erscheinungsbildes ist ein Pflichtfeld.'),
+    primaryColor: yup.string()
+        .matches(/^#[0-9a-f]{6}$/i, 'Die Markenfarbe muss eine gültige HEX-Farbe sein.')
+        .required('Die Markenfarbe ist ein Pflichtfeld.'),
+    secondaryColor: yup.string()
+        .matches(/^#[0-9a-f]{6}$/i, 'Die Sekundärfarbe muss eine gültige HEX-Farbe sein.')
+        .required('Die Sekundärfarbe ist ein Pflichtfeld.'),
+    primaryColorDark: yup.string()
+        .nullable()
+        .matches(/^#[0-9a-f]{6}$/i, 'Die Primärfarbe für das dunkle Farbschema muss eine gültige HEX-Farbe sein.'),
+    secondaryColorDark: yup.string()
+        .nullable()
+        .matches(/^#[0-9a-f]{6}$/i, 'Die Sekundärfarbe für das dunkle Farbschema muss eine gültige HEX-Farbe sein.'),
 });
 
 export function ThemeDetailsPageIndex() {
@@ -66,11 +100,20 @@ export function ThemeDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
+        handleInputPatch,
     } = useFormManager<Theme>(item, ThemeSchema as any);
 
     const apiService = useMemo(() => new ThemesApiService(api), [api]);
     const theme = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
+    const lightPreviewTheme = useMemo(
+        () => theme == null ? null : createAppTheme(theme, BaseTheme, 'light'),
+        [theme],
+    );
+    const darkPreviewTheme = useMemo(
+        () => theme == null ? null : createAppTheme(theme, BaseTheme, 'dark'),
+        [theme],
+    );
 
     const themeId = useParams().id;
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
@@ -94,6 +137,28 @@ export function ThemeDetailsPageIndex() {
     const deleteDisabledTooltip = deleteDisabledByPermission
         ? formatMissingPermissionTooltip(Permission.THEME_DELETE)
         : undefined;
+    const usesDarkModeColors = theme.primaryColorDark != null || theme.secondaryColorDark != null;
+
+    const handleDarkModeColorsToggle = (enabled: boolean) => {
+        if (!enabled) {
+            handleInputPatch({
+                primaryColorDark: null,
+                secondaryColorDark: null,
+            });
+            return;
+        }
+
+        const darkColorInput = {
+            primaryColor: theme.primaryColorDark ?? theme.primaryColor,
+            secondaryColor: theme.secondaryColorDark ?? theme.secondaryColor,
+        };
+        const darkBackground = resolveAppBackgroundColors('dark', darkColorInput.primaryColor);
+        const suggestedColors = resolveAppearanceColors(darkColorInput, darkBackground.paper);
+        handleInputPatch({
+            primaryColorDark: theme.primaryColorDark ?? suggestedColors.primaryForeground,
+            secondaryColorDark: theme.secondaryColorDark ?? suggestedColors.secondaryForeground,
+        });
+    };
 
     const handleSave = () => {
         if (theme != null) {
@@ -328,90 +393,118 @@ export function ThemeDetailsPageIndex() {
                 Auswahl der Farben
             </Typography>
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Wählen Sie die Farben für das Erscheinungsbild aus. Die Farben werden in der Anwendung
-                verwendet, um die Benutzeroberfläche zu gestalten. Bitte beachten Sie auch die Hinweise zur Barrierefreiheit.
+                Mit diesen Farben übertragen Sie die visuelle Identität Ihrer Organisation auf Prosuna. Wählen Sie
+                als Primärfarbe Ihre prägende Markenfarbe für wichtige Aktionen und aktive Bereiche. Die
+                Sekundärfarbe sollte sich davon sichtbar unterscheiden und ergänzt weniger zentrale Aktionen. Gut
+                unterscheidbare Farben erleichtern die Orientierung und machen die Bedienoberfläche verständlicher.
             </Typography>
-            <Grid
-                container
-                columnSpacing={4}
-                rowSpacing={4}
-                sx={{
-                    mt: 2,
-                }}
-            >
-                <ColorPicker
-                    label="Primärfarbe"
-                    value={theme?.main}
-                    contrastColor={'#EEF2EE'}
-                    contrastColorLabel={'hellgrau'}
-                    onChange={handleInputChange('main')}
-                    disabled={!isEditable}
-                />
+            <Box sx={{mt: 4}}>
+                <Typography variant="h6" component="h2" sx={{mb: 0.5}}>
+                    Helles Farbschema
+                </Typography>
+                <Typography color="text.secondary" sx={{mb: 3, maxWidth: 900}}>
+                    Diese Farben werden standardmäßig in der gesamten Anwendung verwendet.
+                </Typography>
+                <Grid container columnSpacing={3} rowSpacing={3} alignItems="stretch">
+                    <ThemeColorPicker
+                        label="Primärfarbe"
+                        value={theme.primaryColor}
+                        contrastTextColor={lightPreviewTheme?.palette.primary.contrastText}
+                        contrastBackgroundColor={lightPreviewTheme?.palette.background.paper}
+                        onChange={handleInputChange('primaryColor')}
+                        disabled={!isEditable}
+                    />
 
-                <ColorPicker
-                    label="Primärfarbe (Dunkel)"
-                    value={theme?.mainDark}
-                    onChange={handleInputChange('mainDark')}
-                    disabled={!isEditable}
-                />
+                    <ThemeColorPicker
+                        label="Sekundärfarbe"
+                        value={theme.secondaryColor}
+                        contrastTextColor={lightPreviewTheme?.palette.secondary.contrastText}
+                        contrastBackgroundColor={lightPreviewTheme?.palette.background.paper}
+                        onChange={handleInputChange('secondaryColor')}
+                        disabled={!isEditable}
+                    />
 
-                <ColorPicker
-                    label="Akzentfarbe"
-                    value={theme?.accent}
-                    contrastColor={theme?.mainDark}
-                    contrastColorLabel={'Primär/dunkel'}
-                    onChange={handleInputChange('accent')}
-                    disabled={!isEditable}
-                />
-            </Grid>
-            <Divider
-                sx={{
-                    my: 8,
-                }}
-            />
-            <Grid
-                container
-                columnSpacing={4}
-                rowSpacing={4}
-            >
-                <ColorPicker
-                    label="Fehlerfarbe"
-                    value={theme?.error}
-                    onChange={handleInputChange('error')}
-                    disabled={!isEditable}
-                />
+                    <Grid size={12} sx={{minWidth: 0, mt: 1}}>
+                        {lightPreviewTheme != null && (
+                            <ThemePreviewPanel
+                                label="Vorschau des hellen Farbschemas"
+                                theme={lightPreviewTheme}
+                            />
+                        )}
+                    </Grid>
+                </Grid>
+            </Box>
 
-                <ColorPicker
-                    label="Warnungsfarbe"
-                    value={theme?.warning}
-                    onChange={handleInputChange('warning')}
-                    disabled={!isEditable}
-                />
+            <Divider sx={{my: 6}}/>
 
-                <ColorPicker
-                    label="Informationsfarbe"
-                    value={theme?.info}
-                    onChange={handleInputChange('info')}
-                    disabled={!isEditable}
+            <Box>
+                <Typography variant="h6" component="h2" sx={{mb: 1}}>
+                    Dunkles Farbschema
+                </Typography>
+                <FormControlLabel
+                    control={(
+                        <Switch
+                            checked={usesDarkModeColors}
+                            onChange={(_, checked) => handleDarkModeColorsToggle(checked)}
+                            disabled={!isEditable}
+                            slotProps={{
+                                input: {
+                                    'aria-describedby': 'dark-color-scheme-description',
+                                },
+                            }}
+                        />
+                    )}
+                    label="Farben für das dunkle Farbschema anpassen"
                 />
+                <Typography
+                    id="dark-color-scheme-description"
+                    color="text.secondary"
+                    sx={{mt: 0.5, mb: 3, maxWidth: 900}}
+                >
+                    Eine Anpassung ist sinnvoll, wenn die Farben auf dunklen Hintergründen zu wenig Kontrast bieten
+                    oder zu dunkel wirken. Ohne Anpassung werden die Farben des hellen Farbschemas übernommen.
+                </Typography>
+                <Grid container columnSpacing={3} rowSpacing={3} alignItems="stretch">
+                    <ThemeColorPicker
+                        label="Primärfarbe"
+                        value={theme.primaryColorDark ?? theme.primaryColor}
+                        contrastTextColor={darkPreviewTheme?.palette.primary.contrastText}
+                        contrastBackgroundColor={darkPreviewTheme?.palette.background.paper}
+                        onChange={handleInputChange('primaryColorDark')}
+                        disabled={!isEditable || !usesDarkModeColors}
+                    />
 
-                <ColorPicker
-                    label="Erfolgsfarbe"
-                    value={theme?.success}
-                    onChange={handleInputChange('success')}
-                    disabled={!isEditable}
-                />
-            </Grid>
+                    <ThemeColorPicker
+                        label="Sekundärfarbe"
+                        value={theme.secondaryColorDark ?? theme.secondaryColor}
+                        contrastTextColor={darkPreviewTheme?.palette.secondary.contrastText}
+                        contrastBackgroundColor={darkPreviewTheme?.palette.background.paper}
+                        onChange={handleInputChange('secondaryColorDark')}
+                        disabled={!isEditable || !usesDarkModeColors}
+                    />
+
+                    <Grid size={12} sx={{minWidth: 0, mt: 1}}>
+                        {darkPreviewTheme != null && (
+                            <ThemePreviewPanel
+                                label="Vorschau des dunklen Farbschemas"
+                                theme={darkPreviewTheme}
+                            />
+                        )}
+                    </Grid>
+                </Grid>
+            </Box>
             <Alert
                 severity="info"
-                sx={{mt: 4}}
+                sx={{mt: 6}}
                 icon={<AccessibilityNewIcon />}
             >
                 <AlertTitle>Hinweis zur Barrierefreiheit des Erscheinungsbildes</AlertTitle>
                 <Typography sx={{maxWidth: 860}}>
-                    Bitte beachten Sie, dass ausgewählte Farben ein Kontrastverhältnis von mindestens 4.5:1 aufweisen müssen,
-                    um den Anforderungen der Barrierefreiheit gemäß der <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1 (AA) zu entsprechen.
-                    Hierbei gilt der Kontrast von der gewählten Farbe zur Vorder- (i.d.R. Text) oder Hintergrundfarbe.
+                    Die Primär- und Sekundärfarben werden im hellen und dunklen Farbschema unverändert für gefüllte
+                    Flächen verwendet und erhalten automatisch schwarzen oder weißen Text mit mindestens 4,5:1
+                    Kontrast. Bei farbigem Text, Textschaltflächen und umrandeten Schaltflächen verwendet Prosuna bei
+                    Bedarf einen kontrastfähigen Ton derselben Farbe. Für Symbolschaltflächen zeigt die Kontrastangabe
+                    das Verhältnis der gewählten Farbe zur Standardfläche der Anwendung.
                 </Typography>
             </Alert>
 
@@ -512,282 +605,140 @@ export function ThemeDetailsPageIndex() {
 }
 
 
-const colors: PresetColor[] = [
-    {
-        title: 'Standard-Primärfarbe',
-        color: '#253B5B',
-    },
-    {
-        title: 'Standard-Primärfarbe (Dunkel)',
-        color: '#102334',
-    },
-    {
-        title: 'Standard-Akzent',
-        color: '#F8D27C',
-    },
-    {
-        title: 'Standard-Fehler',
-        color: '#CD362D',
-    },
-    {
-        title: 'Standard-Warnung',
-        color: '#B55E06',
-    },
-    {
-        title: 'Standard-Info',
-        color: '#1F7894',
-    },
-    {
-        title: 'Standard-Erfolg',
-        color: '#378550',
-    },
-
-
-    {
-        title: 'Rot',
-        color: '#f44336',
-    },
-    {
-        title: 'Rot (Dunkel)',
-        color: '#aa2e25',
-    },
-    {
-        title: 'Rot (Akzentuiert)',
-        color: '#ff1744',
-    },
-
-    {
-        title: 'Pink',
-        color: '#e91e63',
-    },
-    {
-        title: 'Pink (Dunkel)',
-        color: '#a31545',
-    },
-    {
-        title: 'Pink (Akzentuiert)',
-        color: '#f50057',
-    },
-
-    {
-        title: 'Flieder',
-        color: '#9c27b0',
-    },
-    {
-        title: 'Flieder (Dunkel)',
-        color: '#6d1b7b',
-    },
-    {
-        title: 'Flieder (Akzentuiert)',
-        color: '#d500f9',
-    },
-
-    {
-        title: 'Violett',
-        color: '#673ab7',
-    },
-    {
-        title: 'Violett (Dunkel)',
-        color: '#482880',
-    },
-    {
-        title: 'Violett (Akzentuiert)',
-        color: '#651fff',
-    },
-
-    {
-        title: 'Indigo',
-        color: '#3f51b5',
-    },
-    {
-        title: 'Indigo (Dunkel)',
-        color: '#2c387e',
-    },
-    {
-        title: 'Indigo (Akzentuiert)',
-        color: '#3d5afe',
-    },
-
-    {
-        title: 'Blau',
-        color: '#2196f3',
-    },
-    {
-        title: 'Blau (Dunkel)',
-        color: '#1769aa',
-    },
-    {
-        title: 'Blau (Akzentuiert)',
-        color: '#2979ff',
-    },
-
-    {
-        title: 'Cyan',
-        color: '#00bcd4',
-    },
-    {
-        title: 'Cyan (Dunkel)',
-        color: '#008394',
-    },
-    {
-        title: 'Cyan (Akzentuiert)',
-        color: '#00e5ff',
-    },
-
-    {
-        title: 'Blaugrün',
-        color: '#009688',
-    },
-    {
-        title: 'Blaugrün (Dunkel)',
-        color: '#00695f',
-    },
-    {
-        title: 'Blaugrün (Akzentuiert)',
-        color: '#1de9b6',
-    },
-
-    {
-        title: 'Grün',
-        color: '#4caf50',
-    },
-    {
-        title: 'Grün (Dunkel)',
-        color: '#357a38',
-    },
-    {
-        title: 'Grün (Akzentuiert)',
-        color: '#00e676',
-    },
-
-    {
-        title: 'Limette',
-        color: '#cddc39',
-    },
-    {
-        title: 'Limette (Dunkel)',
-        color: '#8f9a27',
-    },
-    {
-        title: 'Limette (Akzentuiert)',
-        color: '#c6ff00',
-    },
-
-    {
-        title: 'Gelb',
-        color: '#ffeb3b',
-    },
-    {
-        title: 'Gelb (Dunkel)',
-        color: '#b2a429',
-    },
-    {
-        title: 'Gelb (Akzentuiert)',
-        color: '#ffea00',
-    },
-
-    {
-        title: 'Bernstein',
-        color: '#ffc107',
-    },
-    {
-        title: 'Bernstein (Dunkel)',
-        color: '#b28704',
-    },
-    {
-        title: 'Bernstein (Akzentuiert)',
-        color: '#ffc400',
-    },
-
-    {
-        title: 'Orange',
-        color: '#ff5722',
-    },
-    {
-        title: 'Orange (Dunkel)',
-        color: '#b23c17',
-    },
-    {
-        title: 'Orange (Dunkel)',
-        color: '#ff3d00',
-    },
-];
-
-function ColorPicker({
-                         label,
-                         value,
-                         onChange,
-                         contrastColor,
-                         contrastColorLabel,
-                         disabled,
-                     }: {
-    label: string;
-    value?: string;
-    onChange: (val: string) => void;
-    contrastColor?: string;
-    contrastColorLabel?: string;
-    disabled?: boolean;
-}) {
+function ThemePreviewPanel({label, theme}: {label: string; theme: MuiTheme}) {
     return (
-        <Grid
-            size={{
-                xs: 12,
-                md: 6,
-                lg: 4,
-            }}
-        >
+        <ThemeProvider theme={theme}>
             <Box
                 sx={{
-                    mb: 1,
-                    display: 'flex',
-                    alignItems: 'center',
+                    overflow: 'hidden',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    backgroundColor: 'background.paper',
+                    color: 'text.primary',
                 }}
             >
-                <Box
-                    sx={{
-                        mr: 1,
-                        width: '1em',
-                        height: '1em',
-                        borderRadius: '100%',
-                        backgroundColor: value,
-                    }}
-                />
-
-                <Typography
-                    variant="subtitle1"
-                    component="h2"
-                >
-                    {label}
-                </Typography>
+                <Box sx={{px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider'}}>
+                    <Typography variant="subtitle1">{label}</Typography>
+                </Box>
+                <Grid container alignItems="stretch">
+                    <Grid
+                        size={{xs: 12, md: 6}}
+                        sx={{
+                            p: 3,
+                            backgroundColor: 'background.default',
+                            borderRight: {xs: 'none', md: `1px solid ${theme.palette.divider}`},
+                            borderBottom: {xs: `1px solid ${theme.palette.divider}`, md: 'none'},
+                        }}
+                    >
+                        <Typography variant="h5">Prosuna</Typography>
+                        <Typography sx={{mt: 0.5}} color="text.secondary">
+                            Organisation Musterstadt
+                        </Typography>
+                        <Stack spacing={1} sx={{mt: 3, maxWidth: 320}}>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    px: 1.5,
+                                    py: 1,
+                                    borderRadius: 1,
+                                    color: theme.palette.primary.contrastText,
+                                    backgroundColor: theme.palette.primary.main,
+                                }}
+                            >
+                                <DashboardOutlinedIcon sx={{fontSize: 20, mr: 1.25}} />
+                                Übersicht
+                            </Box>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    px: 1.5,
+                                    py: 1,
+                                    color: 'text.secondary',
+                                }}
+                            >
+                                <DescriptionOutlinedIcon sx={{fontSize: 20, mr: 1.25}} />
+                                <Box component="span" sx={{flex: 1}}>Formulare</Box>
+                                <Box
+                                    component="span"
+                                    sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: 24,
+                                        height: 24,
+                                        borderRadius: '50%',
+                                        color: theme.palette.secondary.contrastText,
+                                        backgroundColor: theme.palette.secondary.main,
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    3
+                                </Box>
+                            </Box>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    px: 1.5,
+                                    py: 1,
+                                    color: 'text.secondary',
+                                }}
+                            >
+                                <SettingsOutlinedIcon sx={{fontSize: 20, mr: 1.25}} />
+                                Einstellungen
+                            </Box>
+                        </Stack>
+                        <Box sx={{mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`}}>
+                            <Typography variant="caption" color="text.secondary">
+                                Organisationseinheit
+                            </Typography>
+                            <Typography variant="body2">Verwaltung Musterstadt</Typography>
+                        </Box>
+                    </Grid>
+                    <Grid size={{xs: 12, md: 6}} sx={{p: 3, backgroundColor: 'background.paper'}}>
+                        <Tabs
+                            value={0}
+                            sx={{mb: 2, borderBottom: '1px solid', borderColor: 'divider'}}
+                        >
+                            <Tab label="Allgemeine Angaben"/>
+                            <Tab label="Zuordnung"/>
+                        </Tabs>
+                        <Stack direction="row" useFlexGap flexWrap="wrap" spacing={1} sx={{mb: 2}}>
+                            <Button size="small" variant="contained">Primäre Aktion</Button>
+                            <Button size="small" variant="outlined">Weitere Aktion</Button>
+                            <Button size="small" color="secondary" variant="contained">Sekundäre Aktion</Button>
+                            <Box sx={{display: 'inline-flex', alignItems: 'center', gap: 0.5}}>
+                                <Tooltip title="Bearbeiten" arrow>
+                                    <IconButton size="small" color="primary" aria-label="Bearbeiten">
+                                        <EditOutlinedIcon/>
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Einstellungen" arrow>
+                                    <IconButton size="small" color="secondary" aria-label="Einstellungen">
+                                        <SettingsOutlinedIcon/>
+                                    </IconButton>
+                                </Tooltip>
+                            </Box>
+                        </Stack>
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label="Beispiel-Eingabefeld"
+                            value="Beispielinhalt"
+                            slotProps={{input: {readOnly: true}}}
+                            sx={{mb: 2}}
+                        />
+                        <Stack spacing={1}>
+                            <Alert severity="success">Erfolgreich gespeichert</Alert>
+                            <Alert severity="warning">Bitte prüfen Sie Ihre Eingaben</Alert>
+                        </Stack>
+                    </Grid>
+                </Grid>
             </Box>
-            <SketchPicker
-                color={value}
-                onChange={(color) => {
-                    if (disabled) {
-                        return;
-                    }
-                    onChange(color.hex);
-                }}
-                disableAlpha={true}
-                width="256px"
-                styles={{
-                    default: {
-                        picker: {
-                            boxShadow: 'none',
-                            border: '1px solid #ccc',
-                        },
-                    },
-                }}
-                presetColors={colors}
-            />
-            <Typography
-                variant="caption"
-                color={'text.secondary'}
-                sx={{mt: '8px', display: 'inline-block'}}
-            >
-                <ContrastOutlinedIcon sx={{fontSize: '0.875rem', transform: 'translateY(2px)', mr: '4px', ml: '10px'}} /> Kontrastverhältnis: {calculateContrastRatio(value ?? '#000000', contrastColor ?? '#ffffff')}:1
-                (zu {contrastColorLabel ?? 'weiß'})
-            </Typography>
-        </Grid>
+        </ThemeProvider>
     );
 }
