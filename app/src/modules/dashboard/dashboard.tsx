@@ -90,7 +90,7 @@ export function Dashboard() {
                                 alignItems: 'center',
                             }}
                         >
-                            Entwickelt in Deutschland für die deutsche Verwaltung.
+                            Entwickelt in Deutschland für souveräne Organisationen.
                             <Box
                                 component="button"
                                 type="button"

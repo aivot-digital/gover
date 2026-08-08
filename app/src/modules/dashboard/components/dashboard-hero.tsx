@@ -44,7 +44,7 @@ export function DashboardHero(props: DashboardHeroProps) {
                     fontSize="1.75rem"
                     color="white"
                 >
-                    Herzlich willkommen!
+                    Willkommen bei Prosuna!
                 </Typography>
 
                 <Typography
@@ -58,10 +58,8 @@ export function DashboardHero(props: DashboardHeroProps) {
                     }}
                 >
                     <span style={{color: theme.palette.secondary.main}}>
-                        Antragsmanagement
+                        {AppConfig.providerName}
                     </span>
-                    <br />
-                    {AppConfig.providerName}
                 </Typography>
 
                 <Divider
