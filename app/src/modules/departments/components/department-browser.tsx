@@ -717,6 +717,8 @@ function DepartmentTreeSkeletonItem(props: DepartmentTreeSkeletonItemProps): Rea
                                             width: 2,
                                             bottom: -4,
                                             bgcolor: 'background.paper',
+                                            // Match MUI Paper's effective dark-mode surface, including its overlay.
+                                            backgroundImage: 'var(--Paper-overlay)',
                                             zIndex: 1,
                                         }}
                                     />
@@ -910,6 +912,8 @@ function DepartmentTreeItem(props: DepartmentTreeItemProps): React.ReactElement 
                                             width: 2,
                                             bottom: -4,
                                             bgcolor: 'background.paper',
+                                            // Match MUI Paper's effective dark-mode surface, including its overlay.
+                                            backgroundImage: 'var(--Paper-overlay)',
                                             zIndex: 1,
                                         }}
                                     />
