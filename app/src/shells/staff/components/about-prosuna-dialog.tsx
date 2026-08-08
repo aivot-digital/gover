@@ -59,7 +59,7 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                         src="/staff/assets/images/about-prosuna-logo.svg"
                         alt="Prosuna Logo"
                         sx={{
-                            width: 250, height: 'auto', zIndex: 2, mb: 3.5,
+                            width: 360, height: 'auto', zIndex: 2, mb: 3.5,
                         }}
                     />
 
@@ -106,12 +106,18 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                     <Typography
                         variant="body1"
                         sx={{
+                            color: theme.palette.text.secondary, mb: 2,
+                        }}
+                    >
+                        Prosuna ist die Plattform für Organisationen, die Verwaltungsprozesse durchgängig und nachvollziehbar digital abbilden möchten. Sie verbindet Formulare, Prozessmodellierung, automatisierte und manuelle Bearbeitungsschritte, die Einbeziehung von externen Beteiligten und Anschlussfähigkeit an bestehende IT-Landschaften. So wird Prosuna zum Dreh- und Angelpunkt für digitale Vorgänge innerhalb der Organisation.
+                    </Typography>
+                    <Typography
+                        variant="body1"
+                        sx={{
                             color: theme.palette.text.secondary, mb: 4,
                         }}
                     >
-                        Prosuna ist die quelloffene Software-Plattform für Ende-zu-Ende digitalisierte Antragsprozesse.
-                        Einfach bedienbar und flexibel einsetzbar für Verwaltungen jeder Größe.
-                        Entwickelt von Aivot und{' '}
+                        Entwickelt von Aivot und weiteren{' '}
                         <abbr
                             title={[
                                 'Kontributoren im Kontext von Open Source sind Einzelpersonen und Organisationen,',
@@ -121,7 +127,7 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                         >
                             Kontributoren
                         </abbr>{' '}
-                        in Deutschland für die deutsche Verwaltung.
+                        in Deutschland.
                     </Typography>
 
                     <Stack
