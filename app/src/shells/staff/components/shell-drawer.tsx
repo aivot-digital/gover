@@ -575,7 +575,7 @@ export function ShellDrawer() {
                         <Box sx={{
                             display: 'flex',
                             flexDirection: minimizeDrawer ? 'column' : 'row',
-                            mb: 3,
+                            mb: 2.5,
                         }}>
                             <Link
                                 to="/"
@@ -583,6 +583,7 @@ export function ShellDrawer() {
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
+                                    justifyContent: minimizeDrawer ? 'center' : 'start',
                                     textDecoration: 'none',
                                 }}
                             >
