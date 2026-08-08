@@ -354,7 +354,8 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         sx={{
                             flex: '1',
                             overflowY: 'scroll',
-                            borderTop: '1px solid #E0E0E0',
+                            borderTop: '1px solid',
+                            borderTopColor: 'divider',
                             p: 2,
                         }}
                     >
@@ -387,7 +388,8 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                             pb: 2.5,
                             px: 2,
                             display: 'flex',
-                            borderTop: '1px solid #E0E0E0',
+                            borderTop: '1px solid',
+                            borderTopColor: 'divider',
                             gap: 2,
                         }}
                     >

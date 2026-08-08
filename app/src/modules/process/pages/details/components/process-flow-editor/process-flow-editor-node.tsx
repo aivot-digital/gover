@@ -181,9 +181,13 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         return 'none';
     }, [node.id, runtimeStatusAccentColor, selectedNode?.id, theme.palette.primary.light]);
     const nodeShadow = useMemo(() => {
-        const neutralShadow = selectedNode?.id === node.id ?
-            '0px 4px 20px rgba(0, 0, 0, 0.15)' :
-            '0px 4px 20px rgba(0, 0, 0, 0.1)';
+        const neutralShadow = theme.palette.mode === 'dark'
+            ? selectedNode?.id === node.id
+                ? '0px 10px 28px rgba(0, 0, 0, 0.58)'
+                : '0px 8px 24px rgba(0, 0, 0, 0.42)'
+            : selectedNode?.id === node.id
+                ? '0px 4px 20px rgba(0, 0, 0, 0.15)'
+                : '0px 4px 20px rgba(0, 0, 0, 0.1)';
 
         if (runtimeStatusAccentColor == null) {
             return neutralShadow;
@@ -192,7 +196,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         return selectedNode?.id === node.id ?
             `0 12px 28px ${alpha(runtimeStatusAccentColor, 0.18)}, ${neutralShadow}` :
             `0 10px 24px ${alpha(runtimeStatusAccentColor, 0.16)}, ${neutralShadow}`;
-    }, [node.id, runtimeStatusAccentColor, selectedNode?.id]);
+    }, [node.id, runtimeStatusAccentColor, selectedNode?.id, theme.palette.mode]);
     const runtimeActionButtonSx = useMemo(() => ({
         minWidth: 0,
         height: 28,
@@ -427,6 +431,11 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                         width: '100%',
                         overflow: 'hidden',
                         borderRadius: '6px',
+                        border: '1px solid',
+                        borderColor: alpha(
+                            theme.palette.text.primary,
+                            theme.palette.mode === 'dark' ? 0.16 : 0.08,
+                        ),
                         outline: nodeOutline,
                         boxShadow: nodeShadow,
                     }}
@@ -566,7 +575,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                     <Divider
                         sx={{
                             width: '100%',
-                            borderColor: 'rgba(15, 23, 42, 0.12)',
+                            borderColor: 'divider',
                         }}
                     />
 

@@ -492,14 +492,8 @@ export function FormNodeEditorPage() {
             return outerTheme;
         }
 
-        return createAppTheme(activeFormTheme, BaseTheme);
+        return createAppTheme(activeFormTheme, BaseTheme, outerTheme.palette.mode);
     }, [draftPreviewThemeChain, formTheme, outerTheme]);
-    const previewThemeCssVariables = useMemo(() => ({
-        '--prosuna-theme-primary': previewTheme.palette.primary.main,
-        '--prosuna-theme-primary-dark': previewTheme.palette.primary.dark,
-        '--prosuna-theme-secondary': previewTheme.palette.secondary.main,
-    }), [previewTheme]);
-
     const {
         ref: containerRef,
         size: containerSize,
@@ -1200,7 +1194,7 @@ export function FormNodeEditorPage() {
                                         ref={scrollContainerRef}
                                     >
                                         <ThemeProvider theme={previewTheme}>
-                                            <Box sx={previewThemeCssVariables}>
+                                            <Box>
                                                 <FormHeaderComponent
                                                     form={formLayout}
                                                     node={node}
@@ -1297,7 +1291,8 @@ export function FormNodeEditorPage() {
                                         <Paper
                                             sx={{
                                                 boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                                                borderLeft: '1px solid #E0E7E0',
+                                                borderLeft: '1px solid',
+                                                borderLeftColor: 'divider',
                                                 borderRadius: 0,
                                                 position: 'relative',
                                                 height: '100%',

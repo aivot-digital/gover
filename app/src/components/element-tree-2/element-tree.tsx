@@ -289,7 +289,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         >
             <Box
                 sx={{
-                    borderBottom: '1px solid #ccc',
+                    borderBottom: '1px solid',
+                    borderBottomColor: 'divider',
                     minWidth: 0,
                 }}
             >
@@ -317,7 +318,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             flexShrink: 0,
                             borderRadius: '50%',
                             bgcolor: 'grey.100',
-                            color: 'text.primary',
+                            color: (theme) => theme.palette.getContrastText(theme.palette.grey[100]),
                         }}
                     >
                         <AccountTree/>
