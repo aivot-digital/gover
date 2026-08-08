@@ -311,7 +311,9 @@ export function EmailPage() {
                                 >
                                     Änderungen an der Konfiguration
                                 </Typography>
-                                <Typography>
+                                <Typography
+                                    sx={{mb: 1.5}}
+                                >
                                     Die angezeigten Werte werden über die Betriebsumgebung der Prosuna-Instanz
                                     verwaltet. Wenden Sie sich für Änderungen an die technische Administration und
                                     prüfen Sie die Anbindung anschließend im Reiter „Testen“.
