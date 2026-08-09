@@ -15,6 +15,7 @@ import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
 import {ProcessEntity} from '../../modules/process/entities/process-entity';
 import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
+import {ProsunaAttribution} from '../prosuna-attribution/prosuna-attribution';
 
 const buttonStyle: SxProps = {
     color: 'text.primary',
@@ -172,24 +173,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                     </Box>
                 </Box>
             </Container>
-            <Box
-                sx={{
-                    backgroundColor: 'action.hover',
-                    p: 0.5,
-                    px: 2,
-                    [theme.breakpoints.up('md')]: {
-                        textAlign: 'center',
-                    },
-                }}
-            >
-                <Typography
-                    variant="caption"
-                    color="text.secondary"
-                >
-                    Dieses Formular wurde umgesetzt mit Prosuna – dem Fundament für moderne digitale Verwaltungsleistungen
-                    von Aivot
-                </Typography>
-            </Box>
+            <ProsunaAttribution placement="form"/>
         </Box>
     );
 }

@@ -8,6 +8,7 @@ import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {Logo} from '../../components/logo/logo';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
+import {ProsunaAttribution} from '../../components/prosuna-attribution/prosuna-attribution';
 
 const buttonStyle: SxProps = {
     color: 'text.primary',
@@ -125,24 +126,7 @@ export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
                 </Box>
             </Container>
 
-            <Box
-                sx={{
-                    backgroundColor: 'action.hover',
-                    p: 0.5,
-                    px: 2,
-                    [theme.breakpoints.up('md')]: {
-                        textAlign: 'center',
-                    },
-                }}
-            >
-                <Typography
-                    variant="caption"
-                    color="text.secondary"
-                >
-                    Dieses Angebot wurde umgesetzt mit Prosuna – dem Fundament für moderne digitale Verwaltungsleistungen
-                    von Aivot
-                </Typography>
-            </Box>
+            <ProsunaAttribution placement="listing"/>
         </Box>
     );
 }
