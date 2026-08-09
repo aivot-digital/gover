@@ -9,7 +9,6 @@ import {AppInfo} from '../../../app-info';
 import {createApiPath} from '../../../utils/url-path-utils';
 import {DebugInformationDialog} from '../../../dialogs/debug-information-dialog/debug-information-dialog';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
-import {getOverlayAlpha, lighten} from '@mui/material/styles';
 
 interface AboutProsunaDialogProps {
     open: boolean;
@@ -17,6 +16,11 @@ interface AboutProsunaDialogProps {
 }
 
 const dialogPaperElevation = 1;
+// Cut the curved edge out of the hero image so the actual Dialog Paper remains visible underneath.
+const heroImageMask = 'url("data:image/svg+xml,' +
+    '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 500 280%22 preserveAspectRatio=%22none%22%3E' +
+    '%3Cpath fill=%22white%22 d=%22M0 0H500V260Q250 280 0 260Z%22/%3E' +
+    '%3C/svg%3E")';
 const resourceButtonSx = {
     width: {xs: '100%', sm: 'auto'},
     color: 'text.primary',
@@ -29,10 +33,6 @@ const resourceButtonSx = {
 
 export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): React.ReactElement {
     const theme = useTheme();
-    // Match the SVG edge to MUI's elevation overlay on dark paper surfaces.
-    const dialogSurfaceColor = theme.palette.mode === 'dark'
-        ? lighten(theme.palette.background.paper, getOverlayAlpha(dialogPaperElevation))
-        : theme.palette.background.paper;
     const [
         isDebugInformationDialogOpen,
         setDebugInformationDialogOpen,
@@ -63,15 +63,29 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                     sx={{
                         position: 'relative',
                         height: 280,
-                        backgroundImage: 'url("/staff/assets/images/about-prosuna-bg.jpg")',
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: '#fff',
                     }}
                 >
+                    <Box
+                        aria-hidden="true"
+                        sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundImage: 'url("/staff/assets/images/about-prosuna-bg.jpg")',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            WebkitMaskImage: heroImageMask,
+                            maskImage: heroImageMask,
+                            WebkitMaskSize: '100% 100%',
+                            maskSize: '100% 100%',
+                            WebkitMaskRepeat: 'no-repeat',
+                            maskRepeat: 'no-repeat',
+                        }}
+                    />
+
                     <Box
                         component="img"
                         src="/staff/assets/images/about-prosuna-logo.svg"
@@ -88,30 +102,11 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                             top: 8,
                             right: 8,
                             color: 'white',
+                            zIndex: 2,
                         }}
                     >
                         <CloseIcon />
                     </IconButton>
-
-                    <Box
-                        component="svg"
-                        viewBox="0 0 500 40"
-                        xmlns="http://www.w3.org/2000/svg"
-                        preserveAspectRatio="none"
-                        sx={{
-                            position: 'absolute',
-                            bottom: -1,
-                            left: 0,
-                            width: '100%',
-                            height: 40,
-                        }}
-                    >
-                        <path
-                            d="M0,20 Q250,40 500,20 L500,40 L0,40 Z"
-                            fill={dialogSurfaceColor}
-                        />
-                    </Box>
-
                 </Box>
 
                 <Box sx={{
