@@ -91,7 +91,8 @@ export function ProcessActionMenu(props: ProcessActionMenuProps): ReactNode {
                             left: 0,
                             width: 10,
                             height: 10,
-                            bgcolor: 'background.paper',
+                            // Inherit the Paper surface including MUI's dark-mode elevation overlay.
+                            background: 'inherit',
                             transform: 'translateX(-50%) rotate(45deg)',
                             boxShadow: '-2px 2px 6px rgba(15, 23, 42, 0.08)',
                             zIndex: 0,
