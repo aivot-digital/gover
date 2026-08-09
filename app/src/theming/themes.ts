@@ -46,6 +46,11 @@ const softShadows = [
     }),
 ];
 
+/**
+ * Untinted neutral foundations for the page and Paper hierarchy. They are kept application-controlled instead of
+ * being exposed as additional appearance settings, so an appearance remains defined by two understandable brand
+ * colors rather than a complete design-system palette.
+ */
 export const APP_BACKGROUND_COLORS = {
     light: {
         default: '#F6F6F6',
@@ -57,8 +62,19 @@ export const APP_BACKGROUND_COLORS = {
     },
 } as const;
 
-// Keep neutral surfaces recognizable while carrying a small amount of the active brand color.
+/**
+ * MUI and several application components use `palette.grey` directly for borders, connectors, disabled states, and
+ * subtle fills. A very small primary-color admixture keeps those elements visually related to the active appearance
+ * instead of placing cool neutral greys next to a potentially warm brand color. The weight deliberately stays low:
+ * grey must continue to read as neutral and retain its ordered light-to-dark scale.
+ */
 const NEUTRAL_TINT_WEIGHT = 0.03;
+
+/**
+ * Backgrounds use separate, deliberately subtle weights because they cover much larger areas than controls.
+ * The asymmetric values preserve the established page-to-Paper hierarchy in each mode: light Paper stays especially
+ * clean, while dark Paper may carry slightly more brand character without becoming a colored surface.
+ */
 const BACKGROUND_TINT_WEIGHTS = {
     light: {
         default: 0.03,
@@ -70,6 +86,10 @@ const BACKGROUND_TINT_WEIGHTS = {
     },
 } as const;
 
+/**
+ * Derives application backgrounds by mixing the active primary brand color into the neutral foundations.
+ * This provides a coherent overall cast without using the primary color itself as a large surface.
+ */
 export function resolveAppBackgroundColors(
     mode: PaletteMode,
     primaryColor: string,
@@ -83,6 +103,7 @@ export function resolveAppBackgroundColors(
     };
 }
 
+/** Applies the same subtle brand cast to every MUI grey shade while preserving the complete shade scale. */
 function createTintedGreyPalette(primaryColor: string): typeof muiGrey {
     return Object.fromEntries(
         Object.entries(muiGrey).map(([shade, color]) => [
@@ -104,6 +125,8 @@ export function createAppTheme(
     baseTheme: MuiTheme,
     mode: PaletteMode = baseTheme.palette.mode,
 ): MuiTheme {
+    // Custom dark colors are optional. When absent, the configured light colors intentionally remain the brand source
+    // for both modes; the standard appearance has explicit dark defaults because there is no persisted configuration.
     const appearanceColorInput = appTheme == null
         ? {
             primaryColor: mode === 'dark'
@@ -121,11 +144,16 @@ export function createAppTheme(
                 ? appTheme.secondaryColorDark ?? appTheme.secondaryColor
                 : appTheme.secondaryColor,
         };
+
+    // Resolve the effective tinted Paper first: foreground roles must be checked against the surface they are
+    // actually rendered on, not against the untinted foundation or the page background.
     const background = resolveAppBackgroundColors(mode, appearanceColorInput.primaryColor);
     const resolvedColors = resolveAppearanceColors(
         appearanceColorInput,
         background.paper,
     );
+
+    // Links sit on Paper rather than on a solid primary fill, so they use the contrast-adjusted foreground role.
     const linkStyles = {
         '.MuiTypography-body2 > a, .MuiAccordionDetails-root a': {
             color: resolvedColors.primaryForeground,
@@ -170,6 +198,7 @@ export function createAppTheme(
     const baseCssBaselineStyles = baseTheme.components?.MuiCssBaseline?.styleOverrides;
     const palette: PaletteOptions = {
         contrastThreshold: MINIMUM_THEME_CONTRAST,
+        // Supplying the tinted scale globally keeps MUI and custom consumers of `palette.grey` consistent.
         grey: createTintedGreyPalette(resolvedColors.primary),
         DataGrid: {
             bg: background.paper,
@@ -187,6 +216,9 @@ export function createAppTheme(
         mode,
         background,
     };
+
+    // Filled controls can use the configured main colors together with their on-color contrast text. Components that
+    // render the brand as text, an outline, or a thin indicator instead use the Paper-safe foreground roles below.
     return createTheme({
         ...baseTheme,
         palette,
