@@ -9,6 +9,7 @@ import {AppInfo} from '../../../app-info';
 import {createApiPath} from '../../../utils/url-path-utils';
 import {DebugInformationDialog} from '../../../dialogs/debug-information-dialog/debug-information-dialog';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
+import {ProsunaLogo} from '../../../components/prosuna-logo/prosuna-logo';
 
 interface AboutProsunaDialogProps {
     open: boolean;
@@ -86,12 +87,16 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                         }}
                     />
 
-                    <Box
-                        component="img"
-                        src="/staff/assets/images/about-prosuna-logo.svg"
-                        alt="Prosuna Logo"
-                        sx={{
-                            width: 360, height: 'auto', zIndex: 2, mb: 3.5,
+                    <ProsunaLogo
+                        title="Prosuna"
+                        colorVariant="monochrome"
+                        color="#FFFFFF"
+                        style={{
+                            width: 'min(360px, 80%)',
+                            height: 'auto',
+                            zIndex: 2,
+                            marginBottom: 28,
+                            filter: 'drop-shadow(0 1.5px 11px rgba(0, 0, 0, 0.15))',
                         }}
                     />
 
