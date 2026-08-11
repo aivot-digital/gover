@@ -6,6 +6,7 @@ import {SystemStatusPage} from './pages/system-status-page';
 import {ExtensionsPage} from './pages/extensions-page/extensions-page';
 import {ExtensionsPageIndex} from './pages/extensions-page/extensions-page-index';
 import {ExtensionsPageList} from './pages/extensions-page/extensions-page-list';
+import {DashboardSettingsPage} from '../dashboard/pages/dashboard-settings-page';
 
 export const configsRoutes: RouteObject[] = [
     {
@@ -23,6 +24,10 @@ export const configsRoutes: RouteObject[] = [
     {
         path: '/settings/status',
         element: <SystemStatusPage />,
+    },
+    {
+        path: '/settings/dashboard',
+        element: <DashboardSettingsPage />,
     },
     {
         path: '/settings/extensions/*',

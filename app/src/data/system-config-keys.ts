@@ -24,6 +24,12 @@ export const SystemConfigKeys = {
     systemRoles: {
         mostPrivilegedRole: 'system_roles.most_privileged_role',
     },
+    dashboard: {
+        activity: {
+            enabled: 'dashboard.activity.enabled',
+            period: 'dashboard.activity.period',
+        },
+    },
     storage: {
         assets: {
             default_storage_provider: 'storage.assets.default_storage_provider',

@@ -76,6 +76,7 @@ import Check from '@aivot/mui-material-symbols-400-n25-outlined/Check';
 import Contrast from '@aivot/mui-material-symbols-400-n25-outlined/Contrast';
 import DarkMode from '@aivot/mui-material-symbols-400-n25-outlined/DarkMode';
 import LightMode from '@aivot/mui-material-symbols-400-n25-outlined/LightMode';
+import DashboardCustomize from '@aivot/mui-material-symbols-400-n25-outlined/DashboardCustomize';
 import {
     type ColorModePreference,
     useColorMode,
@@ -323,9 +324,9 @@ const BaseDrawerGroups: DrawerGroup[] = [
                         requiredSystemPermission: Permission.PLUGIN_READ,
                     },
                     {
-                        ...drawerModuleIcon('providerLinks'),
-                        label: 'Links (legacy)',
-                        to: '/provider-links',
+                        icon: <DashboardCustomize/>,
+                        label: 'Übersicht konfigurieren',
+                        to: '/settings/dashboard',
                         requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
                     },
                 ],

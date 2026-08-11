@@ -1285,7 +1285,7 @@ export function ApplicationSettings() {
                                         });
                                     }}
                                     disabled={inputsDisabled}
-                                    startIcon={ModuleIcons.providerLinks}
+                                    startIcon={ModuleIcons.customLinks}
                                 />
                             </Box>
                         }

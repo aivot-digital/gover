@@ -18,6 +18,8 @@ declare var AppConfig: {
     systemConfigs: {
         ProviderName: string;
         SystemTheme: string;
+        'dashboard.activity.enabled'?: boolean;
+        'dashboard.activity.period'?: string;
     };
     faviconUrl: string;
     logoUrl: string;

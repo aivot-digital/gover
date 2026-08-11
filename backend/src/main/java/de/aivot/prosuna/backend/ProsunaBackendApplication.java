@@ -21,7 +21,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
         "de.aivot.prosuna.backend.permissions.repositories",
         "de.aivot.prosuna.backend.preset.repositories",
         "de.aivot.prosuna.backend.process.repositories",
-        "de.aivot.prosuna.backend.providerLink.repositories",
+        "de.aivot.prosuna.backend.customLink.repositories",
         "de.aivot.prosuna.backend.search.repositories",
         "de.aivot.prosuna.backend.secrets.repositories",
         "de.aivot.prosuna.backend.storage.repositories",

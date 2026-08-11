@@ -26,6 +26,7 @@
     "@mdxeditor/editor": "^4.0.4",
     "@monaco-editor/react": "^4.7.0",
     "@mui/material": "^7.3.2",
+    "@mui/x-charts": "8.11.3",
     "@mui/x-data-grid": "^8.11.3",
     "@mui/x-date-pickers": "^8.11.3",
     "@reduxjs/toolkit": "^2.8.2",
