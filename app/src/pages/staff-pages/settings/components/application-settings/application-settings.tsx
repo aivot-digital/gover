@@ -1,4 +1,4 @@
-import {Box, Button, Grid, Tab, Tabs, Typography} from '@mui/material';
+import {Alert, Box, Button, Grid, Tab, Tabs, Typography} from '@mui/material';
 import React, {type FormEvent, useEffect, useMemo, useState} from 'react';
 import {
     selectSystemConfig,
@@ -51,6 +51,11 @@ import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabl
 import {useThemeReloadPrompt} from '../../../../../modules/themes/hooks/use-theme-reload-prompt';
 
 const SYSTEM_THEME_FALLBACK_OPTION_VALUE = '__prosuna_system_theme_fallback__';
+const SYSTEM_THEME_FALLBACK_OPTION: SelectFieldComponentOption = {
+    value: SYSTEM_THEME_FALLBACK_OPTION_VALUE,
+    label: 'Prosuna-Systemstandard',
+    subLabel: 'Integriertes Standard-Erscheinungsbild ohne eigene Konfiguration',
+};
 
 export function ApplicationSettings() {
     const dispatch = useAppDispatch();
@@ -74,14 +79,56 @@ export function ApplicationSettings() {
     useEffect(() => {
         new SystemConfigsApiService(api)
             .listDefinitions()
-            .then(setConfigDefinitions);
-    }, [api]);
+            .then(setConfigDefinitions)
+            .catch((err) => {
+                console.error(err);
+                dispatch(showApiErrorSnackbar(err, 'Die Definitionen der Systemeinstellungen konnten nicht geladen werden'));
+            });
+    }, [api, dispatch]);
 
     const config = useAppSelector(selectSystemConfig);
     const [editedConfig, setEditedConfig] = useState<SystemConfigMap>({});
+    const [isLoadingSystemConfigs, setIsLoadingSystemConfigs] = useState(true);
+    const [hasSystemConfigsLoadingError, setHasSystemConfigsLoadingError] = useState(false);
+
+    // AppConfig may contain only public values when the access cookie is refreshed after page bootstrap.
+    // Administrative settings therefore use this authenticated response as their authoritative source.
+    useEffect(() => {
+        let isActive = true;
+        setIsLoadingSystemConfigs(true);
+        setHasSystemConfigsLoadingError(false);
+
+        new SystemConfigsApiService(api)
+            .listAll()
+            .then(({content: configs}) => {
+                if (isActive) {
+                    dispatch(setSystemConfigsFromMap(Object.fromEntries(
+                        configs.map(({key, value}) => [key, value]),
+                    )));
+                }
+            })
+            .catch((err) => {
+                if (isActive) {
+                    setHasSystemConfigsLoadingError(true);
+                    dispatch(showApiErrorSnackbar(err, 'Die Systemeinstellungen konnten nicht geladen werden'));
+                }
+            })
+            .finally(() => {
+                if (isActive) {
+                    setIsLoadingSystemConfigs(false);
+                }
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, [api, dispatch]);
 
     const [departments, setDepartments] = useState<VDepartmentShadowedEntity[]>([]);
-    const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
+    // Keep the fallback available from the first render so the stable appearance control has a valid loading value.
+    const [themes, setThemes] = useState<SelectFieldComponentOption[]>([SYSTEM_THEME_FALLBACK_OPTION]);
+    const [isLoadingThemes, setIsLoadingThemes] = useState(true);
+    const [hasThemesLoadingError, setHasThemesLoadingError] = useState(false);
     const [systemRoleOptions, setSystemRoleOptions] = useState<SelectFieldComponentOption[]>([]);
     const [isLoadingSystemRoles, setIsLoadingSystemRoles] = useState(true);
     const [hasSystemRolesLoadingError, setHasSystemRolesLoadingError] = useState(false);
@@ -92,6 +139,8 @@ export function ApplicationSettings() {
     const [isLoadingAttStorageProviders, setIsLoadingAttStorageProviders] = useState(true);
 
     const hasNotChanged = Object.keys(editedConfig).length === 0;
+    const inputsDisabled =
+        !canUpdateSystemConfig || isLoadingSystemConfigs || hasSystemConfigsLoadingError;
     const configuredDefaultSystemRole = config[SystemConfigKeys.users.defaultSystemRole];
     const configuredMostPrivilegedSystemRole = config[SystemConfigKeys.systemRoles.mostPrivilegedRole];
     const configuredAssetStorageProvider = config[SystemConfigKeys.storage.assets.default_storage_provider];
@@ -118,7 +167,11 @@ export function ApplicationSettings() {
         });
     };
     const defaultSystemRoleError =
-        canReadSystemRoles && !isLoadingSystemRoles
+        canReadSystemRoles &&
+        !isLoadingSystemConfigs &&
+        !hasSystemConfigsLoadingError &&
+        !isLoadingSystemRoles &&
+        !hasSystemRolesLoadingError
             ? systemRoleOptions.length === 0
                 ? 'Es ist keine Systemrolle vorhanden. Legen Sie zuerst eine Systemrolle an.'
                 : isStringNullOrEmpty(defaultSystemRoleValue)
@@ -126,7 +179,11 @@ export function ApplicationSettings() {
                     : undefined
             : undefined;
     const mostPrivilegedSystemRoleError =
-        canReadSystemRoles && !isLoadingSystemRoles
+        canReadSystemRoles &&
+        !isLoadingSystemConfigs &&
+        !hasSystemConfigsLoadingError &&
+        !isLoadingSystemRoles &&
+        !hasSystemRolesLoadingError
             ? systemRoleOptions.length === 0
                 ? 'Es ist keine Systemrolle vorhanden. Legen Sie zuerst eine Systemrolle an.'
                 : isStringNullOrEmpty(mostPrivilegedSystemRoleValue)
@@ -134,7 +191,7 @@ export function ApplicationSettings() {
                     : undefined
             : undefined;
     const assetStorageProviderError =
-        canReadStorageProviders && !isLoadingAssetStorageProviders
+        canReadStorageProviders && !isLoadingSystemConfigs && !hasSystemConfigsLoadingError && !isLoadingAssetStorageProviders
             ? assetStorageProviders.length === 0
                 ? 'Es ist kein Speicheranbieter für Assets vorhanden. Legen Sie zuerst einen Speicheranbieter an.'
                 : isStringNullOrEmpty(assetStorageProviderValue)
@@ -142,7 +199,7 @@ export function ApplicationSettings() {
                     : undefined
             : undefined;
     const attachmentStorageProviderError =
-        canReadStorageProviders && !isLoadingAttStorageProviders
+        canReadStorageProviders && !isLoadingSystemConfigs && !hasSystemConfigsLoadingError && !isLoadingAttStorageProviders
             ? attStorageProviders.length === 0
                 ? 'Es ist kein Speicheranbieter für Vorgangsanlagen vorhanden. Legen Sie zuerst einen Speicheranbieter an.'
                 : isStringNullOrEmpty(attachmentStorageProviderValue)
@@ -154,22 +211,22 @@ export function ApplicationSettings() {
     // Skipping unauthorized lookups prevents unrelated 403 toasts while keeping the page readable.
     useEffect(() => {
         if (!canReadThemes) {
-            setThemes([]);
+            setThemes([SYSTEM_THEME_FALLBACK_OPTION]);
+            setHasThemesLoadingError(false);
+            setIsLoadingThemes(false);
             return;
         }
 
         let isActive = true;
+        setIsLoadingThemes(true);
+        setHasThemesLoadingError(false);
 
         new ThemesApiService(api)
             .listAll()
             .then((themes) => {
                 if (isActive) {
                     setThemes([
-                        {
-                            value: SYSTEM_THEME_FALLBACK_OPTION_VALUE,
-                            label: 'Prosuna-Systemstandard',
-                            subLabel: 'Integriertes Standard-Erscheinungsbild ohne eigene Konfiguration',
-                        },
+                        SYSTEM_THEME_FALLBACK_OPTION,
                         ...themes.content.map((theme) => ({
                             value: theme.id.toString(),
                             label: theme.name,
@@ -179,8 +236,14 @@ export function ApplicationSettings() {
             })
             .catch((err) => {
                 if (isActive) {
+                    setHasThemesLoadingError(true);
                     console.error(err);
                     dispatch(showErrorSnackbar('Erscheinungsbilder konnten nicht geladen werden'));
+                }
+            })
+            .finally(() => {
+                if (isActive) {
+                    setIsLoadingThemes(false);
                 }
             });
 
@@ -309,8 +372,15 @@ export function ApplicationSettings() {
         };
     }, [canReadStorageProviders, dispatch]);
 
+    // Wait for the authoritative configuration before deriving defaults. Otherwise the first provider could be
+    // recorded as an edit while the stored provider is still loading.
     useEffect(() => {
-        if (!canUpdateSystemConfig || attStorageProviders.length === 0) {
+        if (
+            !canUpdateSystemConfig ||
+            isLoadingSystemConfigs ||
+            hasSystemConfigsLoadingError ||
+            attStorageProviders.length === 0
+        ) {
             return;
         }
 
@@ -328,10 +398,21 @@ export function ApplicationSettings() {
                 [SystemConfigKeys.storage.attachments.default_storage_provider]: attStorageProviders[0].value,
             };
         });
-    }, [attStorageProviders, canUpdateSystemConfig, configuredAttachmentStorageProvider]);
+    }, [
+        attStorageProviders,
+        canUpdateSystemConfig,
+        configuredAttachmentStorageProvider,
+        hasSystemConfigsLoadingError,
+        isLoadingSystemConfigs,
+    ]);
 
     useEffect(() => {
-        if (!canUpdateSystemConfig || assetStorageProviders.length === 0) {
+        if (
+            !canUpdateSystemConfig ||
+            isLoadingSystemConfigs ||
+            hasSystemConfigsLoadingError ||
+            assetStorageProviders.length === 0
+        ) {
             return;
         }
 
@@ -349,12 +430,18 @@ export function ApplicationSettings() {
                 [SystemConfigKeys.storage.assets.default_storage_provider]: assetStorageProviders[0].value,
             };
         });
-    }, [assetStorageProviders, canUpdateSystemConfig, configuredAssetStorageProvider]);
+    }, [
+        assetStorageProviders,
+        canUpdateSystemConfig,
+        configuredAssetStorageProvider,
+        hasSystemConfigsLoadingError,
+        isLoadingSystemConfigs,
+    ]);
 
     const handleSubmit = async (event: FormEvent): Promise<void> => {
         event.preventDefault();
 
-        if (canUpdateSystemConfig && editedConfig != null) {
+        if (!inputsDisabled && editedConfig != null) {
             const normalizedEditedConfig = {
                 ...editedConfig,
             };
@@ -619,7 +706,7 @@ export function ApplicationSettings() {
                         <ElementDerivationContext
                             element={currentGroup}
                             authoredElementValues={config}
-                            disabled={!canUpdateSystemConfig}
+                            disabled={inputsDisabled}
                             onAuthoredElementValuesChange={(updated) => {
                                 console.log(updated);
                                 dispatch(setSystemConfigsFromMap(updated));
@@ -638,7 +725,7 @@ export function ApplicationSettings() {
                         >
                             <Button
                                 type="submit"
-                                disabled={hasNotChanged || !canUpdateSystemConfig}
+                                disabled={hasNotChanged || inputsDisabled}
                                 color="primary"
                                 variant="contained"
                                 startIcon={<SaveOutlinedIcon
@@ -657,7 +744,7 @@ export function ApplicationSettings() {
                             }}
                             type="button"
                             color="error"
-                            disabled={hasNotChanged || !canUpdateSystemConfig}
+                            disabled={hasNotChanged || inputsDisabled}
                             onClick={() => {
                                 setEditedConfig({});
                             }}
@@ -678,6 +765,17 @@ export function ApplicationSettings() {
             }}
         >
             <form onSubmit={handleSubmit}>
+                {
+                    hasSystemConfigsLoadingError &&
+                    <Alert
+                        severity="error"
+                        sx={{mb: 2}}
+                    >
+                        Die gespeicherten Systemeinstellungen konnten nicht geladen werden. Laden Sie die Seite neu,
+                        bevor Sie Änderungen vornehmen.
+                    </Alert>
+                }
+
                 <Typography
                     variant="subtitle1"
                 >
@@ -716,64 +814,72 @@ export function ApplicationSettings() {
                                 });
                             }}
                             required
-                            disabled={!canUpdateSystemConfig}
+                            disabled={inputsDisabled}
                             startIcon={<Label/>}
                         />
                     </Grid>
                 </Grid>
-                {
-                    themes.length > 0 &&
-                    <>
-                        <Typography
-                            variant="subtitle1"
-                            sx={{
-                                mt: 4,
-                            }}
-                        >
-                            Standard-Erscheinungsbild der Prosuna-Instanz
-                        </Typography>
+                <Typography
+                    variant="subtitle1"
+                    sx={{
+                        mt: 4,
+                    }}
+                >
+                    Standard-Erscheinungsbild der Prosuna-Instanz
+                </Typography>
 
-                        <Typography
-                            sx={{
-                                maxWidth: 900,
-                                mb: 1.6,
-                            }}
-                        >
-                            Wählen Sie das Erscheinungsbild, das standardmäßig für die Prosuna-Instanz verwendet wird.
-                            Organisationseinheiten können weiterhin ein eigenes Erscheinungsbild vorgeben.
-                        </Typography>
+                <Typography
+                    sx={{
+                        maxWidth: 900,
+                        mb: 1.6,
+                    }}
+                >
+                    Wählen Sie das Erscheinungsbild, das standardmäßig für die Prosuna-Instanz verwendet wird.
+                    Organisationseinheiten können weiterhin ein eigenes Erscheinungsbild vorgeben.
+                </Typography>
 
-                        <Grid
-                            container
-                            columnSpacing={4}
-                        >
-                            <Grid
-                                size={{
-                                    xs: 12,
-                                    lg: 6,
-                                }}
-                            >
-                                <SelectFieldComponent
-                                    label="Standard-Erscheinungsbild"
-                                    options={themes}
-                                    value={systemThemeSelectValue}
-                                    onChange={(val) => {
-                                        setEditedConfig({
-                                            ...editedConfig,
-                                            [SystemConfigKeys.system.theme]: val === SYSTEM_THEME_FALLBACK_OPTION_VALUE
-                                                ? ''
-                                                : val ?? '',
-                                        });
-                                    }}
-                                    disabled={!canUpdateSystemConfig || !canReadThemes}
-                                    hint={!canReadThemes ? themeReadHint : undefined}
-                                    startIcon={ModuleIcons.themes}
-                                    includeEmptyOption={false}
-                                />
-                            </Grid>
-                        </Grid>
-                    </>
-                }
+                <Grid
+                    container
+                    columnSpacing={4}
+                >
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                        }}
+                    >
+                        <SelectFieldComponent
+                            label="Standard-Erscheinungsbild"
+                            options={themes}
+                            value={systemThemeSelectValue}
+                            onChange={(val) => {
+                                setEditedConfig({
+                                    ...editedConfig,
+                                    [SystemConfigKeys.system.theme]: val === SYSTEM_THEME_FALLBACK_OPTION_VALUE
+                                        ? ''
+                                        : val ?? '',
+                                });
+                            }}
+                            disabled={
+                                inputsDisabled ||
+                                !canReadThemes ||
+                                isLoadingThemes ||
+                                hasThemesLoadingError
+                            }
+                            hint={
+                                !canReadThemes
+                                    ? themeReadHint
+                                    : hasThemesLoadingError
+                                        ? 'Die Erscheinungsbilder konnten nicht geladen werden. Bitte laden Sie die Seite neu.'
+                                        : isLoadingThemes
+                                            ? 'Erscheinungsbilder werden geladen…'
+                                            : undefined
+                            }
+                            startIcon={ModuleIcons.themes}
+                            includeEmptyOption={false}
+                        />
+                    </Grid>
+                </Grid>
 
                 <Typography
                     variant="subtitle1"
@@ -815,7 +921,7 @@ export function ApplicationSettings() {
                                     [SystemConfigKeys.prosuna.marketplaceKey]: val ?? '',
                                 });
                             }}
-                            disabled={!canUpdateSystemConfig}
+                            disabled={inputsDisabled}
                             startIcon={ModuleIcons.secrets}
                         />
                     </Grid>
@@ -853,9 +959,13 @@ export function ApplicationSettings() {
                             hint={
                                 !canReadSystemRoles
                                     ? systemRoleReadHint
-                                    : hasSystemRolesLoadingError
-                                    ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
-                                    : 'Diese Systemrolle wird bei neuen automatischen Benutzerimporten und -synchronisationen verwendet.'
+                                    : hasSystemConfigsLoadingError
+                                        ? 'Die gespeicherten Systemeinstellungen konnten nicht geladen werden.'
+                                        : isLoadingSystemConfigs
+                                            ? 'Gespeicherte Systemeinstellungen werden geladen…'
+                                            : hasSystemRolesLoadingError
+                                                ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
+                                                : 'Diese Systemrolle wird bei neuen automatischen Benutzerimporten und -synchronisationen verwendet.'
                             }
                             value={defaultSystemRoleValue}
                             onChange={(val) => {
@@ -866,7 +976,11 @@ export function ApplicationSettings() {
                             }}
                             required
                             error={defaultSystemRoleError}
-                            disabled={!canUpdateSystemConfig || !canReadSystemRoles || isLoadingSystemRoles}
+                            disabled={
+                                inputsDisabled ||
+                                !canReadSystemRoles ||
+                                isLoadingSystemRoles
+                            }
                             options={systemRoleOptions}
                             emptyStatePlaceholder={
                                 !canReadSystemRoles
@@ -891,9 +1005,13 @@ export function ApplicationSettings() {
                             hint={
                                 !canReadSystemRoles
                                     ? systemRoleReadHint
-                                    : hasSystemRolesLoadingError
-                                    ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
-                                    : 'Diese Systemrolle gilt in Prosuna als höchste Berechtigungsstufe. Besitzt keine aktive Mitarbeiter:in diese Rolle, wird sie automatisch dem Administrationskonto zugewiesen, dessen E-Mail-Adresse über die Umgebungsvariable PROSUNA_BOOTSTRAP_ADMIN_MAIL konfiguriert ist.'
+                                    : hasSystemConfigsLoadingError
+                                        ? 'Die gespeicherten Systemeinstellungen konnten nicht geladen werden.'
+                                        : isLoadingSystemConfigs
+                                            ? 'Gespeicherte Systemeinstellungen werden geladen…'
+                                            : hasSystemRolesLoadingError
+                                                ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
+                                                : 'Diese Systemrolle gilt in Prosuna als höchste Berechtigungsstufe. Besitzt keine aktive Mitarbeiter:in diese Rolle, wird sie automatisch dem Administrationskonto zugewiesen, dessen E-Mail-Adresse über die Umgebungsvariable PROSUNA_BOOTSTRAP_ADMIN_MAIL konfiguriert ist.'
                             }
                             value={mostPrivilegedSystemRoleValue}
                             onChange={(val) => {
@@ -904,7 +1022,11 @@ export function ApplicationSettings() {
                             }}
                             required
                             error={mostPrivilegedSystemRoleError}
-                            disabled={!canUpdateSystemConfig || !canReadSystemRoles || isLoadingSystemRoles}
+                            disabled={
+                                inputsDisabled ||
+                                !canReadSystemRoles ||
+                                isLoadingSystemRoles
+                            }
                             options={systemRoleOptions}
                             emptyStatePlaceholder={
                                 !canReadSystemRoles
@@ -961,7 +1083,11 @@ export function ApplicationSettings() {
                             }}
                             required
                             error={attachmentStorageProviderError}
-                            disabled={!canUpdateSystemConfig || !canReadStorageProviders || isLoadingAttStorageProviders}
+                            disabled={
+                                inputsDisabled ||
+                                !canReadStorageProviders ||
+                                isLoadingAttStorageProviders
+                            }
                             options={attStorageProviders}
                             emptyStatePlaceholder={!canReadStorageProviders ? 'Keine Berechtigung zur Einsicht' : 'Keine Speicheranbieter für Vorgangsanlagen vorhanden'}
                             startIcon={ModuleIcons.storage}
@@ -1011,7 +1137,11 @@ export function ApplicationSettings() {
                             }}
                             required
                             error={assetStorageProviderError}
-                            disabled={!canUpdateSystemConfig || !canReadStorageProviders || isLoadingAssetStorageProviders}
+                            disabled={
+                                inputsDisabled ||
+                                !canReadStorageProviders ||
+                                isLoadingAssetStorageProviders
+                            }
                             options={assetStorageProviders}
                             emptyStatePlaceholder={!canReadStorageProviders ? 'Keine Berechtigung zur Einsicht' : 'Keine Speicheranbieter für Assets vorhanden'}
                             startIcon={ModuleIcons.storage}
@@ -1057,7 +1187,7 @@ export function ApplicationSettings() {
                                     onChange={(department) => {
                                         handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId, department?.id ?? null);
                                     }}
-                                    disabled={!canUpdateSystemConfig || !canReadDepartments}
+                                    disabled={inputsDisabled || !canReadDepartments}
                                     hint={!canReadDepartments ? departmentReadHint : undefined}
                                 />
 
@@ -1074,7 +1204,7 @@ export function ApplicationSettings() {
                                     onChange={(department) => {
                                         handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId, department?.id ?? null);
                                     }}
-                                    disabled={!canUpdateSystemConfig || !canReadDepartments}
+                                    disabled={inputsDisabled || !canReadDepartments}
                                     hint={!canReadDepartments ? departmentReadHint : undefined}
                                 />
                             </Grid>
@@ -1090,7 +1220,7 @@ export function ApplicationSettings() {
                                     onChange={(department) => {
                                         handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId, department?.id ?? null);
                                     }}
-                                    disabled={!canUpdateSystemConfig || !canReadDepartments}
+                                    disabled={inputsDisabled || !canReadDepartments}
                                     hint={!canReadDepartments ? departmentReadHint : undefined}
                                 />
                             </Grid>
@@ -1113,7 +1243,7 @@ export function ApplicationSettings() {
                                 });
                             }}
                             hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
-                            disabled={!canUpdateSystemConfig}
+                            disabled={inputsDisabled}
                         />
                         <Typography
                             variant="subtitle1"
@@ -1154,7 +1284,7 @@ export function ApplicationSettings() {
                                             [SystemConfigKeys.provider.listingPage.customListingPageLink]: val ?? '',
                                         });
                                     }}
-                                    disabled={!canUpdateSystemConfig}
+                                    disabled={inputsDisabled}
                                     startIcon={ModuleIcons.providerLinks}
                                 />
                             </Box>
@@ -1169,7 +1299,7 @@ export function ApplicationSettings() {
                                 });
                             }}
                             hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
-                            disabled={!canUpdateSystemConfig}
+                            disabled={inputsDisabled}
                         />
                     </>
                 }
@@ -1184,7 +1314,7 @@ export function ApplicationSettings() {
                     >
                         <Button
                             type="submit"
-                            disabled={hasNotChanged || !canUpdateSystemConfig}
+                            disabled={hasNotChanged || inputsDisabled}
                             color="primary"
                             variant="contained"
                             startIcon={<SaveOutlinedIcon
@@ -1203,7 +1333,7 @@ export function ApplicationSettings() {
                         }}
                         type="button"
                         color="error"
-                        disabled={hasNotChanged || !canUpdateSystemConfig}
+                        disabled={hasNotChanged || inputsDisabled}
                         onClick={() => {
                             setEditedConfig({});
                         }}
