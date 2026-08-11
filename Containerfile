@@ -119,6 +119,9 @@ COPY default-assets /app/default-assets
 COPY --from=build_server /app/target/backend-${BUILD_VERSION}-exec.jar /app/prosuna.jar
 COPY --from=build_app /app/build/customer /app/www
 COPY --from=build_app /app/build/staff /app/www/staff
+# Keep the SBOM separate from both frontend build outputs and expose one canonical bundle.
+COPY build/sbom /app/www/sbom
+RUN rm -f /app/www/sbom/.gitkeep
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["/app/healthcheck.sh"]
 

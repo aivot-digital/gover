@@ -16,6 +16,12 @@
 /app/node_modules/
 /app/build/
 
+### Build artifacts ###
+/build/*
+!/build/sbom/
+/build/sbom/*
+!/build/sbom/.gitkeep
+
 ### macOS ###
 .DS_Store
 

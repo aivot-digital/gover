@@ -152,6 +152,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:Z
+      # Usually empty in development; generated or local bundles are served when present.
+      - ../build/sbom:/srv/sbom:ro,Z
     ports:
       - "9595:80"
     extra_hosts:

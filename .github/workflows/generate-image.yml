@@ -69,7 +69,7 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: sbom-bundle
-          path: app/public/sbom/
+          path: build/sbom/
 
       - name: Build image and push when allowed
         uses: docker/build-push-action@v7
@@ -132,7 +132,7 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: sbom-bundle
-          path: app/public/sbom/
+          path: build/sbom/
 
       - name: Build image and push when allowed
         uses: docker/build-push-action@v7
