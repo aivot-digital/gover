@@ -1,4 +1,4 @@
-import React, {type ReactNode, useCallback, useEffect, useMemo} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef} from 'react';
 import {type User} from '../../modules/users/models/user';
 import {selectUser, setMemberships, setPermissions, setUser} from '../../slices/user-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -55,8 +55,18 @@ export function StaffShell(): ReactNode {
     const appError = useAppSelector(selectErrorMessage);
     const user = useAppSelector(selectUser);
     const refreshPermissionSet = useRefreshPermissionSet();
+    const contentContainerRef = useRef<HTMLElement>(null);
 
     const location = useLocation();
+
+    useLayoutEffect(() => {
+        // The staff shell owns page scrolling instead of the browser window. Reset it
+        // before paint so every internal route opens at the top without a visible jump.
+        if (contentContainerRef.current != null) {
+            contentContainerRef.current.scrollTop = 0;
+            contentContainerRef.current.scrollLeft = 0;
+        }
+    }, [location.pathname]);
 
     const handlePermissionSetInvalidation = useCallback(async () => {
         await refreshPermissionSet({broadcast: false});
@@ -191,6 +201,7 @@ export function StaffShell(): ReactNode {
                         <ShellDrawer/>
 
                         <Box
+                            ref={contentContainerRef}
                             data-confetti-container="staff-shell-content"
                             sx={{
                                 flex: 1,
