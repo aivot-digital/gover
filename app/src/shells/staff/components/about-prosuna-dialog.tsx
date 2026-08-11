@@ -4,12 +4,16 @@ import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNe
 import CodeIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code';
 import HistoryIcon from '@aivot/mui-material-symbols-400-n25-outlined/History';
 import ApiIcon from '@aivot/mui-material-symbols-400-n25-outlined/Api';
+import Inventory2Icon from '@aivot/mui-material-symbols-400-n25-outlined/Inventory2';
 import React from 'react';
 import {AppInfo} from '../../../app-info';
 import {createApiPath} from '../../../utils/url-path-utils';
 import {DebugInformationDialog} from '../../../dialogs/debug-information-dialog/debug-information-dialog';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
 import {ProsunaLogo} from '../../../components/prosuna-logo/prosuna-logo';
+import {
+    SoftwareBillOfMaterialsDialog,
+} from '../../../dialogs/software-bill-of-materials-dialog/software-bill-of-materials-dialog';
 
 interface AboutProsunaDialogProps {
     open: boolean;
@@ -31,6 +35,14 @@ const resourceButtonSx = {
         backgroundColor: 'action.hover',
     },
 };
+const secondaryButtonSx = {
+    width: {xs: '100%', sm: 'auto'},
+    color: 'text.secondary',
+    '&:hover': {
+        color: 'text.primary',
+        backgroundColor: 'action.hover',
+    },
+};
 
 export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): React.ReactElement {
     const theme = useTheme();
@@ -38,9 +50,14 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
         isDebugInformationDialogOpen,
         setDebugInformationDialogOpen,
     ] = React.useState(false);
+    const [
+        isSoftwareBillOfMaterialsDialogOpen,
+        setSoftwareBillOfMaterialsDialogOpen,
+    ] = React.useState(false);
 
     const handleClose = (): void => {
         setDebugInformationDialogOpen(false);
+        setSoftwareBillOfMaterialsDialogOpen(false);
         onClose();
     };
 
@@ -230,7 +247,23 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                         </Button>
                     </Stack>
 
-                    <Stack direction="row" justifyContent="center">
+                    <Stack
+                        direction={{xs: 'column', sm: 'row'}}
+                        spacing={0.5}
+                        justifyContent="center"
+                        alignItems="center"
+                    >
+                        <Button
+                            variant="text"
+                            color="inherit"
+                            startIcon={<Inventory2Icon />}
+                            onClick={() => {
+                                setSoftwareBillOfMaterialsDialogOpen(true);
+                            }}
+                            sx={secondaryButtonSx}
+                        >
+                            Software Bill of Materials (SBOM)
+                        </Button>
                         <Button
                             variant="text"
                             color="inherit"
@@ -238,13 +271,7 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                             onClick={() => {
                                 setDebugInformationDialogOpen(true);
                             }}
-                            sx={{
-                                color: 'text.secondary',
-                                '&:hover': {
-                                    color: 'text.primary',
-                                    backgroundColor: 'action.hover',
-                                },
-                            }}
+                            sx={secondaryButtonSx}
                         >
                             Debug-Informationen
                         </Button>
@@ -255,6 +282,12 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                 open={isDebugInformationDialogOpen}
                 onClose={() => {
                     setDebugInformationDialogOpen(false);
+                }}
+            />
+            <SoftwareBillOfMaterialsDialog
+                open={isSoftwareBillOfMaterialsDialogOpen}
+                onClose={() => {
+                    setSoftwareBillOfMaterialsDialogOpen(false);
                 }}
             />
         </>
