@@ -148,7 +148,7 @@ export function Login() {
                             variant="h4"
                             component="p"
                             sx={{
-                                maxWidth: '24rem',
+                                maxWidth: '20rem',
                                 color: '#733635',
                                 lineHeight: 1.4,
                             }}

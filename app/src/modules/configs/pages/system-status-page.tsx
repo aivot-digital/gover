@@ -18,7 +18,7 @@ export function SystemStatusPage() {
 
             <Paper
                 sx={{
-                    marginTop: 3.5,
+                    marginTop: 2.75,
                     padding: 2,
                 }}
             >

@@ -573,8 +573,7 @@ export function ThemeDetailsPageIndex() {
                         wrapperSx={{marginLeft: 'auto'}}
                     >
                         <Button
-                            variant="outlined"
-                            color="info"
+                            variant="text"
                             startIcon={<StarOutlined />}
                             disabled={setDefaultThemeActionDisabled}
                             onClick={() => {
