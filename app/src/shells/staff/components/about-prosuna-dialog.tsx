@@ -6,7 +6,6 @@ import HistoryIcon from '@aivot/mui-material-symbols-400-n25-outlined/History';
 import ApiIcon from '@aivot/mui-material-symbols-400-n25-outlined/Api';
 import Inventory2Icon from '@aivot/mui-material-symbols-400-n25-outlined/Inventory2';
 import React from 'react';
-import {AppInfo} from '../../../app-info';
 import {createApiPath} from '../../../utils/url-path-utils';
 import {DebugInformationDialog} from '../../../dialogs/debug-information-dialog/debug-information-dialog';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
@@ -14,6 +13,7 @@ import {ProsunaLogo} from '../../../components/prosuna-logo/prosuna-logo';
 import {
     SoftwareBillOfMaterialsDialog,
 } from '../../../dialogs/software-bill-of-materials-dialog/software-bill-of-materials-dialog';
+import {getAppVersionLabel} from '../../../utils/app-info-utils';
 
 interface AboutProsunaDialogProps {
     open: boolean;
@@ -135,7 +135,7 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                     p: 4, textAlign: 'center',
                 }}>
                     <Typography variant="h2" fontWeight={600} sx={{ mb: 2 }}>
-                        Über Prosuna Version {AppInfo.version === '@buildVersion' ? '5.x (DEV)' : AppInfo.version}
+                        Über Prosuna Version {getAppVersionLabel()}
                     </Typography>
 
                     <Typography

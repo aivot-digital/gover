@@ -7,8 +7,10 @@ import {
     addSnackbarMessage,
     type ErrorMessage,
     selectErrorMessage,
+    selectShowAboutProsunaDialog,
     selectStatus,
     setErrorMessage,
+    setShowAboutProsunaDialog,
     setStatus,
     ShellStatus,
     SnackbarSeverity,
@@ -47,12 +49,14 @@ import {
     PERMISSION_SET_INVALIDATION_KEY,
     useRefreshPermissionSet,
 } from '../../modules/permissions/hooks/use-permissions';
+import {AboutProsunaDialog} from './components/about-prosuna-dialog';
 
 export function StaffShell(): ReactNode {
     const routerError = useRouteError();
     const dispatch = useAppDispatch();
     const status = useAppSelector(selectStatus);
     const appError = useAppSelector(selectErrorMessage);
+    const showAboutProsunaDialog = useAppSelector(selectShowAboutProsunaDialog);
     const user = useAppSelector(selectUser);
     const refreshPermissionSet = useRefreshPermissionSet();
     const contentContainerRef = useRef<HTMLElement>(null);
@@ -229,6 +233,10 @@ export function StaffShell(): ReactNode {
                     <ShellResolutionOverlay/>
                     <PreReleaseVersionNoticeDialog/>
                     <DuplicatePageWarning/>
+                    <AboutProsunaDialog
+                        open={showAboutProsunaDialog}
+                        onClose={() => dispatch(setShowAboutProsunaDialog(false))}
+                    />
                 </>
             }
         </>

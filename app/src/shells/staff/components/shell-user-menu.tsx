@@ -14,10 +14,10 @@ import HeadsetMicOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Hea
 import InfoOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import Logout from '@aivot/mui-material-symbols-400-n25-outlined/Logout';
 import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
-import {AppInfo} from '../../../app-info';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {setShowAboutProsunaDialog} from '../../../slices/shell-slice';
 import {StringAvatar} from '../../../components/avatar/string-avatar';
+import {getAboutProsunaLabel} from '../../../utils/app-info-utils';
 
 interface ShellUserMenuProps {
     anchorEl: null | HTMLElement;
@@ -199,8 +199,7 @@ export function ShellUserMenu({
                     <ListItemIcon>
                         <InfoOutlined fontSize="small"/>
                     </ListItemIcon>
-                    <Typography variant="body1">Über Prosuna
-                                                v{AppInfo.version === '@buildVersion' ? '5.x (DEV)' : AppInfo.version}</Typography>
+                    <Typography variant="body1">{getAboutProsunaLabel()}</Typography>
                 </MenuItem>
 
                 <Divider sx={{my: 1}}/>

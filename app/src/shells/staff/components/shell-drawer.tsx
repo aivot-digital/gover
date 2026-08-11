@@ -26,9 +26,7 @@ import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {
     selectMinimizeDrawer,
-    selectShowAboutProsunaDialog,
     setMinimizeDrawer,
-    setShowAboutProsunaDialog,
     setShowSearchDialog,
 } from '../../../slices/shell-slice';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
@@ -48,7 +46,6 @@ import PageInfo from '@aivot/mui-material-symbols-400-n25-outlined/PageInfo';
 import ShellDrawerLogo from './shell-drawer-logo';
 import ShellDrawerUserIcon from './shell-drawer-user-icon';
 import SimpleBar from 'simplebar-react';
-import {AboutProsunaDialog} from './about-prosuna-dialog';
 import {ShellNotificationsMenu} from './shell-notifications-menu';
 import Api from '@aivot/mui-material-symbols-400-n25-outlined/Api';
 import ApiFilled from '@aivot/mui-material-symbols-400-n25-outlined/ApiFilled';
@@ -347,7 +344,6 @@ export function ShellDrawer() {
     const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [notificationsAnchorEl, setNotificationsAnchorEl] = useState<null | HTMLElement>(null);
     const [showBlockedMsg, setShowBlockedMsg] = useState(false);
-    const showAboutProsunaDialog = useAppSelector(selectShowAboutProsunaDialog) ?? false;
     const [assetStorageProviderItems, setAssetStorageProviderItems] = useState<DrawerItem[]>([]);
     const [isLoadingAssetStorageProviders, setIsLoadingAssetStorageProviders] = useState(true);
     const [assignedTaskCount, setAssignedTaskCount] = useState<number | null>(null);
@@ -812,11 +808,6 @@ export function ShellDrawer() {
                 autoHideDuration={3000}
                 onClose={() => setShowBlockedMsg(false)}
                 message="Menü kann nicht maximiert werden: Fenster/Bildschirm zu klein."
-            />
-
-            <AboutProsunaDialog
-                open={showAboutProsunaDialog}
-                onClose={() => dispatch(setShowAboutProsunaDialog(false))}
             />
         </>
     );
