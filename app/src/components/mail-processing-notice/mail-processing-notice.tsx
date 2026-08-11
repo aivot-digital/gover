@@ -22,7 +22,7 @@ export function MailProcessingNotice() {
             </Typography>
             <Typography sx={{mt: 1, mb: 1.5}}>
                 Um Zustellprobleme zu vermeiden, empfehlen wir, die für Prosuna konfigurierte E-Mail-Absenderadresse in
-                die <b>Whitelist</b> Ihrer E-Mail-Konfiguration aufzunehmen. Falls Sie keine E-Mails erhalten,
+                die <b>Allowlist</b> Ihrer E-Mail-Konfiguration aufzunehmen. Falls Sie keine E-Mails erhalten,
                 überprüfen Sie bitte auch Ihren Spam-Ordner oder kontaktieren Sie Ihre E-Mail-Administrator:in.
             </Typography>
 
