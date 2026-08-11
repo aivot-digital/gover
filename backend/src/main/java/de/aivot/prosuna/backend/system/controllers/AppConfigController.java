@@ -65,6 +65,7 @@ public class AppConfigController {
     private static final String LOGO_URL_CONFIG_KEY = "logoUrl";
     private static final String API_HOSTNAME_CONFIG_KEY = "apiHostname";
     private static final String REGISTRY_HOSTNAME_CONFIG_KEY = "registryHostname";
+    private static final String SUPPORT_URL_CONFIG_KEY = "supportUrl";
     private static final String SENTRY_DSN = "sentryDsn";
     private static final String APPLICATION_TIMEZONE_CONFIG_KEY = "applicationTimeZone";
     private static final String DEPARTMENT_LEVEL_LABELS_CONFIG_KEY = "departmentLevelLabels";
@@ -113,6 +114,7 @@ public class AppConfigController {
 
         appConfig.put(API_HOSTNAME_CONFIG_KEY, prosunaConfig.getProsunaHostname());
         appConfig.put(REGISTRY_HOSTNAME_CONFIG_KEY, prosunaConfig.getRegistryHostname());
+        appConfig.put(SUPPORT_URL_CONFIG_KEY, prosunaConfig.getSupportUrl());
         appConfig.put(SENTRY_DSN, prosunaConfig.getSentryWebApp());
         appConfig.put(APPLICATION_TIMEZONE_CONFIG_KEY, ApplicationTimeZone.getZoneIdValue());
         appConfig.put(DEPARTMENT_LEVEL_LABELS_CONFIG_KEY, prosunaConfig.getDepartmentLevelLabels());

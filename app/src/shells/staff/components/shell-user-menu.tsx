@@ -35,9 +35,10 @@ export function ShellUserMenu({
     const userName = useMemo(() => getFullName(user), [user]);
     const open = Boolean(anchorEl);
     const dispatch = useAppDispatch();
+    const supportUrl = AppConfig.supportUrl;
 
     const handleExternalLink = (url: string) => {
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
         onClose();
     };
 
@@ -167,24 +168,26 @@ export function ShellUserMenu({
                     </Box>
                 </MenuItem>
 
-                {/* Support */}
-                <MenuItem onClick={() => handleExternalLink('https://support.aivot.de')}>
-                    <ListItemIcon>
-                        <HeadsetMicOutlined fontSize="small"/>
-                    </ListItemIcon>
-                    <Box sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                    }}>
-                        <Typography variant="body1">Supportportal</Typography>
-                        <OpenInNew fontSize="inherit"
-                                   sx={{
-                                       fontSize: '1rem',
-                                       opacity: 0.6,
-                                   }}/>
-                    </Box>
-                </MenuItem>
+                {/* Support is deployment-specific and remains hidden when no destination is configured. */}
+                {supportUrl && (
+                    <MenuItem onClick={() => handleExternalLink(supportUrl)}>
+                        <ListItemIcon>
+                            <HeadsetMicOutlined fontSize="small"/>
+                        </ListItemIcon>
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                        }}>
+                            <Typography variant="body1">Support</Typography>
+                            <OpenInNew fontSize="inherit"
+                                       sx={{
+                                           fontSize: '1rem',
+                                           opacity: 0.6,
+                                       }}/>
+                        </Box>
+                    </MenuItem>
+                )}
 
                 {/* Über Prosuna */}
                 <MenuItem

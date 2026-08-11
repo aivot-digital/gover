@@ -193,6 +193,7 @@ services:
       PROSUNA_ENVIRONMENT: "{{ SENTRY_ENVIRONMENT }}" # Setzen Sie die Umgebung für Sentry. Diese wird verwendet, um Fehlermeldungen in Sentry zu gruppieren. Passen Sie diese Umgebung unbedingt an. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
 
       PROSUNA_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse inklusive Protokoll und Hostname unter der die Prosuna-Anwendung erreichbar ist. Passen Sie diese Adresse unbedingt an.
+      PROSUNA_SUPPORT_URL: "{{ PROSUNA_SUPPORT_URL }}" # Optionaler Link zu einem Support-Angebot. Ohne Wert wird der Support-Link in Prosuna ausgeblendet.
       PROSUNA_TIMEZONE: "{{ PROSUNA_TIMEZONE }}" # Setzen Sie die fachliche Zeitzone der Prosuna-Anwendung, z. B. Europe/Berlin. Passen Sie diese Zeitzone unbedingt an. Dieser Wert muss mit PGTZ der Prosuna-Datenbank übereinstimmen.
       PROSUNA_DEPARTMENT_LEVEL_LABELS: "Organisation, Bereich, Abteilung, Sachgebiet, Arbeitsbereich" # Setzen Sie die kommagetrennten Bezeichnungen der Hierarchieebenen für Organisationseinheiten. Die Anzahl der Einträge bestimmt die maximal mögliche Anzahl an Ebenen. Entfernen Sie diese Variable oder lassen Sie sie leer, um den Standard zu verwenden.
       PROSUNA_SECRETS_KEY: "{{ PROSUNA_SECRETS_KEY }}" # Setzen Sie den geheimen Schlüssel für die Verschlüsselung der Daten. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein.

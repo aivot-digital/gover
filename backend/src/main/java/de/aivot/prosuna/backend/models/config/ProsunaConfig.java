@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.models.config;
 
 import de.aivot.prosuna.backend.core.enums.ModuleFlags;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import jakarta.annotation.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +30,7 @@ public class ProsunaConfig {
     private Integer maxSubmissionCopyRetryCount;
     private List<String> bootstrapAdminMail;
     private String registryHostname;
+    private String supportUrl;
     private String timezone;
 
     private Map<ProcessNodeType, Integer> processNodeLimits;
@@ -170,6 +172,31 @@ public class ProsunaConfig {
     public ProsunaConfig setRegistryHostname(String registryHostname) {
         this.registryHostname = registryHostname;
         return this;
+    }
+
+    @Nullable
+    public String getSupportUrl() {
+        return supportUrl;
+    }
+
+    public void setSupportUrl(@Nullable String supportUrl) {
+        if (supportUrl == null || supportUrl.isBlank()) {
+            this.supportUrl = null;
+            return;
+        }
+
+        URI uri;
+        try {
+            uri = URI.create(supportUrl.trim());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("PROSUNA_SUPPORT_URL must be a valid absolute HTTP(S) URL", exception);
+        }
+
+        if (!uri.isAbsolute() || uri.getHost() == null ||
+                !("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))) {
+            throw new IllegalArgumentException("PROSUNA_SUPPORT_URL must be a valid absolute HTTP(S) URL");
+        }
+        this.supportUrl = uri.toString();
     }
 
     public String getTimezone() {

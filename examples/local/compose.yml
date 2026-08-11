@@ -42,6 +42,7 @@ services:
       PROSUNA_SECRETS_KEY: ${PROSUNA_SECRETS_KEY}
       PROSUNA_CAPTCHA_KEY: ${PROSUNA_CAPTCHA_KEY}
       PROSUNA_HOSTNAME: http://localhost:9595
+      PROSUNA_SUPPORT_URL: https://support.aivot.de
       PROSUNA_TIMEZONE: Europe/Berlin
       PROSUNA_FROM_MAIL: mail@example.com
       PROSUNA_REPORT_MAIL: mail@example.com

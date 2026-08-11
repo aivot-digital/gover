@@ -23,6 +23,7 @@ declare var AppConfig: {
     logoUrl: string;
     apiHostname: string;
     registryHostname: string;
+    supportUrl: string | null;
     applicationTimeZone: string;
     departmentLevelLabels: string[];
     sentryDsn: string;

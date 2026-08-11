@@ -213,6 +213,7 @@ prosuna:
   maxSubmissionCopyRetryCount: 3
   bootstrapAdminMail: "${PROSUNA_BOOTSTRAP_ADMIN_MAIL:}"
   registryHostname: "${PROSUNA_TEMPLATE_REGISTRY_URL:}"
+  supportUrl: "${PROSUNA_SUPPORT_URL:}"
   moduleFlags: "${PROSUNA_MODULE_FLAGS:form,process,portal}"
   processNodeLimits:
     trigger: "${PROSUNA_PROCESS_NODE_LIMITS_TRIGGERS:1}"

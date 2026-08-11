@@ -53,6 +53,7 @@ Object.defineProperty(globalThis, 'AppConfig', {
         logoUrl: '',
         apiHostname: 'http://localhost',
         registryHostname: 'http://localhost',
+        supportUrl: null,
         applicationTimeZone: 'Europe/Berlin',
         departmentLevelLabels: [],
         sentryDsn: '',
