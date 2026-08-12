@@ -336,6 +336,8 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                                     width: 2,
                                     bottom: `-${ELEMENT_TREE_LAYOUT.gapPx + 2}px`,
                                     bgcolor: 'background.paper',
+                                    // Match the effective Paper surface in dark mode, including its elevation overlay.
+                                    backgroundImage: 'var(--Paper-overlay)',
                                     zIndex: 2,
                                 }}
                             />

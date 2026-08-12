@@ -301,6 +301,8 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                     height: 24,
                     width: 24,
                     backgroundColor: 'background.paper',
+                    // Match the effective Paper surface in dark mode, including its elevation overlay.
+                    backgroundImage: 'var(--Paper-overlay)',
                     borderRadius: '50%',
                     transform: 'scale(1.25)',
                 }}
