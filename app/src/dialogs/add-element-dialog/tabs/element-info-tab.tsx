@@ -714,7 +714,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                         borderRadius: 1,
                         border: '1px dashed',
                         borderColor: 'divider',
-                        bgcolor: 'grey.50',
+                        bgcolor: 'action.hover',
                     }}
                 />
                 <Typography variant="body2">Weitere Hinweise</Typography>
@@ -749,7 +749,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     overflow: 'hidden',
                 }}
             >
-                <Box sx={{display: 'grid', gridTemplateColumns: '1.4fr 1fr', bgcolor: 'grey.100'}}>
+                <Box sx={{display: 'grid', gridTemplateColumns: '1.4fr 1fr', bgcolor: 'action.selected'}}>
                     <Typography sx={{px: 1.5, py: 1}}
                                 fontWeight={700}>Bezeichnung</Typography>
                     <Typography sx={{px: 1.5, py: 1}}
@@ -1251,7 +1251,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     border: '1px solid',
                     borderColor: 'divider',
                     borderRadius: 2,
-                    bgcolor: 'grey.50',
+                    bgcolor: 'action.hover',
                     fontFamily: 'Monaco, monospace',
                     fontSize: 14,
                 }}

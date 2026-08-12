@@ -52,14 +52,15 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
                     mt={1}
                 >
                     {IconComponent && (
-                        <Tooltip title={iconLabel}>
+                        <Tooltip title={iconLabel} arrow>
                             <Box
                                 sx={{
                                     border: '1px solid',
-                                    borderColor: 'grey.300',
+                                    borderColor: 'divider',
                                     borderRadius: 1,
                                     p: 1,
-                                    backgroundColor: 'grey.50',
+                                    backgroundColor: 'action.selected',
+                                    color: 'text.secondary',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',

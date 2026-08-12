@@ -317,8 +317,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             aspectRatio: '1 / 1',
                             flexShrink: 0,
                             borderRadius: '50%',
-                            bgcolor: 'grey.100',
-                            color: (theme) => theme.palette.getContrastText(theme.palette.grey[100]),
+                            bgcolor: 'action.selected',
+                            color: 'text.secondary',
                         }}
                     >
                         <AccountTree/>

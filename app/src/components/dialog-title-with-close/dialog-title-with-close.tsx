@@ -1,4 +1,4 @@
-import {Box, DialogTitle, DialogTitleProps, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
+import {Box, DialogTitle, DialogTitleProps, IconButton, Tooltip, Typography} from '@mui/material';
 import React from 'react';
 import CloseOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import {Action} from '../actions/actions-props';
@@ -13,7 +13,6 @@ interface DialogTitleWithCloseProps extends DialogTitleProps {
 }
 
 export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
-    const theme = useTheme();
     const {
         children,
         onClose,
@@ -30,7 +29,8 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
                 p: 2,
                 pl: 2.8,
                 pr: onClose != null ? 8 : 2,
-                borderBottom: props.bordered ? `1px solid ${theme.palette.grey[300]}` : 'none',
+                borderBottom: props.bordered ? '1px solid' : 'none',
+                borderBottomColor: props.bordered ? 'divider' : undefined,
                 display: 'flex',
                 justifyContent: 'space-between',
             }}
@@ -65,7 +65,7 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
                             position: 'absolute',
                             right: 10,
                             top: 8,
-                            color: (theme) => theme.palette.grey[500],
+                            color: 'text.secondary',
                         }}
                     >
                         <CloseOutlinedIcon

@@ -947,10 +947,10 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
                             width: 42,
                             height: 42,
                             borderRadius: '50%',
-                            bgcolor: isAction ? 'primary.main' : 'grey.100',
+                            bgcolor: isAction ? 'primary.main' : 'action.selected',
                             color: (theme) => isAction
                                 ? theme.palette.primary.contrastText
-                                : theme.palette.getContrastText(theme.palette.grey[100]),
+                                : theme.palette.text.secondary,
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1063,8 +1063,8 @@ function SummaryIcon(props: {children?: ReactNode}): ReactNode {
                 width: 34,
                 height: 34,
                 borderRadius: '50%',
-                bgcolor: 'grey.100',
-                color: (theme) => theme.palette.getContrastText(theme.palette.grey[100]),
+                bgcolor: 'action.selected',
+                color: 'text.secondary',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
