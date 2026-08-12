@@ -10,6 +10,7 @@ import {GenericPageHeader} from '../../../components/generic-page-header/generic
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 
 function getGreeting(hour: number): string {
+    if (hour >= 23 || hour < 4) return 'Willkommen zu später Stunde';
     if (hour >= 4 && hour < 11) return 'Guten Morgen';
     if (hour >= 11 && hour < 18) return 'Guten Tag';
     return 'Guten Abend';
