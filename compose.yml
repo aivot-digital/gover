@@ -99,8 +99,9 @@ services:
       KC_SPI_EGOV_BUNDID_DISPLAY_NAME: "{{ ORG_NAME }}" # Setzen Sie den Namen Ihrer Organisation. Dieser Name wird an den BundID-Service übermittelt. Der Name sollte nicht mehr als 50 Zeichen enthalten.
 
       KC_SPI_EGOV_BAYERNID_ONLINE_SERVICE_ID: "{{ ONLINE_SERVICE_ID }}" # Setzen Sie die ID, die Sie von der BayernID erhalten haben. Diese ID wird an den BayernID-Service übermittelt.
-      KC_SPI_EGOV_BAYERNID_SP_NAME: Online-Antrags-Management
-      KC_SPI_EGOV_BAYERNID_SP_DESCRIPTION: Online-Antrags-Management
+      # Name und Beschreibung werden in den SAML-Metadaten der BayernID-Anbindung veröffentlicht. Passen Sie die Werte an Ihre konkrete Bereitstellung an.
+      KC_SPI_EGOV_BAYERNID_SP_NAME: "Digitale Verwaltungsleistungen"
+      KC_SPI_EGOV_BAYERNID_SP_DESCRIPTION: "Zugang zu digitalen Formularen und Verwaltungsleistungen"
       KC_SPI_EGOV_BAYERNID_ORG_NAME: "{{ ORG_NAME }}" # Setzen Sie den Namen Ihrer Organisation. Dieser Name wird an den BayernID-Service übermittelt. Der Name sollte nicht mehr als 50 Zeichen enthalten.
       KC_SPI_EGOV_BAYERNID_ORG_DESCRIPTION: "{{ ORG_DESCRIPTION }}" # Setzen Sie die Beschreibung Ihrer Organisation. Diese Beschreibung wird an den BayernID-Service übermittelt. Die Beschreibung sollte nicht mehr als 50 Zeichen enthalten.
       KC_SPI_EGOV_BAYERNID_ORG_URL: "{{ ORG_WEBSITE }}" # Setzen Sie die Website Ihrer Organisation. Diese Website wird an den BayernID-Service übermittelt.
