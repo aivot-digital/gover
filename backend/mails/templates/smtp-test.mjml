@@ -1,4 +1,4 @@
-<mjml>
+<mjml lang="de">
     <mj-head>
         <mj-include path="../partials/head.mjml"/>
 
@@ -59,15 +59,27 @@
                         </li>
                     </ul>
 
-                    <p>
-                        <b>Datenschutzhinweis:</b> Externe Prüfdienste erhalten die an ihre
-                        Testadresse gesendete E-Mail einschließlich ihrer technischen Header.
-                        Verwenden Sie dafür keine sensiblen oder personenbezogenen Inhalte.
-                    </p>
                 </mj-text>
+
+                <mj-table cellpadding="0"
+                          cellspacing="0"
+                          font-size="15px"
+                          line-height="22px"
+                          padding="8px 0 0"
+                          width="100%">
+                    <tr>
+                        <td style="background-color:#f5f6f7;border-left:4px solid #9aa0a6;color:#242424;padding:16px;">
+                            <b>Wichtiger Hinweis: Datenschutz</b><br/>
+                            Externe Prüfdienste erhalten die an ihre Testadresse gesendete E-Mail
+                            einschließlich ihrer technischen Header. Verwenden Sie dafür keine
+                            sensiblen oder personenbezogenen Inhalte.
+                        </td>
+                    </tr>
+                </mj-table>
             </mj-column>
         </mj-section>
 
+        <mj-include path="../partials/default-mail-signature.mjml"/>
         <mj-include path="../partials/auto-generate-hint.mjml"/>
     </mj-body>
 </mjml>

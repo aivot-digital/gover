@@ -23,8 +23,15 @@ externen Prüfdienst bereitgestellte Testadresse verwenden:
 - MXToolbox Email Health prüft die Domain-, DNS- und Mailserver-Konfiguration:
   https://mxtoolbox.com/emailhealth
 
-Datenschutzhinweis: Externe Prüfdienste erhalten die an ihre Testadresse gesendete E-Mail
+Wichtiger Hinweis: Datenschutz
+
+Externe Prüfdienste erhalten die an ihre Testadresse gesendete E-Mail
 einschließlich ihrer technischen Header. Verwenden Sie dafür keine sensiblen oder
 personenbezogenen Inhalte.
 
-Diese E-Mail ist automatisch generiert. Bitte nicht antworten.
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

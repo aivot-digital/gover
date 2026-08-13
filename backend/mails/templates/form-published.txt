@@ -8,6 +8,12 @@ Entwickelnde Organisationseinheit: [(${developingDepartment != null ? developing
 [(${managingDepartment != null ? 'Bewirtschaftende Organisationseinheit: ' + managingDepartment.name : ''})]
 Veröffentlicht durch: [(${triggeringUser.getFullName})]
 
-Sie können das Formular über den nachfolgenden Link aufrufen: [(${base.config.createUrl('/' + form.slug)})]
+Formular öffnen:
+[(${base.config.createUrl('/' + form.slug)})]
 
-Diese E-Mail ist automatisch generiert. Bitte nicht antworten.
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

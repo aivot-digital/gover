@@ -1,9 +1,15 @@
-<mj-section>
+<mj-section padding="32px 32px 28px">
     <mj-column>
-        <mj-text>
+        <mj-divider padding="0 0 20px"/>
+
+        <mj-text css-class="email-footer"
+                 color="#5f6368"
+                 font-size="13px"
+                 line-height="19px"
+                 padding="0">
             <p>
-                Diese E-Mail wurde automatisch generiert.
-                Bitte nicht darauf antworten.
+                Diese Nachricht wurde automatisch versendet.
+                Bitte nicht auf diese E-Mail antworten.
             </p>
         </mj-text>
     </mj-column>

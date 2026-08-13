@@ -7,4 +7,9 @@ Entwickelnde Organisationseinheit: [(${developingDepartment != null ? developing
 [(${managingDepartment != null ? 'Bewirtschaftende Organisationseinheit: ' + managingDepartment.name : ''})]
 Gelöscht durch: [(${triggeringUser.getFullName})]
 
-Diese E-Mail ist automatisch generiert. Bitte nicht antworten.
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

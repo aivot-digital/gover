@@ -1,4 +1,4 @@
-<mjml>
+<mjml lang="de">
     <mj-head>
         <mj-include path="../partials/head.mjml"/>
 
@@ -18,38 +18,38 @@
                         es ist ein Fehler aufgetreten am Host <b th:text="${base.config.prosunaHostname}">https://prosuna.de</b>.
                     </p>
 
-                    <div th:if="${additionalContext != null}">
-                        <p>
-                            Weitere Informationen:
-                        </p>
+                    <h2>Fehlermeldung</h2>
 
-                        <table>
+                    <div style="background-color:#f5f6f7;border-left:4px solid #9aa0a6;padding:16px;word-break:break-word;">
+                        <span th:text="${message}">Beispiel-Fehlermeldung</span>
+                    </div>
+
+                    <div th:if="${additionalContext != null && !additionalContext.isEmpty()}">
+                        <h2>Weitere Informationen</h2>
+
+                        <table cellpadding="0"
+                               cellspacing="0"
+                               style="border-collapse:collapse;font-size:14px;line-height:20px;width:100%;">
                             <tbody>
                                 <tr th:each="entryKey : ${additionalContext.entrySet()}">
-                                    <td th:text="${entryKey.key}">Key</td>
-                                    <td th:text="${entryKey.value}">Value</td>
+                                    <th scope="row"
+                                        style="border-bottom:1px solid #e5e7eb;color:#5f6368;font-weight:normal;padding:8px 16px 8px 0;text-align:left;vertical-align:top;width:38%;"
+                                        th:text="${entryKey.key}">Schlüssel</th>
+                                    <td style="border-bottom:1px solid #e5e7eb;color:#242424;padding:8px 0;vertical-align:top;word-break:break-word;"
+                                        th:text="${entryKey.value}">Wert</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <p>
-                        Die Fehlernachricht lautet:
-                        <br/>
-                        <b th:text="${message}">Message</b>
-                    </p>
+                    <h2>Stacktrace</h2>
 
-                    <p>
-                        Der StackTrace zum Fehler:
-                    </p>
-
-                    <pre>
-                        <code th:text="${stackTrace}">StackTrace</code>
-                    </pre>
+                    <pre style="background-color:#f5f6f7;font-family:Courier New, monospace;font-size:12px;line-height:18px;margin:0;overflow-wrap:anywhere;padding:16px;white-space:pre-wrap;word-break:break-word;"><code th:text="${stackTrace}">Stacktrace</code></pre>
                 </mj-text>
             </mj-column>
         </mj-section>
 
+        <mj-include path="../partials/default-mail-signature.mjml"/>
         <mj-include path="../partials/auto-generate-hint.mjml"/>
     </mj-body>
 </mjml>

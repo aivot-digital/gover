@@ -1,6 +1,12 @@
-<mjml>
+<mjml lang="de">
     <mj-head>
         <mj-include path="../partials/head.mjml"/>
+
+        <mj-html-attributes>
+            <mj-selector path=".primary-action a">
+                <mj-html-attribute name="th:href">${base.config.createUrl('/staff/submissions/' + submission.id)}</mj-html-attribute>
+            </mj-selector>
+        </mj-html-attributes>
 
         <mj-preview>
             Mitteilung zur Neuzuweisung eines Antrages
@@ -33,17 +39,18 @@
                         Zugewiesen durch:
                         <b th:text="${triggeringUser.getFullName}">Erika Musterfrau</b>
                     </p>
-
-                    <p>
-                        Sie können den Antrag über den nachfolgenden Link aufrufen:
-                        <a th:href="${base.config.createUrl('/staff/submissions/' + submission.id)}"
-                           th:text="${base.config.createUrl('/staff/submissions/' + submission.id)}">Beispiel-Link
-                        </a>
-                    </p>
                 </mj-text>
+
+                <mj-button align="left"
+                           css-class="primary-action"
+                           href="#"
+                           padding="24px 0 0">
+                    Antrag öffnen
+                </mj-button>
             </mj-column>
         </mj-section>
 
+        <mj-include path="../partials/default-mail-signature.mjml"/>
         <mj-include path="../partials/auto-generate-hint.mjml"/>
     </mj-body>
 </mjml>
