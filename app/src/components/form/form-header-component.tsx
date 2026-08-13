@@ -27,6 +27,7 @@ import {ProcessEntity} from '../../modules/process/entities/process-entity';
 import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
 import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
 import {resolveAccessibleForeground} from '../../theming/resolve-appearance-colors';
+import {ColorModePicker} from '../color-mode-picker/color-mode-picker';
 
 interface FormHeaderComponentProps {
     form: FormLayoutElement;
@@ -34,6 +35,7 @@ interface FormHeaderComponentProps {
     process: ProcessEntity;
     version: ProcessVersionEntity;
     logoUrl: string | null;
+    logoUrlDark: string | null;
     onDeleteFormData: () => void;
 }
 
@@ -44,6 +46,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
         process,
         version,
         logoUrl,
+        logoUrlDark,
         onDeleteFormData,
     } = props;
 
@@ -61,11 +64,13 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
 
     const [logoStatus, setLogoStatus] = useState<'loading' | 'failed' | 'present'>('loading');
 
-    useEffect(() => {
-        setLogoStatus(logoUrl == null ? 'failed' : 'loading');
-    }, [logoUrl]);
+    const resolvedLogoUrl = theme.palette.mode === 'dark' ? logoUrlDark ?? logoUrl : logoUrl;
 
-    const hasVisibleLogo = logoUrl != null && logoStatus === 'present';
+    useEffect(() => {
+        setLogoStatus(resolvedLogoUrl == null ? 'failed' : 'loading');
+    }, [resolvedLogoUrl]);
+
+    const hasVisibleLogo = resolvedLogoUrl != null && logoStatus === 'present';
 
     return (
         <Box
@@ -102,11 +107,12 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                             }}
                         >
                             {
-                                logoUrl != null &&
+                                resolvedLogoUrl != null &&
                                 <Logo
-                                    key={'logo-' + logoUrl}
+                                    key={'logo-' + resolvedLogoUrl}
                                     updated={version.updated}
-                                    src={logoUrl}
+                                    src={logoUrl ?? undefined}
+                                    srcDark={logoUrlDark ?? undefined}
                                     width={200}
                                     height={100}
                                     onStatusChange={setLogoStatus}
@@ -180,6 +186,11 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                                     />
                                 </IconButton>
                             </Tooltip>
+
+                            <ColorModePicker
+                                color="primary"
+                                iconFontSize="large"
+                            />
 
                             <Tooltip
                                 title="Weitere Optionen"

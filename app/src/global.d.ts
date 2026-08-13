@@ -14,6 +14,7 @@ declare var AppConfig: {
         secondaryColorDark: string | null;
         faviconKey: string | null;
         logoKey: string | null;
+        logoKeyDark: string | null;
     };
     systemConfigs: {
         ProviderName: string;

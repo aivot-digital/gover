@@ -11,7 +11,6 @@ import {
     ListItemButton,
     ListItemIcon,
     ListItemText,
-    ListSubheader,
     Menu,
     MenuItem,
     Paper,
@@ -69,17 +68,10 @@ import {AssetsApiService} from '../../../modules/assets/assets-api-service';
 import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
 import {hasModuleFlag, ModuleFlag} from '../../../utils/module-flags';
 import {alpha, type Theme as MuiTheme} from '@mui/material/styles';
-import Check from '@aivot/mui-material-symbols-400-n25-outlined/Check';
-import Contrast from '@aivot/mui-material-symbols-400-n25-outlined/Contrast';
-import DarkMode from '@aivot/mui-material-symbols-400-n25-outlined/DarkMode';
-import LightMode from '@aivot/mui-material-symbols-400-n25-outlined/LightMode';
 import DashboardCustomize from '@aivot/mui-material-symbols-400-n25-outlined/DashboardCustomize';
-import {
-    type ColorModePreference,
-    useColorMode,
-} from '../../../providers/color-mode-context';
 import {createAppTheme} from '../../../theming/themes';
 import {BaseTheme} from '../../../theming/base-theme';
+import {ColorModePicker} from '../../../components/color-mode-picker/color-mode-picker';
 
 export const COLLAPSED_DRAWER_WIDTH_REM = '4.25rem';
 export const EXPANDED_DRAWER_WIDTH_REM = '16.25rem';
@@ -766,7 +758,13 @@ export function ShellDrawer() {
                                         width: minimizeDrawer ? 'auto' : '100%',
                                     }}
                                 >
-                                    <ColorModeMenuButton minimizeDrawer={minimizeDrawer}/>
+                                    <ColorModePicker
+                                        showLabel={!minimizeDrawer}
+                                        placement={minimizeDrawer ? 'right-end' : 'top-end'}
+                                        tooltipPlacement="right"
+                                        iconFontSize="small"
+                                        size="small"
+                                    />
                                     <Actions
                                         sx={{
                                             flex: 0,
@@ -1389,142 +1387,6 @@ function DrawerNavigationIcon({
                 {item.activeIcon}
             </Box>
         </Box>
-    );
-}
-
-
-const colorModeOptions: Array<{
-    value: ColorModePreference;
-    label: string;
-    shortLabel: string;
-}> = [
-    {
-        value: 'system',
-        label: 'System-Standard',
-        shortLabel: 'System',
-    },
-    {
-        value: 'light',
-        label: 'Hell',
-        shortLabel: 'Hell',
-    },
-    {
-        value: 'dark',
-        label: 'Dunkel',
-        shortLabel: 'Dunkel',
-    },
-];
-
-function ColorModeIcon({preference}: {preference: ColorModePreference}) {
-    switch (preference) {
-        case 'light':
-            return <LightMode fontSize="small"/>;
-        case 'dark':
-            return <DarkMode fontSize="small"/>;
-        default:
-            return <Contrast fontSize="small"/>;
-    }
-}
-
-function ColorModeMenuButton({minimizeDrawer}: {minimizeDrawer: boolean}) {
-    const {preference, setPreference} = useColorMode();
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-    const selectedOption = colorModeOptions.find((option) => option.value === preference) ?? colorModeOptions[0];
-    const open = anchorEl != null;
-
-    const button = (
-        <Button
-            id="color-mode-menu-button"
-            size="small"
-            color="inherit"
-            aria-label={`Farbmodus: ${selectedOption.label}`}
-            aria-controls={open ? 'color-mode-menu' : undefined}
-            aria-haspopup="menu"
-            aria-expanded={open ? 'true' : undefined}
-            onClick={(event) => setAnchorEl(event.currentTarget)}
-            startIcon={minimizeDrawer ? undefined : <ColorModeIcon preference={preference}/>}
-            endIcon={minimizeDrawer ? undefined : <KeyboardArrowDown/>}
-            sx={{
-                minWidth: minimizeDrawer ? 32 : 0,
-                width: minimizeDrawer ? 32 : 'auto',
-                px: minimizeDrawer ? 0 : 0.75,
-                color: 'text.secondary',
-                '& .MuiButton-startIcon': {
-                    ml: 0,
-                    mr: 0.5,
-                },
-                '& .MuiButton-endIcon': {
-                    ml: 0.25,
-                    mr: 0,
-                },
-                '&:hover': {
-                    color: 'text.primary',
-                    backgroundColor: 'action.hover',
-                },
-            }}
-        >
-            {minimizeDrawer ? <ColorModeIcon preference={preference}/> : selectedOption.shortLabel}
-        </Button>
-    );
-
-    return (
-        <>
-            {
-                minimizeDrawer
-                    ? <Tooltip title={`Farbmodus: ${selectedOption.label}`} placement="right">{button}</Tooltip>
-                    : button
-            }
-            <Menu
-                id="color-mode-menu"
-                anchorEl={anchorEl}
-                open={open}
-                onClose={() => setAnchorEl(null)}
-                anchorOrigin={minimizeDrawer
-                    ? {vertical: 'bottom', horizontal: 'right'}
-                    : {vertical: 'top', horizontal: 'right'}
-                }
-                transformOrigin={minimizeDrawer
-                    ? {vertical: 'bottom', horizontal: 'left'}
-                    : {vertical: 'bottom', horizontal: 'right'}
-                }
-                slotProps={{
-                    list: {
-                        'aria-labelledby': 'color-mode-menu-button',
-                    },
-                }}
-            >
-                <ListSubheader
-                    disableSticky
-                    sx={{
-                        pb: 0.75,
-                        lineHeight: 1.5,
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        letterSpacing: 0,
-                        color: 'text.secondary',
-                        backgroundColor: 'transparent',
-                    }}
-                >
-                    Farbmodus
-                </ListSubheader>
-                {colorModeOptions.map((option) => (
-                    <MenuItem
-                        key={option.value}
-                        selected={option.value === preference}
-                        onClick={() => {
-                            setPreference(option.value);
-                            setAnchorEl(null);
-                        }}
-                    >
-                        <ListItemIcon>
-                            <ColorModeIcon preference={option.value}/>
-                        </ListItemIcon>
-                        <ListItemText>{option.label}</ListItemText>
-                        {option.value === preference && <Check fontSize="small" sx={{ml: 1.5}}/>}
-                    </MenuItem>
-                ))}
-            </Menu>
-        </>
     );
 }
 

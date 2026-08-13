@@ -52,6 +52,7 @@ public class SystemService {
                 "#FF613A",
                 "#A0C9CB",
                 null,
+                null,
                 null
         );
     }

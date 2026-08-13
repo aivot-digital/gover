@@ -40,6 +40,10 @@ public class ThemeEntity {
 
     @Nullable
     @Column(columnDefinition = "uuid")
+    private UUID logoKeyDark;
+
+    @Nullable
+    @Column(columnDefinition = "uuid")
     private UUID faviconKey;
 
     // region Constructors
@@ -57,6 +61,7 @@ public class ThemeEntity {
                        @Nullable String primaryColorDark,
                        @Nullable String secondaryColorDark,
                        @Nullable UUID logoKey,
+                       @Nullable UUID logoKeyDark,
                        @Nullable UUID faviconKey) {
         this.id = id;
         this.name = name;
@@ -65,6 +70,7 @@ public class ThemeEntity {
         this.primaryColorDark = primaryColorDark;
         this.secondaryColorDark = secondaryColorDark;
         this.logoKey = logoKey;
+        this.logoKeyDark = logoKeyDark;
         this.faviconKey = faviconKey;
     }
 
@@ -138,6 +144,16 @@ public class ThemeEntity {
 
     public ThemeEntity setLogoKey(@Nullable UUID logoKey) {
         this.logoKey = logoKey;
+        return this;
+    }
+
+    @Nullable
+    public UUID getLogoKeyDark() {
+        return logoKeyDark;
+    }
+
+    public ThemeEntity setLogoKeyDark(@Nullable UUID logoKeyDark) {
+        this.logoKeyDark = logoKeyDark;
         return this;
     }
 

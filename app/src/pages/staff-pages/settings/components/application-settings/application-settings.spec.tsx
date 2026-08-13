@@ -76,6 +76,7 @@ const themes: ThemeResponseDTO[] = [
         secondaryColorDark: null,
         faviconKey: null,
         logoKey: null,
+        logoKeyDark: null,
     },
 ];
 

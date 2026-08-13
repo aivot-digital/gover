@@ -85,6 +85,7 @@ class ThemeServiceTest {
                 "#8EA9D1",
                 "#AEB3B8",
                 UUID.randomUUID(),
+                UUID.randomUUID(),
                 UUID.randomUUID()
         );
 
@@ -95,6 +96,7 @@ class ThemeServiceTest {
                 "#222222",
                 "#AAAAAA",
                 "#BBBBBB",
+                null,
                 null,
                 null
         );
@@ -109,6 +111,7 @@ class ThemeServiceTest {
         assertEquals("#AAAAAA", savedEntity.getPrimaryColorDark());
         assertEquals("#BBBBBB", savedEntity.getSecondaryColorDark());
         assertNull(savedEntity.getLogoKey());
+        assertNull(savedEntity.getLogoKeyDark());
         assertNull(savedEntity.getFaviconKey());
         verify(assetRepository, never()).existsById(any());
     }

@@ -22,6 +22,7 @@ export class ThemesApiService extends CrudApiService<ThemeRequestDTO, ThemeRespo
             secondaryColorDark: null,
             faviconKey: null,
             logoKey: null,
+            logoKeyDark: null,
         };
     }
 }

@@ -1,10 +1,11 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Box} from '@mui/material';
+import {Box, useTheme} from '@mui/material';
 import {createApiPath} from '../../utils/url-path-utils';
 
 interface LogoProps {
     updated?: string | null | undefined;
     src?: string;
+    srcDark?: string;
     width?: number;
     height?: number;
     onStatusChange?: (status: 'loading' | 'failed' | 'present') => void;
@@ -14,18 +15,24 @@ export function Logo(props: LogoProps) {
     const {
         updated,
         src,
+        srcDark,
         width,
         height,
+        onStatusChange,
     } = props;
+    const theme = useTheme();
 
     const [imageStatus, setImageStatus] = useState<'loading' | 'failed' | 'present'>('loading');
 
     useEffect(() => {
-        props.onStatusChange?.(imageStatus);
-    }, [imageStatus]);
+        onStatusChange?.(imageStatus);
+    }, [imageStatus, onStatusChange]);
 
     const url = useMemo(() => {
-        let url = src ?? createApiPath('/api/public/system/logo/');
+        const resolvedSrc = theme.palette.mode === 'dark' ? srcDark ?? src : src;
+        let url = resolvedSrc ?? createApiPath(
+            `/api/public/system/logo/${theme.palette.mode === 'dark' ? '?color-scheme=dark' : ''}`,
+        );
 
         if (updated == null) {
             return url;
@@ -37,7 +44,11 @@ export function Logo(props: LogoProps) {
             return `${url}&t=${t}`;
         }
         return `${url}?t=${t}`;
-    }, [src, updated]);
+    }, [src, srcDark, theme.palette.mode, updated]);
+
+    useEffect(() => {
+        setImageStatus('loading');
+    }, [url]);
 
     if (imageStatus === 'failed') {
         // empty Box is required so that the space is reserved in the footer

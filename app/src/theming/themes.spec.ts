@@ -110,6 +110,7 @@ describe('createAppTheme', () => {
             primaryColorDark: null,
             secondaryColorDark: null,
             logoKey: null,
+            logoKeyDark: null,
             faviconKey: null,
         }, BaseTheme);
         const buttonOverrides = theme.components?.MuiButton?.styleOverrides as Record<string, Record<string, unknown>>;
@@ -152,6 +153,7 @@ describe('createAppTheme', () => {
             primaryColorDark: null,
             secondaryColorDark: null,
             logoKey: null,
+            logoKeyDark: null,
             faviconKey: null,
         }, BaseTheme, 'dark');
         const buttonOverrides = theme.components?.MuiButton?.styleOverrides as Record<string, Record<string, unknown>>;
@@ -181,6 +183,7 @@ describe('createAppTheme', () => {
             primaryColorDark: '#8EA9D1',
             secondaryColorDark: '#B1B5BA',
             logoKey: null,
+            logoKeyDark: null,
             faviconKey: null,
         };
 

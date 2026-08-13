@@ -39,6 +39,9 @@ interface ImageSelectorProps {
     disabled?: boolean;
     required?: boolean;
     error?: string;
+    previewBackgroundColor?: string;
+    previewForegroundColor?: string;
+    previewBorderColor?: string;
 }
 
 export function ImageSelector(props: ImageSelectorProps) {
@@ -52,6 +55,9 @@ export function ImageSelector(props: ImageSelectorProps) {
         disabled,
         required,
         error,
+        previewBackgroundColor,
+        previewForegroundColor,
+        previewBorderColor,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -146,7 +152,9 @@ export function ImageSelector(props: ImageSelectorProps) {
     const fieldCursor = disabled ? 'default' : 'pointer';
     const primaryContentColor = disabled ? 'text.disabled' : 'text.primary';
     const secondaryContentColor = disabled ? 'text.disabled' : 'text.secondary';
-    const previewIconColor = disabled ? 'text.disabled' : hasImageFailed ? 'error.main' : 'action.active';
+    const previewIconColor = hasImageFailed
+        ? 'error.main'
+        : previewForegroundColor ?? (disabled ? 'text.disabled' : 'action.active');
     const endIconColor = disabled ? 'text.disabled' : 'action.active';
     const selectedAssetPath = asset?.pathFromRoot;
 
@@ -206,9 +214,11 @@ export function ImageSelector(props: ImageSelectorProps) {
                                     },
                                     maxHeight: hasExplicitSize ? undefined : '5rem',
                                     overflow: 'hidden',
-                                    border: `1px solid ${theme.palette.divider}`,
+                                    border: `1px solid ${previewBorderColor ?? theme.palette.divider}`,
                                     borderRadius: 1,
-                                    backgroundColor: disabled ? theme.palette.action.disabledBackground : theme.palette.action.hover,
+                                    backgroundColor: previewBackgroundColor ?? (
+                                        disabled ? theme.palette.action.disabledBackground : theme.palette.action.hover
+                                    ),
                                     color: previewIconColor,
                                 })}
                             >

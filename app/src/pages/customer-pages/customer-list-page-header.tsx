@@ -9,6 +9,7 @@ import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessib
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {resolveAccessibleForeground} from '../../theming/resolve-appearance-colors';
+import {ColorModePicker} from '../../components/color-mode-picker/color-mode-picker';
 
 interface CustomerListPageHeaderProps {
 }
@@ -82,7 +83,7 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
                                         margin: 0,
                                     }}
                                 >
-                                    Online-Antrags-Management <br />
+                                    Formularverzeichnis <br />
                                     {AppConfig.providerName}
                                 </Typography>
                             </Box>
@@ -113,6 +114,11 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
                                     </IconButton>
                                 </Tooltip>
                             }
+
+                            <ColorModePicker
+                                color="primary"
+                                iconFontSize="large"
+                            />
                         </Box>
                     </Box>
                 </Container>

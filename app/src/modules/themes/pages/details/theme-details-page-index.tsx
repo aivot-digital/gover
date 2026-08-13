@@ -59,6 +59,8 @@ import {ThemeColorPicker} from '../../components/theme-color-picker';
 import StarOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Star';
 import {useSetDefaultTheme} from '../../hooks/use-set-default-theme';
 import {DepartmentApiService} from '../../../departments/services/department-api-service';
+import {AssetsApiService} from '../../../assets/assets-api-service';
+import {resolveThemeLogoKey} from '../../../../theming/resolve-theme-logo';
 
 export const ThemeSchema = yup.object({
     name: yup.string()
@@ -126,6 +128,14 @@ export function ThemeDetailsPageIndex() {
         () => theme == null ? null : createAppTheme(theme, BaseTheme, 'dark'),
         [theme],
     );
+    const lightPreviewLogoKey = theme == null ? null : resolveThemeLogoKey(theme, 'light');
+    const darkPreviewLogoKey = theme == null ? null : resolveThemeLogoKey(theme, 'dark');
+    const lightPreviewLogoUrl = lightPreviewLogoKey == null
+        ? null
+        : AssetsApiService.useAssetLink(lightPreviewLogoKey);
+    const darkPreviewLogoUrl = darkPreviewLogoKey == null
+        ? null
+        : AssetsApiService.useAssetLink(darkPreviewLogoKey);
 
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
@@ -303,7 +313,7 @@ export function ThemeDetailsPageIndex() {
                 Erscheinungsbild konfigurieren
             </Typography>
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Konfigurieren Sie das Erscheinungsbild, um Namen, Logo, Favicon und Farben für Prosuna und veröffentlichte Formulare festzulegen.
+                Konfigurieren Sie das Erscheinungsbild, um Namen, Logos, Favicon und Farben für Prosuna und veröffentlichte Formulare festzulegen.
                 Die Einstellungen können jederzeit angepasst werden, wirken sich aber unmittelbar auf alle Formulare aus, die dieses Erscheinungsbild verwenden.
             </Typography>
 
@@ -351,9 +361,9 @@ export function ThemeDetailsPageIndex() {
                     }}
                 >
                     <ImageSelector
-                        label="Logo des Erscheinungsbildes"
-                        hint="Dieses Logo wird in der Anwendung angezeigt, z.B. in der Kopfzeile."
-                        selectLabel="Logo für das Erscheinungsbild auswählen"
+                        label="Logo für helle Hintergründe"
+                        hint="Dieses Logo wird im hellen Farbschema sowie in Dokumenten und E-Mails verwendet."
+                        selectLabel="Logo für helle Hintergründe auswählen"
                         value={theme.logoKey ?? null}
                         onChange={(key) => {
                             handleInputChange('logoKey')(key);
@@ -361,6 +371,33 @@ export function ThemeDetailsPageIndex() {
                         size={{
                             aspectRatio: 2, // Default aspect ratio of a logo is 2:1. See logo.tsx
                         }}
+                        previewBackgroundColor={lightPreviewTheme?.palette.background.paper}
+                        previewForegroundColor={lightPreviewTheme?.palette.text.secondary}
+                        previewBorderColor={lightPreviewTheme?.palette.divider}
+                        disabled={!isEditable}
+                    />
+                </Grid>
+
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <ImageSelector
+                        label="Logo für dunkle Hintergründe"
+                        hint="Optional. Ohne Auswahl wird auch im dunklen Farbschema das Logo für helle Hintergründe verwendet."
+                        selectLabel="Logo für dunkle Hintergründe auswählen"
+                        value={theme.logoKeyDark ?? null}
+                        onChange={(key) => {
+                            handleInputChange('logoKeyDark')(key);
+                        }}
+                        size={{
+                            aspectRatio: 2,
+                        }}
+                        previewBackgroundColor={darkPreviewTheme?.palette.background.paper}
+                        previewForegroundColor={darkPreviewTheme?.palette.text.secondary}
+                        previewBorderColor={darkPreviewTheme?.palette.divider}
                         disabled={!isEditable}
                     />
                 </Grid>
@@ -446,6 +483,7 @@ export function ThemeDetailsPageIndex() {
                             <ThemePreviewPanel
                                 label="Vorschau des hellen Farbschemas"
                                 theme={lightPreviewTheme}
+                                logoUrl={lightPreviewLogoUrl}
                             />
                         )}
                     </Grid>
@@ -505,6 +543,7 @@ export function ThemeDetailsPageIndex() {
                             <ThemePreviewPanel
                                 label="Vorschau des dunklen Farbschemas"
                                 theme={darkPreviewTheme}
+                                logoUrl={darkPreviewLogoUrl}
                             />
                         )}
                     </Grid>
@@ -642,7 +681,7 @@ export function ThemeDetailsPageIndex() {
 }
 
 
-function ThemePreviewPanel({label, theme}: {label: string; theme: MuiTheme}) {
+function ThemePreviewPanel({label, theme, logoUrl}: {label: string; theme: MuiTheme; logoUrl: string | null}) {
     return (
         <ThemeProvider theme={theme}>
             <Box
@@ -668,9 +707,33 @@ function ThemePreviewPanel({label, theme}: {label: string; theme: MuiTheme}) {
                             borderBottom: {xs: `1px solid ${theme.palette.divider}`, md: 'none'},
                         }}
                     >
+                        {logoUrl != null && (
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    height: 48,
+                                    maxWidth: 220,
+                                    mb: 2,
+                                }}
+                            >
+                                <Box
+                                    component="img"
+                                    src={logoUrl}
+                                    alt="Beispielansicht des ausgewählten Logos"
+                                    sx={{
+                                        display: 'block',
+                                        width: 'auto',
+                                        maxWidth: '100%',
+                                        maxHeight: '100%',
+                                        objectFit: 'contain',
+                                    }}
+                                />
+                            </Box>
+                        )}
                         <Typography variant="h5">Prosuna</Typography>
                         <Typography sx={{mt: 0.5}} color="text.secondary">
-                            Organisation Musterstadt
+                            Digitale Verwaltungsservices
                         </Typography>
                         <Stack spacing={1} sx={{mt: 3, maxWidth: 320}}>
                             <Box

@@ -6,6 +6,7 @@ export interface ThemeRequestDTO {
     secondaryColorDark: string | null;
     faviconKey: string | null;
     logoKey: string | null;
+    logoKeyDark: string | null;
 }
 
 export interface ThemeResponseDTO extends ThemeRequestDTO {

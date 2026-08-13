@@ -43,6 +43,7 @@ const theme: Theme = {
     secondaryColorDark: '#A0C9CB',
     faviconKey: null,
     logoKey: null,
+    logoKeyDark: null,
 };
 
 describe('useSetDefaultTheme', () => {

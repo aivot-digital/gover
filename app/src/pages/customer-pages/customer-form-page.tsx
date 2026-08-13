@@ -345,6 +345,9 @@ export function CustomerFormPage() {
 
     const formAssetQuery = formAssetQueryParams.toString();
     const formLogoUrl = `/api/public/form/${process.slug}/${resolvedFormSlug}/logo/?${formAssetQuery}`;
+    const darkLogoQueryParams = new URLSearchParams(formAssetQueryParams);
+    darkLogoQueryParams.set('color-scheme', 'dark');
+    const formLogoUrlDark = `/api/public/form/${process.slug}/${resolvedFormSlug}/logo/?${darkLogoQueryParams.toString()}`;
     const formFaviconUrl = `/api/public/form/${process.slug}/${resolvedFormSlug}/favicon/?${formAssetQuery}`;
     const customerInputDraft = CustomerInputService.loadCustomerInputDraft(process.slug, resolvedFormSlug, version.processVersion);
     const showFormFlow = data.identitySlots.length === 0 || dismissAuthentication;
@@ -369,6 +372,7 @@ export function CustomerFormPage() {
                         process={process}
                         version={version}
                         logoUrl={formLogoUrl}
+                        logoUrlDark={formLogoUrlDark}
                         onDeleteFormData={() => {
                             dispatch(setCurrentStep(0));
                             CustomerInputService.cleanCustomerInput(process.slug, resolvedFormSlug, version.processVersion);
@@ -473,6 +477,7 @@ export function CustomerFormPage() {
                         process={process}
                         version={version}
                         logoUrl={formLogoUrl}
+                        logoUrlDark={formLogoUrlDark}
                     />
                 </Box>
 

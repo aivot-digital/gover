@@ -17,6 +17,8 @@ public record ThemeResponseDTO(
         @Nullable
         UUID logoKey,
         @Nullable
+        UUID logoKeyDark,
+        @Nullable
         UUID faviconKey
 ) {
     public static ThemeResponseDTO fromEntity(ThemeEntity theme) {
@@ -28,6 +30,7 @@ public record ThemeResponseDTO(
                 theme.getPrimaryColorDark(),
                 theme.getSecondaryColorDark(),
                 theme.getLogoKey(),
+                theme.getLogoKeyDark(),
                 theme.getFaviconKey()
         );
     }

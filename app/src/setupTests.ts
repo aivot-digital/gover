@@ -44,6 +44,7 @@ Object.defineProperty(globalThis, 'AppConfig', {
             secondaryColorDark: null,
             faviconKey: null,
             logoKey: null,
+            logoKeyDark: null,
         },
         systemConfigs: {
             ProviderName: 'Prosuna',

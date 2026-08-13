@@ -30,6 +30,7 @@ interface RootComponentFooterProps {
     process: ProcessEntity;
     version: ProcessVersionEntity;
     logoUrl: string | null;
+    logoUrlDark: string | null;
 }
 
 export function RootComponentFooter(props: RootComponentFooterProps) {
@@ -39,6 +40,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
         process,
         version,
         logoUrl,
+        logoUrlDark,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -46,6 +48,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const disableListingPageLink = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.disableListingPageLink));
     const customListingPageLink = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.customListingPageLink));
+    const resolvedLogoUrl = theme.palette.mode === 'dark' ? logoUrlDark ?? logoUrl : logoUrl;
 
     return (
         <Box
@@ -73,11 +76,12 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                     }}
                 >
                     {
-                        logoUrl != null ?
+                        resolvedLogoUrl != null ?
                             <Logo
-                                key={'logo-' + logoUrl}
+                                key={'logo-' + resolvedLogoUrl}
                                 updated={version.updated}
-                                src={logoUrl}
+                                src={logoUrl ?? undefined}
+                                srcDark={logoUrlDark ?? undefined}
                                 width={200}
                                 height={100}
                             /> :

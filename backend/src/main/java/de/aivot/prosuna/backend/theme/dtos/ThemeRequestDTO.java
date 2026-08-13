@@ -42,6 +42,9 @@ public record ThemeRequestDTO(
         UUID logoKey,
 
         @Nullable
+        UUID logoKeyDark,
+
+        @Nullable
         UUID faviconKey
 ) implements RequestDTO<ThemeEntity> {
     @Override
@@ -54,6 +57,7 @@ public record ThemeRequestDTO(
                 primaryColorDark,
                 secondaryColorDark,
                 logoKey,
+                logoKeyDark,
                 faviconKey
         );
     }

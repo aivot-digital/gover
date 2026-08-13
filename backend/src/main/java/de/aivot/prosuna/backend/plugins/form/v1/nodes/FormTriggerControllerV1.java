@@ -653,10 +653,11 @@ public class FormTriggerControllerV1 {
                         @Nonnull @PathVariable String formSlug,
                         @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                         @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion,
+                        @Nullable @RequestParam(value = "color-scheme", required = false) String colorScheme,
                         @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
         var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var logoResolution = getFormLogoResolution(context.formLayout());
+        var logoResolution = getFormLogoResolution(context.formLayout(), "dark".equalsIgnoreCase(colorScheme));
 
         String redirectUrl;
         if (logoResolution.assetKey() == null && logoResolution.allowDefaultFallback()) {
@@ -797,10 +798,13 @@ public class FormTriggerControllerV1 {
     }
 
     @Nullable
-    private UUID getFirstLogoKey(@Nonnull List<ThemeEntity> themes) {
+    private UUID getFirstLogoKey(@Nonnull List<ThemeEntity> themes, boolean darkColorScheme) {
         for (var theme : themes) {
-            if (theme.getLogoKey() != null) {
-                return theme.getLogoKey();
+            var logoKey = darkColorScheme && theme.getLogoKeyDark() != null
+                    ? theme.getLogoKeyDark()
+                    : theme.getLogoKey();
+            if (logoKey != null) {
+                return logoKey;
             }
         }
 
@@ -808,18 +812,21 @@ public class FormTriggerControllerV1 {
     }
 
     @Nonnull
-    private LogoResolution getFormLogoResolution(@Nonnull FormLayoutElement formLayout) {
+    private LogoResolution getFormLogoResolution(@Nonnull FormLayoutElement formLayout, boolean darkColorScheme) {
         var customThemes = getCustomFormThemesInOrderOfImportance(formLayout);
 
         // A resolved custom theme chain without a logo should stay logo-less instead of inheriting
         // the system theme logo. Only forms without custom themes fall back to the system/default logo.
         if (!customThemes.isEmpty()) {
-            return new LogoResolution(getFirstLogoKey(customThemes), false);
+            return new LogoResolution(getFirstLogoKey(customThemes, darkColorScheme), false);
         }
 
         var systemTheme = systemService.retrieveDefaultTheme();
-        if (systemTheme.getLogoKey() != null) {
-            return new LogoResolution(systemTheme.getLogoKey(), true);
+        var systemLogoKey = darkColorScheme && systemTheme.getLogoKeyDark() != null
+                ? systemTheme.getLogoKeyDark()
+                : systemTheme.getLogoKey();
+        if (systemLogoKey != null) {
+            return new LogoResolution(systemLogoKey, true);
         }
 
         return new LogoResolution(null, true);

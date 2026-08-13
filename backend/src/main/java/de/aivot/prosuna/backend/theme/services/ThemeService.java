@@ -101,6 +101,15 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
             }
         }
 
+        var logoKeyDark = entity.getLogoKeyDark();
+        if (logoKeyDark == null) {
+            existingEntity.setLogoKeyDark(null);
+        } else if (assetRepository.existsById(logoKeyDark)) {
+            existingEntity.setLogoKeyDark(logoKeyDark);
+        } else {
+            existingEntity.setLogoKeyDark(null);
+        }
+
         var faviconKey = entity.getFaviconKey();
         if (faviconKey == null) {
             existingEntity.setFaviconKey(null);
