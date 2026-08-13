@@ -21,6 +21,8 @@ function createProsunaUrl(placement: 'logo' | 'footer'): string {
 export function Login() {
     const location = useLocation();
     const theme = useTheme();
+    const isDarkMode = theme.palette.mode === 'dark';
+    const heroForeground = isDarkMode ? '#FFFFFF' : '#733635';
 
     const loginUrl = useMemo(() => {
         return AuthService.getLoginUrl(location);
@@ -74,11 +76,11 @@ export function Login() {
                             position: 'absolute',
                             inset: 0,
                             zIndex: -2,
-                            backgroundImage: 'url("/staff/assets/images/login-background.jpg")',
+                            backgroundImage: `url("/staff/assets/images/login-background-${theme.palette.mode}.jpg")`,
                             backgroundSize: 'cover',
                             backgroundPosition: {
                                 xs: 'center 30%',
-                                md: 'center',
+                                md: 'center right',
                             },
                         },
                         '&::after': {
@@ -109,16 +111,18 @@ export function Login() {
                             },
                             '&:focus-visible': {
                                 outline: '2px solid',
-                                outlineColor: '#733635',
+                                outlineColor: heroForeground,
                                 outlineOffset: 4,
                                 borderRadius: 1,
                             },
                         }}
                     >
                         <ProsunaLogo
+                            colorVariant={isDarkMode ? 'monochrome' : 'brand'}
                             style={{
                                 width: 'min(13.5rem, 62vw)',
                                 height: 'auto',
+                                color: heroForeground,
                             }}
                         />
                     </Link>
@@ -135,25 +139,35 @@ export function Login() {
                             mx: -7,
                             mb: -6,
                             px: 7,
-                            py: 3.5,
+                            py: 3,
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             flexWrap: 'wrap',
-                            gap: 3,
-                            backgroundColor: 'rgba(255, 255, 255, 0.34)',
-                            borderTop: '1px solid rgba(255, 255, 255, 0.72)',
+                            columnGap: 4,
+                            rowGap: 1.5,
+                            color: heroForeground,
+                            backgroundColor: isDarkMode
+                                ? 'rgba(8, 8, 8, 0.58)'
+                                : 'rgba(255, 255, 255, 0.68)',
+                            borderTop: '1px solid',
+                            borderColor: isDarkMode
+                                ? 'rgba(255, 255, 255, 0.16)'
+                                : 'rgba(115, 54, 53, 0.12)',
+                            backdropFilter: 'blur(4px)',
                         }}
                     >
                         <Typography
-                            variant="h4"
+                            variant="subtitle1"
                             component="p"
                             sx={{
-                                maxWidth: '20rem',
-                                color: '#733635',
-                                lineHeight: 1.4,
+                                maxWidth: '22rem',
+                                color: 'inherit',
+                                fontWeight: 600,
+                                lineHeight: 1.45,
                             }}
                         >
-                            Digitale Verwaltungsprozesse von Anfang bis Ende.
+                            Digitale Verwaltungsprozesse<br/>
+                            von Anfang bis Ende.
                         </Typography>
 
                         <Link
@@ -168,17 +182,17 @@ export function Login() {
                                 gap: 0.75,
                                 flex: '0 0 auto',
                                 ml: 'auto',
-                                color: '#733635',
+                                color: 'inherit',
                                 fontSize: '0.875rem',
                                 fontWeight: 600,
                                 whiteSpace: 'nowrap',
-                                transition: theme.transitions.create('color'),
+                                transition: theme.transitions.create('opacity'),
                                 '&:hover': {
-                                    color: '#4F2222',
+                                    opacity: 0.72,
                                 },
                                 '&:focus-visible': {
                                     outline: '2px solid',
-                                    outlineColor: '#733635',
+                                    outlineColor: heroForeground,
                                     outlineOffset: 4,
                                     borderRadius: 1,
                                 },
