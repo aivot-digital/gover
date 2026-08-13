@@ -78,13 +78,34 @@ export function ImageEditor(props: BaseEditorProps<ImageElement>) {
                 sx={{mt: 4}}
                 icon={<AccessibilityNewIcon />}
             >
-                <AlertTitle>Hinweis zur Barrierefreiheit von eingebundenen Bildern</AlertTitle>
+                <AlertTitle>Hinweise zu Darstellung und Barrierefreiheit</AlertTitle>
+                <Typography
+                    component="h3"
+                    variant="subtitle2"
+                    sx={{mt: 1.5, mb: 0.5}}
+                >
+                    Darstellung auf hellen und dunklen Hintergründen
+                </Typography>
                 <Typography sx={{maxWidth: 860}}>
-                    Bitte beachten Sie, dass eingebundene Bilder ein Kontrastverhältnis von mindestens 3:1 aufweisen
-                    müssen, um den Anforderungen der Barrierefreiheit gemäß
-                    der <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1 (AA) zu entsprechen. Dies
-                    gilt für die Unterscheidung von grafischen Objekten in den Bildern (wie z.B. Symbole und Teile von
-                    Diagrammen oder anderen Grafiken).
+                    Bilder werden in der hellen und dunklen Darstellung unverändert verwendet. Verwenden Sie
+                    insbesondere für Grafiken und Diagramme möglichst eine Bilddatei mit eigenem, deckendem
+                    Hintergrund. Stellen Sie bei transparenten Bildern sicher, dass alle wichtigen Inhalte auf hellen
+                    wie dunklen Flächen gut erkennbar bleiben.
+                </Typography>
+
+                <Typography
+                    component="h3"
+                    variant="subtitle2"
+                    sx={{mt: 2, mb: 0.5}}
+                >
+                    Barrierefreiheit
+                </Typography>
+                <Typography sx={{maxWidth: 860}}>
+                    Grafische Elemente, die für das Verständnis erforderlich sind, müssen nach den
+                    {' '}<abbr title="Web Content Accessibility Guidelines">WCAG</abbr> 2.2 in der Regel mit
+                    mindestens 3:1 zu angrenzenden Farben kontrastieren. Verwenden Sie für wichtige Informationen
+                    möglichst echten Text statt Schrift in Bildern und hinterlegen Sie einen aussagekräftigen
+                    Alternativtext.
                 </Typography>
             </Alert>
 
