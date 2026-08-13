@@ -1,4 +1,4 @@
-import {Box, DialogTitle, DialogTitleProps, IconButton, Tooltip, Typography} from '@mui/material';
+import {DialogTitle, DialogTitleProps, IconButton, Tooltip, Typography} from '@mui/material';
 import React from 'react';
 import CloseOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import {Action} from '../actions/actions-props';
@@ -25,6 +25,7 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
     return (
         <DialogTitle
             sx={{
+                position: 'relative',
                 m: 0,
                 p: 2,
                 pl: 2.8,
@@ -32,6 +33,7 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
                 borderBottom: props.bordered ? '1px solid' : 'none',
                 borderBottomColor: props.bordered ? 'divider' : undefined,
                 display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'space-between',
             }}
             {...other}
@@ -48,7 +50,6 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
                 <Actions
                     actions={actions}
                     sx={{
-                        mt: -0.5,
                         justifyContent: 'end',
                     }}
                     dense
@@ -64,7 +65,8 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
                         sx={{
                             position: 'absolute',
                             right: 10,
-                            top: 8,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
                             color: 'text.secondary',
                         }}
                     >

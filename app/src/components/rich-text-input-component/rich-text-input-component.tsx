@@ -124,10 +124,11 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
     const outlinedBorderColor = theme.palette.mode === 'light'
         ? 'rgba(0, 0, 0, 0.23)'
         : 'rgba(255, 255, 255, 0.23)';
-    // Match the visual surface used by TextFieldComponent while the field is read-only.
-    const baseBg = isReadOnly
+    // Apply the field state only once on the outer container. Repeating a translucent background on MDXEditor's
+    // nested layers would compound its opacity and make this control diverge from regular MUI inputs.
+    const fieldBackground = isReadOnly
         ? getDisabledFieldBackground(theme)
-        : theme.palette.background.paper;
+        : 'transparent';
     const editorContentColor = isReadOnly
         ? theme.palette.text.secondary
         : theme.palette.text.primary;
@@ -202,7 +203,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                     border: '1px solid',
                     borderColor: error != null ? 'error.main' : outlinedBorderColor,
                     borderRadius: 1,
-                    backgroundColor: baseBg,
+                    backgroundColor: fieldBackground,
                     transition: theme.transitions.create(['background-color', 'border-color', 'box-shadow'], {
                         duration: theme.transitions.duration.shorter,
                     }),
@@ -212,8 +213,8 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                     },
                     '& .prosuna-mdx-editor.mdxeditor': {
                         '--font-body': theme.typography.fontFamily,
-                        '--basePageBg': baseBg,
-                        '--baseBase': baseBg,
+                        '--basePageBg': 'transparent',
+                        '--baseBase': theme.palette.background.paper,
                         '--baseBgSubtle': alpha(theme.palette.text.primary, 0.025),
                         '--baseBg': toolbarBg,
                         '--baseBgHover': buttonHoverBg,
@@ -237,7 +238,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         '--accentText': theme.palette.primary.main,
                         '--accentTextContrast': theme.palette.primary.contrastText,
                         fontFamily: 'inherit',
-                        backgroundColor: baseBg,
+                        backgroundColor: 'transparent',
                         borderRadius: 'inherit',
                         overflow: 'hidden',
                         transition: theme.transitions.create('background-color', {
@@ -245,12 +246,12 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         }),
                     },
                     '& .prosuna-mdx-editor .mdxeditor-root-contenteditable': {
-                        backgroundColor: baseBg,
+                        backgroundColor: 'transparent',
                         transition: theme.transitions.create('background-color', {
                             duration: theme.transitions.duration.shorter,
                         }),
                     },
-                    '& .prosuna-mdx-editor [class*="_toolbarRoot_"]': {
+                    '& .prosuna-mdx-editor [class*="_toolbarRoot_"], & .prosuna-mdx-editor [class*="_readOnlyToolbarRoot_"]': {
                         position: 'sticky',
                         top: 0,
                         zIndex: 2,
@@ -258,7 +259,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         borderBottom: '1px solid',
                         borderColor: error != null ? alpha(theme.palette.error.main, 0.3) : 'divider',
                         borderRadius: '4px 4px 0 0',
-                        backgroundColor: baseBg,
+                        backgroundColor: 'transparent',
                         paddingInline: 1,
                         paddingBlock: 0.75,
                         minHeight: 47,
@@ -317,7 +318,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         border: '1px solid',
                         borderColor: 'divider',
                         minHeight: 30,
-                        backgroundColor: baseBg,
+                        backgroundColor: 'transparent',
                     },
                     '& .prosuna-mdx-editor [class*="_toolbarRoot_"] [class*="_selectTrigger_"]': {
                         width: 'auto !important',
@@ -406,17 +407,43 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         minHeight: editorMinHeight,
                         maxHeight: editorMaxHeight,
                         overflow: 'hidden',
+                        backgroundColor: 'transparent',
                     },
                     '& .prosuna-mdx-editor .cm-sourceView .cm-editor': {
                         maxHeight: editorMaxHeight,
                         overflow: 'hidden',
                         color: editorContentColor,
+                        backgroundColor: 'transparent',
                     },
                     '& .prosuna-mdx-editor .cm-sourceView .cm-scroller': {
                         minHeight: editorMinHeight,
                         maxHeight: editorMaxHeight,
                         overflowY: 'auto',
                         overflowX: 'auto',
+                        backgroundColor: 'transparent',
+                    },
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-content': {
+                        color: editorContentColor,
+                        caretColor: theme.palette.primary.main,
+                    },
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-cursor, & .prosuna-mdx-editor .cm-sourceView .cm-dropCursor': {
+                        borderLeftColor: theme.palette.primary.main,
+                    },
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-gutters': {
+                        color: 'text.disabled',
+                        backgroundColor: alpha(theme.palette.text.primary, 0.025),
+                        borderRight: '1px solid',
+                        borderColor: 'divider',
+                    },
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-activeLine, & .prosuna-mdx-editor .cm-sourceView .cm-activeLineGutter': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.07),
+                    },
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-selectionBackground, & .prosuna-mdx-editor .cm-sourceView.cm-focused .cm-selectionBackground': {
+                        backgroundColor: `${alpha(theme.palette.primary.main, 0.22)} !important`,
+                    },
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-panels, & .prosuna-mdx-editor .cm-sourceView .cm-tooltip': {
+                        color: 'text.primary',
+                        backgroundColor: 'background.paper',
                     },
                     '& .prosuna-mdx-editor [class*="_placeholder_"]': {
                         color: 'text.disabled',
@@ -460,7 +487,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                                 borderColor: error != null ? 'error.main' : outlinedBorderColor,
                                 boxShadow: 'none',
                             },
-                            '& .prosuna-mdx-editor [class*="_toolbarRoot_"], & .prosuna-mdx-editor .cm-sourceView': {
+                            '& .prosuna-mdx-editor [class*="_toolbarRoot_"], & .prosuna-mdx-editor [class*="_readOnlyToolbarRoot_"], & .prosuna-mdx-editor .cm-sourceView': {
                                 pointerEvents: 'none',
                             },
                         }
