@@ -19,7 +19,7 @@ services:
       - "5432:5432"
 
   antivirus:
-    image: clamav/clamav-debian:1.5.1
+    image: docker.io/clamav/clamav:1.5.4-debian
     restart: unless-stopped
     ports:
       - "3310:3310"

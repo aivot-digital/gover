@@ -155,7 +155,7 @@ services:
       - keycloak
 
   clamav:
-    image: docker.io/clamav/clamav:1.5-debian
+    image: docker.io/clamav/clamav:1.5.4-debian
     restart: unless-stopped
     networks:
       - prosuna

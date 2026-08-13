@@ -44,7 +44,7 @@ services:
 
 
   clamav:
-    image: clamav/clamav-debian:1.5.2
+    image: docker.io/clamav/clamav:1.5.4-debian
     restart: always
     networks:
       - prosuna

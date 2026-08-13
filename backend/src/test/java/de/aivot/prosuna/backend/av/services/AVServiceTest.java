@@ -2,7 +2,6 @@ package de.aivot.prosuna.backend.av.services;
 
 import de.aivot.prosuna.backend.av.exceptions.AVCheckFailedException;
 import de.aivot.prosuna.backend.av.exceptions.AVVirusFoundException;
-import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ClamConfig;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
@@ -11,14 +10,66 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AVServiceTest {
+    @Test
+    void testServiceStatusShouldUseClamdPingProtocol() throws Exception {
+        try (var scanner = new ServerSocket(0)) {
+            var scannerTask = startScannerTask(scanner, socket -> {
+                var command = socket.getInputStream().readNBytes("zPING\0".length());
+                assertArrayEquals("zPING\0".getBytes(StandardCharsets.US_ASCII), command);
+
+                socket.getOutputStream().write("PONG\0".getBytes(StandardCharsets.US_ASCII));
+                socket.getOutputStream().flush();
+            });
+
+            assertTrue(createService(scanner).testServiceStatus());
+            scannerTask.get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testFileShouldUseClamdInstreamProtocol() throws Exception {
+        var content = new byte[9000];
+        Arrays.fill(content, (byte) 'a');
+
+        try (var scanner = new ServerSocket(0)) {
+            var scannerTask = startScannerTask(scanner, socket -> {
+                var input = new DataInputStream(socket.getInputStream());
+                var command = input.readNBytes("zINSTREAM\0".length());
+                assertArrayEquals("zINSTREAM\0".getBytes(StandardCharsets.US_ASCII), command);
+
+                var receivedContent = new ByteArrayOutputStream();
+                int chunkLength;
+                while ((chunkLength = input.readInt()) != 0) {
+                    receivedContent.write(input.readNBytes(chunkLength));
+                }
+                assertArrayEquals(content, receivedContent.toByteArray());
+
+                socket.getOutputStream().write("stream: OK\0".getBytes(StandardCharsets.US_ASCII));
+                socket.getOutputStream().flush();
+            });
+
+            createService(scanner).testFile(new ByteArrayInputStream(content), "clean.txt");
+            scannerTask.get(5, TimeUnit.SECONDS);
+        }
+    }
+
     @Test
     void parseScannerPortShouldRejectInvalidValues() {
         assertThrows(IOException.class, () -> AVService.parseScannerPort("invalid"));
@@ -64,5 +115,29 @@ class AVServiceTest {
 
         assertEquals(HttpStatus.NOT_ACCEPTABLE, exception.getStatus());
         assertEquals("Die Dateiendung des Anhangs \"report.exe\" ist nicht erlaubt.", exception.getTitle());
+    }
+
+    private static AVService createService(ServerSocket scanner) {
+        var clamConfig = new ClamConfig();
+        clamConfig.setHost("127.0.0.1");
+        clamConfig.setPort(String.valueOf(scanner.getLocalPort()));
+        clamConfig.setTimeout(2000);
+        return new AVService(new ProsunaConfig(), clamConfig);
+    }
+
+    private static FutureTask<Void> startScannerTask(ServerSocket scanner, SocketHandler handler) {
+        var task = new FutureTask<Void>(() -> {
+            try (var socket = scanner.accept()) {
+                handler.handle(socket);
+            }
+            return null;
+        });
+        Thread.ofVirtual().start(task);
+        return task;
+    }
+
+    @FunctionalInterface
+    private interface SocketHandler {
+        void handle(java.net.Socket socket) throws Exception;
     }
 }
