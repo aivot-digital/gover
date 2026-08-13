@@ -30,19 +30,19 @@ public class ListingPageCustomLinkSystemConfigDefinition implements SystemConfig
     @Nonnull
     @Override
     public String getCategory() {
-        return "Öffentliche Auflistung";
+        return "Öffentliches Formularverzeichnis";
     }
 
     @Nonnull
     @Override
     public String getLabel() {
-        return "Externer Formular-Index-Link";
+        return "Link zu einem externen Formularverzeichnis";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Der Link zu einer externen Übersichtsseite der Formulare.";
+        return "Der Link zu einem extern bereitgestellten Formularverzeichnis.";
     }
 
     @Nonnull

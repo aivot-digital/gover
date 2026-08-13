@@ -39,21 +39,38 @@ export interface FormTriggerListItem {
     node: FormTriggerNodeEntity;
 }
 
+export type FormOverviewMode = 'Published' | 'Drafted';
+
+export interface FormOverviewItem {
+    id: number;
+    nodeName: string;
+    formTitle: string;
+    processId: number;
+    processTitle: string;
+    processVersion: number;
+    status: FormOverviewMode;
+    publicUrl: string | null;
+    showOnFormIndexPage: boolean;
+    updated: string;
+    published: string | null;
+}
+
 export class FormTriggerApiService extends BaseApiService {
-    public async list(
+    public async listOverview(
         page: number,
         limit: number,
+        view: FormOverviewMode,
+        search?: string,
         sort?: FormTriggerSortField | FormTriggerSortField[],
         order?: SortOrder,
-        filters?: Partial<FormTriggerFilter>,
-    ): Promise<Page<FormTriggerListItem>> {
-        return await this.get<Page<FormTriggerListItem>>('/api/forms/v1/', {
-            query: this.buildListQuery(page, limit, sort, order, filters),
+    ): Promise<Page<FormOverviewItem>> {
+        return await this.get<Page<FormOverviewItem>>('/api/forms/v1/', {
+            query: {
+                ...this.buildListQuery(page, limit, sort, order),
+                view,
+                search,
+            },
         });
-    }
-
-    public async listAll(filters?: Partial<FormTriggerFilter>): Promise<Page<FormTriggerListItem>> {
-        return await this.list(0, 999, undefined, undefined, filters);
     }
 
     public async listPublic(
@@ -74,7 +91,7 @@ export class FormTriggerApiService extends BaseApiService {
     }
 
     public async getIdentityProviders(): Promise<FormTriggerIdentityDetailsDTO[]> {
-        return await this.get<FormTriggerIdentityDetailsDTO[]>(`/api/public/identity/providers/`, {
+        return await this.get<FormTriggerIdentityDetailsDTO[]>('/api/public/identity/providers/', {
             skipAuthCheck: true,
         });
     }

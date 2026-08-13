@@ -33,19 +33,19 @@ public class ListingPageDisabledSystemConfigDefinition implements SystemConfigDe
     @Nonnull
     @Override
     public String getCategory() {
-        return "Öffentliche Auflistung";
+        return "Öffentliches Formularverzeichnis";
     }
 
     @Nonnull
     @Override
     public String getLabel() {
-        return "Öffentliche Auflistung deaktivieren";
+        return "Öffentliches Formularverzeichnis deaktivieren";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Deaktiviert die öffentliche Auflistung der Formulare.";
+        return "Deaktiviert das öffentliche Formularverzeichnis.";
     }
 
     @Nonnull

@@ -1158,7 +1158,7 @@ export function ApplicationSettings() {
                                 mt: 4,
                             }}
                         >
-                            Öffentliche Auflistung der veröffentlichten Formulare (Index-Seite)
+                            Öffentliches Formularverzeichnis
                         </Typography>
                         <Typography
                             sx={{
@@ -1166,10 +1166,9 @@ export function ApplicationSettings() {
                                 mb: 1.6,
                             }}
                         >
-                            Wenn die Domain des Systems direkt aufgerufen wird, wird eine öffentliche Index-Seite
-                            angezeigt, die alle veröffentlichten Formulare auflistet. Hier können Sie diese Seite konfigurieren
-                            und
-                            ggf. deaktivieren.
+                            Beim direkten Aufruf der Domain zeigt Prosuna ein öffentliches Formularverzeichnis mit den
+                            dafür freigegebenen veröffentlichten Formularen an. Hier können Sie das Verzeichnis
+                            konfigurieren oder vollständig deaktivieren.
                         </Typography>
                         <Grid
                             container
@@ -1234,7 +1233,7 @@ export function ApplicationSettings() {
                             Organisationseinheiten auswählen, deren Texte Sie verwenden und anzeigen möchten.
                         </Typography>
                         <CheckboxFieldComponent
-                            label="Öffentliche Auflistung der veröffentlichten Formulare (in Form einer Index-Seite) vollständig deaktivieren"
+                            label="Öffentliches Formularverzeichnis vollständig deaktivieren"
                             value={(editedConfig[SystemConfigKeys.provider.listingPage.disableProsunaListingPage] ?? config[SystemConfigKeys.provider.listingPage.disableProsunaListingPage]) == 'true'}
                             onChange={(checked) => {
                                 setEditedConfig({
@@ -1251,7 +1250,7 @@ export function ApplicationSettings() {
                                 mt: 4,
                             }}
                         >
-                            Verweis auf Formular-Index aus Formularen heraus
+                            Verweis auf das Formularverzeichnis
                         </Typography>
                         <Typography
                             sx={{
@@ -1259,8 +1258,8 @@ export function ApplicationSettings() {
                                 mb: 1.6,
                             }}
                         >
-                            Am Ende eines jeden Formulars wird Ihre Index-Seite mit dem Text „Weitere Formulare“ verlinkt.
-                            Diese Verlinkung dient der Barrierefreiheit
+                            Am Ende eines jeden Formulars wird das Formularverzeichnis mit dem Text „Weitere Formulare“
+                            verlinkt. Diese Verlinkung dient der Barrierefreiheit
                             (gemäß <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1)
                             und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen
                             Link ersetzen
@@ -1270,7 +1269,7 @@ export function ApplicationSettings() {
                             (editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) != 'true' &&
                             <Box>
                                 <TextFieldComponent
-                                    label="Link zu externer Formular-Auflistung"
+                                    label="Link zu einem externen Formularverzeichnis"
                                     placeholder="https://bad-musterstadt.de/formulare"
                                     hint="Der Link wird (soweit angegeben) anstelle des regulären Links mit dem Text „Weitere Formulare“ am Ende eines jeden Formulars angezeigt."
                                     value={editedConfig[SystemConfigKeys.provider.listingPage.customListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.customListingPageLink]}
@@ -1290,7 +1289,7 @@ export function ApplicationSettings() {
                             </Box>
                         }
                         <CheckboxFieldComponent
-                            label="Verlinkung von Formularen zur Formular-Index-Seite vollständig deaktivieren"
+                            label="Verweis aus Formularen auf das Formularverzeichnis vollständig deaktivieren"
                             value={(editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) == 'true'}
                             onChange={(checked) => {
                                 setEditedConfig({

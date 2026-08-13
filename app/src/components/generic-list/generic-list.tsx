@@ -611,6 +611,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     }}
                     getRowHeight={dynamicRowHeight ? () => 'auto' : undefined}
                     getEstimatedRowHeight={dynamicRowHeight ? () => 80 : undefined}
+                    rowHeight={props.rowHeight}
                 />
             </Box>
 
