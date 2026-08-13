@@ -90,7 +90,7 @@ services:
       - "5433:5432"
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.2
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3
     restart: unless-stopped
     depends_on:
       - keycloak-database
