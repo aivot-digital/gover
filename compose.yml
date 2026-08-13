@@ -15,7 +15,7 @@ services:
 
 
   prosuna_database:
-    image: postgres:15.18
+    image: docker.io/library/postgres:15.18
     restart: always
     environment:
       POSTGRES_PASSWORD: "{{ PROSUNA_DB_PASSWORD }}" # Setzen Sie das Passwort für die Prosuna-Datenbank. Passen Sie dieses Passwort unbedingt an.
@@ -30,7 +30,7 @@ services:
 
 
   keycloak_database:
-    image: postgres:15.18
+    image: docker.io/library/postgres:15.18
     restart: always
     environment:
       POSTGRES_PASSWORD: "{{ KEYCLOAK_DB_PASSWORD }}" # Setzen Sie das Passwort für die Keycloak-Datenbank. Passen Sie dieses Passwort unbedingt an.
@@ -51,14 +51,14 @@ services:
 
 
   redis:
-    image: redis:7.4.9
+    image: docker.io/library/redis:7.4.9
     restart: always
     networks:
       - prosuna
 
 
   gotenberg:
-    image: gotenberg/gotenberg:8
+    image: docker.io/gotenberg/gotenberg:8
     restart: always
     environment:
       CHROMIUM_DENY_PRIVATE_IPS: "true"
@@ -259,7 +259,7 @@ services:
 
 
   traefik:
-    image: traefik:2.11.46
+    image: docker.io/library/traefik:2.11.46
     restart: always
     command:
       - --providers.docker

@@ -12,7 +12,7 @@ if [ ! -f .env ]; then
 fi
 
 # Container Images
-postgres_image="docker.io/postgres:18.3-alpine3.23"
+postgres_image="docker.io/library/postgres:18.3-alpine3.23"
 clamav_image="docker.io/clamav/clamav:1.5.4-debian"
 redis_image="registry.opencode.de/open-code/oci/redis:8.2.3"
 gotenberg_image="docker.io/gotenberg/gotenberg:8.30.1-chromium"

@@ -71,7 +71,7 @@ services:
       PROSUNA_HOSTNAME: http://localhost:9595
 
   prosuna_database:
-    image: docker.io/postgres:18-alpine
+    image: docker.io/library/postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${PROSUNA_DB_PASSWORD}
@@ -137,7 +137,7 @@ services:
       - keycloak
 
   keycloak_database:
-    image: docker.io/postgres:18-alpine
+    image: docker.io/library/postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
@@ -156,7 +156,7 @@ services:
       - prosuna
 
   redis:
-    image: docker.io/redis:8-alpine
+    image: docker.io/library/redis:8-alpine
     restart: unless-stopped
     networks:
       - prosuna
@@ -190,7 +190,7 @@ services:
       - mail
 
   rabbitmq:
-    image: docker.io/rabbitmq:4-alpine
+    image: docker.io/library/rabbitmq:4-alpine
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: prosuna
@@ -201,7 +201,7 @@ services:
       - prosuna
 
   caddy:
-    image: docker.io/caddy:2-alpine
+    image: docker.io/library/caddy:2-alpine
     restart: unless-stopped
     depends_on:
       prosuna_api:
