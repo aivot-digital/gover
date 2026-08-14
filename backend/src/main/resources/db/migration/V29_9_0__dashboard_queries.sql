@@ -12,9 +12,9 @@ create index idx_process_instances_dashboard_status
     on process_instances (status)
     where created_for_test_claim_id is null;
 
--- Covers assignment filtering and the deadline-first ordering used by the task preview.
+-- Covers assignment filtering and the deadline-first, oldest-task ordering used by the task preview.
 create index idx_process_instance_tasks_dashboard_assignment
-    on process_instance_tasks (assigned_user_id, status, deadline asc nulls last, started desc)
+    on process_instance_tasks (assigned_user_id, status, deadline asc nulls last, started asc, id asc)
     where assigned_user_id is not null;
 
 create index idx_processes_dashboard_updated

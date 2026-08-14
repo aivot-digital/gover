@@ -46,7 +46,8 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
                           AND access.permissions::text[] @> ARRAY[:permission]
                     )
               )
-            ORDER BY task.deadline ASC NULLS LAST, task.started DESC
+            -- Deadlines take precedence; otherwise tasks waiting the longest are shown first.
+            ORDER BY task.deadline ASC NULLS LAST, task.started ASC, task.id ASC
             """, nativeQuery = true)
     List<ProcessInstanceTaskEntity> findDashboardTasks(@Param("userId") String userId,
                                                        @Param("status") short status,
