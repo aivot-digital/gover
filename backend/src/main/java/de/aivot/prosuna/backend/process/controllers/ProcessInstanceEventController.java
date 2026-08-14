@@ -4,9 +4,11 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
+import de.aivot.prosuna.backend.process.dtos.ProcessInstanceEventLogDTO;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceEventFilter;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceEventLogService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceEventService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +21,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -36,14 +39,17 @@ public class ProcessInstanceEventController {
     // only read endpoints here; clients cannot create, alter, or delete execution and audit history.
     private final UserService userService;
     private final ProcessInstanceEventService processInstanceHistoryEventService;
+    private final ProcessInstanceEventLogService processInstanceEventLogService;
     private final PermissionService permissionService;
 
     @Autowired
     public ProcessInstanceEventController(UserService userService,
                                           ProcessInstanceEventService processInstanceHistoryEventService,
+                                          ProcessInstanceEventLogService processInstanceEventLogService,
                                           PermissionService permissionService) {
         this.userService = userService;
         this.processInstanceHistoryEventService = processInstanceHistoryEventService;
+        this.processInstanceEventLogService = processInstanceEventLogService;
         this.permissionService = permissionService;
     }
 
@@ -89,6 +95,42 @@ public class ProcessInstanceEventController {
 
         return processInstanceHistoryEventService
                 .list(pageable, filter);
+    }
+
+    @GetMapping("log/")
+    @Operation(
+            summary = "Retrieve Process Instance Event Log",
+            description = "Retrieve a paginated and enriched event log for a process instance or one of its tasks."
+    )
+    public ProcessInstanceEventLogDTO getEventLog(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @RequestParam Long processInstanceId,
+            @Nullable @RequestParam(required = false) Long processInstanceTaskId,
+            @Nullable @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "false") boolean notableOnly,
+            @Nonnull @ParameterObject @PageableDefault(
+                    size = 50,
+                    sort = "timestamp",
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.requireProcessInstancePermission(
+                user.getId(),
+                processInstanceId,
+                ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ
+        );
+
+        return processInstanceEventLogService.getEventLog(
+                processInstanceId,
+                processInstanceTaskId,
+                search,
+                notableOnly,
+                pageable
+        );
     }
 
     @GetMapping("{id}/")
