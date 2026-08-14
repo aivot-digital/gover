@@ -607,7 +607,6 @@ export function IdentityProviderDetailsPageIndex() {
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: isSystemProvider ? 'center' : 'stretch',
-                        transform: isSystemProvider ? 'translateY(-10px)' : undefined,
                     }}
                     size={{
                         xs: 12,
@@ -616,25 +615,14 @@ export function IdentityProviderDetailsPageIndex() {
                 >
                     {
                         isSystemProvider
-                            ? identityProvider.iconAssetKey &&
-                            <Box
-                                sx={{
-                                    display: 'inline-block',
-                                    py: 1,
-                                    px: 2,
-                                    border: '1px solid #ccc',
-                                    borderRadius: '4px',
-                                }}
-                            >
-                                <IdentityProviderIcon
-                                    name={identityProvider.name}
-                                    type={identityProvider.type}
-                                    iconAssetKey={identityProvider.iconAssetKey}
-                                />
-                            </Box>
+                            ? <IdentityProviderIcon
+                                name={identityProvider.name}
+                                type={identityProvider.type}
+                                iconAssetKey={identityProvider.iconAssetKey}
+                            />
                             : <ImageSelector
                                 label="Logo-Grafik"
-                                hint="Das Logo dient im Formular als Erkennungsmerkmal. Nutzen Sie am besten eine Vektordatei (z.B. SVG) für eine optimale Darstellung. Die Datei muss den öffentlichen Zugriff zulassen."
+                                hint="Das Logo dient im Formular als Erkennungsmerkmal und wird dort auf einer hellen Schutzfläche dargestellt. Nutzen Sie am besten eine Vektordatei (z.B. SVG) für eine optimale Darstellung. Die Datei muss den öffentlichen Zugriff zulassen."
                                 selectLabel="Logo-Grafik auswählen"
                                 value={identityProvider.iconAssetKey ?? null}
                                 onChange={(value) => {
@@ -643,6 +631,9 @@ export function IdentityProviderDetailsPageIndex() {
                                 size={{
                                     aspectRatio: 3,
                                 }}
+                                previewBackgroundColor="#fff"
+                                previewBorderColor="rgba(0, 0, 0, 0.16)"
+                                previewImageFilter="drop-shadow(0 0 1px rgba(0, 0, 0, 0.45))"
                                 disabled={inputsDisabled}
                                 required
                                 error={errors.iconAssetKey}

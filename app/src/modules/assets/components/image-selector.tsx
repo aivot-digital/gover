@@ -42,6 +42,7 @@ interface ImageSelectorProps {
     previewBackgroundColor?: string;
     previewForegroundColor?: string;
     previewBorderColor?: string;
+    previewImageFilter?: string;
 }
 
 export function ImageSelector(props: ImageSelectorProps) {
@@ -58,6 +59,7 @@ export function ImageSelector(props: ImageSelectorProps) {
         previewBackgroundColor,
         previewForegroundColor,
         previewBorderColor,
+        previewImageFilter,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -243,6 +245,7 @@ export function ImageSelector(props: ImageSelectorProps) {
                                             objectFit: 'contain',
                                             display: 'block',
                                             p: 0.75,
+                                            filter: previewImageFilter,
                                         }}
                                     />
                                 }

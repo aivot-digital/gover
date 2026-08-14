@@ -530,23 +530,21 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
         relatedProcessNodeId,
     } = props;
 
-    const theme = useTheme();
-
     const authRequired = identitySlots
         .some(slot => slot.isRequired);
     const allRequiredAuthenticated = identitySlots
         .every(slot => slot.isOptional || slot.isAuthenticated);
     const someAuthenticated = identitySlots
         .some(slot => slot.isAuthenticated);
-    const sortedIdentitySlots = useMemo(() => {
-        return identitySlots
+    const sortedIdentitySlots = useMemo(() => (
+        identitySlots
             .map((slot, index) => ({
                 slot,
                 index,
             }))
             .sort((a, b) => Number(b.slot.isRequired) - Number(a.slot.isRequired) || a.index - b.index)
-            .map(({slot}) => slot);
-    }, [identitySlots]);
+            .map(({slot}) => slot)
+    ), [identitySlots]);
 
     return (
         <Container
@@ -567,49 +565,38 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                 spacing={3}
             >
                 <Grid size={{xs: 12, md: 10, lg: 8}} sx={{mb: 2}}>
-                    {
-                        authRequired &&
-                        <>
-                            <Typography
-                                variant="h2"
-                                component="div"
-                            >
-                                Anmeldung erforderlich
-                            </Typography>
+                    <Typography
+                        variant="h2"
+                        component="div"
+                    >
+                        Mit Nutzerkonto anmelden
+                    </Typography>
 
-                            <Typography
-                                sx={{
-                                    mt: 1,
-                                    maxWidth: 680,
-                                }}
-                            >
-                                Sie müssen sich mit den nachfolgend als verpflichtend gekennzeichneten Identitäten anmelden.
-                                Nach einer erfolgreichen Authentifizierung werden ggf. verfügbare Daten automatisch in das Formular
-                                übernommen.
-                            </Typography>
-                        </>
-                    }
                     {
-                        !authRequired &&
-                        <>
-                            <Typography
-                                variant="h2"
-                                component="div"
-                            >
-                                Anmeldung optional
-                            </Typography>
-
-                            <Typography
-                                sx={{
-                                    mt: 1,
-                                    maxWidth: 680,
-                                }}
-                            >
-                                Sie können sich optional mit einer der nachfolgenden Identitäten anmelden.
-                                Nach einer erfolgreichen Authentifizierung werden ggf. verfügbare Daten automatisch in das Formular
-                                übernommen. Sie können das Formular auch ohne Anmeldung ausfüllen.
-                            </Typography>
-                        </>
+                        authRequired
+                            ? (
+                                <Typography
+                                    sx={{
+                                        mt: 1,
+                                        maxWidth: 680,
+                                    }}
+                                >
+                                    Für dieses Formular ist eine Anmeldung erforderlich. Wählen Sie für jede als verpflichtend
+                                    gekennzeichnete Identität eines der verfügbaren Nutzerkonten aus. Verfügbare Daten können
+                                    anschließend automatisch in das Formular übernommen werden.
+                                </Typography>
+                            )
+                            : (
+                                <Typography
+                                    sx={{
+                                        mt: 1,
+                                        maxWidth: 680,
+                                    }}
+                                >
+                                    Sie können sich mit einem Nutzerkonto anmelden, um verfügbare Daten automatisch in das
+                                    Formular übernehmen zu lassen. Alternativ können Sie das Formular ohne Anmeldung ausfüllen.
+                                </Typography>
+                            )
                     }
                 </Grid>
 
@@ -631,16 +618,8 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                             xs: 2,
                                             md: 2.5,
                                         },
-                                        borderColor: slot.isAuthenticated
-                                            ? alpha(theme.palette.success.main, 0.45)
-                                            : slot.isRequired
-                                                ? alpha(theme.palette.warning.main, 0.5)
-                                                : alpha(theme.palette.text.primary, 0.16),
-                                        backgroundColor: slot.isAuthenticated
-                                            ? alpha(theme.palette.success.main, 0.0125)
-                                            : slot.isRequired
-                                                ? alpha(theme.palette.warning.main, 0.0125)
-                                                : undefined,
+                                        borderColor: 'divider',
+                                        backgroundColor: 'background.paper',
                                     }}
                                 >
                                     <Box
