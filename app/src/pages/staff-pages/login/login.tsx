@@ -42,7 +42,11 @@ export function Login() {
                     display: 'grid',
                     gridTemplateColumns: {
                         xs: 'minmax(0, 1fr)',
-                        md: 'minmax(20rem, 40%) minmax(0, 1fr)',
+                        md: 'minmax(0, 1fr) minmax(20rem, 40%)',
+                    },
+                    gridTemplateAreas: {
+                        xs: '"hero" "login"',
+                        md: '"login hero"',
                     },
                     backgroundColor: 'background.default',
                 }}
@@ -50,6 +54,7 @@ export function Login() {
                 <Box
                     component="header"
                     sx={{
+                        gridArea: 'hero',
                         position: 'relative',
                         minHeight: {
                             xs: '9rem',
@@ -211,6 +216,7 @@ export function Login() {
                     component="section"
                     aria-labelledby="login-heading"
                     sx={{
+                        gridArea: 'login',
                         minHeight: {
                             xs: 'calc(100dvh - 9rem)',
                             sm: 'calc(100dvh - 11rem)',
