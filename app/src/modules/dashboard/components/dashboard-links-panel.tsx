@@ -6,7 +6,6 @@ import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForw
 import MenuBook from '@aivot/mui-material-symbols-400-n25-outlined/MenuBook';
 import SupportAgent from '@aivot/mui-material-symbols-400-n25-outlined/SupportAgent';
 import ReadinessScore from '@aivot/mui-material-symbols-400-n25-outlined/ReadinessScore';
-import CorporateFare from '@aivot/mui-material-symbols-400-n25-outlined/CorporateFare';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {useApi} from '../../../hooks/use-api';
 import {CustomLinksApiService} from '../../custom-links/custom-links-api-service';
@@ -17,6 +16,7 @@ import {DashboardPanel} from './dashboard-panel';
 import {Permission} from '../../../data/permissions/permission';
 import {useHasSystemPermission} from '../../permissions/hooks/use-permissions';
 import Balancer from 'react-wrap-balancer';
+import Link2 from '@aivot/mui-material-symbols-400-n25-outlined/Link2';
 
 interface CustomLinkCardProps {
     actionLabel: string;
@@ -104,7 +104,7 @@ function OrganizationLinksPanel({links, canCreate}: {links: CustomLink[]; canCre
             <DashboardPanel sx={{overflow: 'hidden'}}>
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, px: {xs: 2, sm: 2.75}, py: 2.25}}>
                     <Box sx={{width: 40, height: 40, display: 'grid', placeItems: 'center', borderRadius: '50%', bgcolor: 'action.hover', color: 'text.secondary', flexShrink: 0}}>
-                        <CorporateFare/>
+                        <Link2/>
                     </Box>
                     <Box>
                         <Typography id="organization-links-title" variant="h6" component="h2">
