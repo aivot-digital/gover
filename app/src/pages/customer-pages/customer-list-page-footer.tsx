@@ -23,6 +23,7 @@ interface CustomerListPageFooterProps {
 export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
+    const providerName = AppConfig.providerName.trim();
 
     const imprintDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.imprintDepartmentId));
     const privacyDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.privacyDepartmentId));
@@ -119,7 +120,11 @@ export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
                                     },
                                 }}
                             >
-                                {AppConfig.providerName} &bull; Alle Rechte vorbehalten.
+                                {
+                                    providerName.length > 0 &&
+                                    <>{providerName} &bull; </>
+                                }
+                                Alle Rechte vorbehalten.
                             </Typography>
                         </Box>
                     </Box>

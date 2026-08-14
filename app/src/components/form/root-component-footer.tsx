@@ -49,6 +49,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
     const disableListingPageLink = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.disableListingPageLink));
     const customListingPageLink = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.customListingPageLink));
     const resolvedLogoUrl = theme.palette.mode === 'dark' ? logoUrlDark ?? logoUrl : logoUrl;
+    const providerName = name?.trim() ?? '';
 
     return (
         <Box
@@ -171,7 +172,11 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                                     },
                                 }}
                             >
-                                {name} &bull; Alle Rechte vorbehalten.
+                                {
+                                    providerName.length > 0 &&
+                                    <>{providerName} &bull; </>
+                                }
+                                Alle Rechte vorbehalten.
                             </Typography>
                         </Box>
                     </Box>
