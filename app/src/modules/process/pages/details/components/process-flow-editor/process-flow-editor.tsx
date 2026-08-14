@@ -60,6 +60,7 @@ import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 import {AlertComponent} from '../../../../../../components/alert/alert-component';
 import {ProcessNodeProviderDetailsDialog} from '../../../../components/process-node-provider-details';
 import {getReactFlowBackgroundDotColor} from '../../../../../../theming/react-flow-theme';
+import {ProcessInstanceEventDialog} from '../../../../dialogs/process-instance-event-dialog';
 
 const FLOW_MIN_ZOOM = 0.25;
 const FLOW_MAX_ZOOM = 2;
@@ -127,6 +128,11 @@ interface ProcessFlowEditorProps {
 }
 
 type ProcessFlowEditorRuntimeData = ProcessFlowEditorProps['runtimeData'];
+
+interface ProcessFlowEditorEventDialogTarget {
+    instanceId: number;
+    taskId: number;
+}
 
 const NodeTypes = {
     [DEFAULT_FLOW_NODE_TYPE]: ProcessFlowEditorNode,
@@ -465,6 +471,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const [canvasTriggerLaneHeaderPosition, setCanvasTriggerLaneHeaderPosition] = useState<CanvasTriggerLaneHeaderPosition | null>(null);
     const [layoutError, setLayoutError] = useState<ProcessFlowEditorLayoutError | null>(null);
     const [providerDetailsDialogProvider, setProviderDetailsDialogProvider] = useState<ProcessNodeProvider | null>(null);
+    const [eventDialogTarget, setEventDialogTarget] = useState<ProcessFlowEditorEventDialogTarget | null>(null);
 
     const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
@@ -483,6 +490,16 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const handleShowNodeProviderDetails = useCallback((provider: ProcessNodeProvider): void => {
         setProviderDetailsDialogProvider(provider);
     }, []);
+    const handleShowTaskEvents = useCallback((taskId: number): void => {
+        if (runtimeData == null) {
+            return;
+        }
+
+        setEventDialogTarget({
+            instanceId: runtimeData.instance.id,
+            taskId,
+        });
+    }, [runtimeData]);
     const hasAllNodeProviders = useMemo(() => (
         processFlow.nodes.every((node) => (
             nodeProviders.some((provider) => (
@@ -511,6 +528,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onStartReplaceNode: onStartReplaceNode ?? NOOP_START_REPLACE_NODE,
         onStartCloneNode: onStartCloneNode ?? NOOP_START_CLONE_NODE,
         onShowNodeProviderDetails: handleShowNodeProviderDetails,
+        onShowTaskEvents: handleShowTaskEvents,
 
         onReloadRuntimeData: onReloadRuntimeData,
         onDownloadAttachment,
@@ -533,6 +551,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onStartReplaceNode,
         onStartCloneNode,
         handleShowNodeProviderDetails,
+        handleShowTaskEvents,
         runtimeData,
         onDownloadAttachment,
         onReloadRuntimeData,
@@ -907,6 +926,18 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                         setProviderDetailsDialogProvider(null);
                     }}
                 />
+
+                {
+                    eventDialogTarget != null &&
+                    <ProcessInstanceEventDialog
+                        open
+                        onClose={() => {
+                            setEventDialogTarget(null);
+                        }}
+                        instanceId={eventDialogTarget.instanceId}
+                        taskId={eventDialogTarget.taskId}
+                    />
+                }
             </>
         </ProcessFlowEditorProvider>
     );
