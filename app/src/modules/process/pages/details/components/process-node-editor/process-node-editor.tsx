@@ -456,17 +456,16 @@ export function ProcessNodeEditor(): ReactNode {
                                 }}
                             >
                                 <Typography
-                                    fontWeight="bold"
                                     component="div"
                                     title={provider.name}
                                     sx={{
+                                        fontWeight: "bold",
                                         flex: 1,
                                         minWidth: 0,
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                    }}
-                                >
+                                        whiteSpace: 'nowrap'
+                                    }}>
                                     {provider.name}
                                 </Typography>
                                 <Chip

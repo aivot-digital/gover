@@ -141,7 +141,9 @@ function PresetInfoRow({
 }) {
     return (
         <Box sx={{py: 0.25}}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+                color: "text.secondary"
+            }}>
                 {label}
             </Typography>
             <Typography variant="body2" sx={{mt: 0.25}}>

@@ -169,11 +169,10 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
             >
                 <Typography
                     variant="body1"
-                    color="text.secondary"
                     sx={{
-                        flex: 1,
-                    }}
-                >
+                        color: "text.secondary",
+                        flex: 1
+                    }}>
                     {descriptionText}
                 </Typography>
 

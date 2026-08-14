@@ -56,7 +56,13 @@ export function Dashboard() {
         >
             <DashboardGreeting/>
 
-            <Grid container spacing={3} alignItems="stretch" sx={{mt: 2.75}}>
+            <Grid
+                container
+                spacing={3}
+                sx={{
+                    alignItems: "stretch",
+                    mt: 2.75
+                }}>
                 <Grid size={{xs: 12, lg: showRecentProcesses ? 8 : 12}} sx={{display: 'flex'}}>
                     <DashboardTasksPanel summary={overview?.tasks} error={overviewError}/>
                 </Grid>

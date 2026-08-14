@@ -140,7 +140,9 @@ export function ReferenceCheck(props: ReferenceCheckProps) {
                 ) : (
                     <Typography
                         variant="body2"
-                        color="text.secondary"
+                        sx={{
+                            color: "text.secondary"
+                        }}
                     >
                         Keine referenzierten Elemente gefunden.
                     </Typography>

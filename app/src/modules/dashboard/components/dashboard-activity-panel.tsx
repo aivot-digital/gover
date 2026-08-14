@@ -34,7 +34,7 @@ interface DashboardActivityPanelProps {
 }
 
 function DashboardGradientArea({ownerState, ...props}: AnimatedAreaProps) {
-    const gradientId = `dashboard-activity-gradient-${ownerState.id}`;
+    const gradientId = `dashboard-activity-gradient-${ownerState.seriesId}`;
 
     return (
         <>
@@ -94,19 +94,27 @@ export function DashboardActivityPanel({activity, error = false, initialPeriod}:
                 </Box>
                 <Box>
                     <Typography variant="h6" component="h2">Vorgangsaktivität</Typography>
-                    <Typography variant="body2" color="text.secondary">Gestartete und abgeschlossene Vorgänge {periodLabel}</Typography>
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>Gestartete und abgeschlossene Vorgänge {periodLabel}</Typography>
                 </Box>
             </Box>
 
             {activity == null && !error && <Box sx={{height: 300, display: 'grid', placeItems: 'center'}}><CircularProgress size={28}/></Box>}
-            {error && <Box sx={{height: 260, display: 'grid', placeItems: 'center', textAlign: 'center'}}><Box><Typography fontWeight={600}>Vorgangsaktivität konnte nicht geladen werden</Typography><Typography variant="body2" color="text.secondary"><Balancer>Die Vorgänge sind weiterhin über die Navigation erreichbar.</Balancer></Typography></Box></Box>}
+            {error && <Box sx={{height: 260, display: 'grid', placeItems: 'center', textAlign: 'center'}}><Box><Typography sx={{
+                fontWeight: 600
+            }}>Vorgangsaktivität konnte nicht geladen werden</Typography><Typography variant="body2" sx={{
+                color: "text.secondary"
+            }}><Balancer>Die Vorgänge sind weiterhin über die Navigation erreichbar.</Balancer></Typography></Box></Box>}
             {activity != null && (
                 <>
                     <Box sx={{display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 1, mt: 2.5, mb: 1}}>
                         {metrics.map((metric) => (
                             <Box key={metric.label} sx={{borderLeft: '2px solid', borderColor: metric.borderColor, pl: 1.5}}>
                                 <Typography sx={{fontSize: '1.5rem', fontWeight: 650, lineHeight: 1.2}}>{metric.value}</Typography>
-                                <Typography variant="caption" color="text.secondary">{metric.label}</Typography>
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>{metric.label}</Typography>
                             </Box>
                         ))}
                     </Box>
@@ -127,7 +135,9 @@ export function DashboardActivityPanel({activity, error = false, initialPeriod}:
                             }}
                         >
                             <BarChartIcon sx={{fontSize: 19, color: 'text.secondary', flexShrink: 0}}/>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
                                 <Balancer>
                                     <Box component="span" sx={{fontWeight: 650, color: 'text.primary'}}>
                                         Im ausgewählten Zeitraum wurden keine Vorgänge gestartet oder abgeschlossen.
@@ -197,7 +207,9 @@ export function DashboardActivityPanel({activity, error = false, initialPeriod}:
                         }}
                     >
                         <Info sx={{fontSize: 16, color: 'text.disabled', mt: '1px', flexShrink: 0}}/>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             <Balancer>
                                 Die Auswertung berücksichtigt nur Vorgänge, auf die Sie zugreifen dürfen. Sie bildet daher möglicherweise nicht alle Vorgänge dieser Prosuna-Instanz ab.
                             </Balancer>

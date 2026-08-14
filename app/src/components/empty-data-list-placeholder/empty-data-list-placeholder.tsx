@@ -34,12 +34,11 @@ export function EmptyDataListPlaceholder(props: EmptyDataListPlaceholderProps) {
                 (props.description != null || props.helperText != null) &&
                 <Typography
                     variant="body1"
-                    color="text.secondary"
                     sx={{
+                        color: "text.secondary",
                         mt: props.title != null ? 1 : 0,
-                        lineHeight: 1.55,
-                    }}
-                >
+                        lineHeight: 1.55
+                    }}>
                     {props.description ?? props.helperText}
                 </Typography>
             }

@@ -394,19 +394,21 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
         <Box sx={{mt: 3}}>
             <Stack
                 direction="row"
-                alignItems="center"
-                justifyContent="space-between"
                 spacing={2}
-                sx={{mb: 1}}
-            >
+                sx={{
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    mb: 1
+                }}>
                 <Box>
                     <Typography variant="h6">
                         {title}{' '}
                         <Typography
                             variant="body2"
-                            color="text.secondary"
-                            sx={{display: 'inline'}}
-                        >
+                            sx={{
+                                color: "text.secondary",
+                                display: 'inline'
+                            }}>
                             ({selectedCount} ausgewählt · {allKnownPermissions.length} zuweisbar
                             {recoveryPermissionCount > 0 ? ` · ${recoveryPermissionCount} zu prüfen` : ''}
                             {normalizedPermissionQuery ? ` · ${visiblePermissions.length} sichtbar` : ''})
@@ -417,7 +419,9 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                 <Stack
                     direction="row"
                     spacing={1}
-                    alignItems="center"
+                    sx={{
+                        alignItems: "center"
+                    }}
                 >
                     <Tooltip
                         title="Änderungen anzeigen"
@@ -434,7 +438,9 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                                 <Stack
                                     direction="row"
                                     spacing={1}
-                                    alignItems="center"
+                                    sx={{
+                                        alignItems: "center"
+                                    }}
                                 >
                                     <Typography variant="inherit">Änderungen</Typography>
                                     <Chip
@@ -591,7 +597,9 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                     {!diff.hasChanges ? (
                         <Typography
                             variant="body2"
-                            color="text.secondary"
+                            sx={{
+                                color: "text.secondary"
+                            }}
                         >
                             Keine Änderungen gegenüber dem zuletzt gespeicherten Stand.
                         </Typography>
@@ -612,7 +620,9 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                                         direction="row"
                                         spacing={1}
                                         useFlexGap
-                                        flexWrap="wrap"
+                                        sx={{
+                                            flexWrap: "wrap"
+                                        }}
                                     >
                                         {diff.added.map((permission) => (
                                             <Chip
@@ -637,7 +647,9 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                                         direction="row"
                                         spacing={1}
                                         useFlexGap
-                                        flexWrap="wrap"
+                                        sx={{
+                                            flexWrap: "wrap"
+                                        }}
                                     >
                                         {diff.removed.map((permission) => (
                                             <Chip

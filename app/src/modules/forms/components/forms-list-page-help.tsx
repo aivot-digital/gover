@@ -7,7 +7,9 @@ export function FormsListPageHelp(): React.ReactElement {
             <Typography
                 variant="body1"
                 component="p"
-                marginBottom={2}
+                sx={{
+                    marginBottom: 2
+                }}
             >
                 Formulare werden als Formulareingänge innerhalb von Prozessen erstellt und gemeinsam mit einer
                 Prozessversion veröffentlicht. Sie besitzen daher keinen vom Prozess unabhängigen Lebenszyklus.
@@ -15,7 +17,9 @@ export function FormsListPageHelp(): React.ReactElement {
             <Typography
                 variant="body1"
                 component="p"
-                marginBottom={2}
+                sx={{
+                    marginBottom: 2
+                }}
             >
                 Unter „Veröffentlicht“ finden Sie alle Formulareingänge der aktuell veröffentlichten Prozessversionen,
                 auf die Sie Zugriff haben. Die Übersicht enthält auch Formulare, die nicht im öffentlichen

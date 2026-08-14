@@ -366,9 +366,10 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     }}
                 >
                     <Box
-                        display="flex"
-                        alignItems="center"
-                    >
+                        sx={{
+                            display: "flex",
+                            alignItems: "center"
+                        }}>
                         {
                             themes == null &&
                             <Skeleton
@@ -426,9 +427,10 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     }}
                 >
                     <Box
-                        display="flex"
-                        alignItems="center"
-                    >
+                        sx={{
+                            display: "flex",
+                            alignItems: "center"
+                        }}>
                         <AssetSelector
                             label="PDF-Vorlage"
                             selectLabel="PDF-Vorlage auswählen"

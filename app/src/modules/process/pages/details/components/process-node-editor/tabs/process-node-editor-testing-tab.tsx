@@ -82,9 +82,10 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
                 testClaim == null &&
                 <Typography
                     variant="body1"
-                    my={2}
-                    maxWidth={400}
-                >
+                    sx={{
+                        my: 2,
+                        maxWidth: 400
+                    }}>
                     Der Prozess befindet sich aktuell nicht in der Testphase.
                     Sobald der Prozess in die Testphase wechselt, können hier zusätzliche Eigenschaften des Elemente
                     konfiguriert werden.
@@ -105,9 +106,10 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
                 noTestingLayout &&
                 <Typography
                     variant="body1"
-                    my={2}
-                    maxWidth={400}
-                >
+                    sx={{
+                        my: 2,
+                        maxWidth: 400
+                    }}>
                     Für dieses Prozesselement sind keine weiteren Testinformationen vorhanden.
                 </Typography>
             }

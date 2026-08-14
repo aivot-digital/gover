@@ -271,8 +271,9 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
                     typeof value === 'string' ? value : value?.value,
                 );
             }}
-            renderOption={(renderProps, option) => (
+            renderOption={({key, ...renderProps}, option) => (
                 <Box
+                    key={key}
                     component="li"
                     {...renderProps}
                     sx={{display: 'block !important'}}
@@ -304,33 +305,37 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
                     helperText={props.hint}
                     margin="none"
                     fullWidth
-                    InputLabelProps={{
-                        ...params.InputLabelProps,
-                        title: getStaticValueLabel(props.label),
-                    }}
-                    InputProps={{
-                        ...params.InputProps,
-                        startAdornment: (
-                            <>
-                                <InputAdornment position="start">
-                                    <Article/>
-                                </InputAdornment>
-                                {params.InputProps.startAdornment}
-                            </>
-                        ),
-                        endAdornment: (
-                            <>
-                                <InputAdornment
-                                    position="end"
-                                    sx={{mr: 1}}
-                                >
-                                    {getStaticValueActions(props).map(renderIconButton)}
-                                </InputAdornment>
-                                {params.InputProps.endAdornment}
-                            </>
-                        ),
-                    }}
-                />
+                    slotProps={{
+                        ...params.slotProps,
+
+                        input: {
+                            ...params.slotProps.input,
+                            startAdornment: (
+                                <>
+                                    <InputAdornment position="start">
+                                        <Article/>
+                                    </InputAdornment>
+                                    {params.slotProps.input.startAdornment}
+                                </>
+                            ),
+                            endAdornment: (
+                                <>
+                                    <InputAdornment
+                                        position="end"
+                                        sx={{mr: 1}}
+                                    >
+                                        {getStaticValueActions(props).map(renderIconButton)}
+                                    </InputAdornment>
+                                    {params.slotProps.input.endAdornment}
+                                </>
+                            ),
+                        },
+
+                        inputLabel: {
+                            ...params.slotProps.inputLabel,
+                            title: getStaticValueLabel(props.label),
+                        }
+                    }} />
             )}
         />
     );

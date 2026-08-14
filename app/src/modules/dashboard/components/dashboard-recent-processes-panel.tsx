@@ -17,7 +17,9 @@ export function DashboardRecentProcessesPanel({processes}: {processes: Dashboard
         <DashboardPanel sx={{width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
             <Box sx={{px: 2.25, pt: 2.5, pb: 2}}>
                 <Typography variant="h6" component="h2">Zuletzt geänderte Prozesse</Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                }}>
                     <Balancer>Prozesse, die Sie bearbeiten dürfen</Balancer>
                 </Typography>
             </Box>
@@ -29,8 +31,16 @@ export function DashboardRecentProcessesPanel({processes}: {processes: Dashboard
                         <ListItemButton component={Link} to={getProcessLink(process)} sx={{px: 2.25, py: 1.75, gap: 1.5}}>
                             <Route sx={{color: 'text.secondary', flexShrink: 0}}/>
                             <Box sx={{minWidth: 0}}>
-                                <Typography fontWeight={600} variant="body2" noWrap>{process.title}</Typography>
-                                <Typography variant="caption" color="text.secondary" sx={{display: 'block', lineHeight: 1.4}}>
+                                <Typography variant="body2" noWrap sx={{
+                                    fontWeight: 600
+                                }}>{process.title}</Typography>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: "text.secondary",
+                                        display: 'block',
+                                        lineHeight: 1.4
+                                    }}>
                                     Bearbeitet am {formatInstantInApplicationTimeZone(process.updated, 'dd.MM.yyyy')}
                                 </Typography>
                             </Box>

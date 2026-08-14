@@ -35,7 +35,9 @@ export function IdentityProviderDetailsPage() {
                                 <>
                                     <Typography
                                         variant="body1"
-                                        paragraph
+                                        sx={{
+                                            marginBottom: "16px"
+                                        }}
                                     >
                                         Konfigurieren Sie hier die Nutzerkontenanbieter, die in Ihrer Prosuna-Instanz global verfügbar sein sollen.
                                         Die angebundenen Nutzerkonten können in Formularen als Authentifizierungsoptionen verwendet werden.
@@ -43,7 +45,9 @@ export function IdentityProviderDetailsPage() {
                                     </Typography>
                                     <Typography
                                         variant="body1"
-                                        paragraph
+                                        sx={{
+                                            marginBottom: "16px"
+                                        }}
                                     >
                                         <strong>Mögliche Szenarien:</strong>
                                     </Typography>
@@ -51,7 +55,9 @@ export function IdentityProviderDetailsPage() {
                                         <li>
                                             <Typography
                                                 variant="body1"
-                                                paragraph
+                                                sx={{
+                                                    marginBottom: "16px"
+                                                }}
                                             >
                                                 <strong>Direkt OpenID Connect kompatible IdPs</strong>
                                                 (z.B. BundID, BayernID, Mein Unternehmenskonto, Servicekonto SH, Keycloak, Azure AD):
@@ -62,7 +68,9 @@ export function IdentityProviderDetailsPage() {
                                         <li>
                                             <Typography
                                                 variant="body1"
-                                                paragraph
+                                                sx={{
+                                                    marginBottom: "16px"
+                                                }}
                                             >
                                                 <strong>Systeme ohne OpenID Connect Unterstützung</strong>
                                                 (z.B. LDAP/AD, andere IdPs):
@@ -73,7 +81,9 @@ export function IdentityProviderDetailsPage() {
                                         <li>
                                             <Typography
                                                 variant="body1"
-                                                paragraph
+                                                sx={{
+                                                    marginBottom: "16px"
+                                                }}
                                             >
                                                 <strong>LDAP/AD für Prosuna-Mitarbeitende:</strong>
                                                 <br />
@@ -85,13 +95,17 @@ export function IdentityProviderDetailsPage() {
                                     </ul>
                                     <Typography
                                         variant="body1"
-                                        paragraph
+                                        sx={{
+                                            marginBottom: "16px"
+                                        }}
                                     >
                                         Es wird empfohlen, für jeden Nutzerkontenanbieter sowohl eine produktive als auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
                                     </Typography>
                                     <Typography
                                         variant="body1"
-                                        paragraph
+                                        sx={{
+                                            marginBottom: "16px"
+                                        }}
                                     >
                                         Die notwendigen Konfigurationsdaten erhalten Sie in der Dokumentation des Anbieters oder direkt vom Anbieter selbst.
                                     </Typography>

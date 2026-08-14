@@ -459,11 +459,10 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         <Stack
                             direction="row"
                             spacing={1}
-                            alignItems="center"
                             sx={{
-                                width: '100%',
-                            }}
-                        >
+                                alignItems: "center",
+                                width: '100%'
+                            }}>
                             <MobileLayout
                                 sx={{
                                     flexShrink: 0,
@@ -473,14 +472,13 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                             />
                             <Typography
                                 variant="body2"
-                                color="text.secondary"
                                 title={summary}
                                 sx={{
+                                    color: "text.secondary",
                                     flexGrow: 1,
                                     lineHeight: 1.4,
-                                    minWidth: 0,
-                                }}
-                            >
+                                    minWidth: 0
+                                }}>
                                 {summary}
                             </Typography>
 
@@ -757,10 +755,12 @@ function UiDefinitionInputFieldSettingsMenu(props: UiDefinitionInputFieldSetting
                 horizontal: 'right',
                 vertical: 'top',
             }}
-            MenuListProps={{
-                sx: {
-                    py: 1,
-                },
+            slotProps={{
+                list: {
+                    sx: {
+                        py: 1,
+                    },
+                }
             }}
         >
             <MenuItem
@@ -782,8 +782,10 @@ function UiDefinitionInputFieldSettingsMenu(props: UiDefinitionInputFieldSetting
                 </ListItemIcon>
                 <ListItemText
                     primary="Element-Kontextmenü aktivieren"
-                    primaryTypographyProps={{
-                        noWrap: true,
+                    slotProps={{
+                        primary: {
+                            noWrap: true,
+                        }
                     }}
                 />
                 <Switch

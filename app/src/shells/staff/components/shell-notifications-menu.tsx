@@ -37,35 +37,44 @@ export function ShellNotificationsMenu({ anchorEl, onClose, minimizeDrawer }: Sh
                 vertical: minimizeDrawer ? 'center' : 'top',
                 horizontal: minimizeDrawer ? 'left' : 'left',
             }}
-            PaperProps={{
-                elevation: menuElevation,
-                sx: {
-                    mt: 1.5,
-                    minWidth: 400,
-                    overflow: 'visible',
-                    ...(!minimizeDrawer
-                        ? {
-                            '&::before': {
-                                content: '""',
-                                display: 'block',
-                                position: 'absolute',
-                                top: 0,
-                                left: 16,
-                                width: 10,
-                                height: 10,
-                                bgcolor: getHeaderBackgroundColor,
-                                transform: 'translateY(-50%) translateX(-5px) rotate(45deg)',
-                                boxShadow: '-1px -1px 2px rgba(0,0,0,0.1)',
-                                zIndex: 0,
-                            },
-                        }
-                        : {}),
+            slotProps={{
+                paper: {
+                    elevation: menuElevation,
+                    sx: {
+                        mt: 1.5,
+                        minWidth: 400,
+                        overflow: 'visible',
+                        ...(!minimizeDrawer
+                            ? {
+                                '&::before': {
+                                    content: '""',
+                                    display: 'block',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 16,
+                                    width: 10,
+                                    height: 10,
+                                    bgcolor: getHeaderBackgroundColor,
+                                    transform: 'translateY(-50%) translateX(-5px) rotate(45deg)',
+                                    boxShadow: '-1px -1px 2px rgba(0,0,0,0.1)',
+                                    zIndex: 0,
+                                },
+                            }
+                            : {}),
+                    },
                 },
             }}
             sx={{ '& .MuiMenu-list': {p: 0} }}
         >
             <Box sx={{ px: 2, py: 2, backgroundColor: getHeaderBackgroundColor, borderTopLeftRadius: 4, borderTopRightRadius: 4 }}>
-                <Typography variant="h6" component="h3" fontWeight={600} sx={{ lineHeight: 1, m: 0 }}>
+                <Typography
+                    variant="h6"
+                    component="h3"
+                    sx={{
+                        fontWeight: 600,
+                        lineHeight: 1,
+                        m: 0
+                    }}>
                     Benachrichtigungen
                 </Typography>
             </Box>
@@ -119,7 +128,13 @@ export function ShellNotificationsMenu({ anchorEl, onClose, minimizeDrawer }: Sh
                         borderBottomRightRadius: 4
                     }}
                 >
-                    <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 320, transform: 'translateY(-13%)', }}>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: "text.secondary",
+                            maxWidth: 320,
+                            transform: 'translateY(-13%)'
+                        }}>
                         Die Funktionalitäten für Benachrichtigungen werden derzeit entwickelt und stehen in Kürze zur Verfügung.
                     </Typography>
                 </Box>

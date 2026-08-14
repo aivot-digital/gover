@@ -337,8 +337,10 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                         slotToEdit != null &&
                         <Typography
                             variant="body2"
-                            color="text.secondary"
                             gutterBottom
+                            sx={{
+                                color: "text.secondary"
+                            }}
                         >
                             {slotToEdit.hint}
                         </Typography>

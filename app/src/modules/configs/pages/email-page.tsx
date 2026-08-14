@@ -47,7 +47,9 @@ const mailApiService = new MailApiService();
 function renderOptionalValue(value: string | number | null): React.ReactNode {
     return value == null || String(value).trim().length === 0
         ? (
-            <Typography component="span" color="text.secondary">
+            <Typography component="span" sx={{
+                color: "text.secondary"
+            }}>
                 <i>Nicht konfiguriert</i>
             </Typography>
         )
@@ -238,10 +240,14 @@ export function EmailPage() {
                         <Stack
                             direction="row"
                             spacing={1.5}
-                            alignItems="center"
+                            sx={{
+                                alignItems: "center"
+                            }}
                         >
                             <CircularProgress size={22}/>
-                            <Typography color="text.secondary">E-Mail-Konfiguration wird geladen…</Typography>
+                            <Typography sx={{
+                                color: "text.secondary"
+                            }}>E-Mail-Konfiguration wird geladen…</Typography>
                         </Stack>
                     )}
 

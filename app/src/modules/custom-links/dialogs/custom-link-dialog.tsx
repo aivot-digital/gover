@@ -83,7 +83,12 @@ export function CustomLinkDialog(props: CustomLinkDialogProps) {
                     {props.link == null ? 'Link hinzufügen' : 'Link bearbeiten'}
                 </DialogTitleWithClose>
                 <DialogContent tabIndex={0}>
-                    <Typography color="text.secondary" sx={{mb: 2, maxWidth: 560}}>
+                    <Typography
+                        sx={{
+                            color: "text.secondary",
+                            mb: 2,
+                            maxWidth: 560
+                        }}>
                         Aktivierte Links werden allen angemeldeten Mitarbeiter:innen im Bereich „Relevante Links“ auf der Übersicht angezeigt.
                     </Typography>
                     <TextFieldComponent

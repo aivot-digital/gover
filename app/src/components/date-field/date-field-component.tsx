@@ -166,25 +166,29 @@ export function DateFieldComponent({
             variant: 'outlined' as const,
             error: error != null,
             helperText: helper,
-            autoComplete: autocomplete,
-            InputLabelProps: {
-                title: computedLabel,
-            },
             onInput: handleInputChange,
             onKeyDown: handleKeyDown,
             onPaste: handleInputChange,
             onBlur: handleBlur,
-            InputProps: {
-                startAdornment: startIcon && (
-                    <InputAdornment position="start">{startIcon}</InputAdornment>
-                ),
-                endAdornment: endAction && (
-                    <InputAdornment position="end">
-                        {Array.isArray(endAction)
-                            ? endAction.map(renderIconButton)
-                            : renderIconButton(endAction)}
-                    </InputAdornment>
-                ),
+            slotProps: {
+                inputLabel: {
+                    title: computedLabel,
+                },
+                input: {
+                    startAdornment: startIcon && (
+                        <InputAdornment position="start">{startIcon}</InputAdornment>
+                    ),
+                    endAdornment: endAction && (
+                        <InputAdornment position="end">
+                            {Array.isArray(endAction)
+                                ? endAction.map(renderIconButton)
+                                : renderIconButton(endAction)}
+                        </InputAdornment>
+                    ),
+                },
+                htmlInput: {
+                    autoComplete: autocomplete,
+                },
             },
         },
         actionBar: {

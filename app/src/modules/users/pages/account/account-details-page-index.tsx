@@ -79,7 +79,9 @@ export function AccountDetailsPageIndex() {
             children: (
                 <>
                     Prosuna Identity{' '}
-                    <Typography component="span" color="text.secondary">
+                    <Typography component="span" sx={{
+                        color: "text.secondary"
+                    }}>
                         (zentraler Identitätsdienst basierend auf Keycloak)
                     </Typography>
                 </>

@@ -78,7 +78,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
 
     const handleAddSlot = () => {
         setValue([
-            ...value ?? [],
+            ...(value ?? []),
             {
                 id: generateId(10),
                 title: null,
@@ -98,7 +98,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
         }
 
         const changedValue = [
-            ...value ?? [],
+            ...(value ?? []),
         ];
         changedValue[slotIndex] = edited;
         setValue(changedValue);
@@ -112,7 +112,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
         }
 
         const changedValue = [
-            ...value ?? [],
+            ...(value ?? []),
         ];
         changedValue.splice(slotIndex, 1);
         setValue(changedValue);
@@ -123,9 +123,10 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
             <Stack
                 direction="row"
                 spacing={2}
-                alignItems="center"
-                justifyContent="space-between"
-            >
+                sx={{
+                    alignItems: "center",
+                    justifyContent: "space-between"
+                }}>
                 <Typography variant="subtitle2">
                     {element.label}{element.required ? ' *' : ''}
                 </Typography>
@@ -164,7 +165,9 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                     <Stack
                         direction="row"
                         spacing={1}
-                        alignItems="center"
+                        sx={{
+                            alignItems: "center"
+                        }}
                     >
                         <AccountCircle
                             sx={{
@@ -175,11 +178,10 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                         />
                         <Typography
                             variant="body2"
-                            color="text.secondary"
                             sx={{
-                                minWidth: 0,
-                            }}
-                        >
+                                color: "text.secondary",
+                                minWidth: 0
+                            }}>
                             Keine Identitäten vorhanden.{' '}
                             {
                                 element.required &&
@@ -288,7 +290,9 @@ function IdentityConfigSlot(props: {
                 <Grid
                     container
                     spacing={2}
-                    alignItems="flex-start"
+                    sx={{
+                        alignItems: "flex-start"
+                    }}
                 >
                     <Grid
                         size={{

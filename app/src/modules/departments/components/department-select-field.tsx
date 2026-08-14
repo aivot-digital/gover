@@ -42,6 +42,7 @@ export function DepartmentSelectField(props: DepartmentSelectFieldProps): React.
     const showDepartmentPath = value != null && (value.parentNames?.length ?? 0) > 0;
     const departmentPath = showDepartmentPath ? getDepartmentPath(value) : undefined;
     const departmentIcon = value != null ? getDepartmentTypeIcons(value.depth) : <GroupWork />;
+    // The native input remains available for TextField semantics while the selection is rendered in adornments.
     const fieldValue = value?.name ?? '';
     const interactiveCursor = disabled ? 'default' : 'pointer';
     const primaryContentColor = disabled ? 'text.disabled' : 'text.primary';
@@ -85,150 +86,6 @@ export function DepartmentSelectField(props: DepartmentSelectFieldProps): React.
                 required={required}
                 onClick={handleOpenDialog}
                 onKeyDown={handleKeyDown}
-                InputLabelProps={{
-                    title: label,
-                }}
-                FormHelperTextProps={{
-                    title: error ?? hint,
-                    sx: {
-                        whiteSpace: 'normal',
-                    },
-                }}
-                inputProps={{
-                    readOnly: true,
-                    title: value?.name,
-                    'aria-label': label,
-                }}
-                InputProps={{
-                    startAdornment: (
-                        <InputAdornment
-                            position="start"
-                            sx={{
-                                minWidth: 0,
-                                flex: 1,
-                                alignItems: 'center',
-                                mr: 1,
-                            }}
-                        >
-                            <Box
-                                component="span"
-                                sx={{
-                                    display: 'inline-flex',
-                                    flexShrink: 0,
-                                    mr: 1.25,
-                                    color: iconColor,
-                                    '& .MuiSvgIcon-root': {
-                                        fontSize: 20,
-                                    },
-                                }}
-                            >
-                                {departmentIcon}
-                            </Box>
-
-                            <Box
-                                component="span"
-                                sx={{
-                                    minWidth: 0,
-                                    flex: 1,
-                                }}
-                            >
-                                {
-                                    value != null ? (
-                                        <>
-                                            <Typography
-                                                variant="body2"
-                                                component="span"
-                                                color={primaryContentColor}
-                                                sx={{
-                                                    display: 'block',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    whiteSpace: 'nowrap',
-                                                    fontSize: '1rem',
-                                                    lineHeight: 1.25,
-                                                }}
-                                                title={value.name}
-                                            >
-                                                {value.name}
-                                            </Typography>
-
-                                            {
-                                                departmentPath != null &&
-                                                <Typography
-                                                    variant="caption"
-                                                    component="span"
-                                                    color={secondaryContentColor}
-                                                    sx={{
-                                                        display: 'block',
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap',
-                                                        fontSize: '0.75rem',
-                                                        lineHeight: 1.2,
-                                                    }}
-                                                    title={departmentPath}
-                                                >
-                                                    {departmentPath}
-                                                </Typography>
-                                            }
-                                        </>
-                                    ) : (
-                                        <Typography
-                                            variant="body2"
-                                            component="span"
-                                            color={secondaryContentColor}
-                                            sx={{
-                                                display: 'block',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                            }}
-                                        >
-                                            {placeholder}
-                                        </Typography>
-                                    )
-                                }
-                            </Box>
-                        </InputAdornment>
-                    ),
-                    endAdornment: (
-                        <InputAdornment position="end">
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5,
-                                    mr: -0.5,
-                                }}
-                            >
-                                <Tooltip
-                                    title={clearTooltip}
-                                    arrow
-                                >
-                                    <span>
-                                        <IconButton
-                                            size="small"
-                                            onClick={handleClear}
-                                            onMouseDown={(event) => {
-                                                event.preventDefault();
-                                                event.stopPropagation();
-                                            }}
-                                            disabled={disabled || value == null}
-                                            aria-label="Auswahl entfernen"
-                                        >
-                                            <Close fontSize="small"/>
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
-
-                                <ChevronRight
-                                    fontSize="small"
-                                    sx={{color: endIconColor}}
-                                />
-                            </Box>
-                        </InputAdornment>
-                    ),
-                }}
                 sx={{
                     '& .MuiOutlinedInput-root': {
                         cursor: interactiveCursor,
@@ -247,7 +104,155 @@ export function DepartmentSelectField(props: DepartmentSelectFieldProps): React.
                         pointerEvents: disabled ? 'none' : 'auto',
                     },
                 }}
-            />
+                slotProps={{
+                    input: {
+                        startAdornment: (
+                            <InputAdornment
+                                position="start"
+                                sx={{
+                                    minWidth: 0,
+                                    flex: 1,
+                                    alignItems: 'center',
+                                    mr: 1,
+                                }}
+                            >
+                                <Box
+                                    component="span"
+                                    sx={{
+                                        display: 'inline-flex',
+                                        flexShrink: 0,
+                                        mr: 1.25,
+                                        color: iconColor,
+                                        '& .MuiSvgIcon-root': {
+                                            fontSize: 20,
+                                        },
+                                    }}
+                                >
+                                    {departmentIcon}
+                                </Box>
+
+                                <Box
+                                    component="span"
+                                    sx={{
+                                        minWidth: 0,
+                                        flex: 1,
+                                    }}
+                                >
+                                    {
+                                        value != null ? (
+                                            <>
+                                                <Typography
+                                                    variant="body2"
+                                                    component="span"
+                                                    color={primaryContentColor}
+                                                    sx={{
+                                                        display: 'block',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap',
+                                                        fontSize: '1rem',
+                                                        lineHeight: 1.25,
+                                                    }}
+                                                    title={value.name}
+                                                >
+                                                    {value.name}
+                                                </Typography>
+
+                                                {
+                                                    departmentPath != null &&
+                                                    <Typography
+                                                        variant="caption"
+                                                        component="span"
+                                                        color={secondaryContentColor}
+                                                        sx={{
+                                                            display: 'block',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap',
+                                                            fontSize: '0.75rem',
+                                                            lineHeight: 1.2,
+                                                        }}
+                                                        title={departmentPath}
+                                                    >
+                                                        {departmentPath}
+                                                    </Typography>
+                                                }
+                                            </>
+                                        ) : (
+                                            <Typography
+                                                variant="body2"
+                                                component="span"
+                                                color={secondaryContentColor}
+                                                sx={{
+                                                    display: 'block',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                }}
+                                            >
+                                                {placeholder}
+                                            </Typography>
+                                        )
+                                    }
+                                </Box>
+                            </InputAdornment>
+                        ),
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                        mr: -0.5,
+                                    }}
+                                >
+                                    <Tooltip
+                                        title={clearTooltip}
+                                        arrow
+                                    >
+                                        <span>
+                                            <IconButton
+                                                size="small"
+                                                onClick={handleClear}
+                                                onMouseDown={(event) => {
+                                                    event.preventDefault();
+                                                    event.stopPropagation();
+                                                }}
+                                                disabled={disabled || value == null}
+                                                aria-label="Auswahl entfernen"
+                                            >
+                                                <Close fontSize="small"/>
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+
+                                    <ChevronRight
+                                        fontSize="small"
+                                        sx={{color: endIconColor}}
+                                    />
+                                </Box>
+                            </InputAdornment>
+                        ),
+                    },
+
+                    htmlInput: {
+                        readOnly: true,
+                        title: value?.name,
+                        'aria-label': label,
+                    },
+
+                    inputLabel: {
+                        title: label,
+                    },
+
+                    formHelperText: {
+                        title: error ?? hint,
+                        sx: {
+                            whiteSpace: 'normal',
+                        },
+                    },
+                }} />
 
             <SelectDepartmentDialog
                 open={showSelectDepartmentDialog}

@@ -256,13 +256,17 @@ export function ProcessListPage() {
             tooltip: 'Hilfe anzeigen',
             content: (
                 <>
-                    <Typography mb={2}>
+                    <Typography sx={{
+                        mb: 2
+                    }}>
                         Prozesse sind digitale Abläufe, die verschiedene Aufgaben und Genehmigungsschritte innerhalb
                         Ihrer Organisation abbilden.
                         In dieser Übersicht sehen Sie alle Prozesse, an deren Entwicklung Sie beteiligt sind oder die
                         Ihrer Organisationseinheit zugeordnet wurden.
                     </Typography>
-                    <Typography mb={2}>
+                    <Typography sx={{
+                        mb: 2
+                    }}>
                         Sie können neue Prozesse anlegen, bestehende Prozesse bearbeiten oder veröffentlichte Versionen
                         einsehen.
                         Der Status eines Prozesses zeigt an, ob er sich noch im Entwurf befindet, bereits veröffentlicht

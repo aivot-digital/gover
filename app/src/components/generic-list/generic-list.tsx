@@ -401,7 +401,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         [`& .MuiDataGrid-columnHeader:last-of-type, & .MuiDataGrid-cell[data-colindex="${lastColIndex}"]`]: {
             paddingRight: '16px',
         },
-        [`& .${gridClasses.columnHeaders}, & .${gridClasses.columnHeader}, & .${gridClasses['scrollbarFiller--header']}, & .${gridClasses.columnHeaders} .${gridClasses.filler}`]: {
+        [`& .${gridClasses.columnHeaders}, & .${gridClasses.columnHeader}, & .${gridClasses.columnHeaders} .${gridClasses.scrollbarFiller}, & .${gridClasses.columnHeaders} .${gridClasses.filler}`]: {
             backgroundColor: (theme: MuiTheme) => `${theme.palette.action.hover} !important`,
         },
         '& .MuiDataGrid-columnHeader .MuiDataGrid-columnSeparator': {

@@ -336,9 +336,11 @@ export function ExpandableCodeBlock(props: ExpandableCodeBlockProps) {
                     {diffResult.limitReached && (
                         <Typography
                             variant="caption"
-                            color="text.secondary"
-                            sx={{mr: 'auto', whiteSpace: 'normal'}}
-                        >
+                            sx={{
+                                color: "text.secondary",
+                                mr: 'auto',
+                                whiteSpace: 'normal'
+                            }}>
                             Der Vergleich wurde wegen des Datenumfangs nicht dargestellt.
                         </Typography>
                     )}

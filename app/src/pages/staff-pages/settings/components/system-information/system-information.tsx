@@ -163,10 +163,13 @@ export function SystemInformation(): React.ReactElement {
 
     const getStatusLabel = (key: keyof HealthDataComponents): React.ReactNode => {
         if (health == null) {
-            return <Typography
-                fontStyle={'italic'}
-                color={'text.secondary'}
-            >Status wird geladen…</Typography>;
+            return (
+                <Typography
+                    sx={{
+                        fontStyle: 'italic',
+                        color: 'text.secondary'
+                    }}>Status wird geladen…</Typography>
+            );
         }
 
         const status = getStatus(key);
@@ -213,9 +216,11 @@ export function SystemInformation(): React.ReactElement {
             <Typography
                 component="span"
                 variant="body2"
-                color="text.secondary"
+                sx={{
+                    color: "text.secondary"
+                }}
             >
-                {freeSpace} frei von {totalSpace}
+                {freeSpace}frei von {totalSpace}
             </Typography>
         );
     };
@@ -249,7 +254,9 @@ export function SystemInformation(): React.ReactElement {
                     <Typography
                         component="span"
                         variant="body2"
-                        color="text.secondary"
+                        sx={{
+                            color: "text.secondary"
+                        }}
                     >
                         Zentraler Anbieter für Vorgangsanlagen: {defaultProvider.name}
                     </Typography>
@@ -269,7 +276,9 @@ export function SystemInformation(): React.ReactElement {
                     <Typography
                         component="span"
                         variant="body2"
-                        color="text.secondary"
+                        sx={{
+                            color: "text.secondary"
+                        }}
                     >
                         {formatCount(providersWithHints, 'Anbieter mit Hinweis', 'Anbieter mit Hinweisen')}
                     </Typography>
@@ -424,9 +433,10 @@ export function SystemInformation(): React.ReactElement {
                     : (
                         <Stack
                             direction="row"
-                            flexWrap="wrap"
-                            gap={0.75}
-                        >
+                            sx={{
+                                flexWrap: "wrap",
+                                gap: 0.75
+                            }}>
                             {
                                 AppConfig
                                     .moduleFlags
@@ -525,9 +535,10 @@ export function SystemInformation(): React.ReactElement {
                     ? (
                         <Stack
                             direction="row"
-                            flexWrap="wrap"
-                            gap={0.75}
-                        >
+                            sx={{
+                                flexWrap: "wrap",
+                                gap: 0.75
+                            }}>
                             {
                                 knownFileExtensions.map((extension) => (
                                     <Chip

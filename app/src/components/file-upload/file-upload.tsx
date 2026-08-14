@@ -100,9 +100,10 @@ export function FileUpload({
                 </Box>
                 <Box>
                     <Typography
-                        sx={{mt: 1}}
-                        color="#aaa"
-                    >
+                        sx={{
+                            color: "#aaa",
+                            mt: 1
+                        }}>
                         Klicken Sie hier, um eine Datei für den Upload auszuwählen
                     </Typography>
                 </Box>
@@ -110,10 +111,11 @@ export function FileUpload({
                     extensions != null &&
                     <Box>
                         <Typography
-                            color="#ccc"
                             variant="caption"
-                            sx={{mt: 1}}
-                        >
+                            sx={{
+                                color: "#ccc",
+                                mt: 1
+                            }}>
                             Akzeptierte Formate: {extensions.map(ext => '.' + ext).join(', ')}
                         </Typography>
                     </Box>

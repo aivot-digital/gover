@@ -1,5 +1,5 @@
-import {useMemo, type HTMLAttributes} from 'react';
-import {Autocomplete, type AutocompleteRenderInputParams, Box, ListItemText, MenuItem, TextField} from '@mui/material';
+import {useMemo, type HTMLAttributes, type Key} from 'react';
+import {Autocomplete, type AutocompleteRenderInputParams, Box, ListItemText, TextField} from '@mui/material';
 import type {
     ProcessNodeDefinitionMetadataForwardedAttachmentSet,
 } from '../../modules/process/entities/process-node-definition-metadata';
@@ -154,15 +154,15 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
     };
 
     const renderOption = (
-        optionProps: HTMLAttributes<HTMLLIElement>,
+        {key, ...optionProps}: HTMLAttributes<HTMLLIElement> & {key: Key},
         option: AttachmentSetOption,
     ) => (
-        <MenuItem {...optionProps}>
+        <Box component="li" key={key} {...optionProps}>
             <ListItemText
                 primary={option.label}
                 secondary={option.subLabel}
             />
-        </MenuItem>
+        </Box>
     );
 
     const renderInput = (params: AutocompleteRenderInputParams) => (
@@ -173,9 +173,12 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
             error={errors != null}
             required={required ?? undefined}
             helperText={renderHelperText()}
-            inputProps={{
-                ...params.inputProps,
-                readOnly: readOnly ?? undefined,
+            slotProps={{
+                ...params.slotProps,
+                htmlInput: {
+                    ...params.slotProps.htmlInput,
+                    readOnly: readOnly ?? undefined,
+                }
             }}
         />
     );

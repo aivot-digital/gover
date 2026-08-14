@@ -68,13 +68,15 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                 onClose={handleClose}
                 maxWidth="sm"
                 fullWidth
-                PaperProps={{
-                    elevation: dialogPaperElevation,
-                    sx: {
-                        borderRadius: 3,
-                        overflow: 'hidden',
-                        boxShadow: 6,
-                    },
+                slotProps={{
+                    paper: {
+                        elevation: dialogPaperElevation,
+                        sx: {
+                            borderRadius: 3,
+                            overflow: 'hidden',
+                            boxShadow: 6,
+                        },
+                    }
                 }}
             >
                 <Box
@@ -134,7 +136,12 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                 <Box sx={{
                     p: 4, textAlign: 'center',
                 }}>
-                    <Typography variant="h2" fontWeight={600} sx={{ mb: 2 }}>
+                    <Typography
+                        variant="h2"
+                        sx={{
+                            fontWeight: 600,
+                            mb: 2
+                        }}>
                         Über Prosuna Version {getAppVersionLabel()}
                     </Typography>
 
@@ -176,9 +183,10 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
 
                     <Stack
                         direction="row"
-                        justifyContent="center"
-                        sx={{mb: 3.5}}
-                    >
+                        sx={{
+                            justifyContent: "center",
+                            mb: 3.5
+                        }}>
                         <Button
                             variant="contained"
                             color="primary"
@@ -208,10 +216,11 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                         direction={{xs: 'column', sm: 'row'}}
                         spacing={2}
                         useFlexGap
-                        justifyContent="center"
-                        flexWrap="wrap"
-                        sx={{mb: 1.5}}
-                    >
+                        sx={{
+                            justifyContent: "center",
+                            flexWrap: "wrap",
+                            mb: 1.5
+                        }}>
                         <Button
                             variant="outlined"
                             color="inherit"
@@ -250,9 +259,10 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                     <Stack
                         direction={{xs: 'column', sm: 'row'}}
                         spacing={0.5}
-                        justifyContent="center"
-                        alignItems="center"
-                    >
+                        sx={{
+                            justifyContent: "center",
+                            alignItems: "center"
+                        }}>
                         <Button
                             variant="text"
                             color="inherit"

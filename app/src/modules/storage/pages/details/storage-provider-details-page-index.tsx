@@ -654,7 +654,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 >
                     <Stack
                         direction="row"
-                        gap={1}
+                        sx={{
+                            gap: 1
+                        }}
                     >
                         <NumberFieldComponent
                             label="Maximale Dateigröße (in MB)"
@@ -677,7 +679,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                             details={
                                 <>
                                     <Typography
-                                        marginBottom={2}
+                                        sx={{
+                                            marginBottom: 2
+                                        }}
                                     >
                                         Speicheranbieter können in der Übertragung verschiedene Limitierungen haben.
                                         Um diesen Limitierungen gerecht zu werden, kann pro Speicheranbieter eine
@@ -687,7 +691,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                                     </Typography>
 
                                     <Typography
-                                        marginBottom={2}
+                                        sx={{
+                                            marginBottom: 2
+                                        }}
                                     >
                                         Die maximale Dateigröße wird unter Anderem an den folgenden Stellen
                                         berücksichtigt:

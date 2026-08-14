@@ -720,14 +720,13 @@ function OrganizationChartNodeCard(props: {
                     }
                     <Typography
                         variant="caption"
-                        color="text.secondary"
                         sx={{
+                            color: "text.secondary",
                             alignSelf: 'flex-start',
                             borderRadius: 1,
                             bgcolor: isDepartment ? alpha(item.color, 0.25) : undefined,
-                            mt: -0.25,
-                        }}
-                    >
+                            mt: -0.25
+                        }}>
                         {typeLabel}
                     </Typography>
                 </Box>
@@ -827,12 +826,11 @@ function OrganizationChartMembersPermissionState(props: {
         >
             <Typography
                 variant="body2"
-                color="text.secondary"
                 sx={{
+                    color: "text.secondary",
                     fontWeight: 600,
-                    lineHeight: 1.35,
-                }}
-            >
+                    lineHeight: 1.35
+                }}>
                 {`${message} (${permission}).`}
             </Typography>
         </Box>
@@ -874,13 +872,12 @@ function OrganizationChartMembersEmptyState(): ReactNode {
                 />
                 <Typography
                     variant="body2"
-                    color="text.secondary"
                     noWrap
                     sx={{
+                        color: "text.secondary",
                         ml: 1,
-                        fontWeight: 600,
-                    }}
-                >
+                        fontWeight: 600
+                    }}>
                     Keine Mitarbeiter:innen zugeordnet
                 </Typography>
             </Box>
@@ -1068,7 +1065,9 @@ function OrganizationChartFlowEmptyState(props: {
         >
             <Typography
                 variant="body2"
-                color="text.secondary"
+                sx={{
+                    color: "text.secondary"
+                }}
             >
                 {message}
             </Typography>

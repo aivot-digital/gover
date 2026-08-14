@@ -36,7 +36,9 @@ export function DashboardTasksPanel({summary, error = false}: DashboardTasksPane
                 </Box>
                 <Box sx={{minWidth: 0}}>
                     <Typography variant="h6" component="h2">Meine Aufgaben</Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         <Balancer>Aufgaben, die Ihnen aktuell persönlich zugewiesen sind</Balancer>
                     </Typography>
                 </Box>
@@ -48,7 +50,11 @@ export function DashboardTasksPanel({summary, error = false}: DashboardTasksPane
             {summary == null && !error && <Box sx={{flex: 1, minHeight: 132, display: 'grid', placeItems: 'center'}}><CircularProgress size={28}/></Box>}
             {error && (
                 <Box sx={{flex: 1, minHeight: 132, display: 'grid', placeItems: 'center', px: 3, textAlign: 'center'}}>
-                    <Box><Typography fontWeight={600}>Aufgaben konnten nicht geladen werden</Typography><Typography variant="body2" color="text.secondary"><Balancer>Die Aufgabenliste ist weiterhin über die Navigation erreichbar.</Balancer></Typography></Box>
+                    <Box><Typography sx={{
+                        fontWeight: 600
+                    }}>Aufgaben konnten nicht geladen werden</Typography><Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}><Balancer>Die Aufgabenliste ist weiterhin über die Navigation erreichbar.</Balancer></Typography></Box>
                 </Box>
             )}
             {summary != null && summary.items.length === 0 && (
@@ -68,8 +74,17 @@ export function DashboardTasksPanel({summary, error = false}: DashboardTasksPane
                     <Box sx={{width: 52, height: 52, display: 'grid', placeItems: 'center', borderRadius: '50%', bgcolor: alpha(theme.palette.success.main, 0.12), color: 'success.main'}}>
                         <CheckCircle sx={{fontSize: 29}}/>
                     </Box>
-                    <Typography fontWeight={650} sx={{mt: 1.5}}>Alles erledigt</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{mt: 0.25}}>
+                    <Typography
+                        sx={{
+                            fontWeight: 650,
+                            mt: 1.5
+                        }}>Alles erledigt</Typography>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: "text.secondary",
+                            mt: 0.25
+                        }}>
                         <Balancer>Aktuell sind Ihnen keine Aufgaben zur Bearbeitung zugewiesen.</Balancer>
                     </Typography>
                 </Box>
@@ -89,8 +104,17 @@ export function DashboardTasksPanel({summary, error = false}: DashboardTasksPane
                                 >
                                     <Task sx={{color: 'text.secondary', flexShrink: 0}}/>
                                     <Box sx={{flex: 1, minWidth: 0}}>
-                                        <Typography fontWeight={600} noWrap>{task.taskName}</Typography>
-                                        <Typography variant="caption" color="text.secondary" noWrap sx={{display: 'block', lineHeight: 1.4}}>
+                                        <Typography noWrap sx={{
+                                            fontWeight: 600
+                                        }}>{task.taskName}</Typography>
+                                        <Typography
+                                            variant="caption"
+                                            noWrap
+                                            sx={{
+                                                color: "text.secondary",
+                                                display: 'block',
+                                                lineHeight: 1.4
+                                            }}>
                                             {task.processTitle} · {task.caseNumber}
                                         </Typography>
                                     </Box>

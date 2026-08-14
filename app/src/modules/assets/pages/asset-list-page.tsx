@@ -336,7 +336,9 @@ export function AssetListPage() {
                     <Stack
                         direction="row"
                         spacing={1}
-                        alignItems="center"
+                        sx={{
+                            alignItems: "center"
+                        }}
                     >
                         <span>{params.row.directory ? 'Ordner' : fileType}</span>
                         <Chip

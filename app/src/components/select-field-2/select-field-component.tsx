@@ -127,43 +127,47 @@ export function SelectFieldComponent<T extends SelectFieldValueType>(props: Sele
             value={isValueInOptions ? normalizeValue(value) : ''}
             onChange={handleChange}
             disabled={disabled ?? false}
-            slotProps={{}}
-            InputLabelProps={{
-                title: label,
-            }}
-            InputProps={{
-                sx: sx,
-                readOnly: readOnly,
-                startAdornment: startIcon && (
-                    <InputAdornment position="start">{startIcon}</InputAdornment>
-                ),
-                endAdornment: endAction && (
-                    <InputAdornment
-                        position="end"
-                        sx={{
-                            mr: 2,
-                        }}
-                    >
-                        {Array.isArray(endAction)
-                            ? endAction.map(renderIconButton)
-                            : renderIconButton(endAction)}
-                    </InputAdornment>
-                ),
-            }}
-            SelectProps={{
-                renderValue: (value) => {
-                    const option = options.find((option) => normalizeValue(option.value) === value);
-                    return option?.label ?? '';
+            slotProps={{
+                input: {
+                    sx: sx,
+                    readOnly: readOnly,
+                    startAdornment: startIcon && (
+                        <InputAdornment position="start">{startIcon}</InputAdornment>
+                    ),
+                    endAdornment: endAction && (
+                        <InputAdornment
+                            position="end"
+                            sx={{
+                                mr: 2,
+                            }}
+                        >
+                            {Array.isArray(endAction)
+                                ? endAction.map(renderIconButton)
+                                : renderIconButton(endAction)}
+                        </InputAdornment>
+                    ),
                 },
-                MenuProps: {
-                    PaperProps: {
-                        sx: {
-                            width: 0,
+
+                select: {
+                    renderValue: (value) => {
+                        const option = options.find((option) => normalizeValue(option.value) === value);
+                        return option?.label ?? '';
+                    },
+                    MenuProps: {
+                        slotProps: {
+                            paper: {
+                                sx: {
+                                    width: 0,
+                                },
+                            },
                         },
                     },
                 },
-            }}
-        >
+
+                inputLabel: {
+                    title: label,
+                }
+            }}>
             {
                 !(required ?? false) &&
                 options.length > 0 &&

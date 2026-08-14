@@ -308,30 +308,29 @@ function DepartmentName(props: {
             >
                 <Typography
                     variant="subtitle1"
-                    color="text.primary"
                     title={department.name}
                     sx={{
+                        color: "text.primary",
                         'fontWeight': 700,
                         'overflow': 'hidden',
                         'textOverflow': 'ellipsis',
                         'whiteSpace': 'nowrap',
                         'textDecoration': 'none',
+
                         '&:hover': {
                             textDecoration: 'underline',
-                        },
-                    }}
-                >
+                        }
+                    }}>
                     {department.name}
                 </Typography>
 
                 <Typography
                     variant="caption"
-                    color="text.secondary"
                     sx={{
+                        color: "text.secondary",
                         alignSelf: 'flex-start',
-                        mt: -0.25,
-                    }}
-                >
+                        mt: -0.25
+                    }}>
                     {subtitle}
                 </Typography>
             </Box>
@@ -350,26 +349,24 @@ function DepartmentName(props: {
         >
             <Typography
                 variant="subtitle1"
-                color="text.primary"
                 title={department.name}
                 sx={{
+                    color: "text.primary",
                     fontWeight: 700,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                }}
-            >
+                    whiteSpace: 'nowrap'
+                }}>
                 {department.name}
             </Typography>
 
             <Typography
                 variant="caption"
-                color="text.secondary"
                 sx={{
+                    color: "text.secondary",
                     alignSelf: 'flex-start',
-                    mt: -0.25,
-                }}
-            >
+                    mt: -0.25
+                }}>
                 {subtitle}
             </Typography>
         </Box>
@@ -415,15 +412,14 @@ function DepartmentSearchResultItem(props: DepartmentSearchResultItemProps): Rea
                         <Typography
                             key={`${result.id}-${index}`}
                             variant="caption"
-                            color="text.secondary"
+                            title={segment}
                             sx={{
+                                color: "text.secondary",
                                 maxWidth: 220,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                            }}
-                            title={segment}
-                        >
+                                whiteSpace: 'nowrap'
+                            }}>
                             {segment}
                         </Typography>
                     ))
@@ -481,26 +477,29 @@ function DepartmentSearchResultItem(props: DepartmentSearchResultItemProps): Rea
                 </Box>
 
                 <Typography
+                    variant="body2"
+                    title={addressText}
                     sx={{
+                        color: "text.secondary",
                         ml: 1,
+
                         display: {
                             xs: 'none',
                             md: 'block',
                         },
+
                         minWidth: 0,
                         flexShrink: 1,
                         whiteSpace: 'nowrap',
+
                         maxWidth: {
                             md: 220,
                             lg: 320,
                         },
+
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                    }}
-                    variant="body2"
-                    color="text.secondary"
-                    title={addressText}
-                >
+                        textOverflow: 'ellipsis'
+                    }}>
                     {addressText}
                 </Typography>
 
@@ -809,26 +808,29 @@ function DepartmentTreeItem(props: DepartmentTreeItemProps): React.ReactElement 
                 </Box>
 
                 <Typography
+                    variant="body2"
+                    title={addressText}
                     sx={{
+                        color: "text.secondary",
                         ml: 1,
+
                         display: {
                             xs: 'none',
                             md: 'block',
                         },
+
                         minWidth: 0,
                         flexShrink: 1,
                         whiteSpace: 'nowrap',
+
                         maxWidth: {
                             md: 220,
                             lg: 320,
                         },
+
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                    }}
-                    variant="body2"
-                    color="text.secondary"
-                    title={addressText}
-                >
+                        textOverflow: 'ellipsis'
+                    }}>
                     {addressText}
                 </Typography>
 

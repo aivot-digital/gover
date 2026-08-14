@@ -1,8 +1,9 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Box, IconButton, InputAdornment, ListItemText, MenuItem, TextField, Typography} from '@mui/material';
+import {Box, IconButton, InputAdornment, ListItemText, TextField, Typography} from '@mui/material';
 import {type TextFieldComponentProps} from './text-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
 import Autocomplete from '@mui/material/Autocomplete';
+import type {TextFieldOwnerState} from '@mui/material/TextField';
 import {CopyToClipboardButton} from '../copy-to-clipboard-button/copy-to-clipboard-button';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
@@ -87,7 +88,7 @@ function renderEndAdornment(
         ...(Array.isArray(endAction)
             ? endAction.map((action, index) => renderIconButton(action, index))
             : endAction != null
-                ? [renderIconButton(endAction)]
+                ? [renderIconButton(endAction, 0)]
                 : []),
         copyButton,
     ].filter((child): child is React.ReactNode => child != null);
@@ -148,8 +149,9 @@ export function AutocompleteTextField(props: TextFieldComponentProps & {
             disablePortal
             freeSolo
             fullWidth
+            readOnly={rest.readonly}
             onChange={(_, value) => {
-                if (rest.disabled) {
+                if (rest.disabled || rest.readonly) {
                     return;
                 }
 
@@ -161,13 +163,13 @@ export function AutocompleteTextField(props: TextFieldComponentProps & {
             }}
             value={rest.value ?? null}
             options={options}
-            renderOption={(optionProps, option) => (
-                <MenuItem {...optionProps} disabled={rest.disabled}>
+            renderOption={({key, ...optionProps}, option) => (
+                <Box component="li" key={key} {...optionProps}>
                     <ListItemText
                         primary={option.label}
                         secondary={option.subLabel}
                     />
-                </MenuItem>
+                </Box>
             )}
             renderInput={(params) => (
                 <TextFieldComponent {...rest} muiPassTroughProps={params}
@@ -245,6 +247,21 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         };
     }, []);
 
+    // Pattern validation
+    const patternError = useMemo(() => {
+        if (!props.pattern || !inputValue) return undefined;
+        return new RegExp(props.pattern.regex).test(inputValue) ? undefined : props.pattern.message;
+    }, [props.pattern, inputValue]);
+
+    const errorMessages = useMemo(() => {
+        if (props.error == null) {
+            return [];
+        }
+
+        return (Array.isArray(props.error) ? props.error : [props.error])
+            .filter((errorMessage) => errorMessage.length > 0);
+    }, [props.error]);
+
     // Display mode (if should be displayed as text field only)
     if (props.display) {
         return (
@@ -263,20 +280,6 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         );
     }
 
-    // Pattern validation
-    const patternError = useMemo(() => {
-        if (!props.pattern || !inputValue) return undefined;
-        return new RegExp(props.pattern.regex).test(inputValue) ? undefined : props.pattern.message;
-    }, [props.pattern, inputValue]);
-
-    const errorMessages = useMemo(() => {
-        if (props.error == null) {
-            return [];
-        }
-
-        return (Array.isArray(props.error) ? props.error : [props.error])
-            .filter((errorMessage) => errorMessage.length > 0);
-    }, [props.error]);
     const errorHelperMessage = errorMessages.length > 1 ? (
         <Box
             component="ul"
@@ -303,13 +306,15 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         props.softLimitCharacters && isSoftLimitExceeded,
     );
     const hasHelperTextContent = Boolean(helperMessage || showMaxCharacters || showMinCharacters || showSoftLimitWarning);
-    const existingStartAdornment = props.muiPassTroughProps?.InputProps?.startAdornment;
-    const existingEndAdornment = props.muiPassTroughProps?.InputProps?.endAdornment;
+    // Autocomplete supplies refs, event handlers, and accessibility attributes through these slots.
+    // Resolve callback-based props before adding local behavior so those bindings remain intact.
+    const passThroughSlotProps = props.muiPassTroughProps?.slotProps;
     const copyValue = props.copyValueTemplate == null || props.copyValueTemplate.length === 0
         ? inputValue
         : props.copyValueTemplate.split(COPY_VALUE_TEMPLATE_PLACEHOLDER).join(inputValue);
     const copyButton = props.copyable ? (
         <CopyToClipboardButton
+            key="copy"
             text={copyValue}
             ariaLabel={props.label ? `${props.label} kopieren` : 'Kopieren'}
             disabled={inputValue.length === 0}
@@ -330,7 +335,6 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
             error={errorMessages.length > 0 || !!patternError}
             multiline={props.multiline}
             rows={props.multiline ? (props.rows ?? 4) : undefined}
-            FormHelperTextProps={{component: 'div'}}
             helperText={
                 hasHelperTextContent ? (
                     <>
@@ -374,7 +378,9 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
                             <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
                                 <Typography
                                     variant="caption"
-                                    color="warning.main"
+                                    sx={{
+                                        color: "warning.main"
+                                    }}
                                 >
                                     {props.softLimitCharactersWarning ??
                                         `Wir empfehlen, eine Länge von ${props.softLimitCharacters} Zeichen nicht zu überschreiten.`}
@@ -387,20 +393,6 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
             value={inputValue}
             onChange={handleChange}
             onBlur={handleBlur}
-            inputProps={{
-                ...(props.muiPassTroughProps?.inputProps),
-                ...(props.maxCharacters ? {maxLength: props.maxCharacters} : undefined),
-                'aria-disabled': props.busy || props.disabled,
-            }}
-            InputProps={{
-                ...(props.muiPassTroughProps?.InputProps),
-                startAdornment: renderStartAdornment(props.startIcon, existingStartAdornment),
-                endAdornment: renderEndAdornment(props.endAction, copyButton, existingEndAdornment),
-                readOnly: props.busy,
-            }}
-            InputLabelProps={{
-                title: props.label,
-            }}
             disabled={props.disabled}
             required={props.required}
             sx={{
@@ -409,7 +401,55 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
                 cursor: props.busy ? 'not-allowed' : undefined,
             }}
             size={props.size}
-        />
+            slotProps={{
+                ...passThroughSlotProps,
+                input: (ownerState: TextFieldOwnerState) => {
+                    const inputSlotProps = typeof passThroughSlotProps?.input === 'function'
+                        ? passThroughSlotProps.input(ownerState)
+                        : passThroughSlotProps?.input;
+
+                    return {
+                        ...inputSlotProps,
+                        startAdornment: renderStartAdornment(props.startIcon, inputSlotProps?.startAdornment),
+                        endAdornment: renderEndAdornment(props.endAction, copyButton, inputSlotProps?.endAdornment),
+                        readOnly: props.readonly || props.busy || inputSlotProps?.readOnly,
+                    };
+                },
+
+                htmlInput: (ownerState: TextFieldOwnerState) => {
+                    const htmlInputSlotProps = typeof passThroughSlotProps?.htmlInput === 'function'
+                        ? passThroughSlotProps.htmlInput(ownerState)
+                        : passThroughSlotProps?.htmlInput;
+
+                    return {
+                        ...htmlInputSlotProps,
+                        ...(props.maxCharacters ? {maxLength: props.maxCharacters} : undefined),
+                        'aria-disabled': props.busy || props.disabled,
+                    };
+                },
+
+                inputLabel: (ownerState: TextFieldOwnerState) => {
+                    const inputLabelSlotProps = typeof passThroughSlotProps?.inputLabel === 'function'
+                        ? passThroughSlotProps.inputLabel(ownerState)
+                        : passThroughSlotProps?.inputLabel;
+
+                    return {
+                        ...inputLabelSlotProps,
+                        title: props.label,
+                    };
+                },
+
+                formHelperText: (ownerState: TextFieldOwnerState) => {
+                    const formHelperTextSlotProps = typeof passThroughSlotProps?.formHelperText === 'function'
+                        ? passThroughSlotProps.formHelperText(ownerState)
+                        : passThroughSlotProps?.formHelperText;
+
+                    return {
+                        ...formHelperTextSlotProps,
+                        component: 'div',
+                    };
+                },
+            }} />
     );
 }
 

@@ -81,7 +81,9 @@ export function StorageProvidersListPage(): ReactNode {
                 <>
                     <Typography
                         variant="body1"
-                        paragraph
+                        sx={{
+                            marginBottom: "16px"
+                        }}
                     >
                         Konfigurieren Sie hier Speicheranbieter, die in Ihrer Prosuna-Instanz global
                         verfügbar sein sollen.
@@ -90,7 +92,9 @@ export function StorageProvidersListPage(): ReactNode {
                     </Typography>
                     <Typography
                         variant="body1"
-                        paragraph
+                        sx={{
+                            marginBottom: "16px"
+                        }}
                     >
                         Es wird empfohlen, für jeden Speicheranbieter sowohl eine produktive als
                         auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.

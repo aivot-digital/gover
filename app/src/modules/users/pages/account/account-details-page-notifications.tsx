@@ -85,7 +85,9 @@ export function AccountDetailsPageNotifications() {
                     <Box sx={{borderRadius: 1, overflow: 'hidden', border: '1px solid', borderColor: 'divider'}}>
                         {[...Array(3)].map((_, index) => (
                             <Box key={index} sx={{ px: 2, py: 1 }}>
-                                <Grid container alignItems="center" spacing={2}>
+                                <Grid container spacing={2} sx={{
+                                    alignItems: "center"
+                                }}>
                                     <Grid size={8}>
                                         <Skeleton variant="text" width="60%" height={30} />
                                         <Skeleton variant="text" width="80%" height={20} sx={{ mt: 1, mb: 2 }} />
@@ -106,10 +108,20 @@ export function AccountDetailsPageNotifications() {
                         <Box sx={{borderRadius: 1, overflow: 'hidden', border: '1px solid', borderColor: 'divider', mb: 3}}>
                             {items.map(({ key, label, description, options }, index) => (
                                 <Box key={key}>
-                                    <Grid container alignItems="center" spacing={2} sx={{ px: 2, pt: 1, pb: 1.5 }}>
+                                    <Grid
+                                        container
+                                        spacing={2}
+                                        sx={{
+                                            alignItems: "center",
+                                            px: 2,
+                                            pt: 1,
+                                            pb: 1.5
+                                        }}>
                                         <Grid size={8}>
                                             <Typography variant="subtitle1">{label}</Typography>
-                                            <Typography variant="body2" color="text.secondary">{description}</Typography>
+                                            <Typography variant="body2" sx={{
+                                                color: "text.secondary"
+                                            }}>{description}</Typography>
                                         </Grid>
                                         <Grid sx={{ display: 'flex', justifyContent: 'flex-end' }} size={4}>
                                             {options.map(({ label: optionLabel, value }) => (

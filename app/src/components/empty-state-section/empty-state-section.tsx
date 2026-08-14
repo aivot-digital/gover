@@ -22,15 +22,14 @@ export function EmptyStateSection(props: EmptyStateProps): ReactNode {
     return (
         <Stack
             direction="column"
-            gap={2}
             sx={{
+                gap: 2,
                 alignItems: 'center',
                 textAlign: 'center',
                 maxWidth: 520,
                 margin: '40px auto 48px auto',
-                ...sx,
-            }}
-        >
+                ...sx
+            }}>
             {illustration ?? <EmptyStateIllustration />}
 
             <Typography
@@ -42,7 +41,9 @@ export function EmptyStateSection(props: EmptyStateProps): ReactNode {
 
             {
                 description != null &&
-                <Typography color="text.secondary">
+                <Typography sx={{
+                    color: "text.secondary"
+                }}>
                     {description}
                 </Typography>
             }
@@ -51,13 +52,12 @@ export function EmptyStateSection(props: EmptyStateProps): ReactNode {
                 actions != null &&
                 <Stack
                     direction="row"
-                    gap={2}
                     sx={{
+                        gap: 2,
                         marginTop: 1.5,
                         flexWrap: 'wrap',
-                        justifyContent: 'center',
-                    }}
-                >
+                        justifyContent: 'center'
+                    }}>
                     {actions}
                 </Stack>
             }

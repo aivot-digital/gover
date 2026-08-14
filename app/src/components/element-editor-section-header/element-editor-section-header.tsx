@@ -33,7 +33,13 @@ export function ElementEditorSectionHeader({
             }}
         >
             <Typography variant={variant}>
-                <Balancer>{title} <Typography component="span" color={"text.secondary"} sx={{fontSize: 'inherit', pl: 0.5}}>{titleSuffix}</Typography></Balancer>
+                <Balancer>{title} <Typography
+                    component="span"
+                    sx={{
+                        color: "text.secondary",
+                        fontSize: 'inherit',
+                        pl: 0.5
+                    }}>{titleSuffix}</Typography></Balancer>
             </Typography>
             {children && (
                 <Typography sx={{mt: 1}}>

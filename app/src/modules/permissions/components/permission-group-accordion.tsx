@@ -74,13 +74,12 @@ export const PermissionGroupAccordion = React.memo(function PermissionGroupAccor
             <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
                 <Stack
                     direction="row"
-                    alignItems="center"
                     spacing={1.5}
                     sx={{
+                        alignItems: "center",
                         width: '100%',
-                        pr: 1,
-                    }}
-                >
+                        pr: 1
+                    }}>
                     <Typography
                         sx={{
                             flex: 1,
@@ -138,9 +137,10 @@ export const PermissionGroupAccordion = React.memo(function PermissionGroupAccor
                 {group.assignmentHint != null && (
                     <Typography
                         variant="body2"
-                        color="text.secondary"
-                        sx={{mb: 2}}
-                    >
+                        sx={{
+                            color: "text.secondary",
+                            mb: 2
+                        }}>
                         {group.assignmentHint}
                     </Typography>
                 )}
@@ -206,11 +206,10 @@ export const PermissionGroupAccordion = React.memo(function PermissionGroupAccor
                                             <Stack
                                                 direction="row"
                                                 spacing={1}
-                                                alignItems="center"
                                                 sx={{
-                                                    minWidth: 0,
-                                                }}
-                                            >
+                                                    alignItems: "center",
+                                                    minWidth: 0
+                                                }}>
                                                 <Typography
                                                     variant="body2"
                                                     sx={{
@@ -225,26 +224,24 @@ export const PermissionGroupAccordion = React.memo(function PermissionGroupAccor
 
                                             <Typography
                                                 variant="caption"
-                                                color="text.secondary"
                                                 sx={{
+                                                    color: "text.secondary",
                                                     display: 'block',
                                                     fontFamily: 'monospace',
-                                                    wordBreak: 'break-word',
-                                                }}
-                                            >
+                                                    wordBreak: 'break-word'
+                                                }}>
                                                 {permission}
                                             </Typography>
 
                                             {description && (
                                                 <Typography
                                                     variant="caption"
-                                                    color="text.secondary"
                                                     sx={{
+                                                        color: "text.secondary",
                                                         display: 'block',
                                                         mt: 0.25,
-                                                        wordBreak: 'break-word',
-                                                    }}
-                                                >
+                                                        wordBreak: 'break-word'
+                                                    }}>
                                                     {description}
                                                 </Typography>
                                             )}
@@ -255,11 +252,10 @@ export const PermissionGroupAccordion = React.memo(function PermissionGroupAccor
                                 <Stack
                                     direction="row"
                                     spacing={1}
-                                    alignItems="center"
                                     sx={{
-                                        pt: 0.25,
-                                    }}
-                                >
+                                        alignItems: "center",
+                                        pt: 0.25
+                                    }}>
                                     {crud && (
                                         <Chip
                                             size="small"

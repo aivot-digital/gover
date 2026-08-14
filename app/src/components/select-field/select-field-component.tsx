@@ -88,44 +88,49 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
                 }
             }}
             disabled={disabled ?? false}
-            InputLabelProps={{
-                title: label,
-            }}
-            InputProps={{
-                sx: sx,
-                readOnly: readOnly,
-                startAdornment: startIcon && (
-                    <InputAdornment position="start">{startIcon}</InputAdornment>
-                ),
-                endAdornment: endAction && (
-                    <InputAdornment
-                        position="end"
-                        sx={{
-                            mr: 2,
-                        }}
-                    >
-                        {Array.isArray(endAction)
-                            ? endAction.map(renderIconButton)
-                            : renderIconButton(endAction)}
-                    </InputAdornment>
-                ),
-            }}
-            SelectProps={{
-                renderValue: (value) => {
-                    const option = options.find((option) => option.value === value);
-                    return option?.label ?? '';
+            size={size}
+            fullWidth
+            slotProps={{
+                input: {
+                    sx: sx,
+                    readOnly: readOnly,
+                    startAdornment: startIcon && (
+                        <InputAdornment position="start">{startIcon}</InputAdornment>
+                    ),
+                    endAdornment: endAction && (
+                        <InputAdornment
+                            position="end"
+                            sx={{
+                                mr: 2,
+                            }}
+                        >
+                            {Array.isArray(endAction)
+                                ? endAction.map(renderIconButton)
+                                : renderIconButton(endAction)}
+                        </InputAdornment>
+                    ),
                 },
-                MenuProps: {
-                    PaperProps: {
-                        sx: {
-                            width: 0,
+
+                select: {
+                    renderValue: (value) => {
+                        const option = options.find((option) => option.value === value);
+                        return option?.label ?? '';
+                    },
+                    MenuProps: {
+                        slotProps: {
+                            paper: {
+                                sx: {
+                                    width: 0,
+                                },
+                            },
                         },
                     },
                 },
-            }}
-            size={size}
-            fullWidth
-        >
+
+                inputLabel: {
+                    title: label,
+                }
+            }}>
             {
                 includeEmptyOption &&
                 !(required ?? false) &&

@@ -74,13 +74,17 @@ export function Rating(props: RatingProps) {
             readOnly={props.onChange == null}
             value={props.value}
             name="highlight-selected-only"
-            IconContainerComponent={IconContainer}
             getLabelText={(value) => `${customIcons[value].label}, ${value} von 5`}
             highlightSelectedOnly
             size="large"
             onChange={(_, newValue) => {
                 if (props.onChange != null) {
                     props.onChange(newValue);
+                }
+            }}
+            slotProps={{
+                icon: {
+                    component: IconContainer
                 }
             }}
         />

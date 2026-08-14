@@ -46,9 +46,10 @@ export function StatusTable(props: StatusTableProps) {
             {
                 props.description != null &&
                 <Box
-                    display="flex"
-                    alignItems="center"
-                >
+                    sx={{
+                        display: "flex",
+                        alignItems: "center"
+                    }}>
                     <Typography
                         variant={props.labelVariant ?? 'subtitle1'}
                         sx={{
@@ -113,9 +114,10 @@ export function StatusTable(props: StatusTableProps) {
                                                     } : undefined}
                                                 >
                                                     <Box
-                                                        display="flex"
-                                                        alignItems={item.alignTop ? 'flex-start' : 'center'}
-                                                    >
+                                                        sx={{
+                                                            display: "flex",
+                                                            alignItems: item.alignTop ? 'flex-start' : 'center'
+                                                        }}>
                                                         {item.icon}
                                                         <Box sx={{ml: item.icon != null ? 1.5 : undefined}}>
                                                             {item.children}
@@ -188,12 +190,11 @@ export function StatusTable(props: StatusTableProps) {
                                                             }}
                                                         >
                                                             <Box
-                                                                display="flex"
-                                                                alignItems="flex-start"
                                                                 sx={{
-                                                                    pl: 1,
-                                                                }}
-                                                            >
+                                                                    display: "flex",
+                                                                    alignItems: "flex-start",
+                                                                    pl: 1
+                                                                }}>
                                                                 {subItem.icon}
                                                                 <Box sx={{ml: 1}}>
                                                                     {subItem.children}

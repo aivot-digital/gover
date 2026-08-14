@@ -141,10 +141,10 @@ export function FormsListPage(): React.ReactElement {
                     </Typography>
                     <Typography
                         variant="caption"
-                        color="text.secondary"
                         title={params.row.nodeName}
-                        sx={secondaryCellTextSx}
-                    >
+                        sx={[{
+                            color: "text.secondary"
+                        }, ...(Array.isArray(secondaryCellTextSx) ? secondaryCellTextSx : [secondaryCellTextSx])]}>
                         {params.row.nodeName}
                     </Typography>
                 </Box>
@@ -179,9 +179,9 @@ export function FormsListPage(): React.ReactElement {
                     </Typography>
                     <Typography
                         variant="caption"
-                        color="text.secondary"
-                        sx={secondaryCellTextSx}
-                    >
+                        sx={[{
+                            color: "text.secondary"
+                        }, ...(Array.isArray(secondaryCellTextSx) ? secondaryCellTextSx : [secondaryCellTextSx])]}>
                         Version {params.row.processVersion}
                     </Typography>
                 </Box>
@@ -237,13 +237,12 @@ export function FormsListPage(): React.ReactElement {
                         </Typography>
                         <Typography
                             variant="caption"
-                            color="text.secondary"
                             noWrap
                             sx={{
+                                color: "text.secondary",
                                 lineHeight: 1.35,
-                                mt: 0.25,
-                            }}
-                        >
+                                mt: 0.25
+                            }}>
                             {isPublished ? 'Veröffentlicht' : 'Zuletzt bearbeitet'}
                         </Typography>
                     </Box>
@@ -256,9 +255,10 @@ export function FormsListPage(): React.ReactElement {
         <Typography
             key="description"
             variant="body2"
-            color="text.secondary"
-            sx={{maxWidth: 900}}
-        >
+            sx={{
+                color: "text.secondary",
+                maxWidth: 900
+            }}>
             Formulare werden als Einstiegspunkte innerhalb von Prozessen erstellt.
             <br/>
             Diese Übersicht bündelt die

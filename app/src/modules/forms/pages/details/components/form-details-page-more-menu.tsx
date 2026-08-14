@@ -76,33 +76,35 @@ export function FormDetailsPageMoreMenu(props: FormDetailsPageMoreMenuProps): Re
                 horizontal: 'left',
                 vertical: 'top',
             }}
-            PaperProps={{
-                elevation: 6,
-                sx: {
-                    mt: -0.875,
-                    ml: 0.5,
-                    minWidth: 400,
-                    width: 'max-content',
-                    maxWidth: 'calc(100vw - 32px)',
-                    overflow: 'visible',
-                    '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 19,
-                        left: 0,
-                        width: 10,
-                        height: 10,
-                        bgcolor: 'background.paper',
-                        transform: 'translateX(-50%) rotate(45deg)',
-                        boxShadow: '-2px 2px 6px rgba(15, 23, 42, 0.08)',
-                        zIndex: 0,
+            slotProps={{
+                paper: {
+                    elevation: 6,
+                    sx: {
+                        mt: -0.875,
+                        ml: 0.5,
+                        minWidth: 400,
+                        width: 'max-content',
+                        maxWidth: 'calc(100vw - 32px)',
+                        overflow: 'visible',
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 19,
+                            left: 0,
+                            width: 10,
+                            height: 10,
+                            bgcolor: 'background.paper',
+                            transform: 'translateX(-50%) rotate(45deg)',
+                            boxShadow: '-2px 2px 6px rgba(15, 23, 42, 0.08)',
+                            zIndex: 0,
+                        },
                     },
                 },
-            }}
-            MenuListProps={{
-                sx: {
-                    py: 1,
-                },
+                list: {
+                    sx: {
+                        py: 1,
+                    },
+                }
             }}
         >
             {
@@ -138,8 +140,10 @@ export function FormDetailsPageMoreMenu(props: FormDetailsPageMoreMenuProps): Re
                                 </ListItemIcon>
                                 <ListItemText
                                     primary={item.label}
-                                    primaryTypographyProps={{
-                                        noWrap: true,
+                                    slotProps={{
+                                        primary: {
+                                            noWrap: true,
+                                        }
                                     }}
                                 />
                                 <Switch
@@ -184,9 +188,11 @@ export function FormDetailsPageMoreMenu(props: FormDetailsPageMoreMenuProps): Re
                             </ListItemIcon>
                             <ListItemText
                                 primary={item.label}
-                                primaryTypographyProps={{
-                                    noWrap: true,
-                                    color: item.isDangerous ? 'error.main' : 'text.primary',
+                                slotProps={{
+                                    primary: {
+                                        noWrap: true,
+                                        color: item.isDangerous ? 'error.main' : 'text.primary',
+                                    }
                                 }}
                             />
                             {

@@ -38,8 +38,10 @@ export function SelectionDialogShell(props: SelectionDialogShellProps): ReactNod
             onClose={props.onClose}
             fullWidth
             maxWidth={props.showDetailsPanel ? (props.expandedMaxWidth ?? 'lg') : (props.compactMaxWidth ?? 'md')}
-            TransitionProps={{
-                onExited: props.onExited,
+            slotProps={{
+                transition: {
+                    onExited: props.onExited,
+                }
             }}
         >
             <DialogTitleWithClose

@@ -62,15 +62,18 @@ export function IdentityButton(props: IdentityButtonProps) {
             >
                 <Typography
                     variant="caption"
-                    color="text.secondary"
                     component="div"
+                    sx={{
+                        color: "text.secondary"
+                    }}
                 >
                     Nutzerkonto
                 </Typography>
                 <Typography
-                    color="text.primary"
-                    sx={{fontWeight: 600}}
-                >
+                    sx={{
+                        color: "text.primary",
+                        fontWeight: 600
+                    }}>
                     {
                         isAuthenticated
                             ? <>Mit „{identityProviderName}“ angemeldet</>

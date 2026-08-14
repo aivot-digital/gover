@@ -295,8 +295,16 @@ export function DashboardSettingsPage() {
                         )}
                         {links?.length === 0 && (
                             <Box sx={{px: 3, py: 4, textAlign: 'center'}}>
-                                <Typography fontWeight={600}>Noch keine Links eingerichtet</Typography>
-                                <Typography color="text.secondary" sx={{mt: 0.5, mx: 'auto', maxWidth: 680}}>
+                                <Typography sx={{
+                                    fontWeight: 600
+                                }}>Noch keine Links eingerichtet</Typography>
+                                <Typography
+                                    sx={{
+                                        color: "text.secondary",
+                                        mt: 0.5,
+                                        mx: 'auto',
+                                        maxWidth: 680
+                                    }}>
                                     <Balancer>
                                         Fügen Sie einen Link hinzu, um Mitarbeiter:innen häufig benötigte Informationen und Dienste direkt auf der Übersicht bereitzustellen.
                                     </Balancer>
@@ -323,11 +331,17 @@ export function DashboardSettingsPage() {
                                         </Box>
                                         <Box sx={{minWidth: 0}}>
                                             <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap'}}>
-                                                <Typography fontWeight={600}>{link.label}</Typography>
+                                                <Typography sx={{
+                                                    fontWeight: 600
+                                                }}>{link.label}</Typography>
                                                 {!link.enabled && <Chip label="Ausgeblendet" size="small"/>}
                                             </Box>
-                                            {link.description && <Typography variant="body2" color="text.secondary">{link.description}</Typography>}
-                                            <Typography variant="body2" color="text.secondary" noWrap>{link.url}</Typography>
+                                            {link.description && <Typography variant="body2" sx={{
+                                                color: "text.secondary"
+                                            }}>{link.description}</Typography>}
+                                            <Typography variant="body2" noWrap sx={{
+                                                color: "text.secondary"
+                                            }}>{link.url}</Typography>
                                         </Box>
                                         <Box sx={{display: 'flex', alignItems: 'center', gridColumn: {xs: '2', sm: 'auto'}, justifyContent: {xs: 'flex-start', sm: 'flex-end'}}}>
                                             <IconButton tooltipProps={{title: 'Link öffnen', arrow: true}} buttonProps={{onClick: () => window.open(link.url, '_blank', 'noopener,noreferrer'), size: 'small', 'aria-label': `${link.label} öffnen`}}><OpenInNew/></IconButton>

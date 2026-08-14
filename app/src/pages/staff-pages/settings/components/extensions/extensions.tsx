@@ -147,7 +147,9 @@ function openDeprecatedComponentsDialog(confirm: ConfirmFn, plugin: PluginDTO) {
             <Stack spacing={2}>
                 <Typography
                     variant="body2"
-                    color="text.secondary"
+                    sx={{
+                        color: "text.secondary"
+                    }}
                 >
                     Diese Erweiterung enthält veraltete Komponenten oder Versionen. Prüfen Sie die folgenden Hinweise,
                     um notwendige Aktualisierungen oder Ablösungen planen zu können.
@@ -169,9 +171,10 @@ function openDeprecatedComponentsDialog(confirm: ConfirmFn, plugin: PluginDTO) {
 
                             <Typography
                                 variant="body2"
-                                color="text.secondary"
-                                sx={{mt: 0.25}}
-                            >
+                                sx={{
+                                    color: "text.secondary",
+                                    mt: 0.25
+                                }}>
                                 {PluginComponentTypeDisplayNames[version.componentType]} ·
                                                                                          Version {version.componentVersion}
                             </Typography>
@@ -395,12 +398,11 @@ function ExtensionComponentTypeSection(props: { plugin: PluginDTO; componentType
 
                     <Typography
                         variant="caption"
-                        color="text.secondary"
                         sx={{
+                            color: "text.secondary",
                             display: 'block',
-                            mt: -0.125,
-                        }}
-                    >
+                            mt: -0.125
+                        }}>
                         {pluralize(componentGroups.length, 'registrierte Komponente', 'registrierte Komponenten')}
                     </Typography>
                 </Box>
@@ -409,11 +411,10 @@ function ExtensionComponentTypeSection(props: { plugin: PluginDTO; componentType
                     direction="row"
                     spacing={1}
                     useFlexGap
-                    flexWrap="wrap"
                     sx={{
-                        justifyContent: 'flex-end',
-                    }}
-                >
+                        flexWrap: "wrap",
+                        justifyContent: 'flex-end'
+                    }}>
                     {
                         deprecatedComponentCount > 0 &&
                         <Badge
@@ -627,7 +628,9 @@ function ExtensionComponentTypeSection(props: { plugin: PluginDTO; componentType
                 >
                     <Typography
                         variant="body2"
-                        color="text.secondary"
+                        sx={{
+                            color: "text.secondary"
+                        }}
                     >
                         Keine Komponenten dieses Typs vorhanden.
                     </Typography>
@@ -727,7 +730,9 @@ function ExtensionCard(props: { plugin: PluginDTO; onShowChangelog: (plugin: Plu
                     >
                         <Typography
                             variant="body2"
-                            color="text.secondary"
+                            sx={{
+                                color: "text.secondary"
+                            }}
                         >
                             von {plugin.vendorName}
                         </Typography>
@@ -757,11 +762,10 @@ function ExtensionCard(props: { plugin: PluginDTO; onShowChangelog: (plugin: Plu
                     direction="row"
                     spacing={1}
                     useFlexGap
-                    flexWrap="wrap"
                     sx={{
-                        justifyContent: 'flex-end',
-                    }}
-                >
+                        flexWrap: "wrap",
+                        justifyContent: 'flex-end'
+                    }}>
                     {
                         hasText(plugin.deprecationNotice) &&
                         <Button
@@ -947,13 +951,12 @@ function ExtensionCard(props: { plugin: PluginDTO; onShowChangelog: (plugin: Plu
 
                         <Typography
                             variant="body2"
-                            color="text.secondary"
                             sx={{
+                                color: "text.secondary",
                                 mt: 1,
                                 mb: 2,
-                                maxWidth: 900,
-                            }}
-                        >
+                                maxWidth: 900
+                            }}>
                             Alle installierten Komponenten werden nach Typ gruppiert angezeigt. Bei mehreren Versionen
                             wird die aktuellste Fassung zuerst dargestellt.
                         </Typography>
@@ -1079,12 +1082,11 @@ export function ExtensionsSummary() {
 
             <Typography
                 variant="body2"
-                color="text.secondary"
                 sx={{
+                    color: "text.secondary",
                     mt: 1.5,
-                    lineHeight: 1.6,
-                }}
-            >
+                    lineHeight: 1.6
+                }}>
                 Die vollständigen Metadaten, Changelogs und nach Typ gruppierten Komponenten finden Sie im Reiter
                 &bdquo;Liste der Erweiterungen&ldquo;.
             </Typography>

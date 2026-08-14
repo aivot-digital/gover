@@ -91,16 +91,15 @@ function ElementWidthOptionContent(props: {
         >
             <Typography
                 className="element-width-option-label"
-                fontSize={16}
-                fontWeight={400}
                 noWrap
                 sx={{
+                    fontSize: 16,
+                    fontWeight: 400,
                     color: choice.disabled ? 'text.disabled' : 'text.primary',
                     fontVariantNumeric: 'tabular-nums',
                     minWidth: 0,
-                    width: '68px',
-                }}
-            >
+                    width: '68px'
+                }}>
                 {choice.label}
             </Typography>
 
@@ -118,16 +117,15 @@ function ElementWidthOptionContent(props: {
             </Box>
 
             <Typography
-                fontSize={12}
                 noWrap
                 sx={{
+                    fontSize: 12,
                     color: choice.disabled ? 'text.disabled' : 'text.secondary',
                     justifySelf: 'end',
                     fontVariantNumeric: 'tabular-nums',
                     textAlign: 'right',
-                    width: '60px',
-                }}
-            >
+                    width: '60px'
+                }}>
                 {choice.fractionLabel}
             </Typography>
         </Box>
@@ -175,24 +173,6 @@ export function ElementWidthSelector(props: ElementWidthSelectorProps) {
             }}
             disabled={disabled}
             helperText={helperText}
-            InputLabelProps={{
-                title: label,
-            }}
-            SelectProps={{
-                renderValue: () => (
-                    <ElementWidthOptionContent
-                        choice={selectedChoice}
-                        variant="field"
-                    />
-                ),
-                MenuProps: {
-                    PaperProps: {
-                        sx: {
-                            minWidth: 360,
-                        },
-                    },
-                },
-            }}
             sx={{
                 '& .MuiOutlinedInput-root': {
                     minHeight: 56,
@@ -207,7 +187,29 @@ export function ElementWidthSelector(props: ElementWidthSelectorProps) {
                     width: '100%',
                 },
             }}
-        >
+            slotProps={{
+                select: {
+                    renderValue: () => (
+                        <ElementWidthOptionContent
+                            choice={selectedChoice}
+                            variant="field"
+                        />
+                    ),
+                    MenuProps: {
+                        slotProps: {
+                            paper: {
+                                sx: {
+                                    minWidth: 360,
+                                },
+                            },
+                        },
+                    },
+                },
+
+                inputLabel: {
+                    title: label,
+                }
+            }}>
             {
                 hasDisabledChoices && restrictionHint != null &&
                 <ListSubheader

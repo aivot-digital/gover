@@ -52,7 +52,9 @@ export function DateRangeFieldComponent(props: DateRangeFieldComponentProps) {
     return (
         <Grid container rowSpacing={0.5}>
             <Grid size={12}>
-                <Grid container columnSpacing={1} alignItems="center">
+                <Grid container columnSpacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <Grid size={{xs: 12, md: 'grow'}}>
                         <DateFieldComponent
                             label={`${props.label} (Von)`}
