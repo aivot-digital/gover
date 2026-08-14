@@ -78,32 +78,17 @@ export function getLatestTaskForEdge(
     ));
 }
 
-export function getTransferredProcessDataForEdge(
-    tasks: ProcessInstanceTaskEntity[],
-    fromNodeId: number,
-    toNodeId: number,
-    viaPort: string,
-): Record<string, any> | null {
-    const targetTask = getLatestTaskForEdge(tasks, fromNodeId, toNodeId, viaPort);
-    if (targetTask == null) {
-        return null;
-    }
-
-    const targetStarted = parseTimestamp(targetTask.started);
-    const sourceTask = pickLatestTask(tasks, (task) => (
-        task.processNodeId === fromNodeId &&
-        parseTaskEndTimestamp(task) <= targetStarted
-    ));
-
-    return sourceTask?.processData ?? null;
+interface TransferredProcessDataComparison {
+    currentValue: Record<string, any>;
+    previousValue: Record<string, any> | null;
 }
 
-export function getTransferredProcessDataDiffForEdge(
+export function getTransferredProcessDataComparisonForEdge(
     tasks: ProcessInstanceTaskEntity[],
     fromNodeId: number,
     toNodeId: number,
     viaPort: string,
-): Record<string, any> | null {
+): TransferredProcessDataComparison | null {
     const targetTask = getLatestTaskForEdge(tasks, fromNodeId, toNodeId, viaPort);
     if (targetTask == null) {
         return null;
@@ -115,5 +100,23 @@ export function getTransferredProcessDataDiffForEdge(
         parseTaskEndTimestamp(task) <= targetStarted
     ));
 
-    return sourceTask?.processDataDiff ?? null;
+    if (sourceTask == null) {
+        return null;
+    }
+
+    if (sourceTask.previousProcessInstanceTaskId == null) {
+        return {
+            currentValue: sourceTask.processData,
+            previousValue: {},
+        };
+    }
+
+    const previousTask = tasks.find((task) => task.id === sourceTask.previousProcessInstanceTaskId);
+
+    return {
+        currentValue: sourceTask.processData,
+        // If permissions or response shaping omit the predecessor, showing no diff is safer than deriving one from
+        // the custom and potentially ambiguous processDataDiff representation.
+        previousValue: previousTask?.processData ?? null,
+    };
 }

@@ -646,6 +646,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                                 </Typography>
                                                 <ExpandableCodeBlock
                                                     value={JSON.stringify(associatedTask?.nodeData, null, 2)}
+                                                    language="json"
                                                 />
 
                                                 <ProcessInstanceAttachmentSetList
