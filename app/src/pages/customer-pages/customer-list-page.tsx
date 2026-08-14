@@ -142,7 +142,7 @@ export function CustomerListPage() {
                                 }}
                             >
                                 <ListHeader
-                                    title="Unsere Formulare"
+                                    title="Formulare"
                                     search={search}
                                     onSearchChange={setSearch}
                                     searchLabel="Formular suchen"

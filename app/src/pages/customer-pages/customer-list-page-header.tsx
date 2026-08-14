@@ -1,4 +1,4 @@
-import React from 'react';
+import {useState} from 'react';
 import {Box, Container, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
 import {Logo} from '../../components/logo/logo';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -18,6 +18,8 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
     const accessibilityDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId));
+    const [logoStatus, setLogoStatus] = useState<'loading' | 'failed' | 'present'>('loading');
+    const hasVisibleLogo = logoStatus === 'present';
 
     return (
         <Box
@@ -56,13 +58,14 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
                             <Logo
                                 width={200}
                                 height={100}
+                                onStatusChange={setLogoStatus}
                             />
 
                             <Box
                                 sx={{
-                                    ml: 4,
-                                    pl: 4,
-                                    borderLeft: `1px solid ${theme.palette.divider}`,
+                                    ml: hasVisibleLogo ? 4 : 0,
+                                    pl: hasVisibleLogo ? 4 : 0,
+                                    borderLeft: hasVisibleLogo ? `1px solid ${theme.palette.divider}` : 'none',
                                     [theme.breakpoints.down('md')]: {
                                         borderLeft: 'none',
                                         pl: 0,
