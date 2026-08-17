@@ -5,6 +5,7 @@ import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.elements.enums.ElementDisplayContext;
 import de.aivot.gover.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
@@ -44,6 +45,7 @@ import de.aivot.gover.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.gover.backend.process.models.ProcessNodeOutput;
 import de.aivot.gover.backend.process.models.ProcessNodePort;
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultNoop;
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
@@ -78,7 +80,6 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     public static final String DATA_KEY_PAYLOAD = "payload";
     public static final String DATA_KEY_UNMAPPED = "unmapped";
-    public static final String DATA_KEY_AUTHORED = "authored";
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
     public static final String DATA_KEY_STARTED = "started";
     public static final String DATA_KEY_CUSTOMER_SUMMARY_FILES = "customerSummaryFiles";
@@ -421,21 +422,6 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             );
         }
 
-        var formLayout = configuration.formLayout;
-
-        var authoredValues = ObjectMapperFactory
-                .getInstance()
-                .convertValue(
-                        context
-                                .getThisProcessInstance()
-                                .getInitialPayload()
-                                .get(DATA_KEY_AUTHORED),
-                        AuthoredElementValues.class
-                );
-
-        var derived = elementDerivationService
-                .derive(formLayout, authoredValues);
-
         var paymentConfig = context
                 .getConfigurationOfExecutingNode()
                 .payment;
@@ -451,9 +437,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             Optional<PaymentPayload> paymentRequest;
             try {
                 paymentRequest = paymentRequestCreationService
-                        .createRequest(paymentConfig,
-                                derived,
-                                context.getCurrentProcessExecutionData());
+                        .createRequest(
+                                paymentConfig,
+                                DerivedRuntimeElementData.empty(),
+                                context.getCurrentProcessExecutionData()
+                        );
             } catch (PaymentException e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,
@@ -545,6 +533,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                             "Die Zahlungsanforderung mit dem Schlüssel %s konnte nicht gefunden werden.",
                             StringUtils.quote(txKey)
                     ));
+
+            // If the transaction is still in the initial state, exit this method and wait for the next resume.
+            if (tx.getStatus() == XBezahldienstStatus.INITIAL) {
+                return new ProcessNodeExecutionResultNoop();
+            }
 
             if (tx.getStatus() != XBezahldienstStatus.PAYED) {
                 if (StringUtils.isNotNullOrEmpty(tx.getPaymentError())) {
