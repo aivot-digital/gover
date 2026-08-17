@@ -16,6 +16,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.TimeUnit;
+
 @Service
 @EnableScheduling
 public class ProcessStarter {
@@ -43,7 +45,7 @@ public class ProcessStarter {
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
     }
 
-    @Scheduled(fixedRate = 1000 * 5) // every 5 seconds
+    @Scheduled(fixedRate = 5, timeUnit = TimeUnit.SECONDS) // every 5 seconds
     public void startProcesses() {
         logger.info("Suche nach neuen Prozessen zum Starten...");
 
