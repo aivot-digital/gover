@@ -771,6 +771,7 @@ function PaymentConfigItemEditor(props: {
                 <Grid size={{xs: 12, md: 6}}>
                     <TextFieldComponent
                         label="Beschreibung"
+                        hint="Name und/oder Beschreibung der Zahlungsposition. Wird der das Formular einreichenden Person angezeigt."
                         value={item.description}
                         onChange={(description) => onChange({...item, description})}
                         required={true}
@@ -782,6 +783,7 @@ function PaymentConfigItemEditor(props: {
                 <Grid size={{xs: 12, md: 6}}>
                     <TextFieldComponent
                         label="Referenz"
+                        hint="Eine fachliche Referenz für die Zahlungsposition. Kann nur von Ihnen intern eingesehen werden."
                         value={item.reference}
                         onChange={(reference) => onChange({...item, reference})}
                         required={true}
@@ -1099,7 +1101,7 @@ function AdditionalBookingDataEditor(props: {
                 sx={{mb: rows.length === 0 ? 0 : 1.5}}
             >
                 <Typography variant="subtitle2">
-                    Weitere Buchungsdaten
+                    Buchungsdaten
                 </Typography>
 
                 <Button
@@ -1112,6 +1114,16 @@ function AdditionalBookingDataEditor(props: {
                     Hinzufügen
                 </Button>
             </Stack>
+
+            <Typography variant="body2" color="textSecondary"
+             sx={{
+                 maxWidth: 560,
+                 mt: 0.75,
+                 mb: 1.75,
+             }}
+            >
+                In den Buchungsdaten können technisch relevante Informationen für die weitergehende Verbuchung in Folgesystemen mitgegeben werden.
+            </Typography>
 
             {
                 rows.length === 0 &&
@@ -1222,7 +1234,6 @@ function EmptyBookingDataState(props: { hasError: boolean }) {
             sx={(theme) => ({
                 px: 1.5,
                 py: 1.25,
-                mt: 0.75,
                 minHeight: 56,
                 display: 'flex',
                 alignItems: 'center',
