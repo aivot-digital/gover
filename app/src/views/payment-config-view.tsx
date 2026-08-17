@@ -1,6 +1,6 @@
 import {Box, Button, FormHelperText, Grid, Stack, Typography} from '@mui/material';
 import {alpha} from '@mui/material/styles';
-import {useEffect, useMemo, useState} from 'react';
+import React, {FunctionComponent, useEffect, useMemo, useState} from 'react';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Receipt from '@aivot/mui-material-symbols-400-n25-outlined/Receipt';
@@ -30,13 +30,14 @@ import {ProcessDataKeyInputComponent} from './process-data-key-input-field-view'
 import {NoCodeInputFieldComponent} from '../components/no-code-input-field/no-code-input-field-component';
 import {NoCodeDataType} from '../data/no-code-data-type';
 import {CodeInputFieldComponent} from '../components/code-input-field/code-input-field-component';
-import {isFormLayoutElement} from '../models/elements/form-layout-element';
 import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
 import {AnyElement} from '../models/elements/any-element';
 import {NoCodeOperand} from '../models/functions/no-code-expression';
 import {JavascriptCode} from '../models/functions/javascript-code';
-
-const FormLayoutFieldKey = 'formLayout';
+import PaymentArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/PaymentArrowDown';
+import {DisabledTooltip} from '../components/disabled-tooltip/disabled-tooltip';
+import {pluralize} from '../utils/humanization-utils';
+import {RadioFieldComponent} from '../components/radio-field/radio-field-component';
 
 const EmptyPaymentConfigValue: PaymentConfigElementValue = {
     paymentProviderKey: null,
@@ -48,12 +49,13 @@ const EmptyPaymentConfigValue: PaymentConfigElementValue = {
 };
 
 const EmptyRequestorMapping: PaymentConfigElementValueRequestorMapping = {
+    requestorSourceType: null,
     lastNameDestinationKey: null,
     firstNameDestinationKey: null,
     genderDestinationKey: null,
     isOrganizationDestinationKey: null,
     organizationNameDestinationKey: null,
-    streeDestinationKey: null,
+    streetDestinationKey: null,
     houseNumberDestinationKey: null,
     addressLineDestinationKey: null,
     postalCodeDestinationKey: null,
@@ -94,7 +96,6 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
         errors,
         isBusy: isGloballyDisabled,
         isDeriving,
-        authoredElementValues,
     } = props;
 
     const {
@@ -124,6 +125,8 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                 setIsLoadingProviders(false);
             });
     }, []);
+
+    const shouldShowEmptyState = value == null;
 
     const currentValue = useMemo(() => normalizePaymentConfigValue(value), [value]);
 
@@ -162,27 +165,211 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
         return options;
     }, [currentValue.paymentProviderKey, providers]);
 
-    const calculationRootElement = useMemo<AnyElement>(() => {
-        const configuredFormLayout = authoredElementValues[FormLayoutFieldKey];
-        return isFormLayoutElement(configuredFormLayout) ? configuredFormLayout : rootElement;
-    }, [authoredElementValues, rootElement]);
+    const DialogContentComponent = useMemo(() => {
+        return wrapPaymentConfigDialogContent(paymentProviderOptions, rootElement, errors);
+    }, [paymentProviderOptions, rootElement]);
 
-    const itemRows = useMemo<PaymentItemRow[]>(() => {
-        return (currentValue.items ?? [])
-            .map((item, index) => ({index, item}));
-    }, [currentValue.items]);
+    const handleAdd = () => {
+        setValue(EmptyPaymentConfigValue);
+    };
 
-    const ItemDialogContent = useMemo(() => {
-        return wrapPaymentConfigItem(calculationRootElement);
-    }, [calculationRootElement]);
+    const errorText = [
+        errors?.join(' '),
+        providersError,
+    ]
+        .filter((part) => part != null && part.length > 0)
+        .join(' ');
+
+    return (
+        <Box>
+            <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+                justifyContent="space-between"
+            >
+                <Typography variant="subtitle2">
+                    {element.label}{element.required ? ' *' : ''}
+                </Typography>
+
+                <DisabledTooltip
+                    title="Es kann nur eine Zahlungskonfiguration existieren."
+                    disabled={value != null}
+                >
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<Add/>}
+                        disabled={element.disabled || isDisabled || isFieldBusy || value != null}
+                        onClick={handleAdd}
+                    >
+                        Hinzufügen
+                    </Button>
+                </DisabledTooltip>
+            </Stack>
+
+            {
+                shouldShowEmptyState &&
+                <Box
+                    sx={(theme) => ({
+                        px: 1.5,
+                        py: 1.25,
+                        mt: 0.75,
+                        minHeight: 56,
+                        display: 'flex',
+                        alignItems: 'center',
+                        borderRadius: 1,
+                        border: errors != null || providersError != null
+                            ? '1px solid'
+                            : '1px dashed',
+                        borderColor: errors != null || providersError != null
+                            ? theme.palette.error.main
+                            : alpha(theme.palette.text.primary, 0.18),
+                        textAlign: 'left',
+                    })}
+                >
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                    >
+                        <PaymentArrowDown
+                            sx={{
+                                flexShrink: 0,
+                                fontSize: 20,
+                                color: 'text.secondary',
+                            }}
+                        />
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                                minWidth: 0,
+                            }}
+                        >
+                            Keine Zahlungskonfiguration vorhanden.{' '}
+                            {
+                                element.required &&
+                                <>Eine Zahlungskonfiguration ist erforderlich.</>
+                            }
+                        </Typography>
+                    </Stack>
+                </Box>
+            }
+
+            {
+                !shouldShowEmptyState &&
+                <Stack
+                    direction="column"
+                    spacing={2}
+                    sx={{
+                        mt: 0.75,
+                    }}
+                >
+                    <DialogList
+                        dialogTitle="Zahlungskonfiguration bearbeiten"
+                        dialogViewTitle="Zahlungskonfiguration ansehen"
+                        getId={(i) => i != null ? '1' : '0'}
+                        items={[value]}
+                        title={(i) => getPaymentConfigTitle(i, paymentProviderOptions)}
+                        subTitle={getPaymentConfigSubtitle}
+                        dialogContentComponent={DialogContentComponent}
+                        onDialogSave={(value) => {
+                            setValue(value);
+                        }}
+                        onDelete={() => {
+                            setValue(null);
+                        }}
+                        disabled={element.disabled || isDisabled || isFieldBusy}
+                    />
+                </Stack>
+            }
+
+            {
+                errorText.length > 0 &&
+                <FormHelperText
+                    error
+                    sx={{
+                        mx: 1.75,
+                        mt: shouldShowEmptyState ? 0.75 : -1,
+                    }}
+                >
+                    {errorText}
+                </FormHelperText>
+            }
+        </Box>
+    );
+}
+
+function getPaymentConfigTitle(item: PaymentConfigElementValue, paymentProviderOptions: SelectFieldComponentOption<string>[]): string {
+    if (item.paymentProviderKey != null) {
+        return paymentProviderOptions
+                .find((option) => option.value === item.paymentProviderKey)
+                ?.label
+            ?? `Zahlungskonfiguration (${item.paymentProviderKey})`;
+    }
+
+    return 'Neue Zahlungskonfiguration';
+}
+
+function getPaymentConfigSubtitle(item: PaymentConfigElementValue): string {
+    const parts = [];
+
+    if (item.purpose != null) {
+        parts.push(item.purpose);
+    }
+
+    if (item.items != null && item.items.length > 0) {
+        parts.push(`${item.items.length} ${pluralize(item.items.length, 'Zahlungsposition', 'Zahlungspositionen')}`);
+    }
+
+    return parts.join(' · ');
+}
+
+function wrapPaymentConfigDialogContent(paymentProviders: SelectFieldComponentOption<string>[], rootElement: AnyElement, errors: string[] | null | undefined):
+    FunctionComponent<Omit<PaymentConfigDialogContentProps, 'paymentProviders' | 'rootElement' | 'errors'>> {
+    return (props: {
+        item: PaymentConfigElementValue,
+        onChange: (item: PaymentConfigElementValue) => void,
+        disabled?: boolean
+    }) => (
+        <PaymentConfigDialogContent
+            item={props.item}
+            onChange={props.onChange}
+            paymentProviders={paymentProviders}
+            disabled={props.disabled}
+            rootElement={rootElement}
+            errors={errors}
+        />
+    );
+}
+
+interface PaymentConfigDialogContentProps {
+    item: PaymentConfigElementValue;
+    onChange: (item: PaymentConfigElementValue) => void;
+    disabled?: boolean;
+    paymentProviders: SelectFieldComponentOption<string>[],
+    rootElement: AnyElement;
+    errors: string[] | null | undefined;
+}
+
+function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
+    const {
+        item: currentValue,
+        onChange,
+        disabled: isDisabled = false,
+        paymentProviders: paymentProviderOptions,
+        rootElement,
+        errors,
+    } = props;
+
+    const isFieldBusy = isDisabled;
 
     const updateValue = (patch: Partial<PaymentConfigElementValue>) => {
-        const nextValue = {
+        onChange({
             ...currentValue,
             ...patch,
-        };
-
-        setValue(isPaymentConfigValueEmpty(nextValue) ? null : nextValue);
+        });
     };
 
     const updateRequestorMapping = (
@@ -228,19 +415,17 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
         updateValue({items});
     };
 
-    const errorText = [
-        errors?.join(' '),
-        providersError,
-    ]
-        .filter((part) => part != null && part.length > 0)
-        .join(' ');
+    const itemRows = useMemo<PaymentItemRow[]>(() => {
+        return (currentValue.items ?? [])
+            .map((item, index) => ({index, item}));
+    }, [currentValue.items]);
+
+    const ItemDialogContent = useMemo(() => {
+        return wrapPaymentConfigItem(rootElement);
+    }, [rootElement]);
 
     return (
         <Box>
-            <Typography variant="subtitle2">
-                {element.label}{element.required ? ' *' : ''}
-            </Typography>
-
             <Grid
                 container
                 spacing={2}
@@ -260,12 +445,12 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
 
                 <Grid size={{xs: 12, md: 6}}>
                     <TextFieldComponent
-                        label="Verwendungszweck"
+                        label="Buchungstext"
                         value={currentValue.purpose}
                         onChange={(purpose) => updateValue({purpose})}
                         required={true}
                         disabled={isDisabled || isFieldBusy}
-                        hint="Erscheint bei der zahlenden Person auf der Abrechnung."
+                        hint="Der Buchungstext erscheint auf der Abrechnung der antragstellenden Person (z. B. Bank oder Kreditkarte)."
                     />
                 </Grid>
 
@@ -278,43 +463,32 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                         disabled={isDisabled || isFieldBusy}
                         multiline
                         rows={2}
-                        hint="Beschreibung der Zahlung für die antragstellende Person."
+                        hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die anfallenden Gebühren."
                     />
                 </Grid>
             </Grid>
 
-            <Box sx={{mt: 3.5}}>
-                <Typography variant="body1">
-                    Antragsteller:in
-                </Typography>
-                <Typography
-                    variant="caption"
-                    color="textDisabled"
-                >
-                    Optionale Zuordnung von Formularwerten zu Zahlungsdaten.
-                </Typography>
+            <CheckboxFieldComponent
+                label="Personen- oder Organisationsangaben zuordnen"
+                value={currentValue.mapRequestor ?? false}
+                onChange={(mapRequestor) => updateValue({
+                    mapRequestor,
+                    requestorMapping: mapRequestor ? currentValue.requestorMapping ?? EmptyRequestorMapping : null,
+                })}
+                variant="switch"
+                disabled={isDisabled || isFieldBusy}
+                sx={{mt: 1.5, mb: 0}}
+                hint="Sie können hier Angaben zu der Person oder Organisation, welche die Zahlung ausführt, dem Zahlungsvorgang zuordnen. Diese Daten werden an den Zahlungsanbieter übertragen."
+            />
 
-                <CheckboxFieldComponent
-                    label="Antragsteller:in zuordnen"
-                    value={currentValue.mapRequestor ?? false}
-                    onChange={(mapRequestor) => updateValue({
-                        mapRequestor,
-                        requestorMapping: mapRequestor ? currentValue.requestorMapping ?? EmptyRequestorMapping : null,
-                    })}
-                    variant="switch"
+            {
+                currentValue.mapRequestor === true &&
+                <RequestorMappingEditor
+                    value={currentValue.requestorMapping ?? EmptyRequestorMapping}
+                    onChange={updateRequestorMapping}
                     disabled={isDisabled || isFieldBusy}
-                    sx={{mt: 1.5, mb: 0}}
                 />
-
-                {
-                    currentValue.mapRequestor === true &&
-                    <RequestorMappingEditor
-                        value={currentValue.requestorMapping ?? EmptyRequestorMapping}
-                        onChange={updateRequestorMapping}
-                        disabled={isDisabled || isFieldBusy}
-                    />
-                }
-            </Box>
+            }
 
             <Box sx={{mt: 3.5}}>
                 <Stack
@@ -324,7 +498,7 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                     justifyContent="space-between"
                 >
                     <Typography variant="body1">
-                        Zahlungsposten
+                        Zahlungspositionen
                     </Typography>
 
                     <Button
@@ -347,8 +521,8 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                     itemRows.length > 0 &&
                     <Box sx={{mt: 0.75}}>
                         <DialogList
-                            dialogTitle="Zahlungsposten bearbeiten"
-                            dialogViewTitle="Zahlungsposten ansehen"
+                            dialogTitle="Zahlungspositionen bearbeiten"
+                            dialogViewTitle="Zahlungspositionen ansehen"
                             getId={(row) => row.index.toString()}
                             items={itemRows}
                             title={(row) => getPaymentItemTitle(row.item)}
@@ -361,19 +535,6 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                     </Box>
                 }
             </Box>
-
-            {
-                errorText.length > 0 &&
-                <FormHelperText
-                    error
-                    sx={{
-                        mx: 1.75,
-                        mt: 0.75,
-                    }}
-                >
-                    {errorText}
-                </FormHelperText>
-            }
         </Box>
     );
 }
@@ -395,66 +556,144 @@ function RequestorMappingEditor(props: {
             spacing={2}
             sx={{mt: 0.5}}
         >
-            <RequestorMappingField
-                label="Nachname"
-                value={value.lastNameDestinationKey}
-                onChange={(next) => onChange('lastNameDestinationKey', next)}
-                disabled={disabled}
-            />
-            <RequestorMappingField
-                label="Vorname"
-                value={value.firstNameDestinationKey}
-                onChange={(next) => onChange('firstNameDestinationKey', next)}
-                disabled={disabled}
-            />
-            <RequestorMappingField
-                label="Geschlecht"
-                value={value.genderDestinationKey}
-                onChange={(next) => onChange('genderDestinationKey', next)}
-                disabled={disabled}
-            />
-            <RequestorMappingField
-                label="Ist Organisation"
-                value={value.isOrganizationDestinationKey}
-                onChange={(next) => onChange('isOrganizationDestinationKey', next)}
-                disabled={disabled}
-            />
-            <RequestorMappingField
-                label="Organisationsname"
-                value={value.organizationNameDestinationKey}
-                onChange={(next) => onChange('organizationNameDestinationKey', next)}
-                disabled={disabled}
-            />
+            <Grid size={12}>
+                <RadioFieldComponent
+                    label="Art der Zuordnung"
+                    required={true}
+                    value={value.requestorSourceType}
+                    onChange={(val) => {
+                        onChange('requestorSourceType', val);
+                    }}
+                    options={[
+                        {
+                            label: 'Es handelt sich um eine natürliche Person',
+                            value: 'fixPerson',
+                        },
+                        {
+                            label: 'Es handelt sich um eine Organisation',
+                            value: 'fixOrg',
+                        },
+                        {
+                            label: 'Die Art der Antragsteller:in wird aus den Prozessdaten abgeleitet',
+                            value: 'processDataKey',
+                        },
+                    ]}
+                />
+            </Grid>
+
+            {
+                value.requestorSourceType === 'processDataKey' &&
+                <>
+                    <RequestorMappingField
+                        label="Datenfeld zur Kennzeichnung als Organisation"
+                        hint="Dieses Prozessdatenfeld muss einen Wahrheitswert enthalten, der angibt, ob es sich um eine Organisation handelt."
+                        value={value.isOrganizationDestinationKey}
+                        onChange={(next) => onChange('isOrganizationDestinationKey', next)}
+                        disabled={disabled}
+                    />
+
+                    <Grid size={{xs: 12, md: 6}}/>
+                </>
+            }
+
+            {
+                (
+                    value.requestorSourceType === 'fixPerson' ||
+                    value.requestorSourceType === 'processDataKey'
+                ) &&
+                <>
+                    <Grid size={12}>
+                        <Typography variant="subtitle2">
+                            Personendaten
+                        </Typography>
+                    </Grid>
+
+                    <RequestorMappingField
+                        label="Nachname"
+                        value={value.lastNameDestinationKey}
+                        onChange={(next) => onChange('lastNameDestinationKey', next)}
+                        disabled={disabled}
+                    />
+
+                    <RequestorMappingField
+                        label="Vorname"
+                        value={value.firstNameDestinationKey}
+                        onChange={(next) => onChange('firstNameDestinationKey', next)}
+                        disabled={disabled}
+                    />
+
+                    <RequestorMappingField
+                        label="Geschlecht"
+                        value={value.genderDestinationKey}
+                        onChange={(next) => onChange('genderDestinationKey', next)}
+                        disabled={disabled}
+                        hint="Dieses Prozessdatenfeld muss einen der folgenden enthalten: M, W, D"
+                    />
+                </>
+            }
+
+            {
+                (
+                    value.requestorSourceType === 'fixOrg' ||
+                    value.requestorSourceType === 'processDataKey'
+                ) &&
+                <>
+                    <Grid size={12}>
+                        <Typography variant="subtitle2">
+                            Organisationsdaten
+                        </Typography>
+                    </Grid>
+
+                    <RequestorMappingField
+                        label="Organisationsname"
+                        value={value.organizationNameDestinationKey}
+                        onChange={(next) => onChange('organizationNameDestinationKey', next)}
+                        disabled={disabled}
+                    />
+                </>
+            }
+
+            <Grid size={12}>
+                <Typography variant="subtitle2">
+                    Adressdaten
+                </Typography>
+            </Grid>
+
             <RequestorMappingField
                 label="Straße"
-                value={value.streeDestinationKey}
-                onChange={(next) => onChange('streeDestinationKey', next)}
+                value={value.streetDestinationKey}
+                onChange={(next) => onChange('streetDestinationKey', next)}
                 disabled={disabled}
             />
+
             <RequestorMappingField
                 label="Hausnummer"
                 value={value.houseNumberDestinationKey}
                 onChange={(next) => onChange('houseNumberDestinationKey', next)}
                 disabled={disabled}
             />
+
             <RequestorMappingField
                 label="Adresszusatz"
                 value={value.addressLineDestinationKey}
                 onChange={(next) => onChange('addressLineDestinationKey', next)}
                 disabled={disabled}
             />
+
             <RequestorMappingField
                 label="Postleitzahl"
                 value={value.postalCodeDestinationKey}
                 onChange={(next) => onChange('postalCodeDestinationKey', next)}
                 disabled={disabled}
             />
+
             <RequestorMappingField
                 label="Ort"
                 value={value.cityDestinationKey}
                 onChange={(next) => onChange('cityDestinationKey', next)}
                 disabled={disabled}
             />
+
             <RequestorMappingField
                 label="Land"
                 value={value.countryDestinationKey}
@@ -467,6 +706,7 @@ function RequestorMappingEditor(props: {
 
 function RequestorMappingField(props: {
     label: string;
+    hint?: string;
     value: string | null;
     onChange: (value: string | null) => void;
     disabled: boolean;
@@ -475,9 +715,11 @@ function RequestorMappingField(props: {
         <Grid size={{xs: 12, md: 6}}>
             <ProcessDataKeyInputComponent
                 label={props.label}
+                hint={props.hint}
                 value={props.value}
                 onChange={props.onChange}
                 disabled={props.disabled}
+                required={true}
             />
         </Grid>
     );
@@ -955,7 +1197,7 @@ function EmptyItemsState(props: { hasError: boolean }) {
                     color="text.secondary"
                     sx={{minWidth: 0}}
                 >
-                    Keine Zahlungsposten vorhanden.
+                    Keine Zahlungspositionen vorhanden.
                 </Typography>
             </Stack>
         </Box>
@@ -1005,14 +1247,6 @@ function normalizePaymentConfigValue(value: PaymentConfigElementValue | null | u
     };
 }
 
-function isPaymentConfigValueEmpty(value: PaymentConfigElementValue): boolean {
-    return value.paymentProviderKey == null &&
-        isStringNullOrEmpty(value.purpose) &&
-        isStringNullOrEmpty(value.description) &&
-        value.mapRequestor !== true &&
-        (value.items?.length ?? 0) === 0;
-}
-
 function getPaymentItemTitle(item: PaymentConfigElementValueItem): string {
     if (!isStringNullOrEmpty(item.description)) {
         return item.description!;
@@ -1022,7 +1256,7 @@ function getPaymentItemTitle(item: PaymentConfigElementValueItem): string {
         return item.reference!;
     }
 
-    return 'Unbenannter Zahlungsposten';
+    return 'Unbenannte Zahlungsposition';
 }
 
 function getPaymentItemSubtitle(item: PaymentConfigElementValueItem, isReadonly: boolean): string {

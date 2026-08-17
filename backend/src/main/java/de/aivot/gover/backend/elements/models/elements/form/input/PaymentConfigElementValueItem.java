@@ -3,6 +3,7 @@ package de.aivot.gover.backend.elements.models.elements.form.input;
 import de.aivot.gover.backend.exceptions.ValidationException;
 import de.aivot.gover.backend.javascript.models.JavascriptCode;
 import de.aivot.gover.backend.nocode.models.NoCodeOperand;
+import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nullable;
 
 import java.math.BigDecimal;
@@ -51,7 +52,106 @@ public record PaymentConfigElementValueItem(
         Map<String, String> additionalBookingData // Value Field Supports Template Tag Rendering
 ) {
     public void performValidation() throws ValidationException {
-        // TODO
+        requireText(description, "Beschreibung");
+        requireText(reference, "Referenz");
+
+        if (idType == null) {
+            throw new ValidationException(null, "Es muss ein ID-Typ ausgewählt werden.");
+        }
+        if (idType == IdType.Predefined) {
+            requireText(predefinedId, "Vordefinierte ID");
+        }
+
+        if (costType == null) {
+            throw new ValidationException(null, "Es muss ein Kostentyp ausgewählt werden.");
+        }
+        if (costType == CostType.FixedCosts) {
+            requireNotNegative(fixedCosts, "Feste Kosten");
+        } else {
+            validateVariableCalculation(
+                    variableCostsCalculationType,
+                    variableCostsNoCodeCalculation,
+                    variableCostsLowCodeCalculation,
+                    "Variable Kosten"
+            );
+        }
+
+        if (quantityType == null) {
+            throw new ValidationException(null, "Es muss ein Mengentyp ausgewählt werden.");
+        }
+        if (quantityType == QuantityType.FixedQuantity) {
+            requireNotNegative(fixedQuantity, "Feste Menge");
+        } else {
+            validateVariableCalculation(
+                    variableQuantityCalculationType,
+                    variableQuantityNoCodeCalculation,
+                    variableQuantityLowCodeCalculation,
+                    "Variable Menge"
+            );
+        }
+
+        if (fixedTaxRate == null) {
+            throw new ValidationException(null, "Es muss ein Steuersatz angegeben werden.");
+        }
+        if (fixedTaxRate.compareTo(BigDecimal.ZERO) < 0 || fixedTaxRate.compareTo(BigDecimal.valueOf(100)) > 0) {
+            throw new ValidationException(null, "Der Steuersatz muss zwischen 0 und 100 liegen.");
+        }
+
+        if (additionalBookingData != null) {
+            for (var entry : additionalBookingData.entrySet()) {
+                if (StringUtils.isNullOrEmpty(entry.getKey())) {
+                    throw new ValidationException(null, "Buchungsdaten dürfen keine leeren Schlüssel enthalten.");
+                }
+            }
+        }
+    }
+
+    private void validateVariableCalculation(
+            @Nullable VariableValueCalculationType calculationType,
+            @Nullable NoCodeOperand noCodeCalculation,
+            @Nullable JavascriptCode lowCodeCalculation,
+            String fieldName
+    ) throws ValidationException {
+        if (calculationType == null) {
+            throw new ValidationException(null, fieldName + " benötigen einen Berechnungstyp.");
+        }
+
+        if (calculationType == VariableValueCalculationType.NoCode) {
+            if (noCodeCalculation == null) {
+                throw new ValidationException(null, fieldName + " benötigen eine No-Code-Berechnung.");
+            }
+
+            var noCodeError = noCodeCalculation.validate();
+            if (!noCodeError.isValid()) {
+                throw new ValidationException(null, fieldName + " enthalten einen ungültigen No-Code-Ausdruck.", noCodeError);
+            }
+        } else if (lowCodeCalculation == null || lowCodeCalculation.isEmpty()) {
+            throw new ValidationException(null, fieldName + " benötigen eine Low-Code-Berechnung.");
+        }
+    }
+
+    private void requireText(@Nullable String value, String fieldName) throws ValidationException {
+        if (StringUtils.isNullOrEmpty(value)) {
+            throw new ValidationException(null, fieldName + " muss angegeben werden.");
+        }
+    }
+
+    private void requireNotNegative(@Nullable BigDecimal value, String fieldName) throws ValidationException {
+        if (value == null) {
+            throw new ValidationException(null, fieldName + " müssen angegeben werden.");
+        }
+        if (value.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException(null, fieldName + " dürfen nicht negativ sein.");
+        }
+    }
+
+    private void requireNotNegative(@Nullable Long value, String fieldName) throws ValidationException {
+        if (value == null) {
+            throw new ValidationException(null, fieldName + " muss angegeben werden.");
+        }
+        if (value < 0) {
+            throw new ValidationException(null, fieldName + " darf nicht negativ sein.");
+        }
     }
 
     public enum IdType {

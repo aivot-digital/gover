@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PaymentPayloadCreationServiceTest {
@@ -26,12 +27,18 @@ class PaymentPayloadCreationServiceTest {
         var processData = new ProcessExecutionData().addProcessData(Map.of(
                 "caseNumber", "AZ-1",
                 "name", "Ada",
-                "requestor", Map.of(
-                        "lastName", "Lovelace",
-                        "firstName", "Ada",
-                        "gender", "F",
-                        "city", "London",
-                        "country", "gb"
+                "requestor", Map.ofEntries(
+                        Map.entry("lastName", "Lovelace"),
+                        Map.entry("firstName", "Ada"),
+                        Map.entry("gender", "F"),
+                        Map.entry("isOrganization", false),
+                        Map.entry("organizationName", "Ignored Ltd"),
+                        Map.entry("street", "Analytical Engine Road"),
+                        Map.entry("houseNumber", "1"),
+                        Map.entry("addressLine", "Suite 2"),
+                        Map.entry("postalCode", "12345"),
+                        Map.entry("city", "London"),
+                        Map.entry("country", "gb")
                 )
         ));
         var config = new PaymentConfigElementValue(
@@ -40,15 +47,16 @@ class PaymentPayloadCreationServiceTest {
                 "Fee for {{ $.name }}",
                 true,
                 new PaymentConfigElementValueRequestorMapping(
+                        PaymentConfigElementValueRequestorMapping.RequestorSourceType.ProcessDataKey,
                         "requestor.lastName",
                         "requestor.firstName",
                         "requestor.gender",
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
+                        "requestor.isOrganization",
+                        "requestor.organizationName",
+                        "requestor.street",
+                        "requestor.houseNumber",
+                        "requestor.addressLine",
+                        "requestor.postalCode",
                         "requestor.city",
                         "requestor.country"
                 ),
@@ -77,6 +85,7 @@ class PaymentPayloadCreationServiceTest {
         assertEquals("PAY AZ-1", request.getPurpose());
         assertEquals("Fee for Ada", request.getDescription());
         assertEquals(new BigDecimal("23.80"), request.getTotal());
+        assertEquals(false, request.getRequestor().getOrganization());
         assertEquals("Lovelace", request.getRequestor().getLastName());
         assertEquals(XBezahldienstGender.FEMALE, request.getRequestor().getGender());
         assertEquals("London", request.getRequestor().getAddress().getCity());
@@ -90,6 +99,154 @@ class PaymentPayloadCreationServiceTest {
         assertEquals(new BigDecimal("10.00"), item.getNetPrice());
         assertEquals(new BigDecimal("23.80"), item.getTotalPrice());
         assertEquals("AZ-1", item.getBookingData().getFirst().value());
+    }
+
+    @Test
+    void shouldCreateFixedPersonRequestor() throws PaymentException {
+        var processData = new ProcessExecutionData().addProcessData(Map.of(
+                "person", Map.ofEntries(
+                        Map.entry("lastName", "Doe"),
+                        Map.entry("firstName", "Jane"),
+                        Map.entry("gender", "D"),
+                        Map.entry("isOrganization", true),
+                        Map.entry("organizationName", "Ignored GmbH"),
+                        Map.entry("street", "Main Street"),
+                        Map.entry("houseNumber", "1"),
+                        Map.entry("addressLine", "Floor 2"),
+                        Map.entry("postalCode", "12345"),
+                        Map.entry("city", "Berlin"),
+                        Map.entry("country", "de")
+                )
+        ));
+
+        var request = createService().createRequest(requestorConfig(new PaymentConfigElementValueRequestorMapping(
+                PaymentConfigElementValueRequestorMapping.RequestorSourceType.FixPerson,
+                "person.lastName",
+                "person.firstName",
+                "person.gender",
+                "person.isOrganization",
+                "person.organizationName",
+                "person.street",
+                "person.houseNumber",
+                "person.addressLine",
+                "person.postalCode",
+                "person.city",
+                "person.country"
+        )), null, processData).orElseThrow();
+
+        var requestor = request.getRequestor();
+        assertEquals(false, requestor.getOrganization());
+        assertEquals("Doe", requestor.getLastName());
+        assertEquals("Jane", requestor.getFirstName());
+        assertEquals(XBezahldienstGender.DIVERSE, requestor.getGender());
+        assertNull(requestor.getOrganizationName());
+        assertEquals("Berlin", requestor.getAddress().getCity());
+    }
+
+    @Test
+    void shouldCreateFixedOrganizationRequestor() throws PaymentException {
+        var processData = new ProcessExecutionData().addProcessData(Map.of(
+                "company", Map.of(
+                        "lastName", "Ignored",
+                        "firstName", "Ignored",
+                        "organizationName", "Acme GmbH",
+                        "street", "Market Street",
+                        "houseNumber", "2",
+                        "addressLine", "Building A",
+                        "postalCode", "23456",
+                        "city", "Hamburg",
+                        "country", "de"
+                )
+        ));
+
+        var request = createService().createRequest(requestorConfig(new PaymentConfigElementValueRequestorMapping(
+                PaymentConfigElementValueRequestorMapping.RequestorSourceType.FixOrg,
+                "company.lastName",
+                "company.firstName",
+                null,
+                null,
+                "company.organizationName",
+                "company.street",
+                "company.houseNumber",
+                "company.addressLine",
+                "company.postalCode",
+                "company.city",
+                "company.country"
+        )), null, processData).orElseThrow();
+
+        var requestor = request.getRequestor();
+        assertEquals(true, requestor.getOrganization());
+        assertEquals("Acme GmbH", requestor.getOrganizationName());
+        assertNull(requestor.getLastName());
+        assertNull(requestor.getFirstName());
+        assertNull(requestor.getGender());
+        assertEquals("Hamburg", requestor.getAddress().getCity());
+    }
+
+    @Test
+    void shouldCreateDynamicOrganizationRequestor() throws PaymentException {
+        var processData = new ProcessExecutionData().addProcessData(Map.of(
+                "requestor", Map.ofEntries(
+                        Map.entry("isOrganization", true),
+                        Map.entry("lastName", "Ignored"),
+                        Map.entry("firstName", "Ignored"),
+                        Map.entry("gender", "M"),
+                        Map.entry("organizationName", "Dynamic GmbH"),
+                        Map.entry("street", "Dynamic Street"),
+                        Map.entry("houseNumber", "3"),
+                        Map.entry("addressLine", "Unit 4"),
+                        Map.entry("postalCode", "34567"),
+                        Map.entry("city", "Munich"),
+                        Map.entry("country", "de")
+                )
+        ));
+
+        var request = createService().createRequest(requestorConfig(new PaymentConfigElementValueRequestorMapping(
+                PaymentConfigElementValueRequestorMapping.RequestorSourceType.ProcessDataKey,
+                "requestor.lastName",
+                "requestor.firstName",
+                "requestor.gender",
+                "requestor.isOrganization",
+                "requestor.organizationName",
+                "requestor.street",
+                "requestor.houseNumber",
+                "requestor.addressLine",
+                "requestor.postalCode",
+                "requestor.city",
+                "requestor.country"
+        )), null, processData).orElseThrow();
+
+        var requestor = request.getRequestor();
+        assertEquals(true, requestor.getOrganization());
+        assertEquals("Dynamic GmbH", requestor.getOrganizationName());
+        assertNull(requestor.getLastName());
+        assertNull(requestor.getFirstName());
+        assertEquals("Munich", requestor.getAddress().getCity());
+    }
+
+    @Test
+    void shouldRejectDynamicRequestorWithoutOrganizationFlag() {
+        var processData = new ProcessExecutionData().addProcessData(Map.of(
+                "requestor", Map.of(
+                        "lastName", "Lovelace",
+                        "firstName", "Ada"
+                )
+        ));
+
+        assertThrows(PaymentException.class, () -> createService().createRequest(requestorConfig(new PaymentConfigElementValueRequestorMapping(
+                PaymentConfigElementValueRequestorMapping.RequestorSourceType.ProcessDataKey,
+                "requestor.lastName",
+                "requestor.firstName",
+                "requestor.gender",
+                "requestor.isOrganization",
+                "requestor.organizationName",
+                "requestor.street",
+                "requestor.houseNumber",
+                "requestor.addressLine",
+                "requestor.postalCode",
+                "requestor.city",
+                "requestor.country"
+        )), null, processData));
     }
 
     @Test
@@ -193,6 +350,34 @@ class PaymentPayloadCreationServiceTest {
         assertThrows(
                 PaymentException.class,
                 () -> createService().createRequest(config, null, new ProcessExecutionData())
+        );
+    }
+
+    private static PaymentConfigElementValue requestorConfig(PaymentConfigElementValueRequestorMapping requestorMapping) {
+        return new PaymentConfigElementValue(
+                null,
+                "Purpose",
+                "Description",
+                true,
+                requestorMapping,
+                List.of(new PaymentConfigElementValueItem(
+                        PaymentConfigElementValueItem.IdType.Predefined,
+                        "fee-1",
+                        "Fee",
+                        "FEE",
+                        PaymentConfigElementValueItem.CostType.FixedCosts,
+                        BigDecimal.TEN,
+                        null,
+                        null,
+                        null,
+                        PaymentConfigElementValueItem.QuantityType.FixedQuantity,
+                        1L,
+                        null,
+                        null,
+                        null,
+                        BigDecimal.ZERO,
+                        null
+                ))
         );
     }
 

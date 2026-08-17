@@ -294,11 +294,40 @@ public class PaymentPayloadCreationService {
             throw new PaymentException("Für die Zahlungsanfrage muss eine Antragsteller-Zuweisung konfiguriert sein.");
         }
 
+        return switch (mapping.requestorSourceType()) {
+            case FixPerson -> createPersonRequestor(mapping, processExecutionData);
+            case FixOrg -> createOrganizationRequestor(mapping, processExecutionData);
+            case ProcessDataKey -> createDynamicRequestor(mapping, processExecutionData);
+            case null -> throw new PaymentException("Für die Zahlungsanfrage muss eine Quelle für die Antragsteller-Zuweisung konfiguriert sein.");
+        };
+    }
+
+    @Nonnull
+    private XBezahldiensteRequestor createPersonRequestor(
+            @Nonnull PaymentConfigElementValueRequestorMapping mapping,
+            @Nonnull ProcessExecutionData processExecutionData
+    ) throws PaymentException {
         var requestor = new XBezahldiensteRequestor();
+        requestor.setOrganization(false);
         requestor.setLastName(readString(processExecutionData, mapping.lastNameDestinationKey()));
         requestor.setFirstName(readString(processExecutionData, mapping.firstNameDestinationKey()));
         requestor.setGender(readGender(processExecutionData, mapping.genderDestinationKey()));
-        requestor.setOrganization(readBoolean(processExecutionData, mapping.isOrganizationDestinationKey()));
+
+        var address = createAddress(mapping, processExecutionData);
+        if (address != null) {
+            requestor.setAddress(address);
+        }
+
+        return requestor;
+    }
+
+    @Nonnull
+    private XBezahldiensteRequestor createOrganizationRequestor(
+            @Nonnull PaymentConfigElementValueRequestorMapping mapping,
+            @Nonnull ProcessExecutionData processExecutionData
+    ) {
+        var requestor = new XBezahldiensteRequestor();
+        requestor.setOrganization(true);
         requestor.setOrganizationName(readString(processExecutionData, mapping.organizationNameDestinationKey()));
 
         var address = createAddress(mapping, processExecutionData);
@@ -306,16 +335,22 @@ public class PaymentPayloadCreationService {
             requestor.setAddress(address);
         }
 
-        if (requestor.getLastName() == null &&
-                requestor.getFirstName() == null &&
-                requestor.getGender() == null &&
-                requestor.getOrganization() == null &&
-                requestor.getOrganizationName() == null &&
-                requestor.getAddress() == null) {
-            return null;
+        return requestor;
+    }
+
+    @Nonnull
+    private XBezahldiensteRequestor createDynamicRequestor(
+            @Nonnull PaymentConfigElementValueRequestorMapping mapping,
+            @Nonnull ProcessExecutionData processExecutionData
+    ) throws PaymentException {
+        var isOrganization = readBoolean(processExecutionData, mapping.isOrganizationDestinationKey());
+        if (isOrganization == null) {
+            throw new PaymentException("Der Wert für %s muss angeben, ob die Antragsteller-Zuweisung eine Organisation ist.", mapping.isOrganizationDestinationKey());
         }
 
-        return requestor;
+        return isOrganization
+                ? createOrganizationRequestor(mapping, processExecutionData)
+                : createPersonRequestor(mapping, processExecutionData);
     }
 
     @Nullable

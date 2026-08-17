@@ -16,12 +16,13 @@ export interface PaymentConfigElementValue {
 }
 
 export interface PaymentConfigElementValueRequestorMapping {
+    requestorSourceType: 'fixPerson' | 'fixOrg' | 'processDataKey' | null;
     lastNameDestinationKey: string | null;
     firstNameDestinationKey: string | null;
     genderDestinationKey: string | null;
     isOrganizationDestinationKey: string | null;
     organizationNameDestinationKey: string | null;
-    streeDestinationKey: string | null;
+    streetDestinationKey: string | null;
     houseNumberDestinationKey: string | null;
     addressLineDestinationKey: string | null;
     postalCodeDestinationKey: string | null;
