@@ -473,7 +473,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                 value={currentValue.mapRequestor ?? false}
                 onChange={(mapRequestor) => updateValue({
                     mapRequestor,
-                    requestorMapping: mapRequestor ? currentValue.requestorMapping ?? EmptyRequestorMapping : null,
+                    requestorMapping: currentValue.requestorMapping ?? EmptyRequestorMapping,
                 })}
                 variant="switch"
                 disabled={isDisabled || isFieldBusy}
