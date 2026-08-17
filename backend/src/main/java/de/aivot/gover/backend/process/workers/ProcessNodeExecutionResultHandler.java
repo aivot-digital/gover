@@ -112,6 +112,9 @@ public class ProcessNodeExecutionResultHandler {
             case ProcessNodeExecutionResultTaskCompleted taskCompleted -> handleTaskComplete(context.withResult(taskCompleted));
             case ProcessNodeExecutionResultInstanceCompleted instanceCompleted -> handleInstanceComplete(context.withResult(instanceCompleted));
             case ProcessNodeExecutionResultTaskAssigned assigned -> handleAssigned(context.withResult(assigned));
+            case ProcessNodeExecutionResultNoop ignored -> {
+                // Do nothing here.
+            }
             default -> throw new ProcessNodeExecutionExceptionBrokenImplementation(
                     """
                             Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine unbekanntes Ergebnisklasse erzeugt: „%s“.
