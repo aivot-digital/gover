@@ -1,5 +1,6 @@
 package de.aivot.gover.backend.payment.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.gover.backend.enums.XBezahldienstStatus;
 import de.aivot.gover.backend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.gover.backend.payment.models.XBezahldienstePaymentRequest;
@@ -16,8 +17,11 @@ import java.util.UUID;
 @Entity
 @Table(name = "payment_transactions")
 public class PaymentTransactionEntity {
+    @JsonIgnore
+    public static final int KEY_LENGTH = 128;
+
     @Id
-    @Column(length = 36)
+    @Column(length = 128)
     private String key;
 
     @NotNull

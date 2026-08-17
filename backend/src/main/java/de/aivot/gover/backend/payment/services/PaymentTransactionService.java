@@ -16,6 +16,7 @@ import de.aivot.gover.backend.payment.filters.PaymentTransactionFilter;
 import de.aivot.gover.backend.payment.models.*;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.gover.backend.payment.repositories.PaymentTransactionRepository;
+import de.aivot.gover.backend.utils.RandomUtils;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -96,7 +97,7 @@ public class PaymentTransactionService implements
 
         // Prepare transaction entity
         var transactionEntity = new PaymentTransactionEntity();
-        transactionEntity.setKey(UUID.randomUUID().toString());
+        transactionEntity.setKey(RandomUtils.generateRandomString(PaymentTransactionEntity.KEY_LENGTH));
         transactionEntity.setPaymentProviderKey(paymentProviderEntity.getKey());
         transactionEntity.setRedirectUrl(finalRedirectUrl);
         transactionEntity.setCreated(Instant.now());

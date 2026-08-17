@@ -21,6 +21,7 @@ import de.aivot.gover.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.gover.backend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.gover.backend.process.services.ProcessNodeService;
 import de.aivot.gover.backend.utils.ApplicationTimeZone;
+import de.aivot.gover.backend.utils.RandomUtils;
 import de.aivot.gover.backend.utils.StringUtils;
 import de.aivot.gover.backend.utils.Tuple3;
 import jakarta.annotation.Nonnull;
@@ -225,7 +226,7 @@ public class ProcessWorker {
         var taskEntity = processInstanceTaskRepository.save(
                 new ProcessInstanceTaskEntity(
                         null,
-                        UUID.randomUUID(),
+                        RandomUtils.generateRandomString(ProcessInstanceTaskEntity.ACCESS_KEY_LENGTH),
                         processInstance.getId(),
                         processInstance.getProcessId(),
                         currentNode.getProcessVersion(),

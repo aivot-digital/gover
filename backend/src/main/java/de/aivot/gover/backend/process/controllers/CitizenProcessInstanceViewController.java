@@ -92,7 +92,7 @@ public class CitizenProcessInstanceViewController {
             @Nonnull
             ProcessInstanceStatus status,
             @Nullable
-            List<UUID> currentTasks
+            List<String> currentTasks
     ) {
     }
 }
