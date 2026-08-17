@@ -1287,7 +1287,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
         <Box>
             <Typography>
                 Das Element „Zahlungskonfiguration“ legt den Zahlungsdienstleister, den
-                Verwendungszweck und die Zahlungsposten eines Formulars fest.
+                Buchungstext und die Zahlungsposten eines Formulars fest.
             </Typography>
         </Box>
     ),

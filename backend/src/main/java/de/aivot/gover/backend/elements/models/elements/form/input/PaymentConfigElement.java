@@ -26,7 +26,7 @@ public class PaymentConfigElement extends BaseInputElement<PaymentConfigElementV
         }
 
         if (StringUtils.isNullOrEmpty(value.purpose())) {
-            throw new ValidationException(this, "Es muss ein Verwendungszweck angegeben werden.");
+            throw new ValidationException(this, "Es muss ein Buchungstext angegeben werden.");
         }
 
         if (StringUtils.isNullOrEmpty(value.description())) {
