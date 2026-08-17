@@ -17,6 +17,7 @@ import {
 } from '../models/elements/form/input/payment-config-element';
 import {PaymentProvidersApiService} from '../modules/payment/payment-providers-api-service';
 import {PaymentProviderResponseDTO} from '../modules/payment/dtos/payment-provider-response-dto';
+import {PaymentProviderDefinitionResponseDTO} from '../modules/payment/dtos/payment-provider-definition-response-dto';
 import {isApiError} from '../models/api-error';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {SelectFieldComponent, SelectFieldComponentOption} from '../components/select-field-2/select-field-component';
@@ -103,16 +104,23 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
     } = useViewDispatcherContext();
 
     const [providers, setProviders] = useState<PaymentProviderResponseDTO[]>([]);
+    const [providerDefinitions, setProviderDefinitions] = useState<PaymentProviderDefinitionResponseDTO[]>([]);
     const [providersError, setProvidersError] = useState<string>();
     const [isLoadingProviders, setIsLoadingProviders] = useState(false);
 
     useEffect(() => {
         setIsLoadingProviders(true);
 
-        new PaymentProvidersApiService()
-            .listAll()
-            .then((res) => {
-                setProviders(res.content);
+        const apiService = new PaymentProvidersApiService();
+
+        Promise
+            .all([
+                apiService.listAll({isEnabled: true}),
+                apiService.listDefinitions(),
+            ])
+            .then(([providers, definitions]) => {
+                setProviders(providers.content);
+                setProviderDefinitions(definitions);
             })
             .catch((err) => {
                 if (isApiError(err) && err.displayableToUser) {
@@ -128,8 +136,6 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
 
     const shouldShowEmptyState = value == null;
 
-    const currentValue = useMemo(() => normalizePaymentConfigValue(value), [value]);
-
     const isDisabled = useMemo(() => {
         return Boolean(element.disabled) || isGloballyDisabled;
     }, [element.disabled, isGloballyDisabled]);
@@ -139,31 +145,14 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
     }, [element, isDeriving, isLoadingProviders]);
 
     const paymentProviderOptions = useMemo(() => {
-        const options = [...providers]
-            .sort((left, right) => Number(right.isEnabled) - Number(left.isEnabled) || left.name.localeCompare(right.name, 'de'))
+        return [...providers]
+            .filter((provider) => provider.isEnabled)
+            .sort((left, right) => left.name.localeCompare(right.name, 'de'))
             .map((provider) => ({
-                label: provider.name,
-                subLabel: [
-                    provider.isEnabled ? undefined : 'Deaktiviert',
-                    provider.isTestProvider ? 'Testanbieter' : undefined,
-                    provider.description,
-                ].filter((part) => part != null && part.length > 0).join(' · '),
+                label: `${provider.name} (${getPaymentProviderDefinitionName(provider, providerDefinitions)}) – ${provider.isTestProvider ? 'Test-System' : 'Live-System'}`,
                 value: provider.key,
             }));
-
-        if (
-            currentValue.paymentProviderKey != null &&
-            !options.some((option) => option.value === currentValue.paymentProviderKey)
-        ) {
-            options.push({
-                label: `Ausgewählter Zahlungsdienstleister (${currentValue.paymentProviderKey})`,
-                subLabel: 'Nicht gefunden',
-                value: currentValue.paymentProviderKey,
-            });
-        }
-
-        return options;
-    }, [currentValue.paymentProviderKey, providers]);
+    }, [providerDefinitions, providers]);
 
     const DialogContentComponent = useMemo(() => {
         return wrapPaymentConfigDialogContent(paymentProviderOptions, rootElement, errors);
@@ -275,7 +264,12 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                         subTitle={getPaymentConfigSubtitle}
                         dialogContentComponent={DialogContentComponent}
                         onDialogSave={(value) => {
-                            setValue(value);
+                            setValue({
+                                ...value,
+                                paymentProviderKey: paymentProviderOptions.some((option) => option.value === value.paymentProviderKey)
+                                    ? value.paymentProviderKey
+                                    : null,
+                            });
                         }}
                         onDelete={() => {
                             setValue(null);
@@ -310,6 +304,13 @@ function getPaymentConfigTitle(item: PaymentConfigElementValue, paymentProviderO
     }
 
     return 'Neue Zahlungskonfiguration';
+}
+
+function getPaymentProviderDefinitionName(provider: PaymentProviderResponseDTO, definitions: PaymentProviderDefinitionResponseDTO[]): string {
+    return definitions.find((definition) => (
+        definition.key === provider.providerKey &&
+        definition.version === provider.providerVersion
+    ))?.name ?? provider.providerKey;
 }
 
 function getPaymentConfigSubtitle(item: PaymentConfigElementValue): string {
@@ -1296,16 +1297,6 @@ function normalizePaymentItem(item: PaymentConfigElementValueItem): PaymentConfi
         quantityType: item.quantityType ?? PaymentConfigElementValueItemQuantityType.FixedQuantity,
         variableCostsCalculationType: item.variableCostsCalculationType ?? PaymentConfigElementValueItemVariableValueCalculationType.NoCode,
         variableQuantityCalculationType: item.variableQuantityCalculationType ?? PaymentConfigElementValueItemVariableValueCalculationType.NoCode,
-    };
-}
-
-function normalizePaymentConfigValue(value: PaymentConfigElementValue | null | undefined): PaymentConfigElementValue {
-    return {
-        ...EmptyPaymentConfigValue,
-        ...value,
-        mapRequestor: value?.mapRequestor ?? false,
-        requestorMapping: value?.requestorMapping ?? null,
-        items: value?.items ?? [],
     };
 }
 
