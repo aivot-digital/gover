@@ -102,6 +102,7 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodeListAvgOperator(),
                 new NoCodeListConcatOperator(),
                 new NoCodeListContainsOperator(),
+                new NoCodeListCountOperator(),
                 new NoCodeListGetOperator(),
                 new NoCodeListIntersectionOperator(),
                 new NoCodeListLengthOperator(),

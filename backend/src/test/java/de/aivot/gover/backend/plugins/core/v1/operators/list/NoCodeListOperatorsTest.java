@@ -1,6 +1,7 @@
 package de.aivot.gover.backend.plugins.core.v1.operators.list;
 
 import de.aivot.gover.backend.nocode.exceptions.NoCodeException;
+import de.aivot.gover.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -94,6 +95,17 @@ class NoCodeListOperatorsTest {
     }
 
     @Test
+    void listCountShouldCountMatchesWithCastingAndNulls() throws NoCodeException {
+        var operator = new NoCodeListCountOperator();
+        var data = runtime();
+
+        assertEquals(3, operator.evaluate(data, Arrays.asList(1, "2", 2, null, "2"), "2").getValue());
+        assertEquals(0, operator.evaluate(data, List.of(1, 2, 3), "9").getValue());
+        assertEquals(2, operator.evaluate(data, Arrays.asList("a", null, null), null).getValue());
+        assertEquals(0, operator.evaluate(data, List.of(), "a").getValue());
+    }
+
+    @Test
     void listIntersectionShouldReturnSharedValuesOnceInLeftOrder() throws NoCodeException {
         var operator = new NoCodeListIntersectionOperator();
         var data = runtime();
@@ -125,5 +137,12 @@ class NoCodeListOperatorsTest {
 
         assertEquals(3, operator.evaluate(data, List.of("a", "b", "c")).getValue());
         assertEquals(0, operator.evaluate(data, List.of()).getValue());
+    }
+
+    @Test
+    void commonOperatorsShouldIncludeListCount() {
+        var operators = new CommonOperatorsV1(null, null).getOperators();
+
+        assertTrue(Arrays.stream(operators).anyMatch(NoCodeListCountOperator.class::isInstance));
     }
 }
