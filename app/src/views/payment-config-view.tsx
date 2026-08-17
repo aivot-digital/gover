@@ -421,8 +421,8 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
     }, [currentValue.items]);
 
     const ItemDialogContent = useMemo(() => {
-        return wrapPaymentConfigItem(rootElement);
-    }, [rootElement]);
+        return wrapPaymentConfigItem(rootElement, errors);
+    }, [rootElement, errors]);
 
     return (
         <Box>
@@ -725,7 +725,7 @@ function RequestorMappingField(props: {
     );
 }
 
-function wrapPaymentConfigItem(rootElement: AnyElement): DialogListPropsDialogContentComponent<PaymentItemRow> {
+function wrapPaymentConfigItem(rootElement: AnyElement, errors: string[] | null | undefined): DialogListPropsDialogContentComponent<PaymentItemRow> {
     return (props: {
         item: PaymentItemRow,
         onChange: (item: PaymentItemRow) => void,
@@ -739,6 +739,7 @@ function wrapPaymentConfigItem(rootElement: AnyElement): DialogListPropsDialogCo
             })}
             rootElement={rootElement}
             disabled={props.disabled ?? false}
+            errors={errors}
         />
     );
 }
@@ -748,12 +749,14 @@ function PaymentConfigItemEditor(props: {
     onChange: (item: PaymentConfigElementValueItem) => void;
     rootElement: AnyElement;
     disabled: boolean;
+    errors: string[] | null | undefined;
 }) {
     const {
         item,
         onChange,
         rootElement,
         disabled,
+        errors,
     } = props;
 
     return (
@@ -1024,6 +1027,7 @@ function PaymentConfigItemEditor(props: {
                     value={item.additionalBookingData}
                     onChange={(additionalBookingData) => onChange({...item, additionalBookingData})}
                     disabled={disabled}
+                    errors={errors}
                 />
             </Box>
         </Stack>
@@ -1076,6 +1080,7 @@ function AdditionalBookingDataEditor(props: {
     value: Record<string, string> | null;
     onChange: (value: Record<string, string> | null) => void;
     disabled: boolean;
+    errors: string[] | null | undefined;
 }) {
     const rows = Object.entries(props.value ?? {});
 
@@ -1094,7 +1099,7 @@ function AdditionalBookingDataEditor(props: {
                 sx={{mb: rows.length === 0 ? 0 : 1.5}}
             >
                 <Typography variant="subtitle2">
-                    Buchungsdaten
+                    Weitere Buchungsdaten
                 </Typography>
 
                 <Button
@@ -1107,6 +1112,13 @@ function AdditionalBookingDataEditor(props: {
                     Hinzufügen
                 </Button>
             </Stack>
+
+            {
+                rows.length === 0 &&
+                <EmptyBookingDataState
+                    hasError={props.errors != null}
+                />
+            }
 
             <Stack spacing={1.5}>
                 {
@@ -1198,6 +1210,45 @@ function EmptyItemsState(props: { hasError: boolean }) {
                     sx={{minWidth: 0}}
                 >
                     Keine Zahlungspositionen vorhanden.
+                </Typography>
+            </Stack>
+        </Box>
+    );
+}
+
+function EmptyBookingDataState(props: { hasError: boolean }) {
+    return (
+        <Box
+            sx={(theme) => ({
+                px: 1.5,
+                py: 1.25,
+                mt: 0.75,
+                minHeight: 56,
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: 1,
+                border: props.hasError ? '1px solid' : '1px dashed',
+                borderColor: props.hasError ? theme.palette.error.main : alpha(theme.palette.text.primary, 0.18),
+            })}
+        >
+            <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+            >
+                <Receipt
+                    sx={{
+                        flexShrink: 0,
+                        fontSize: 20,
+                        color: 'text.secondary',
+                    }}
+                />
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{minWidth: 0}}
+                >
+                    Keine Buchungsdaten vorhanden.
                 </Typography>
             </Stack>
         </Box>
