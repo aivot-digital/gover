@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.Nonnull;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @EnableScheduling
@@ -295,7 +296,7 @@ public class PaymentTransactionService implements
         }
     }
 
-    @Scheduled(cron = "* 0/15 * * * *", zone = "${gover.timezone}")
+    @Scheduled(fixedRate = 15, timeUnit = TimeUnit.MINUTES)
     public void poll() {
         var spec = PaymentTransactionFilter
                 .create()
