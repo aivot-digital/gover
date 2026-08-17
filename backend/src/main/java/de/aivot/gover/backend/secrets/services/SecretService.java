@@ -3,10 +3,13 @@ package de.aivot.gover.backend.secrets.services;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.lib.services.EntityService;
+import de.aivot.gover.backend.secrets.controllers.SecretController;
 import de.aivot.gover.backend.secrets.entities.SecretEntity;
 import de.aivot.gover.backend.secrets.properties.SecretConfigurationProperties;
-import de.aivot.gover.backend.secrets.controllers.SecretController;
 import de.aivot.gover.backend.secrets.repositories.SecretRepository;
+import de.aivot.gover.backend.utils.RandomUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,8 +17,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
@@ -24,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Base64;
@@ -33,11 +33,9 @@ import java.util.Random;
 import java.util.UUID;
 
 /**
- * This service is responsible for handling secrets.
- * Secrets are used to store sensitive information like passwords, API keys, etc.
- * The service provides methods for listing, retrieving, decrypting, saving, and destroying secrets.
- * It also provides methods for encrypting and decrypting secret values.
- * The service is used by the {@link SecretController} to handle API requests related to secrets.
+ * This service is responsible for handling secrets. Secrets are used to store sensitive information like passwords, API keys, etc. The service provides methods for listing,
+ * retrieving, decrypting, saving, and destroying secrets. It also provides methods for encrypting and decrypting secret values. The service is used by the {@link SecretController}
+ * to handle API requests related to secrets.
  */
 @Service
 public class SecretService implements EntityService<SecretEntity, UUID> {
@@ -130,9 +128,7 @@ public class SecretService implements EntityService<SecretEntity, UUID> {
     }
 
     /**
-     * Decrypts a secret entity.
-     * The method returns the decrypted secret entity.
-     * The method throws a {@link RuntimeException} if an error occurs during decryption.
+     * Decrypts a secret entity. The method returns the decrypted secret entity. The method throws a {@link RuntimeException} if an error occurs during decryption.
      *
      * @param secretEntity The secret entity to decrypt.
      * @return The decrypted secret entity.
@@ -187,10 +183,8 @@ public class SecretService implements EntityService<SecretEntity, UUID> {
     }
 
     /**
-     * Encrypts a string using AES-256-GCM encryption.
-     * The method uses a secret key and salt to encrypt the string.
-     * The method returns the encrypted string as a Base64 encoded string.
-     * The IV is prepended to the ciphertext in the output.
+     * Encrypts a string using AES-256-GCM encryption. The method uses a secret key and salt to encrypt the string. The method returns the encrypted string as a Base64 encoded
+     * string. The IV is prepended to the ciphertext in the output.
      *
      * @param strToEncrypt The string to encrypt.
      * @param secretKey    The secret key used for encryption.
@@ -208,9 +202,7 @@ public class SecretService implements EntityService<SecretEntity, UUID> {
         final int GCM_IV_LENGTH = 12; // 12 bytes for GCM
         final int GCM_TAG_LENGTH = 128; // 128 bits authentication tag
 
-        SecureRandom secureRandom = new SecureRandom();
-        byte[] iv = new byte[GCM_IV_LENGTH];
-        secureRandom.nextBytes(iv);
+        byte[] iv = RandomUtils.generateRandomBytes(GCM_IV_LENGTH);
         GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
 
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
@@ -230,10 +222,8 @@ public class SecretService implements EntityService<SecretEntity, UUID> {
     }
 
     /**
-     * Decrypts a string using AES-256-GCM decryption.
-     * The method uses a secret key and salt to decrypt the string.
-     * The method returns the decrypted string.
-     * The IV is expected to be prepended to the ciphertext in the input.
+     * Decrypts a string using AES-256-GCM decryption. The method uses a secret key and salt to decrypt the string. The method returns the decrypted string. The IV is expected to
+     * be prepended to the ciphertext in the input.
      *
      * @param strToDecrypt The string to decrypt.
      * @param secretKey    The secret key used for decryption.
