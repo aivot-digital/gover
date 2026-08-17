@@ -1,5 +1,6 @@
 import {FunctionComponent, useState} from 'react';
 import {
+    Box,
     Button,
     Dialog,
     DialogActions,
@@ -7,6 +8,7 @@ import {
     List,
     ListItemButton,
     ListItemText,
+    Tooltip,
     Typography,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
@@ -17,6 +19,7 @@ import {Actions} from '../actions/actions';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
+import ErrorIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 
 export type DialogListPropsDialogContentComponent<T> = FunctionComponent<{
     item: T;
@@ -35,6 +38,7 @@ interface DialogListProps<T> {
     onDialogSave: (edited: T, original: T) => void;
     onDelete: (item: T) => void;
     disabled?: boolean;
+    hasError?: (item: T) => boolean;
 }
 
 export function DialogList<T>(props: DialogListProps<T>) {
@@ -49,6 +53,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
         onDialogSave,
         onDelete,
         disabled,
+        hasError,
     } = props;
 
     const isReadonly = disabled === true;
@@ -132,66 +137,92 @@ export function DialogList<T>(props: DialogListProps<T>) {
         <>
             <List disablePadding>
                 {
-                    items.map((item) => (
-                        <ListItemButton
-                            key={getId(item)}
-                            sx={(theme) => ({
-                                mb: 1,
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                borderRadius: 1,
-                                '&:hover': {
-                                    borderColor: theme.palette.primary.main,
-                                    backgroundColor: alpha(theme.palette.primary.main, 0.04),
-                                },
-                            })}
-                            onClick={() => {
-                                handleDialogOpen(item);
-                            }}
-                        >
-                            <ListItemText
-                                primary={title(item)}
-                                secondary={subTitle?.(item)}
-                            />
+                    items.map((item) => {
+                        const itemHasError = hasError?.(item) === true;
 
-                            <Actions
-                                actions={
-                                    isReadonly
-                                        ? [
-                                            {
-                                                icon: <Visibility/>,
-                                                tooltip: 'Ansehen',
-                                                onClick: (evt) => {
-                                                    evt.preventDefault();
-                                                    evt.stopPropagation();
-                                                    handleDialogOpen(item);
-                                                },
-                                            },
-                                        ]
-                                        : [
-                                            {
-                                                icon: <Edit/>,
-                                                tooltip: 'Bearbeiten',
-                                                onClick: (evt) => {
-                                                    evt.preventDefault();
-                                                    evt.stopPropagation();
-                                                    handleDialogOpen(item);
-                                                },
-                                            },
-                                            {
-                                                icon: <Delete/>,
-                                                tooltip: 'Eintrag löschen',
-                                                onClick: (evt) => {
-                                                    evt.preventDefault();
-                                                    evt.stopPropagation();
-                                                    handleDelete(item);
-                                                },
-                                            },
-                                        ]
+                        return (
+                            <ListItemButton
+                                key={getId(item)}
+                                sx={(theme) => ({
+                                    mb: 1,
+                                    border: '1px solid',
+                                    borderColor: itemHasError ? theme.palette.error.main : 'divider',
+                                    borderRadius: 1,
+                                    '&:hover': {
+                                        borderColor: itemHasError ? theme.palette.error.main : theme.palette.primary.main,
+                                        backgroundColor: alpha(itemHasError ? theme.palette.error.main : theme.palette.primary.main, 0.04),
+                                    },
+                                })}
+                                onClick={() => {
+                                    handleDialogOpen(item);
+                                }}
+                            >
+                                <ListItemText
+                                    primary={title(item)}
+                                    secondary={subTitle?.(item)}
+                                />
+
+                                {
+                                    itemHasError &&
+                                    <Tooltip
+                                        title="Fehler in diesem Eintrag"
+                                        arrow
+                                    >
+                                        <Box
+                                            component="span"
+                                            role="img"
+                                            aria-label="Fehler in diesem Eintrag"
+                                            sx={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                mr: 1,
+                                                color: 'error.main',
+                                            }}
+                                        >
+                                            <ErrorIcon fontSize="small"/>
+                                        </Box>
+                                    </Tooltip>
                                 }
-                            />
-                        </ListItemButton>
-                    ))
+
+                                <Actions
+                                    actions={
+                                        isReadonly
+                                            ? [
+                                                {
+                                                    icon: <Visibility/>,
+                                                    tooltip: 'Ansehen',
+                                                    onClick: (evt) => {
+                                                        evt.preventDefault();
+                                                        evt.stopPropagation();
+                                                        handleDialogOpen(item);
+                                                    },
+                                                },
+                                            ]
+                                            : [
+                                                {
+                                                    icon: <Edit/>,
+                                                    tooltip: 'Bearbeiten',
+                                                    onClick: (evt) => {
+                                                        evt.preventDefault();
+                                                        evt.stopPropagation();
+                                                        handleDialogOpen(item);
+                                                    },
+                                                },
+                                                {
+                                                    icon: <Delete/>,
+                                                    tooltip: 'Eintrag löschen',
+                                                    onClick: (evt) => {
+                                                        evt.preventDefault();
+                                                        evt.stopPropagation();
+                                                        handleDelete(item);
+                                                    },
+                                                },
+                                            ]
+                                    }
+                                />
+                            </ListItemButton>
+                        );
+                    })
                 }
             </List>
 
