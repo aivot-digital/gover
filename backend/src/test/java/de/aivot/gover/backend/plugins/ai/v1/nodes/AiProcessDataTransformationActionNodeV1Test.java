@@ -400,7 +400,7 @@ class AiProcessDataTransformationActionNodeV1Test {
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessId(PROCESS_ID)
                 .setInitialProcessVersion(PROCESS_VERSION)
                 .setStatus(ProcessInstanceStatus.Running)
@@ -417,7 +417,7 @@ class AiProcessDataTransformationActionNodeV1Test {
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessInstanceId(PROCESS_INSTANCE_ID)
                 .setProcessId(PROCESS_ID)
                 .setProcessVersion(PROCESS_VERSION)

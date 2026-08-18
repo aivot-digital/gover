@@ -1,10 +1,13 @@
 package de.aivot.gover.backend.plugins.core.v1.operators.list;
 
+import de.aivot.gover.backend.core.services.BusinessTime;
 import de.aivot.gover.backend.nocode.exceptions.NoCodeException;
 import de.aivot.gover.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -141,7 +144,8 @@ class NoCodeListOperatorsTest {
 
     @Test
     void commonOperatorsShouldIncludeListCount() {
-        var operators = new CommonOperatorsV1(null, null).getOperators();
+        var businessTime = new BusinessTime(ZoneId.of("Europe/Berlin"), Clock.systemUTC());
+        var operators = new CommonOperatorsV1(null, null, businessTime).getOperators();
 
         assertTrue(Arrays.stream(operators).anyMatch(NoCodeListCountOperator.class::isInstance));
     }

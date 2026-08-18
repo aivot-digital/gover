@@ -109,7 +109,7 @@ class ProcessInstanceTaskControllerTest {
     private ProcessInstanceTaskEntity createTask(ProcessTaskStatus status) {
         return new ProcessInstanceTaskEntity()
                 .setId(7L)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessInstanceId(13L)
                 .setProcessId(21)
                 .setProcessVersion(1)

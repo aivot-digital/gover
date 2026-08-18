@@ -98,7 +98,7 @@ class CitizenProcessInstanceViewControllerTest {
 
         assertEquals(processVersion.getPublicTitle(), response.title());
         assertEquals(ProcessInstanceStatus.Running, response.status());
-        assertEquals(List.of(taskAccessKey), response.currentTasks());
+        assertEquals(taskAccessKey, response.tasks().getFirst().accessKey());
         verify(processInstanceService).retrieveByAccessKey(instanceAccessKey);
         verify(processInstanceTaskService).list(any(Pageable.class), argThat((ProcessInstanceTaskFilter filter) ->
                 instance.getId().equals(filter.getProcessInstanceId())

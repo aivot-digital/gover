@@ -514,7 +514,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             }
         }
 
-        return resume(context);
+        return complete(context, nodeData);
     }
 
     @Nullable
@@ -531,7 +531,20 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 .getThisProcessInstance()
                 .getInitialPayload();
 
-        var nodeData = new LinkedHashMap<>(processInstanceInitialPayload);
+        var currentNodeData = context.getThisTask().getNodeData();
+        var nodeData = currentNodeData.isEmpty()
+                ? new LinkedHashMap<>(processInstanceInitialPayload)
+                : new LinkedHashMap<>(currentNodeData);
+
+        return complete(context, nodeData);
+    }
+
+    @Nonnull
+    private ProcessNodeExecutionResult complete(@Nonnull ProcessNodeExecutionInitContext<FormTriggerConfigV1> context,
+                                                @Nonnull Map<String, Object> nodeData) throws ProcessNodeExecutionException {
+        var processInstanceInitialPayload = context
+                .getThisProcessInstance()
+                .getInitialPayload();
 
         var nodeInitialPayloadRaw = processInstanceInitialPayload
                 .get(DATA_KEY_PAYLOAD);

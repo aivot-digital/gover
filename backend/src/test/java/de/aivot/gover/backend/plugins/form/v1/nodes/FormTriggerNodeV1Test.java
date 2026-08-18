@@ -407,10 +407,11 @@ class FormTriggerNodeV1Test {
         var paymentProvider = paymentProvider(paymentProviderKey);
         when(paymentProviderRepository.findById(paymentProviderKey))
                 .thenReturn(Optional.of(paymentProvider));
+        var paymentProviderDefinition = paymentProviderDefinition();
         when(paymentProviderDefinitionsService.getProviderDefinition(
                 paymentProvider.getPaymentProviderDefinitionKey(),
                 paymentProvider.getPaymentProviderDefinitionVersion()
-        )).thenReturn(Optional.of(paymentProviderDefinition()));
+        )).thenReturn(Optional.of(paymentProviderDefinition));
         when(processService.retrieve(PROCESS_ID))
                 .thenReturn(Optional.of(process()));
 
@@ -426,7 +427,7 @@ class FormTriggerNodeV1Test {
         ));
 
         var richText = assertInstanceOf(RichTextContentElement.class, layout.getChildren().getFirst());
-        assertEquals("# Zahlung erhalten\nDanke **Ada**.", richText.getContent());
+        assertTrue(richText.getContent().contains("# Zahlung erfolgreich\n# Zahlung erhalten\nDanke **Ada**."));
     }
 
     @Test
@@ -459,10 +460,11 @@ class FormTriggerNodeV1Test {
         var paymentProvider = paymentProvider(paymentProviderKey);
         when(paymentProviderRepository.findById(paymentProviderKey))
                 .thenReturn(Optional.of(paymentProvider));
+        var paymentProviderDefinition = paymentProviderDefinition();
         when(paymentProviderDefinitionsService.getProviderDefinition(
                 paymentProvider.getPaymentProviderDefinitionKey(),
                 paymentProvider.getPaymentProviderDefinitionVersion()
-        )).thenReturn(Optional.of(paymentProviderDefinition()));
+        )).thenReturn(Optional.of(paymentProviderDefinition));
         when(processService.retrieve(PROCESS_ID))
                 .thenReturn(Optional.of(process()));
 

@@ -129,7 +129,7 @@ class ProcessInstanceRetentionCleanupServiceTest {
         return new ProcessInstanceEntity(
                 id,
                 null,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 1,
                 1,
                 ProcessInstanceStatus.Completed,

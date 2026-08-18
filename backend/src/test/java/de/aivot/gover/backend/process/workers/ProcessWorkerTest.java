@@ -38,7 +38,7 @@ class ProcessWorkerTest {
         var processInstance = new ProcessInstanceEntity(
                 42L,
                 null,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 7,
                 1,
                 ProcessInstanceStatus.Running,
@@ -146,7 +146,7 @@ class ProcessWorkerTest {
         var processInstance = new ProcessInstanceEntity(
                 42L,
                 null,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 7,
                 1,
                 ProcessInstanceStatus.Running,
@@ -178,7 +178,7 @@ class ProcessWorkerTest {
 
         var currentTask = new ProcessInstanceTaskEntity(
                 100L,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 processInstance.getId(),
                 processInstance.getProcessId(),
                 1,

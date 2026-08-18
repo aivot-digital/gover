@@ -116,7 +116,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         var instance = new ProcessInstanceEntity(
                 42L,
                 null,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 process.getId(),
                 version.getProcessVersion(),
                 ProcessInstanceStatus.Running,
@@ -136,7 +136,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         var task = new ProcessInstanceTaskEntity(
                 9L,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 instance.getId(),
                 process.getId(),
                 version.getProcessVersion(),
@@ -360,7 +360,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         var instance = new ProcessInstanceEntity(
                 42L,
                 null,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 process.getId(),
                 version.getProcessVersion(),
                 ProcessInstanceStatus.Running,
@@ -380,7 +380,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         var task = new ProcessInstanceTaskEntity(
                 9L,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 instance.getId(),
                 process.getId(),
                 version.getProcessVersion(),

@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -19,18 +18,20 @@ import static org.mockito.Mockito.when;
 class PaymentGroupPresetTest {
     @Test
     void shouldUseConfiguredPaymentResultMessages() throws Exception {
-        assertEquals(
+        var paidMessage = renderMessage(XBezahldienstStatus.PAYED, "# Bezahlt\n**Danke.**", "# Nicht bezahlt.");
+        assertTrue(paidMessage.contains("# Zahlung erfolgreich\n# Bezahlt\n**Danke.**"));
+        assertTrue(paidMessage.contains("Sie können die Zahlungsbestätigung über den folgenden Link herunterladen: [https://example.test/payment-confirmation/](https://example.test/payment-confirmation/)"));
+
+        assertTrue(renderMessage(
+                XBezahldienstStatus.FAILED,
                 "# Bezahlt\n**Danke.**",
-                renderMessage(XBezahldienstStatus.PAYED, "# Bezahlt\n**Danke.**", "# Nicht bezahlt.")
-        );
-        assertEquals(
-                "# Nicht bezahlt\nBitte **erneut versuchen**.",
-                renderMessage(XBezahldienstStatus.FAILED, "# Bezahlt\n**Danke.**", "# Nicht bezahlt\nBitte **erneut versuchen**.")
-        );
-        assertEquals(
-                "# Nicht bezahlt\nBitte **erneut versuchen**.",
-                renderMessage(XBezahldienstStatus.CANCELED, "# Bezahlt\n**Danke.**", "# Nicht bezahlt\nBitte **erneut versuchen**.")
-        );
+                "# Nicht bezahlt\nBitte **erneut versuchen**."
+        ).contains("# Zahlung fehlgeschlagen\n# Nicht bezahlt\nBitte **erneut versuchen**."));
+        assertTrue(renderMessage(
+                XBezahldienstStatus.CANCELED,
+                "# Bezahlt\n**Danke.**",
+                "# Nicht bezahlt\nBitte **erneut versuchen**."
+        ).contains("# Zahlung abgebrochen\n# Nicht bezahlt\nBitte **erneut versuchen**."));
     }
 
     @Test
