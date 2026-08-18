@@ -1,6 +1,7 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import type {RootState} from '../store.staff';
 import {ElementDerivationLogItem} from '../models/element-data';
+import {instantToEpochMillis} from '../utils/temporal-utils';
 
 export enum LogLevel {
     Debug,
@@ -40,7 +41,7 @@ const loggingSlice = createSlice({
                 type: item.level === 'Debug' ? LogLevel.Debug : LogLevel.Error,
                 source: item.elementId,
                 message: item.message,
-                timestamp: new Date(item.timestamp).getTime(),
+                timestamp: instantToEpochMillis(item.timestamp) ?? Number.NaN,
             }));
 
             state.entries = [

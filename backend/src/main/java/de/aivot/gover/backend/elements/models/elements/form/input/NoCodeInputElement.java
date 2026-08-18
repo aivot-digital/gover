@@ -108,6 +108,7 @@ public class NoCodeInputElement extends BaseInputElement<NoCodeInputElementItem>
         NUMBER,
         BOOLEAN,
         DATE,
-        DATETIME
+        DATETIME,
+        TIME
     }
 }

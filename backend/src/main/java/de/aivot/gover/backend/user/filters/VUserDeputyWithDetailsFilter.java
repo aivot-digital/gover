@@ -2,19 +2,18 @@ package de.aivot.gover.backend.user.filters;
 
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.user.entities.VUserDeputyWithDetailsEntity;
-import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import de.aivot.gover.backend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public class VUserDeputyWithDetailsFilter implements Filter<VUserDeputyWithDetailsEntity> {
     private String originalUserId;
     private String originalUserFullName;
     private String deputyUserId;
     private String deputyUserFullName;
-    private LocalDateTime fromTimestamp;
-    private Boolean untilTimestampIsNull;
+    private LocalDate fromDate;
+    private Boolean untilDateIsNull;
 
     public static VUserDeputyWithDetailsFilter create() {
         return new VUserDeputyWithDetailsFilter();
@@ -29,14 +28,16 @@ public class VUserDeputyWithDetailsFilter implements Filter<VUserDeputyWithDetai
                 .withContains("originalUserFullName", originalUserFullName)
                 .withContains("deputyUserFullName", deputyUserFullName);
 
-        if (fromTimestamp != null) {
+        if (fromDate != null) {
             builder = builder
-                    .withGreaterThan("fromTimestamp", fromTimestamp.atZone(ApplicationTimeZone.getZoneId()).toEpochSecond());
+                    .withSpecification((root, query, criteriaBuilder) ->
+                            criteriaBuilder.greaterThan(root.get("fromDate"), fromDate)
+                    );
         }
 
-        if (Boolean.TRUE.equals(untilTimestampIsNull)) {
+        if (Boolean.TRUE.equals(untilDateIsNull)) {
             builder = builder
-                    .withNull("untilTimestamp");
+                    .withNull("untilDate");
         }
 
         return builder.build();
@@ -78,21 +79,21 @@ public class VUserDeputyWithDetailsFilter implements Filter<VUserDeputyWithDetai
         return this;
     }
 
-    public LocalDateTime getFromTimestamp() {
-        return fromTimestamp;
+    public LocalDate getFromDate() {
+        return fromDate;
     }
 
-    public VUserDeputyWithDetailsFilter setFromTimestamp(LocalDateTime fromTimestamp) {
-        this.fromTimestamp = fromTimestamp;
+    public VUserDeputyWithDetailsFilter setFromDate(LocalDate fromDate) {
+        this.fromDate = fromDate;
         return this;
     }
 
-    public Boolean getUntilTimestampIsNull() {
-        return untilTimestampIsNull;
+    public Boolean getUntilDateIsNull() {
+        return untilDateIsNull;
     }
 
-    public VUserDeputyWithDetailsFilter setUntilTimestampIsNull(Boolean untilTimestampIsNull) {
-        this.untilTimestampIsNull = untilTimestampIsNull;
+    public VUserDeputyWithDetailsFilter setUntilDateIsNull(Boolean untilDateIsNull) {
+        this.untilDateIsNull = untilDateIsNull;
         return this;
     }
 }

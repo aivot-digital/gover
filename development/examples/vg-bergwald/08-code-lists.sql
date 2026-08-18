@@ -76,7 +76,7 @@ with updated_code_list as (
             label_column_index = 1,
             status = 2,
             status_message = null,
-            last_sync = timestamp with time zone '2026-07-19 00:00:00+02',
+            last_sync = timestamp with time zone '2026-07-19T00:00:00+02:00',
             updated = current_timestamp
         where key = 'familienstand'
         returning id
@@ -105,7 +105,7 @@ inserted_code_list as (
            1,
            2,
            null,
-           timestamp with time zone '2026-07-19 00:00:00+02'
+           timestamp with time zone '2026-07-19T00:00:00+02:00'
     where not exists (select 1 from updated_code_list)
     returning id
 ),

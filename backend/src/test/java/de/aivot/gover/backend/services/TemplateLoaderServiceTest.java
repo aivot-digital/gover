@@ -27,11 +27,12 @@ import de.aivot.gover.backend.pdf.models.PrintableFormPdfData;
 import de.aivot.gover.backend.services.pdf.MarkdownDialect;
 import de.aivot.gover.backend.services.pdf.PdfElement;
 import de.aivot.gover.backend.services.pdf.PdfElementsGenerator;
-import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import org.junit.jupiter.api.Test;
 import org.thymeleaf.templatemode.TemplateMode;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -232,7 +233,7 @@ class TemplateLoaderServiceTest {
                 Map.of(
                         "base", createBaseContext(FormPdfScope.Blank),
                         "element", dateRangeElement,
-                        "value", new RangeInputElementValue()
+                        "value", new RangeInputElementValue<>()
                 ),
                 TemplateMode.HTML
         );
@@ -241,7 +242,7 @@ class TemplateLoaderServiceTest {
                 Map.of(
                         "base", createBaseContext(FormPdfScope.Blank),
                         "element", timeRangeElement,
-                        "value", new RangeInputElementValue()
+                        "value", new RangeInputElementValue<>()
                 ),
                 TemplateMode.HTML
         );
@@ -250,7 +251,7 @@ class TemplateLoaderServiceTest {
                 Map.of(
                         "base", createBaseContext(FormPdfScope.Blank),
                         "element", dateTimeRangeElement,
-                        "value", new RangeInputElementValue()
+                        "value", new RangeInputElementValue<>()
                 ),
                 TemplateMode.HTML
         );
@@ -326,17 +327,17 @@ class TemplateLoaderServiceTest {
         dateTimeRangeElement.setLabel("Terminspanne");
         dateTimeRangeElement.setMode(TimeType.Minute);
 
-        var dateRangeValue = new RangeInputElementValue(
-                ZonedDateTime.of(2025, 1, 2, 0, 0, 0, 0, ApplicationTimeZone.getZoneId()),
-                ZonedDateTime.of(2025, 1, 5, 0, 0, 0, 0, ApplicationTimeZone.getZoneId())
+        var dateRangeValue = new RangeInputElementValue<>(
+                LocalDate.of(2025, 1, 2),
+                LocalDate.of(2025, 1, 5)
         );
-        var timeRangeValue = new RangeInputElementValue(
-                ZonedDateTime.of(2025, 1, 2, 9, 15, 30, 0, ApplicationTimeZone.getZoneId()),
-                ZonedDateTime.of(2025, 1, 2, 11, 45, 15, 0, ApplicationTimeZone.getZoneId())
+        var timeRangeValue = new RangeInputElementValue<>(
+                LocalTime.of(9, 15, 30),
+                LocalTime.of(11, 45, 15)
         );
-        var dateTimeRangeValue = new RangeInputElementValue(
-                ZonedDateTime.of(2025, 1, 2, 9, 15, 0, 0, ApplicationTimeZone.getZoneId()),
-                ZonedDateTime.of(2025, 1, 5, 17, 0, 0, 0, ApplicationTimeZone.getZoneId())
+        var dateTimeRangeValue = new RangeInputElementValue<>(
+                Instant.parse("2025-01-02T08:15:00Z"),
+                Instant.parse("2025-01-05T16:00:00Z")
         );
 
         var form = new PrintableFormPdfData()
@@ -400,7 +401,7 @@ class TemplateLoaderServiceTest {
                                 List.of(
                                         new PdfElement(
                                                 dateTimeElement,
-                                                ZonedDateTime.of(2025, 1, 2, 9, 15, 30, 0, ApplicationTimeZone.getZoneId()),
+                                                Instant.parse("2025-01-02T08:15:30Z"),
                                                 null
                                         ),
                                         new PdfElement(chipInputElement, List.of("Alpha", "Beta"), null),

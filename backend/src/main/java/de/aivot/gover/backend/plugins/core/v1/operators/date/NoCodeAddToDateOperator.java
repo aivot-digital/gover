@@ -6,13 +6,25 @@ import de.aivot.gover.backend.nocode.exceptions.NoCodeException;
 import de.aivot.gover.backend.nocode.models.*;
 import jakarta.annotation.Nullable;
 
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.temporal.TemporalAccessor;
 import java.util.Locale;
+import java.util.Set;
 
 public class NoCodeAddToDateOperator extends NoCodeOperator {
     public static final String DAYS_UNIT = "tage";
     public static final String WEEKS_UNIT = "wochen";
     public static final String MONTHS_UNIT = "monate";
     public static final String YEARS_UNIT = "jahre";
+    private static final Set<String> SUPPORTED_UNITS = Set.of(
+            DAYS_UNIT,
+            WEEKS_UNIT,
+            MONTHS_UNIT,
+            YEARS_UNIT
+    );
 
     @Override
     public String getIdentifier() {
@@ -57,6 +69,9 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
                 Verwenden Sie **„Zu Datum hinzufügen“**, wenn Sie:
                 - Datumsarithmetik durchführen müssen. \s
                 - Zukünftige oder vergangene Daten basierend auf einem gegebenen Datum berechnen möchten.
+
+                Teil-Datumswerte behalten ihre Präzision. Monate können nur um Monate oder Jahre,
+                reine Jahreswerte nur um Jahre verschoben werden.
                 """;
     }
 
@@ -96,18 +111,55 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var date = requireDateTime(args[0], "Ungültiger Datumswert: " + castToString(args[0]));
-        var amount = castToNumber(args[1]).intValue();
+        var date = requireCalendarValue(args[0], "Ungültiger Datumswert: " + castToString(args[0]));
+        var amount = requireInteger(args[1], "Die Anzahl muss eine ganze Zahl sein.");
         var unit = castToString(args[2]).trim().toLowerCase(Locale.ROOT);
 
-        date = switch (unit) {
-            case DAYS_UNIT -> date.plusDays(amount);
-            case WEEKS_UNIT -> date.plusWeeks(amount);
-            case MONTHS_UNIT -> date.plusMonths(amount);
-            case YEARS_UNIT -> date.plusYears(amount);
-            default -> throw new NoCodeException("Ungültige Einheit: " + unit);
-        };
+        return new NoCodeResult(adjustDate(date, amount, unit));
+    }
 
-        return new NoCodeResult(date);
+    static TemporalAccessor adjustDate(
+            TemporalAccessor date,
+            long amount,
+            String unit
+    ) throws NoCodeException {
+        if (!SUPPORTED_UNITS.contains(unit)) {
+            throw new NoCodeException("Ungültige Einheit: " + unit);
+        }
+
+        try {
+            return switch (date) {
+                case LocalDate localDate -> switch (unit) {
+                    case DAYS_UNIT -> localDate.plusDays(amount);
+                    case WEEKS_UNIT -> localDate.plusWeeks(amount);
+                    // java.time intentionally resolves invalid target month-days, such
+                    // as January 31 plus one month, to the last valid day of that month.
+                    case MONTHS_UNIT -> localDate.plusMonths(amount);
+                    case YEARS_UNIT -> localDate.plusYears(amount);
+                    default -> throw new IllegalStateException("Validated unit is not handled");
+                };
+                case YearMonth yearMonth -> switch (unit) {
+                    case MONTHS_UNIT -> yearMonth.plusMonths(amount);
+                    case YEARS_UNIT -> yearMonth.plusYears(amount);
+                    default -> throw incompatiblePrecision(unit, "Monat");
+                };
+                case Year year -> {
+                    if (!YEARS_UNIT.equals(unit)) {
+                        throw incompatiblePrecision(unit, "Jahr");
+                    }
+                    yield year.plusYears(amount);
+                }
+                default -> throw new NoCodeException("Nicht unterstützter Datumswert.");
+            };
+        } catch (DateTimeException | ArithmeticException exception) {
+            throw new NoCodeException("Der Datumswert liegt außerhalb des unterstützten Bereichs.");
+        }
+    }
+
+    private static NoCodeException incompatiblePrecision(String unit, String precision) {
+        return new NoCodeException(
+                "Die Einheit %s kann nicht auf einen Datumswert mit der Präzision %s angewendet werden."
+                        .formatted(unit, precision)
+        );
     }
 }

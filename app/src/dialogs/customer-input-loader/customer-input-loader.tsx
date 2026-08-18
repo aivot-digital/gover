@@ -7,7 +7,6 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
-import {format} from 'date-fns';
 import SettingsBackupRestoreOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SettingsBackupRestore';
 import {useSearchParams} from 'react-router-dom';
 import RestorePageIcon from '@aivot/mui-material-symbols-400-n25-outlined/RestorePage';
@@ -19,6 +18,7 @@ import {canPrefillElement} from '../prefill-form-dialog/prefill-form-dialog';
 import {flattenElements} from '../../utils/flatten-elements';
 import {type CustomerInputDraft, CustomerInputService} from '../../services/customer-input-service';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
+import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
 
 interface CustomerInputLoaderProps {
     processSlug: string;
@@ -165,7 +165,13 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
                                 {
                                     customerInputDraft?.date != null && (
                                         <span>
-                                            Zuletzt bearbeitet am {format(customerInputDraft.date, 'dd.MM.yyyy')} um {format(customerInputDraft.date, 'HH:mm')} Uhr
+                                            Zuletzt bearbeitet am {formatInstantInApplicationTimeZone(
+                                                customerInputDraft.date,
+                                                'dd.MM.yyyy',
+                                            )} um {formatInstantInApplicationTimeZone(
+                                                customerInputDraft.date,
+                                                'HH:mm',
+                                            )} Uhr
                                         </span>
                                     )
                                 }

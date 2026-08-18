@@ -1,8 +1,8 @@
 import {Grid, Typography, useTheme} from '@mui/material';
-import {format} from 'date-fns';
 import {BaseSummaryProps} from './base-summary';
 import {DateTimeFieldElement} from '../models/elements/form/input/date-time-field-element';
 import {TimeFieldComponentModelMode} from '../models/elements/form/input/time-field-element';
+import {formatInstantInApplicationTimeZone} from '../utils/temporal-utils';
 
 export function DateTimeFieldSummary(props: BaseSummaryProps<DateTimeFieldElement, string>) {
     const {
@@ -10,11 +10,11 @@ export function DateTimeFieldSummary(props: BaseSummaryProps<DateTimeFieldElemen
         model,
     } = props;
 
-    const date = value != null && value.length > 0 ? new Date(value) : null;
     const theme = useTheme();
     const formatPattern = (model.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second
         ? 'dd.MM.yyyy, HH:mm:ss'
         : 'dd.MM.yyyy, HH:mm';
+    const formattedValue = formatInstantInApplicationTimeZone(value, formatPattern);
 
     return (
         <Grid
@@ -56,7 +56,7 @@ export function DateTimeFieldSummary(props: BaseSummaryProps<DateTimeFieldElemen
                 }}
             >
                 <Typography variant="body2">
-                    {date != null && !isNaN(date.getTime()) ? `${format(date, formatPattern)} Uhr` : 'Keine Angabe'}
+                    {formattedValue != null ? `${formattedValue} Uhr` : 'Keine Angabe'}
                 </Typography>
             </Grid>
         </Grid>

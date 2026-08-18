@@ -41,7 +41,6 @@ import de.aivot.gover.backend.process.repositories.ProcessRepository;
 import de.aivot.gover.backend.services.pdf.PdfElementsGenerator;
 import de.aivot.gover.backend.theme.entities.ThemeEntity;
 import de.aivot.gover.backend.theme.services.ThemeService;
-import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import de.aivot.gover.backend.utils.MultipartUtils;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -57,7 +56,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -194,7 +192,7 @@ public class PdfService {
                 .setPdfTemplateKey(formLayoutElement.getPdfTemplateKey())
         );
         dto.put("submission", Map.of(
-                "created", processInstance.getStarted().atZone(ApplicationTimeZone.getZoneId())
+                "created", processInstance.getStarted()
         ));
 
         /* TODO: Resolve Identity

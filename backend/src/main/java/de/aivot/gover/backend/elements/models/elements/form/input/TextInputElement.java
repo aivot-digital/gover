@@ -8,6 +8,11 @@ import de.aivot.gover.backend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.time.LocalDate;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAccessor;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -57,8 +62,17 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
             case String sValue -> sValue;
             case Number nValue -> NumberInputElement
                     .formatGermanNumber(nValue);
+            case LocalDate dateValue -> formatDateValue(dateValue);
+            case YearMonth dateValue -> formatDateValue(dateValue);
+            case Year dateValue -> formatDateValue(dateValue);
+            case ZonedDateTime dateValue -> formatDateValue(DateInputElement._formatValue(dateValue));
             default -> null;
         };
+    }
+
+    @Nonnull
+    private static String formatDateValue(@Nonnull TemporalAccessor value) {
+        return new DateInputElement().toDisplayValue(value);
     }
 
     @Override

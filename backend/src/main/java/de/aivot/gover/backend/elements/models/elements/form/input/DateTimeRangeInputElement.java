@@ -11,11 +11,12 @@ import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
 
-public class DateTimeRangeInputElement extends BaseInputElement<RangeInputElementValue> implements PrintableElement<RangeInputElementValue> {
+public class DateTimeRangeInputElement extends BaseInputElement<RangeInputElementValue<Instant>> implements PrintableElement<RangeInputElementValue<Instant>> {
     @Nullable
     private String placeholder;
 
@@ -28,12 +29,14 @@ public class DateTimeRangeInputElement extends BaseInputElement<RangeInputElemen
 
     @Nullable
     @Override
-    public RangeInputElementValue formatValue(@Nullable Object value) {
+    public RangeInputElementValue<Instant> formatValue(@Nullable Object value) {
+        // Keep the full precision of both absolute endpoints. The mode controls only
+        // the picker and display precision, matching DateTimeInputElement.
         return _formatValue(value);
     }
 
     @Override
-    public void performValidation(@Nullable RangeInputElementValue value) throws ValidationException {
+    public void performValidation(@Nullable RangeInputElementValue<Instant> value) throws ValidationException {
         if (value == null || value.isEmpty()) {
             if (Boolean.TRUE.equals(getRequired())) {
                 throw new RequiredValidationException(this);
@@ -58,7 +61,7 @@ public class DateTimeRangeInputElement extends BaseInputElement<RangeInputElemen
 
     @Nonnull
     @Override
-    public String toDisplayValue(@Nullable RangeInputElementValue value) {
+    public String toDisplayValue(@Nullable RangeInputElementValue<Instant> value) {
         if (value == null || value.isEmpty()) {
             return "Keine Angabe";
         }
@@ -67,8 +70,8 @@ public class DateTimeRangeInputElement extends BaseInputElement<RangeInputElemen
                 .ofPattern(mode == TimeType.Second ? "dd.MM.yyyy HH:mm:ss" : "dd.MM.yyyy HH:mm")
                 .withZone(ApplicationTimeZone.getZoneId());
 
-        var start = value.getStart() == null ? "Keine Angabe" : value.getStart().format(formatter) + " Uhr";
-        var end = value.getEnd() == null ? "Keine Angabe" : value.getEnd().format(formatter) + " Uhr";
+        var start = value.getStart() == null ? "Keine Angabe" : formatter.format(value.getStart()) + " Uhr";
+        var end = value.getEnd() == null ? "Keine Angabe" : formatter.format(value.getEnd()) + " Uhr";
         return start + " bis " + end;
     }
 
@@ -97,16 +100,20 @@ public class DateTimeRangeInputElement extends BaseInputElement<RangeInputElemen
     }
 
     @Nullable
-    public static RangeInputElementValue _formatValue(@Nullable Object value) {
+    public static RangeInputElementValue<Instant> _formatValue(@Nullable Object value) {
         switch (value) {
             case null:
                 return null;
-            case RangeInputElementValue val:
-                return val.isEmpty() ? null : val;
+            case RangeInputElementValue<?> val:
+                var normalizedRange = new RangeInputElementValue<>(
+                        DateTimeInputElement._formatValue(val.getStart()),
+                        DateTimeInputElement._formatValue(val.getEnd())
+                );
+                return normalizedRange.isEmpty() ? null : normalizedRange;
             case Map<?, ?> map:
                 var start = DateTimeInputElement._formatValue(map.get("start"));
                 var end = DateTimeInputElement._formatValue(map.get("end"));
-                var range = new RangeInputElementValue(start, end);
+                var range = new RangeInputElementValue<>(start, end);
                 return range.isEmpty() ? null : range;
             default:
                 return null;

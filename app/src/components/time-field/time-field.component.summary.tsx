@@ -1,14 +1,16 @@
 import {Grid, Typography} from '@mui/material';
 import {TimeFieldElement} from '../../models/elements/form/input/time-field-element';
-import {format} from 'date-fns';
 import {BaseSummaryProps} from '../../summaries/base-summary';
 import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
+import {localTimeIsoToDateTime} from '../../utils/temporal-utils';
 
 export function TimeFieldComponentSummary({
                                               model,
                                               value,
                                           }: BaseSummaryProps<TimeFieldElement, string>) {
-    const date = value != null && value.length > 0 && new Date(value);
+    const time = value != null && value.length > 0
+        ? localTimeIsoToDateTime(value)
+        : null;
 
     return (
         <Grid
@@ -31,7 +33,9 @@ export function TimeFieldComponentSummary({
             <Grid size={8}>
                 <Typography variant={"body2"}>
                     {
-                        date ? format(date, (model.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm') + ' Uhr' : 'Keine Angabe'
+                        time != null
+                            ? `${time.toFormat((model.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm')} Uhr`
+                            : 'Keine Angabe'
                     }
                 </Typography>
             </Grid>

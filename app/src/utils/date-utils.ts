@@ -1,8 +1,5 @@
-import {format} from "date-fns/format";
+import {dateValueToDateTime} from './temporal-utils';
 
-export function formatISODate(isoString: string): string {
-    if (isoString.endsWith('Z')) {
-        return format(isoString, 'dd.MM.yyyy');
-    }
-    return format(isoString + 'Z', 'dd.MM.yyyy');
+export function formatLocalDate(value: string): string {
+    return dateValueToDateTime(value, 'day')?.toFormat('dd.MM.yyyy') ?? value;
 }

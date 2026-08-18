@@ -5,6 +5,7 @@ import {
     mapAuthoredElementValues,
     normalizeReplicatingContainerValues,
     resolveReplicatingContainerItemDerivedData,
+    resolveVisibility,
     resolveValueForResolvedOverride,
     walkAuthoredElementValues,
 } from './element-data-utils';
@@ -60,6 +61,45 @@ describe('resolveValueForResolvedOverride', () => {
         });
 
         expect(resolveValueForResolvedOverride(field, {field: 'authored'}, derivedData)).toBe('identity');
+    });
+});
+
+describe('resolveVisibility', () => {
+    const field = {
+        id: 'field',
+        type: ElementType.Text,
+    } as AnyElement;
+    const dynamicField = {
+        id: 'dynamicField',
+        type: ElementType.Text,
+        visibility: {
+            type: 'NoCode',
+        },
+    } as AnyElement;
+
+    it('should keep static elements visible while derived state is missing', () => {
+        expect(resolveVisibility(field, createDerivedRuntimeElementData())).toBe(true);
+    });
+
+    it('should hide dynamic visibility elements while derived state is missing', () => {
+        expect(resolveVisibility(dynamicField, createDerivedRuntimeElementData())).toBe(false);
+    });
+
+    it('should use explicit derived visibility when available', () => {
+        expect(resolveVisibility(dynamicField, createDerivedRuntimeElementData({
+            elementStates: {
+                dynamicField: {
+                    visible: true,
+                },
+            },
+        }))).toBe(true);
+        expect(resolveVisibility(field, createDerivedRuntimeElementData({
+            elementStates: {
+                field: {
+                    visible: false,
+                },
+            },
+        }))).toBe(false);
     });
 });
 

@@ -1,19 +1,19 @@
 import {Grid, Typography, useTheme} from '@mui/material';
 import {BaseSummaryProps} from './base-summary';
 import {TimeRangeFieldElement, TimeRangeValue} from '../models/elements/form/input/time-range-field-element';
-import {format} from 'date-fns';
 import {TimeFieldComponentModelMode} from '../models/elements/form/input/time-field-element';
+import {localTimeIsoToDateTime} from '../utils/temporal-utils';
 
 export function TimeRangeFieldSummary(props: BaseSummaryProps<TimeRangeFieldElement, TimeRangeValue>) {
     const theme = useTheme();
 
-    const startDate = props.value?.start != null ? new Date(props.value.start) : null;
-    const endDate = props.value?.end != null ? new Date(props.value.end) : null;
-    const isBothEmpty = startDate == null && endDate == null;
+    const startTime = props.value?.start != null ? localTimeIsoToDateTime(props.value.start) : null;
+    const endTime = props.value?.end != null ? localTimeIsoToDateTime(props.value.end) : null;
+    const isBothEmpty = startTime == null && endTime == null;
     const formatPattern = (props.model.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm';
 
-    const startLabel = startDate != null && !isNaN(startDate.getTime()) ? `${format(startDate, formatPattern)} Uhr` : 'Keine Angabe';
-    const endLabel = endDate != null && !isNaN(endDate.getTime()) ? `${format(endDate, formatPattern)} Uhr` : 'Keine Angabe';
+    const startLabel = startTime != null ? `${startTime.toFormat(formatPattern)} Uhr` : 'Keine Angabe';
+    const endLabel = endTime != null ? `${endTime.toFormat(formatPattern)} Uhr` : 'Keine Angabe';
 
     return (
         <Grid

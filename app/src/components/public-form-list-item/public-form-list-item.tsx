@@ -2,10 +2,10 @@ import React from 'react';
 import {Box, Button, Typography} from '@mui/material';
 import styles from './public-form-list-item.module.scss';
 import {Link} from 'react-router-dom';
-import {format, parseISO} from 'date-fns';
 import OpenInNewOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import DescriptionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Description';
 import {FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
+import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
 
 interface PublicFormListItemProps {
     form: FormCitizenListResponseDTO;
@@ -45,7 +45,10 @@ export function PublicFormListItem(props: PublicFormListItemProps) {
                         color: 'text.secondary',
                     }}
                 >
-                    Stand vom: {format(parseISO(props.form.updated), 'dd.MM.yyyy')} • Version: {props.form.version}
+                    Stand vom: {formatInstantInApplicationTimeZone(
+                        props.form.updated,
+                        'dd.MM.yyyy',
+                    ) ?? 'Unbekannt'} • Version: {props.form.version}
                 </Typography>
             </Box>
             <Box className={styles.listItemActions}>

@@ -93,7 +93,7 @@ export function resolveErrorDetails(element: AnyElement, derivedData: DerivedRun
 }
 
 export function resolveVisibility(element: AnyElement, derivedData: DerivedRuntimeElementData): boolean {
-    return resolveElementState(element, derivedData)?.visible ?? true;
+    return resolveElementState(element, derivedData)?.visible ?? element.visibility?.type == null;
 }
 
 export function resolveReplicatingContainerItemDerivedData(

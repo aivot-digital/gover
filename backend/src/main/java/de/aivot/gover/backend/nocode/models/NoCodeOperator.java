@@ -6,27 +6,36 @@ import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.nocode.exceptions.NoCodeException;
 import de.aivot.gover.backend.nocode.exceptions.NoCodeWrongArgumentCountException;
-
+import de.aivot.gover.backend.utils.ApplicationTimeZone;
+import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DateTimeException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.Year;
+import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import de.aivot.gover.backend.utils.IsoTimestampUtils;
 
 /**
  * Represents an operator in the NoCode language.
  */
 public abstract class NoCodeOperator {
+    private static final DateTimeFormatter LOCAL_TIME_SECONDS_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm:ss");
+
     /**
      * Returns the identifier of the operator.
      * This is used to reference the operator in the NoCode language.
@@ -196,11 +205,26 @@ public abstract class NoCodeOperator {
             case ZonedDateTime zReferenceObject -> {
                 return castToDateTime(objectToCast);
             }
+            case OffsetDateTime oReferenceObject -> {
+                return castToDateTime(objectToCast).toOffsetDateTime();
+            }
             case Instant iReferenceObject -> {
-                return castToDateTime(objectToCast);
+                return castToDateTime(objectToCast).toInstant();
             }
             case LocalDateTime lReferenceObject -> {
-                return castToDateTime(objectToCast);
+                return castToDateTime(objectToCast).toLocalDateTime();
+            }
+            case LocalDate dReferenceObject -> {
+                return castToDate(objectToCast);
+            }
+            case YearMonth ymReferenceObject -> {
+                return YearMonth.from(castToDate(objectToCast));
+            }
+            case Year yReferenceObject -> {
+                return Year.from(castToDate(objectToCast));
+            }
+            case LocalTime tReferenceObject -> {
+                return castToTime(objectToCast);
             }
             default -> {
                 return null;
@@ -251,7 +275,14 @@ public abstract class NoCodeOperator {
                 if (isDateTimeString(sValue)) {
                     var dateTime = castToDateTime(sValue);
                     yield BigDecimal.valueOf(dateTime.toEpochSecond());
+                } else if (isDateString(sValue)) {
+                    yield BigDecimal.valueOf(LocalDate.parse(sValue).toEpochDay());
                 } else {
+                    var parsedTime = parseTime(sValue);
+                    if (parsedTime != null) {
+                        yield BigDecimal.valueOf(parsedTime.toSecondOfDay());
+                    }
+
                     try {
                         yield new BigDecimal(sValue);
                     } catch (NumberFormatException e) {
@@ -262,12 +293,46 @@ public abstract class NoCodeOperator {
             case List<?> lValue -> BigDecimal.valueOf(lValue.size());
             case Map<?, ?> mValue -> BigDecimal.valueOf(mValue.size());
             case Instant iValue -> BigDecimal.valueOf(iValue.getEpochSecond());
-            case LocalDateTime ldtValue -> BigDecimal.valueOf(ldtValue.toEpochSecond(ZoneOffset.UTC));
+            case OffsetDateTime odtValue -> BigDecimal.valueOf(odtValue.toEpochSecond());
+            case LocalDate ldValue -> BigDecimal.valueOf(ldValue.toEpochDay());
+            case YearMonth ymValue -> BigDecimal.valueOf(ymValue.atDay(1).toEpochDay());
+            case Year yValue -> BigDecimal.valueOf(yValue.atDay(1).toEpochDay());
+            case LocalTime ltValue -> BigDecimal.valueOf(ltValue.toSecondOfDay());
+            case LocalDateTime ldtValue -> {
+                var resolved = resolveLocalDateTime(ldtValue);
+                yield resolved == null
+                        ? BigDecimal.ZERO
+                        : BigDecimal.valueOf(resolved.toEpochSecond());
+            }
             case ZonedDateTime zdtValue -> BigDecimal.valueOf(zdtValue.toEpochSecond());
             default -> BigDecimal.ZERO;
         };
 
         return res.setScale(8, RoundingMode.HALF_UP);
+    }
+
+    protected int requireInteger(
+            @Nullable Object value,
+            @Nonnull String invalidValueMessage
+    ) throws NoCodeException {
+        try {
+            // General no-code number casts intentionally provide permissive fallbacks.
+            // Temporal components must instead reject text lengths, fractions and overflow.
+            var number = switch (value) {
+                case BigDecimal decimal -> decimal;
+                case Number numericValue -> new BigDecimal(numericValue.toString());
+                case String stringValue -> new BigDecimal(stringValue.trim());
+                default -> null;
+            };
+
+            if (number != null) {
+                return number.intValueExact();
+            }
+        } catch (ArithmeticException | NumberFormatException ignored) {
+            // Convert all invalid numeric shapes into the operator's domain error below.
+        }
+
+        throw new NoCodeException(invalidValueMessage);
     }
 
     @Nonnull
@@ -286,42 +351,217 @@ public abstract class NoCodeOperator {
             case Boolean bValue -> bValue.toString();
             case List<?> lValue -> {
                 try {
-                    yield new ObjectMapper().writeValueAsString(lValue);
+                    yield ObjectMapperFactory.getInstance().writeValueAsString(lValue);
                 } catch (JsonProcessingException e) {
                     yield "";
                 }
             }
             case Map<?, ?> mValue -> {
                 try {
-                    yield new ObjectMapper().writeValueAsString(mValue);
+                    yield ObjectMapperFactory.getInstance().writeValueAsString(mValue);
                 } catch (JsonProcessingException e) {
                     yield "";
                 }
             }
-            case Instant iValue -> iValue.toString();
-            case LocalDateTime ldtValue -> ldtValue.format(DateTimeFormatter.ISO_DATE_TIME);
-            case ZonedDateTime zdtValue -> zdtValue.toInstant().toString();
+            case Instant iValue -> IsoTimestampUtils.toOffsetString(iValue);
+            case OffsetDateTime odtValue -> IsoTimestampUtils.toOffsetString(odtValue.toInstant());
+            case LocalDate ldValue -> ldValue.toString();
+            case YearMonth ymValue -> ymValue.toString();
+            case Year yValue -> yValue.toString();
+            case LocalTime ltValue -> formatLocalTime(ltValue);
+            case LocalDateTime ldtValue -> {
+                var resolved = resolveLocalDateTime(ldtValue);
+                yield resolved == null
+                        ? ""
+                        : IsoTimestampUtils.toOffsetString(resolved.toInstant());
+            }
+            case ZonedDateTime zdtValue -> IsoTimestampUtils.toOffsetString(zdtValue.toInstant());
             default -> "";
         };
     }
 
     private boolean isDateTimeString(String sValue) {
         try {
-            IsoTimestampUtils.parseIsoTimestamp(sValue, ZoneOffset.UTC);
+            IsoTimestampUtils.parseIsoInstant(sValue);
             return true;
         } catch (Exception e) {
             return false;
         }
     }
 
+    private boolean isDateString(String value) {
+        try {
+            LocalDate.parse(value);
+            return true;
+        } catch (DateTimeParseException ignored) {
+            return false;
+        }
+    }
+
+    @Nullable
+    private LocalTime parseTime(String value) {
+        if (!value.matches("^\\d{2}:\\d{2}(?::\\d{2})?$")) {
+            return null;
+        }
+
+        try {
+            return LocalTime.parse(value);
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
+    }
+
+    @Nonnull
+    private static String formatLocalTime(@Nonnull LocalTime value) {
+        // LocalTime.toString() omits zero seconds. No-code string casts use the same
+        // stable HH:mm:ss representation as the HTTP and destination-payload contract.
+        return value.withNano(0).format(LOCAL_TIME_SECONDS_FORMATTER);
+    }
+
+    @Nonnull
+    public LocalDate castToDate(@Nullable Object value) {
+        var parsedValue = tryCastToDate(value);
+        return parsedValue != null
+                ? parsedValue
+                : LocalDate.now(ApplicationTimeZone.getZoneId());
+    }
+
+    @Nonnull
+    protected LocalDate requireDate(
+            @Nullable Object value,
+            @Nonnull String invalidValueMessage
+    ) throws NoCodeException {
+        var parsedValue = tryCastToDate(value);
+        if (parsedValue == null) {
+            throw new NoCodeException(invalidValueMessage);
+        }
+        return parsedValue;
+    }
+
+    @Nonnull
+    protected TemporalAccessor requireCalendarValue(
+            @Nullable Object value,
+            @Nonnull String invalidValueMessage
+    ) throws NoCodeException {
+        var parsedValue = tryCastToCalendarValue(value);
+        if (parsedValue == null) {
+            throw new NoCodeException(invalidValueMessage);
+        }
+        return parsedValue;
+    }
+
+    @Nullable
+    protected TemporalAccessor tryCastToCalendarValue(@Nullable Object value) {
+        return switch (value) {
+            case LocalDate localDate -> localDate;
+            case YearMonth yearMonth -> yearMonth;
+            case Year year -> year;
+            case String stringValue -> {
+                try {
+                    yield LocalDate.parse(stringValue);
+                } catch (DateTimeParseException ignored) {
+                    try {
+                        yield YearMonth.parse(stringValue);
+                    } catch (DateTimeParseException ignoredMonth) {
+                        try {
+                            yield Year.parse(stringValue);
+                        } catch (DateTimeParseException ignoredYear) {
+                            yield null;
+                        }
+                    }
+                }
+            }
+            default -> null;
+        };
+    }
+
+    @Nullable
+    private LocalDate tryCastToDate(@Nullable Object value) {
+        // Generic reference casts require a complete LocalDate. Partial form dates use
+        // their first representable day here, then castToReferenceType restores the
+        // reference value's YearMonth or Year precision. Temporal operators use
+        // requireCalendarValue instead so they never invent missing calendar components.
+        return switch (value) {
+            case null -> null;
+            case LocalDate localDate -> localDate;
+            case YearMonth yearMonth -> yearMonth.atDay(1);
+            case Year year -> year.atDay(1);
+            case LocalDateTime localDateTime -> localDateTime.toLocalDate();
+            case Instant instant -> instant.atZone(ApplicationTimeZone.getZoneId()).toLocalDate();
+            case OffsetDateTime offsetDateTime ->
+                    offsetDateTime.toInstant().atZone(ApplicationTimeZone.getZoneId()).toLocalDate();
+            case ZonedDateTime zonedDateTime ->
+                    zonedDateTime.toInstant().atZone(ApplicationTimeZone.getZoneId()).toLocalDate();
+            case String stringValue -> {
+                try {
+                    yield LocalDate.parse(stringValue);
+                } catch (DateTimeParseException ignored) {
+                    try {
+                        yield YearMonth.parse(stringValue).atDay(1);
+                    } catch (DateTimeParseException ignoredMonth) {
+                        try {
+                            yield Year.parse(stringValue).atDay(1);
+                        } catch (DateTimeParseException ignoredYear) {
+                            try {
+                                yield IsoTimestampUtils.parseIsoInstant(stringValue)
+                                        .atZone(ApplicationTimeZone.getZoneId())
+                                        .toLocalDate();
+                            } catch (DateTimeParseException ignoredInstant) {
+                                yield null;
+                            }
+                        }
+                    }
+                }
+            }
+            default -> null;
+        };
+    }
+
+    @Nonnull
+    public LocalTime castToTime(@Nullable Object value) {
+        var parsedValue = tryCastToTime(value);
+        return parsedValue != null
+                ? parsedValue
+                : LocalTime.now(ApplicationTimeZone.getZoneId()).withNano(0);
+    }
+
+    @Nonnull
+    protected LocalTime requireTime(
+            @Nullable Object value,
+            @Nonnull String invalidValueMessage
+    ) throws NoCodeException {
+        var parsedValue = tryCastToTime(value);
+        if (parsedValue == null) {
+            throw new NoCodeException(invalidValueMessage);
+        }
+        return parsedValue;
+    }
+
+    @Nullable
+    private LocalTime tryCastToTime(@Nullable Object value) {
+        return switch (value) {
+            case null -> null;
+            case LocalTime localTime -> localTime.withNano(0);
+            case LocalDateTime localDateTime -> localDateTime.toLocalTime().withNano(0);
+            case Instant instant ->
+                    instant.atZone(ApplicationTimeZone.getZoneId()).toLocalTime().withNano(0);
+            case OffsetDateTime offsetDateTime ->
+                    offsetDateTime.toInstant().atZone(ApplicationTimeZone.getZoneId()).toLocalTime().withNano(0);
+            case ZonedDateTime zonedDateTime ->
+                    zonedDateTime.toInstant().atZone(ApplicationTimeZone.getZoneId()).toLocalTime().withNano(0);
+            case String stringValue -> parseTime(stringValue);
+            default -> null;
+        };
+    }
+
     @Nonnull
     public ZonedDateTime castToDateTime(@Nullable Object value) {
         if (value == null) {
-            return ZonedDateTime.now();
+            return ZonedDateTime.now(ApplicationTimeZone.getZoneId());
         }
 
         var parsedValue = tryCastToDateTime(value);
-        return parsedValue != null ? parsedValue : ZonedDateTime.now();
+        return parsedValue != null ? parsedValue : ZonedDateTime.now(ApplicationTimeZone.getZoneId());
     }
 
     @Nonnull
@@ -339,18 +579,37 @@ public abstract class NoCodeOperator {
     private ZonedDateTime tryCastToDateTime(@Nullable Object value) {
         return switch (value) {
             case null -> null;
-            case Instant iValue -> iValue.atZone(ZoneOffset.UTC);
-            case LocalDateTime ldtValue -> ZonedDateTime.of(ldtValue, ZoneOffset.UTC);
-            case ZonedDateTime zdtValue -> zdtValue;
+            case Instant iValue -> iValue.atZone(ApplicationTimeZone.getZoneId());
+            case OffsetDateTime odtValue -> odtValue.toInstant().atZone(ApplicationTimeZone.getZoneId());
+            case LocalDateTime ldtValue -> resolveLocalDateTime(ldtValue);
+            case ZonedDateTime zdtValue -> zdtValue.withZoneSameInstant(ApplicationTimeZone.getZoneId());
             case String sValue -> {
                 try {
-                    yield IsoTimestampUtils.parseIsoTimestamp(sValue, ZoneOffset.UTC).atZone(ZoneOffset.UTC);
+                    yield IsoTimestampUtils.parseIsoInstant(sValue).atZone(ApplicationTimeZone.getZoneId());
                 } catch (DateTimeParseException ignored) {
                     yield null;
                 }
             }
             default -> null;
         };
+    }
+
+    @Nullable
+    private ZonedDateTime resolveLocalDateTime(@Nonnull LocalDateTime value) {
+        var zoneId = ApplicationTimeZone.getZoneId();
+        var validOffsets = zoneId.getRules().getValidOffsets(value);
+        // LocalDateTime.atZone would silently move a nonexistent DST-gap value
+        // forward. No-code conversions treat that input as invalid instead.
+        if (validOffsets.isEmpty()) {
+            return null;
+        }
+
+        try {
+            // ZoneRules lists the earlier offset first during a DST overlap.
+            return value.atOffset(validOffsets.getFirst()).toInstant().atZone(zoneId);
+        } catch (DateTimeException ignored) {
+            return null;
+        }
     }
 
     @Nonnull
@@ -363,7 +622,7 @@ public abstract class NoCodeOperator {
             case Map<?, ?> mValue -> (Map<String, Object>) mValue;
             case String sValue -> {
                 try {
-                    yield new ObjectMapper().readValue(sValue, Map.class);
+                    yield ObjectMapperFactory.getInstance().readValue(sValue, Map.class);
                 } catch (JsonProcessingException e) {
                     yield Map.of();
                 }
@@ -391,7 +650,7 @@ public abstract class NoCodeOperator {
             case List<?> lValue -> (List<Object>) lValue;
             case String sValue -> {
                 try {
-                    yield new ObjectMapper().readValue(sValue, List.class);
+                    yield ObjectMapperFactory.getInstance().readValue(sValue, List.class);
                 } catch (JsonProcessingException e) {
                     yield List.of();
                 }

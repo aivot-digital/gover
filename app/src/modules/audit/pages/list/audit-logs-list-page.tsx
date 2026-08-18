@@ -17,6 +17,10 @@ import {getTriggerTypeColor, getTriggerTypeIcon, getTriggerTypeLabel} from '../.
 import {getActorTypeColor, getActorTypeIcon, getActorTypeLabel} from '../../data/actor-type';
 import {AuditLogDetailsDialogContent} from './audit-log-details-dialog-content';
 import {ChipInputFieldComponent} from '../../../../components/chip-input-field/chip-input-field-component';
+import {
+    formatInstantInApplicationTimeZone,
+    instantToEpochMillis,
+} from '../../../../utils/temporal-utils';
 
 const actorFilters = [
     {label: 'Alle', value: 'all'},
@@ -32,38 +36,18 @@ const auditLogsListPermissionCheck: GenericListPagePermissionConfig<AuditLogEnti
     read: AUDIT_LOG_READ_PERMISSION,
 };
 
-function parseDate(value: string): Date | undefined {
-    if (value.trim().length === 0) {
-        return undefined;
-    }
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return undefined;
-    }
-
-    return date;
-}
-
 function formatDateTime(value: string): string {
-    const date = parseDate(value);
-    if (date == null) {
-        return '-';
-    }
-
-    return `${new Intl.DateTimeFormat('de-DE', {
-        dateStyle: 'medium',
-        timeStyle: 'medium',
-    }).format(date)} Uhr`;
+    const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy, HH:mm:ss');
+    return formatted != null ? `${formatted} Uhr` : '-';
 }
 
 function formatRelative(value: string): string {
-    const date = parseDate(value);
-    if (date == null) {
+    const epochMillis = instantToEpochMillis(value);
+    if (epochMillis == null) {
         return '-';
     }
 
-    const diffMs = Date.now() - date.getTime();
+    const diffMs = Date.now() - epochMillis;
     const diffMin = Math.floor(diffMs / 60000);
 
     if (diffMin < 1) {

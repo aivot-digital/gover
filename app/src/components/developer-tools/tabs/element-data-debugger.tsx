@@ -5,7 +5,6 @@ import React, {useMemo, useState} from 'react';
 import {Actions} from '../../actions/actions';
 import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import UploadFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
-import {format} from 'date-fns';
 import {downloadObjectFile, uploadObjectFile} from '../../../utils/download-utils';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';

@@ -9,8 +9,7 @@ import {TransactionsApiService} from '../../transaction-api-service';
 import {PaymentTransactionResponseDTO} from '../../dtos/payment-transaction-response-dto';
 import {XBezahldienstePaymentStatus} from '../../../../data/xbezahldienste-payment-status';
 import {formatNumToGermanNum} from '../../../../utils/format-german-numbers';
-import {parseISO} from 'date-fns/parseISO';
-import {formatDate} from 'date-fns/format';
+import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 
 const columns: GridColDef<PaymentTransactionResponseDTO>[] = [
     {
@@ -18,8 +17,8 @@ const columns: GridColDef<PaymentTransactionResponseDTO>[] = [
         headerName: 'Erstellt',
         flex: 1,
         renderCell: (params) => {
-            const created = parseISO(params.value);
-            return `${formatDate(created, 'dd.MM.yyyy')} ${formatDate(created, 'HH:mm')} Uhr`;
+            const formatted = formatInstantInApplicationTimeZone(params.value, 'dd.MM.yyyy HH:mm');
+            return formatted != null ? `${formatted} Uhr` : '—';
         },
     },
     {

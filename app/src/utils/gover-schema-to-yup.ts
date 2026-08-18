@@ -45,6 +45,14 @@ import {
     normalizeDomainAndUserSelectItem,
 } from '../components/domain-user-select-field/domain-user-select-options';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
+import {
+    compareInstantIso,
+    CalendarDatePrecision,
+    dateValueToDateTime,
+    isInstantIso,
+    localTimeIsoToDateTime,
+} from './temporal-utils';
+import {DateFieldComponentModelMode} from '../models/elements/form/input/date-field-element';
 
 
 export function goverSchemaToYup(elem: AnyElement, states: ComputedElementStates): Record<string, Schema> {
@@ -355,26 +363,55 @@ function chipInputFieldToYup(elem: ChipInputFieldElement): Schema {
 }
 
 function dateRangeFieldToYup(elem: DateRangeFieldElement): Schema {
-    return buildRangeSchema(elem, 'date');
+    const precision = dateModeToPrecision(elem.mode);
+    return buildRangeSchema(
+        elem,
+        (value) => dateValueToDateTime(value, precision)?.toMillis() ?? null,
+        compareNumbers,
+    );
 }
 
 function timeRangeFieldToYup(elem: TimeRangeFieldElement): Schema {
-    return buildRangeSchema(elem, 'time');
+    return buildRangeSchema(
+        elem,
+        (value) => localTimeIsoToDateTime(value)?.toMillis() ?? null,
+        compareNumbers,
+    );
 }
 
 function dateTimeRangeFieldToYup(elem: DateTimeRangeFieldElement): Schema {
-    return buildRangeSchema(elem, 'dateTime');
+    return buildRangeSchema(
+        elem,
+        (value) => isInstantIso(value) ? value : null,
+        (start, end) => compareInstantIso(start, end)!,
+    );
 }
 
-function buildRangeSchema(
+function dateModeToPrecision(mode: DateFieldComponentModelMode | null | undefined): CalendarDatePrecision {
+    switch (mode) {
+        case DateFieldComponentModelMode.Month:
+            return 'month';
+        case DateFieldComponentModelMode.Year:
+            return 'year';
+        default:
+            return 'day';
+    }
+}
+
+function compareNumbers(left: number, right: number): number {
+    return left - right;
+}
+
+function buildRangeSchema<T>(
     elem: DateRangeFieldElement | TimeRangeFieldElement | DateTimeRangeFieldElement,
-    kind: 'date' | 'time' | 'dateTime',
+    parseValue: (value: string) => T | null,
+    compareValues: (left: T, right: T) => number,
 ): Schema {
     let rangeSchema: Schema = yup
         .object()
         .shape({
-            start: yup.string().nullable(),
-            end: yup.string().nullable(),
+            start: temporalRangeBoundarySchema(parseValue),
+            end: temporalRangeBoundarySchema(parseValue),
         })
         .test(
             'range-complete',
@@ -405,13 +442,13 @@ function buildRangeSchema(
                     return true;
                 }
 
-                const startValue = parseComparableRangeValue(start, kind);
-                const endValue = parseComparableRangeValue(end, kind);
+                const startValue = parseValue(start);
+                const endValue = parseValue(end);
                 if (startValue == null || endValue == null) {
                     return true;
                 }
 
-                return startValue <= endValue;
+                return compareValues(startValue, endValue) <= 0;
             },
         );
 
@@ -431,17 +468,15 @@ function buildRangeSchema(
     return rangeSchema;
 }
 
-function parseComparableRangeValue(value: string, kind: 'date' | 'time' | 'dateTime'): number | null {
-    const parsed = new Date(value);
-    if (isNaN(parsed.getTime())) {
-        return null;
-    }
-
-    if (kind === 'time') {
-        return parsed.getHours() * 60 + parsed.getMinutes();
-    }
-
-    return parsed.getTime();
+function temporalRangeBoundarySchema<T>(parseValue: (value: string) => T | null): Schema {
+    return yup
+        .string()
+        .nullable()
+        .test(
+            'temporal-format',
+            'Der Wert besitzt kein gültiges Datums- oder Zeitformat.',
+            (value) => value == null || value.length === 0 || parseValue(value) != null,
+        );
 }
 
 function mapPointFieldToYup(elem: MapPointFieldElement): Schema {

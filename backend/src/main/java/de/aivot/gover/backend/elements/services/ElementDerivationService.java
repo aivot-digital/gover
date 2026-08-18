@@ -955,7 +955,7 @@ public class ElementDerivationService {
                 var res = noCodeEvaluationService
                         .evaluate(validationExpression.getNoCode(), accumulator, patchedProcessExecutionData);
                 if (!res.getValueAsBoolean()) {
-                    return ErrorResult.of(validationExpression.getMessage());
+                    return ErrorResult.of(Objects.requireNonNullElse(validationExpression.getMessage(), ""));
                 }
             }
         }

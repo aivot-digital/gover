@@ -1,5 +1,6 @@
 package de.aivot.gover.backend.plugins.core.v1.operators.date;
 
+import de.aivot.gover.backend.core.services.BusinessTime;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.nocode.enums.NoCodeDataType;
 import de.aivot.gover.backend.nocode.exceptions.NoCodeException;
@@ -8,13 +9,19 @@ import de.aivot.gover.backend.nocode.models.NoCodeParameter;
 import de.aivot.gover.backend.nocode.models.NoCodeParameterOption;
 import de.aivot.gover.backend.nocode.models.NoCodeResult;
 import de.aivot.gover.backend.nocode.models.NoCodeSignatur;
-import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nullable;
 
+import java.time.DateTimeException;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 public class NoCodeFormatDateOperator extends NoCodeOperator {
+    private final BusinessTime businessTime;
+
+    public NoCodeFormatDateOperator(BusinessTime businessTime) {
+        this.businessTime = businessTime;
+    }
+
     @Override
     public String getIdentifier() {
         return "format-date";
@@ -68,8 +75,9 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
                                 "Format",
                                 "Das Ausgabeformat als DateTimeFormatter-Muster.",
                                 new NoCodeParameterOption("Datum (TT.MM.JJJJ)", "dd.MM.yyyy"),
-                                new NoCodeParameterOption("Datum mit Zeit", "dd.MM.yyyy HH:mm"),
-                                new NoCodeParameterOption("ISO Datum/Zeit", "yyyy-MM-dd'T'HH:mm:ssXXX")
+                                new NoCodeParameterOption("Monat und Jahr", "MM.yyyy"),
+                                new NoCodeParameterOption("Jahr", "yyyy"),
+                                new NoCodeParameterOption("ISO-Datum", "yyyy-MM-dd")
                         )
                 )
         );
@@ -83,24 +91,60 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        // Date-specific operators should fail explicitly for invalid inputs instead of silently
-        // falling back to a synthetic "now" value from the generic runtime casting helpers.
-        var date = requireDateTime(args[0], "Ungültiger Datumswert: " + castToString(args[0]));
-        var formatPattern = castToString(args[1]).trim();
+        var formatter = requireFormatter(args[1]);
+
+        try {
+            var calendarValue = tryCastToCalendarValue(args[0]);
+            if (calendarValue != null) {
+                // Formatting the original type preserves Year and YearMonth precision.
+                // Incompatible fields (for example "dd" on YearMonth) fail explicitly.
+                return new NoCodeResult(formatter.format(calendarValue));
+            }
+
+            // Existing format-date expressions historically accepted DateTime values at
+            // runtime despite declaring a Date parameter. Preserve that behavior while
+            // the dedicated format-datetime operator provides the correct editor contract.
+            return formatDateTimeValue(
+                    args[0],
+                    formatter,
+                    "Ungültiger Datumswert: " + castToString(args[0])
+            );
+        } catch (DateTimeException exception) {
+            throw incompatibleFormat();
+        }
+    }
+
+    protected final DateTimeFormatter requireFormatter(Object patternValue) throws NoCodeException {
+        var formatPattern = castToString(patternValue).trim();
 
         if (formatPattern.isEmpty()) {
             throw new NoCodeException("Das Datumsformat darf nicht leer sein.");
         }
 
-        final DateTimeFormatter formatter;
         try {
-            formatter = DateTimeFormatter
-                    .ofPattern(formatPattern, Locale.GERMAN)
-                    .withZone(ApplicationTimeZone.getZoneId());
-        } catch (Exception e) {
+            return DateTimeFormatter.ofPattern(formatPattern, Locale.GERMAN);
+        } catch (IllegalArgumentException exception) {
             throw new NoCodeException("Ungültiges Datumsformat: " + formatPattern);
         }
+    }
 
-        return new NoCodeResult(date.format(formatter));
+    protected final NoCodeResult formatDateTimeValue(
+            Object value,
+            DateTimeFormatter formatter,
+            String invalidValueMessage
+    ) throws NoCodeException {
+        var instant = requireDateTime(value, invalidValueMessage).toInstant();
+
+        try {
+            return new NoCodeResult(formatter.format(instant.atZone(businessTime.zoneId())));
+        } catch (DateTimeException exception) {
+            throw incompatibleFormat();
+        }
+    }
+
+    private NoCodeException incompatibleFormat() {
+        return new NoCodeException(
+                "Das gewählte Format ist für den übergebenen Datumswert nicht anwendbar."
+        );
     }
 }

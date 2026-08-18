@@ -1,18 +1,41 @@
 package de.aivot.gover.backend.plugins.core.v1.javascript;
 
+import de.aivot.gover.backend.core.services.BusinessTime;
 import de.aivot.gover.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.gover.backend.plugins.core.CorePlugin;
 import de.aivot.gover.backend.utils.ApplicationTimeZone;
+import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
+import org.graalvm.polyglot.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 
 @Service
 public class DateJavascriptV1 implements JavascriptFunctionProvider {
+    private static final DateTimeFormatter LOCAL_TIME_SECONDS_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    private final BusinessTime businessTime;
+
+    // JavascriptEngine is also used directly outside Spring, most notably in isolated
+    // script executions and tests. Production construction uses the injected BusinessTime.
+    public DateJavascriptV1() {
+        this(new BusinessTime(ApplicationTimeZone.getZoneId(), Clock.systemUTC()));
+    }
+
+    @Autowired
+    public DateJavascriptV1(BusinessTime businessTime) {
+        this.businessTime = businessTime;
+    }
+
     @Nonnull
     @Override
     public String getParentPluginKey() {
@@ -49,12 +72,20 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
                 "createDate(): Date;",
                 "today(): string;",
                 "now(): string;",
+                "todayIso(): string;",
+                "nowIso(): string;",
+                "getApplicationTimeZone(): string;",
+                "resolveDateTime(date: string, time: string): string | null;",
+                "toLocalDateIso(value: Date | string | number): string | null;",
+                "toLocalTimeIso(value: Date | string | number): string | null;",
                 "createDate(date: Date | string | number): Date | null;",
                 "isSameDay(dateA: Date | string | number, dateB: Date | string | number): boolean;",
                 "isBefore(dateA: Date | string | number, dateB: Date | string | number): boolean;",
                 "isBeforeOrSameDay(dateA: Date | string | number, dateB: Date | string | number): boolean;",
                 "isAfter(dateA: Date | string | number, dateB: Date | string | number): boolean;",
                 "isAfterOrSameDay(dateA: Date | string | number, dateB: Date | string | number): boolean;",
+                "isInstantBefore(dateA: Date | string | number, dateB: Date | string | number): boolean;",
+                "isInstantAfter(dateA: Date | string | number, dateB: Date | string | number): boolean;",
                 "addDays(date: Date | string | number, days: number): Date | null;",
                 "addWeeks(date: Date | string | number, weeks: number): Date | null;",
                 "addMonths(date: Date | string | number, months: number): Date | null;",
@@ -68,23 +99,9 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         };
     }
 
-    private static final DateTimeFormatter isoDateDateFormatter = DateTimeFormatter
-            .ofPattern("yyyy-MM-dd")
-            .withZone(ApplicationTimeZone.getZoneId());
-    private static final DateTimeFormatter germanDateFormatter = DateTimeFormatter
-            .ofPattern("dd.MM.yyyy")
-            .withZone(ApplicationTimeZone.getZoneId());
-    private static final DateTimeFormatter[] availableDateFormatters = new DateTimeFormatter[]{
-            DateTimeFormatter.ISO_DATE_TIME,
-            isoDateDateFormatter,
-            germanDateFormatter
-    };
-
     @HostAccess.Export
     public ZonedDateTime createDate() {
-        return LocalDate
-                .now()
-                .atStartOfDay(ApplicationTimeZone.getZoneId());
+        return businessTime.today().atStartOfDay(businessTime.zoneId());
     }
 
     @HostAccess.Export
@@ -95,8 +112,60 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
 
     @HostAccess.Export
     public String now() {
-        var date = createDate();
-        return formatDate(date, "dd.MM.yyyy hh:mm") + " Uhr";
+        return formatDate(businessTime.zonedNow(), "dd.MM.yyyy HH:mm") + " Uhr";
+    }
+
+    @HostAccess.Export
+    public String todayIso() {
+        return businessTime.today().toString();
+    }
+
+    @HostAccess.Export
+    public String nowIso() {
+        return IsoTimestampUtils.toOffsetString(businessTime.now(), businessTime.zoneId());
+    }
+
+    @HostAccess.Export
+    public String getApplicationTimeZone() {
+        return businessTime.zoneId().getId();
+    }
+
+    @Nullable
+    @HostAccess.Export
+    public String resolveDateTime(@Nullable String date, @Nullable String time) {
+        if (date == null || time == null) {
+            return null;
+        }
+
+        try {
+            var localDate = LocalDate.parse(date);
+            var localTime = parseLocalTime(time);
+            if (localTime == null) {
+                return null;
+            }
+
+            var instant = businessTime.resolve(LocalDateTime.of(localDate, localTime));
+            return IsoTimestampUtils.toOffsetString(instant, businessTime.zoneId());
+        } catch (DateTimeException ignored) {
+            // This includes malformed values and local date-times inside a DST gap.
+            return null;
+        }
+    }
+
+    @Nullable
+    @HostAccess.Export
+    public String toLocalDateIso(@Nullable Object value) {
+        var dateTime = createDate(value);
+        return dateTime == null ? null : dateTime.toLocalDate().toString();
+    }
+
+    @Nullable
+    @HostAccess.Export
+    public String toLocalTimeIso(@Nullable Object value) {
+        var dateTime = createDate(value);
+        return dateTime == null
+                ? null
+                : dateTime.toLocalTime().withNano(0).format(LOCAL_TIME_SECONDS_FORMATTER);
     }
 
     @Nullable
@@ -107,32 +176,119 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         }
 
         return switch (date) {
-            case ZonedDateTime zonedDateTime -> zonedDateTime;
-            case Number number -> {
-                long epochMilli = number.longValue();
-                yield ZonedDateTime.ofInstant(
-                        Instant.ofEpochSecond(epochMilli),
-                        ApplicationTimeZone.getZoneId()
-                );
-            }
-            case String dateString -> {
-                for (DateTimeFormatter formatter : availableDateFormatters) {
-                    try {
-                        yield LocalDate
-                                .parse(dateString, formatter)
-                                .atStartOfDay(ApplicationTimeZone.getZoneId());
-                    } catch (Exception e) {
-                        // Try next format
-                    }
-                }
-                yield null;
-            }
+            case ZonedDateTime zonedDateTime -> zonedDateTime.withZoneSameInstant(businessTime.zoneId());
+            case OffsetDateTime offsetDateTime -> offsetDateTime.toInstant().atZone(businessTime.zoneId());
+            case Instant instant -> instant.atZone(businessTime.zoneId());
+            case Date legacyDate -> legacyDate.toInstant().atZone(businessTime.zoneId());
+            case LocalDate localDate -> localDate.atStartOfDay(businessTime.zoneId());
+            case YearMonth yearMonth -> yearMonth.atDay(1).atStartOfDay(businessTime.zoneId());
+            case Year year -> year.atDay(1).atStartOfDay(businessTime.zoneId());
+            case LocalDateTime localDateTime -> resolveLocalDateTime(localDateTime);
+            case Number number -> Instant.ofEpochMilli(number.longValue()).atZone(businessTime.zoneId());
+            case Value guestValue -> parseGuestValue(guestValue);
+            case String dateString -> parseDateString(dateString);
             default -> null;
         };
     }
 
+    @Nullable
     @HostAccess.Export
-    public Boolean isSameDay(Object dateARaw, Object dateBRaw) {
+    public ZonedDateTime createDate(@Nullable Value date) {
+        // GraalJS resolves guest arguments to Value before ordinary Java conversions.
+        // In particular, a JavaScript Date does not reliably arrive as java.util.Date,
+        // so this overload must remain alongside createDate(Object).
+        if (date == null || date.isNull()) {
+            return null;
+        }
+        return parseGuestValue(date);
+    }
+
+    @Nullable
+    private ZonedDateTime parseGuestValue(@Nonnull Value value) {
+        try {
+            if (value.isString()) {
+                return parseDateString(value.asString());
+            }
+            if (value.isNumber()) {
+                // JavaScript numbers are represented as doubles by GraalJS. Epoch
+                // milliseconds are integral within JavaScript's safe integer range.
+                return parseGuestEpochMillis(value);
+            }
+            if (value.canInvokeMember("getTime")) {
+                // A JavaScript Date is a guest object. Calling getTime() through the
+                // Polyglot API is the stable way to obtain its absolute epoch value.
+                var epochMillis = value.invokeMember("getTime");
+                if (epochMillis.isNumber()) {
+                    return parseGuestEpochMillis(epochMillis);
+                }
+            }
+        } catch (RuntimeException ignored) {
+            // Guest member access and type conversion can throw PolyglotException or
+            // ClassCastException. Invalid script input follows the provider's null contract.
+            return null;
+        }
+        return null;
+    }
+
+    @Nullable
+    private ZonedDateTime parseGuestEpochMillis(@Nonnull Value value) {
+        var epochMillis = value.asDouble();
+        // Invalid JavaScript Date instances return NaN from getTime(). Casting NaN to
+        // long would otherwise turn invalid input into 1970-01-01T00:00:00Z.
+        if (!Double.isFinite(epochMillis)) {
+            return null;
+        }
+        return Instant.ofEpochMilli((long) epochMillis).atZone(businessTime.zoneId());
+    }
+
+    @Nullable
+    private ZonedDateTime parseDateString(@Nonnull String value) {
+        try {
+            return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE)
+                    .atStartOfDay(businessTime.zoneId());
+        } catch (DateTimeParseException ignored) {
+            // JavaScript exposes only one Date type. Partial calendar values therefore
+            // use their first representable day when entering this compatibility API.
+            try {
+                return YearMonth.parse(value).atDay(1).atStartOfDay(businessTime.zoneId());
+            } catch (DateTimeParseException ignoredMonth) {
+                try {
+                    return Year.parse(value).atDay(1).atStartOfDay(businessTime.zoneId());
+                } catch (DateTimeParseException ignoredYear) {
+                    try {
+                        return IsoTimestampUtils.parseIsoInstant(value).atZone(businessTime.zoneId());
+                    } catch (DateTimeParseException ignoredInstant) {
+                        return null;
+                    }
+                }
+            }
+        }
+    }
+
+    @Nullable
+    private LocalTime parseLocalTime(@Nonnull String value) {
+        if (!value.matches("^\\d{2}:\\d{2}(?::\\d{2})?$")) {
+            return null;
+        }
+
+        try {
+            return LocalTime.parse(value).withNano(0);
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private ZonedDateTime resolveLocalDateTime(@Nonnull LocalDateTime value) {
+        try {
+            return businessTime.resolve(value).atZone(businessTime.zoneId());
+        } catch (DateTimeException ignored) {
+            return null;
+        }
+    }
+
+    @HostAccess.Export
+    public boolean isSameDay(Object dateARaw, Object dateBRaw) {
         var dateA = createDate(dateARaw);
         var dateB = createDate(dateBRaw);
 
@@ -140,19 +296,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
             return false;
         }
 
-        if (dateA.getYear() != dateB.getYear()) {
-            return false;
-        }
-
-        if (dateA.getMonth() != dateB.getMonth()) {
-            return false;
-        }
-
-        if (dateA.getDayOfMonth() != dateB.getDayOfMonth()) {
-            return false;
-        }
-
-        return true;
+        return dateA.toLocalDate().equals(dateB.toLocalDate());
     }
 
     @HostAccess.Export
@@ -164,31 +308,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
             return false;
         }
 
-        if (dateA.getYear() > dateB.getYear()) {
-            return false;
-        }
-
-        if (dateA.getYear() < dateB.getYear()) {
-            return true;
-        }
-
-        if (dateA.getMonthValue() > dateB.getMonthValue()) {
-            return false;
-        }
-
-        if (dateA.getMonthValue() < dateB.getMonthValue()) {
-            return true;
-        }
-
-        if (dateA.getDayOfMonth() > dateB.getDayOfMonth()) {
-            return false;
-        }
-
-        if (dateA.getDayOfMonth() < dateB.getDayOfMonth()) {
-            return true;
-        }
-
-        return false;
+        return dateA.toLocalDate().isBefore(dateB.toLocalDate());
     }
 
     @HostAccess.Export
@@ -196,7 +316,9 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         var dateA = createDate(dateARaw);
         var dateB = createDate(dateBRaw);
 
-        return isBefore(dateA, dateB) || isSameDay(dateA, dateB);
+        return dateA != null &&
+                dateB != null &&
+                !dateA.toLocalDate().isAfter(dateB.toLocalDate());
     }
 
     @HostAccess.Export
@@ -208,31 +330,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
             return false;
         }
 
-        if (dateA.getYear() < dateB.getYear()) {
-            return false;
-        }
-
-        if (dateA.getYear() > dateB.getYear()) {
-            return true;
-        }
-
-        if (dateA.getMonthValue() < dateB.getMonthValue()) {
-            return false;
-        }
-
-        if (dateA.getMonthValue() > dateB.getMonthValue()) {
-            return true;
-        }
-
-        if (dateA.getDayOfMonth() < dateB.getDayOfMonth()) {
-            return false;
-        }
-
-        if (dateA.getDayOfMonth() > dateB.getDayOfMonth()) {
-            return true;
-        }
-
-        return false;
+        return dateA.toLocalDate().isAfter(dateB.toLocalDate());
     }
 
     @HostAccess.Export
@@ -240,9 +338,32 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         var dateA = createDate(dateARaw);
         var dateB = createDate(dateBRaw);
 
-        return isAfter(dateA, dateB) || isSameDay(dateA, dateB);
+        return dateA != null &&
+                dateB != null &&
+                !dateA.toLocalDate().isBefore(dateB.toLocalDate());
     }
 
+    @HostAccess.Export
+    public boolean isInstantBefore(Object dateARaw, Object dateBRaw) {
+        var dateA = createDate(dateARaw);
+        var dateB = createDate(dateBRaw);
+
+        return dateA != null &&
+                dateB != null &&
+                dateA.toInstant().isBefore(dateB.toInstant());
+    }
+
+    @HostAccess.Export
+    public boolean isInstantAfter(Object dateARaw, Object dateBRaw) {
+        var dateA = createDate(dateARaw);
+        var dateB = createDate(dateBRaw);
+
+        return dateA != null &&
+                dateB != null &&
+                dateA.toInstant().isAfter(dateB.toInstant());
+    }
+
+    @Nullable
     @HostAccess.Export
     public ZonedDateTime addDays(Object dateRaw, int days) {
         var date = createDate(dateRaw);
@@ -254,6 +375,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         return date.plusDays(days);
     }
 
+    @Nullable
     @HostAccess.Export
     public ZonedDateTime addWeeks(Object dateRaw, int weeks) {
         var date = createDate(dateRaw);
@@ -265,6 +387,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         return date.plusWeeks(weeks);
     }
 
+    @Nullable
     @HostAccess.Export
     public ZonedDateTime addMonths(Object dateRaw, int months) {
         var date = createDate(dateRaw);
@@ -276,6 +399,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         return date.plusMonths(months);
     }
 
+    @Nullable
     @HostAccess.Export
     public ZonedDateTime addYears(Object dateRaw, int years) {
         var date = createDate(dateRaw);
@@ -287,6 +411,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         return date.plusYears(years);
     }
 
+    @Nullable
     @HostAccess.Export
     public ZonedDateTime subtractDays(Object dateRaw, int days) {
         var date = createDate(dateRaw);
@@ -298,6 +423,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         return date.minusDays(days);
     }
 
+    @Nullable
     @HostAccess.Export
     public ZonedDateTime subtractWeeks(Object dateRaw, int weeks) {
         var date = createDate(dateRaw);
@@ -309,6 +435,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         return date.minusWeeks(weeks);
     }
 
+    @Nullable
     @HostAccess.Export
     public ZonedDateTime subtractMonths(Object dateRaw, int months) {
         var date = createDate(dateRaw);
@@ -320,6 +447,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         return date.minusMonths(months);
     }
 
+    @Nullable
     @HostAccess.Export
     public ZonedDateTime subtractYears(Object dateRaw, int years) {
         var date = createDate(dateRaw);
@@ -343,13 +471,14 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         try {
             var formatter = DateTimeFormatter
                     .ofPattern(format)
-                    .withZone(ApplicationTimeZone.getZoneId());
+                    .withZone(businessTime.zoneId());
             return formatter.format(date);
         } catch (Exception e) {
             return null;
         }
     }
 
+    @Nullable
     @HostAccess.Export
     public Number diff(Object startRaw, Object endRaw, String unit) {
         var start = createDate(startRaw);
@@ -359,9 +488,10 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
             return null;
         }
 
+        var calendarDays = ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate());
         return switch (unit.toLowerCase()) {
-            case "days" -> (int) Duration.between(start.toLocalDate().atStartOfDay(), end.toLocalDate().atStartOfDay()).toDays();
-            case "weeks" -> Duration.between(start.toLocalDate().atStartOfDay(), end.toLocalDate().atStartOfDay()).toDays() / 7.f;
+            case "days" -> (int) calendarDays;
+            case "weeks" -> calendarDays / 7.f;
             case "months" -> (end.getYear() - start.getYear()) * 12 + (end.getMonthValue() - start.getMonthValue());
             case "years" -> end.getYear() - start.getYear();
             default -> null;

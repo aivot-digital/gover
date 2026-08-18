@@ -28,6 +28,10 @@ const returnTypeOptions: SelectFieldComponentOption[] = [
         value: NoCodeInputFieldReturnType.DATETIME,
         label: 'Datum und Uhrzeit',
     },
+    {
+        value: NoCodeInputFieldReturnType.TIME,
+        label: 'Uhrzeit',
+    },
 ];
 
 export function NoCodeInputFieldEditor(props: BaseEditorProps<NoCodeInputFieldElement>) {

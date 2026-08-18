@@ -10,7 +10,6 @@ import Skeleton from '@mui/material/Skeleton';
 import Typography from '@mui/material/Typography';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import List from '@mui/material/List';
-import {format} from 'date-fns/format';
 import MoreVertOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import {useConfirm} from '../../../providers/confirm-provider';
 import {withDelay} from '../../../utils/with-delay';
@@ -44,6 +43,7 @@ import {type ProcessTestClaimEntity} from '../entities/process-test-claim-entity
 import {type User} from '../../users/models/user';
 import {UsersApiService} from '../../users/users-api-service';
 import {resolveUserName} from '../../users/utils/resolve-user-name';
+import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
 
 function deriveProcessFromVersions(
     process: ProcessEntity,
@@ -658,8 +658,8 @@ function VersionListItem(props: VersionListItemProps) {
 
     const subtext = useMemo(() => {
         const _format = (val: string | null | undefined) => {
-            const fallback = updated != null ? new Date(updated) : new Date();
-            return format(val ?? fallback, 'dd.MM.yyyy – HH:mm') + ' Uhr';
+            const formatted = formatInstantInApplicationTimeZone(val ?? updated, 'dd.MM.yyyy – HH:mm');
+            return formatted != null ? `${formatted} Uhr` : '—';
         };
 
         let statusText = '';

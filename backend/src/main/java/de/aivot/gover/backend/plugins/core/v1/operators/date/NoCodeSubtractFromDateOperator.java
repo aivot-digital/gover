@@ -3,7 +3,6 @@ package de.aivot.gover.backend.plugins.core.v1.operators.date;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.nocode.enums.NoCodeDataType;
 import de.aivot.gover.backend.nocode.exceptions.NoCodeException;
-import de.aivot.gover.backend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import de.aivot.gover.backend.nocode.models.*;
 import jakarta.annotation.Nullable;
 
@@ -53,6 +52,9 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
                 Verwenden Sie **„Von Datum subtrahieren“**, wenn Sie:
                 - Datumsarithmetik durchführen müssen. \s
                 - Vergangene Daten basierend auf einem gegebenen Datum berechnen möchten.
+
+                Teil-Datumswerte behalten ihre Präzision. Monate können nur um Monate oder Jahre,
+                reine Jahreswerte nur um Jahre verschoben werden.
                 """;
     }
 
@@ -92,22 +94,11 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        if (args.length != 3) {
-            throw new NoCodeWrongArgumentCountException(3, args.length);
-        }
-
-        var date = requireDateTime(args[0], "Ungültiger Datumswert: " + castToString(args[0]));
-        var amount = castToNumber(args[1]).intValue();
+        var date = requireCalendarValue(args[0], "Ungültiger Datumswert: " + castToString(args[0]));
+        var amount = requireInteger(args[1], "Die Anzahl muss eine ganze Zahl sein.");
         var unit = castToString(args[2]).trim().toLowerCase(Locale.ROOT);
 
-        date = switch (unit) {
-            case NoCodeAddToDateOperator.DAYS_UNIT -> date.minusDays(amount);
-            case NoCodeAddToDateOperator.WEEKS_UNIT -> date.minusWeeks(amount);
-            case NoCodeAddToDateOperator.MONTHS_UNIT -> date.minusMonths(amount);
-            case NoCodeAddToDateOperator.YEARS_UNIT -> date.minusYears(amount);
-            default -> throw new NoCodeException("Ungültige Einheit: " + unit);
-        };
-
-        return new NoCodeResult(date);
+        // Widen before negation so Integer.MIN_VALUE remains representable.
+        return new NoCodeResult(NoCodeAddToDateOperator.adjustDate(date, -(long) amount, unit));
     }
 }

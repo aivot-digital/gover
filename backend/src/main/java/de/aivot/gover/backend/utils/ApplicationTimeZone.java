@@ -7,6 +7,8 @@ import java.time.ZoneId;
 public final class ApplicationTimeZone {
     public static final String DEFAULT_TIMEZONE = "Europe/Berlin";
 
+    // Static and non-Spring code paths cannot inject BusinessTime. This bridge is
+    // configured once from GoverConfig during startup and remains visible across threads.
     private static volatile ZoneId zoneId = resolveInitialZoneId();
 
     private ApplicationTimeZone() {

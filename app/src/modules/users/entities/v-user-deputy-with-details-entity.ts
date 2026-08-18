@@ -1,7 +1,9 @@
+import {LocalDateIso} from '../../../utils/temporal-types';
+
 export interface VUserDeputyWithDetailsEntity {
     id: number;
-    fromTimestamp: string;
-    untilTimestamp: string | null;
+    fromDate: LocalDateIso;
+    untilDate: LocalDateIso | null;
     active: boolean;
 
     originalUserId: string;

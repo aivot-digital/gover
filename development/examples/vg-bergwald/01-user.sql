@@ -44,43 +44,43 @@ on conflict (id) do update
         enabled        = excluded.enabled,
         deleted_in_idp = excluded.deleted_in_idp;
 
--- create deputies
-insert into user_deputies (id, original_user_id, deputy_user_id, from_timestamp, until_timestamp)
+-- create deputies with inclusive calendar-date boundaries
+insert into user_deputies (id, original_user_id, deputy_user_id, from_date, until_date)
 values
     -- indefinite deputy
     (1,
      '00000000-0000-0000-0000-000000000001',
      '00000000-0000-0000-0000-000000000002',
-     now() - interval '1 day', null),
+     current_date - 1, null),
     -- deputy in the past
     (2,
      '00000000-0000-0000-0000-000000000001',
      '00000000-0000-0000-0000-000000000002',
-     now() - interval '10 days',
-     now() - interval '5 days'),
+     current_date - 10,
+     current_date - 5),
     -- deputy in the future
     (3,
      '00000000-0000-0000-0000-000000000001',
      '00000000-0000-0000-0000-000000000002',
-     now() + interval '5 days',
-     now() + interval '10 days'),
+     current_date + 5,
+     current_date + 10),
     -- current deputy
     (4,
      '00000000-0000-0000-0000-000000000001',
      '00000000-0000-0000-0000-000000000002',
-     now() - interval '1 day',
-     now() + interval '3 day'),
--- current deputy
+     current_date - 1,
+     current_date + 3),
+    -- current deputy
     (5,
      '00000000-0000-0000-0000-000000000002',
      '00000000-0000-0000-0000-000000000003',
-     now() - interval '1 day',
-     now() + interval '1 day')
+     current_date - 1,
+     current_date + 1)
 on conflict (id) do update
     set original_user_id = excluded.original_user_id,
         deputy_user_id   = excluded.deputy_user_id,
-        from_timestamp   = excluded.from_timestamp,
-        until_timestamp  = excluded.until_timestamp;
+        from_date        = excluded.from_date,
+        until_date       = excluded.until_date;
 
 -- fix id sequence for user_deputies
 select setval('user_deputies_id_seq',

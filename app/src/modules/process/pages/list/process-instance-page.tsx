@@ -32,6 +32,7 @@ import {GenericPageHeaderProps} from '../../../../components/generic-page-header
 import {GridColDef} from '@mui/x-data-grid';
 import {Chip} from '../../../../components/chip/chip';
 import {ProcessInstanceStatusIcon} from '../../components/process-instance-status-icon';
+import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 
 
 const Filters: GenericListFilter[] = [
@@ -266,15 +267,8 @@ export function ProcessInstanceListPage(): ReactNode {
             width: 200,
             renderCell: (params) => {
                 if (params.row.started === undefined || params.row.started === null || params.row.started === '') return '—';
-                const date = new Date(params.row.started);
-                return new Intl.DateTimeFormat('de-DE', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                }).format(date).replace(',', ' –') + ' Uhr';
+                const formatted = formatInstantInApplicationTimeZone(params.row.started, 'dd.MM.yyyy – HH:mm');
+                return formatted != null ? `${formatted} Uhr` : '—';
             },
         },
     ], []);

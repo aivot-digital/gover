@@ -18,6 +18,7 @@ import {Link} from 'react-router-dom';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import type {ProcessEntity} from '../../process/entities/process-entity';
 import {ProcessDefinitionApiService} from '../../process/services/process-definition-api-service';
+import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
 
 const fetchSize = 4;
 
@@ -26,20 +27,8 @@ function formatUpdatedAt(value: string): string {
         return 'Unbekannt';
     }
 
-    const normalized = value.replace(/(\.\d{3})\d+/, '$1');
-    const date = new Date(normalized);
-
-    if (Number.isNaN(date.getTime())) {
-        return 'Unbekannt';
-    }
-
-    return `${new Intl.DateTimeFormat('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(date)} Uhr`;
+    const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy, HH:mm');
+    return formatted != null ? `${formatted} Uhr` : 'Unbekannt';
 }
 
 function createProcessLink(process: ProcessEntity): string {

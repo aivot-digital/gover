@@ -8,15 +8,10 @@ import {useApi} from '../../../hooks/use-api';
 import {PresetVersionApiService} from '../../../modules/presets/preset-version-api-service';
 import {type ReactNode} from 'react';
 import {SelectionDetailsPanel} from '../../../components/selection-dialog/selection-details-panel';
+import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
 
 function formatDateTime(value: string): string {
-    return new Intl.DateTimeFormat('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(new Date(value));
+    return formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy, HH:mm') ?? 'Unbekannt';
 }
 
 function getPresetSummary(preset: Preset): string {

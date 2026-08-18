@@ -4,13 +4,15 @@ import {AppInfo} from '../app-info';
 import {AuthoredElementValues, hasAuthoredElementValuesSomeInput} from '../models/element-data';
 import {cleanAuthoredElementValues} from '../utils/element-data-utils';
 import {FormLayoutElement} from '../models/elements/form-layout-element';
+import {InstantIso} from '../utils/temporal-types';
+import {isInstantIso} from '../utils/temporal-utils';
 
 const MAJOR_VERSION = AppInfo.version.split('.')[0];
 const DATA_KEY = 'state';
 const DATE_KEY = 'date';
 
 export interface CustomerInputDraft {
-    date: Date;
+    date: InstantIso;
     data: AuthoredElementValues;
 }
 
@@ -29,21 +31,13 @@ export class CustomerInputService {
         return null;
     }
 
-    public static loadCustomerInputDate(processSlug: string, formSlug: string, version: number): Date | null {
+    public static loadCustomerInputDate(processSlug: string, formSlug: string, version: number): InstantIso | null {
         const rawDate = this
             .getKeys(processSlug, formSlug, version, DATE_KEY)
             .map((key) => StorageService.loadString_unsafe(key))
             .find((value) => value != null);
 
-        if (rawDate != null) {
-            try {
-                const date = new Date(rawDate);
-                return Number.isNaN(date.getTime()) ? null : date;
-            } catch (e) {
-                return null;
-            }
-        }
-        return null;
+        return isInstantIso(rawDate) ? rawDate : null;
     }
 
     public static loadCustomerInputState(processSlug: string, formSlug: string, version: number): AuthoredElementValues | null {

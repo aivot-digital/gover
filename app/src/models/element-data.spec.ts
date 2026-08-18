@@ -56,6 +56,21 @@ describe('hasAnyErrorRecursivelyInParent', () => {
         expect(hasAnyErrorRecursivelyInParent(parent, elementStates)).toBe(true);
     });
 
+    it('should detect an empty error marker on the parent itself', () => {
+        const parent = {
+            id: 'parent',
+            type: ElementType.Step,
+            children: [],
+        } as any;
+        const elementStates: ComputedElementStates = {
+            parent: {
+                error: '',
+            },
+        };
+
+        expect(hasAnyErrorRecursivelyInParent(parent, elementStates)).toBe(true);
+    });
+
     it('should detect errors in regular descendants of the parent', () => {
         const parent = {
             id: 'parent',
@@ -120,6 +135,42 @@ describe('hasAnyErrorRecursivelyInParent', () => {
         expect(hasAnyErrorRecursivelyInParent(parent, elementStates)).toBe(true);
     });
 
+    it('should detect empty error markers in replicated row descendants', () => {
+        const parent = {
+            id: 'parent',
+            type: ElementType.Step,
+            children: [
+                {
+                    id: 'list',
+                    type: ElementType.ReplicatingContainer,
+                    children: [
+                        {
+                            id: 'rowField',
+                            type: ElementType.Text,
+                        },
+                    ],
+                },
+            ],
+        } as any;
+        const elementStates: ComputedElementStates = {
+            parent: {},
+            list: {
+                subStates: [
+                    {
+                        id: 'row-1',
+                        states: {
+                            rowField: {
+                                error: '',
+                            },
+                        },
+                    },
+                ],
+            },
+        };
+
+        expect(hasAnyErrorRecursivelyInParent(parent, elementStates)).toBe(true);
+    });
+
     it('should ignore errors outside the parent element tree', () => {
         const parent = {
             id: 'parent',
@@ -134,10 +185,9 @@ describe('hasAnyErrorRecursivelyInParent', () => {
         const elementStates: ComputedElementStates = {
             parent: {},
             field: {
-                error: '',
             },
             sibling: {
-                error: 'Sibling error',
+                error: '',
             },
         };
 

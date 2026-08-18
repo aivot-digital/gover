@@ -1,21 +1,21 @@
 import {Grid, Typography, useTheme} from '@mui/material';
 import {BaseSummaryProps} from './base-summary';
 import {DateTimeRangeFieldElement, DateTimeRangeValue} from '../models/elements/form/input/date-time-range-field-element';
-import {format} from 'date-fns';
 import {TimeFieldComponentModelMode} from '../models/elements/form/input/time-field-element';
+import {formatInstantInApplicationTimeZone} from '../utils/temporal-utils';
 
 export function DateTimeRangeFieldSummary(props: BaseSummaryProps<DateTimeRangeFieldElement, DateTimeRangeValue>) {
     const theme = useTheme();
 
-    const startDate = props.value?.start != null ? new Date(props.value.start) : null;
-    const endDate = props.value?.end != null ? new Date(props.value.end) : null;
-    const isBothEmpty = startDate == null && endDate == null;
+    const isBothEmpty = props.value?.start == null && props.value?.end == null;
     const formatPattern = (props.model.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second
         ? 'dd.MM.yyyy HH:mm:ss'
         : 'dd.MM.yyyy HH:mm';
 
-    const startLabel = startDate != null && !isNaN(startDate.getTime()) ? `${format(startDate, formatPattern)} Uhr` : 'Keine Angabe';
-    const endLabel = endDate != null && !isNaN(endDate.getTime()) ? `${format(endDate, formatPattern)} Uhr` : 'Keine Angabe';
+    const formattedStart = formatInstantInApplicationTimeZone(props.value?.start, formatPattern);
+    const formattedEnd = formatInstantInApplicationTimeZone(props.value?.end, formatPattern);
+    const startLabel = formattedStart != null ? `${formattedStart} Uhr` : 'Keine Angabe';
+    const endLabel = formattedEnd != null ? `${formattedEnd} Uhr` : 'Keine Angabe';
 
     return (
         <Grid

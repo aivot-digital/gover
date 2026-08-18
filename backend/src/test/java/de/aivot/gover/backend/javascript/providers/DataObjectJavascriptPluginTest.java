@@ -10,6 +10,7 @@ import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement
 import de.aivot.gover.backend.javascript.models.JavascriptCode;
 import de.aivot.gover.backend.javascript.services.JavascriptEngine;
 import de.aivot.gover.backend.plugins.core.v1.javascript.DataObjectJavascriptV1;
+import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -76,8 +77,8 @@ class DataObjectJavascriptPluginTest {
             assertEquals("Ada", item.get("name"));
             assertEquals("active", item.get("status"));
             assertEquals("item-1", item.get("$id"));
-            assertEquals(CREATED.toString(), item.get("$created"));
-            assertEquals(UPDATED.toString(), item.get("$updated"));
+            assertEquals(instantWithApplicationOffset(CREATED), item.get("$created"));
+            assertEquals(instantWithApplicationOffset(UPDATED), item.get("$updated"));
 
             verify(dataObjectItemService).list(filterCaptor.capture());
             assertEquals("contacts", filterCaptor.getValue().getSchemaKey());
@@ -129,11 +130,15 @@ class DataObjectJavascriptPluginTest {
 
             assertEquals("Ada", item.get("name"));
             assertEquals("item-1", item.get("$id"));
-            assertEquals(CREATED.toString(), item.get("$created"));
-            assertEquals(UPDATED.toString(), item.get("$updated"));
+            assertEquals(instantWithApplicationOffset(CREATED), item.get("$created"));
+            assertEquals(instantWithApplicationOffset(UPDATED), item.get("$updated"));
         } catch (Exception e) {
             fail(e);
         }
+    }
+
+    private static String instantWithApplicationOffset(Instant value) {
+        return IsoTimestampUtils.toOffsetString(value);
     }
 
     @Test

@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "user_deputies")
@@ -31,10 +31,10 @@ public class UserDeputyEntity {
 
     @Nonnull
     @NotNull(message = "Das Startdatum der Vertretung darf nicht null sein.")
-    private LocalDateTime fromTimestamp;
+    private LocalDate fromDate;
 
     @Nullable
-    private LocalDateTime untilTimestamp;
+    private LocalDate untilDate;
 
     @Nonnull
     public Integer getId() {
@@ -67,22 +67,22 @@ public class UserDeputyEntity {
     }
 
     @Nonnull
-    public LocalDateTime getFromTimestamp() {
-        return fromTimestamp;
+    public LocalDate getFromDate() {
+        return fromDate;
     }
 
-    public UserDeputyEntity setFromTimestamp(@Nonnull LocalDateTime fromTimestamp) {
-        this.fromTimestamp = fromTimestamp;
+    public UserDeputyEntity setFromDate(@Nonnull LocalDate fromDate) {
+        this.fromDate = fromDate;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getUntilTimestamp() {
-        return untilTimestamp;
+    public LocalDate getUntilDate() {
+        return untilDate;
     }
 
-    public UserDeputyEntity setUntilTimestamp(@Nullable LocalDateTime untilTimestamp) {
-        this.untilTimestamp = untilTimestamp;
+    public UserDeputyEntity setUntilDate(@Nullable LocalDate untilDate) {
+        this.untilDate = untilDate;
         return this;
     }
 }
