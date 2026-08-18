@@ -26,6 +26,7 @@ import de.aivot.gover.backend.identity.repositories.IdentityProviderRepository;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.models.config.GotenbergConfig;
 import de.aivot.gover.backend.models.config.GoverConfig;
+import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.gover.backend.payment.repositories.PaymentTransactionRepository;
 import de.aivot.gover.backend.payment.services.PaymentProviderDefinitionsService;
@@ -247,6 +248,23 @@ public class PdfService {
          */
 
         return generatePdf(formLayoutElement, dto, scope, processInstance.getProcessId());
+    }
+
+    public byte[] generatePaymentConfirmation(@Nonnull PaymentTransactionEntity transaction,
+                                              @Nonnull String caseNumber,
+                                              @Nullable String logoUrl,
+                                              @Nonnull VDepartmentShadowedEntity department) throws IOException, InterruptedException, URISyntaxException {
+        var dto = new HashMap<String, Object>();
+        dto.put("transaction", transaction);
+        dto.put("caseNumber", caseNumber);
+        dto.put("logoUrl", logoUrl);
+        dto.put("department", department);
+        dto.put("generatedAt", Instant.now().toString());
+
+        var contentHtml = loadTemplate("payment-confirmation/form-trigger-payment-confirmation.html", dto);
+        var footerHtml = loadTemplate("payment-confirmation/form-trigger-payment-confirmation-footer.html", dto);
+
+        return generatePdfFromHtml(contentHtml, null, footerHtml);
     }
 
     private DerivedRuntimeElementData deriveBlankPrintableElementData(FormLayoutElement form) {

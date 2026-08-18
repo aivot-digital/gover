@@ -77,7 +77,9 @@ class PaymentPayloadCreationServiceTest {
                         null,
                         new BigDecimal("19.00"),
                         Map.of("case", "{{ $.caseNumber }}")
-                ))
+                )),
+                null,
+                null
         );
 
         var request = createService().createRequest(config, null, processData).orElseThrow();
@@ -144,6 +146,25 @@ class PaymentPayloadCreationServiceTest {
     }
 
     @Test
+    void shouldCreateFixedPersonRequestorWithoutOptionalFields() throws PaymentException {
+        var request = createService()
+                .createRequest(
+                        requestorConfig(emptyRequestorMapping(PaymentConfigElementValueRequestorMapping.RequestorSourceType.FixPerson, null)),
+                        null,
+                        new ProcessExecutionData()
+                )
+                .orElseThrow();
+
+        var requestor = request.getRequestor();
+        assertEquals(false, requestor.getOrganization());
+        assertNull(requestor.getLastName());
+        assertNull(requestor.getFirstName());
+        assertNull(requestor.getGender());
+        assertNull(requestor.getOrganizationName());
+        assertNull(requestor.getAddress());
+    }
+
+    @Test
     void shouldCreateFixedOrganizationRequestor() throws PaymentException {
         var processData = new ProcessExecutionData().addProcessData(Map.of(
                 "company", Map.of(
@@ -181,6 +202,25 @@ class PaymentPayloadCreationServiceTest {
         assertNull(requestor.getFirstName());
         assertNull(requestor.getGender());
         assertEquals("Hamburg", requestor.getAddress().getCity());
+    }
+
+    @Test
+    void shouldCreateFixedOrganizationRequestorWithoutOptionalFields() throws PaymentException {
+        var request = createService()
+                .createRequest(
+                        requestorConfig(emptyRequestorMapping(PaymentConfigElementValueRequestorMapping.RequestorSourceType.FixOrg, null)),
+                        null,
+                        new ProcessExecutionData()
+                )
+                .orElseThrow();
+
+        var requestor = request.getRequestor();
+        assertEquals(true, requestor.getOrganization());
+        assertNull(requestor.getOrganizationName());
+        assertNull(requestor.getLastName());
+        assertNull(requestor.getFirstName());
+        assertNull(requestor.getGender());
+        assertNull(requestor.getAddress());
     }
 
     @Test
@@ -222,6 +262,29 @@ class PaymentPayloadCreationServiceTest {
         assertNull(requestor.getLastName());
         assertNull(requestor.getFirstName());
         assertEquals("Munich", requestor.getAddress().getCity());
+    }
+
+    @Test
+    void shouldCreateDynamicRequestorWithOnlyOrganizationFlag() throws PaymentException {
+        var processData = new ProcessExecutionData().addProcessData(Map.of(
+                "requestor", Map.of("isOrganization", false)
+        ));
+
+        var request = createService()
+                .createRequest(
+                        requestorConfig(emptyRequestorMapping(PaymentConfigElementValueRequestorMapping.RequestorSourceType.ProcessDataKey, "requestor.isOrganization")),
+                        null,
+                        processData
+                )
+                .orElseThrow();
+
+        var requestor = request.getRequestor();
+        assertEquals(false, requestor.getOrganization());
+        assertNull(requestor.getLastName());
+        assertNull(requestor.getFirstName());
+        assertNull(requestor.getGender());
+        assertNull(requestor.getOrganizationName());
+        assertNull(requestor.getAddress());
     }
 
     @Test
@@ -275,7 +338,9 @@ class PaymentPayloadCreationServiceTest {
                         JavascriptCode.of("$.count + 1"),
                         BigDecimal.ZERO,
                         null
-                ))
+                )),
+                null,
+                null
         );
 
         var request = createService().createRequest(config, null, processData).orElseThrow();
@@ -310,7 +375,9 @@ class PaymentPayloadCreationServiceTest {
                         null,
                         new BigDecimal("19.00"),
                         null
-                ))
+                )),
+                null,
+                null
         );
 
         var request = createService().createRequest(config, null, new ProcessExecutionData()).orElseThrow();
@@ -344,12 +411,34 @@ class PaymentPayloadCreationServiceTest {
                         null,
                         BigDecimal.ZERO,
                         null
-                ))
+                )),
+                null,
+                null
         );
 
         assertThrows(
                 PaymentException.class,
                 () -> createService().createRequest(config, null, new ProcessExecutionData())
+        );
+    }
+
+    private static PaymentConfigElementValueRequestorMapping emptyRequestorMapping(
+            PaymentConfigElementValueRequestorMapping.RequestorSourceType sourceType,
+            String isOrganizationDestinationKey
+    ) {
+        return new PaymentConfigElementValueRequestorMapping(
+                sourceType,
+                null,
+                null,
+                null,
+                isOrganizationDestinationKey,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
         );
     }
 
@@ -377,7 +466,9 @@ class PaymentPayloadCreationServiceTest {
                         null,
                         BigDecimal.ZERO,
                         null
-                ))
+                )),
+                null,
+                null
         );
     }
 

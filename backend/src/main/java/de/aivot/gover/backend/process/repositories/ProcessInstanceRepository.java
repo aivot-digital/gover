@@ -10,9 +10,12 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 public interface ProcessInstanceRepository extends JpaRepository<ProcessInstanceEntity, Long>, JpaSpecificationExecutor<ProcessInstanceEntity> {
     List<ProcessInstanceEntity> findAllByStatus(ProcessInstanceStatus status);
+
+    Optional<ProcessInstanceEntity> findByAccessKey(String accessKey);
 
     List<ProcessInstanceEntity> findAllByStatusAndKeepUntilLessThanEqual(ProcessInstanceStatus status,
                                                                          Instant keepUntil,

@@ -8,19 +8,33 @@ import de.aivot.gover.backend.department.services.VDepartmentShadowedService;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
+import de.aivot.gover.backend.enums.XBezahldienstStatus;
 import de.aivot.gover.backend.identity.services.IdentityProviderService;
 import de.aivot.gover.backend.identity.services.IdentityService;
+import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.models.config.GoverConfig;
+import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.gover.backend.payment.models.XBezahldienstePaymentInformation;
+import de.aivot.gover.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.gover.backend.payment.services.PaymentPayloadCreationService;
+import de.aivot.gover.backend.payment.services.PaymentProviderDefinitionsService;
+import de.aivot.gover.backend.payment.services.PaymentTransactionService;
 import de.aivot.gover.backend.process.entities.ProcessEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.entities.ProcessTestClaimEntity;
 import de.aivot.gover.backend.process.entities.ProcessVersionEntity;
+import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import de.aivot.gover.backend.process.enums.ProcessVersionStatus;
 import de.aivot.gover.backend.process.filters.ProcessVersionFilter;
 import de.aivot.gover.backend.process.filters.ProcessNodeFilter;
 import de.aivot.gover.backend.process.services.*;
+import de.aivot.gover.backend.services.PdfService;
+import de.aivot.gover.backend.storage.services.StorageService;
 import de.aivot.gover.backend.storage.services.StorageProviderService;
 import de.aivot.gover.backend.submission.services.ElementDataTransformService;
 import de.aivot.gover.backend.system.services.SystemService;
@@ -29,14 +43,22 @@ import de.aivot.gover.backend.theme.services.ThemeService;
 import de.aivot.gover.backend.user.entities.UserEntity;
 import de.aivot.gover.backend.user.services.UserService;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -162,6 +184,341 @@ class FormTriggerControllerV1Test {
         assertEquals("https://gover.example/assets/default-favicon.ico", response.getRedirectedUrl());
     }
 
+    @Test
+    void getPrintShouldStreamSubmittedSummaryPdf() throws Exception {
+        var fixture = createPrintFixture(true);
+        var pdfBytes = new byte[]{37, 80, 68, 70};
+        when(fixture.storageService().getDocumentContent(7, "/summary.pdf"))
+                .thenReturn(new ByteArrayInputStream(pdfBytes));
+
+        var response = new MockHttpServletResponse();
+        fixture.controller().getPrint(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                fixture.instanceAccessKey(),
+                fixture.taskAccessKey(),
+                null,
+                response
+        );
+
+        assertEquals("application/pdf", response.getContentType());
+        assertArrayEquals(pdfBytes, response.getContentAsByteArray());
+        assertTrue(response.getHeader("Content-Disposition").contains("summary.pdf"));
+    }
+
+    @Test
+    void getPrintShouldRejectWrongFormSlug() throws Exception {
+        var fixture = createPrintFixture(true);
+        var response = new MockHttpServletResponse();
+
+        var error = assertThrows(ResponseException.class, () -> fixture.controller().getPrint(
+                null,
+                fixture.processSlug(),
+                "other-form",
+                fixture.instanceAccessKey(),
+                fixture.taskAccessKey(),
+                null,
+                response
+        ));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatus());
+        verify(fixture.storageService(), never()).getDocumentContent(anyInt(), anyString());
+    }
+
+    @Test
+    void getPrintShouldReturnNotFoundWhenSummaryAttachmentIsMissing() throws Exception {
+        var fixture = createPrintFixture(false);
+        var response = new MockHttpServletResponse();
+
+        var error = assertThrows(ResponseException.class, () -> fixture.controller().getPrint(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                fixture.instanceAccessKey(),
+                fixture.taskAccessKey(),
+                null,
+                response
+        ));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatus());
+        verify(fixture.storageService(), never()).getDocumentContent(anyInt(), anyString());
+    }
+
+    @Test
+    void getPaymentConfirmationShouldStreamPdfForPaidTransactionResolvedByRedirectUrl() throws Exception {
+        var transaction = createPaymentTransaction(
+                XBezahldienstStatus.PAYED,
+                "https://gover.example/process/instance-access-key/tasks/task-access-key"
+        );
+        var fixture = createPrintFixture(false, transaction, false);
+        var pdfBytes = new byte[]{37, 80, 68, 70};
+        when(fixture.pdfService().generatePaymentConfirmation(
+                same(transaction),
+                eq("CASE-1"),
+                eq("https://gover.example/assets/default-logo.png"),
+                any(VDepartmentShadowedEntity.class)
+        )).thenReturn(pdfBytes);
+
+        var response = new MockHttpServletResponse();
+        fixture.controller().getPaymentConfirmation(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                fixture.instanceAccessKey(),
+                fixture.taskAccessKey(),
+                null,
+                response
+        );
+
+        assertEquals("application/pdf", response.getContentType());
+        assertArrayEquals(pdfBytes, response.getContentAsByteArray());
+        assertTrue(response.getHeader("Content-Disposition").contains("Zahlungsbestaetigung-CASE-1.pdf"));
+        verify(fixture.paymentTransactionService()).retrieveByRedirectUrl(fixture.paymentRedirectUrl());
+    }
+
+    @Test
+    void getPaymentConfirmationShouldUseRuntimeTransactionKey() throws Exception {
+        var transaction = createPaymentTransaction(
+                XBezahldienstStatus.PAYED,
+                "https://gover.example/process/instance-access-key/tasks/task-access-key"
+        );
+        var fixture = createPrintFixture(false, transaction, true);
+        when(fixture.pdfService().generatePaymentConfirmation(
+                any(PaymentTransactionEntity.class),
+                anyString(),
+                any(),
+                any(VDepartmentShadowedEntity.class)
+        )).thenReturn(new byte[]{37, 80, 68, 70});
+
+        fixture.controller().getPaymentConfirmation(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                fixture.instanceAccessKey(),
+                fixture.taskAccessKey(),
+                null,
+                new MockHttpServletResponse()
+        );
+
+        verify(fixture.paymentTransactionService()).retrieve(transaction.getKey());
+        verify(fixture.paymentTransactionService(), never()).retrieveByRedirectUrl(anyString());
+    }
+
+    @Test
+    void getPaymentConfirmationShouldRejectUnpaidTransaction() throws Exception {
+        var transaction = createPaymentTransaction(
+                XBezahldienstStatus.INITIAL,
+                "https://gover.example/process/instance-access-key/tasks/task-access-key"
+        );
+        var fixture = createPrintFixture(false, transaction, false);
+
+        var error = assertThrows(ResponseException.class, () -> fixture.controller().getPaymentConfirmation(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                fixture.instanceAccessKey(),
+                fixture.taskAccessKey(),
+                null,
+                new MockHttpServletResponse()
+        ));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatus());
+        verify(fixture.pdfService(), never()).generatePaymentConfirmation(any(), anyString(), any(), any());
+    }
+
+    private PrintFixture createPrintFixture(boolean withSummaryAttachment) throws ResponseException {
+        return createPrintFixture(withSummaryAttachment, null, false);
+    }
+
+    private PrintFixture createPrintFixture(boolean withSummaryAttachment,
+                                            PaymentTransactionEntity paymentTransaction,
+                                            boolean runtimeDataContainsTransaction) throws ResponseException {
+        var processSlug = "example-process";
+        var formSlug = "example-form";
+        var instanceAccessKey = "instance-access-key";
+        var taskAccessKey = "task-access-key";
+        var paymentRedirectUrl = "https://gover.example/process/instance-access-key/tasks/task-access-key";
+
+        var process = new ProcessEntity()
+                .setId(100)
+                .setInternalTitle("Process")
+                .setDepartmentId(10)
+                .setAccessKey(UUID.randomUUID())
+                .setSlug(processSlug)
+                .setVersionCount(1)
+                .setPublishedVersion(1);
+
+        var instance = new ProcessInstanceEntity()
+                .setId(1L)
+                .setCaseNumber("CASE-1")
+                .setAccessKey(instanceAccessKey)
+                .setProcessId(process.getId())
+                .setInitialProcessVersion(1);
+
+        var task = new ProcessInstanceTaskEntity()
+                .setId(2L)
+                .setAccessKey(taskAccessKey)
+                .setProcessInstanceId(instance.getId())
+                .setProcessId(process.getId())
+                .setProcessVersion(1)
+                .setProcessNodeId(500)
+                .setStatus(ProcessTaskStatus.Completed)
+                .setRuntimeData(runtimeDataContainsTransaction && paymentTransaction != null
+                        ? Map.of(FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY, paymentTransaction.getKey())
+                        : Map.of());
+
+        var node = new ProcessNodeEntity()
+                .setId(task.getProcessNodeId())
+                .setProcessId(process.getId())
+                .setProcessVersion(task.getProcessVersion())
+                .setDataKey("formSummary")
+                .setProcessNodeDefinitionKey("form.form")
+                .setProcessNodeDefinitionVersion(1);
+
+        var processService = mock(ProcessService.class);
+        when(processService.retrieveBySlugOrHistory(processSlug)).thenReturn(Optional.of(process));
+
+        var processInstanceService = mock(ProcessInstanceService.class);
+        when(processInstanceService.retrieveByAccessKey(instanceAccessKey)).thenReturn(Optional.of(instance));
+
+        var processInstanceTaskService = mock(ProcessInstanceTaskService.class);
+        when(processInstanceTaskService.retrieveByProcessInstanceIdAndAccessKey(instance.getId(), taskAccessKey))
+                .thenReturn(Optional.of(task));
+
+        var processNodeService = mock(ProcessNodeService.class);
+        when(processNodeService.retrieve(task.getProcessNodeId())).thenReturn(Optional.of(node));
+
+        var provider = mock(FormTriggerNodeV1.class);
+        when(provider.getKey()).thenReturn("form.form");
+
+        var triggerConfig = new FormTriggerConfigV1();
+        triggerConfig.formSlug = formSlug;
+        triggerConfig.formLayout = baseFormLayout();
+        when(processNodeService.deriveConfiguration(eq(node), eq(provider), nullable(UserEntity.class), eq(true)))
+                .thenReturn(new ProcessNodeService.ProcessConfigurationDetails<>(
+                        triggerConfig,
+                        new DerivedRuntimeElementData()
+                ));
+
+        var processNodeDefinitionService = mock(ProcessNodeDefinitionService.class);
+        when(processNodeDefinitionService.getProcessNodeDefinition(eq(node), eq(FormTriggerNodeV1.class)))
+                .thenReturn(Optional.of(provider));
+
+        var userService = mock(UserService.class);
+        when(userService.fromJWT(isNull())).thenReturn(Optional.empty());
+
+        var attachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
+        var attachmentService = mock(ProcessInstanceAttachmentService.class);
+        if (withSummaryAttachment) {
+            var attachmentSet = new ProcessInstanceAttachmentSetEntity()
+                    .setId(3)
+                    .setName("Formularzusammenfassung.pdf")
+                    .setDataKey(node.getDataKey())
+                    .setProcessInstanceId(instance.getId())
+                    .setProcessInstanceTaskId(task.getId());
+            when(attachmentSetService.retrieveLatestByProcessInstanceIdAndTaskIdAndDataKey(
+                    instance.getId(),
+                    task.getId(),
+                    node.getDataKey()
+            )).thenReturn(Optional.of(attachmentSet));
+
+            var attachment = new ProcessInstanceAttachmentEntity()
+                    .setKey(UUID.randomUUID())
+                    .setFileName("summary.pdf")
+                    .setOriginalFileName("summary.pdf")
+                    .setPosition(1)
+                    .setAttachmentSetId(attachmentSet.getId())
+                    .setProcessInstanceId(instance.getId())
+                    .setProcessInstanceTaskId(task.getId())
+                    .setStorageProviderId(7)
+                    .setStoragePathFromRoot("/summary.pdf");
+            when(attachmentService.findAllByAttachmentSetId(attachmentSet.getId()))
+                    .thenReturn(List.of(attachment));
+        } else {
+            when(attachmentSetService.retrieveLatestByProcessInstanceIdAndTaskIdAndDataKey(
+                    instance.getId(),
+                    task.getId(),
+                    node.getDataKey()
+            )).thenReturn(Optional.empty());
+        }
+
+        var storageService = mock(StorageService.class);
+        var goverConfig = mock(GoverConfig.class);
+        when(goverConfig.createUrl(eq("/process/"), eq(instanceAccessKey), eq("tasks"), eq(taskAccessKey)))
+                .thenReturn(paymentRedirectUrl);
+        when(goverConfig.getDefaultLogoUrl()).thenReturn("https://gover.example/assets/default-logo.png");
+
+        var assetService = mock(AssetService.class);
+        when(assetService.createUrl(any(UUID.class))).thenAnswer(invocation -> "https://assets.example/" + invocation.getArgument(0, UUID.class));
+
+        var systemService = mock(SystemService.class);
+        when(systemService.retrieveDefaultTheme()).thenReturn(createTheme(1, "System Theme", null, null));
+
+        var departmentService = mock(VDepartmentShadowedService.class);
+        when(departmentService.retrieve(process.getDepartmentId()))
+                .thenReturn(Optional.of(new VDepartmentShadowedEntity()
+                        .setId(process.getDepartmentId())
+                        .setName("Department")
+                        .setPostalAddress("Example street 1")));
+
+        var paymentTransactionService = mock(PaymentTransactionService.class);
+        when(paymentTransactionService.retrieveByRedirectUrl(paymentRedirectUrl))
+                .thenReturn(Optional.ofNullable(paymentTransaction));
+        if (paymentTransaction != null) {
+            when(paymentTransactionService.retrieve(paymentTransaction.getKey()))
+                    .thenReturn(Optional.of(paymentTransaction));
+        }
+
+        var pdfService = mock(PdfService.class);
+
+        var controller = new FormTriggerControllerV1(
+                goverConfig,
+                mock(IdentityProviderService.class),
+                mock(ElementDerivationService.class),
+                assetService,
+                mock(ThemeService.class),
+                departmentService,
+                systemService,
+                userService,
+                processService,
+                processNodeService,
+                mock(ProcessTestClaimService.class),
+                mock(ProcessVersionService.class),
+                processNodeDefinitionService,
+                mock(SystemConfigService.class),
+                mock(StorageProviderService.class),
+                mock(CaptchaReplayGuard.class),
+                processInstanceService,
+                processInstanceTaskService,
+                attachmentSetService,
+                attachmentService,
+                storageService,
+                mock(FileUploadMultipartInputService.class),
+                mock(ElementDataTransformService.class),
+                mock(ProcessNodeExecutionLoggerFactory.class),
+                provider,
+                mock(IdentityService.class),
+                mock(PaymentPayloadCreationService.class),
+                paymentTransactionService,
+                mock(PaymentProviderRepository.class),
+                pdfService,
+                mock(PaymentProviderDefinitionsService.class)
+        );
+
+        return new PrintFixture(
+                controller,
+                processSlug,
+                formSlug,
+                instanceAccessKey,
+                taskAccessKey,
+                storageService,
+                paymentTransactionService,
+                pdfService,
+                paymentRedirectUrl
+        );
+    }
+
     private TestFixture createFixture(FormLayoutElement formLayout) throws Exception {
         return createFixture(formLayout, null);
     }
@@ -270,13 +627,20 @@ class FormTriggerControllerV1Test {
                 mock(StorageProviderService.class),
                 mock(CaptchaReplayGuard.class),
                 mock(ProcessInstanceService.class),
+                mock(ProcessInstanceTaskService.class),
+                mock(ProcessInstanceAttachmentSetService.class),
+                mock(ProcessInstanceAttachmentService.class),
+                mock(StorageService.class),
                 mock(FileUploadMultipartInputService.class),
                 mock(ElementDataTransformService.class),
                 mock(ProcessNodeExecutionLoggerFactory.class),
                 provider,
                 mock(IdentityService.class),
                 mock(PaymentPayloadCreationService.class),
-                mock(PaymentProviderRepository.class)
+                mock(PaymentTransactionService.class),
+                mock(PaymentProviderRepository.class),
+                mock(PdfService.class),
+                mock(PaymentProviderDefinitionsService.class)
         );
 
         return new TestFixture(
@@ -315,6 +679,24 @@ class FormTriggerControllerV1Test {
         );
     }
 
+    private PaymentTransactionEntity createPaymentTransaction(XBezahldienstStatus status,
+                                                              String redirectUrl) {
+        var request = new XBezahldienstePaymentRequest();
+        request.setGrosAmount(BigDecimal.valueOf(12.34));
+
+        var information = new XBezahldienstePaymentInformation();
+        information.setStatus(status);
+        information.setTransactionId("TX-123");
+        information.setTransactionTimestamp("2026-08-17T10:00:00.000Z");
+
+        return new PaymentTransactionEntity()
+                .setKey("tx-key")
+                .setPaymentProviderKey(UUID.randomUUID())
+                .setPaymentRequest(request)
+                .setPaymentInformation(information)
+                .setRedirectUrl(redirectUrl);
+    }
+
     private record TestFixture(
             FormTriggerControllerV1 controller,
             String processSlug,
@@ -324,6 +706,19 @@ class FormTriggerControllerV1Test {
             ProcessVersionService processVersionService,
             ThemeService themeService,
             VDepartmentShadowedService departmentService
+    ) {
+    }
+
+    private record PrintFixture(
+            FormTriggerControllerV1 controller,
+            String processSlug,
+            String formSlug,
+            String instanceAccessKey,
+            String taskAccessKey,
+            StorageService storageService,
+            PaymentTransactionService paymentTransactionService,
+            PdfService pdfService,
+            String paymentRedirectUrl
     ) {
     }
 }

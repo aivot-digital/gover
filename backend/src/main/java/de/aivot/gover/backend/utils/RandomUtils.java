@@ -13,7 +13,7 @@ public class RandomUtils {
     }
 
     public static String generateRandomString(int length) {
-        var bytes = generateRandomBytes(length);
+        var bytes = generateRandomBytes(length / 2);  // Divide by two, to compensate for the Base64 encoding which increases the size by 2
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 }

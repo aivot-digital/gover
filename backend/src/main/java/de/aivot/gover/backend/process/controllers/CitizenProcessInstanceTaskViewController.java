@@ -3,8 +3,10 @@ package de.aivot.gover.backend.process.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.elements.models.ElementDerivationOptions;
 import de.aivot.gover.backend.elements.models.ElementDerivationRequest;
+import de.aivot.gover.backend.elements.models.elements.BaseElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.identity.controllers.IdentityController;
@@ -28,13 +30,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/public/processes/{procAccess}/tasks/{taskAccess}/")
@@ -51,6 +54,7 @@ public class CitizenProcessInstanceTaskViewController {
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final ElementDerivationService elementDerivationService;
     private final FileUploadMultipartInputService fileUploadMultipartInputService;
+    private final ProcessDataService processDataService;
 
     public CitizenProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                     ProcessInstanceTaskService processInstanceTaskService,
@@ -59,7 +63,7 @@ public class CitizenProcessInstanceTaskViewController {
                                                     ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
                                                     ElementDerivationService elementDerivationService,
-                                                    FileUploadMultipartInputService fileUploadMultipartInputService) {
+                                                    FileUploadMultipartInputService fileUploadMultipartInputService, ProcessDataService processDataService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -68,6 +72,7 @@ public class CitizenProcessInstanceTaskViewController {
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.elementDerivationService = elementDerivationService;
         this.fileUploadMultipartInputService = fileUploadMultipartInputService;
+        this.processDataService = processDataService;
     }
 
     @GetMapping("")
@@ -76,13 +81,13 @@ public class CitizenProcessInstanceTaskViewController {
             description = "Retrieves the view layout for a specific task within a process instance. " +
                     "The layout defines how the task is presented to the user, including form fields and structure."
     )
-    public TaskViewResponse retrieve(
-            @Nonnull @PathVariable UUID procAccess,
-            @Nonnull @PathVariable UUID taskAccess,
-            @RequestParam(required=false) Map<String, List<String>> queryParameters,
+    public <NodeConfig> TaskViewResponse retrieve(
+            @Nonnull @PathVariable String procAccess,
+            @Nonnull @PathVariable String taskAccess,
+            @RequestParam(required = false) Map<String, List<String>> queryParameters,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
     ) throws ResponseException {
-        var taskViewData = fetchTaskViewData(
+        TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
                 procAccess,
                 taskAccess
         );
@@ -95,13 +100,14 @@ public class CitizenProcessInstanceTaskViewController {
                         identitySessionId
                 );
 
-        var context = new ProcessNodeExecutionContextUICustomer(
+        var context = new ProcessNodeExecutionContextUICustomer<NodeConfig>(
                 logger,
                 taskViewData.node,
                 taskViewData.instance,
                 taskViewData.task,
                 new ProcessTestClaimEntity(), // TODO: Get Test Claim
                 identitySessionId,
+                taskViewData.nodeConfig,
                 queryParameters
         );
 
@@ -130,17 +136,17 @@ public class CitizenProcessInstanceTaskViewController {
             description = "Retrieves the view layout for a specific task within a process instance. " +
                     "The layout defines how the task is presented to the user, including form fields and structure."
     )
-    public TaskViewResponse update(
-            @Nonnull @PathVariable UUID procAccess,
-            @Nonnull @PathVariable UUID taskAccess,
+    public <NodeConfig> TaskViewResponse update(
+            @Nonnull @PathVariable String procAccess,
+            @Nonnull @PathVariable String taskAccess,
             @RequestParam(value = "inputs", required = true) String rawInputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @RequestParam(value = "fileUris", required = false) List<String> fileUris,
             @Nullable @RequestParam(value = "event", required = false) String rawEvent,
-            @RequestParam(required=false) Map<String, List<String>> queryParameters,
+            @RequestParam(required = false) Map<String, List<String>> queryParameters,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
     ) throws ResponseException {
-        var taskViewData = fetchTaskViewData(
+        TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
                 procAccess,
                 taskAccess
         );
@@ -153,13 +159,14 @@ public class CitizenProcessInstanceTaskViewController {
                         identitySessionId
                 );
 
-        var context = new ProcessNodeExecutionContextUICustomer(
+        var context = new ProcessNodeExecutionContextUICustomer<NodeConfig>(
                 logger,
                 taskViewData.node,
                 taskViewData.instance,
                 taskViewData.task,
                 new ProcessTestClaimEntity(), // TODO: Get Test Claim
                 identitySessionId,
+                taskViewData.nodeConfig,
                 queryParameters
         );
 
@@ -298,9 +305,66 @@ public class CitizenProcessInstanceTaskViewController {
         );
     }
 
+    @PostMapping("derive/")
+    @Operation(
+            summary = "Retrieve Process Instance Task View Layout",
+            description = "Retrieves the view layout for a specific task within a process instance. " +
+                    "The layout defines how the task is presented to the user, including form fields and structure."
+    )
+    public <NodeConfig> DerivedRuntimeElementData derive(
+            @Nonnull @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String procAccess,
+            @Nonnull @PathVariable String taskAccess,
+            @Nonnull @RequestBody AuthoredElementValues authoredElementValues,
+            @Nullable @RequestParam(value = "skipErrorsFor", required = false) List<String> skipErrorsFor,
+            @RequestParam(required = false) Map<String, List<String>> queryParameters,
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
+    ) throws ResponseException {
+        TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
+                procAccess,
+                taskAccess
+        );
+
+        var logger = processNodeExecutionLoggerFactory
+                .create(taskViewData.instance().getId(), taskViewData.task().getId(), null, identitySessionId);
+
+        var incomingProcessExecutionData = processDataService
+                .foldProcessInstanceData(
+                        taskViewData.instance(),
+                        taskViewData.task().getPreviousProcessNodeId(),
+                        taskViewData.task()
+                );
+
+        var context = new ProcessNodeExecutionContextUICustomer<NodeConfig>(
+                logger,
+                taskViewData.node,
+                taskViewData.instance,
+                taskViewData.task,
+                new ProcessTestClaimEntity(), // TODO: Get Test Claim
+                identitySessionId,
+                taskViewData.nodeConfig,
+                queryParameters
+        );
+
+        var customerTaskView = taskViewData
+                .provider
+                .getCustomerTaskView(context);
+
+        var elementDerivationRequest = new ElementDerivationRequest(
+                (BaseElement) customerTaskView,
+                authoredElementValues,
+                new ElementDerivationOptions()
+                        .setSkipErrorsForElementIds(skipErrorsFor),
+                incomingProcessExecutionData
+        );
+
+        return elementDerivationService
+                .derive(elementDerivationRequest);
+    }
+
     private <NodeConfig> TaskViewData<NodeConfig> fetchTaskViewData(
-            @Nonnull UUID procAccess,
-            @Nonnull UUID taskAccess
+            @Nonnull String procAccess,
+            @Nonnull String taskAccess
     ) throws ResponseException {
         var instance = processInstanceService
                 .retrieve(ProcessInstanceFilter
@@ -319,14 +383,6 @@ public class CitizenProcessInstanceTaskViewController {
                 )
                 .orElseThrow(ResponseException::notFound);
 
-        if (
-                task.getStatus() != ProcessTaskStatus.Running &&
-                        task.getStatus() != ProcessTaskStatus.AwaitingPayment &&
-                        task.getStatus() != ProcessTaskStatus.AwaitingCustomer
-        ) {
-            throw ResponseException.forbidden();
-        }
-
         var node = processDefinitionNodeService
                 .retrieve(task.getProcessNodeId())
                 .orElseThrow(ResponseException::notFound);
@@ -335,11 +391,19 @@ public class CitizenProcessInstanceTaskViewController {
                 .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::notFound);
 
+        var cfgRes = processDefinitionNodeService.deriveConfiguration(
+                node,
+                provider,
+                null,
+                true
+        );
+
         return new TaskViewData<>(
                 instance,
                 task,
                 node,
-                provider
+                provider,
+                cfgRes.configuration()
         );
     }
 
@@ -351,7 +415,9 @@ public class CitizenProcessInstanceTaskViewController {
             @Nonnull
             ProcessNodeEntity node,
             @Nonnull
-            ProcessNodeDefinition<NodeConfig> provider
+            ProcessNodeDefinition<NodeConfig> provider,
+            @Nonnull
+            NodeConfig nodeConfig
     ) {
 
     }

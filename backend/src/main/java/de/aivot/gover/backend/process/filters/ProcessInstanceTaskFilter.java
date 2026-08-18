@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class ProcessInstanceTaskFilter extends EntityFilter<ProcessInstanceTaskEntity> {
-    private UUID accessKey;
+    private String accessKey;
     private Long processInstanceId;
     private Integer processId;
     private Integer processVersion;
@@ -38,11 +38,11 @@ public class ProcessInstanceTaskFilter extends EntityFilter<ProcessInstanceTaskE
                 .withInList("status", anyStatus);
     }
 
-    public UUID getAccessKey() {
+    public String getAccessKey() {
         return accessKey;
     }
 
-    public ProcessInstanceTaskFilter setAccessKey(UUID accessKey) {
+    public ProcessInstanceTaskFilter setAccessKey(String accessKey) {
         this.accessKey = accessKey;
         return this;
     }

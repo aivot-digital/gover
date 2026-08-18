@@ -45,8 +45,8 @@ import static org.mockito.Mockito.mock;
 class CitizenProcessInstanceTaskViewControllerTest {
     @Test
     void update_AutoSavePersistsNormalizedInputsAndReturnsMergedCustomerTaskViewData() throws ResponseException {
-        var procAccess = UUID.randomUUID();
-        var taskAccess = UUID.randomUUID();
+        var procAccess = UUID.randomUUID().toString();
+        var taskAccess = UUID.randomUUID().toString();
         var now = Instant.now();
 
         var instance = new ProcessInstanceEntity(
@@ -121,7 +121,8 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 new ApplyingProcessNodeExecutionResultHandler(),
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestElementDerivationService(normalizedInputs),
-                new TestTaskViewMultipartInputService(normalizedInputs)
+                new TestTaskViewMultipartInputService(normalizedInputs),
+                mock(ProcessDataService.class)
         );
 
         var response = controller.update(
@@ -144,8 +145,8 @@ class CitizenProcessInstanceTaskViewControllerTest {
 
     @Test
     void update_ReturnsNormalizedInputs_WhenCustomerUpdateIsNoOp() throws ResponseException {
-        var procAccess = UUID.randomUUID();
-        var taskAccess = UUID.randomUUID();
+        var procAccess = UUID.randomUUID().toString();
+        var taskAccess = UUID.randomUUID().toString();
 
         var instance = new ProcessInstanceEntity(
                 42L,
@@ -219,7 +220,8 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 new FailingProcessNodeExecutionResultHandler(),
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestElementDerivationService(normalizedInputs),
-                new TestTaskViewMultipartInputService(normalizedInputs)
+                new TestTaskViewMultipartInputService(normalizedInputs),
+                mock(ProcessDataService.class)
         );
 
         var response = controller.update(
@@ -279,6 +281,18 @@ class CitizenProcessInstanceTaskViewControllerTest {
         @Override
         public Optional<ProcessNodeEntity> retrieve(@Nonnull Integer id) {
             return Optional.of(node);
+        }
+
+        @Nonnull
+        @Override
+        public <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveConfiguration(@Nonnull ProcessNodeEntity entity,
+                                                                                        @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                                                        UserEntity user,
+                                                                                        @Nonnull Boolean skipErrors) {
+            return new ProcessConfigurationDetails<>(
+                    provider.getNodeConfigurationClass().cast(node.getConfiguration()),
+                    new DerivedRuntimeElementData()
+            );
         }
     }
 
@@ -454,7 +468,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+        public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             var layout = new GroupLayoutElement();
             layout.setId("customer-root");
             return layout;
@@ -462,13 +476,13 @@ class CitizenProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+        public List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             return List.of(new TaskViewEvent("Submit", "submit"));
         }
 
         @Nonnull
         @Override
-        public AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+        public AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             var persistedData = new AuthoredElementValues();
             persistedData.put("field", "persisted");
             return persistedData;
@@ -526,7 +540,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+        public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             var layout = new GroupLayoutElement();
             layout.setId("customer-root");
             return layout;
@@ -534,13 +548,13 @@ class CitizenProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+        public List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             return List.of(new TaskViewEvent("Submit", "submit"));
         }
 
         @Nonnull
         @Override
-        public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+        public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             var initialData = new AuthoredElementValues();
             initialData.put("defaultField", "initial");
             return initialData;

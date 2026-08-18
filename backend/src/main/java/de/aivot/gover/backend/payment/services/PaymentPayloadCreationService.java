@@ -361,7 +361,7 @@ public class PaymentPayloadCreationService {
         var address = new XBezahldiensteAddress();
         address.setStreet(readString(processExecutionData, mapping.streetDestinationKey()));
         address.setHouseNumber(readString(processExecutionData, mapping.houseNumberDestinationKey()));
-        address.setAddressLine(readString(processExecutionData, mapping.addressLineDestinationKey()));
+        address.setAddressLineFromString(readString(processExecutionData, mapping.addressLineDestinationKey()));
         address.setPostalCode(readString(processExecutionData, mapping.postalCodeDestinationKey()));
         address.setCity(readString(processExecutionData, mapping.cityDestinationKey()));
 

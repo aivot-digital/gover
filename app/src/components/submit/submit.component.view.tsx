@@ -210,7 +210,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                             }
                         </ul>
 
-                        Insgesamt zu entrichtende Gebühr: {formatNumToGermanNum(costs.totalCost, 2)} Euro
+                        Insgesamt zu entrichtende Zahlung: {formatNumToGermanNum(costs.totalCost, 2)} Euro
                         inkl. Steuern
                     </AlertComponent>
                 </Box>

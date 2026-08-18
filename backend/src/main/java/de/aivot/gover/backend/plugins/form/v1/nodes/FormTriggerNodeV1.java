@@ -14,7 +14,6 @@ import de.aivot.gover.backend.elements.models.elements.form.input.UiDefinitionIn
 import de.aivot.gover.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.elements.uiPresets.PaymentGroupPreset;
 import de.aivot.gover.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.gover.backend.elements.utils.ElementStreamUtils;
@@ -27,6 +26,7 @@ import de.aivot.gover.backend.payment.exceptions.PaymentException;
 import de.aivot.gover.backend.payment.models.PaymentPayload;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.gover.backend.payment.services.PaymentPayloadCreationService;
+import de.aivot.gover.backend.payment.services.PaymentProviderDefinitionsService;
 import de.aivot.gover.backend.payment.services.PaymentTransactionService;
 import de.aivot.gover.backend.pdf.enums.FormPdfScope;
 import de.aivot.gover.backend.plugin.models.PluginComponent;
@@ -40,6 +40,7 @@ import de.aivot.gover.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.gover.backend.process.enums.ProcessNodeType;
 import de.aivot.gover.backend.process.exceptions.*;
 import de.aivot.gover.backend.process.filters.ProcessNodeFilter;
+import de.aivot.gover.backend.process.models.ProcessExecutionData;
 import de.aivot.gover.backend.process.models.ProcessNodeDefinition;
 import de.aivot.gover.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.gover.backend.process.models.ProcessNodeOutput;
@@ -56,7 +57,9 @@ import de.aivot.gover.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.gover.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
+import de.aivot.gover.backend.process.services.ProcessService;
 import de.aivot.gover.backend.process.services.PublicUrlService;
+import de.aivot.gover.backend.process.services.TemplateRenderService;
 import de.aivot.gover.backend.services.PdfService;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -78,6 +81,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public static final String DATA_KEY_PAYMENT_PAYLOAD = "paymentPayload";
     public static final String DATA_KEY_PAYMENT_TRANSACTION_KEY = "paymentTransaction";
 
+    public static final String DATA_KEY_AUTHORED = "authored";
     public static final String DATA_KEY_PAYLOAD = "payload";
     public static final String DATA_KEY_UNMAPPED = "unmapped";
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
@@ -88,9 +92,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processNodeRepository;
     private final PaymentPayloadCreationService paymentRequestCreationService;
-    private final ElementDerivationService elementDerivationService;
+    private final TemplateRenderService templateRenderService;
     private final PaymentTransactionService paymentTransactionService;
     private final PaymentProviderRepository paymentProviderRepository;
+    private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
+    private final ProcessService processService;
     private final GoverConfig goverConfig;
     private final PdfService pdfService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
@@ -99,9 +105,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public FormTriggerNodeV1(PublicUrlService publicUrlService,
                              ProcessNodeRepository processNodeRepository,
                              PaymentPayloadCreationService paymentRequestCreationService,
-                             ElementDerivationService elementDerivationService,
+                             TemplateRenderService templateRenderService,
                              PaymentTransactionService paymentTransactionService,
                              PaymentProviderRepository paymentProviderRepository,
+                             PaymentProviderDefinitionsService paymentProviderDefinitionsService,
+                             ProcessService processService,
                              GoverConfig goverConfig,
                              PdfService pdfService,
                              ProcessInstanceAttachmentService processInstanceAttachmentService,
@@ -112,9 +120,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.paymentRequestCreationService = paymentRequestCreationService;
-        this.elementDerivationService = elementDerivationService;
+        this.templateRenderService = templateRenderService;
         this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderRepository = paymentProviderRepository;
+        this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
+        this.processService = processService;
         this.goverConfig = goverConfig;
     }
 
@@ -422,6 +432,17 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             );
         }
 
+        var processInstanceInitialPayload = context
+                .getThisProcessInstance()
+                .getInitialPayload();
+
+        var nodeData = new LinkedHashMap<>(processInstanceInitialPayload);
+
+        nodeData.put(
+                DATA_KEY_CUSTOMER_SUMMARY_FILES,
+                createCustomerSummaryFiles(context, configuration, processInstanceInitialPayload)
+        );
+
         var paymentConfig = context
                 .getConfigurationOfExecutingNode()
                 .payment;
@@ -434,13 +455,18 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                             StringUtils.quote(paymentConfig.paymentProviderKey().toString())
                     ));
 
+            var execData = context
+                    .getCurrentProcessExecutionData()
+                    .clone()
+                    .addProcessData(context.getCurrentProcessExecutionData().getProcessData().get(DATA_KEY_PAYLOAD));
+
             Optional<PaymentPayload> paymentRequest;
             try {
                 paymentRequest = paymentRequestCreationService
                         .createRequest(
                                 paymentConfig,
                                 DerivedRuntimeElementData.empty(),
-                                context.getCurrentProcessExecutionData()
+                                execData
                         );
             } catch (PaymentException e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
@@ -480,6 +506,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                         transaction.getKey(),
                         paymentProvider.getName()
                 )
+                        .setNodeData(nodeData)
                         .setRuntimeData(Map.of(
                                 DATA_KEY_PAYMENT_PAYLOAD, paymentRequest.get(),
                                 DATA_KEY_PAYMENT_TRANSACTION_KEY, transaction.getKey()
@@ -505,10 +532,6 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 .getInitialPayload();
 
         var nodeData = new LinkedHashMap<>(processInstanceInitialPayload);
-        nodeData.put(
-                DATA_KEY_CUSTOMER_SUMMARY_FILES,
-                createCustomerSummaryFiles(context, configuration, processInstanceInitialPayload)
-        );
 
         var nodeInitialPayloadRaw = processInstanceInitialPayload
                 .get(DATA_KEY_PAYLOAD);
@@ -572,6 +595,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
+                .setRuntimeData(context.getThisTask().getRuntimeData())
                 .setNodeData(nodeData)
                 .setProcessData(nodeInitialPayload);
     }
@@ -659,12 +683,12 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     @Nonnull
     @Override
-    public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+    public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
         return createPaymentView(context);
     }
 
     @Nonnull
-    private GroupLayoutElement createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+    private GroupLayoutElement createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
         var paymentTransactionKey = context
                 .getThisTask()
                 .getRuntimeData()
@@ -697,10 +721,77 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                         )
                 ));
 
+        var paymentProviderDefinition = paymentProviderDefinitionsService
+                .getProviderDefinition(
+                        paymentProvider.getPaymentProviderDefinitionKey(),
+                        paymentProvider.getPaymentProviderDefinitionVersion()
+                )
+                .orElseThrow(() -> ResponseException.internalServerError(
+                        "Die Definition des Zahlungsanbieters %s in Version %s konnte nicht gefunden werden.".formatted(
+                                StringUtils.quote(paymentProvider.getPaymentProviderDefinitionKey()),
+                                paymentProvider.getPaymentProviderDefinitionVersion()
+                        )
+                ));
+
+        var process = processService
+                .retrieve(context.getThisProcessInstance().getProcessId())
+                .orElseThrow(() -> ResponseException.internalServerError(
+                        "Der Prozess mit der ID %s konnte nicht gefunden werden.".formatted(
+                                context.getThisProcessInstance().getProcessId()
+                        )
+                ));
+
+        var config = context.getConfigurationOfExecutingNode();
+        var paymentConfig = config.payment;
+        var successMessage = paymentConfig == null
+                ? null
+                : renderOptionalPaymentMessage(context, paymentConfig.successMessage());
+        var failureMessage = paymentConfig == null
+                ? null
+                : renderOptionalPaymentMessage(context, paymentConfig.failureMessage());
+        var downloadUrl = goverConfig.createUrlWithTrailingSlash(
+                "/api/public/form/",
+                process.getSlug(),
+                config.formSlug,
+                "submit",
+                context.getThisProcessInstance().getAccessKey(),
+                context.getThisTask().getAccessKey(),
+                "payment-confirmation"
+        );
+
         try {
-            return new PaymentGroupPreset(paymentProvider, paymentPayload, transaction.get());
+            return new PaymentGroupPreset(
+                    paymentProvider,
+                    paymentProviderDefinition,
+                    paymentPayload,
+                    transaction.get(),
+                    successMessage,
+                    failureMessage,
+                    downloadUrl
+            );
         } catch (IOException | WriterException e) {
             throw ResponseException.internalServerError(e);
+        }
+    }
+
+    @Nullable
+    private String renderOptionalPaymentMessage(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context,
+                                                @Nullable String template) throws ResponseException {
+        if (StringUtils.isNullOrEmpty(template)) {
+            return null;
+        }
+
+        var processExecutionData = new ProcessExecutionData()
+                .addProcessData(context.getThisTask().getProcessData());
+
+        try {
+            return templateRenderService.interpolate(processExecutionData, template);
+        } catch (RuntimeException e) {
+            throw ResponseException.internalServerError(
+                    e,
+                    "Die Vorlage %s konnte nicht gerendert werden.",
+                    StringUtils.quote(template)
+            );
         }
     }
 

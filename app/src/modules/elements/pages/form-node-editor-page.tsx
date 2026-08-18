@@ -219,7 +219,10 @@ export function FormNodeEditorPage() {
             .map(({identity}) => identity);
     }, [identityMappingInformation]);
 
-    const [startedProcessAccessKey, setStartedProcessAccessKey] = useState<string | null>(null);
+    const [startedProcessAccessInfo, setStartedProcessAccessInfo] = useState<{
+        processInstanceAccessKey: string;
+        paymentRequired: boolean;
+    } | null>(null);
 
     const {
         dialog: changeBlockerDialog,
@@ -1105,8 +1108,9 @@ export function FormNodeEditorPage() {
             .calculateCosts(process.slug, node.configuration.formSlug, values, {
                 testClaim: testClaim.accessKey,
             });
+        const paymentRequired = costs.totalCost > 0;
 
-        if (costs.totalCost > 0) {
+        if (paymentRequired) {
             const proceedWithPaymentRequirements = await confirm({
                 title: 'Zahlung erforderlich',
                 children: (
@@ -1151,7 +1155,10 @@ export function FormNodeEditorPage() {
                     testClaim: testClaimRef.current?.accessKey,
                 });
 
-            setStartedProcessAccessKey(startRes.startedProcessAccessKey);
+            setStartedProcessAccessInfo({
+                processInstanceAccessKey: startRes.startedProcessAccessKey,
+                paymentRequired: paymentRequired,
+            });
         } catch (err) {
             dispatch(showApiErrorSnackbar(err, 'Beim Absenden des Formulars ist ein Fehler aufgetreten'));
         } finally {
@@ -1224,13 +1231,13 @@ export function FormNodeEditorPage() {
                                                     onDeleteFormData={() => {
                                                         dispatch(setCurrentStep(0));
                                                         setAuthoredElementValues({});
-                                                        setStartedProcessAccessKey(null);
+                                                        setStartedProcessAccessInfo(null);
                                                         IdentityProvidersApiService.clearIdentity(node.id);
                                                     }}
                                                 />
 
                                                 {
-                                                    startedProcessAccessKey == null &&
+                                                    startedProcessAccessInfo == null &&
                                                     <ElementTreeInlineEditorContextProvider
                                                         value={{
                                                             cloneElement: handleCloneElement,
@@ -1254,9 +1261,10 @@ export function FormNodeEditorPage() {
                                                     </ElementTreeInlineEditorContextProvider>
                                                 }
                                                 {
-                                                    startedProcessAccessKey != null &&
+                                                    startedProcessAccessInfo != null &&
                                                     <Submitted
-                                                        startedProcessAccessKey={startedProcessAccessKey}
+                                                        startedProcessAccessKey={startedProcessAccessInfo.processInstanceAccessKey}
+                                                        paymentRequired={startedProcessAccessInfo.paymentRequired}
                                                         formElement={formLayout}
                                                         node={node}
                                                         process={process}

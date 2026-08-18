@@ -47,6 +47,7 @@ export interface FormTriggerSubmissionStatusResponseV1 {
 
 export interface FormTriggerCostCalculationResponseV1 {
     totalCost: number;
+    hasTaxes: boolean;
     paymentItems: {
         id: string;
         reference: string;
@@ -150,6 +151,42 @@ export class FormTriggerApiService extends BaseApiService {
 
     public async downloadPrintablePdf(nodeId: number): Promise<Blob> {
         return await this.getBlob(`/api/forms/v1/${nodeId}/print-pdf/`);
+    }
+
+    public async downloadSubmittedSummaryPdf(
+        processSlug: string,
+        triggerSlug: string,
+        instanceAccessKey: string,
+        taskAccessKey: string,
+        version?: number,
+    ): Promise<Blob> {
+        return await this.getBlob(
+            `/api/public/form/${processSlug}/${triggerSlug}/submit/${encodeURIComponent(instanceAccessKey)}/${encodeURIComponent(taskAccessKey)}/print/`,
+            {
+                query: {
+                    version,
+                },
+                skipAuthCheck: true,
+            },
+        );
+    }
+
+    public async downloadPaymentConfirmationPdf(
+        processSlug: string,
+        triggerSlug: string,
+        instanceAccessKey: string,
+        taskAccessKey: string,
+        version?: number,
+    ): Promise<Blob> {
+        return await this.getBlob(
+            `/api/public/form/${processSlug}/${triggerSlug}/submit/${encodeURIComponent(instanceAccessKey)}/${encodeURIComponent(taskAccessKey)}/payment-confirmation/`,
+            {
+                query: {
+                    version,
+                },
+                skipAuthCheck: true,
+            },
+        );
     }
 
     private buildListQuery(

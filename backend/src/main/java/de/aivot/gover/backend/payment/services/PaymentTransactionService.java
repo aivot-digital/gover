@@ -182,6 +182,12 @@ public class PaymentTransactionService implements
     }
 
     @Nonnull
+    public Optional<PaymentTransactionEntity> retrieveByRedirectUrl(@Nonnull String redirectUrl) {
+        return paymentTransactionRepository
+                .findFirstByRedirectUrlOrderByCreatedDesc(redirectUrl);
+    }
+
+    @Nonnull
     @Override
     public Optional<PaymentTransactionEntity> retrieve(@Nonnull Specification<PaymentTransactionEntity> specification) {
         return paymentTransactionRepository.findOne(specification);

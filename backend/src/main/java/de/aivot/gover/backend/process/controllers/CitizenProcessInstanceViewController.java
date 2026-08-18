@@ -6,7 +6,6 @@ import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
-import de.aivot.gover.backend.process.filters.ProcessInstanceFilter;
 import de.aivot.gover.backend.process.filters.ProcessInstanceTaskFilter;
 import de.aivot.gover.backend.process.services.ProcessInstanceService;
 import de.aivot.gover.backend.process.services.ProcessInstanceTaskService;
@@ -23,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/public/processes/{procAccess}/")
@@ -51,13 +49,10 @@ public class CitizenProcessInstanceViewController {
                     "The layout defines how the task is presented to the user, including form fields and structure."
     )
     public ProcessInstanceStatusResponse retrieve(
-            @Nonnull @PathVariable UUID procAccess
+            @Nonnull @PathVariable String procAccess
     ) throws ResponseException {
-        var instanceFilter = new ProcessInstanceFilter()
-                .setAccessKey(procAccess);
-
         var instance = processInstanceService
-                .retrieve(instanceFilter)
+                .retrieveByAccessKey(procAccess)
                 .orElseThrow(ResponseException::notFound);
 
         var processVersion = processVersionService
@@ -65,23 +60,20 @@ public class CitizenProcessInstanceViewController {
                 .orElseThrow(ResponseException::notFound);
 
         var taskFilter = new ProcessInstanceTaskFilter()
-                .setProcessInstanceId(instance.getId())
-                .setAnyStatus(List.of(
-                        ProcessTaskStatus.AwaitingPayment,
-                        ProcessTaskStatus.AwaitingCustomer
-                ));
+                .setProcessInstanceId(instance.getId());
 
         var taskPagination = Pageable
                 .unpaged(Sort.by(Sort.Direction.ASC, "started"));
 
         var tasks = processInstanceTaskService
                 .list(taskPagination, taskFilter)
-                .map(ProcessInstanceTaskEntity::getAccessKey)
+                .map(ProcessInstanceTaskStatusResponse::of)
                 .toList();
 
         return new ProcessInstanceStatusResponse(
                 processVersion.getPublicTitle(),
                 instance.getStatus(),
+                instance.getStatusOverride(),
                 tasks
         );
     }
@@ -92,7 +84,26 @@ public class CitizenProcessInstanceViewController {
             @Nonnull
             ProcessInstanceStatus status,
             @Nullable
-            List<String> currentTasks
+            String statusOverride,
+            @Nullable
+            List<ProcessInstanceTaskStatusResponse> tasks
     ) {
+    }
+
+    public record  ProcessInstanceTaskStatusResponse(
+            @Nonnull
+            String accessKey,
+            @Nonnull
+            ProcessTaskStatus status,
+            @Nullable
+            String statusOverride
+    ) {
+        public static ProcessInstanceTaskStatusResponse of(ProcessInstanceTaskEntity task) {
+            return new ProcessInstanceTaskStatusResponse(
+                    task.getAccessKey(),
+                    task.getStatus(),
+                    task.getStatusOverride()
+            );
+        }
     }
 }

@@ -1,12 +1,12 @@
 package de.aivot.gover.backend.elements.models.elements.form.input;
 
-import de.aivot.gover.backend.exceptions.ValidationException;
 import de.aivot.gover.backend.javascript.models.JavascriptCode;
 import de.aivot.gover.backend.nocode.models.NoCodeOperand;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nullable;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Map;
 
 public record PaymentConfigElementValueItem(
@@ -51,24 +51,29 @@ public record PaymentConfigElementValueItem(
         @Nullable
         Map<String, String> additionalBookingData // Value Field Supports Template Tag Rendering
 ) {
-    public void performValidation() throws ValidationException {
-        requireText(description, "Beschreibung");
-        requireText(reference, "Referenz");
+    public Map<String, Object> performValidation() {
+        var errors = new HashMap<String, Object>();
+
+        requireText(errors, "description", description, "Beschreibung");
+        requireText(errors, "reference", reference, "Referenz");
 
         if (idType == null) {
-            throw new ValidationException(null, "Es muss ein ID-Typ ausgewählt werden.");
+            errors.put("idType", "Es muss ein ID-Typ ausgewählt werden.");
         }
         if (idType == IdType.Predefined) {
-            requireText(predefinedId, "Vordefinierte ID");
+            requireText(errors, "predefinedId", predefinedId, "Vordefinierte ID");
         }
 
         if (costType == null) {
-            throw new ValidationException(null, "Es muss ein Kostentyp ausgewählt werden.");
-        }
-        if (costType == CostType.FixedCosts) {
-            requireNotNegative(fixedCosts, "Feste Kosten");
-        } else {
+            errors.put("costType", "Es muss ein Kostentyp ausgewählt werden.");
+        } else if (costType == CostType.FixedCosts) {
+            requireNotNegative(errors, "fixedCosts", fixedCosts, "Feste Kosten");
+        } else if (costType == CostType.VariableCosts) {
             validateVariableCalculation(
+                    errors,
+                    "variableCostsCalculationType",
+                    "variableCostsNoCodeCalculation",
+                    "variableCostsLowCodeCalculation",
                     variableCostsCalculationType,
                     variableCostsNoCodeCalculation,
                     variableCostsLowCodeCalculation,
@@ -77,12 +82,15 @@ public record PaymentConfigElementValueItem(
         }
 
         if (quantityType == null) {
-            throw new ValidationException(null, "Es muss ein Mengentyp ausgewählt werden.");
-        }
-        if (quantityType == QuantityType.FixedQuantity) {
-            requireNotNegative(fixedQuantity, "Feste Menge");
-        } else {
+            errors.put("quantityType", "Es muss ein Mengentyp ausgewählt werden.");
+        } else if (quantityType == QuantityType.FixedQuantity) {
+            requireNotNegative(errors, "fixedQuantity", fixedQuantity, "Feste Menge");
+        } else if (quantityType == QuantityType.VariableQuantity) {
             validateVariableCalculation(
+                    errors,
+                    "variableQuantityCalculationType",
+                    "variableQuantityNoCodeCalculation",
+                    "variableQuantityLowCodeCalculation",
                     variableQuantityCalculationType,
                     variableQuantityNoCodeCalculation,
                     variableQuantityLowCodeCalculation,
@@ -91,66 +99,71 @@ public record PaymentConfigElementValueItem(
         }
 
         if (fixedTaxRate == null) {
-            throw new ValidationException(null, "Es muss ein Steuersatz angegeben werden.");
-        }
-        if (fixedTaxRate.compareTo(BigDecimal.ZERO) < 0 || fixedTaxRate.compareTo(BigDecimal.valueOf(100)) > 0) {
-            throw new ValidationException(null, "Der Steuersatz muss zwischen 0 und 100 liegen.");
+            errors.put("fixedTaxRate", "Es muss ein Steuersatz angegeben werden.");
+        } else if (fixedTaxRate.compareTo(BigDecimal.ZERO) < 0 || fixedTaxRate.compareTo(BigDecimal.valueOf(100)) > 0) {
+            errors.put("fixedTaxRate", "Der Steuersatz muss zwischen 0 und 100 liegen.");
         }
 
         if (additionalBookingData != null) {
             for (var entry : additionalBookingData.entrySet()) {
                 if (StringUtils.isNullOrEmpty(entry.getKey())) {
-                    throw new ValidationException(null, "Buchungsdaten dürfen keine leeren Schlüssel enthalten.");
+                    errors.put("additionalBookingData", "Buchungsdaten dürfen keine leeren Schlüssel enthalten.");
                 }
             }
         }
+
+        return errors;
     }
 
     private void validateVariableCalculation(
+            Map<String, Object> errors,
+            String calculationTypeKey,
+            String noCodeCalculationKey,
+            String lowCodeCalculationKey,
             @Nullable VariableValueCalculationType calculationType,
             @Nullable NoCodeOperand noCodeCalculation,
             @Nullable JavascriptCode lowCodeCalculation,
             String fieldName
-    ) throws ValidationException {
+    ) {
         if (calculationType == null) {
-            throw new ValidationException(null, fieldName + " benötigen einen Berechnungstyp.");
+            errors.put(calculationTypeKey, fieldName + " benötigen einen Berechnungstyp.");
+            return;
         }
 
         if (calculationType == VariableValueCalculationType.NoCode) {
             if (noCodeCalculation == null) {
-                throw new ValidationException(null, fieldName + " benötigen eine No-Code-Berechnung.");
+                errors.put(noCodeCalculationKey, fieldName + " benötigen eine No-Code-Berechnung.");
+                return;
             }
 
             var noCodeError = noCodeCalculation.validate();
             if (!noCodeError.isValid()) {
-                throw new ValidationException(null, fieldName + " enthalten einen ungültigen No-Code-Ausdruck.", noCodeError);
+                errors.put(noCodeCalculationKey, fieldName + " enthalten einen ungültigen No-Code-Ausdruck.");
             }
         } else if (lowCodeCalculation == null || lowCodeCalculation.isEmpty()) {
-            throw new ValidationException(null, fieldName + " benötigen eine Low-Code-Berechnung.");
+            errors.put(lowCodeCalculationKey, fieldName + " benötigen eine Low-Code-Berechnung.");
         }
     }
 
-    private void requireText(@Nullable String value, String fieldName) throws ValidationException {
+    private void requireText(Map<String, Object> errors, String fieldKey, @Nullable String value, String fieldName) {
         if (StringUtils.isNullOrEmpty(value)) {
-            throw new ValidationException(null, fieldName + " muss angegeben werden.");
+            errors.put(fieldKey, fieldName + " muss angegeben werden.");
         }
     }
 
-    private void requireNotNegative(@Nullable BigDecimal value, String fieldName) throws ValidationException {
+    private void requireNotNegative(Map<String, Object> errors, String fieldKey, @Nullable BigDecimal value, String fieldName) {
         if (value == null) {
-            throw new ValidationException(null, fieldName + " müssen angegeben werden.");
-        }
-        if (value.compareTo(BigDecimal.ZERO) < 0) {
-            throw new ValidationException(null, fieldName + " dürfen nicht negativ sein.");
+            errors.put(fieldKey, fieldName + " müssen angegeben werden.");
+        } else if (value.compareTo(BigDecimal.ZERO) < 0) {
+            errors.put(fieldKey, fieldName + " dürfen nicht negativ sein.");
         }
     }
 
-    private void requireNotNegative(@Nullable Long value, String fieldName) throws ValidationException {
+    private void requireNotNegative(Map<String, Object> errors, String fieldKey, @Nullable Long value, String fieldName) {
         if (value == null) {
-            throw new ValidationException(null, fieldName + " muss angegeben werden.");
-        }
-        if (value < 0) {
-            throw new ValidationException(null, fieldName + " darf nicht negativ sein.");
+            errors.put(fieldKey, fieldName + " muss angegeben werden.");
+        } else if (value < 0) {
+            errors.put(fieldKey, fieldName + " darf nicht negativ sein.");
         }
     }
 

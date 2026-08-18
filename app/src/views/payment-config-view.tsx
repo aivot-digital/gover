@@ -39,6 +39,7 @@ import PaymentArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/Payme
 import {DisabledTooltip} from '../components/disabled-tooltip/disabled-tooltip';
 import {pluralize} from '../utils/humanization-utils';
 import {RadioFieldComponent} from '../components/radio-field/radio-field-component';
+import {RichTextInputComponent} from '../components/rich-text-input-component/rich-text-input-component';
 
 const EmptyPaymentConfigValue: PaymentConfigElementValue = {
     paymentProviderKey: null,
@@ -47,6 +48,8 @@ const EmptyPaymentConfigValue: PaymentConfigElementValue = {
     mapRequestor: false,
     requestorMapping: null,
     items: [],
+    successMessage: null,
+    failureMessage: null,
 };
 
 const EmptyRequestorMapping: PaymentConfigElementValueRequestorMapping = {
@@ -89,12 +92,15 @@ type PaymentItemRow = {
     item: PaymentConfigElementValueItem;
 };
 
+type PaymentConfigErrorDetails = Record<string, unknown>;
+
 export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, PaymentConfigElementValue>) {
     const {
         element,
         value,
         setValue,
         errors,
+        errorDetails,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -155,8 +161,8 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
     }, [providerDefinitions, providers]);
 
     const DialogContentComponent = useMemo(() => {
-        return wrapPaymentConfigDialogContent(paymentProviderOptions, rootElement, errors);
-    }, [paymentProviderOptions, rootElement]);
+        return wrapPaymentConfigDialogContent(paymentProviderOptions, rootElement, asErrorDetails(errorDetails));
+    }, [paymentProviderOptions, rootElement, errorDetails]);
 
     const handleAdd = () => {
         setValue(EmptyPaymentConfigValue);
@@ -327,8 +333,8 @@ function getPaymentConfigSubtitle(item: PaymentConfigElementValue): string {
     return parts.join(' · ');
 }
 
-function wrapPaymentConfigDialogContent(paymentProviders: SelectFieldComponentOption<string>[], rootElement: AnyElement, errors: string[] | null | undefined):
-    FunctionComponent<Omit<PaymentConfigDialogContentProps, 'paymentProviders' | 'rootElement' | 'errors'>> {
+function wrapPaymentConfigDialogContent(paymentProviders: SelectFieldComponentOption<string>[], rootElement: AnyElement, errorDetails: PaymentConfigErrorDetails | undefined):
+    FunctionComponent<Omit<PaymentConfigDialogContentProps, 'paymentProviders' | 'rootElement' | 'errorDetails'>> {
     return (props: {
         item: PaymentConfigElementValue,
         onChange: (item: PaymentConfigElementValue) => void,
@@ -340,7 +346,7 @@ function wrapPaymentConfigDialogContent(paymentProviders: SelectFieldComponentOp
             paymentProviders={paymentProviders}
             disabled={props.disabled}
             rootElement={rootElement}
-            errors={errors}
+            errorDetails={errorDetails}
         />
     );
 }
@@ -351,7 +357,7 @@ interface PaymentConfigDialogContentProps {
     disabled?: boolean;
     paymentProviders: SelectFieldComponentOption<string>[],
     rootElement: AnyElement;
-    errors: string[] | null | undefined;
+    errorDetails?: PaymentConfigErrorDetails;
 }
 
 function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
@@ -361,7 +367,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
         disabled: isDisabled = false,
         paymentProviders: paymentProviderOptions,
         rootElement,
-        errors,
+        errorDetails,
     } = props;
 
     const isFieldBusy = isDisabled;
@@ -422,8 +428,10 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
     }, [currentValue.items]);
 
     const ItemDialogContent = useMemo(() => {
-        return wrapPaymentConfigItem(rootElement, errors);
-    }, [rootElement, errors]);
+        return wrapPaymentConfigItem(rootElement, errorDetails);
+    }, [rootElement, errorDetails]);
+
+    const itemsError = getFieldError(errorDetails, 'items');
 
     return (
         <Box>
@@ -441,6 +449,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         required={true}
                         disabled={isDisabled || isFieldBusy}
                         emptyStatePlaceholder="Keine Zahlungsdienstleister vorhanden"
+                        error={getFieldError(errorDetails, 'paymentProviderKey')}
                     />
                 </Grid>
 
@@ -452,6 +461,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         required={true}
                         disabled={isDisabled || isFieldBusy}
                         hint="Der Buchungstext erscheint auf der Abrechnung der antragstellenden Person (z. B. Bank oder Kreditkarte)."
+                        error={getFieldError(errorDetails, 'purpose')}
                     />
                 </Grid>
 
@@ -465,6 +475,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         multiline
                         rows={2}
                         hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die anfallenden Gebühren."
+                        error={getFieldError(errorDetails, 'description')}
                     />
                 </Grid>
             </Grid>
@@ -480,6 +491,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                 disabled={isDisabled || isFieldBusy}
                 sx={{mt: 1.5, mb: 0}}
                 hint="Sie können hier Angaben zu der Person oder Organisation, welche die Zahlung ausführt, dem Zahlungsvorgang zuordnen. Diese Daten werden an den Zahlungsanbieter übertragen."
+                error={getFieldError(errorDetails, 'requestorMapping')}
             />
 
             {
@@ -488,6 +500,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     value={currentValue.requestorMapping ?? EmptyRequestorMapping}
                     onChange={updateRequestorMapping}
                     disabled={isDisabled || isFieldBusy}
+                    errorDetails={getNestedErrorDetails(errorDetails, 'requestorMapping')}
                 />
             }
 
@@ -499,7 +512,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     justifyContent="space-between"
                 >
                     <Typography variant="body1">
-                        Zahlungspositionen
+                        Zahlungspositionen *
                     </Typography>
 
                     <Button
@@ -515,7 +528,21 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
 
                 {
                     itemRows.length === 0 &&
-                    <EmptyItemsState hasError={errors != null}/>
+                    <>
+                        <EmptyItemsState hasError={itemsError != null}/>
+                        {
+                            itemsError != null &&
+                            <FormHelperText
+                                error
+                                sx={{
+                                    mx: 1.75,
+                                    mt: 0.75,
+                                }}
+                            >
+                                {itemsError}
+                            </FormHelperText>
+                        }
+                    </>
                 }
 
                 {
@@ -532,9 +559,44 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                             onDialogSave={handleItemChanged}
                             onDelete={handleDeleteItem}
                             disabled={isDisabled || isFieldBusy}
+                            hasError={(row) => hasErrorDetails(getItemErrorDetails(errorDetails, row.index))}
                         />
                     </Box>
                 }
+            </Box>
+
+            <Box
+                sx={{
+                    mt: 3,
+                }}
+            >
+                <RichTextInputComponent
+                    label="Erfolgsmeldung nach Zahlung"
+                    value={currentValue.successMessage}
+                    onChange={(successMessage) => updateValue({
+                        successMessage: isStringNullOrEmpty(successMessage) ? null : successMessage,
+                    })}
+                    disabled={isDisabled || isFieldBusy}
+                    hint="Diese Meldung wird in der Vorgangsansicht angezeigt, nachdem die Zahlung erfolgreich abgeschlossen wurde."
+                    error={getFieldError(errorDetails, 'successMessage')}
+                />
+            </Box>
+
+            <Box
+                sx={{
+                    mt: 2,
+                }}
+            >
+                <RichTextInputComponent
+                    label="Fehlermeldung bei Zahlungsfehler"
+                    value={currentValue.failureMessage}
+                    onChange={(failureMessage) => updateValue({
+                        failureMessage: isStringNullOrEmpty(failureMessage) ? null : failureMessage,
+                    })}
+                    disabled={isDisabled || isFieldBusy}
+                    hint="Diese Meldung wird in der Vorgangsansicht angezeigt, wenn die Zahlung fehlgeschlagen ist oder abgebrochen wurde."
+                    error={getFieldError(errorDetails, 'failureMessage')}
+                />
             </Box>
         </Box>
     );
@@ -544,11 +606,13 @@ function RequestorMappingEditor(props: {
     value: PaymentConfigElementValueRequestorMapping;
     onChange: (field: keyof PaymentConfigElementValueRequestorMapping, value: string | null) => void;
     disabled: boolean;
+    errorDetails?: PaymentConfigErrorDetails;
 }) {
     const {
         value,
         onChange,
         disabled,
+        errorDetails,
     } = props;
 
     return (
@@ -565,6 +629,7 @@ function RequestorMappingEditor(props: {
                     onChange={(val) => {
                         onChange('requestorSourceType', val);
                     }}
+                    error={getFieldError(errorDetails, 'requestorSourceType')}
                     options={[
                         {
                             label: 'Es handelt sich um eine natürliche Person',
@@ -591,6 +656,8 @@ function RequestorMappingEditor(props: {
                         value={value.isOrganizationDestinationKey}
                         onChange={(next) => onChange('isOrganizationDestinationKey', next)}
                         disabled={disabled}
+                        required={true}
+                        error={getFieldError(errorDetails, 'isOrganizationDestinationKey')}
                     />
 
                     <Grid size={{xs: 12, md: 6}}/>
@@ -614,6 +681,7 @@ function RequestorMappingEditor(props: {
                         value={value.lastNameDestinationKey}
                         onChange={(next) => onChange('lastNameDestinationKey', next)}
                         disabled={disabled}
+                        error={getFieldError(errorDetails, 'lastNameDestinationKey')}
                     />
 
                     <RequestorMappingField
@@ -621,6 +689,7 @@ function RequestorMappingEditor(props: {
                         value={value.firstNameDestinationKey}
                         onChange={(next) => onChange('firstNameDestinationKey', next)}
                         disabled={disabled}
+                        error={getFieldError(errorDetails, 'firstNameDestinationKey')}
                     />
 
                     <RequestorMappingField
@@ -629,6 +698,7 @@ function RequestorMappingEditor(props: {
                         onChange={(next) => onChange('genderDestinationKey', next)}
                         disabled={disabled}
                         hint="Dieses Prozessdatenfeld muss einen der folgenden enthalten: M, W, D"
+                        error={getFieldError(errorDetails, 'genderDestinationKey')}
                     />
                 </>
             }
@@ -650,6 +720,7 @@ function RequestorMappingEditor(props: {
                         value={value.organizationNameDestinationKey}
                         onChange={(next) => onChange('organizationNameDestinationKey', next)}
                         disabled={disabled}
+                        error={getFieldError(errorDetails, 'organizationNameDestinationKey')}
                     />
                 </>
             }
@@ -665,6 +736,7 @@ function RequestorMappingEditor(props: {
                 value={value.streetDestinationKey}
                 onChange={(next) => onChange('streetDestinationKey', next)}
                 disabled={disabled}
+                error={getFieldError(errorDetails, 'streetDestinationKey')}
             />
 
             <RequestorMappingField
@@ -672,6 +744,7 @@ function RequestorMappingEditor(props: {
                 value={value.houseNumberDestinationKey}
                 onChange={(next) => onChange('houseNumberDestinationKey', next)}
                 disabled={disabled}
+                error={getFieldError(errorDetails, 'houseNumberDestinationKey')}
             />
 
             <RequestorMappingField
@@ -679,6 +752,7 @@ function RequestorMappingEditor(props: {
                 value={value.addressLineDestinationKey}
                 onChange={(next) => onChange('addressLineDestinationKey', next)}
                 disabled={disabled}
+                error={getFieldError(errorDetails, 'addressLineDestinationKey')}
             />
 
             <RequestorMappingField
@@ -686,6 +760,7 @@ function RequestorMappingEditor(props: {
                 value={value.postalCodeDestinationKey}
                 onChange={(next) => onChange('postalCodeDestinationKey', next)}
                 disabled={disabled}
+                error={getFieldError(errorDetails, 'postalCodeDestinationKey')}
             />
 
             <RequestorMappingField
@@ -693,6 +768,7 @@ function RequestorMappingEditor(props: {
                 value={value.cityDestinationKey}
                 onChange={(next) => onChange('cityDestinationKey', next)}
                 disabled={disabled}
+                error={getFieldError(errorDetails, 'cityDestinationKey')}
             />
 
             <RequestorMappingField
@@ -700,6 +776,7 @@ function RequestorMappingEditor(props: {
                 value={value.countryDestinationKey}
                 onChange={(next) => onChange('countryDestinationKey', next)}
                 disabled={disabled}
+                error={getFieldError(errorDetails, 'countryDestinationKey')}
             />
         </Grid>
     );
@@ -711,6 +788,8 @@ function RequestorMappingField(props: {
     value: string | null;
     onChange: (value: string | null) => void;
     disabled: boolean;
+    required?: boolean;
+    error?: string;
 }) {
     return (
         <Grid size={{xs: 12, md: 6}}>
@@ -720,13 +799,14 @@ function RequestorMappingField(props: {
                 value={props.value}
                 onChange={props.onChange}
                 disabled={props.disabled}
-                required={true}
+                required={props.required}
+                error={props.error}
             />
         </Grid>
     );
 }
 
-function wrapPaymentConfigItem(rootElement: AnyElement, errors: string[] | null | undefined): DialogListPropsDialogContentComponent<PaymentItemRow> {
+function wrapPaymentConfigItem(rootElement: AnyElement, errorDetails: PaymentConfigErrorDetails | undefined): DialogListPropsDialogContentComponent<PaymentItemRow> {
     return (props: {
         item: PaymentItemRow,
         onChange: (item: PaymentItemRow) => void,
@@ -740,7 +820,7 @@ function wrapPaymentConfigItem(rootElement: AnyElement, errors: string[] | null 
             })}
             rootElement={rootElement}
             disabled={props.disabled ?? false}
-            errors={errors}
+            errorDetails={getItemErrorDetails(errorDetails, props.item.index)}
         />
     );
 }
@@ -750,14 +830,14 @@ function PaymentConfigItemEditor(props: {
     onChange: (item: PaymentConfigElementValueItem) => void;
     rootElement: AnyElement;
     disabled: boolean;
-    errors: string[] | null | undefined;
+    errorDetails?: PaymentConfigErrorDetails;
 }) {
     const {
         item,
         onChange,
         rootElement,
         disabled,
-        errors,
+        errorDetails,
     } = props;
 
     return (
@@ -778,6 +858,7 @@ function PaymentConfigItemEditor(props: {
                         required={true}
                         disabled={disabled}
                         muiPassTroughProps={{margin: 'none'}}
+                        error={getFieldError(errorDetails, 'description')}
                     />
                 </Grid>
 
@@ -790,6 +871,7 @@ function PaymentConfigItemEditor(props: {
                         required={true}
                         disabled={disabled}
                         muiPassTroughProps={{margin: 'none'}}
+                        error={getFieldError(errorDetails, 'reference')}
                     />
                 </Grid>
 
@@ -805,6 +887,7 @@ function PaymentConfigItemEditor(props: {
                         options={IdTypeOptions}
                         disabled={disabled}
                         required={true}
+                        error={getFieldError(errorDetails, 'idType')}
                     />
                 </Grid>
 
@@ -817,6 +900,7 @@ function PaymentConfigItemEditor(props: {
                             onChange={(predefinedId) => onChange({...item, predefinedId})}
                             required={true}
                             disabled={disabled}
+                            error={getFieldError(errorDetails, 'predefinedId')}
                         />
                     </Grid>
                 }
@@ -846,6 +930,7 @@ function PaymentConfigItemEditor(props: {
                             options={CostTypeOptions}
                             disabled={disabled}
                             required={true}
+                            error={getFieldError(errorDetails, 'costType')}
                         />
                     </Grid>
 
@@ -861,6 +946,7 @@ function PaymentConfigItemEditor(props: {
                                 suffix="Euro"
                                 required={true}
                                 disabled={disabled}
+                                error={getFieldError(errorDetails, 'fixedCosts')}
                             />
                         </Grid>
                     }
@@ -878,6 +964,7 @@ function PaymentConfigItemEditor(props: {
                                 options={CalculationTypeOptions}
                                 disabled={disabled}
                                 required={true}
+                                error={getFieldError(errorDetails, 'variableCostsCalculationType')}
                             />
                         </Grid>
                     }
@@ -905,6 +992,12 @@ function PaymentConfigItemEditor(props: {
                                 variableCostsLowCodeCalculation,
                             })}
                             disabled={disabled}
+                            error={getPaymentValueCalculationError(
+                                errorDetails,
+                                item.variableCostsCalculationType,
+                                'variableCostsNoCodeCalculation',
+                                'variableCostsLowCodeCalculation',
+                            )}
                         />
                     </Box>
                 }
@@ -934,6 +1027,7 @@ function PaymentConfigItemEditor(props: {
                             options={QuantityTypeOptions}
                             disabled={disabled}
                             required={true}
+                            error={getFieldError(errorDetails, 'quantityType')}
                         />
                     </Grid>
 
@@ -951,6 +1045,7 @@ function PaymentConfigItemEditor(props: {
                                 decimalPlaces={0}
                                 required={true}
                                 disabled={disabled}
+                                error={getFieldError(errorDetails, 'fixedQuantity')}
                             />
                         </Grid>
                     }
@@ -968,6 +1063,7 @@ function PaymentConfigItemEditor(props: {
                                 options={CalculationTypeOptions}
                                 disabled={disabled}
                                 required={true}
+                                error={getFieldError(errorDetails, 'variableQuantityCalculationType')}
                             />
                         </Grid>
                     }
@@ -995,6 +1091,12 @@ function PaymentConfigItemEditor(props: {
                                 variableQuantityLowCodeCalculation,
                             })}
                             disabled={disabled}
+                            error={getPaymentValueCalculationError(
+                                errorDetails,
+                                item.variableQuantityCalculationType,
+                                'variableQuantityNoCodeCalculation',
+                                'variableQuantityLowCodeCalculation',
+                            )}
                         />
                     </Box>
                 }
@@ -1022,6 +1124,7 @@ function PaymentConfigItemEditor(props: {
                             maxValue={100}
                             suffix="%"
                             disabled={disabled}
+                            error={getFieldError(errorDetails, 'fixedTaxRate')}
                         />
                     </Grid>
                 </Grid>
@@ -1030,7 +1133,7 @@ function PaymentConfigItemEditor(props: {
                     value={item.additionalBookingData}
                     onChange={(additionalBookingData) => onChange({...item, additionalBookingData})}
                     disabled={disabled}
-                    errors={errors}
+                    error={getFieldError(errorDetails, 'additionalBookingData')}
                 />
             </Box>
         </Stack>
@@ -1046,6 +1149,7 @@ function PaymentValueCalculationEditor(props: {
     onNoCodeChange: (value: NoCodeOperand | null) => void;
     onLowCodeChange: (value: JavascriptCode | null) => void;
     disabled: boolean;
+    error?: string;
 }) {
     const calculationType = props.calculationType ?? PaymentConfigElementValueItemVariableValueCalculationType.NoCode;
 
@@ -1061,6 +1165,7 @@ function PaymentValueCalculationEditor(props: {
                     onChange={(value) => props.onNoCodeChange(value?.noCode ?? null)}
                     disabled={props.disabled}
                     disablePopoutModeWhenFormLayoutChild={true}
+                    error={props.error}
                 />
             }
 
@@ -1073,6 +1178,7 @@ function PaymentValueCalculationEditor(props: {
                     language="javascript"
                     height="220px"
                     disabled={props.disabled}
+                    error={props.error}
                 />
             }
         </>
@@ -1083,7 +1189,7 @@ function AdditionalBookingDataEditor(props: {
     value: Record<string, string> | null;
     onChange: (value: Record<string, string> | null) => void;
     disabled: boolean;
-    errors: string[] | null | undefined;
+    error?: string;
 }) {
     const rows = Object.entries(props.value ?? {});
 
@@ -1129,7 +1235,7 @@ function AdditionalBookingDataEditor(props: {
             {
                 rows.length === 0 &&
                 <EmptyBookingDataState
-                    hasError={props.errors != null}
+                    hasError={props.error != null}
                 />
             }
 
@@ -1153,6 +1259,7 @@ function AdditionalBookingDataEditor(props: {
                                     }}
                                     disabled={props.disabled}
                                     muiPassTroughProps={{margin: 'none'}}
+                                    error={isStringNullOrEmpty(key) ? props.error : undefined}
                                 />
                             </Grid>
 
@@ -1265,6 +1372,47 @@ function EmptyBookingDataState(props: { hasError: boolean }) {
             </Stack>
         </Box>
     );
+}
+
+function asErrorDetails(value: unknown): PaymentConfigErrorDetails | undefined {
+    if (value != null && typeof value === 'object' && !Array.isArray(value)) {
+        return value as PaymentConfigErrorDetails;
+    }
+
+    return undefined;
+}
+
+function getFieldError(errorDetails: PaymentConfigErrorDetails | null | undefined, fieldKey: string): string | undefined {
+    const error = errorDetails?.[fieldKey];
+    return typeof error === 'string' ? error : undefined;
+}
+
+function getNestedErrorDetails(errorDetails: PaymentConfigErrorDetails | null | undefined, fieldKey: string): PaymentConfigErrorDetails | undefined {
+    return asErrorDetails(errorDetails?.[fieldKey]);
+}
+
+function getItemErrorDetails(errorDetails: PaymentConfigErrorDetails | null | undefined, itemIndex: number): PaymentConfigErrorDetails | undefined {
+    const itemErrors = errorDetails?.items;
+    if (!Array.isArray(itemErrors)) {
+        return undefined;
+    }
+
+    return asErrorDetails(itemErrors[itemIndex]);
+}
+
+function hasErrorDetails(errorDetails: PaymentConfigErrorDetails | null | undefined): boolean {
+    return errorDetails != null && Object.keys(errorDetails).length > 0;
+}
+
+function getPaymentValueCalculationError(
+    errorDetails: PaymentConfigErrorDetails | null | undefined,
+    calculationType: PaymentConfigElementValueItemVariableValueCalculationType | null,
+    noCodeFieldKey: string,
+    lowCodeFieldKey: string,
+): string | undefined {
+    return calculationType === PaymentConfigElementValueItemVariableValueCalculationType.LowCode
+        ? getFieldError(errorDetails, lowCodeFieldKey)
+        : getFieldError(errorDetails, noCodeFieldKey);
 }
 
 function createPaymentItem(): PaymentConfigElementValueItem {

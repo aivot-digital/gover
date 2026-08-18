@@ -11,9 +11,13 @@ import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement
 import de.aivot.gover.backend.enums.XBezahldienstStatus;
 import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.gover.backend.payment.models.PaymentItem;
 import de.aivot.gover.backend.payment.models.PaymentPayload;
+import de.aivot.gover.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.gover.backend.utils.NumberUtils;
 import de.aivot.gover.backend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.apache.commons.codec.binary.Base64;
 
 import java.awt.*;
@@ -25,9 +29,13 @@ import java.util.stream.Collectors;
 
 
 public class PaymentGroupPreset extends GroupLayoutElement {
-    public PaymentGroupPreset(PaymentProviderEntity paymentProvider,
-                              PaymentPayload paymentPayload,
-                              PaymentTransactionEntity transaction) throws IOException, WriterException {
+    public PaymentGroupPreset(@Nonnull PaymentProviderEntity paymentProvider,
+                              @Nonnull PaymentProviderDefinition paymentProviderDefinition,
+                              @Nonnull PaymentPayload paymentPayload,
+                              @Nonnull PaymentTransactionEntity transaction,
+                              @Nullable String successMessage,
+                              @Nullable String failureMessage,
+                              @Nonnull String downloadUrl) throws IOException, WriterException {
         super();
 
         setId("payment-group");
@@ -36,19 +44,25 @@ public class PaymentGroupPreset extends GroupLayoutElement {
             case XBezahldienstStatus.INITIAL -> {
                 yield """
                         # Zahlung ausstehend
-                        Um Ihre Einreichung bearbeiten zu können, ist eine Zahlung von Gebühren erforderlich.
-                        Die Zahlung wird durch den **%s** abgewickelt.
-                        Bitte achten Sie darauf, dass Sie die Zahlungsinformationen korrekt eingeben und den Vorgang abschließen.
+                        Um Ihre Einreichung bearbeiten zu können, ist eine Zahlung erforderlich.
+                        Die Zahlung wird durch den Dienstleister **%s** abgewickelt.
+                        Bitte achten Sie darauf, dass Sie die Zahlungs­informationen korrekt eingeben und den Vorgang abschließen.
                         
-                        Für Ihre Einreichung sind folgende Gebühren zu zahlen:
+                        
+                        **Wichtig:** Ihre Einreichung wird erst nach erfolgter Zahlung weiterbearbeitet.
+                        
+                        
+                        Für Ihre Einreichung sind folgende Positionen zu begleichen:
                         %s
                         
-                        Insgesamt zu entrichtende Gebühr: %s Euro inkl. Steuern.
+                        
+                        Insgesamt zu entrichtende Gebühr: %s Euro %s
+                        
                         
                         Sie können den Betrag über den folgenden Link zahlen: [%s](%s)
                         """
                         .formatted(
-                                StringUtils.quote(paymentProvider.getName()),
+                                StringUtils.quote(paymentProviderDefinition.getProviderName()),
                                 paymentPayload
                                         .getPaymentItems()
                                         .stream()
@@ -61,6 +75,12 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                                         ))
                                         .collect(Collectors.joining()),
                                 NumberUtils.formatGermanNumber(paymentPayload.getTotal(), 2),
+                                paymentPayload
+                                        .getPaymentItems()
+                                        .stream()
+                                        .map(PaymentItem::getTaxRate)
+                                        .map(BigDecimal.ZERO::compareTo)
+                                        .anyMatch(i -> i != 0) ? "inkl. Steuern." : "",
                                 transaction.getPaymentInformation().getTransactionRedirectUrl(),
                                 transaction.getPaymentInformation().getTransactionRedirectUrl()
                         );
@@ -68,23 +88,36 @@ public class PaymentGroupPreset extends GroupLayoutElement {
             case XBezahldienstStatus.FAILED -> {
                 yield """
                         # Zahlung fehlgeschlagen
-                        Die Zahlung konnte nicht erfolgreich abgeschlossen werden.
-                        Bitte wenden Sie sich an den Support, um weitere Informationen zu erhalten und die Zahlung erneut zu versuchen.
-                        """;
+                        %s
+                        """
+                        .formatted(
+                                StringUtils.isNotNullOrEmpty(failureMessage)
+                                        ? failureMessage
+                                        : "Die Zahlung wurde abgebrochen. Bitte wenden Sie sich an den Support, um weitere Informationen zu erhalten und die Zahlung erneut zu versuchen."
+                        );
             }
             case XBezahldienstStatus.CANCELED -> {
                 yield """
                         # Zahlung abgebrochen
-                        Die Zahlung wurde abgebrochen.
-                        Bitte wenden Sie sich an den Support, um weitere Informationen zu erhalten und die Zahlung erneut zu versuchen.
-                        """;
+                        %s
+                        """
+                        .formatted(
+                                StringUtils.isNotNullOrEmpty(failureMessage)
+                                        ? failureMessage
+                                        : "Die Zahlung wurde abgebrochen. Bitte wenden Sie sich an den Support, um weitere Informationen zu erhalten und die Zahlung erneut zu versuchen."
+                        );
             }
             case XBezahldienstStatus.PAYED -> {
                 yield """
                         # Zahlung erfolgreich
-                        Die Zahlung wurde erfolgreich abgeschlossen.
-                        Vielen Dank für Ihre Einreichung.
-                        """;
+                        %s
+                        
+                        Sie können die Zahlungsbestätigung über den folgenden Link herunterladen: [%s](%s)
+                        """.formatted(
+                        StringUtils.isNotNullOrEmpty(successMessage) ? successMessage : "Die Zahlung wurde erfolgreich abgeschlossen. Vielen Dank für Ihre Einreichung.",
+                        downloadUrl,
+                        downloadUrl
+                );
             }
         };
 

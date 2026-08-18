@@ -79,6 +79,11 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
         return processInstanceRepository.findOne(specification);
     }
 
+    @Nonnull
+    public Optional<ProcessInstanceEntity> retrieveByAccessKey(@Nonnull String accessKey) {
+        return processInstanceRepository.findByAccessKey(accessKey);
+    }
+
     @Override
     public boolean exists(@Nonnull Long id) {
         return processInstanceRepository.existsById(id);

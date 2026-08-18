@@ -1,13 +1,18 @@
 import {Box} from '@mui/material';
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {CustomerTaskViewApiService, TaskViewResponse} from './customer-task-view-api-service';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../../slices/shell-slice';
 import {isApiError} from '../../../models/api-error';
 import {ElementDerivationContext} from '../../../modules/elements/components/element-derivation-context';
-import {AuthoredElementValues} from '../../../models/element-data';
+import {
+    AuthoredElementValues,
+    createDerivedRuntimeElementData,
+    ElementDerivationResponse,
+} from '../../../models/element-data';
 import {useParams} from 'react-router-dom';
+import {BaseApiService} from '../../../services/base-api-service';
 
 export function CustomerInstanceTaskView() {
     const {
@@ -54,6 +59,11 @@ export function CustomerInstanceTaskView() {
             })
     }, [taskAccessKey]);
 
+    const handleDerive = useCallback((values: AuthoredElementValues, skipErrorsForElements: string[]) => {
+        return new CustomerTaskViewApiService()
+            .deriveTaskView(instanceAccessKey, taskAccessKey, values, skipErrorsForElements);
+    }, [instanceAccessKey, taskAccessKey]);
+
     if (taskView == null) {
         return (
             <LoadingPlaceholder/>
@@ -72,6 +82,7 @@ export function CustomerInstanceTaskView() {
                 element={taskView.layout}
                 authoredElementValues={authoredValues}
                 onAuthoredElementValuesChange={setEditedAuthoredValues}
+                onDeriveOverride={handleDerive}
             />
         </Box>
     );

@@ -126,7 +126,10 @@ export function CustomerFormPage() {
         minimumDerivedDataVersion: number;
     } | null>(null);
 
-    const [startedProcessAccessKey, setStartedProcessAccessKey] = useState<string | null>(null);
+    const [startedProcessAccessInfo, setStartedProcessAccessInfo] = useState<{
+        processInstanceAccessKey: string;
+        paymentRequired: boolean;
+    } | null>(null);
     const [dismissAuthentication, setDismissAuthentication] = useState(false);
     const [customerInputLoaderResolved, setCustomerInputLoaderResolved] = useState(false);
 
@@ -157,7 +160,7 @@ export function CustomerFormPage() {
                 setDerivedData(createDerivedRuntimeElementData());
                 setDerivedDataVersion(0);
                 setPendingStepRestore(null);
-                setStartedProcessAccessKey(null);
+                setStartedProcessAccessInfo(null);
                 setDismissAuthentication(false);
                 setCustomerInputLoaderResolved(false);
                 dispatch(setCurrentStep(0));
@@ -250,8 +253,9 @@ export function CustomerFormPage() {
             .calculateCosts(process.slug, resolvedFormSlug, values, {
                 testClaim: testClaimKey ?? undefined,
             });
+        const paymentRequired = costs.totalCost > 0;
 
-        if (costs.totalCost > 0) {
+        if (paymentRequired) {
             const proceedWithPaymentRequirements = await confirm({
                 title: 'Zahlung erforderlich',
                 children: (
@@ -297,7 +301,10 @@ export function CustomerFormPage() {
                 });
 
             CustomerInputService.cleanCustomerInput(process.slug, resolvedFormSlug, version.processVersion);
-            setStartedProcessAccessKey(startRes.startedProcessAccessKey);
+            setStartedProcessAccessInfo({
+                processInstanceAccessKey: startRes.startedProcessAccessKey,
+                paymentRequired: paymentRequired,
+            });
         } finally {
             dispatch(clearLoadingMessage());
         }
@@ -393,7 +400,7 @@ export function CustomerFormPage() {
                             setDerivedData(createDerivedRuntimeElementData());
                             setDerivedDataVersion(0);
                             setPendingStepRestore(null);
-                            setStartedProcessAccessKey(null);
+                            setStartedProcessAccessInfo(null);
                             setDismissAuthentication(false);
                             setCustomerInputLoaderResolved(true);
                             IdentityProvidersApiService.clearIdentity(node.id);
@@ -432,7 +439,7 @@ export function CustomerFormPage() {
 
                     {
                         showFormFlow &&
-                        startedProcessAccessKey == null &&
+                        startedProcessAccessInfo == null &&
                         !customerInputLoaderResolved &&
                         customerInputDraft != null &&
                         <CustomerFormSkeleton />
@@ -440,7 +447,7 @@ export function CustomerFormPage() {
 
                     {
                         showFormFlow &&
-                        startedProcessAccessKey == null &&
+                        startedProcessAccessInfo == null &&
                         !customerInputLoaderResolved &&
                         <CustomerInputLoader
                             processSlug={process.slug}
@@ -457,7 +464,7 @@ export function CustomerFormPage() {
 
                     {
                         showFormFlow &&
-                        startedProcessAccessKey == null &&
+                        startedProcessAccessInfo == null &&
                         customerInputLoaderResolved &&
                         <ElementDerivationContext
                             element={layoutElement}
@@ -474,9 +481,10 @@ export function CustomerFormPage() {
                     }
                     {
                         showFormFlow &&
-                        startedProcessAccessKey != null &&
+                        startedProcessAccessInfo != null &&
                         <Submitted
-                            startedProcessAccessKey={startedProcessAccessKey}
+                            startedProcessAccessKey={startedProcessAccessInfo.processInstanceAccessKey}
+                            paymentRequired={startedProcessAccessInfo.paymentRequired}
                             formElement={layoutElement}
                             node={node}
                             process={process}

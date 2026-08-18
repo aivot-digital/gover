@@ -1,0 +1,9 @@
+<!--/*@thymesVar id="transaction" type="de.aivot.gover.backend.payment.entities.PaymentTransactionEntity"*/-->
+<!--/*@thymesVar id="caseNumber" type="java.lang.String"*/-->
+<!--/*@thymesVar id="logoUrl" type="java.lang.String"*/-->
+<!--/*@thymesVar id="department" type="de.aivot.gover.backend.department.entities.VDepartmentShadowedEntity"*/-->
+<!--/*@thymesVar id="#numberformat" type="de.aivot.gover.backend.services.pdf.NumberFormatDialect"*/-->
+
+<div style="width: 100%; display: flex; align-items: flex-end; padding: 0 2cm; color: #626262;">
+    <span style="font-size: 10px; white-space: pre-line;" th:text="${department.getPostalAddress()}">Musterstraße 1 12345 Musterort</span>
+</div>

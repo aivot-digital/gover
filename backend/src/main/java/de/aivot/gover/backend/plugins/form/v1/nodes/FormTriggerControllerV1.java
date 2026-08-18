@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.gover.backend.asset.services.AssetService;
 import de.aivot.gover.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.gover.backend.config.services.SystemConfigService;
+import de.aivot.gover.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.department.services.VDepartmentShadowedService;
 import de.aivot.gover.backend.elements.dtos.ElementDerivationResponse;
@@ -21,6 +22,7 @@ import de.aivot.gover.backend.elements.services.ElementDerivationLogger;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.elements.utils.ElementFlattenUtils;
 import de.aivot.gover.backend.elements.utils.ElementStreamUtils;
+import de.aivot.gover.backend.enums.XBezahldienstStatus;
 import de.aivot.gover.backend.identity.controllers.IdentityController;
 import de.aivot.gover.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.gover.backend.identity.enums.IdentityProviderType;
@@ -32,11 +34,15 @@ import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.models.dtos.MaxFileSizeDto;
 import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
+import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.gover.backend.payment.exceptions.PaymentException;
 import de.aivot.gover.backend.payment.models.PaymentPayload;
+import de.aivot.gover.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.gover.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.gover.backend.payment.services.PaymentPayloadCreationService;
+import de.aivot.gover.backend.payment.services.PaymentProviderDefinitionsService;
+import de.aivot.gover.backend.payment.services.PaymentTransactionService;
 import de.aivot.gover.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.gover.backend.process.entities.*;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
@@ -45,8 +51,10 @@ import de.aivot.gover.backend.process.filters.ProcessNodeFilter;
 import de.aivot.gover.backend.process.filters.ProcessVersionFilter;
 import de.aivot.gover.backend.process.models.ProcessExecutionData;
 import de.aivot.gover.backend.process.services.*;
+import de.aivot.gover.backend.services.PdfService;
 import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
 import de.aivot.gover.backend.storage.services.StorageProviderService;
+import de.aivot.gover.backend.storage.services.StorageService;
 import de.aivot.gover.backend.submission.services.ElementDataTransformService;
 import de.aivot.gover.backend.system.services.SystemService;
 import de.aivot.gover.backend.theme.dtos.ThemeResponseDTO;
@@ -60,12 +68,17 @@ import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.thymeleaf.exceptions.TemplateProcessingException;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 
@@ -92,13 +105,20 @@ public class FormTriggerControllerV1 {
     private final StorageProviderService storageProviderService;
     private final CaptchaReplayGuard captchaReplayGuard;
     private final ProcessInstanceService processInstanceService;
+    private final ProcessInstanceTaskService processInstanceTaskService;
+    private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
+    private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final StorageService storageService;
     private final FileUploadMultipartInputService fileUploadMultipartInputService;
     private final ElementDataTransformService elementDataTransformService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final FormTriggerNodeV1 formTriggerNodeV1;
     private final IdentityService identityService;
     private final PaymentPayloadCreationService paymentRequestCreationService;
+    private final PaymentTransactionService paymentTransactionService;
     private final PaymentProviderRepository paymentProviderRepository;
+    private final PdfService pdfService;
+    private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
 
     @Autowired
     public FormTriggerControllerV1(GoverConfig goverConfig,
@@ -118,13 +138,19 @@ public class FormTriggerControllerV1 {
                                    StorageProviderService storageProviderService,
                                    CaptchaReplayGuard captchaReplayGuard,
                                    ProcessInstanceService processInstanceService,
+                                   ProcessInstanceTaskService processInstanceTaskService,
+                                   ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
+                                   ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                   StorageService storageService,
                                    FileUploadMultipartInputService fileUploadMultipartInputService,
                                    ElementDataTransformService elementDataTransformService,
                                    ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
                                    FormTriggerNodeV1 formTriggerNodeV1,
                                    IdentityService identityService,
                                    PaymentPayloadCreationService paymentRequestCreationService,
-                                   PaymentProviderRepository paymentProviderRepository) {
+                                   PaymentTransactionService paymentTransactionService,
+                                   PaymentProviderRepository paymentProviderRepository,
+                                   PdfService pdfService, PaymentProviderDefinitionsService paymentProviderDefinitionsService) {
         this.goverConfig = goverConfig;
         this.identityProviderService = identityProviderService;
         this.elementDerivationService = elementDerivationService;
@@ -142,13 +168,20 @@ public class FormTriggerControllerV1 {
         this.storageProviderService = storageProviderService;
         this.captchaReplayGuard = captchaReplayGuard;
         this.processInstanceService = processInstanceService;
+        this.processInstanceTaskService = processInstanceTaskService;
+        this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
+        this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.storageService = storageService;
         this.fileUploadMultipartInputService = fileUploadMultipartInputService;
         this.elementDataTransformService = elementDataTransformService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.formTriggerNodeV1 = formTriggerNodeV1;
         this.identityService = identityService;
         this.paymentRequestCreationService = paymentRequestCreationService;
+        this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderRepository = paymentProviderRepository;
+        this.pdfService = pdfService;
+        this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
     }
 
     @GetMapping("")
@@ -320,9 +353,8 @@ public class FormTriggerControllerV1 {
 
     @Nonnull
     private ProcessNodeService.ProcessConfigurationDetails<FormTriggerConfigV1> getConfigurationDetails(ProcessNodeEntity node, FormTriggerNodeV1 provider, UserEntity execUser) throws ResponseException {
-        var config = processNodeService
+        return processNodeService
                 .deriveConfiguration(node, provider, execUser, true);
-        return config;
     }
 
     @GetMapping("max-file-size/")
@@ -389,6 +421,10 @@ public class FormTriggerControllerV1 {
                 .findById(paymentConfig.paymentProviderKey())
                 .orElseThrow(ResponseException::internalServerError);
 
+        PaymentProviderDefinition paymentProviderDefinition = paymentProviderDefinitionsService
+                .getProviderDefinition(paymentProvider.getPaymentProviderDefinitionKey(), paymentProvider.getPaymentProviderDefinitionVersion())
+                .orElseThrow(ResponseException::internalServerError);
+
         var options = new ElementDerivationOptions()
                 .setSkipValuesForElementIds(List.of())
                 .setSkipOverridesForElementIds(List.of())
@@ -424,7 +460,7 @@ public class FormTriggerControllerV1 {
         return paymentRequest
                 .map(paymentPayload -> FormTriggerCostCalculationResponseV1.of(
                         paymentPayload,
-                        paymentProvider
+                        paymentProviderDefinition
                 ))
                 .orElseGet(FormTriggerCostCalculationResponseV1::empty);
     }
@@ -757,36 +793,236 @@ public class FormTriggerControllerV1 {
         response.sendRedirect(redirectUrl);
     }
 
-    @GetMapping("submit/{instanceAccessKey}/print/")
+    @GetMapping("submit/{instanceAccessKey}/{taskAccessKey}/print/")
     @Operation(
-            summary = "Get the favicon for a form",
-            description = "Get the favicon image associated with the specified form. " +
-                    "If the form does not have a custom favicon, a default favicon URL will be provided."
+            summary = "Get submitted form summary PDF",
+            description = "Download the printable summary PDF created for a submitted form."
     )
     public void getPrint(@Nullable @AuthenticationPrincipal Jwt jwt,
                          @Nonnull @PathVariable String processSlug,
                          @Nonnull @PathVariable String formSlug,
-                         @Nonnull @PathVariable UUID instanceAccessKey,
-                         @Nullable @RequestParam(value = "version", required = false) Integer version,
+                         @Nonnull @PathVariable String instanceAccessKey,
+                         @Nonnull @PathVariable String taskAccessKey,
+                         @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer version,
                          @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
+        var attachment = resolveSubmittedSummaryAttachment(
+                jwt,
+                processSlug,
+                formSlug,
+                instanceAccessKey,
+                taskAccessKey,
+                version
+        );
 
+        response.setContentType("application/pdf");
+        response.setHeader(
+                HttpHeaders.CONTENT_DISPOSITION,
+                ContentDisposition
+                        .attachment()
+                        .filename(attachment.getFileName(), StandardCharsets.UTF_8)
+                        .build()
+                        .toString()
+        );
+
+        try (var inputStream = storageService.getDocumentContent(
+                attachment.getStorageProviderId(),
+                attachment.getStoragePathFromRoot()
+        )) {
+            inputStream.transferTo(response.getOutputStream());
+        }
     }
 
-    @GetMapping("submit/{instanceAccessKey}/status/")
+    @GetMapping("submit/{instanceAccessKey}/{taskAccessKey}/payment-confirmation/")
     @Operation(
-            summary = "Get the favicon for a form",
-            description = "Get the favicon image associated with the specified form. " +
-                    "If the form does not have a custom favicon, a default favicon URL will be provided."
+            summary = "Get submitted form payment confirmation PDF",
+            description = "Download the payment confirmation PDF for a paid submitted form."
     )
-    public void getStatus(@Nullable @AuthenticationPrincipal Jwt jwt,
-                          @Nonnull @PathVariable String processSlug,
-                          @Nonnull @PathVariable String formSlug,
-                          @Nonnull @PathVariable UUID instanceAccessKey,
-                          @Nullable @RequestParam(value = "version", required = false) Integer version,
-                          @Nonnull HttpServletResponse response
-    ) throws ResponseException, IOException {
+    public void getPaymentConfirmation(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                       @Nonnull @PathVariable String processSlug,
+                                       @Nonnull @PathVariable String formSlug,
+                                       @Nonnull @PathVariable String instanceAccessKey,
+                                       @Nonnull @PathVariable String taskAccessKey,
+                                       @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer version,
+                                       @Nonnull HttpServletResponse response) throws ResponseException, IOException {
+        var context = resolveSubmittedFormTriggerTaskContext(
+                jwt,
+                processSlug,
+                formSlug,
+                instanceAccessKey,
+                taskAccessKey,
+                version
+        );
 
+        var transaction = resolvePaymentTransaction(context, instanceAccessKey, taskAccessKey);
+        if (transaction.getStatus() != XBezahldienstStatus.PAYED) {
+            throw ResponseException.notFound();
+        }
+
+        var department = resolvePaymentConfirmationDepartment(context);
+        var logoUrl = resolvePaymentConfirmationLogoUrl(context.formLayout());
+
+        byte[] pdfBytes;
+        try {
+            pdfBytes = pdfService.generatePaymentConfirmation(
+                    transaction,
+                    context.instance().getCaseNumber(),
+                    logoUrl,
+                    department
+            );
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw ResponseException.internalServerError(e, "Die PDF-Erstellung der Zahlungsbestätigung wurde unterbrochen.");
+        } catch (IOException | URISyntaxException | TemplateProcessingException e) {
+            throw ResponseException.internalServerError(e, "Fehler beim Erzeugen der Zahlungsbestätigung: %s", e.getMessage());
+        }
+
+        response.setContentType("application/pdf");
+        response.setHeader(
+                HttpHeaders.CONTENT_DISPOSITION,
+                ContentDisposition
+                        .attachment()
+                        .filename("Zahlungsbestaetigung-" + context.instance().getCaseNumber() + ".pdf", StandardCharsets.UTF_8)
+                        .build()
+                        .toString()
+        );
+
+        response.getOutputStream().write(pdfBytes);
+    }
+
+    @Nonnull
+    private ProcessInstanceAttachmentEntity resolveSubmittedSummaryAttachment(@Nullable Jwt jwt,
+                                                                              @Nonnull String processSlug,
+                                                                              @Nonnull String formSlug,
+                                                                              @Nonnull String instanceAccessKey,
+                                                                              @Nonnull String taskAccessKey,
+                                                                              @Nullable Integer version) throws ResponseException {
+        var context = resolveSubmittedFormTriggerTaskContext(
+                jwt,
+                processSlug,
+                formSlug,
+                instanceAccessKey,
+                taskAccessKey,
+                version
+        );
+
+        var attachmentSet = processInstanceAttachmentSetService
+                .retrieveLatestByProcessInstanceIdAndTaskIdAndDataKey(
+                        context.instance().getId(),
+                        context.task().getId(),
+                        context.node().getDataKey()
+                )
+                .orElseThrow(ResponseException::notFound);
+
+        return processInstanceAttachmentService
+                .findAllByAttachmentSetId(attachmentSet.getId())
+                .stream()
+                .findFirst()
+                .orElseThrow(ResponseException::notFound);
+    }
+
+    @Nonnull
+    private ResolvedSubmittedFormTriggerTaskContext resolveSubmittedFormTriggerTaskContext(@Nullable Jwt jwt,
+                                                                                          @Nonnull String processSlug,
+                                                                                          @Nonnull String formSlug,
+                                                                                          @Nonnull String instanceAccessKey,
+                                                                                          @Nonnull String taskAccessKey,
+                                                                                          @Nullable Integer version) throws ResponseException {
+        var execUser = getExecUser(jwt);
+        var process = getProcessEntity(processSlug);
+        var instance = processInstanceService
+                .retrieveByAccessKey(instanceAccessKey)
+                .orElseThrow(ResponseException::notFound);
+
+        if (!Objects.equals(process.getId(), instance.getProcessId())) {
+            throw ResponseException.notFound();
+        }
+
+        var task = processInstanceTaskService
+                .retrieveByProcessInstanceIdAndAccessKey(instance.getId(), taskAccessKey)
+                .orElseThrow(ResponseException::notFound);
+
+        if (version != null && !Objects.equals(version, task.getProcessVersion())) {
+            throw ResponseException.notFound();
+        }
+
+        var node = processNodeService
+                .retrieve(task.getProcessNodeId())
+                .orElseThrow(ResponseException::notFound);
+
+        if (!Objects.equals(process.getId(), node.getProcessId()) ||
+                !Objects.equals(task.getProcessVersion(), node.getProcessVersion()) ||
+                !Objects.equals(formTriggerNodeV1.getKey(), node.getProcessNodeDefinitionKey()) ||
+                !Objects.equals(1, node.getProcessNodeDefinitionVersion())) {
+            throw ResponseException.notFound();
+        }
+
+        var provider = getProvider(node);
+        var config = getConfigurationDetails(node, provider, execUser);
+        if (!Objects.equals(formSlug, config.configuration().formSlug)) {
+            throw ResponseException.notFound();
+        }
+
+        var formLayout = config.configuration().formLayout;
+        if (formLayout == null) {
+            throw ResponseException.internalServerError("Die Konfiguration des Formulareingangs enthält kein Formular.");
+        }
+
+        return new ResolvedSubmittedFormTriggerTaskContext(
+                process,
+                instance,
+                task,
+                node,
+                formLayout
+        );
+    }
+
+    @Nonnull
+    private PaymentTransactionEntity resolvePaymentTransaction(@Nonnull ResolvedSubmittedFormTriggerTaskContext context,
+                                                               @Nonnull String instanceAccessKey,
+                                                               @Nonnull String taskAccessKey) throws ResponseException {
+        var expectedRedirectUrl = goverConfig.createUrl("/process/", instanceAccessKey, "tasks", taskAccessKey);
+        var runtimeData = context.task().getRuntimeData();
+        var transactionKey = runtimeData != null ? runtimeData.get(FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY) : null;
+
+        var transaction = transactionKey != null
+                ? paymentTransactionService
+                .retrieve(String.valueOf(transactionKey))
+                .orElseThrow(ResponseException::notFound)
+                : paymentTransactionService
+                .retrieveByRedirectUrl(expectedRedirectUrl)
+                .orElseThrow(ResponseException::notFound);
+
+        if (!Objects.equals(transaction.getRedirectUrl(), expectedRedirectUrl)) {
+            throw ResponseException.notFound();
+        }
+
+        return transaction;
+    }
+
+    @Nonnull
+    private VDepartmentShadowedEntity resolvePaymentConfirmationDepartment(@Nonnull ResolvedSubmittedFormTriggerTaskContext context) throws ResponseException {
+        var formDepartmentId = context.formLayout().getRelevantDepartmentId();
+        if (formDepartmentId != null) {
+            var formDepartment = vDepartmentShadowedService.retrieve(formDepartmentId);
+            if (formDepartment.isPresent()) {
+                return formDepartment.get();
+            }
+        }
+
+        return vDepartmentShadowedService
+                .retrieve(context.process().getDepartmentId())
+                .orElseThrow(() -> ResponseException.internalServerError("Keine zuständige Organisationseinheit für die Zahlungsbestätigung gefunden."));
+    }
+
+    @Nullable
+    private String resolvePaymentConfirmationLogoUrl(@Nonnull FormLayoutElement formLayout) {
+        var logoResolution = getFormLogoResolution(formLayout);
+        if (logoResolution.assetKey() != null) {
+            return assetService.createUrl(logoResolution.assetKey());
+        }
+
+        return logoResolution.allowDefaultFallback() ? goverConfig.getDefaultLogoUrl() : null;
     }
 
     @Nonnull
@@ -974,6 +1210,15 @@ public class FormTriggerControllerV1 {
     private record ResolvedFormTriggerContext(
             @Nonnull ProcessEntity process,
             @Nonnull ProcessVersionEntity processVersion,
+            @Nonnull ProcessNodeEntity node,
+            @Nonnull FormLayoutElement formLayout
+    ) {
+    }
+
+    private record ResolvedSubmittedFormTriggerTaskContext(
+            @Nonnull ProcessEntity process,
+            @Nonnull ProcessInstanceEntity instance,
+            @Nonnull ProcessInstanceTaskEntity task,
             @Nonnull ProcessNodeEntity node,
             @Nonnull FormLayoutElement formLayout
     ) {

@@ -9,6 +9,8 @@ import {isApiError} from '../../../models/api-error';
 import {ProcessInstanceStatusIcon} from '../../../modules/process/components/process-instance-status-icon';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 
+const INSTANCE_POLL_INTERVAL_MS = 2000;
+
 export function CustomerInstanceView() {
     const {
         instanceAccessKey = '',
@@ -48,7 +50,7 @@ export function CustomerInstanceView() {
 
         const intervalId = setInterval(() => {
             fetchInstanceStatus();
-        }, 1000);
+        }, INSTANCE_POLL_INTERVAL_MS);
 
         return () => {
             clearInterval(intervalId);
@@ -56,12 +58,12 @@ export function CustomerInstanceView() {
     }, [fetchInstanceStatus]);
 
     useEffect(() => {
-        if (instanceStatus == null || instanceStatus == 'failed' || instanceStatus.currentTasks.length === 0) {
+        if (instanceStatus == null || instanceStatus == 'failed' || instanceStatus.tasks.length === 0 || taskAccessKey != null) {
             return;
         }
 
         if (taskAccessKey == null) {
-            navigate(`/process/${instanceAccessKey}/tasks/${instanceStatus.currentTasks[0]}`);
+            navigate(`/process/${instanceAccessKey}/tasks/${instanceStatus.tasks[0].accessKey}`);
         }
     }, [instanceStatus]);
 
@@ -93,12 +95,12 @@ export function CustomerInstanceView() {
             </Stack>
 
             {
-                instanceStatus.currentTasks.length == 0 &&
+                instanceStatus.tasks.length == 0 &&
                 <NoTaskToDoPlaceholder/>
             }
 
             {
-                instanceStatus.currentTasks.length > 0 &&
+                instanceStatus.tasks.length > 0 &&
                 <Outlet/>
             }
         </PageWrapper>

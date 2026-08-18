@@ -1,22 +1,31 @@
 package de.aivot.gover.backend.plugins.form.v1.nodes;
 
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
-import de.aivot.gover.backend.elements.models.elements.form.input.PaymentConfigElement;
+import de.aivot.gover.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.PaymentConfigElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
-import de.aivot.gover.backend.elements.services.ElementDerivationService;
+import de.aivot.gover.backend.enums.XBezahldienstStatus;
+import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.pdf.enums.FormPdfScope;
+import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
+import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.gover.backend.payment.models.PaymentProviderDefinition;
+import de.aivot.gover.backend.payment.models.PaymentPayload;
+import de.aivot.gover.backend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.gover.backend.payment.services.PaymentPayloadCreationService;
+import de.aivot.gover.backend.payment.services.PaymentProviderDefinitionsService;
 import de.aivot.gover.backend.payment.services.PaymentTransactionService;
 import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
@@ -29,12 +38,15 @@ import de.aivot.gover.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.gover.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.gover.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.gover.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
+import de.aivot.gover.backend.process.services.ProcessService;
 import de.aivot.gover.backend.process.services.PublicUrlService;
+import de.aivot.gover.backend.process.services.TemplateRenderService;
 import de.aivot.gover.backend.services.PdfService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +58,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -72,6 +85,11 @@ class FormTriggerNodeV1Test {
     private PdfService pdfService;
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
     private ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
+    private PaymentTransactionService paymentTransactionService;
+    private PaymentProviderRepository paymentProviderRepository;
+    private PaymentProviderDefinitionsService paymentProviderDefinitionsService;
+    private ProcessService processService;
+    private TemplateRenderService templateRenderService;
     private FormTriggerNodeV1 node;
 
     @BeforeEach
@@ -80,6 +98,11 @@ class FormTriggerNodeV1Test {
         pdfService = mock(PdfService.class);
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
         processInstanceAttachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
+        paymentTransactionService = mock(PaymentTransactionService.class);
+        paymentProviderRepository = mock(PaymentProviderRepository.class);
+        paymentProviderDefinitionsService = mock(PaymentProviderDefinitionsService.class);
+        processService = mock(ProcessService.class);
+        templateRenderService = new TemplateRenderService(new JavascriptEngineFactoryService(List.of()));
         node = createNode(mock(PublicUrlService.class));
     }
 
@@ -355,6 +378,111 @@ class FormTriggerNodeV1Test {
         assertFalse(cleaned.containsKey(FormTriggerConfigV1.PAYMENT));
     }
 
+    @Test
+    void getCustomerTaskView_ShouldRenderConfiguredPaymentSuccessMessage() throws Exception {
+        var paymentProviderKey = UUID.randomUUID();
+        var transactionKey = "tx-1";
+        var paymentConfig = new PaymentConfigElementValue(
+                paymentProviderKey,
+                null,
+                null,
+                false,
+                null,
+                List.of(),
+                "# Zahlung erhalten\nDanke **{{ $.name }}**.",
+                "# Zahlung offen\nHallo **{{ $.name }}**."
+        );
+        var nodeConfiguration = new FormTriggerConfigV1();
+        nodeConfiguration.formSlug = "antrag-online";
+        nodeConfiguration.payment = paymentConfig;
+        var task = task()
+                .setRuntimeData(Map.of(
+                        FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY, transactionKey,
+                        FormTriggerNodeV1.DATA_KEY_PAYMENT_PAYLOAD, new PaymentPayload()
+                ))
+                .setProcessData(Map.of("name", "Ada"));
+
+        when(paymentTransactionService.retrieve(transactionKey))
+                .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, XBezahldienstStatus.PAYED)));
+        var paymentProvider = paymentProvider(paymentProviderKey);
+        when(paymentProviderRepository.findById(paymentProviderKey))
+                .thenReturn(Optional.of(paymentProvider));
+        when(paymentProviderDefinitionsService.getProviderDefinition(
+                paymentProvider.getPaymentProviderDefinitionKey(),
+                paymentProvider.getPaymentProviderDefinitionVersion()
+        )).thenReturn(Optional.of(paymentProviderDefinition()));
+        when(processService.retrieve(PROCESS_ID))
+                .thenReturn(Optional.of(process()));
+
+        var layout = node.getCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+                mock(ProcessNodeExecutionLogger.class),
+                processNode(),
+                processInstance(Map.of()),
+                task,
+                null,
+                null,
+                nodeConfiguration,
+                null
+        ));
+
+        var richText = assertInstanceOf(RichTextContentElement.class, layout.getChildren().getFirst());
+        assertEquals("# Zahlung erhalten\nDanke **Ada**.", richText.getContent());
+    }
+
+    @Test
+    void getCustomerTaskView_ShouldRenderPaymentConfirmationDownloadUrl() throws Exception {
+        var paymentProviderKey = UUID.randomUUID();
+        var transactionKey = "tx-1";
+        var paymentConfig = new PaymentConfigElementValue(
+                paymentProviderKey,
+                null,
+                null,
+                false,
+                null,
+                List.of(),
+                null,
+                null
+        );
+        var nodeConfiguration = new FormTriggerConfigV1();
+        nodeConfiguration.formSlug = "antrag-online";
+        nodeConfiguration.payment = paymentConfig;
+        var task = task()
+                .setAccessKey("task-access")
+                .setRuntimeData(Map.of(
+                        FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY, transactionKey,
+                        FormTriggerNodeV1.DATA_KEY_PAYMENT_PAYLOAD, new PaymentPayload()
+                ));
+        var instance = processInstance(Map.of()).setAccessKey("instance-access");
+
+        when(paymentTransactionService.retrieve(transactionKey))
+                .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, XBezahldienstStatus.PAYED)));
+        var paymentProvider = paymentProvider(paymentProviderKey);
+        when(paymentProviderRepository.findById(paymentProviderKey))
+                .thenReturn(Optional.of(paymentProvider));
+        when(paymentProviderDefinitionsService.getProviderDefinition(
+                paymentProvider.getPaymentProviderDefinitionKey(),
+                paymentProvider.getPaymentProviderDefinitionVersion()
+        )).thenReturn(Optional.of(paymentProviderDefinition()));
+        when(processService.retrieve(PROCESS_ID))
+                .thenReturn(Optional.of(process()));
+
+        var layout = node.getCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+                mock(ProcessNodeExecutionLogger.class),
+                processNode(),
+                instance,
+                task,
+                null,
+                null,
+                nodeConfiguration,
+                null
+        ));
+
+        var richText = assertInstanceOf(RichTextContentElement.class, layout.getChildren().getFirst());
+        assertTrue(richText.getContent().contains(
+                "https://example.test/api/public/form/antrag-prozess/antrag-online/submit/instance-access/task-access/payment-confirmation/"
+        ));
+    }
+
     private static FormTriggerConfigV1 configuration(String formSlug, FormLayoutElement formLayout) {
         var configuration = new FormTriggerConfigV1();
         configuration.formSlug = formSlug;
@@ -403,7 +531,7 @@ class FormTriggerNodeV1Test {
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessId(PROCESS_ID)
                 .setInitialProcessVersion(PROCESS_VERSION)
                 .setStatus(ProcessInstanceStatus.Running)
@@ -420,7 +548,7 @@ class FormTriggerNodeV1Test {
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessInstanceId(PROCESS_INSTANCE_ID)
                 .setProcessId(PROCESS_ID)
                 .setProcessVersion(PROCESS_VERSION)
@@ -431,6 +559,30 @@ class FormTriggerNodeV1Test {
                 .setRuntimeData(Map.of())
                 .setNodeData(Map.of())
                 .setProcessData(Map.of());
+    }
+
+    private static PaymentProviderEntity paymentProvider(UUID paymentProviderKey) {
+        return new PaymentProviderEntity()
+                .setKey(paymentProviderKey)
+                .setPaymentProviderDefinitionKey("test-provider")
+                .setPaymentProviderDefinitionVersion(1)
+                .setName("Stadtkasse");
+    }
+
+    private static PaymentProviderDefinition paymentProviderDefinition() {
+        var definition = mock(PaymentProviderDefinition.class);
+        when(definition.getProviderName()).thenReturn("Testprovider");
+        return definition;
+    }
+
+    private static PaymentTransactionEntity paymentTransaction(UUID paymentProviderKey, XBezahldienstStatus status) {
+        var paymentInformation = new XBezahldienstePaymentInformation();
+        paymentInformation.setStatus(status);
+
+        return new PaymentTransactionEntity()
+                .setKey("tx-1")
+                .setPaymentProviderKey(paymentProviderKey)
+                .setPaymentInformation(paymentInformation);
     }
 
     private static ProcessNodeDefinitionConfigurationLayoutContext configurationLayoutContext() {
@@ -466,10 +618,12 @@ class FormTriggerNodeV1Test {
                 publicUrlService,
                 processNodeRepository,
                 mock(PaymentPayloadCreationService.class),
-                mock(ElementDerivationService.class),
-                mock(PaymentTransactionService.class),
-                mock(PaymentProviderRepository.class),
-                mock(GoverConfig.class),
+                templateRenderService,
+                paymentTransactionService,
+                paymentProviderRepository,
+                paymentProviderDefinitionsService,
+                processService,
+                goverConfig(),
                 pdfService,
                 processInstanceAttachmentService,
                 processInstanceAttachmentSetService

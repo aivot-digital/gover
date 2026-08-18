@@ -13,6 +13,8 @@ export interface PaymentConfigElementValue {
     mapRequestor: boolean | null;
     requestorMapping: PaymentConfigElementValueRequestorMapping | null;
     items: PaymentConfigElementValueItem[] | null;
+    successMessage: string | null;
+    failureMessage: string | null;
 }
 
 export interface PaymentConfigElementValueRequestorMapping {

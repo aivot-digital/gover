@@ -20,6 +20,8 @@ import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.gover.backend.payment.services.PaymentPayloadCreationService;
+import de.aivot.gover.backend.payment.services.PaymentProviderDefinitionsService;
+import de.aivot.gover.backend.payment.services.PaymentTransactionService;
 import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
@@ -29,7 +31,9 @@ import de.aivot.gover.backend.process.filters.ProcessNodeFilter;
 import de.aivot.gover.backend.process.filters.ProcessTestClaimFilter;
 import de.aivot.gover.backend.process.filters.ProcessVersionFilter;
 import de.aivot.gover.backend.process.services.*;
+import de.aivot.gover.backend.services.PdfService;
 import de.aivot.gover.backend.storage.services.StorageProviderService;
+import de.aivot.gover.backend.storage.services.StorageService;
 import de.aivot.gover.backend.submission.services.ElementDataTransformService;
 import de.aivot.gover.backend.system.services.SystemService;
 import de.aivot.gover.backend.theme.services.ThemeService;
@@ -48,7 +52,7 @@ class FormTriggerControllerV1SubmitTest {
     @Test
     void submitShouldClearIdentityCookieAfterSuccessfulSubmission() throws Exception {
         var identities = new IdentityDataMap();
-        var startedProcessAccessKey = UUID.randomUUID();
+        var startedProcessAccessKey = UUID.randomUUID().toString();
         var derivedRuntimeElementData = new DerivedRuntimeElementData();
         var fixture = createFixture(derivedRuntimeElementData, identities, startedProcessAccessKey);
         var response = new MockHttpServletResponse();
@@ -98,7 +102,7 @@ class FormTriggerControllerV1SubmitTest {
         var fixture = createFixture(
                 new DerivedRuntimeElementData().putError("field", "error"),
                 identities,
-                UUID.randomUUID()
+                UUID.randomUUID().toString()
         );
         var response = new MockHttpServletResponse();
 
@@ -123,7 +127,7 @@ class FormTriggerControllerV1SubmitTest {
     private SubmitFixture createFixture(
             DerivedRuntimeElementData derivedRuntimeElementData,
             IdentityDataMap identities,
-            UUID startedProcessAccessKey
+            String startedProcessAccessKey
     ) throws ResponseException {
         var processAccessKey = UUID.randomUUID();
         var processSlug = "example-process";
@@ -245,13 +249,20 @@ class FormTriggerControllerV1SubmitTest {
                 mock(StorageProviderService.class),
                 mock(CaptchaReplayGuard.class),
                 processInstanceService,
+                mock(ProcessInstanceTaskService.class),
+                mock(ProcessInstanceAttachmentSetService.class),
+                mock(ProcessInstanceAttachmentService.class),
+                mock(StorageService.class),
                 fileUploadMultipartInputService,
                 elementDataTransformService,
                 mock(ProcessNodeExecutionLoggerFactory.class),
                 provider,
                 identityService,
                 mock(PaymentPayloadCreationService.class),
-                mock(PaymentProviderRepository.class)
+                mock(PaymentTransactionService.class),
+                mock(PaymentProviderRepository.class),
+                mock(PdfService.class),
+                mock(PaymentProviderDefinitionsService.class)
         );
 
         return new SubmitFixture(

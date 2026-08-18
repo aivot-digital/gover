@@ -22,11 +22,9 @@ export function PaymentRequestOverview(props: PaymentRequestOverviewProps) {
                     mt: 1,
                 }}
             >
-                Um Ihre Einreichung bearbeiten zu können, ist eine Zahlung von Gebühren erforderlich.
-                Die Zahlung wird durch den
-                Dienstleister <strong>{request.paymentProviderName}</strong> abgewickelt.
-                Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben und den
-                Vorgang abschließen.
+                Um Ihre Einreichung bearbeiten zu können, ist eine Zahlung erforderlich.
+                Die Zahlung wird durch den Dienstleister <strong>{request.paymentProviderName}</strong> abgewickelt.
+                Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben und den Vorgang abschließen.
             </Typography>
 
             <Typography
@@ -46,7 +44,7 @@ export function PaymentRequestOverview(props: PaymentRequestOverviewProps) {
                     maxWidth: '660px',
                     mt: 3,
                 }}
-                title="Für Ihre Einreichung sind folgende Gebühren zu zahlen"
+                title="Für Ihre Einreichung sind folgende Positionen zu begleichen"
             >
                 <ul style={{paddingLeft: '20px'}}>
                     {
@@ -64,8 +62,8 @@ export function PaymentRequestOverview(props: PaymentRequestOverviewProps) {
                     }
                 </ul>
 
-                Insgesamt zu entrichtende Gebühr: {formatNumToGermanNum(request.totalCost, 2)} Euro
-                inkl. Steuern
+                Insgesamt zu entrichtende Zahlung: {formatNumToGermanNum(request.totalCost, 2)} Euro
+                { request.hasTaxes ? ' inkl. Steuern' : '' }
             </AlertComponent>
         </>
     );

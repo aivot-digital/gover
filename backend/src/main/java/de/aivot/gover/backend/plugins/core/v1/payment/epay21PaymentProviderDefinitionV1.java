@@ -196,7 +196,6 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         var objectMapper = new ObjectMapper()
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
-        paymentRequest.setRequestor(null);
         for (var item : paymentRequest.getItems()) {
             if (item.getBookingData().isEmpty()) {
                 item.setBookingData(null);

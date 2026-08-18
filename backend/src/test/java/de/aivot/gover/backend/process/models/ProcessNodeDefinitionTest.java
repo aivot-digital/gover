@@ -309,7 +309,7 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+            public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
                 var initialData = new AuthoredElementValues();
                 initialData.put("defaultField", "initial");
                 initialData.put("sharedField", "initial");
@@ -389,7 +389,7 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+            public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
                 var initialData = new AuthoredElementValues();
                 initialData.put("defaultField", "initial");
                 return initialData;
@@ -512,21 +512,22 @@ class ProcessNodeDefinitionTest {
         );
     }
 
-    private static ProcessNodeExecutionContextUICustomer customerContext(Map<String, Object> runtimeData,
-                                                                         Map<String, Object> nodeData,
-                                                                         Map<String, Object> processData) {
+    private static ProcessNodeExecutionContextUICustomer<AuthoredElementValues> customerContext(Map<String, Object> runtimeData,
+                                                                                                Map<String, Object> nodeData,
+                                                                                                Map<String, Object> processData) {
         var task = new ProcessInstanceTaskEntity()
                 .setRuntimeData(new HashMap<>(runtimeData))
                 .setNodeData(new HashMap<>(nodeData))
                 .setProcessData(new HashMap<>(processData));
 
-        return new ProcessNodeExecutionContextUICustomer(
+        return new ProcessNodeExecutionContextUICustomer<>(
                 logger(),
                 new ProcessNodeEntity(),
                 new ProcessInstanceEntity(),
                 task,
                 null,
                 null,
+                new AuthoredElementValues(),
                 null
         );
     }

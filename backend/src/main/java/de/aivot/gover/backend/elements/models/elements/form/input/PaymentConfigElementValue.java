@@ -17,6 +17,10 @@ public record PaymentConfigElementValue(
         @Nullable
         PaymentConfigElementValueRequestorMapping requestorMapping,
         @Nullable
-        List<PaymentConfigElementValueItem> items
+        List<PaymentConfigElementValueItem> items,
+        @Nullable
+        String successMessage, // Supports Template Tag Rendering
+        @Nullable
+        String failureMessage // Supports Template Tag Rendering
 ) {
 }

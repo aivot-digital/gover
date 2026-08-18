@@ -9,7 +9,7 @@ import jakarta.annotation.Nonnull;
 import java.util.UUID;
 
 public class ProcessInstanceFilter extends EntityFilter<ProcessInstanceEntity> {
-    private UUID accessKey;
+    private String accessKey;
     private Integer processId;
     private ProcessInstanceStatus status;
     private ProcessInstanceStatus statusIsNot;
@@ -35,11 +35,11 @@ public class ProcessInstanceFilter extends EntityFilter<ProcessInstanceEntity> {
                 .withEquals("createdForTestClaimId", createdForTestClaimId);
     }
 
-    public UUID getAccessKey() {
+    public String getAccessKey() {
         return accessKey;
     }
 
-    public ProcessInstanceFilter setAccessKey(UUID accessKey) {
+    public ProcessInstanceFilter setAccessKey(String accessKey) {
         this.accessKey = accessKey;
         return this;
     }

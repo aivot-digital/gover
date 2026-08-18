@@ -69,7 +69,11 @@ public class XBezahldiensteAddress implements Serializable {
         return addressLine;
     }
 
-    public void setAddressLine(String addressLine) {
+    public void setAddressLine(List<String> addressLine) {
+        this.addressLine = addressLine;
+    }
+
+    public void setAddressLineFromString(String addressLine) {
         if (addressLine != null) {
             this.addressLine = Arrays
                     .stream(addressLine.split("[^\r\n]+"))
