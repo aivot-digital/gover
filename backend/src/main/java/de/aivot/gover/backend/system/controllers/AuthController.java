@@ -495,7 +495,7 @@ public class AuthController {
 
     @Nonnull
     private static String generateOpaqueValue() {
-        return RandomUtils.generateRandomString(32);
+        return RandomUtils.generateRandomString(64);
     }
 
     @Nonnull
