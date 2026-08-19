@@ -71,6 +71,7 @@ export function generateComponentTitle(component: AnyElement | null | undefined,
             return title.toLowerCase().includes('technische preview') ? title : `${title}${mapPointPreviewSuffix}`;
         }
         case ElementType.ProcessAttachmentDisplay:
+        case ElementType.LinkButton:
             return stringOrDefault(component.label, defaultElementDescriptor);
         default:
             return stringOrDefault(defaultElementDescriptor, 'Unbekanntes Element');

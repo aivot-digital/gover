@@ -88,4 +88,5 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputSummary,
     [ElementType.StoragePathSelector]: StoragePathSelectorInputSummary,
     [ElementType.ProcessAttachmentDisplay]: null,
+    [ElementType.LinkButton]: null,
 };

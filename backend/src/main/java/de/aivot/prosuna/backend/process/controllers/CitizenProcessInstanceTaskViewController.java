@@ -7,8 +7,10 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
@@ -35,9 +37,11 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/public/processes/{procAccess}/tasks/{taskAccess}/")
@@ -193,13 +197,7 @@ public class CitizenProcessInstanceTaskViewController {
                 .provider
                 .getCustomerTaskViewEvents(context);
 
-        // Test if the event is valid
-        var cleanEvent = events
-                .stream()
-                .filter(e -> e.event().equals(rawEvent))
-                .findFirst()
-                .map(TaskViewEvent::event)
-                .orElse(null);
+        var cleanEvent = resolveValidCustomerEvent(layout, events, rawEvent);
 
         if (rawEvent != null && cleanEvent == null) {
             throw ResponseException.badRequest("Invalid event: " + rawEvent);
@@ -303,6 +301,40 @@ public class CitizenProcessInstanceTaskViewController {
                 updatedElementData,
                 updatedEvents
         );
+    }
+
+    @Nullable
+    private String resolveValidCustomerEvent(@Nonnull BaseElement layout,
+                                             @Nonnull List<TaskViewEvent> events,
+                                             @Nullable String rawEvent) {
+        if (rawEvent == null) {
+            return null;
+        }
+
+        var validEvents = new LinkedHashSet<String>();
+        events.stream()
+                .map(TaskViewEvent::event)
+                .forEach(validEvents::add);
+        addInlineCustomerEvents(layout, validEvents);
+
+        return validEvents.contains(rawEvent) ? rawEvent : null;
+    }
+
+    private void addInlineCustomerEvents(@Nonnull BaseElement layout, @Nonnull Set<String> validEvents) {
+        ElementStreamUtils.applyAction(layout, element -> {
+            if (!(element instanceof LinkButtonContentElement linkButton)) {
+                return;
+            }
+
+            var customerTaskEvent = linkButton.getCustomerTaskEvent();
+            if (!hasValue(linkButton.getHref()) && hasValue(customerTaskEvent)) {
+                validEvents.add(customerTaskEvent.trim());
+            }
+        });
+    }
+
+    private boolean hasValue(@Nullable String value) {
+        return value != null && !value.isBlank();
     }
 
     @PostMapping("derive/")

@@ -26,6 +26,7 @@ import {isApiError} from '../../../models/api-error';
 import {normalizeReplicatingContainerValues, walkAuthoredElementValues} from '../../../utils/element-data-utils';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher/view-dispatcher.component';
 import {
+    type TaskViewMode,
     ViewDispatcherContextProvider,
     ViewDispatcherMode,
 } from '../../../components/view-dispatcher/view-dispatcher.context';
@@ -49,6 +50,7 @@ interface ElementDerivationContextProps {
     disableValidation?: boolean;
     disableVisibilities?: boolean;
     highlightedElementId?: string | null;
+    taskViewMode?: TaskViewMode | null;
 }
 
 interface ElementDerivationContextType {
@@ -112,6 +114,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         disableValidation = false,
         disableVisibilities = false,
         highlightedElementId,
+        taskViewMode = null,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -346,6 +349,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                     rootDerivedData: derivedData,
                     showInvisibleElements: disableVisibilities && renderMode === ViewDispatcherMode.Editor,
                     highlightedElementId: highlightedElementId,
+                    taskViewMode,
                 }}
             >
                 <ViewDispatcherComponent
@@ -369,11 +373,10 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                         return deriveWithMinimumVisibleDuration(normalizedData)
                             .then((derived) => {
                                 setInternalDerivedData(derived);
-                                if (!hasAnyErrorRecursively(derived.elementStates)) {
-                                    if (onEvent != null) {
-                                        onEvent(normalizedData, event);
-                                    }
+                                if (!hasAnyErrorRecursively(derived.elementStates) && onEvent != null) {
+                                    return onEvent(normalizedData, event);
                                 }
+                                return false;
                             });
                     }}
                     onResetErrors={() => {

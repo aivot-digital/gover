@@ -52,4 +52,5 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.StoragePathSelector]: true,
     [ElementType.ProcessAttachmentDisplay]: false,
     [ElementType.PaymentConfigElement]: true,
+    [ElementType.LinkButton]: false,
 };

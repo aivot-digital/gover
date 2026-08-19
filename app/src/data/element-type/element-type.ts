@@ -50,4 +50,5 @@ export enum ElementType {
     HtmlTemplateInput = 48,
     StoragePathSelector = 49,
     PaymentConfigElement = 50,
+    LinkButton = 51,
 }

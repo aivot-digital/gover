@@ -26,6 +26,7 @@ export const elementTypeGroupLabels: Record<ElementTypeGroups, string> = {
 export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.Alert]: ElementTypeGroups.Information,
     [ElementType.Image]: ElementTypeGroups.Information,
+    [ElementType.LinkButton]: ElementTypeGroups.Information,
     [ElementType.GroupLayout]: ElementTypeGroups.Display,
     [ElementType.Step]: ElementTypeGroups.Step,
     [ElementType.FormLayout]: null,
@@ -80,6 +81,7 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
 export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.Alert]: 'Zeigt hervorgehobene Hinweise im Formular an.',
     [ElementType.Image]: 'Bindet ein Bild in den Formularfluss ein.',
+    [ElementType.LinkButton]: 'Zeigt einen Button an, der einen Link öffnet oder in Aufgabenansichten ein Ereignis auslöst.',
     [ElementType.GroupLayout]: 'Fasst inhaltlich zusammengehörige Elemente zusammen.',
     [ElementType.Checkbox]: 'Erfasst eine einzelne Ja-/Nein-Angabe.',
     [ElementType.Date]: 'Erfasst ein einzelnes Datum.',

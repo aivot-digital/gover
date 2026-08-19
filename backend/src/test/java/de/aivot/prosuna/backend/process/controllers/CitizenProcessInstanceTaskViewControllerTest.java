@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.process.controllers;
 
 import de.aivot.prosuna.backend.elements.models.*;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -30,6 +31,7 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
@@ -40,6 +42,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 class CitizenProcessInstanceTaskViewControllerTest {
@@ -239,6 +243,144 @@ class CitizenProcessInstanceTaskViewControllerTest {
         assertEquals(normalizedInputs, response.data());
         assertEquals("customer-root", response.layout().getId());
         assertEquals(List.of(new TaskViewEvent("Submit", "submit")), response.events());
+    }
+
+    @Test
+    void update_WithInlineCustomerTaskEventIsAccepted() throws ResponseException {
+        var normalizedInputs = new AuthoredElementValues();
+        normalizedInputs.put("field", "normalized");
+
+        var provider = new InlineCustomerTaskProcessNodeDefinition(null);
+        var fixture = createFixture(provider, normalizedInputs);
+
+        var response = fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                "{\"field\":\"submitted\"}",
+                null,
+                null,
+                "inline-submit",
+                null,
+                null
+        );
+
+        assertEquals("inline-submit", provider.eventInvokedWith);
+        assertEquals("inline-submit", fixture.task().getRuntimeData().get("event"));
+        assertEquals("normalized", response.data().get("field"));
+    }
+
+    @Test
+    void update_WithHrefLinkButtonCustomerTaskEventIsRejected() {
+        var normalizedInputs = new AuthoredElementValues();
+        normalizedInputs.put("field", "normalized");
+
+        var provider = new InlineCustomerTaskProcessNodeDefinition("https://example.org");
+        var fixture = createFixture(provider, normalizedInputs);
+
+        var ex = assertThrows(
+                ResponseException.class,
+                () -> fixture.controller().update(
+                        fixture.procAccess(),
+                        fixture.taskAccess(),
+                        "{\"field\":\"submitted\"}",
+                        null,
+                        null,
+                        "inline-submit",
+                        null,
+                        null
+                )
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        assertNull(provider.eventInvokedWith);
+    }
+
+    private static CitizenTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+                                                              AuthoredElementValues normalizedInputs) {
+        var procAccess = UUID.randomUUID().toString();
+        var taskAccess = UUID.randomUUID().toString();
+        var now = Instant.now();
+
+        var instance = new ProcessInstanceEntity(
+                42L,
+                null,
+                procAccess,
+                7,
+                1,
+                ProcessInstanceStatus.Running,
+                null,
+                null,
+                List.of(),
+                new IdentityDataMap(),
+                now,
+                now,
+                null,
+                null,
+                Map.of(),
+                11,
+                null,
+                null
+        );
+
+        var task = new ProcessInstanceTaskEntity(
+                9L,
+                taskAccess,
+                instance.getId(),
+                instance.getProcessId(),
+                1,
+                11,
+                null,
+                null,
+                null,
+                ProcessTaskStatus.Running,
+                null,
+                now,
+                now,
+                null,
+                null,
+                Map.of(),
+                Map.of(),
+                Map.of(),
+                Map.of(),
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        var node = new ProcessNodeEntity()
+                .setId(11)
+                .setProcessId(instance.getProcessId())
+                .setProcessVersion(1)
+                .setName("Citizen node")
+                .setDataKey("citizenNode")
+                .setProcessNodeDefinitionKey(provider.getKey())
+                .setProcessNodeDefinitionVersion(provider.getMajorVersion())
+                .setConfiguration(new AuthoredElementValues())
+                .setOutputMappings(Map.of());
+
+        var controller = new CitizenProcessInstanceTaskViewController(
+                new TestProcessInstanceService(instance),
+                new TestProcessInstanceTaskService(task),
+                new ProcessNodeDefinitionService(List.of(provider)),
+                new TestProcessNodeService(node),
+                new ApplyingProcessNodeExecutionResultHandler(),
+                new TestProcessNodeExecutionLoggerFactory(),
+                new TestElementDerivationService(normalizedInputs),
+                new TestTaskViewMultipartInputService(normalizedInputs),
+                mock(ProcessDataService.class)
+        );
+
+        return new CitizenTaskControllerFixture(procAccess, taskAccess, task, controller);
+    }
+
+    private record CitizenTaskControllerFixture(
+            String procAccess,
+            String taskAccess,
+            ProcessInstanceTaskEntity task,
+            CitizenProcessInstanceTaskViewController controller
+    ) {
     }
 
     private static final class TestProcessInstanceService extends ProcessInstanceService {
@@ -486,6 +628,109 @@ class CitizenProcessInstanceTaskViewControllerTest {
             var persistedData = new AuthoredElementValues();
             persistedData.put("field", "persisted");
             return persistedData;
+        }
+
+        @Nonnull
+        @Override
+        public Class<AuthoredElementValues> getNodeConfigurationClass() {
+            return AuthoredElementValues.class;
+        }
+    }
+
+    private static final class InlineCustomerTaskProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
+        private final String href;
+        private String eventInvokedWith;
+
+        private InlineCustomerTaskProcessNodeDefinition(String href) {
+            this.href = href;
+        }
+
+        @Override
+        public String getParentPluginKey() {
+            return "test";
+        }
+
+        @Override
+        public String getComponentKey() {
+            return "citizen-inline-event";
+        }
+
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Override
+        public String getName() {
+            return "Citizen inline event";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Customer inline task event test provider";
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeType getType() {
+            return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodePort> getPorts() {
+            return List.of();
+        }
+
+        @Override
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+            throw new UnsupportedOperationException("Not used in this test");
+        }
+
+        @Nonnull
+        @Override
+        public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+            var linkButton = new LinkButtonContentElement()
+                    .setLabel("Submit inline")
+                    .setHref(href)
+                    .setCustomerTaskEvent("inline-submit");
+            linkButton.setId("inline-button");
+
+            var layout = new GroupLayoutElement();
+            layout.setId("customer-root");
+            layout.setChildren(List.of(linkButton));
+            return layout;
+        }
+
+        @Nonnull
+        @Override
+        public List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+            return List.of();
+        }
+
+        @Nonnull
+        @Override
+        public AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+            var data = new AuthoredElementValues();
+            data.put("field", context.getThisTask().getRuntimeData().get("field"));
+            return data;
+        }
+
+        @Nonnull
+        @Override
+        public Optional<ProcessNodeExecutionResult> onEventFromCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context,
+                                                                                @Nonnull AuthoredElementValues update,
+                                                                                @Nonnull DerivedRuntimeElementData derivedData,
+                                                                                @Nonnull String event) {
+            eventInvokedWith = event;
+            return new ProcessNodeExecutionResultTaskUpdated()
+                    .setRuntimeData(Map.of(
+                            "event", event,
+                            "field", update.get("field")
+                    ))
+                    .setNodeData(Map.of())
+                    .setProcessData(context.getThisTask().getProcessData())
+                    .asOptional();
         }
 
         @Nonnull

@@ -53,6 +53,7 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.HtmlTemplateInput]: NoCodeDataType.Object,
     [ElementType.StoragePathSelector]: NoCodeDataType.Object,
     [ElementType.ProcessAttachmentDisplay]: NoCodeDataType.Runtime,
+    [ElementType.LinkButton]: NoCodeDataType.Runtime,
 }
 
 export function matchesDesiredNoCodeDataType(

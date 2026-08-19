@@ -59,6 +59,7 @@ import {HtmlTemplateInputElement} from '../models/elements/form/input/html-templ
 import {StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 import {PaymentConfigElement} from '../models/elements/form/input/payment-config-element';
+import {LinkButtonElement} from '../models/elements/form/content/link-button-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -146,6 +147,7 @@ const elementConstructors: {
     [ElementType.StoragePathSelector]: (id: string) => StoragePathSelectorInputElement;
     [ElementType.PaymentConfigElement]: (id: string) => PaymentConfigElement;
     [ElementType.ProcessAttachmentDisplay]: (id: string) => ProcessAttachmentDisplayElement;
+    [ElementType.LinkButton]: (id: string) => LinkButtonElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -542,6 +544,16 @@ const elementConstructors: {
         attachmentSetKey: undefined,
         label: undefined,
         hint: undefined,
+    }),
+    [ElementType.LinkButton]: (id) => ({
+        ...makeFormBase(ElementType.LinkButton, id),
+        label: 'Link öffnen',
+        href: undefined,
+        openInNewTab: true,
+        staffTaskEvent: undefined,
+        customerTaskEvent: undefined,
+        variant: 'contained',
+        color: 'primary',
     }),
 };
 

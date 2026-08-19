@@ -68,6 +68,7 @@ public enum ElementType implements Identifiable<Integer> {
     HtmlTemplateInput(48),
     StoragePathSelector(49),
     PaymentConfig(50),
+    LinkButton(51),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -121,6 +122,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_HtmlTemplateInput = "48";
     public static final String ID_StoragePathSelector = "49";
     public static final String ID_PaymentConfig = "50";
+    public static final String ID_LinkButton = "51";
 
     private final Integer key;
 
@@ -200,6 +202,7 @@ public enum ElementType implements Identifiable<Integer> {
             case HtmlTemplateInput -> new HtmlTemplateInputElement();
             case StoragePathSelector -> new StoragePathSelectorInputElement();
             case PaymentConfig -> new PaymentConfigElement();
+            case LinkButton -> new LinkButtonContentElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

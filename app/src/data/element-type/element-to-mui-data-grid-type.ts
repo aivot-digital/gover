@@ -54,4 +54,5 @@ export const ElementToMuiDataGridType: Record<ElementType, GridColDef['type'] | 
     [ElementType.HtmlTemplateInput]: null,
     [ElementType.StoragePathSelector]: 'string',
     [ElementType.ProcessAttachmentDisplay]: null,
+    [ElementType.LinkButton]: null,
 };

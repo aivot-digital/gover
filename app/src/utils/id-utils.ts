@@ -90,6 +90,7 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.StoragePathSelector]: 'ps',
     [ElementType.ProcessAttachmentDisplay]: 'pa',
     [ElementType.PaymentConfigElement]: 'pc',
+    [ElementType.LinkButton]: 'lb',
 };
 
 export function generateElementIdForType(type: ElementType): string {

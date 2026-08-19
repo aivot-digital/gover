@@ -6,6 +6,7 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.ImageContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
@@ -55,9 +56,6 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                         
                         
                         Insgesamt zu entrichtende Gebühr: %s Euro %s
-                        
-                        
-                        Sie können den Betrag über den folgenden Link zahlen: [%s](%s)
                         """
                         .formatted(
                                 StringUtils.quote(paymentProviderDefinition.getProviderName()),
@@ -78,9 +76,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                                         .stream()
                                         .map(PaymentItem::getTaxRate)
                                         .map(BigDecimal.ZERO::compareTo)
-                                        .anyMatch(i -> i != 0) ? "inkl. Steuern." : "",
-                                transaction.getPaymentInformation().getTransactionRedirectUrl(),
-                                transaction.getPaymentInformation().getTransactionRedirectUrl()
+                                        .anyMatch(i -> i != 0) ? "inkl. Steuern." : ""
                         );
             }
             case XBezahldienstStatus.FAILED -> {
@@ -109,23 +105,32 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                 yield """
                         # Zahlung erfolgreich
                         %s
-                        
-                        Sie können die Zahlungsbestätigung über den folgenden Link herunterladen: [%s](%s)
                         """.formatted(
-                        StringUtils.isNotNullOrEmpty(successMessage) ? successMessage : "Die Zahlung wurde erfolgreich abgeschlossen. Vielen Dank für Ihre Einreichung.",
-                        downloadUrl,
-                        downloadUrl
+                        StringUtils.isNotNullOrEmpty(successMessage) ? successMessage : "Die Zahlung wurde erfolgreich abgeschlossen. Vielen Dank für Ihre Einreichung."
                 );
             }
         };
 
+        var leftGroup = new GroupLayoutElement();
+        leftGroup.setId("left");
+        leftGroup.setWeight(8.0);
+        addChild(leftGroup);
+
         var richtext = new RichTextContentElement();
         richtext.setId("rtx");
         richtext.setContent(content);
-        richtext.setWeight(8.0);
-        addChild(richtext);
+        richtext.setWeight(12.0);
+        leftGroup.addChild(richtext);
 
         if (transaction.getStatus() == XBezahldienstStatus.INITIAL) {
+            LinkButtonContentElement payButton = new LinkButtonContentElement();
+            payButton.setId("pay");
+            payButton.setLabel("Zahlung durchführen");
+            payButton.setHref(transaction.getPaymentInformation().getTransactionRedirectUrl().toString());
+            payButton.setWeight(6.0);
+            payButton.setOpenInNewTab(false);
+            leftGroup.addChild(payButton);
+
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
             BitMatrix bmx = qrCodeWriter.encode(
                     transaction.getPaymentInformation().getTransactionRedirectUrl().toString(),
@@ -144,6 +149,16 @@ public class PaymentGroupPreset extends GroupLayoutElement {
             image.setSrc("data:image/png;base64," + base64Image);
             image.setWeight(2.0);
             addChild(image);
+        }
+
+        if (transaction.getStatus() == XBezahldienstStatus.PAYED) {
+            LinkButtonContentElement downloadButton = new LinkButtonContentElement();
+            downloadButton.setId("download");
+            downloadButton.setLabel("Zahlungsbestätigung herunterladen");
+            downloadButton.setHref(downloadUrl);
+            downloadButton.setWeight(6.0);
+            downloadButton.setOpenInNewTab(false);
+            leftGroup.addChild(downloadButton);
         }
     }
 }

@@ -33,6 +33,7 @@ import FunctionsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/
 import AttachFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
 import PaymentsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Payments';
 import FolderOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Folder';
+import LinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
 
 import {type AnyElement} from '../../models/elements/any-element';
 import {type SvgIconComponent} from '../../types/svg-icon-component';
@@ -92,6 +93,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.StoragePathSelector]: FolderOutlinedIcon,
     [ElementType.ProcessAttachmentDisplay]: AttachFileOutlinedIcon,
     [ElementType.PaymentConfigElement]: PaymentsOutlinedIcon,
+    [ElementType.LinkButton]: LinkOutlinedIcon,
 };
 
 export function getElementIcon(element: AnyElement): SvgIconComponent {

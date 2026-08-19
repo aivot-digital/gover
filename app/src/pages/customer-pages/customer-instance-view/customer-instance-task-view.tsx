@@ -8,11 +8,9 @@ import {isApiError} from '../../../models/api-error';
 import {ElementDerivationContext} from '../../../modules/elements/components/element-derivation-context';
 import {
     AuthoredElementValues,
-    createDerivedRuntimeElementData,
-    ElementDerivationResponse,
 } from '../../../models/element-data';
 import {useParams} from 'react-router-dom';
-import {BaseApiService} from '../../../services/base-api-service';
+import {ProcessInstanceTaskApiService} from '../../../modules/process/services/process-instance-task-api-service';
 
 export function CustomerInstanceTaskView() {
     const {
@@ -56,13 +54,44 @@ export function CustomerInstanceTaskView() {
             })
             .finally(() => {
                 dispatch(clearLoadingMessage());
-            })
-    }, [taskAccessKey]);
+            });
+    }, [dispatch, instanceAccessKey, taskAccessKey]);
 
     const handleDerive = useCallback((values: AuthoredElementValues, skipErrorsForElements: string[]) => {
         return new CustomerTaskViewApiService()
             .deriveTaskView(instanceAccessKey, taskAccessKey, values, skipErrorsForElements);
     }, [instanceAccessKey, taskAccessKey]);
+
+    const handleTaskEvent = useCallback((values: AuthoredElementValues, event: string) => {
+        dispatch(setLoadingMessage({
+            message: 'Verarbeite Aktion',
+            blocking: true,
+            estimatedTime: 500,
+        }));
+
+        return new ProcessInstanceTaskApiService()
+            .putCustomerTaskView(instanceAccessKey, taskAccessKey, values, event)
+            .then((updatedTaskView) => {
+                setTaskView(updatedTaskView);
+                setEditedAuthoredValues(updatedTaskView.data);
+            })
+            .catch((error) => {
+                if (isApiError(error) && error.displayableToUser) {
+                    dispatch(setErrorMessage({
+                        message: error.message,
+                        status: error.status,
+                    }));
+                } else {
+                    dispatch(setErrorMessage({
+                        message: 'Die Aufgabe konnte nicht verarbeitet werden.',
+                        status: isApiError(error) ? error.status : 500,
+                    }));
+                }
+            })
+            .finally(() => {
+                dispatch(clearLoadingMessage());
+            });
+    }, [dispatch, instanceAccessKey, taskAccessKey]);
 
     if (taskView == null) {
         return (
@@ -83,6 +112,8 @@ export function CustomerInstanceTaskView() {
                 authoredElementValues={authoredValues}
                 onAuthoredElementValuesChange={setEditedAuthoredValues}
                 onDeriveOverride={handleDerive}
+                onEvent={handleTaskEvent}
+                taskViewMode="customer"
             />
         </Box>
     );

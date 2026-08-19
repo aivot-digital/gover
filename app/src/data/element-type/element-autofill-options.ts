@@ -92,6 +92,7 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.HtmlTemplateInput]: [],
     [ElementType.StoragePathSelector]: [],
     [ElementType.ProcessAttachmentDisplay]: [],
+    [ElementType.LinkButton]: [],
 };
 
 export const getAutofillOptionsForElementType = (elementType: ElementType) => {

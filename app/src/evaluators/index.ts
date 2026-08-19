@@ -76,4 +76,5 @@ export const evaluators: {
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputEvaluator,
     [ElementType.StoragePathSelector]: StoragePathSelectorInputEvaluator,
     [ElementType.ProcessAttachmentDisplay]: null,
+    [ElementType.LinkButton]: null,
 };

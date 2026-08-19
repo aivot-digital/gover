@@ -346,6 +346,7 @@ const ElementTypeBackendName: Record<ElementType, string> = {
     [ElementType.HtmlTemplateInput]: 'HtmlTemplateInputElement',
     [ElementType.StoragePathSelector]: 'StoragePathSelector',
     [ElementType.PaymentConfigElement]: 'PaymentConfig',
+    [ElementType.LinkButton]: 'LinkButton',
 };
 
 const ElementTypeBackendValueClass: Record<ElementType, string | null> = {
@@ -400,4 +401,5 @@ const ElementTypeBackendValueClass: Record<ElementType, string | null> = {
     [ElementType.HtmlTemplateInput]: 'HtmlTemplateInputElementValue',
     [ElementType.StoragePathSelector]: 'StoragePathSelectorInputElementValue',
     [ElementType.PaymentConfigElement]: 'PaymentConfigElementValue',
+    [ElementType.LinkButton]: null,
 };
