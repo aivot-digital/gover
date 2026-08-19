@@ -72,11 +72,11 @@ public class XBezahldiensteRequestor implements Serializable {
         this.gender = gender;
     }
 
-    public Boolean getOrganization() {
+    public Boolean getIsOrganization() {
         return isOrganization;
     }
 
-    public void setOrganization(Boolean organization) {
+    public void setIsOrganization(Boolean organization) {
         isOrganization = organization;
     }
 

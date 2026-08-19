@@ -87,7 +87,7 @@ class PaymentPayloadCreationServiceTest {
         assertEquals("PAY AZ-1", request.getPurpose());
         assertEquals("Fee for Ada", request.getDescription());
         assertEquals(new BigDecimal("23.80"), request.getTotal());
-        assertEquals(false, request.getRequestor().getOrganization());
+        assertEquals(false, request.getRequestor().getIsOrganization());
         assertEquals("Lovelace", request.getRequestor().getLastName());
         assertEquals(XBezahldienstGender.FEMALE, request.getRequestor().getGender());
         assertEquals("London", request.getRequestor().getAddress().getCity());
@@ -137,7 +137,7 @@ class PaymentPayloadCreationServiceTest {
         )), null, processData).orElseThrow();
 
         var requestor = request.getRequestor();
-        assertEquals(false, requestor.getOrganization());
+        assertEquals(false, requestor.getIsOrganization());
         assertEquals("Doe", requestor.getLastName());
         assertEquals("Jane", requestor.getFirstName());
         assertEquals(XBezahldienstGender.DIVERSE, requestor.getGender());
@@ -156,7 +156,7 @@ class PaymentPayloadCreationServiceTest {
                 .orElseThrow();
 
         var requestor = request.getRequestor();
-        assertEquals(false, requestor.getOrganization());
+        assertEquals(false, requestor.getIsOrganization());
         assertNull(requestor.getLastName());
         assertNull(requestor.getFirstName());
         assertNull(requestor.getGender());
@@ -196,7 +196,7 @@ class PaymentPayloadCreationServiceTest {
         )), null, processData).orElseThrow();
 
         var requestor = request.getRequestor();
-        assertEquals(true, requestor.getOrganization());
+        assertEquals(true, requestor.getIsOrganization());
         assertEquals("Acme GmbH", requestor.getOrganizationName());
         assertNull(requestor.getLastName());
         assertNull(requestor.getFirstName());
@@ -215,7 +215,7 @@ class PaymentPayloadCreationServiceTest {
                 .orElseThrow();
 
         var requestor = request.getRequestor();
-        assertEquals(true, requestor.getOrganization());
+        assertEquals(true, requestor.getIsOrganization());
         assertNull(requestor.getOrganizationName());
         assertNull(requestor.getLastName());
         assertNull(requestor.getFirstName());
@@ -257,7 +257,7 @@ class PaymentPayloadCreationServiceTest {
         )), null, processData).orElseThrow();
 
         var requestor = request.getRequestor();
-        assertEquals(true, requestor.getOrganization());
+        assertEquals(true, requestor.getIsOrganization());
         assertEquals("Dynamic GmbH", requestor.getOrganizationName());
         assertNull(requestor.getLastName());
         assertNull(requestor.getFirstName());
@@ -279,7 +279,7 @@ class PaymentPayloadCreationServiceTest {
                 .orElseThrow();
 
         var requestor = request.getRequestor();
-        assertEquals(false, requestor.getOrganization());
+        assertEquals(false, requestor.getIsOrganization());
         assertNull(requestor.getLastName());
         assertNull(requestor.getFirstName());
         assertNull(requestor.getGender());

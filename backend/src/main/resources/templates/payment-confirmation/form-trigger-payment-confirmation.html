@@ -96,13 +96,13 @@
                 <!-- Daten des Zahlenden -->
                 <div th:if="${transaction.getPaymentRequest().getRequestor() != null}">
                     <div
-                            th:if="${transaction.getPaymentRequest().getRequestor().getOrganization()}"
+                            th:if="${transaction.getPaymentRequest().getRequestor().getIsOrganization()}"
                             th:text="${transaction.getPaymentRequest().getRequestor().getOrganizationName()}"
                     >
                         Name der Organisation
                     </div>
 
-                    <div th:unless="${transaction.getPaymentRequest().getRequestor().getOrganization()}">
+                    <div th:unless="${transaction.getPaymentRequest().getRequestor().getIsOrganization()}">
                         <span th:text="${transaction.getPaymentRequest().getRequestor().getFirstName()}">
                             Vorname
                         </span>

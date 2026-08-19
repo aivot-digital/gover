@@ -308,7 +308,7 @@ public class PaymentPayloadCreationService {
             @Nonnull ProcessExecutionData processExecutionData
     ) throws PaymentException {
         var requestor = new XBezahldiensteRequestor();
-        requestor.setOrganization(false);
+        requestor.setIsOrganization(false);
         requestor.setLastName(readString(processExecutionData, mapping.lastNameDestinationKey()));
         requestor.setFirstName(readString(processExecutionData, mapping.firstNameDestinationKey()));
         requestor.setGender(readGender(processExecutionData, mapping.genderDestinationKey()));
@@ -327,7 +327,7 @@ public class PaymentPayloadCreationService {
             @Nonnull ProcessExecutionData processExecutionData
     ) {
         var requestor = new XBezahldiensteRequestor();
-        requestor.setOrganization(true);
+        requestor.setIsOrganization(true);
         requestor.setOrganizationName(readString(processExecutionData, mapping.organizationNameDestinationKey()));
 
         var address = createAddress(mapping, processExecutionData);
