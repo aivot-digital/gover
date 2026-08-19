@@ -1,15 +1,15 @@
-package de.aivot.gover.backend.process.controllers;
+package de.aivot.prosuna.backend.process.controllers;
 
-import de.aivot.gover.backend.lib.exceptions.ResponseException;
-import de.aivot.gover.backend.openApi.OpenApiConstants;
-import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
-import de.aivot.gover.backend.process.entities.ProcessVersionEntityId;
-import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
-import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
-import de.aivot.gover.backend.process.filters.ProcessInstanceTaskFilter;
-import de.aivot.gover.backend.process.services.ProcessInstanceService;
-import de.aivot.gover.backend.process.services.ProcessInstanceTaskService;
-import de.aivot.gover.backend.process.services.ProcessVersionService;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.openApi.OpenApiConstants;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
+import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.filters.ProcessInstanceTaskFilter;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceService;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceTaskService;
+import de.aivot.prosuna.backend.process.services.ProcessVersionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;

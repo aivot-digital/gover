@@ -1,10 +1,10 @@
-package de.aivot.gover.backend.elements.models.elements.form.input;
+package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
-import de.aivot.gover.backend.core.services.ObjectMapperFactory;
-import de.aivot.gover.backend.elements.models.elements.BaseInputElement;
-import de.aivot.gover.backend.enums.ElementType;
-import de.aivot.gover.backend.exceptions.ValidationException;
-import de.aivot.gover.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.exceptions.ValidationException;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nullable;
 
 import java.util.ArrayList;

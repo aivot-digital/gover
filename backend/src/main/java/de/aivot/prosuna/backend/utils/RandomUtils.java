@@ -1,4 +1,4 @@
-package de.aivot.gover.backend.utils;
+package de.aivot.prosuna.backend.utils;
 
 import java.security.SecureRandom;
 import java.util.Base64;

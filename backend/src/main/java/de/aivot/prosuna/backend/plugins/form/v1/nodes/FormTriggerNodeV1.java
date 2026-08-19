@@ -5,7 +5,7 @@ import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.ElementDisplayContext;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
-import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
@@ -14,20 +14,20 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinition
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.gover.backend.elements.uiPresets.PaymentGroupPreset;
+import de.aivot.prosuna.backend.elements.uiPresets.PaymentGroupPreset;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
 import de.aivot.prosuna.backend.enums.ElementType;
-import de.aivot.gover.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.gover.backend.models.config.GoverConfig;
-import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
-import de.aivot.gover.backend.payment.exceptions.PaymentException;
-import de.aivot.gover.backend.payment.models.PaymentPayload;
-import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
-import de.aivot.gover.backend.payment.services.PaymentPayloadCreationService;
-import de.aivot.gover.backend.payment.services.PaymentProviderDefinitionsService;
-import de.aivot.gover.backend.payment.services.PaymentTransactionService;
+import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
+import de.aivot.prosuna.backend.payment.models.PaymentPayload;
+import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
+import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
+import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
+import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.pdf.enums.FormPdfScope;
 import de.aivot.prosuna.backend.plugin.models.PluginComponent;
 import de.aivot.prosuna.backend.plugins.form.FormPlugin;
@@ -51,15 +51,15 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
-import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
-import de.aivot.gover.backend.process.services.ProcessService;
+import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.process.services.PublicUrlService;
-import de.aivot.gover.backend.process.services.TemplateRenderService;
+import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -97,7 +97,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     private final PaymentProviderRepository paymentProviderRepository;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private final ProcessService processService;
-    private final GoverConfig goverConfig;
+    private final ProsunaConfig prosunaConfig;
     private final PdfService pdfService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
@@ -110,7 +110,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                              PaymentProviderRepository paymentProviderRepository,
                              PaymentProviderDefinitionsService paymentProviderDefinitionsService,
                              ProcessService processService,
-                             GoverConfig goverConfig,
+                             ProsunaConfig prosunaConfig,
                              PdfService pdfService,
                              ProcessInstanceAttachmentService processInstanceAttachmentService,
                              ProcessInstanceAttachmentSetService processInstanceAttachmentSetService) {
@@ -125,7 +125,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         this.paymentProviderRepository = paymentProviderRepository;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
         this.processService = processService;
-        this.goverConfig = goverConfig;
+        this.prosunaConfig = prosunaConfig;
     }
 
     @Nonnull
@@ -492,7 +492,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                     transaction = paymentTransactionService.create(
                             paymentProvider,
                             paymentRequest.get(),
-                            goverConfig.createUrl("/process/", context.getThisProcessInstance().getAccessKey(), "tasks", context.getThisTask().getAccessKey())
+                            prosunaConfig.createUrl("/process/", context.getThisProcessInstance().getAccessKey(), "tasks", context.getThisTask().getAccessKey())
                     );
                 } catch (PaymentException e) {
                     throw new ProcessNodeExecutionExceptionUnknown(
@@ -762,7 +762,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         var failureMessage = paymentConfig == null
                 ? null
                 : renderOptionalPaymentMessage(context, paymentConfig.failureMessage());
-        var downloadUrl = goverConfig.createUrlWithTrailingSlash(
+        var downloadUrl = prosunaConfig.createUrlWithTrailingSlash(
                 "/api/public/form/",
                 process.getSlug(),
                 config.formSlug,

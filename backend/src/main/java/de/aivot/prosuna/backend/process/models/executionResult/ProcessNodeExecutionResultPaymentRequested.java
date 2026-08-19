@@ -1,4 +1,4 @@
-package de.aivot.gover.backend.process.models.executionResult;
+package de.aivot.prosuna.backend.process.models.executionResult;
 
 public class ProcessNodeExecutionResultPaymentRequested extends ProcessNodeExecutionResult {
     private final String transactionKey;

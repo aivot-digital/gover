@@ -3,7 +3,7 @@ package de.aivot.prosuna.backend.secrets.services;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.lib.services.EntityService;
-import de.aivot.gover.backend.secrets.controllers.SecretController;
+import de.aivot.prosuna.backend.secrets.controllers.SecretController;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.properties.SecretConfigurationProperties;
 import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;

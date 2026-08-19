@@ -1,9 +1,9 @@
-package de.aivot.gover.backend.elements.models.elements.form.input;
+package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import de.aivot.gover.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nullable;
 
 import java.util.HashMap;

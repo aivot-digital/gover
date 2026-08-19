@@ -1,12 +1,13 @@
-package de.aivot.gover.backend.elements.uiPresets;
+package de.aivot.prosuna.backend.elements.uiPresets;
 
-import de.aivot.gover.backend.elements.models.elements.form.content.RichTextContentElement;
-import de.aivot.gover.backend.enums.XBezahldienstStatus;
-import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
-import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
-import de.aivot.gover.backend.payment.models.PaymentProviderDefinition;
-import de.aivot.gover.backend.payment.models.PaymentPayload;
-import de.aivot.gover.backend.payment.models.XBezahldienstePaymentInformation;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
+import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
+import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
+import de.aivot.prosuna.backend.payment.models.PaymentPayload;
+import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
+import de.aivot.prosuna.backend.elements.uiPresets.PaymentGroupPreset;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;

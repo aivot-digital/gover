@@ -1,12 +1,12 @@
-package de.aivot.gover.backend.plugins.core.v1.operators.list;
+package de.aivot.prosuna.backend.plugins.core.v1.operators.list;
 
-import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.gover.backend.nocode.enums.NoCodeDataType;
-import de.aivot.gover.backend.nocode.exceptions.NoCodeException;
-import de.aivot.gover.backend.nocode.models.NoCodeOperator;
-import de.aivot.gover.backend.nocode.models.NoCodeParameter;
-import de.aivot.gover.backend.nocode.models.NoCodeResult;
-import de.aivot.gover.backend.nocode.models.NoCodeSignatur;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
+import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
+import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
+import de.aivot.prosuna.backend.nocode.models.NoCodeParameter;
+import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
+import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
 import jakarta.annotation.Nullable;
 
 import java.util.Objects;

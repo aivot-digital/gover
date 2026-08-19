@@ -1,4 +1,4 @@
-package de.aivot.gover.backend.payment.models;
+package de.aivot.prosuna.backend.payment.models;
 
 import java.math.BigDecimal;
 import java.util.List;

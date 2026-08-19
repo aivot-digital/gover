@@ -432,10 +432,10 @@ class FormTriggerControllerV1Test {
         }
 
         var storageService = mock(StorageService.class);
-        var goverConfig = mock(GoverConfig.class);
-        when(goverConfig.createUrl(eq("/process/"), eq(instanceAccessKey), eq("tasks"), eq(taskAccessKey)))
+        var prosunaConfig = mock(ProsunaConfig.class);
+        when(prosunaConfig.createUrl(eq("/process/"), eq(instanceAccessKey), eq("tasks"), eq(taskAccessKey)))
                 .thenReturn(paymentRedirectUrl);
-        when(goverConfig.getDefaultLogoUrl()).thenReturn("https://gover.example/assets/default-logo.png");
+        when(prosunaConfig.getDefaultLogoUrl()).thenReturn("https://gover.example/assets/default-logo.png");
 
         var assetService = mock(AssetService.class);
         when(assetService.createUrl(any(UUID.class))).thenAnswer(invocation -> "https://assets.example/" + invocation.getArgument(0, UUID.class));
@@ -461,7 +461,7 @@ class FormTriggerControllerV1Test {
         var pdfService = mock(PdfService.class);
 
         var controller = new FormTriggerControllerV1(
-                goverConfig,
+                prosunaConfig,
                 mock(IdentityProviderService.class),
                 mock(ElementDerivationService.class),
                 assetService,

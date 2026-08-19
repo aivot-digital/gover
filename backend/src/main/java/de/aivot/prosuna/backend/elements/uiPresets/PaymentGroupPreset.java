@@ -1,29 +1,27 @@
-package de.aivot.gover.backend.elements.uiPresets;
+package de.aivot.prosuna.backend.elements.uiPresets;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
-import de.aivot.gover.backend.elements.models.elements.form.content.ImageContentElement;
-import de.aivot.gover.backend.elements.models.elements.form.content.RichTextContentElement;
-import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.gover.backend.enums.XBezahldienstStatus;
-import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
-import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
-import de.aivot.gover.backend.payment.models.PaymentItem;
-import de.aivot.gover.backend.payment.models.PaymentPayload;
-import de.aivot.gover.backend.payment.models.PaymentProviderDefinition;
-import de.aivot.gover.backend.utils.NumberUtils;
-import de.aivot.gover.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.ImageContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
+import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.models.PaymentItem;
+import de.aivot.prosuna.backend.payment.models.PaymentPayload;
+import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
+import de.aivot.prosuna.backend.utils.NumberUtils;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.apache.commons.codec.binary.Base64;
 
-import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.util.stream.Collectors;
 

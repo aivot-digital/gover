@@ -5,7 +5,7 @@ import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.gover.backend.utils.RandomUtils;
+import de.aivot.prosuna.backend.utils.RandomUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

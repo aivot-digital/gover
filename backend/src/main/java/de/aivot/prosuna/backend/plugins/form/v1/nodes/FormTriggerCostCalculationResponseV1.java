@@ -1,9 +1,9 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
-import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
+import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.models.PaymentItem;
-import de.aivot.gover.backend.payment.models.PaymentPayload;
-import de.aivot.gover.backend.payment.models.PaymentProviderDefinition;
+import de.aivot.prosuna.backend.payment.models.PaymentPayload;
+import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
 import jakarta.annotation.Nonnull;
 import kotlin.jvm.internal.BooleanSpreadBuilder;
 

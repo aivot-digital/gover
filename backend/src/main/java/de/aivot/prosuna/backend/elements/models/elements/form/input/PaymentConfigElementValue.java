@@ -1,4 +1,4 @@
-package de.aivot.gover.backend.elements.models.elements.form.input;
+package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import jakarta.annotation.Nullable;
 

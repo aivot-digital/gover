@@ -14,7 +14,7 @@ import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
-import de.aivot.gover.backend.elements.models.elements.form.input.PaymentConfigElementValue;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.SubmitStepElement;
@@ -33,16 +33,16 @@ import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.models.dtos.MaxFileSizeDto;
-import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
-import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
+import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
-import de.aivot.gover.backend.payment.models.PaymentPayload;
-import de.aivot.gover.backend.payment.models.PaymentProviderDefinition;
-import de.aivot.gover.backend.payment.models.XBezahldienstePaymentRequest;
-import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
+import de.aivot.prosuna.backend.payment.models.PaymentPayload;
+import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
+import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
+import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
-import de.aivot.gover.backend.payment.services.PaymentTransactionService;
+import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.prosuna.backend.process.entities.*;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
@@ -50,11 +50,11 @@ import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessVersionFilter;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.gover.backend.process.services.*;
-import de.aivot.gover.backend.services.PdfService;
+import de.aivot.prosuna.backend.process.services.*;
+import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
-import de.aivot.gover.backend.storage.services.StorageService;
+import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.dtos.ThemeResponseDTO;
@@ -981,7 +981,7 @@ public class FormTriggerControllerV1 {
     private PaymentTransactionEntity resolvePaymentTransaction(@Nonnull ResolvedSubmittedFormTriggerTaskContext context,
                                                                @Nonnull String instanceAccessKey,
                                                                @Nonnull String taskAccessKey) throws ResponseException {
-        var expectedRedirectUrl = goverConfig.createUrl("/process/", instanceAccessKey, "tasks", taskAccessKey);
+        var expectedRedirectUrl = prosunaConfig.createUrl("/process/", instanceAccessKey, "tasks", taskAccessKey);
         var runtimeData = context.task().getRuntimeData();
         var transactionKey = runtimeData != null ? runtimeData.get(FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY) : null;
 
@@ -1022,7 +1022,7 @@ public class FormTriggerControllerV1 {
             return assetService.createUrl(logoResolution.assetKey());
         }
 
-        return logoResolution.allowDefaultFallback() ? goverConfig.getDefaultLogoUrl() : null;
+        return logoResolution.allowDefaultFallback() ? prosunaConfig.getDefaultLogoUrl() : null;
     }
 
     @Nonnull

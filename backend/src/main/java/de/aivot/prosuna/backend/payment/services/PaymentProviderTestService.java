@@ -6,7 +6,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.payment.models.PaymentItem;
-import de.aivot.gover.backend.payment.models.PaymentPayload;
+import de.aivot.prosuna.backend.payment.models.PaymentPayload;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderTestResult;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;

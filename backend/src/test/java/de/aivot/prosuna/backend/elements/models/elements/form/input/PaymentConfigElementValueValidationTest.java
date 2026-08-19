@@ -1,11 +1,11 @@
-package de.aivot.gover.backend.elements.models.elements.form.input;
+package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
-import de.aivot.gover.backend.core.services.ObjectMapperFactory;
-import de.aivot.gover.backend.exceptions.ValidationException;
-import de.aivot.gover.backend.javascript.models.JavascriptCode;
-import de.aivot.gover.backend.nocode.models.NoCodeOperand;
-import de.aivot.gover.backend.nocode.models.NoCodeReference;
-import de.aivot.gover.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.exceptions.ValidationException;
+import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
+import de.aivot.prosuna.backend.nocode.models.NoCodeOperand;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

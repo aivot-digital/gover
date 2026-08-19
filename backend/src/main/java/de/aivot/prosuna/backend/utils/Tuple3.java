@@ -1,4 +1,4 @@
-package de.aivot.gover.backend.utils;
+package de.aivot.prosuna.backend.utils;
 
 import jakarta.annotation.Nonnull;
 

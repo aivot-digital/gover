@@ -1,8 +1,8 @@
 package de.aivot.prosuna.backend.plugins.core.v1.operators.list;
 
-import de.aivot.gover.backend.core.services.BusinessTime;
+import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
-import de.aivot.gover.backend.plugins.core.v1.operators.CommonOperatorsV1;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

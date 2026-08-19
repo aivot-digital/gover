@@ -26,7 +26,7 @@ import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.GotenbergConfig;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
-import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.repositories.PaymentTransactionRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;

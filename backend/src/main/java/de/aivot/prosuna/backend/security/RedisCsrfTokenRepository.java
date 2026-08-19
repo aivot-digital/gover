@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.security;
 
-import de.aivot.gover.backend.utils.RandomUtils;
+import de.aivot.prosuna.backend.utils.RandomUtils;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
