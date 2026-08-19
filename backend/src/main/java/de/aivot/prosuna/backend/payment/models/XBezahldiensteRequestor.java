@@ -10,7 +10,7 @@ import java.io.Serializable;
 public class XBezahldiensteRequestor implements Serializable {
     // Familienname des Bezahlers
     @JsonProperty("name")
-    private String lastName = null;
+    private String name = null;
 
     // Vorname(n) des Bezahlers
     @JsonProperty("firstName")
@@ -33,18 +33,18 @@ public class XBezahldiensteRequestor implements Serializable {
     private XBezahldiensteAddress address = null;
 
     public String getLastName() {
-        return lastName;
+        return name;
     }
 
     public void setLastName(String lastName) {
         if (lastName != null) {
-            this.lastName = StringUtils.cleanAndTruncate(
+            this.name = StringUtils.cleanAndTruncate(
                     lastName,
                     "[^\\w\\d\\s-,\\.\\u00C0-\\u017F]",
                     250
             );
         } else {
-            this.lastName = null;
+            this.name = null;
         }
     }
 
