@@ -56,6 +56,17 @@ create table process_versions
     -- Additional notes for this process definition version.
     notes                text         null,
 
+    -- Organization units for legal and support information.
+    legal_support_department_id     int          null references departments (id) on delete set null,
+    technical_support_department_id int          null references departments (id) on delete set null,
+    imprint_department_id           int          null references departments (id) on delete set null,
+    privacy_department_id           int          null references departments (id) on delete set null,
+    accessibility_department_id     int          null references departments (id) on delete set null,
+
+    -- Process-specific legal statements.
+    process_specific_privacy_statement        text null,
+    process_specific_accessibility_statement  text null,
+
     -- Timestamps for creation and last update
     created              timestamptz  not null default now(),
     updated              timestamptz  not null default now(),

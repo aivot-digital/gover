@@ -1284,24 +1284,28 @@ export function FormNodeEditorPage() {
                                                     onHide={() => dispatch(showDialog(undefined))}
                                                     open={metaDialog === HelpDialogId}
                                                     form={formLayout}
+                                                    version={processVersion}
                                                 />
 
                                                 <PrivacyDialog
                                                     onHide={() => dispatch(showDialog(undefined))}
                                                     open={metaDialog === PrivacyDialogId}
                                                     form={formLayout}
+                                                    version={processVersion}
                                                 />
 
                                                 <ImprintDialog
                                                     onHide={() => dispatch(showDialog(undefined))}
                                                     open={metaDialog === ImprintDialogId}
                                                     form={formLayout}
+                                                    version={processVersion}
                                                 />
 
                                                 <AccessibilityDialog
                                                     onHide={() => dispatch(showDialog(undefined))}
                                                     open={metaDialog === AccessibilityDialogId}
                                                     form={formLayout}
+                                                    version={processVersion}
                                                 />
                                             </Box>
                                         </ThemeProvider>

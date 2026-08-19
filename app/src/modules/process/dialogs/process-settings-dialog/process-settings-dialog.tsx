@@ -304,6 +304,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                             ref={versionTabRef}
                             open={open}
                             version={renderVersion}
+                            departments={departments}
                             onVersionChange={renderOnVersionChange}
                             onUnsavedChangesChange={setHasUnsavedVersionChanges}
                             onSavingChange={setIsSavingVersionSettings}

@@ -372,21 +372,6 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         if (StringUtils.isNullOrEmpty(formLayout.getPublicTitle())) {
             errors.add("Der öffentliche Titel muss hinterlegt sein.");
         }
-        if (formLayout.getLegalSupportDepartmentId() == null) {
-            errors.add("Der fachliche Support muss eingerichtet sein.");
-        }
-        if (formLayout.getTechnicalSupportDepartmentId() == null) {
-            errors.add("Der technische Support muss eingerichtet sein.");
-        }
-        if (formLayout.getImprintDepartmentId() == null) {
-            errors.add("Das Impressum muss eingerichtet sein.");
-        }
-        if (formLayout.getPrivacyDepartmentId() == null) {
-            errors.add("Die Datenschutzerklärung muss eingerichtet sein.");
-        }
-        if (formLayout.getAccessibilityDepartmentId() == null) {
-            errors.add("Die Barrierefreiheitserklärung muss eingerichtet sein.");
-        }
         ElementStreamUtils.applyAction(formLayout, element -> {
             if (element instanceof FileUploadInputElement uploadElement && StringUtils.isNullOrEmpty(uploadElement.getSubmittedFileName())) {
                 var uploadElementLabel = FileUploadMultipartInputService.describeUploadElement(uploadElement);

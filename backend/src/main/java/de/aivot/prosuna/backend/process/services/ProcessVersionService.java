@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeProblems;
+import de.aivot.prosuna.backend.process.models.ProcessVersionProblems;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -97,6 +98,13 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         existingEntity.setPublicTitle(entity.getPublicTitle());
         existingEntity.setCaseNumberTemplate(entity.getCaseNumberTemplate());
         existingEntity.setNotes(entity.getNotes());
+        existingEntity.setLegalSupportDepartmentId(entity.getLegalSupportDepartmentId());
+        existingEntity.setTechnicalSupportDepartmentId(entity.getTechnicalSupportDepartmentId());
+        existingEntity.setImprintDepartmentId(entity.getImprintDepartmentId());
+        existingEntity.setPrivacyDepartmentId(entity.getPrivacyDepartmentId());
+        existingEntity.setAccessibilityDepartmentId(entity.getAccessibilityDepartmentId());
+        existingEntity.setProcessSpecificPrivacyStatement(entity.getProcessSpecificPrivacyStatement());
+        existingEntity.setProcessSpecificAccessibilityStatement(entity.getProcessSpecificAccessibilityStatement());
         return processDefinitionVersionRepository.save(existingEntity);
     }
 
@@ -105,11 +113,11 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         processDefinitionVersionRepository.delete(entity);
     }
 
-    public List<ProcessNodeProblems> validate(@Nonnull ProcessVersionEntity entity) throws ResponseException {
+    public ProcessVersionProblems validate(@Nonnull ProcessVersionEntity entity) throws ResponseException {
         var nodes = processNodeService
                 .findAllByProcessIdAndProcessVersion(entity.getProcessId(), entity.getProcessVersion());
 
-        var res = new LinkedList<ProcessNodeProblems>();
+        var nodeProblems = new LinkedList<ProcessNodeProblems>();
 
         for (var node : nodes) {
             var provider = processNodeDefinitionService
@@ -117,10 +125,33 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
                     .orElseThrow(() -> ResponseException.internalServerError("No provider found for node with id " + node.getId()));
 
             val(node, provider)
-                    .ifPresent(res::add);
+                    .ifPresent(nodeProblems::add);
         }
 
-        return res;
+        return new ProcessVersionProblems(validateProcessVersionFields(entity), nodeProblems);
+    }
+
+    @Nonnull
+    private List<String> validateProcessVersionFields(@Nonnull ProcessVersionEntity entity) {
+        var problems = new LinkedList<String>();
+
+        if (entity.getLegalSupportDepartmentId() == null) {
+            problems.add("Der fachliche Support muss eingerichtet sein.");
+        }
+        if (entity.getTechnicalSupportDepartmentId() == null) {
+            problems.add("Der technische Support muss eingerichtet sein.");
+        }
+        if (entity.getImprintDepartmentId() == null) {
+            problems.add("Das Impressum muss eingerichtet sein.");
+        }
+        if (entity.getPrivacyDepartmentId() == null) {
+            problems.add("Die Datenschutzerklärung muss eingerichtet sein.");
+        }
+        if (entity.getAccessibilityDepartmentId() == null) {
+            problems.add("Die Barrierefreiheitserklärung muss eingerichtet sein.");
+        }
+
+        return problems;
     }
 
     private <NodeConfig> Optional<ProcessNodeProblems> val(ProcessNodeEntity node, ProcessNodeDefinition<NodeConfig> provider) throws ResponseException {

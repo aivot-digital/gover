@@ -80,13 +80,6 @@ describe('resolveSummaryStepIndex', () => {
             showOnFormIndexPage: null,
             managingDepartmentId: null,
             responsibleDepartmentId: null,
-            legalSupportDepartmentId: null,
-            technicalSupportDepartmentId: null,
-            imprintDepartmentId: null,
-            privacyDepartmentId: null,
-            accessibilityDepartmentId: null,
-            formSpecificPrivacyStatement: null,
-            formSpecificAccessibilityStatement: null,
             themeId: null,
             pdfTemplateKey: null,
         };

@@ -28,13 +28,6 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
 
     private Integer managingDepartmentId;
     private Integer responsibleDepartmentId;
-    private Integer legalSupportDepartmentId;
-    private Integer technicalSupportDepartmentId;
-    private Integer imprintDepartmentId;
-    private Integer privacyDepartmentId;
-    private Integer accessibilityDepartmentId;
-    private String formSpecificPrivacyStatement;
-    private String formSpecificAccessibilityStatement;
 
     private Integer themeId;
 
@@ -53,16 +46,13 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
                 Objects.equals(offlineSubmissionText, that.offlineSubmissionText) && Objects.equals(offlineSignatureNeeded, that.offlineSignatureNeeded) &&
                 Objects.equals(publicTitle, that.publicTitle) && Objects.equals(showOnFormIndexPage, that.showOnFormIndexPage) &&
                 Objects.equals(managingDepartmentId, that.managingDepartmentId) &&
-                Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) &&
-                Objects.equals(technicalSupportDepartmentId, that.technicalSupportDepartmentId) && Objects.equals(imprintDepartmentId, that.imprintDepartmentId) &&
-                Objects.equals(privacyDepartmentId, that.privacyDepartmentId) && Objects.equals(accessibilityDepartmentId, that.accessibilityDepartmentId) &&
-                Objects.equals(formSpecificPrivacyStatement, that.formSpecificPrivacyStatement) && Objects.equals(formSpecificAccessibilityStatement, that.formSpecificAccessibilityStatement) &&
+                Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) &&
                 Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), tabTitle, children, offlineSubmissionText, offlineSignatureNeeded, publicTitle, showOnFormIndexPage, managingDepartmentId, responsibleDepartmentId, legalSupportDepartmentId, technicalSupportDepartmentId, imprintDepartmentId, privacyDepartmentId, accessibilityDepartmentId, formSpecificPrivacyStatement, formSpecificAccessibilityStatement, themeId, pdfTemplateKey);
+        return Objects.hash(super.hashCode(), tabTitle, children, offlineSubmissionText, offlineSignatureNeeded, publicTitle, showOnFormIndexPage, managingDepartmentId, responsibleDepartmentId, themeId, pdfTemplateKey);
     }
 
     @JsonIgnore
@@ -175,69 +165,6 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
 
     public FormLayoutElement setResponsibleDepartmentId(Integer responsibleDepartmentId) {
         this.responsibleDepartmentId = responsibleDepartmentId;
-        return this;
-    }
-
-    public Integer getLegalSupportDepartmentId() {
-        return legalSupportDepartmentId;
-    }
-
-    public FormLayoutElement setLegalSupportDepartmentId(Integer legalSupportDepartmentId) {
-        this.legalSupportDepartmentId = legalSupportDepartmentId;
-        return this;
-    }
-
-    public Integer getTechnicalSupportDepartmentId() {
-        return technicalSupportDepartmentId;
-    }
-
-    public FormLayoutElement setTechnicalSupportDepartmentId(Integer technicalSupportDepartmentId) {
-        this.technicalSupportDepartmentId = technicalSupportDepartmentId;
-        return this;
-    }
-
-    public Integer getImprintDepartmentId() {
-        return imprintDepartmentId;
-    }
-
-    public FormLayoutElement setImprintDepartmentId(Integer imprintDepartmentId) {
-        this.imprintDepartmentId = imprintDepartmentId;
-        return this;
-    }
-
-    public Integer getPrivacyDepartmentId() {
-        return privacyDepartmentId;
-    }
-
-    public FormLayoutElement setPrivacyDepartmentId(Integer privacyDepartmentId) {
-        this.privacyDepartmentId = privacyDepartmentId;
-        return this;
-    }
-
-    public Integer getAccessibilityDepartmentId() {
-        return accessibilityDepartmentId;
-    }
-
-    public FormLayoutElement setAccessibilityDepartmentId(Integer accessibilityDepartmentId) {
-        this.accessibilityDepartmentId = accessibilityDepartmentId;
-        return this;
-    }
-
-    public String getFormSpecificPrivacyStatement() {
-        return formSpecificPrivacyStatement;
-    }
-
-    public FormLayoutElement setFormSpecificPrivacyStatement(String formSpecificPrivacyStatement) {
-        this.formSpecificPrivacyStatement = formSpecificPrivacyStatement;
-        return this;
-    }
-
-    public String getFormSpecificAccessibilityStatement() {
-        return formSpecificAccessibilityStatement;
-    }
-
-    public FormLayoutElement setFormSpecificAccessibilityStatement(String formSpecificAccessibilityStatement) {
-        this.formSpecificAccessibilityStatement = formSpecificAccessibilityStatement;
         return this;
     }
 

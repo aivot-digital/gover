@@ -32,12 +32,7 @@ public class FormLayoutCleanerService {
         copy.setThemeId(null);
         copy.setManagingDepartmentId(null);
         copy.setResponsibleDepartmentId(null);
-        copy.setAccessibilityDepartmentId(null);
-        copy.setImprintDepartmentId(null);
-        copy.setPrivacyDepartmentId(null);
         copy.setPdfTemplateKey(null);
-        copy.setLegalSupportDepartmentId(null);
-        copy.setTechnicalSupportDepartmentId(null);
 
         ElementStreamUtils.applyAction(copy, element -> {
             switch (element) {

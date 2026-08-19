@@ -43,6 +43,29 @@ public class ProcessVersionEntity {
     @Size(max = 2048, message = "Die Notizen dürfen maximal 2048 Zeichen lang sein.")
     private String notes;
 
+    @Nullable
+    private Integer legalSupportDepartmentId;
+
+    @Nullable
+    private Integer technicalSupportDepartmentId;
+
+    @Nullable
+    private Integer imprintDepartmentId;
+
+    @Nullable
+    private Integer privacyDepartmentId;
+
+    @Nullable
+    private Integer accessibilityDepartmentId;
+
+    @Nullable
+    @Column(columnDefinition = "text")
+    private String processSpecificPrivacyStatement;
+
+    @Nullable
+    @Column(columnDefinition = "text")
+    private String processSpecificAccessibilityStatement;
+
     @Nonnull
     private Instant created;
 
@@ -223,6 +246,76 @@ public class ProcessVersionEntity {
 
     public ProcessVersionEntity setNotes(@Nullable String notes) {
         this.notes = notes;
+        return this;
+    }
+
+    @Nullable
+    public Integer getLegalSupportDepartmentId() {
+        return legalSupportDepartmentId;
+    }
+
+    public ProcessVersionEntity setLegalSupportDepartmentId(@Nullable Integer legalSupportDepartmentId) {
+        this.legalSupportDepartmentId = legalSupportDepartmentId;
+        return this;
+    }
+
+    @Nullable
+    public Integer getTechnicalSupportDepartmentId() {
+        return technicalSupportDepartmentId;
+    }
+
+    public ProcessVersionEntity setTechnicalSupportDepartmentId(@Nullable Integer technicalSupportDepartmentId) {
+        this.technicalSupportDepartmentId = technicalSupportDepartmentId;
+        return this;
+    }
+
+    @Nullable
+    public Integer getImprintDepartmentId() {
+        return imprintDepartmentId;
+    }
+
+    public ProcessVersionEntity setImprintDepartmentId(@Nullable Integer imprintDepartmentId) {
+        this.imprintDepartmentId = imprintDepartmentId;
+        return this;
+    }
+
+    @Nullable
+    public Integer getPrivacyDepartmentId() {
+        return privacyDepartmentId;
+    }
+
+    public ProcessVersionEntity setPrivacyDepartmentId(@Nullable Integer privacyDepartmentId) {
+        this.privacyDepartmentId = privacyDepartmentId;
+        return this;
+    }
+
+    @Nullable
+    public Integer getAccessibilityDepartmentId() {
+        return accessibilityDepartmentId;
+    }
+
+    public ProcessVersionEntity setAccessibilityDepartmentId(@Nullable Integer accessibilityDepartmentId) {
+        this.accessibilityDepartmentId = accessibilityDepartmentId;
+        return this;
+    }
+
+    @Nullable
+    public String getProcessSpecificPrivacyStatement() {
+        return processSpecificPrivacyStatement;
+    }
+
+    public ProcessVersionEntity setProcessSpecificPrivacyStatement(@Nullable String processSpecificPrivacyStatement) {
+        this.processSpecificPrivacyStatement = processSpecificPrivacyStatement;
+        return this;
+    }
+
+    @Nullable
+    public String getProcessSpecificAccessibilityStatement() {
+        return processSpecificAccessibilityStatement;
+    }
+
+    public ProcessVersionEntity setProcessSpecificAccessibilityStatement(@Nullable String processSpecificAccessibilityStatement) {
+        this.processSpecificAccessibilityStatement = processSpecificAccessibilityStatement;
         return this;
     }
 

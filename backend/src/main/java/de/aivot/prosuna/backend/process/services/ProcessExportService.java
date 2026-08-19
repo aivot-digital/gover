@@ -127,6 +127,11 @@ public class ProcessExportService {
         processVersion.setRevoked(null);
         processVersion.setNotes(null);
         processVersion.setStatus(ProcessVersionStatus.Drafted);
+        processVersion.setLegalSupportDepartmentId(null);
+        processVersion.setTechnicalSupportDepartmentId(null);
+        processVersion.setImprintDepartmentId(null);
+        processVersion.setPrivacyDepartmentId(null);
+        processVersion.setAccessibilityDepartmentId(null);
     }
 
     private static void cleanProcessDataForExport(ProcessEntity processDefinition) {

@@ -506,24 +506,28 @@ export function CustomerFormPage() {
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === HelpDialogId}
                     form={layoutElement}
+                    version={version}
                 />
 
                 <PrivacyDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === PrivacyDialogId}
                     form={layoutElement}
+                    version={version}
                 />
 
                 <ImprintDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === ImprintDialogId}
                     form={layoutElement}
+                    version={version}
                 />
 
                 <AccessibilityDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === AccessibilityDialogId}
                     form={layoutElement}
+                    version={version}
                 />
             </SnackbarProvider>
         </ThemeProvider>

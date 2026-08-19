@@ -190,7 +190,7 @@ class FormTriggerNodeV1Test {
     }
 
     @Test
-    void validateConfiguration_ShouldReportLegacyLayoutFieldsMissingFromFormLayout() throws Exception {
+    void validateConfiguration_ShouldReportMissingPublicTitleFromFormLayout() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(false);
 
         var errors = node.validateConfiguration(
@@ -203,12 +203,7 @@ class FormTriggerNodeV1Test {
 
         var layoutError = errors.get(FormTriggerConfigV1.FORM_LAYOUT);
         assertNotNull(layoutError);
-        assertTrue(layoutError.contains("Der öffentliche Titel muss hinterlegt sein."));
-        assertTrue(layoutError.contains("Der fachliche Support muss eingerichtet sein."));
-        assertTrue(layoutError.contains("Der technische Support muss eingerichtet sein."));
-        assertTrue(layoutError.contains("Das Impressum muss eingerichtet sein."));
-        assertTrue(layoutError.contains("Die Datenschutzerklärung muss eingerichtet sein."));
-        assertTrue(layoutError.contains("Die Barrierefreiheitserklärung muss eingerichtet sein."));
+        assertEquals(List.of("Der öffentliche Titel muss hinterlegt sein."), layoutError);
     }
 
     @Test
@@ -496,12 +491,7 @@ class FormTriggerNodeV1Test {
 
     private static FormLayoutElement validFormLayout() {
         return new FormLayoutElement()
-                .setPublicTitle("Antrag auf Leistung")
-                .setLegalSupportDepartmentId(1)
-                .setTechnicalSupportDepartmentId(2)
-                .setImprintDepartmentId(3)
-                .setPrivacyDepartmentId(4)
-                .setAccessibilityDepartmentId(5);
+                .setPublicTitle("Antrag auf Leistung");
     }
 
     private static ProcessNodeEntity processNode() {
