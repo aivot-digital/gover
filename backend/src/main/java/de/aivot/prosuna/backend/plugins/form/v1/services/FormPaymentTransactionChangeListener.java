@@ -2,8 +2,8 @@ package de.aivot.prosuna.backend.plugins.form.v1.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
 import de.aivot.prosuna.backend.payment.models.PaymentTransactionChangeListener;
-import de.aivot.prosuna.backend.plugins.form.v1.nodes.FormTriggerNodeV1;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.workers.ProcessWorker;
@@ -37,7 +37,7 @@ public class FormPaymentTransactionChangeListener implements PaymentTransactionC
     private void handle(PaymentTransactionEntity paymentTransactionEntity) throws ResponseException {
         var specificationBuilderJsonEquals = new SpecificationBuilderJsonEquals<ProcessInstanceTaskEntity>(
                 "runtimeData",
-                List.of(FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY),
+                List.of(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY),
                 paymentTransactionEntity.getKey()
         );
 

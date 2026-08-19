@@ -1,7 +1,10 @@
 package de.aivot.prosuna.backend.process.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
@@ -11,9 +14,14 @@ import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButton
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
+import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
+import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
+import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -28,20 +36,32 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.services.*;
 import de.aivot.prosuna.backend.process.workers.ProcessNodeExecutionResultHandler;
+import de.aivot.prosuna.backend.services.PdfService;
+import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
+import de.aivot.prosuna.backend.theme.services.ThemeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.thymeleaf.exceptions.TemplateProcessingException;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/public/processes/{procAccess}/tasks/{taskAccess}/")
@@ -59,6 +79,13 @@ public class CitizenProcessInstanceTaskViewController {
     private final ElementDerivationService elementDerivationService;
     private final FileUploadMultipartInputService fileUploadMultipartInputService;
     private final ProcessDataService processDataService;
+    private final ProcessService processService;
+    private final VDepartmentShadowedService vDepartmentShadowedService;
+    private final PaymentTransactionService paymentTransactionService;
+    private final PdfService pdfService;
+    private final ProsunaConfig prosunaConfig;
+    private final ThemeService themeService;
+    private final AssetService assetService;
 
     public CitizenProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                     ProcessInstanceTaskService processInstanceTaskService,
@@ -67,7 +94,15 @@ public class CitizenProcessInstanceTaskViewController {
                                                     ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
                                                     ElementDerivationService elementDerivationService,
-                                                    FileUploadMultipartInputService fileUploadMultipartInputService, ProcessDataService processDataService) {
+                                                    FileUploadMultipartInputService fileUploadMultipartInputService,
+                                                    ProcessDataService processDataService,
+                                                    ProcessService processService,
+                                                    VDepartmentShadowedService vDepartmentShadowedService,
+                                                    PaymentTransactionService paymentTransactionService,
+                                                    PdfService pdfService,
+                                                    ProsunaConfig prosunaConfig,
+                                                    ThemeService themeService,
+                                                    AssetService assetService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -77,6 +112,13 @@ public class CitizenProcessInstanceTaskViewController {
         this.elementDerivationService = elementDerivationService;
         this.fileUploadMultipartInputService = fileUploadMultipartInputService;
         this.processDataService = processDataService;
+        this.processService = processService;
+        this.vDepartmentShadowedService = vDepartmentShadowedService;
+        this.paymentTransactionService = paymentTransactionService;
+        this.pdfService = pdfService;
+        this.prosunaConfig = prosunaConfig;
+        this.themeService = themeService;
+        this.assetService = assetService;
     }
 
     @GetMapping("")
@@ -132,6 +174,57 @@ public class CitizenProcessInstanceTaskViewController {
                 elementData,
                 events
         );
+    }
+
+    @GetMapping("payment-confirmation/")
+    @Operation(
+            summary = "Get process task payment confirmation PDF",
+            description = "Downloads the payment confirmation PDF for a paid public process task."
+    )
+    public void getPaymentConfirmation(@Nonnull @PathVariable String procAccess,
+                                       @Nonnull @PathVariable String taskAccess,
+                                       @Nonnull HttpServletResponse response) throws ResponseException, IOException {
+        var taskViewData = fetchTaskViewData(procAccess, taskAccess);
+        var transaction = resolvePaymentConfirmationTransaction(taskViewData);
+
+        if (transaction.getStatus() != XBezahldienstStatus.PAYED) {
+            throw ResponseException.notFound();
+        }
+
+        var process = processService
+                .retrieve(taskViewData.instance().getProcessId())
+                .orElseThrow(ResponseException::notFound);
+        var department = vDepartmentShadowedService
+                .retrieve(process.getDepartmentId())
+                .orElseThrow(() -> ResponseException.internalServerError("Keine zuständige Organisationseinheit für die Zahlungsbestätigung gefunden."));
+        var logoUrl = resolvePaymentConfirmationLogoUrl(department);
+
+        byte[] pdfBytes;
+        try {
+            pdfBytes = pdfService.generatePaymentConfirmation(
+                    transaction,
+                    taskViewData.instance().getCaseNumber(),
+                    logoUrl,
+                    department
+            );
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw ResponseException.internalServerError(e, "Die PDF-Erstellung der Zahlungsbestätigung wurde unterbrochen.");
+        } catch (IOException | URISyntaxException | TemplateProcessingException e) {
+            throw ResponseException.internalServerError(e, "Fehler beim Erzeugen der Zahlungsbestätigung: %s", e.getMessage());
+        }
+
+        response.setContentType("application/pdf");
+        response.setHeader(
+                HttpHeaders.CONTENT_DISPOSITION,
+                ContentDisposition
+                        .attachment()
+                        .filename("Zahlungsbestaetigung-" + taskViewData.instance().getCaseNumber() + ".pdf", StandardCharsets.UTF_8)
+                        .build()
+                        .toString()
+        );
+
+        response.getOutputStream().write(pdfBytes);
     }
 
     @PutMapping("")
@@ -437,6 +530,48 @@ public class CitizenProcessInstanceTaskViewController {
                 provider,
                 cfgRes.configuration()
         );
+    }
+
+    @Nonnull
+    private PaymentTransactionEntity resolvePaymentConfirmationTransaction(@Nonnull TaskViewData<?> taskViewData) throws ResponseException {
+        var transactionKey = taskViewData
+                .task()
+                .getRuntimeData()
+                .get(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY);
+
+        if (transactionKey == null) {
+            throw ResponseException.notFound();
+        }
+
+        var transaction = paymentTransactionService
+                .retrieve(String.valueOf(transactionKey))
+                .orElseThrow(ResponseException::notFound);
+
+        var expectedRedirectUrl = prosunaConfig.createUrl(
+                "/process/",
+                taskViewData.instance().getAccessKey(),
+                "tasks",
+                taskViewData.task().getAccessKey()
+        );
+
+        if (!Objects.equals(transaction.getRedirectUrl(), expectedRedirectUrl)) {
+            throw ResponseException.notFound();
+        }
+
+        return transaction;
+    }
+
+    @Nonnull
+    private String resolvePaymentConfirmationLogoUrl(@Nonnull VDepartmentShadowedEntity department) {
+        UUID logoKey = null;
+        if (department.getThemeId() != null) {
+            logoKey = themeService
+                    .retrieve(department.getThemeId())
+                    .map(ThemeEntity::getLogoKey)
+                    .orElse(null);
+        }
+
+        return logoKey == null ? prosunaConfig.getDefaultLogoUrl() : assetService.createUrl(logoKey);
     }
 
     private record TaskViewData<NodeConfig>(
