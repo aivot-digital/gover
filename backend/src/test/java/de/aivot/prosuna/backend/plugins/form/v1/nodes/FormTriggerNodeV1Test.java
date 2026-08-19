@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
+import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
@@ -426,7 +427,7 @@ class FormTriggerNodeV1Test {
                 null
         ));
 
-        var richText = assertInstanceOf(RichTextContentElement.class, layout.getChildren().getFirst());
+        var richText = layout.findChild("rtx", RichTextContentElement.class).orElseThrow();
         assertTrue(richText.getContent().contains("# Zahlung erfolgreich\n# Zahlung erhalten\nDanke **Ada**."));
     }
 
@@ -479,10 +480,11 @@ class FormTriggerNodeV1Test {
                 null
         ));
 
-        var richText = assertInstanceOf(RichTextContentElement.class, layout.getChildren().getFirst());
-        assertTrue(richText.getContent().contains(
-                "https://example.test/api/public/form/antrag-prozess/antrag-online/submit/instance-access/task-access/payment-confirmation/"
-        ));
+        var downloadButton = layout.findChild("download", LinkButtonContentElement.class).orElseThrow();
+        assertEquals(
+                "https://example.test/api/public/form/antrag-prozess/antrag-online/submit/instance-access/task-access/payment-confirmation/",
+                downloadButton.getHref()
+        );
     }
 
     private static FormTriggerConfigV1 configuration(String formSlug, FormLayoutElement formLayout) {

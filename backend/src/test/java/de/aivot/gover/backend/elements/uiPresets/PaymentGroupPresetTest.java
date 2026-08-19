@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.elements.uiPresets;
 
+import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -19,9 +21,13 @@ import static org.mockito.Mockito.when;
 class PaymentGroupPresetTest {
     @Test
     void shouldUseConfiguredPaymentResultMessages() throws Exception {
-        var paidMessage = renderMessage(XBezahldienstStatus.PAYED, "# Bezahlt\n**Danke.**", "# Nicht bezahlt.");
+        var paidPreset = createPreset(XBezahldienstStatus.PAYED, "# Bezahlt\n**Danke.**", "# Nicht bezahlt.");
+        var paidMessage = renderMessage(paidPreset);
         assertTrue(paidMessage.contains("# Zahlung erfolgreich\n# Bezahlt\n**Danke.**"));
-        assertTrue(paidMessage.contains("Sie können die Zahlungsbestätigung über den folgenden Link herunterladen: [https://example.test/payment-confirmation/](https://example.test/payment-confirmation/)"));
+        assertEquals(
+                "https://example.test/payment-confirmation/",
+                paidPreset.findChild("download", LinkButtonContentElement.class).orElseThrow().getHref()
+        );
 
         assertTrue(renderMessage(
                 XBezahldienstStatus.FAILED,
@@ -45,7 +51,18 @@ class PaymentGroupPresetTest {
     private static String renderMessage(XBezahldienstStatus status,
                                         String successMessage,
                                         String failureMessage) throws Exception {
-        var preset = new PaymentGroupPreset(
+        return renderMessage(createPreset(status, successMessage, failureMessage));
+    }
+
+    private static String renderMessage(PaymentGroupPreset preset) {
+        var richText = preset.findChild("rtx", RichTextContentElement.class).orElseThrow();
+        return richText.getContent();
+    }
+
+    private static PaymentGroupPreset createPreset(XBezahldienstStatus status,
+                                                   String successMessage,
+                                                   String failureMessage) throws Exception {
+        return new PaymentGroupPreset(
                 paymentProvider(),
                 paymentProviderDefinition(),
                 new PaymentPayload(),
@@ -54,9 +71,6 @@ class PaymentGroupPresetTest {
                 failureMessage,
                 "https://example.test/payment-confirmation/"
         );
-
-        var richText = (RichTextContentElement) preset.getChildren().getFirst();
-        return richText.getContent();
     }
 
     private static PaymentProviderEntity paymentProvider() {
