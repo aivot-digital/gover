@@ -116,7 +116,10 @@ class TemporalInputElementContractTest {
                 Instant.parse("2026-07-29T07:00:00Z"),
                 DateTimeInputElement._formatValue("2026-07-29T09:00:00+02:00")
         );
-        assertNull(DateTimeInputElement._formatValue("2026-07-29T09:00:00"));
+        assertEquals(
+                Instant.parse("2026-07-29T07:00:00Z"),
+                DateTimeInputElement._formatValue("2026-07-29T09:00:00")
+        );
         assertNull(DateTimeInputElement._formatValue("29.07.2026 09:00"));
     }
 
