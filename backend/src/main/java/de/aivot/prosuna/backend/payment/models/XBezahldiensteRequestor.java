@@ -32,14 +32,14 @@ public class XBezahldiensteRequestor implements Serializable {
     @JsonProperty("address")
     private XBezahldiensteAddress address = null;
 
-    public String getLastName() {
+    public String getName() {
         return name;
     }
 
-    public void setLastName(String lastName) {
-        if (lastName != null) {
+    public void setName(String name) {
+        if (name != null) {
             this.name = StringUtils.cleanAndTruncate(
-                    lastName,
+                    name,
                     "[^\\w\\d\\s-,\\.\\u00C0-\\u017F]",
                     250
             );

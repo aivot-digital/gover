@@ -309,7 +309,7 @@ public class PaymentPayloadCreationService {
     ) throws PaymentException {
         var requestor = new XBezahldiensteRequestor();
         requestor.setIsOrganization(false);
-        requestor.setLastName(readString(processExecutionData, mapping.lastNameDestinationKey()));
+        requestor.setName(readString(processExecutionData, mapping.lastNameDestinationKey()));
         requestor.setFirstName(readString(processExecutionData, mapping.firstNameDestinationKey()));
         requestor.setGender(readGender(processExecutionData, mapping.genderDestinationKey()));
 
