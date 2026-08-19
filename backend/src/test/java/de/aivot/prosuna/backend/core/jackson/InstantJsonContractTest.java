@@ -32,13 +32,13 @@ class InstantJsonContractTest {
     }
 
     @Test
-    void objectMapperFactoryShouldRejectOffsetlessInstants() {
-        assertRejectsOffsetlessInstant(ObjectMapperFactory.getInstance());
+    void objectMapperFactoryShouldResolveOffsetlessInstantsInApplicationTimeZone() throws Exception {
+        assertResolvesOffsetlessInstant(ObjectMapperFactory.getInstance());
     }
 
     @Test
-    void springMapperShouldRejectOffsetlessInstants() {
-        assertRejectsOffsetlessInstant(springMapper());
+    void springMapperShouldResolveOffsetlessInstantsInApplicationTimeZone() throws Exception {
+        assertResolvesOffsetlessInstant(springMapper());
     }
 
     @Test
@@ -147,14 +147,13 @@ class InstantJsonContractTest {
         assertEquals("{\"timestamp\":\"2026-06-15T07:30:00+00:00\"}", result);
     }
 
-    private void assertRejectsOffsetlessInstant(ObjectMapper mapper) {
-        assertThrows(
-                MismatchedInputException.class,
-                () -> mapper.readValue(
-                        "{\"timestamp\":\"2026-06-15T10:30:00\"}",
-                        TimestampPayload.class
-                )
+    private void assertResolvesOffsetlessInstant(ObjectMapper mapper) throws Exception {
+        var payload = mapper.readValue(
+                "{\"timestamp\":\"2026-06-15T10:30:00\"}",
+                TimestampPayload.class
         );
+
+        assertEquals(Instant.parse("2026-06-15T08:30:00Z"), payload.timestamp());
     }
 
     private void assertCoercesEmptyInstantsToNull(ObjectMapper mapper) throws Exception {
