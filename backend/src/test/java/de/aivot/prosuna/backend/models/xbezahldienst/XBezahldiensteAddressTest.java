@@ -16,7 +16,7 @@ class XBezahldiensteAddressTest {
         XBezahldiensteAddress address = new XBezahldiensteAddress();
 
         address.setStreet(null);
-        assertNull(address.getStreet());
+        assertEquals("", address.getStreet());
 
         address.setStreet("Test123");
         assertEquals("Test123", address.getStreet());
