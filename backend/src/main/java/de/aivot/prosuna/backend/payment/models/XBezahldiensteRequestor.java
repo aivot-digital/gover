@@ -33,6 +33,9 @@ public class XBezahldiensteRequestor implements Serializable {
     private XBezahldiensteAddress address = null;
 
     public String getName() {
+        if (name == null) {
+            return "";
+        }
         return name;
     }
 
@@ -49,6 +52,9 @@ public class XBezahldiensteRequestor implements Serializable {
     }
 
     public String getFirstName() {
+        if (firstName == null) {
+            return "";
+        }
         return firstName;
     }
 
@@ -65,6 +71,9 @@ public class XBezahldiensteRequestor implements Serializable {
     }
 
     public XBezahldienstGender getGender() {
+        if (gender == null) {
+            return XBezahldienstGender.DIVERSE;
+        }
         return gender;
     }
 
@@ -73,6 +82,9 @@ public class XBezahldiensteRequestor implements Serializable {
     }
 
     public Boolean getIsOrganization() {
+        if (isOrganization == null) {
+            return false;
+        }
         return isOrganization;
     }
 
@@ -81,6 +93,9 @@ public class XBezahldiensteRequestor implements Serializable {
     }
 
     public String getOrganizationName() {
+        if (organizationName == null) {
+            return "";
+        }
         return organizationName;
     }
 
@@ -97,6 +112,9 @@ public class XBezahldiensteRequestor implements Serializable {
     }
 
     public XBezahldiensteAddress getAddress() {
+        if (address == null) {
+            address = new XBezahldiensteAddress();
+        }
         return address;
     }
 
