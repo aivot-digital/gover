@@ -104,7 +104,7 @@ export function GenericListPage<ItemType extends GenericListRowModel>(props: Gen
 
             <Paper
                 sx={{
-                    marginTop: 3.5,
+                    marginTop: 2.75,
                 }}
             >
                 <GenericList

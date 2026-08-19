@@ -1,6 +1,6 @@
 Hallo,
 
-Ihnen wurde ein Antrag in Gover zugewiesen.
+Ihnen wurde ein Antrag in Prosuna zugewiesen.
 Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
 Aktenzeichen: [(${submission.fileNumber})]
 Zuständige Mitarbeiter:in: [(${user.getFullName})]

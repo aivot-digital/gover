@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useMemo, useRef} from 'react';
 
-const CHANNEL_NAME = 'gover_cross_tab_invalidation';
+const CHANNEL_NAME = 'prosuna_cross_tab_invalidation';
 const MAX_SEEN_MESSAGE_IDS = 1000;
 
 type CrossTabInvalidationScope = string | number | null | undefined;

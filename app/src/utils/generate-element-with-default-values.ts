@@ -186,7 +186,7 @@ const elementConstructors: {
     [ElementType.GroupLayout]: (id) => ({
         ...makeFormBase(ElementType.GroupLayout, id),
         children: [],
-        storeLink: null,
+        marketplaceLink: null,
     }),
     [ElementType.Checkbox]: (id) => ({
         ...makeInputBase(ElementType.Checkbox, id),
@@ -369,8 +369,8 @@ const elementConstructors: {
     }),
     [ElementType.Image]: (id) => ({
         ...makeFormBase(ElementType.Image, id),
-        alt: 'Beispiel-Grafik mit weißem Gover Logo auf blauem Hintergrund (bitte ersetzen)',
-        src: `${AppInfo.mode == 'staff' ? '/staff' : ''}/assets/images/gover-beispiel-grafik.svg`,
+        alt: 'Beispiel-Grafik mit weißem Prosuna Logo auf blauem Hintergrund (bitte ersetzen)',
+        src: `${AppInfo.mode == 'staff' ? '/staff' : ''}/assets/images/prosuna-beispiel-grafik.jpg`,
         height: undefined,
         width: undefined,
         caption: undefined,

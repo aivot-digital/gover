@@ -84,8 +84,8 @@ LABEL org.opencontainers.image.documentation="https://wiki.teamaivot.de/de/dokum
 LABEL org.opencontainers.image.source="https://github.com/aivot-digital/gover"
 LABEL org.opencontainers.image.version=$BUILD_VERSION
 LABEL org.opencontainers.image.vendor="Aivot"
-LABEL org.opencontainers.image.title="Gover Backend"
-LABEL org.opencontainers.image.description="Gover is an efficient low-code e-government platform for creating and managing user-centric online forms."
+LABEL org.opencontainers.image.title="Prosuna Backend"
+LABEL org.opencontainers.image.description="Prosuna is an efficient low-code e-government platform for creating and managing user-centric online forms."
 
 # Set locale env config
 ENV LANG=de_DE.UTF-8
@@ -116,7 +116,7 @@ COPY container/nginx.conf /etc/nginx/http.d/default.conf
 COPY default-assets /app/default-assets
 
 # Copy app files
-COPY --from=build_server /app/target/backend-${BUILD_VERSION}-exec.jar /app/gover.jar
+COPY --from=build_server /app/target/backend-${BUILD_VERSION}-exec.jar /app/prosuna.jar
 COPY --from=build_app /app/build/customer /app/www
 COPY --from=build_app /app/build/staff /app/www/staff
 

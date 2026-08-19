@@ -1,6 +1,6 @@
 # Modules
 
-Each module is a package in the Gover backend.
+Each module is a package in the Prosuna backend.
 A module encapsulates all controllers, models, services, repositories etc. that are related to a specific purpose of the module.
 Each module should contain a `package-info.java` file which contains the module name and description.
 

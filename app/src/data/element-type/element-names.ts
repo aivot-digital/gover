@@ -56,8 +56,8 @@ const ElementNames: Record<ElementType, string> = {
 };
 
 export function getElementName(element: AnyElement): string {
-    if (element.type === ElementType.GroupLayout && element.storeLink != null) {
-        return 'Store-Baustein';
+    if (element.type === ElementType.GroupLayout && element.marketplaceLink != null) {
+        return 'Marktplatz-Baustein';
     }
 
     return getElementNameForType(element.type);

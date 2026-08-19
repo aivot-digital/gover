@@ -49,7 +49,7 @@ export function ProviderLinksGrid() {
                     }}>
                     <BoxLink
                         link="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/home"
-                        text={'Über Gover\nHilfen, Anleitungen und FAQs'}
+                        text={'Über Prosuna\nHilfen, Anleitungen und FAQs'}
                     />
                 </Grid>
                 {

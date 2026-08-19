@@ -66,7 +66,7 @@ export function SystemRolesListPage() {
                         component="p"
                     >
                         Systemrollen definieren Berechtigungen auf Systemebene und gelten
-                        anwendungsweit in Gover.
+                        anwendungsweit in Prosuna.
                     </Typography>
                     <Typography
                         variant="body1"

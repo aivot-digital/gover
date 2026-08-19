@@ -52,7 +52,7 @@ interface ShellState {
     error?: ErrorMessage;
     minimizeDrawer: boolean;
     showSearchDialog: boolean;
-    showAboutGoverDialog: boolean;
+    showAboutProsunaDialog: boolean;
 }
 
 const initialState: ShellState = {
@@ -60,7 +60,7 @@ const initialState: ShellState = {
     snackbars: [],
     minimizeDrawer: localStorage.getItem('minimizeDrawer') != null,
     showSearchDialog: false,
-    showAboutGoverDialog: false,
+    showAboutProsunaDialog: false,
 };
 
 const shellSlice = createSlice({
@@ -81,8 +81,8 @@ const shellSlice = createSlice({
         setShowSearchDialog(state, action: PayloadAction<boolean>) {
             state.showSearchDialog = action.payload;
         },
-        setShowAboutGoverDialog(state, action: PayloadAction<boolean>) {
-            state.showAboutGoverDialog = action.payload;
+        setShowAboutProsunaDialog(state, action: PayloadAction<boolean>) {
+            state.showAboutProsunaDialog = action.payload;
         },
         setLoadingMessage(state, action: PayloadAction<LoadingMessage | undefined>) {
             state.loading = action.payload;
@@ -118,7 +118,7 @@ export const {
     setStatus,
     setMinimizeDrawer,
     setShowSearchDialog,
-    setShowAboutGoverDialog,
+    setShowAboutProsunaDialog,
     setLoadingMessage,
     clearLoadingMessage,
     setErrorMessage,
@@ -129,7 +129,7 @@ export const {
 export const selectStatus = (state: RootState) => state.shell.status;
 export const selectMinimizeDrawer = (state: RootState) => state.shell.minimizeDrawer;
 export const selectShowSearchDialog = (state: RootState) => state.shell.showSearchDialog;
-export const selectShowAboutGoverDialog = (state: RootState) => state.shell.showAboutGoverDialog;
+export const selectShowAboutProsunaDialog = (state: RootState) => state.shell.showAboutProsunaDialog;
 export const selectLoadingMessage = (state: RootState) => state.shell.loading;
 export const selectIsLoading = (state: RootState) => state.shell.loading != null;
 export const selectErrorMessage = (state: RootState) => state.shell.error;

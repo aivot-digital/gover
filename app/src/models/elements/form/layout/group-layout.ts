@@ -4,12 +4,12 @@ import {type AnyFormElement} from '../any-form-element';
 
 export interface GroupLayout extends BaseFormElement<ElementType.GroupLayout> {
     children: AnyFormElement[];
-    storeLink: GroupLayoutStoreLink | null;
+    marketplaceLink: GroupLayoutMarketplaceLink | null;
 }
 
-export interface GroupLayoutStoreLink {
-    storeId: string;
-    storeVersion: string;
+export interface GroupLayoutMarketplaceLink {
+    marketplaceId: string;
+    marketplaceVersion: string;
 }
 
 export function isGroupLayout(obj: any): obj is GroupLayout {
@@ -17,5 +17,5 @@ export function isGroupLayout(obj: any): obj is GroupLayout {
 }
 
 export function isPresetGroupLayout(obj: any): boolean {
-    return isGroupLayout(obj) && obj.storeLink != null;
+    return isGroupLayout(obj) && obj.marketplaceLink != null;
 }

@@ -172,7 +172,7 @@ export function TeamsDetailsPageIndex() {
                     maxWidth: 900,
                 }}
             >
-                Hinterlegen Sie interne Angaben dieses Teams. Diese Angaben werden in Gover zum Beispiel in Listen, Zuweisungen und Auswahlen verwendet.
+                Hinterlegen Sie interne Angaben dieses Teams. Diese Angaben werden in Prosuna zum Beispiel in Listen, Zuweisungen und Auswahlen verwendet.
             </Typography>
             <Grid
                 container

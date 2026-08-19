@@ -20,7 +20,7 @@ import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constra
 import HelpIconOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import Tooltip from '@mui/material/Tooltip';
 import * as yup from 'yup';
-import {goverSchemaToYup, mapFormManagerErrorsToComputedErrors} from '../../../../utils/gover-schema-to-yup';
+import {prosunaSchemaToYup, mapFormManagerErrorsToComputedErrors} from '../../../../utils/prosuna-schema-to-yup';
 import {PaymentProviderDefinitionResponseDTO} from '../../dtos/payment-provider-definition-response-dto';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {useConfirm} from '../../../../providers/confirm-provider';
@@ -156,7 +156,7 @@ export function PaymentProviderDetailsPageIndex() {
             return;
         }
 
-        const configSchemaFields = goverSchemaToYup(
+        const configSchemaFields = prosunaSchemaToYup(
             selectedPaymentProviderDefinition.configLayout,
             derivedRuntimeConfigData.elementStates,
         );

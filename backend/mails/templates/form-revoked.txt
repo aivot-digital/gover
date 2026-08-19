@@ -1,6 +1,6 @@
 Hallo,
 
-es wurde ein Formular in Gover zurückgezogen.
+es wurde ein Formular in Prosuna zurückgezogen.
 Formular: [(${form.internalTitle})]
 Version: [(${form.version})]
 Entwickelnde Organisationseinheit: [(${developingDepartment != null ? developingDepartment.name : '—'})]

@@ -253,10 +253,10 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
 
     const debugInfoText = useMemo(() => {
         const lines: string[] = [
-            '# Gover debug info',
+            '# Prosuna debug info',
             '',
             '## core',
-            `- goverVersion: ${versionLabel}`,
+            `- prosunaVersion: ${versionLabel}`,
             `- buildVersionRaw: ${AppInfo.version}`,
             `- buildNumberRaw: ${AppInfo.number}`,
             `- buildDateRaw: ${AppInfo.date}`,
@@ -435,7 +435,7 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
     };
 
     const handleDownload = (): void => {
-        const filename = `gover-debug-info-${DateTime.now().toFormat('yyyyMMdd-HHmmss')}.txt`;
+        const filename = `prosuna-debug-info-${DateTime.now().toFormat('yyyyMMdd-HHmmss')}.txt`;
         downloadTextFile(filename, debugInfoText, 'text/plain;charset=utf-8');
         dispatch(showSuccessSnackbar('Debug-Informationen wurden heruntergeladen.'));
     };

@@ -1,6 +1,6 @@
-<!--/*@thymesVar id="base" type="de.aivot.gover.backend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="base" type="de.aivot.prosuna.backend.pdf.models.FormPdfContext"*/-->
 <!--/*@thymesVar id="form" type="de.aivot.backend.form.entities.FormVersionWithDetailsEntity"*/-->
-<!--/*@thymesVar id="submission" type="de.aivot.gover.backend.submission.entities.Submission"*/-->
+<!--/*@thymesVar id="submission" type="de.aivot.prosuna.backend.submission.entities.Submission"*/-->
 
 <div style="width: 100%; display: flex; align-items: flex-end; padding: 0 18px; color: #626262;">
     <span style="font-size: 10px;" th:if="${ submission != null }" th:text="${ #numberformat.formatInstant(submission.created, 'dd.MM.yyyy – HH:mm') + ' Uhr' } "></span>

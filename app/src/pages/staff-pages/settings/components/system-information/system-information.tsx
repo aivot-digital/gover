@@ -520,7 +520,7 @@ export function SystemInformation(): React.ReactElement {
                 label="Softwareversion"
                 labelVariant="subtitle1"
                 labelSx={{}}
-                description="Diese Angaben identifizieren die aktuell bereitgestellte Gover-Version und das zugehörige Build-Datum."
+                description="Diese Angaben identifizieren die aktuell bereitgestellte Prosuna-Version und das zugehörige Build-Datum."
                 descriptionSx={{
                     maxWidth: 800,
                 }}

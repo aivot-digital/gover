@@ -1,6 +1,6 @@
 Hallo,
 
-es wurde ein Formular in Gover veröffentlicht.
+es wurde ein Formular in Prosuna veröffentlicht.
 Formular: [(${form.internalTitle})]
 Version: [(${form.version})]
 Entwickelnde Organisationseinheit: [(${developingDepartment != null ? developingDepartment.name : '—'})]

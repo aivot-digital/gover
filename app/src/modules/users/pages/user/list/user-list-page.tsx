@@ -293,7 +293,7 @@ export function UserListPage() {
     const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<User>) => (
         <EmptyDataListPlaceholder
             title="Keine Mitarbeiter:innen vorhanden"
-            description="Mitarbeiter:innen sind Benutzerkonten für Personen, die Gover verwalten oder Aufgaben in Vorgängen bearbeiten."
+            description="Mitarbeiter:innen sind Benutzerkonten für Personen, die Prosuna verwalten oder Aufgaben in Vorgängen bearbeiten."
             addText="Mitarbeiter:in anlegen"
             onAdd={() => navigate('/users/new')}
             addDisabled={!permissions.canCreate}

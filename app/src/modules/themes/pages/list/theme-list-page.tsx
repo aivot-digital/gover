@@ -39,7 +39,7 @@ const activeThemeChip = (
         color="info"
         variant="outlined"
         size="small"
-        title="Aktives Erscheinungsbild der Gover-Instanz"
+        title="Aktives Erscheinungsbild der Prosuna-Instanz"
         sx={{
             ml: 1,
         }}
@@ -69,7 +69,7 @@ export function ThemeListPage() {
             content: (
                 <>
                     <Typography>
-                        Ein Erscheinungsbild legt Farben, Logo und Favicon für die Benutzeroberfläche von Gover fest. Erscheinungsbilder können global oder für einzelne Formulare verwendet werden.
+                        Ein Erscheinungsbild legt Farben, Logo und Favicon für die Benutzeroberfläche von Prosuna fest. Erscheinungsbilder können global oder für einzelne Formulare verwendet werden.
                         So können Sie z. B. für verschiedene Organisationen oder Abteilungen unterschiedliche Erscheinungsbilder anlegen und nutzen.
                     </Typography>
                     <Typography sx={{mt: 2}}>

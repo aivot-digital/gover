@@ -36,7 +36,7 @@ export function Loader(props: LoaderProps) {
                     {message ? message : 'Daten werden geladen'}…
                 </Typography>
                 <svg
-                    id={'gover-decal-loader'}
+                    id={'prosuna-decal-loader'}
                     height={32}
                     style={{flexShrink: 0}}
                     viewBox="0 0 460 110"
@@ -53,19 +53,19 @@ export function Loader(props: LoaderProps) {
                               fill-opacity: 1;
                             }
                           }
-                          #gover-decal-loader g > path:first-child {
+                          #prosuna-decal-loader g > path:first-child {
                             animation: blink 2s infinite;
                           }
-                          #gover-decal-loader g:nth-of-type(1) > path {
+                          #prosuna-decal-loader g:nth-of-type(1) > path {
                             animation-delay: .5s;
                           }
-                          #gover-decal-loader g:nth-of-type(2) > path {
+                          #prosuna-decal-loader g:nth-of-type(2) > path {
                             animation-delay: 1s;
                           }
-                          #gover-decal-loader g:nth-of-type(3) > path {
+                          #prosuna-decal-loader g:nth-of-type(3) > path {
                             animation-delay: .25s;
                           }
-                          #gover-decal-loader g:nth-of-type(4) > path {
+                          #prosuna-decal-loader g:nth-of-type(4) > path {
                             animation-delay: .75s;
                           }
                         `}

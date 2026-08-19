@@ -17,7 +17,7 @@ export function ShellLoader() {
                 variant="h5"
                 component="h1"
             >
-                Gover wird geladen…
+                Prosuna wird geladen…
             </Typography>
             <LinearProgress
                 variant="indeterminate"

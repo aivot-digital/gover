@@ -15,7 +15,7 @@
                     <p>
                         Hallo,
                         <br/>
-                        ein neuer Antrag ist in Gover eingegangen.
+                        ein neuer Antrag ist in Prosuna eingegangen.
                         <br/>
                         <br/>
                         Antrag auf: <b th:text="${form.internalTitle}">Beispielformular</b> - Version

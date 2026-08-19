@@ -1,6 +1,6 @@
 Hallo,
 
-es ist ein Fehler aufgetreten am Host [(${base.config.goverHostname})].
+es ist ein Fehler aufgetreten am Host [(${base.config.prosunaHostname})].
 
 [# th:if="${additionalContext != null}"]
 Weitere Informationen:

@@ -497,9 +497,9 @@ export function FormNodeEditorPage() {
         return createAppTheme(activeFormTheme, BaseTheme);
     }, [draftPreviewThemeChain, formTheme, outerTheme]);
     const previewThemeCssVariables = useMemo(() => ({
-        '--gover-theme-primary': previewTheme.palette.primary.main,
-        '--gover-theme-primary-dark': previewTheme.palette.primary.dark,
-        '--gover-theme-secondary': previewTheme.palette.secondary.main,
+        '--prosuna-theme-primary': previewTheme.palette.primary.main,
+        '--prosuna-theme-primary-dark': previewTheme.palette.primary.dark,
+        '--prosuna-theme-secondary': previewTheme.palette.secondary.main,
     }), [previewTheme]);
 
     const {

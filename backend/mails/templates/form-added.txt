@@ -1,6 +1,6 @@
 Hallo,
 
-es wurde ein neues Formular in Gover erstellt.
+es wurde ein neues Formular in Prosuna erstellt.
 Formular: [(${form.internalTitle})]
 Version: [(${form.version})]
 Entwickelnde Organisationseinheit: [(${developingDepartment != null ? developingDepartment.name : '—'})]

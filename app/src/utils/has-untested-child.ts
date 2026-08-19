@@ -5,7 +5,7 @@ import {ElementType} from '../data/element-type/element-type';
 import {isFormLayoutElement} from '../models/elements/form-layout-element';
 
 export function hasUntestedChild(element: AnyElementWithChildren): boolean {
-    if (element.type === ElementType.GroupLayout && element.storeLink != null) {
+    if (element.type === ElementType.GroupLayout && element.marketplaceLink != null) {
         return false;
     }
 

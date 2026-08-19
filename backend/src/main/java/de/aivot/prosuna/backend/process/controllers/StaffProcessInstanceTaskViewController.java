@@ -1,0 +1,493 @@
+package de.aivot.prosuna.backend.process.controllers;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.elements.utils.ElementReferenceUtils;
+import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
+import de.aivot.prosuna.backend.identity.controllers.IdentityController;
+import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.openApi.OpenApiConstants;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
+import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
+import de.aivot.prosuna.backend.process.models.TaskViewEvent;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
+import de.aivot.prosuna.backend.process.services.*;
+import de.aivot.prosuna.backend.process.workers.ProcessNodeExecutionResultHandler;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.user.services.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/processes/{procId}/tasks/{taskId}/")
+@Tag(
+        name = OpenApiConstants.Tags.ProcessesDefinitionsName,
+        description = "Operations for managing process instance tasks."
+)
+public class StaffProcessInstanceTaskViewController {
+    private final ProcessInstanceService processInstanceService;
+    private final ProcessInstanceTaskService processInstanceTaskService;
+    private final ProcessNodeDefinitionService processNodeProviderService;
+    private final ProcessNodeService processDefinitionNodeService;
+    private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
+    private final UserService userService;
+    private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
+    private final ElementDerivationService elementDerivationService;
+    private final ProcessService processService;
+    private final ProcessVersionService processVersionService;
+    private final FileUploadMultipartInputService fileUploadMultipartInputService;
+    private final ProcessDataService processDataService;
+
+    public StaffProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
+                                                  ProcessInstanceTaskService processInstanceTaskService,
+                                                  ProcessNodeDefinitionService processNodeProviderService,
+                                                  ProcessNodeService processDefinitionNodeService,
+                                                  ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
+                                                  UserService userService,
+                                                  ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
+                                                  ElementDerivationService elementDerivationService,
+                                                  ProcessService processService,
+                                                  ProcessVersionService processVersionService,
+                                                  FileUploadMultipartInputService fileUploadMultipartInputService, ProcessDataService processDataService) {
+        this.processInstanceService = processInstanceService;
+        this.processInstanceTaskService = processInstanceTaskService;
+        this.processNodeProviderService = processNodeProviderService;
+        this.processDefinitionNodeService = processDefinitionNodeService;
+        this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
+        this.userService = userService;
+        this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
+        this.elementDerivationService = elementDerivationService;
+        this.processService = processService;
+        this.processVersionService = processVersionService;
+        this.fileUploadMultipartInputService = fileUploadMultipartInputService;
+        this.processDataService = processDataService;
+    }
+
+    @GetMapping("")
+    @Operation(
+            summary = "Retrieve Process Instance Task View Layout",
+            description = "Retrieves the view layout for a specific task within a process instance. " +
+                    "The layout defines how the task is presented to the user, including form fields and structure."
+    )
+    public <NodeConfig> TaskViewResponse retrieve(
+            @Nonnull @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Long procId,
+            @Nonnull @PathVariable Long taskId
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        TaskViewData<NodeConfig>  taskViewData = fetchTaskViewData(
+                jwt,
+                procId,
+                taskId
+        );
+
+        var logger = processNodeExecutionLoggerFactory
+                .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), null);
+
+        var processData = processDataService
+                .foldProcessInstanceData(
+                        taskViewData.instance(),
+                        taskViewData.task().getPreviousProcessNodeId(),
+                        taskViewData.task()
+                );
+
+        var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
+                logger,
+                taskViewData.node(),
+                taskViewData.instance(),
+                taskViewData.task(),
+                null,
+                user,
+                taskViewData.nodeConfig(),
+                processData
+        );
+
+        var layout = taskViewData
+                .provider
+                .getStaffTaskView(context);
+
+        if (layout instanceof BaseElement rootElement) {
+            var destinationKeyIndex = ElementReferenceUtils
+                    .buildDestinationKeyIndex(rootElement);
+
+            ElementStreamUtils
+                    .applyAction(
+                            rootElement,
+                            element -> element.recalculateReferencedIds(destinationKeyIndex)
+                    );
+        }
+
+        var events = taskViewData
+                .provider
+                .getStaffTaskViewEvents(context);
+
+        var elementData = taskViewData
+                .provider
+                .getStaffTaskViewData(context);
+
+        return new TaskViewResponse(
+                layout,
+                elementData,
+                events
+        );
+    }
+
+    @PutMapping("")
+    @Operation(
+            summary = "Retrieve Process Instance Task View Layout",
+            description = "Retrieves the view layout for a specific task within a process instance. " +
+                    "The layout defines how the task is presented to the user, including form fields and structure."
+    )
+    public <NodeConfig> TaskViewResponse update(
+            @Nonnull @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Long procId,
+            @Nonnull @PathVariable Long taskId,
+            @RequestParam(value = "inputs", required = true) String rawInputs,
+            @RequestParam(value = "files", required = false) MultipartFile[] files,
+            @RequestParam(value = "fileUris", required = false) List<String> fileUris,
+            @Nullable @RequestParam(value = "event", required = false) String rawEvent,
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
+                jwt,
+                procId,
+                taskId
+        );
+
+        var logger = processNodeExecutionLoggerFactory
+                .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), identitySessionId);
+
+        var processData = processDataService
+                .foldProcessInstanceData(
+                        taskViewData.instance(),
+                        taskViewData.task().getPreviousProcessNodeId(),
+                        taskViewData.task()
+                );
+
+        var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
+                logger,
+                taskViewData.node(),
+                taskViewData.instance(),
+                taskViewData.task(),
+                null,
+                user,
+                taskViewData.nodeConfig(),
+                processData
+        );
+
+        ProcessInstanceTaskEntity previousTask;
+        if (taskViewData.task.getPreviousProcessNodeId() != null) {
+            previousTask = processInstanceTaskService
+                    .retrieveLatestForInstanceIdAndNodeId(
+                            taskViewData.instance.getId(),
+                            taskViewData.task.getPreviousProcessNodeId()
+                    )
+                    .orElse(null);
+        } else {
+            previousTask = null;
+        }
+
+        var layout = taskViewData
+                .provider
+                .getStaffTaskView(context);
+        if (!(layout instanceof BaseElement rootLayout)) {
+            throw ResponseException.internalServerError("Die Aufgabenansicht muss ein Basis-Element sein.");
+        }
+
+        var events = taskViewData
+                .provider
+                .getStaffTaskViewEvents(context);
+
+        // Test if the event is valid
+        var cleanEvent = events
+                .stream()
+                .filter(e -> e.event().equals(rawEvent))
+                .findFirst()
+                .map(TaskViewEvent::event)
+                .orElse(null);
+
+        if (rawEvent != null && cleanEvent == null) {
+            throw ResponseException.badRequest("Invalid event: " + rawEvent);
+        }
+
+        AuthoredElementValues inputs;
+        try {
+            inputs = ObjectMapperFactory
+                    .getInstance()
+                    .readValue(rawInputs, AuthoredElementValues.class);
+        } catch (JsonProcessingException e) {
+            throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
+        }
+        inputs = fileUploadMultipartInputService.normalizeInputs(
+                rootLayout,
+                inputs,
+                files,
+                fileUris,
+                taskViewData.instance().getId(),
+                taskViewData.task().getId(),
+                user.getId()
+        ).inputs();
+
+        if (cleanEvent != null) {
+            var derivedElementData = elementDerivationService.derive(
+                    new ElementDerivationRequest(
+                            rootLayout,
+                            inputs,
+                            new ElementDerivationOptions(),
+                            processData
+                    )
+            );
+
+            if (derivedElementData.hasAnyError()) {
+                throw ResponseException.badRequest(derivedElementData);
+            }
+        }
+
+        Optional<ProcessNodeExecutionResult> res;
+        try {
+            if (cleanEvent == null) {
+                res = taskViewData
+                        .provider
+                        .onAutoSaveFromStaffTaskView(context, inputs);
+            } else {
+                res = taskViewData
+                        .provider
+                        .onEventFromStaffTaskView(context, inputs, cleanEvent);
+            }
+        } catch (ResponseException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.logException(e);
+            throw ResponseException.internalServerError(e);
+        }
+
+        if(res.isPresent()) {
+            try {
+                processNodeExecutionResultHandler
+                        .handleResult(
+                                logger,
+                                user,
+                                taskViewData.provider,
+                                taskViewData.node,
+                                taskViewData.instance,
+                                taskViewData.task,
+                                previousTask,
+                                res.get()
+                        );
+            } catch (ProcessNodeExecutionException e) {
+                logger.logException(e);
+                throw ResponseException.internalServerError(e);
+            }
+        }
+
+        var updatedLayout = taskViewData
+                .provider
+                .getStaffTaskView(context);
+
+        var updatedEvents = taskViewData
+                .provider
+                .getStaffTaskViewEvents(context);
+
+        var updatedElementData = taskViewData
+                .provider
+                .getStaffTaskViewData(context);
+
+        return new TaskViewResponse(
+                updatedLayout,
+                updatedElementData,
+                updatedEvents
+        );
+    }
+
+    @PostMapping("derive/")
+    @Operation(
+            summary = "Retrieve Process Instance Task View Layout",
+            description = "Retrieves the view layout for a specific task within a process instance. " +
+                    "The layout defines how the task is presented to the user, including form fields and structure."
+    )
+    public <NodeConfig> DerivedRuntimeElementData derive(
+            @Nonnull @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Long procId,
+            @Nonnull @PathVariable Long taskId,
+            @Nonnull @RequestBody AuthoredElementValues authoredElementValues,
+            @Nullable @RequestParam(value = "skipErrorsFor", required = false) List<String> skipErrorsFor
+    ) throws ResponseException {
+        TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
+                jwt,
+                procId,
+                taskId
+        );
+
+        var logger = processNodeExecutionLoggerFactory
+                .create(taskViewData.instance().getId(), taskViewData.task().getId(), taskViewData.user.getId(), null);
+
+        var incomingProcessExecutionData = processDataService
+                .foldProcessInstanceData(
+                        taskViewData.instance(),
+                        taskViewData.task().getPreviousProcessNodeId(),
+                        taskViewData.task()
+                );
+
+        var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
+                logger,
+                taskViewData.node(),
+                taskViewData.instance(),
+                taskViewData.task(),
+                null,
+                taskViewData.user,
+                taskViewData.nodeConfig(),
+                incomingProcessExecutionData
+        );
+
+        var staffTaskView = taskViewData
+                .provider
+                .getStaffTaskView(context);
+
+        var elementDerivationRequest = new ElementDerivationRequest(
+                (BaseElement) staffTaskView,
+                authoredElementValues,
+                new ElementDerivationOptions()
+                        .setSkipErrorsForElementIds(skipErrorsFor),
+                incomingProcessExecutionData
+        );
+
+        return elementDerivationService
+                .derive(elementDerivationRequest);
+    }
+
+    private <NodeConfig> TaskViewData<NodeConfig> fetchTaskViewData(
+            @Nonnull Jwt jwt,
+            @Nonnull Long procId,
+            @Nonnull Long taskId
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var instance = processInstanceService
+                .retrieve(procId)
+                .orElseThrow(ResponseException::notFound);
+
+        var task = processInstanceTaskService
+                .retrieve(taskId)
+                .orElseThrow(ResponseException::notFound);
+
+        if (task.getStatus() != ProcessTaskStatus.Running) {
+            throw ResponseException.forbidden();
+        }
+
+        var node = processDefinitionNodeService
+                .retrieve(task.getProcessNodeId())
+                .orElseThrow(ResponseException::notFound);
+
+        var process = processService
+                .retrieve(node.getProcessId())
+                .orElseThrow(ResponseException::notFound);
+
+        var version = processVersionService
+                .retrieve(ProcessVersionEntityId.of(node.getProcessId(), node.getProcessVersion()))
+                .orElseThrow(ResponseException::notFound);
+
+        var provider = (ProcessNodeDefinition<NodeConfig>) processNodeProviderService
+                .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
+                .orElseThrow(ResponseException::notFound);
+
+        var cfgRes = processDefinitionNodeService.deriveConfiguration(
+                node,
+                provider,
+                null,
+                true
+        );
+
+        var configContext = new ProcessNodeDefinitionConfigurationLayoutContext(
+                user,
+                process,
+                version,
+                node
+        );
+        var derivationRequest = new ElementDerivationRequest(
+                provider.getConfigurationLayout(configContext),
+                node.getConfiguration(),
+                new ElementDerivationOptions()
+        );
+        var derivationLogger = new ElementDerivationLogger();
+        var derivedRuntimeData = elementDerivationService
+                .derive(
+                        derivationRequest,
+                        new IdentityDataMap(), // TODO: Maybe read from instance?
+                        derivationLogger
+                );
+
+        return new TaskViewData<>(
+                user,
+                instance,
+                task,
+                node,
+                provider,
+                derivedRuntimeData,
+                cfgRes.configuration()
+        );
+    }
+
+    private record TaskViewData<NodeConfig>(
+            @Nonnull
+            UserEntity user,
+            @Nonnull
+            ProcessInstanceEntity instance,
+            @Nonnull
+            ProcessInstanceTaskEntity task,
+            @Nonnull
+            ProcessNodeEntity node,
+            @Nonnull
+            ProcessNodeDefinition<NodeConfig> provider,
+            @Nonnull
+            DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nonnull
+            NodeConfig nodeConfig
+    ) {
+
+    }
+
+    public record TaskViewResponse(
+            @Nonnull
+            LayoutElement<?> layout,
+            @Nonnull
+            AuthoredElementValues data,
+            @Nonnull
+            List<TaskViewEvent> events
+    ) {
+
+    }
+}

@@ -32,12 +32,12 @@ const router = sentryCreateBrowserRouter(
                     ) : (
                         <>
                             <MetaElement
-                                title="Gover-Instanz"
+                                title="Prosuna-Instanz"
                                 titlePrefix={AppConfig.providerName}
                             />
                             <NotFoundPage
-                                title={'Gover-Instanz von ' + AppConfig.providerName}
-                                msg="Unter dieser Domain wird eine Gover-Instanz betrieben. Aktuell sind keine öffentlichen Angebote freigeschaltet."
+                                title={'Prosuna-Instanz von ' + AppConfig.providerName}
+                                msg="Unter dieser Domain wird eine Prosuna-Instanz betrieben. Aktuell sind keine öffentlichen Angebote freigeschaltet."
                             />
                         </>
                     ),

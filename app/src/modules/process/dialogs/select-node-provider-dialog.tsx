@@ -175,7 +175,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
             tabs={[
                 {label: 'Elemente', value: 0},
                 {label: 'Vorlagen', value: 1, disabled: true},
-                {label: 'Gover Marktplatz', value: 2, disabled: true},
+                {label: 'Prosuna Marktplatz', value: 2, disabled: true},
             ]}
             activeTab={currentTab}
             onTabChange={(value) => {

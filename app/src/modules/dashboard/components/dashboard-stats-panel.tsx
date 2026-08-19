@@ -53,7 +53,7 @@ export function DashboardStatsPanel() {
                         color="text.secondary"
                         sx={{mt: 1, mb: 0.75, maxWidth: '400px'}}
                     >
-                        Behalten Sie Ihre Gover-Instanz im Blick und entdecken Sie spannende Metriken.
+                        Behalten Sie Ihre Prosuna-Instanz im Blick und entdecken Sie spannende Metriken.
                     </Typography>
                 </Box>
 

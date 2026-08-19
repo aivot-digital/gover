@@ -1,0 +1,100 @@
+package de.aivot.prosuna.backend.elements.models.elements.form.input;
+
+import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
+import de.aivot.prosuna.backend.enums.ConditionOperator;
+import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
+import de.aivot.prosuna.backend.exceptions.ValidationException;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
+import java.util.Objects;
+
+public class CheckboxInputElement extends BaseInputElement<Boolean> implements PrintableElement<Boolean> {
+    public static final String VARIANT_STANDARD = "standard";
+    public static final String VARIANT_SWITCH = "switch";
+
+    /**
+     * Variant of the checkbox. Options are:
+     * - "standard": Standard checkbox.
+     * - "switch": Switch style checkbox.
+     */
+    private String variant;
+
+    public CheckboxInputElement() {
+        super(ElementType.Checkbox);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        CheckboxInputElement that = (CheckboxInputElement) o;
+        return Objects.equals(variant, that.variant);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), variant);
+    }
+
+    @Nullable
+    @Override
+    public Boolean formatValue(@Nullable Object value) {
+        return _formatValue(value);
+    }
+
+    @Nonnull
+    @Override
+    public String toDisplayValue(@Nullable Boolean value) {
+        return value != null && value ? "Ja" : "Nein";
+    }
+
+    @Override
+    public void performValidation(@Nullable Boolean value) throws ValidationException {
+        if (Boolean.TRUE.equals(getRequired()) && !Boolean.TRUE.equals(value)) {
+            throw new RequiredValidationException(this);
+        }
+    }
+
+    @Nonnull
+    @Override
+    public Boolean evaluate(ConditionOperator operator, Object referencedValue, Object comparedValue) {
+        Boolean valA = formatValue(referencedValue);
+        Boolean valB = formatValue(comparedValue);
+
+        return switch (operator) {
+            case Equals -> valA == valB;
+            case NotEquals -> valA != valB;
+
+            case Empty -> !Boolean.TRUE.equals(valA);
+            case NotEmpty -> Boolean.TRUE.equals(valA);
+
+            default -> false;
+        };
+    }
+
+    public static Boolean _formatValue(@Nullable Object value) {
+        return switch (value) {
+            case null -> false;
+            case String sValue -> "Ja (True)".equalsIgnoreCase(sValue) ||
+                    "Ja".equalsIgnoreCase(sValue) ||
+                    "true".equalsIgnoreCase(sValue) ||
+                    "wahr".equalsIgnoreCase(sValue) ||
+                    "1".equals(sValue);
+            case Boolean bValue -> bValue;
+            default -> false;
+        };
+
+    }
+
+    public String getVariant() {
+        return variant;
+    }
+
+    public CheckboxInputElement setVariant(String variant) {
+        this.variant = variant;
+        return this;
+    }
+}

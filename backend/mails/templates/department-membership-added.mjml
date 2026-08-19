@@ -15,7 +15,7 @@
                     <p>
                         Hallo,
                         <br/>
-                        Sie wurden in Gover einer Organisationseinheit zugeordnet.
+                        Sie wurden in Prosuna einer Organisationseinheit zugeordnet.
                         <br/>
                         Organisationseinheit: <b th:text="${department.name}">Beispiel-Organisationseinheit</b>
                         <br/>

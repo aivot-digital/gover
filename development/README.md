@@ -1,4 +1,4 @@
-# Gover Development Setup
+# Prosuna Development Setup
 
 ## 1 Prerequisites
 
@@ -24,17 +24,17 @@ The project contains the following modules and directories:
 - `./backend/mails`: The module that contains the mail templates
 - `./development`: The module that contains the development setup
     - `./development/compose.yml`: The docker compose file for all local development services
-    - `./development/gover.env`: An environment file containing the environment variables for the Gover application
+    - `./development/prosuna.env`: An environment file containing the environment variables for the Prosuna application
     - `./development/examples`: A directory with example datasets to populate the local database with
-- `./default-assets`: The directory that contains the default assets for the Gover service, such as default templates
+- `./default-assets`: The directory that contains the default assets for the Prosuna service, such as default templates
   for PDFs
 - `./container`: The directory contains additional files for the container image
-- `./tools`: The directory contains additional tools for installing a gover instance
+- `./tools`: The directory contains additional tools for installing a prosuna instance
 
 ### 2.1 Getting started
 
 For working on this project, you need to set up a local development environment.
-The following steps will guide you through the process of setting up the development environment for the Gover service:
+The following steps will guide you through the process of setting up the development environment for the Prosuna service:
 
 1. Clone this repository with
 
@@ -42,7 +42,7 @@ The following steps will guide you through the process of setting up the develop
    git clone https://github.com/aivot-digital/gover.git ./gover
    ```
 
-2. Change into the `gover` directory
+2. Change into the `prosuna` directory
 
    ```bash
    cd gover
@@ -53,7 +53,7 @@ Make sure to follow the steps in the given order, as some steps depend on the su
 
 ### 2.2 Start the development services
 
-Gover needs several dependent services to run locally for development, such as a database and a Keycloak instance for
+Prosuna needs several dependent services to run locally for development, such as a database and a Keycloak instance for
 authentication.
 You can run these services with docker compose, which will pull the necessary images and start the containers for you.
 
@@ -67,7 +67,7 @@ This command will spin up all necessary services in detached mode, allowing you 
 
 The docker compose file includes the following services:
 
-- `gover-database`: A PostgreSQL database for storing the Gover application data
+- `prosuna-database`: A PostgreSQL database for storing the Prosuna application data
 - `antivirus`: A ClamAV antivirus service for scanning uploaded files for viruses
 - `cache`: A Redis instance for caching and session management
 - `pdf-printer`: A Gotenberg instance for converting documents to PDF format
@@ -116,18 +116,18 @@ npm run build:dev --prefix ./mails
 
 ### 2.4 Start the backend application
 
-The backend application is a Spring Boot application that serves as the API for the Gover service.
+The backend application is a Spring Boot application that serves as the API for the Prosuna service.
 To start the backend application, you need to have Java JDK 21 and Apache Maven installed on your machine.
 The following commands work in Linux, macOS terminal shells, and Windows WSL:
 
 ```bash
 set -a
-. ./development/gover.env
+. ./development/prosuna.env
 set +a
 mvn spring-boot:run
 ```
 
-These commands load the environment variables from `./development/gover.env` into your current shell session and then start the Spring Boot application.
+These commands load the environment variables from `./development/prosuna.env` into your current shell session and then start the Spring Boot application.
 
 ### 2.5 Start the frontend applications
 
@@ -155,20 +155,20 @@ After the frontends are started, you can access the staff application at [http:/
 
 ## 3 Accessing the services
 
-### 3.1 Gover Database (PostgreSQL)
+### 3.1 Prosuna Database (PostgreSQL)
 
-The Gover Database exposes its port `5432` to the host machine.
+The Prosuna Database exposes its port `5432` to the host machine.
 You can connect to the database with the following credentials:
 
 | Parameter | Value       |
 |-----------|-------------|
 | Host      | `localhost` |
 | Port      | `5432`      |
-| Database  | `gover`     |
-| Username  | `gover`     |
-| Password  | `gover`     |
+| Database  | `prosuna`   |
+| Username  | `prosuna`   |
+| Password  | `prosuna`   |
 
-You can find these credentials in the `./development/compose.yml` file under `services.gover-database.environment`.
+You can find these credentials in the `./development/compose.yml` file under `services.prosuna-database.environment`.
 
 ### 3.2 S3 Object Storage (MinIO)
 
@@ -186,7 +186,7 @@ You can access the MinIO web interface at [http://localhost:9001](http://localho
 
 You can find these credentials in the `./development/compose.yml` file under `services.s3-object-storage.environment`.
 
-The MinIO Setup Helper automatically creates a bucket named `gover` for storing the uploaded files and configures an access key and secret key for the application to access the MinIO instance.
+The MinIO Setup Helper automatically creates a bucket named `prosuna` for storing the uploaded files and configures an access key and secret key for the application to access the MinIO instance.
 You can use the following Access Key and Secret Key to access the MinIO API:
 
 | Parameter  | Value              |
@@ -250,27 +250,27 @@ Make sure to save the new password and the OTP secret in a secure place, as you 
 **Important distinction:**
 
 - `superuser` is a Keycloak administration user.
-- `superuser` is used for the Keycloak admin console only. It is not automatically a Gover administrator.
-- Gover authenticates its own users against the Keycloak realm configured by `GOVER_KEYCLOAK_OIDC_REALM`.
-- In the default development setup, `GOVER_KEYCLOAK_OIDC_REALM` is set to `staff`.
-- Because of this, only users from the `staff` realm can log into the Gover staff app directly and be imported as Gover users.
-- The Gover bootstrap administrator is therefore a Gover application user from the `staff` realm, not a special Keycloak admin-console account.
-- The `customer` realm is used for customer identity provider integration and is not used for direct Gover staff login.
-- A user is promoted to the configured Gover system role with the highest permission level only when all of the following are true:
-  - the user is imported into Gover by user synchronization or by logging into Gover
+- `superuser` is used for the Keycloak admin console only. It is not automatically a Prosuna administrator.
+- Prosuna authenticates its own users against the Keycloak realm configured by `PROSUNA_KEYCLOAK_OIDC_REALM`.
+- In the default development setup, `PROSUNA_KEYCLOAK_OIDC_REALM` is set to `staff`.
+- Because of this, only users from the `staff` realm can log into the Prosuna staff app directly and be imported as Prosuna users.
+- The Prosuna bootstrap administrator is therefore a Prosuna application user from the `staff` realm, not a special Keycloak admin-console account.
+- The `customer` realm is used for customer identity provider integration and is not used for direct Prosuna staff login.
+- A user is promoted to the configured Prosuna system role with the highest permission level only when all of the following are true:
+  - the user is imported into Prosuna by user synchronization or by logging into Prosuna
   - the user comes from the `staff` realm
-  - the user's e-mail address matches `GOVER_BOOTSTRAP_ADMIN_MAIL`
-  - no active Gover user holds that system role
+  - the user's e-mail address matches `PROSUNA_BOOTSTRAP_ADMIN_MAIL`
+  - no active Prosuna user holds that system role
 - The role with the highest permission level defaults to `Superadministrator:in` and can be changed under the general application settings.
 - In the default development setup, these values are different:
   - the Keycloak admin user `superuser` has the e-mail `mail@example.com`
-  - `GOVER_BOOTSTRAP_ADMIN_MAIL` in `./development/gover.env` is set to `admin@example.com`
+  - `PROSUNA_BOOTSTRAP_ADMIN_MAIL` in `./development/prosuna.env` is set to `admin@example.com`
 
-Because of this, the default Keycloak user `superuser` does not become the bootstrap Gover administrator.
+Because of this, the default Keycloak user `superuser` does not become the bootstrap Prosuna administrator.
 
 The Keycloak Setup Helper creates the following realms:
 
-- `staff`: This realm is for the staff users of the Gover service.
+- `staff`: This realm is for the staff users of the Prosuna service.
 - `customer`: This realm is for the integration of customer identity providers such as the **BundID** or **Mein Unternehmenskonto**.
 
 #### 3.5.1 Creating a Staff User
@@ -282,14 +282,14 @@ After saving the user, go to the "Credentials" tab and set a password for the us
 Make sure to disable the "Temporary" option, so the password does not expire after the first login.
 The user is now available for logging into the staff frontend application.
 
-If this staff user should receive Gover's system role with the highest permission level, set the user's e-mail address to the value of `GOVER_BOOTSTRAP_ADMIN_MAIL` before the user logs into Gover for the first time.
-In the default development setup, that means using the e-mail address `admin@example.com`, or changing `GOVER_BOOTSTRAP_ADMIN_MAIL` in `./development/gover.env` before the first import/login.
+If this staff user should receive Prosuna's system role with the highest permission level, set the user's e-mail address to the value of `PROSUNA_BOOTSTRAP_ADMIN_MAIL` before the user logs into Prosuna for the first time.
+In the default development setup, that means using the e-mail address `admin@example.com`, or changing `PROSUNA_BOOTSTRAP_ADMIN_MAIL` in `./development/prosuna.env` before the first import/login.
 
-**Bootstrap Gover Admin User:**
+**Bootstrap Prosuna Admin User:**
 
-When Keycloak users are synced into Gover, or when a user logs into Gover and is imported on demand, Gover checks whether that user should receive the system role with the highest permission level.
-Gover does this by comparing the imported user's e-mail address with the environment variable `GOVER_BOOTSTRAP_ADMIN_MAIL` in `./development/gover.env`.
-If the e-mail address matches and no active Gover user holds the configured role, that user receives it. The role defaults to `Superadministrator:in`.
+When Keycloak users are synced into Prosuna, or when a user logs into Prosuna and is imported on demand, Prosuna checks whether that user should receive the system role with the highest permission level.
+Prosuna does this by comparing the imported user's e-mail address with the environment variable `PROSUNA_BOOTSTRAP_ADMIN_MAIL` in `./development/prosuna.env`.
+If the e-mail address matches and no active Prosuna user holds the configured role, that user receives it. The role defaults to `Superadministrator:in`.
 
 ### 3.6 Message Broker (RabbitMQ)
 
@@ -310,7 +310,7 @@ You can find these credentials in the `./development/compose.yml` file under `se
 
 Changes to the app will be hot-reloaded automatically.
 Changes to the mails module require a rebuild by running `npm run build:dev --prefix ./mails` again.
-Changes to the backend require a restart of the Gover application.
+Changes to the backend require a restart of the Prosuna application.
 
 ## 5 View API Documentation
 

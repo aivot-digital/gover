@@ -531,7 +531,7 @@ function hasAvailableElementSpecificProperties(element: AnyElement, hasSummaryLa
         return false;
     }
 
-    if (isGroupLayout(element) && element.storeLink == null) {
+    if (isGroupLayout(element) && element.marketplaceLink == null) {
         return false;
     }
 

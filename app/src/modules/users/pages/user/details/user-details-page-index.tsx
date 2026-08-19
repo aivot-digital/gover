@@ -254,7 +254,7 @@ export function UserDetailsPageIndex() {
         }
 
         return [
-            'Initiale Zugangsdaten für Gover',
+            'Initiale Zugangsdaten für Prosuna',
             '',
             `Name: ${initialCredentials.fullName}`,
             `E-Mail-Adresse: ${initialCredentials.email}`,
@@ -274,8 +274,8 @@ export function UserDetailsPageIndex() {
 
         const filenameSegment = sanitizeFilenameSegment(initialCredentials.fullName);
         const filename = filenameSegment.length > 0
-            ? `gover-zugangsdaten-${filenameSegment}.txt`
-            : 'gover-zugangsdaten.txt';
+            ? `prosuna-zugangsdaten-${filenameSegment}.txt`
+            : 'prosuna-zugangsdaten.txt';
 
         downloadTextFile(filename, content, 'text/plain;charset=utf-8');
     };
@@ -519,7 +519,7 @@ export function UserDetailsPageIndex() {
                     {
                         isNewUser
                             ? 'Legen Sie hier eine neue Mitarbeiter:in an. Für das Konto wird ein temporäres Passwort gesetzt. Beim ersten Login muss dieses ersetzt und die E-Mail-Adresse bestätigt werden. Je nach System-Konfiguration kann zusätzlich die Einrichtung einer Zwei-Faktor-Authentifizierung erforderlich sein.'
-                            : 'Hier können Sie die in Gover relevanten Basisdaten und die Systemrolle dieser Mitarbeiter:in pflegen.'
+                            : 'Hier können Sie die in Prosuna relevanten Basisdaten und die Systemrolle dieser Mitarbeiter:in pflegen.'
                     }
                 </Typography>
 
@@ -627,7 +627,7 @@ export function UserDetailsPageIndex() {
                             }}
                         >
                             Dieses Konto wurde im Identity Provider bereits gelöscht. Änderungen, Passwort-Resets und weitere Verwaltungsaktionen sind nicht mehr möglich.
-                            Der Datensatz bleibt in Gover erhalten, damit bestehende Zuordnungen und Historien nachvollziehbar bleiben.
+                            Der Datensatz bleibt in Prosuna erhalten, damit bestehende Zuordnungen und Historien nachvollziehbar bleiben.
                         </AlertComponent>
                     ) : (
                         !isNewUser &&
@@ -781,7 +781,7 @@ export function UserDetailsPageIndex() {
                         color: 'text.secondary',
                     }}
                 >
-                    Das Konto wird im Identity Provider gelöscht und in Gover als gelöscht markiert.
+                    Das Konto wird im Identity Provider gelöscht und in Prosuna als gelöscht markiert.
                     Anschließend sind keine weiteren Anmeldungen oder Passwort-Resets mehr möglich.
                 </Typography>
             </ConfirmDialog>
