@@ -11,6 +11,7 @@
 /backend/src/main/resources/templates/mail/
 /backend/mails/node_modules/
 /backend/mails/dist/
+/backend/plugins
 
 ### App ###
 /app/node_modules/
