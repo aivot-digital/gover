@@ -1,6 +1,6 @@
 Hallo,
 
-es wurde ein bestehendes Formular in Gover gelöscht.
+es wurde ein bestehendes Formular in Prosuna gelöscht.
 Formular: [(${form.internalTitle})]
 Version: [(${form.version})]
 Entwickelnde Organisationseinheit: [(${developingDepartment != null ? developingDepartment.name : '—'})]

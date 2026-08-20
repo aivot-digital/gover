@@ -52,7 +52,7 @@ export function CustomerListPage() {
     const [search, setSearch] = useState('');
 
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
-    const disableGoverListingPage = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.disableGoverListingPage));
+    const disableProsunaListingPage = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.disableProsunaListingPage));
     const metaDialog = useAppSelector((state) => state.app.showDialog);
 
     useEffect(() => {
@@ -88,7 +88,7 @@ export function CustomerListPage() {
                 <NotFoundPage />
             </>
         );
-    } else if (disableGoverListingPage == 'true') {
+    } else if (disableProsunaListingPage == 'true') {
         return (
             <>
                 <MetaElement

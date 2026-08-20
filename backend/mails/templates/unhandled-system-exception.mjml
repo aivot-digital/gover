@@ -15,7 +15,7 @@
                     <p>
                         Hallo,
                         <br/>
-                        es ist ein Fehler aufgetreten am Host <b th:text="${base.config.goverHostname}">https://gover.digital</b>.
+                        es ist ein Fehler aufgetreten am Host <b th:text="${base.config.prosunaHostname}">https://prosuna.de</b>.
                     </p>
 
                     <div th:if="${additionalContext != null}">

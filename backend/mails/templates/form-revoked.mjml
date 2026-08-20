@@ -15,7 +15,7 @@
                     <p>
                         Hallo,
                         <br/>
-                        es wurde ein Formular in Gover zurückgezogen.
+                        es wurde ein Formular in Prosuna zurückgezogen.
                         <br/>
                         <br/>
                         Formular: <b th:text="${form.internalTitle}">Beispielformular</b>

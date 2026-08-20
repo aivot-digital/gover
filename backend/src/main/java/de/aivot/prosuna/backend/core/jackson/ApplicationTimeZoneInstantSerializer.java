@@ -1,0 +1,29 @@
+package de.aivot.prosuna.backend.core.jackson;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
+
+import java.io.IOException;
+import java.time.Instant;
+
+/**
+ * Serializes absolute instants with the offset that applies in Prosuna's application timezone.
+ *
+ * <p>The zone is resolved for every value instead of being captured in the constructor.
+ * Jackson can instantiate this serializer before Spring has applied {@code ProsunaConfig},
+ * and the same serializer is also used by static, non-Spring object mappers.</p>
+ */
+public final class ApplicationTimeZoneInstantSerializer extends JsonSerializer<Instant> {
+    @Override
+    public void serialize(
+            Instant value,
+            JsonGenerator generator,
+            SerializerProvider serializers
+    ) throws IOException {
+        generator.writeString(
+                IsoTimestampUtils.toOffsetString(value)
+        );
+    }
+}

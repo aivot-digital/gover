@@ -90,7 +90,7 @@ export function DepartmentsListPage(): React.ReactElement {
                         content: (
                             <>
                                 <Typography>
-                                    Organisationseinheiten bilden die fachliche Struktur in Gover ab.
+                                    Organisationseinheiten bilden die fachliche Struktur in Prosuna ab.
                                     In dieser Baumansicht sehen Sie die Hierarchie vom übergeordneten Bereich bis zu den untergeordneten Einheiten.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
@@ -109,7 +109,7 @@ export function DepartmentsListPage(): React.ReactElement {
 
                 <Paper
                     sx={{
-                        mt: 3.5,
+                        mt: 2.75,
                         mb: 4,
                         p: 2,
                         pb: 3.5,

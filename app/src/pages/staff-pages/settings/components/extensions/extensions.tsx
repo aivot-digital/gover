@@ -1043,7 +1043,7 @@ export function ExtensionsSummary() {
                     maxWidth: 900,
                 }}
             >
-                Die Übersicht bündelt den aktuellen Erweiterungsbestand Ihrer Gover-Instanz. Sie zeigt auf einen Blick,
+                Die Übersicht bündelt den aktuellen Erweiterungsbestand Ihrer Prosuna-Instanz. Sie zeigt auf einen Blick,
                 wie groß der installierte Funktionsumfang ist, ob neben aktuellen Komponenten auch ältere Fassungen
                 vorhanden sind und welche Erweiterungen oder Komponenten als veraltet markiert sind.
             </Typography>

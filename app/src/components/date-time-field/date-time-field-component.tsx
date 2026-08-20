@@ -3,7 +3,7 @@ import {LocalizationProvider, DateTimePicker} from '@mui/x-date-pickers';
 import {DateTime} from 'luxon';
 import React, {ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
-import {GoverAdapterLuxon, NONEXISTENT_LOCAL_DATETIME_REASON} from '../../utils/gover-adapter-luxon';
+import {ProsunaAdapterLuxon, NONEXISTENT_LOCAL_DATETIME_REASON} from '../../utils/prosuna-adapter-luxon';
 import {
     canonicalizeInstant,
     getApplicationTimeZone,
@@ -180,7 +180,7 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
 
     return (
         <LocalizationProvider
-            dateAdapter={GoverAdapterLuxon}
+            dateAdapter={ProsunaAdapterLuxon}
             adapterLocale="de"
         >
             <DateTimePicker

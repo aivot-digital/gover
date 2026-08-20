@@ -17,10 +17,10 @@ clamav_image="registry.opencode.de/open-code/oci/clamav:1.4.3"
 redis_image="registry.opencode.de/open-code/oci/redis:8.2.3"
 gotenberg_image="docker.io/gotenberg/gotenberg:8.30.1-chromium"
 rabbitmq_image="dhi.io/rabbitmq:4.2"
-keycloak_image="ghcr.io/aivot-digital/keycloak-egov-plugins:26.5.7.0"
-keycloak_setup_image="ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.20"
+keycloak_image="ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.2"
+keycloak_setup_image="ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.24"
 caddy_image="dhi.io/caddy:2"
-gover_image="ghcr.io/aivot-digital/gover-next:5.0.0-alpha-71"
+prosuna_image="ghcr.io/aivot-digital/gover-next:5.0.0-alpha-71"
 
 # Generate random hex strings for secrets
 rand_hex() {
@@ -29,8 +29,8 @@ rand_hex() {
 
 # Automatically generated environment variables with random values
 automatic_env=(
-  "GOVER_POSTGRES_USERNAME $(rand_hex 4)"
-  "GOVER_POSTGRES_PASSWORD $(rand_hex 18)"
+  "PROSUNA_POSTGRES_USERNAME $(rand_hex 4)"
+  "PROSUNA_POSTGRES_PASSWORD $(rand_hex 18)"
   "KEYCLOAK_POSTGRES_USERNAME $(rand_hex 4)"
   "KEYCLOAK_POSTGRES_PASSWORD $(rand_hex 18)"
   "KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME $(rand_hex 4)"
@@ -42,8 +42,8 @@ automatic_env=(
   "KEYCLOAK_BACKEND_CLIENT_SECRET $(rand_hex 24)"
   "RABBITMQ_USERNAME $(rand_hex 4)"
   "RABBITMQ_PASSWORD $(rand_hex 18)"
-  "GOVER_SECRETS_KEY $(rand_hex 24)"
-  "GOVER_CAPTCHA_KEY $(rand_hex 24)"
+  "PROSUNA_SECRETS_KEY $(rand_hex 24)"
+  "PROSUNA_CAPTCHA_KEY $(rand_hex 24)"
 )
 
 # Process the automatically generated environment variables and write them to the .env file
@@ -63,7 +63,7 @@ done
 
 # Manually configured environment variables that require user input
 ask_for_env=(
-  "HOSTNAME Der Hostname unter dem Gover erreichbar ist"
+  "HOSTNAME Der Hostname unter dem Prosuna erreichbar ist"
 )
 
 # Process the manually configured environment variables and prompt the user for input if they are not already set in the .env file
@@ -96,7 +96,7 @@ cat > Caddyfile << EOF
     }
 
     handle @api {
-        reverse_proxy gover-api:8080
+        reverse_proxy prosuna-api:8080
     }
 
     handle @idp {
@@ -109,7 +109,7 @@ cat > Caddyfile << EOF
     }
 
     handle @app {
-        reverse_proxy gover-app:80
+        reverse_proxy prosuna-app:80
     }
 }
 EOF
@@ -118,13 +118,13 @@ EOF
 cat > docker-compose.yml <<EOF
 services:
 
-  gover-postgres:
+  prosuna-postgres:
     image: ${postgres_image}
     restart: unless-stopped
     environment:
-      POSTGRES_USER: \${GOVER_POSTGRES_USERNAME}
-      POSTGRES_PASSWORD: \${GOVER_POSTGRES_PASSWORD}
-      POSTGRES_DB: gover
+      POSTGRES_USER: \${PROSUNA_POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: \${PROSUNA_POSTGRES_PASSWORD}
+      POSTGRES_DB: prosuna
       PGDATA: /var/lib/postgresql/data/pgdata
       POSTGRES_INITDB_ARGS: >
         --encoding=UTF-8
@@ -133,21 +133,21 @@ services:
         --locale-provider=icu
         --icu-locale=de-DE
     volumes:
-      - gover_pg_data:/var/lib/postgresql/data
+      - prosuna_pg_data:/var/lib/postgresql/data
     networks:
-      - gover-network
+      - prosuna-network
 
   clamav:
     image: ${clamav_image}
     restart: unless-stopped
     networks:
-      - gover-network
+      - prosuna-network
 
   redis:
     image: ${redis_image}
     restart: unless-stopped
     networks:
-      - gover-network
+      - prosuna-network
 
   gotenberg:
     image: ${gotenberg_image}
@@ -155,7 +155,7 @@ services:
     environment:
       API_PORT: 9191
     networks:
-      - gover-network
+      - prosuna-network
 
   rabbitmq:
     image: ${rabbitmq_image}
@@ -166,7 +166,7 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - gover-network
+      - prosuna-network
 
   keycloak-postgres:
     image: ${postgres_image}
@@ -230,70 +230,70 @@ services:
     networks:
       - keycloak-network
 
-  gover-api:
-    image: ${gover_image}
+  prosuna-api:
+    image: ${prosuna_image}
     command: serve
     restart: unless-stopped
     depends_on:
-      - gover-postgres
+      - prosuna-postgres
       - clamav
       - redis
       - gotenberg
       - rabbitmq
       - keycloak
     environment:
-      GOVER_DB_HOST: gover-postgres
-      GOVER_DB_PORT: 5432
-      GOVER_DB_DATABASE: gover
-      GOVER_DB_USERNAME: \${GOVER_POSTGRES_USERNAME}
-      GOVER_DB_PASSWORD: \${GOVER_POSTGRES_PASSWORD}
-      GOVER_DB_MIN_IDLE: 4
-      GOVER_DB_MAX_POOL_SIZE: 32
-      GOVER_CLAM_HOST: clamav
-      GOVER_CLAM_PORT: 3310
-      GOVER_GOTENBERG_HOST: gotenberg
-      GOVER_GOTENBERG_PORT: 9191
-      GOVER_RABBITMQ_HOST: rabbitmq
-      GOVER_RABBITMQ_PORT: 5672
-      GOVER_RABBITMQ_USERNAME: \${RABBITMQ_USERNAME}
-      GOVER_RABBITMQ_PASSWORD: \${RABBITMQ_PASSWORD}
-      GOVER_REDIS_HOST: redis
-      GOVER_REDIS_PORT: 6379
-      GOVER_REDIS_DATABASE: 0
-      GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
-      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID: backend
-      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: \${KEYCLOAK_BACKEND_CLIENT_SECRET}
-      GOVER_KEYCLOAK_OIDC_HOSTNAME: \${HOSTNAME}/idp
-      GOVER_KEYCLOAK_OIDC_REALM: staff
-      GOVER_SECRETS_KEY: \${GOVER_SECRETS_KEY}
-      GOVER_CAPTCHA_KEY: \${GOVER_CAPTCHA_KEY}
-      GOVER_BOOTSTRAP_ADMIN_MAIL: \${GOVER_BOOTSTRAP_ADMIN_MAIL}
-      GOVER_LOG_LEVEL: WARN
-      GOVER_LOG_FORMAT: ecs
+      PROSUNA_DB_HOST: prosuna-postgres
+      PROSUNA_DB_PORT: 5432
+      PROSUNA_DB_DATABASE: prosuna
+      PROSUNA_DB_USERNAME: \${PROSUNA_POSTGRES_USERNAME}
+      PROSUNA_DB_PASSWORD: \${PROSUNA_POSTGRES_PASSWORD}
+      PROSUNA_DB_MIN_IDLE: 4
+      PROSUNA_DB_MAX_POOL_SIZE: 32
+      PROSUNA_CLAM_HOST: clamav
+      PROSUNA_CLAM_PORT: 3310
+      PROSUNA_GOTENBERG_HOST: gotenberg
+      PROSUNA_GOTENBERG_PORT: 9191
+      PROSUNA_RABBITMQ_HOST: rabbitmq
+      PROSUNA_RABBITMQ_PORT: 5672
+      PROSUNA_RABBITMQ_USERNAME: \${RABBITMQ_USERNAME}
+      PROSUNA_RABBITMQ_PASSWORD: \${RABBITMQ_PASSWORD}
+      PROSUNA_REDIS_HOST: redis
+      PROSUNA_REDIS_PORT: 6379
+      PROSUNA_REDIS_DATABASE: 0
+      PROSUNA_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
+      PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_ID: backend
+      PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: \${KEYCLOAK_BACKEND_CLIENT_SECRET}
+      PROSUNA_KEYCLOAK_OIDC_HOSTNAME: \${HOSTNAME}/idp
+      PROSUNA_KEYCLOAK_OIDC_REALM: staff
+      PROSUNA_SECRETS_KEY: \${PROSUNA_SECRETS_KEY}
+      PROSUNA_CAPTCHA_KEY: \${PROSUNA_CAPTCHA_KEY}
+      PROSUNA_BOOTSTRAP_ADMIN_MAIL: \${PROSUNA_BOOTSTRAP_ADMIN_MAIL}
+      PROSUNA_LOG_LEVEL: WARN
+      PROSUNA_LOG_FORMAT: ecs
 
-      GOVER_REPORT_MAIL: \${REPORT_MAIL}
-      GOVER_ENVIRONMENT: \${HOSTNAME}
-      GOVER_HOSTNAME: \${HOSTNAME}
+      PROSUNA_REPORT_MAIL: \${REPORT_MAIL}
+      PROSUNA_ENVIRONMENT: \${HOSTNAME}
+      PROSUNA_HOSTNAME: \${HOSTNAME}
 
     volumes:
       - ./plugins:/app/plugins
-      - gover_app_data:/app/data
+      - prosuna_app_data:/app/data
     networks:
-      - gover-network
+      - prosuna-network
       - keycloak-network
       - proxy-network
 
-  gover-app:
-    image: ${gover_image}
+  prosuna-app:
+    image: ${prosuna_image}
     restart: unless-stopped
     command: app
     depends_on:
-      - gover-api
+      - prosuna-api
     environment:
-      GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
-      GOVER_KEYCLOAK_OIDC_REALM: staff
-      GOVER_KEYCLOAK_OIDC_HOSTNAME: \${HOSTNAME}/idp
-      GOVER_HOSTNAME: \${HOSTNAME}
+      PROSUNA_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
+      PROSUNA_KEYCLOAK_OIDC_REALM: staff
+      PROSUNA_KEYCLOAK_OIDC_HOSTNAME: \${HOSTNAME}/idp
+      PROSUNA_HOSTNAME: \${HOSTNAME}
     networks:
       - proxy-network
 
@@ -312,14 +312,14 @@ services:
       - 443:443
 
 volumes:
-  gover_pg_data:
+  prosuna_pg_data:
   keycloak_pg_data:
   rabbitmq_data:
-  gover_app_data:
+  prosuna_app_data:
   caddy_data:
 
 networks:
-  gover-network:
+  prosuna-network:
   keycloak-network:
   proxy-network:
 EOF

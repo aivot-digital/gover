@@ -439,21 +439,21 @@
     "Sustainable Use License"
   ],
   "packageLicenseOverrides": {
-    "gover-frontend": {
+    "prosuna-frontend": {
       "versions": ["*"],
-      "_comment": "Gover internal package under Sustainable Use License."
+      "_comment": "Prosuna internal package under Sustainable Use License."
     },
-    "gover-backend": {
+    "prosuna-backend": {
       "versions": ["*"],
-      "_comment": "Gover internal package under Sustainable Use License."
+      "_comment": "Prosuna internal package under Sustainable Use License."
     },
     "backend": {
       "versions": ["*"],
-      "_comment": "Gover internal package under Sustainable Use License."
+      "_comment": "Prosuna internal package under Sustainable Use License."
     },
-    "gover-mail-templates": {
+    "prosuna-mail-templates": {
       "versions": ["*"],
-      "_comment": "Gover internal package under Sustainable Use License."
+      "_comment": "Prosuna internal package under Sustainable Use License."
     },
     "h2": {
       "versions": ["2.3.232"],

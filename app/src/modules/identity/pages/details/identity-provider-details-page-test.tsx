@@ -106,7 +106,7 @@ export function IdentityProviderDetailsPageTest() {
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
                 Um die korrekte Funktion und Erscheinung eines Nutzerkontos sicherzustellen, können Sie hier einen Test durchführen.
-                Nach einem erfolgreichen Test werden Sie auf diese Seite zurückgeleitet und können die Daten einsehen, die an Gover übermittelt wurden.
+                Nach einem erfolgreichen Test werden Sie auf diese Seite zurückgeleitet und können die Daten einsehen, die an Prosuna übermittelt wurden.
             </Typography>
 
             <Box
@@ -155,7 +155,7 @@ export function IdentityProviderDetailsPageTest() {
                             maxWidth: 900,
                         }}
                     >
-                        Hier sehen Sie die Daten, die von dem Nutzerkontenanbieter an Gover übermittelt wurden.
+                        Hier sehen Sie die Daten, die von dem Nutzerkontenanbieter an Prosuna übermittelt wurden.
                         Bitte beachten Sie, dass nur die Attribute angezeigt werden, die auch in der Konfiguration des Anbieters zugewiesen worden sind.
                     </Typography>
 
@@ -226,9 +226,9 @@ export function IdentityProviderDetailsPageTest() {
                             maxWidth: 900,
                         }}
                     >
-                        Hier sehen Sie, im Gegensatz zu den obigen Testergebnissen, den vollständigen Datensatz, welcher vom Nutzerkontenanbieter an Gover übermittelt wurde.
+                        Hier sehen Sie, im Gegensatz zu den obigen Testergebnissen, den vollständigen Datensatz, welcher vom Nutzerkontenanbieter an Prosuna übermittelt wurde.
                         Dieser kann auch Attribute enthalten, welche Sie in der Konfiguration des Nutzerkontenanbieters nicht zugewiesen haben.
-                        Bitte beachten Sie, dass ausschließlich im Nutzerkontenanbieter zugewiesene Attribute auch innerhalb von Gover verwendbar sind.
+                        Bitte beachten Sie, dass ausschließlich im Nutzerkontenanbieter zugewiesene Attribute auch innerhalb von Prosuna verwendbar sind.
                     </Typography>
 
                     <ExpandableCodeBlock value={JSON.stringify(identityData.attributes, null, '\t')} />

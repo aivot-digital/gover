@@ -15,7 +15,7 @@
                     <p>
                         Hallo,
                         <br/>
-                        Ihnen wurde in einer Organisationseinheit in Gover eine neue Rolle zugewiesen.
+                        Ihnen wurde in einer Organisationseinheit in Prosuna eine neue Rolle zugewiesen.
                         <br/>
                         Organisationseinheit: <b th:text="${department.name}">Beispiel-Organisationseinheit</b>
                         <br/>

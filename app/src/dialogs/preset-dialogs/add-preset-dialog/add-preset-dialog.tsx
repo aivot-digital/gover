@@ -26,7 +26,7 @@ function createEmptyPreset(): PresetCreateReqeustDTO {
             id: '',
             type: ElementType.GroupLayout,
             children: [],
-            storeLink: null,
+            marketplaceLink: null,
             weight: undefined,
             name: undefined,
             testProtocolSet: undefined,

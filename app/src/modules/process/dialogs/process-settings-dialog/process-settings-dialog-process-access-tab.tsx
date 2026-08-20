@@ -42,7 +42,7 @@ const relevantPermissions: string[] = [
     'process_definition.audit',
     'process_definition.publish.test',
     'process_definition.publish.local',
-    'process_definition.publish.store',
+    'process_definition.publish.marketplace',
 ];
 
 function createComparableAccessControl(access: ProcessAccessControlEntity | ProcessAccessControlDraft) {

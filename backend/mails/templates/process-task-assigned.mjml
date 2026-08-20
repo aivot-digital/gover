@@ -15,7 +15,7 @@
                     <p>
                         Hallo,
                         <br/>
-                        <span th:text="${assignmentIntro}">Ihnen wurde in Gover eine Aufgabe zur Bearbeitung zugewiesen.</span>
+                        <span th:text="${assignmentIntro}">Ihnen wurde in Prosuna eine Aufgabe zur Bearbeitung zugewiesen.</span>
                         <br/>
                         <br/>
                         Prozess: <b th:text="${process.internalTitle}">Beispielprozess</b> - Version

@@ -81,7 +81,7 @@ export function StorageProvidersListPage(): ReactNode {
                         variant="body1"
                         paragraph
                     >
-                        Konfigurieren Sie hier Speicheranbieter, die in Ihrer Gover-Instanz global
+                        Konfigurieren Sie hier Speicheranbieter, die in Ihrer Prosuna-Instanz global
                         verfügbar sein sollen.
                         Die erforderlichen Konfigurationsdaten erhalten Sie vom Zahlungsdienstleister
                         oder finden Sie in dessen Dokumentation.
@@ -199,7 +199,7 @@ export function StorageProvidersListPage(): ReactNode {
     const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<StorageProviderEntity>) => (
         <EmptyDataListPlaceholder
             title="Keine Speicheranbieter vorhanden"
-            description="Speicheranbieter verbinden Gover mit Dateispeichern für Uploads, Anlagen und erzeugte Dokumente."
+            description="Speicheranbieter verbinden Prosuna mit Dateispeichern für Uploads, Anlagen und erzeugte Dokumente."
             addText="Neuen Speicheranbieter anlegen"
             onAdd={() => navigate('/storage-providers/new')}
             addDisabled={!permissions.canCreate}

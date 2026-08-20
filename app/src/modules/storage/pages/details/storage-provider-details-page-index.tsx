@@ -12,7 +12,7 @@ import {type StorageProviderAdditionalData} from './storage-provider-details-pag
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker-2';
 import * as yup from 'yup';
-import {goverSchemaToYup, mapFormManagerErrorsToComputedErrors} from '../../../../utils/gover-schema-to-yup';
+import {prosunaSchemaToYup, mapFormManagerErrorsToComputedErrors} from '../../../../utils/prosuna-schema-to-yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {type StorageProviderDefinition} from '../../entities/storage-provider-definition';
 import {type StorageProviderEntity, StorageProviderMetadataAttribute} from '../../entities/storage-provider-entity';
@@ -204,7 +204,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             setStorageProviderSchema({
                 ..._StorageProviderSchema,
                 configuration: yup.object().shape(
-                    goverSchemaToYup(definition.providerConfigLayout, derivedElementData?.elementStates ?? {}),
+                    prosunaSchemaToYup(definition.providerConfigLayout, derivedElementData?.elementStates ?? {}),
                 ),
             });
         } else {
@@ -683,7 +683,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                                         Um diesen Limitierungen gerecht zu werden, kann pro Speicheranbieter eine
                                         maximale Dateigröße spezifiziert werden.
                                         Die Angabe der maximalen Dateigröße erfolgt in Megabyte* und gilt pro Datei,
-                                        welche an den Speicheranbieter von Gover übertragen wird.
+                                        welche an den Speicheranbieter von Prosuna übertragen wird.
                                     </Typography>
 
                                     <Typography
@@ -788,7 +788,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                                 <ul style={{marginTop: '1rem', paddingLeft: '1.1rem'}}>
                                     <li>
                                         <strong>Titel</strong>
-                                        – Anzeigename, der später in der Gover-Oberfläche
+                                        – Anzeigename, der später in der Prosuna-Oberfläche
                                         erscheint (z.&nbsp;B. „E-Mail“ oder „Ersteller:in“).
                                     </li>
 

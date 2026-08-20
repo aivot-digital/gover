@@ -218,7 +218,7 @@
           "dependsOnSelectFieldId": null
         }
       ],
-      "storeLink": null
+      "marketplaceLink": null
     },
     {
       "type": 3,
@@ -293,7 +293,7 @@
           "suggestions": null
         }
       ],
-      "storeLink": null
+      "marketplaceLink": null
     },
     {
       "type": 3,
@@ -533,7 +533,7 @@
               "wordWrap": false
             }
           ],
-          "storeLink": null
+          "marketplaceLink": null
         },
         {
           "type": 14,
@@ -667,7 +667,7 @@
           "maxItems": null
         }
       ],
-      "storeLink": null
+      "marketplaceLink": null
     },
     {
       "type": 3,
@@ -806,7 +806,7 @@
           "suggestions": null
         }
       ],
-      "storeLink": null
+      "marketplaceLink": null
     },
     {
       "type": 3,
@@ -870,7 +870,7 @@
           "minimumRequiredRows": null
         }
       ],
-      "storeLink": null
+      "marketplaceLink": null
     }
   ]
 }

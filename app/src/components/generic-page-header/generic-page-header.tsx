@@ -40,6 +40,7 @@ export function GenericPageHeader(props: GenericPageHeaderProps) {
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
+                    minHeight: 34,
                 }}
             >
                 {props.icon}

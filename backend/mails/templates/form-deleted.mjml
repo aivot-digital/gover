@@ -15,7 +15,7 @@
                     <p>
                         Hallo,
                         <br/>
-                        es wurde ein bestehendes Formular in Gover gelöscht.
+                        es wurde ein bestehendes Formular in Prosuna gelöscht.
                         <br/>
                         <br/>
                         Formular: <b th:text="${form.internalTitle}">Beispielformular</b>

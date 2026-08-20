@@ -37,7 +37,7 @@ export function IdentityProviderDetailsPage() {
                                         variant="body1"
                                         paragraph
                                     >
-                                        Konfigurieren Sie hier die Nutzerkontenanbieter, die in Ihrer Gover-Instanz global verfügbar sein sollen.
+                                        Konfigurieren Sie hier die Nutzerkontenanbieter, die in Ihrer Prosuna-Instanz global verfügbar sein sollen.
                                         Die angebundenen Nutzerkonten können in Formularen als Authentifizierungsoptionen verwendet werden.
                                         Unterstützt werden alle Anbieter, die eine OpenID Connect (OIDC) kompatible Schnittstelle bereitstellen.
                                     </Typography>
@@ -67,7 +67,7 @@ export function IdentityProviderDetailsPage() {
                                                 <strong>Systeme ohne OpenID Connect Unterstützung</strong>
                                                 (z.B. LDAP/AD, andere IDPs):
                                                 <br />
-                                                → Die Anbindung erfolgt über den integrierten Keycloak von Gover. Tragen Sie anschließend die OpenID Connect-Daten des Keycloak-Realms hier ein.
+                                                → Die Anbindung erfolgt über den integrierten Keycloak von Prosuna. Tragen Sie anschließend die OpenID Connect-Daten des Keycloak-Realms hier ein.
                                             </Typography>
                                         </li>
                                         <li>
@@ -75,9 +75,9 @@ export function IdentityProviderDetailsPage() {
                                                 variant="body1"
                                                 paragraph
                                             >
-                                                <strong>LDAP/AD für Gover-Mitarbeitende:</strong>
+                                                <strong>LDAP/AD für Prosuna-Mitarbeitende:</strong>
                                                 <br />
-                                                → Nutzung der User Federation im Staff Realm des Gover-Keycloaks.
+                                                → Nutzung der User Federation im Staff Realm des Prosuna-Keycloaks.
                                                 <br />
                                                 Diese Nutzerkonten werden nicht über die Funktion "Nutzerkontenanbieter" verwaltet.
                                             </Typography>

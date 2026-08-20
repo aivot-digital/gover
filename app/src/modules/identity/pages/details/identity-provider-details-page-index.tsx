@@ -683,7 +683,7 @@ export function IdentityProviderDetailsPageIndex() {
                             sx={{mt: 2}}
                         >
                             <strong>Hinweis:</strong>{' '}
-                            Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover
+                            Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Prosuna
                             bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }
@@ -963,7 +963,7 @@ export function IdentityProviderDetailsPageIndex() {
                             <ul style={{marginTop: '1rem', paddingLeft: '1.1rem'}}>
                                 <li>
                                     <strong>Titel</strong>
-                                    – Anzeigename, der später in der Gover-Oberfläche
+                                    – Anzeigename, der später in der Prosuna-Oberfläche
                                     erscheint (z.&nbsp;B. „E-Mail“ oder „Nachname“).
                                 </li>
 
@@ -985,7 +985,7 @@ export function IdentityProviderDetailsPageIndex() {
                                 <li>
                                     <strong>Anzeigeattribut</strong>
                                     – Steuert, ob der Wert später
-                                    zur Identifikation in Übersichten von Gover (z. B. in Anträgen) angezeigt wird.
+                                    zur Identifikation in Übersichten von Prosuna (z. B. in Anträgen) angezeigt wird.
                                 </li>
                             </ul>
                         </Box>

@@ -44,7 +44,7 @@ export function Dashboard() {
 
                 <DashboardHero
                     sx={{
-                        mt: 2,
+                        mt: 2.75,
                         mb: 4,
                     }}
                 />
@@ -80,7 +80,7 @@ export function Dashboard() {
                     <Divider sx={{borderColor: 'rgba(0, 0, 0, 0.15)', mx: -2}}/>
                     <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2}}>
                         <Typography sx={{fontSize: '0.8125rem', color: 'rgba(0, 0, 0, 0.6)'}}>
-                            Gover – Die quelloffene Plattform für Ende-zu-Ende digitalisierte Antragsprozesse.
+                            Prosuna – Die quelloffene Plattform für Ende-zu-Ende digitalisierte Verwaltungsprozesse.
                         </Typography>
                         <Typography
                             sx={{
@@ -90,7 +90,7 @@ export function Dashboard() {
                                 alignItems: 'center',
                             }}
                         >
-                            Entwickelt in Deutschland für die deutsche Verwaltung.
+                            Entwickelt in Deutschland für souveräne Organisationen.
                             <Box
                                 component="button"
                                 type="button"

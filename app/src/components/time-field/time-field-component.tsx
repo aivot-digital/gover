@@ -3,7 +3,7 @@ import {LocalizationProvider, TimePicker} from '@mui/x-date-pickers';
 import {DateTime} from 'luxon';
 import React, {ReactNode, useEffect, useRef, useState} from 'react';
 import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
-import {GoverAdapterLuxon} from '../../utils/gover-adapter-luxon';
+import {ProsunaAdapterLuxon} from '../../utils/prosuna-adapter-luxon';
 import {
     dateTimeToLocalTimeIso,
     localTimeIsoToDateTime,
@@ -137,7 +137,7 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
 
     return (
         <LocalizationProvider
-            dateAdapter={GoverAdapterLuxon}
+            dateAdapter={ProsunaAdapterLuxon}
             adapterLocale="de"
         >
             <TimePicker

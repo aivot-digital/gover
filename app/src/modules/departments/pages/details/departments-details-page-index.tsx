@@ -565,7 +565,7 @@ export function DepartmentsDetailsPageIndex() {
                         required
                         maxCharacters={96}
                         minCharacters={3}
-                        hint="Diese Bezeichnung wird nur intern in Gover verwendet, zum Beispiel in Listen, Zuweisungen und Auswahlen."
+                        hint="Diese Bezeichnung wird nur intern in Prosuna verwendet, zum Beispiel in Listen, Zuweisungen und Auswahlen."
                         error={errors.name}
                         disabled={!isEditable}
                     />
@@ -690,9 +690,9 @@ export function DepartmentsDetailsPageIndex() {
             </Typography>
             <Typography sx={{mb: 2, maxWidth: 900}}>
                 Hinterlegen Sie das Standard-Erscheinungsbild, das für Formulare dieser Organisationseinheit verwendet werden soll.
-                Dieses überschreibt das Erscheinungsbild der Gover-Instanz.
+                Dieses überschreibt das Erscheinungsbild der Prosuna-Instanz.
                 Bearbeiter:innen können für Formulare weiterhin ein individuelles Erscheinungsbild auswählen.
-                Wenn Sie kein Erscheinungsbild auswählen, wird das Erscheinungsbild der Gover-Instanz verwendet.
+                Wenn Sie kein Erscheinungsbild auswählen, wird das Erscheinungsbild der Prosuna-Instanz verwendet.
             </Typography>
             <Grid
                 container

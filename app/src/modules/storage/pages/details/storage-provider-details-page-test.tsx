@@ -54,7 +54,7 @@ export function StorageProviderDetailsPageTest() {
 
             <Typography sx={{mb: 2, maxWidth: 900}}>
                 Um die korrekte Funktion eines Speicheranbieters sicherzustellen, können Sie hier einen Test durchführen.
-                Technisch wird ein Health-Check durchgeführt, bei welchem Gover eine Anfrage an den Speicheranbieter sendet und prüft, ob eine erfolgreiche Verbindung aufgebaut werden kann.
+                Technisch wird ein Health-Check durchgeführt, bei welchem Prosuna eine Anfrage an den Speicheranbieter sendet und prüft, ob eine erfolgreiche Verbindung aufgebaut werden kann.
             </Typography>
             <Typography sx={{mb: 1, maxWidth: 900}}>
                 Optional kann auch die Beschreibbarkeit des Anbieters getestet werden. Je nach Speicheranbieter kann es sein, dass zu diesem Zweck eine Testdatei hochgeladen und wieder gelöscht wird. Aktivieren Sie diese Option nur, wenn Sie sicher sind, dass dies bei Ihrem Speicheranbieter keine Probleme verursacht.

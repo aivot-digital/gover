@@ -22,7 +22,7 @@ import {DataObjectItem} from '../../models/data-object-item';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
 import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
-import {applyYupErrorsToElementData, goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
+import {applyYupErrorsToElementData, prosunaSchemaToYup} from '../../../../utils/prosuna-schema-to-yup';
 import Grid from '@mui/material/Grid';
 import {isApiError} from '../../../../models/api-error';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
@@ -75,7 +75,7 @@ export function DataObjectItemDetailsPageIndex() {
                 data: yup
                     .object()
                     .required()
-                    .shape(goverSchemaToYup(dataObjectSchema.schema, derivedData.elementStates)),
+                    .shape(prosunaSchemaToYup(dataObjectSchema.schema, derivedData.elementStates)),
             });
     }, [dataObjectSchema, derivedData.elementStates]);
 

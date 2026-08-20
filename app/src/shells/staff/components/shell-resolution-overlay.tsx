@@ -81,7 +81,7 @@ export function ShellResolutionOverlay() {
                 </Typography>
                 <Button
                     variant="contained"
-                    href="https://docs.gover.digital"
+                    href="https://docs.prosuna.de"
                     target="_blank"
                     rel="noopener noreferrer"
                     startIcon={<OpenInNew />}

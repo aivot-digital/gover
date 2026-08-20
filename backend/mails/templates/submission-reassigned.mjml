@@ -15,7 +15,7 @@
                     <p>
                         Hallo,
                         <br/>
-                        ein Antrag wurde in Gover neu zugewiesen.
+                        ein Antrag wurde in Prosuna neu zugewiesen.
                         <br/>
                         <br/>
                         Antrag auf: <b th:text="${form.internalTitle}">Beispielformular</b> - Version

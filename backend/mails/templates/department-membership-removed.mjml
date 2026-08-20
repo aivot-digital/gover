@@ -15,7 +15,7 @@
                     <p>
                         Hallo,
                         <br/>
-                        Sie wurden in Gover aus einer Organisationseinheit entfernt.
+                        Sie wurden in Prosuna aus einer Organisationseinheit entfernt.
                         <br/>
                         Organisationseinheit: <b th:text="${department.name}">Beispiel-Organisationseinheit</b>
                         <br/>

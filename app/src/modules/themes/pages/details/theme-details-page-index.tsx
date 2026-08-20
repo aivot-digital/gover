@@ -217,7 +217,7 @@ export function ThemeDetailsPageIndex() {
                 Erscheinungsbild konfigurieren
             </Typography>
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Konfigurieren Sie das Erscheinungsbild, um Namen, Logo, Favicon und Farben für Gover und veröffentlichte Formulare festzulegen.
+                Konfigurieren Sie das Erscheinungsbild, um Namen, Logo, Favicon und Farben für Prosuna und veröffentlichte Formulare festzulegen.
                 Die Einstellungen können jederzeit angepasst werden, wirken sich aber unmittelbar auf alle Formulare aus, die dieses Erscheinungsbild verwenden.
             </Typography>
 
@@ -305,13 +305,13 @@ export function ThemeDetailsPageIndex() {
                 themeId === appThemeId &&
                 <AlertComponent
                     color="info"
-                    title="Dies ist das aktive Erscheinungsbild der Gover-Instanz"
+                    title="Dies ist das aktive Erscheinungsbild der Prosuna-Instanz"
                     sx={{my: 4}}
                 >
                     <Box sx={{maxWidth: 860}}>
-                        Bitte beachten Sie, dass sich Änderungen an diesem Erscheinungsbild auf die ganze Gover-Instanz
+                        Bitte beachten Sie, dass sich Änderungen an diesem Erscheinungsbild auf die ganze Prosuna-Instanz
                         auswirken.
-                        Sie können die Zuweisung als Standard-Erscheinungsbild für die Gover-Instanz in den <Link
+                        Sie können die Zuweisung als Standard-Erscheinungsbild für die Prosuna-Instanz in den <Link
                         to="/settings"
                         style={{color: 'inherit'}}
                     >Systemeinstellungen</Link> ändern.
@@ -500,7 +500,7 @@ export function ThemeDetailsPageIndex() {
             <ConstraintDialog
                 open={showConstraintDefaultThemeDialog}
                 onClose={() => setConstraintDefaultThemeDialog(false)}
-                message="Dieses Erscheinungsbild kann (noch) nicht gelöscht werden, da es das aktive Erscheinungsbild der Gover-Instanz ist."
+                message="Dieses Erscheinungsbild kann (noch) nicht gelöscht werden, da es das aktive Erscheinungsbild der Prosuna-Instanz ist."
                 solutionText="Um dieses Erscheinungsbild löschen zu können, müssen Sie zuerst in den Systemeinstellungen ein anderes Erscheinungsbild als Standard festlegen."
                 links={[{
                     label: 'Systemeinstellungen aufrufen',

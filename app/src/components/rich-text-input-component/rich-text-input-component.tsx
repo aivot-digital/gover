@@ -213,7 +213,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         borderColor: focusColor,
                         boxShadow: `0 0 0 1px ${focusColor}`,
                     },
-                    '& .gover-mdx-editor.mdxeditor': {
+                    '& .prosuna-mdx-editor.mdxeditor': {
                         '--font-body': theme.typography.fontFamily,
                         '--basePageBg': baseBg,
                         '--baseBase': baseBg,
@@ -247,13 +247,13 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                             duration: theme.transitions.duration.shorter,
                         }),
                     },
-                    '& .gover-mdx-editor .mdxeditor-root-contenteditable': {
+                    '& .prosuna-mdx-editor .mdxeditor-root-contenteditable': {
                         backgroundColor: baseBg,
                         transition: theme.transitions.create('background-color', {
                             duration: theme.transitions.duration.shorter,
                         }),
                     },
-                    '& .gover-mdx-editor [class*="_toolbarRoot_"]': {
+                    '& .prosuna-mdx-editor [class*="_toolbarRoot_"]': {
                         position: 'sticky',
                         top: 0,
                         zIndex: 2,
@@ -271,71 +271,71 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                             duration: theme.transitions.duration.shorter,
                         }),
                     },
-                    '& .mdxeditor-popup-container.gover-mdx-editor': {
+                    '& .mdxeditor-popup-container.prosuna-mdx-editor': {
                         zIndex: `${theme.zIndex.modal + 1} !important`,
                     },
-                    '& .gover-mdx-editor [class*="_toolbarRoot_"] [role="separator"]': {
+                    '& .prosuna-mdx-editor [class*="_toolbarRoot_"] [role="separator"]': {
                         width: '1px',
                         height: 18,
                         alignSelf: 'center',
                         backgroundColor: alpha(theme.palette.text.primary, 0.18),
                         marginInline: 0.5,
                     },
-                    '& .gover-mdx-editor [class*="_toolbarToggleItem_"], & .gover-mdx-editor [class*="_toolbarButton_"]': {
+                    '& .prosuna-mdx-editor [class*="_toolbarToggleItem_"], & .prosuna-mdx-editor [class*="_toolbarButton_"]': {
                         borderRadius: 1,
                         padding: 0.5,
                         transition: theme.transitions.create(['background-color', 'color'], {
                             duration: theme.transitions.duration.shortest,
                         }),
                     },
-                    '& .gover-mdx-editor [class*="_toolbarToggleItem_"]:hover, & .gover-mdx-editor [class*="_toolbarButton_"]:hover': {
+                    '& .prosuna-mdx-editor [class*="_toolbarToggleItem_"]:hover, & .prosuna-mdx-editor [class*="_toolbarButton_"]:hover': {
                         backgroundColor: buttonHoverBg,
                     },
-                    '& .gover-mdx-editor [class*="_toolbarToggleItem_"][data-state="on"], & .gover-mdx-editor [class*="_toolbarButton_"][data-state="on"]': {
+                    '& .prosuna-mdx-editor [class*="_toolbarToggleItem_"][data-state="on"], & .prosuna-mdx-editor [class*="_toolbarButton_"][data-state="on"]': {
                         backgroundColor: accentBg,
                         color: 'primary.main',
                     },
-                    '& .gover-mdx-editor [class*="_diffSourceToggleWrapper_"]': {
+                    '& .prosuna-mdx-editor [class*="_diffSourceToggleWrapper_"]': {
                         marginLeft: 'auto',
                         paddingLeft: 0,
                     },
-                    '& .gover-mdx-editor [class*="_diffSourceToggle_"]': {
+                    '& .prosuna-mdx-editor [class*="_diffSourceToggle_"]': {
                         borderRadius: 0,
                         backgroundColor: 'transparent',
                         padding: 0,
                         gap: 0,
                     },
-                    '& .gover-mdx-editor [class*="_diffSourceToggle_"] [class*="_toolbarToggleItem_"]': {
+                    '& .prosuna-mdx-editor [class*="_diffSourceToggle_"] [class*="_toolbarToggleItem_"]': {
                         minWidth: 0,
                         minHeight: 0,
                         padding: 0,
                         borderRadius: 1,
                     },
-                    '& .gover-mdx-editor [class*="_diffSourceToggle_"] [class*="_toolbarToggleItem_"] > span': {
+                    '& .prosuna-mdx-editor [class*="_diffSourceToggle_"] [class*="_toolbarToggleItem_"] > span': {
                         display: 'block',
                         padding: theme.spacing(0.5),
                     },
-                    '& .gover-mdx-editor [class*="_selectTrigger_"]': {
+                    '& .prosuna-mdx-editor [class*="_selectTrigger_"]': {
                         borderRadius: 1,
                         border: '1px solid',
                         borderColor: 'divider',
                         minHeight: 30,
                         backgroundColor: baseBg,
                     },
-                    '& .gover-mdx-editor [class*="_toolbarRoot_"] [class*="_selectTrigger_"]': {
+                    '& .prosuna-mdx-editor [class*="_toolbarRoot_"] [class*="_selectTrigger_"]': {
                         width: 'auto !important',
                         minWidth: '92px !important',
                         maxWidth: '120px !important',
                         margin: '0 !important',
                         paddingInline: `${theme.spacing(1)} !important`,
                     },
-                    '& .gover-mdx-editor [class*="_toolbarNodeKindSelectTrigger_"]': {
+                    '& .prosuna-mdx-editor [class*="_toolbarNodeKindSelectTrigger_"]': {
                         width: 'auto',
                         minWidth: 92,
                         maxWidth: 120,
                         paddingInline: theme.spacing(1),
                     },
-                    '& .gover-mdx-editor [class*="_selectTrigger_"][data-state="open"]': {
+                    '& .prosuna-mdx-editor [class*="_selectTrigger_"][data-state="open"]': {
                         borderColor: 'primary.main',
                     },
                     '& [class*="_toolbarNodeKindSelectContainer_"], & [class*="_toolbarButtonDropdownContainer_"], & [class*="_selectContainer_"], & [class*="_linkDialogPopoverContent_"], & [class*="_tableColumnEditorPopoverContent_"], & [class*="_dialogContent_"], & [class*="_largeDialogContent_"], & [class*="_popoverContent_"]': {
@@ -386,7 +386,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         borderColor: 'primary.main',
                         boxShadow: `0 0 0 1px ${theme.palette.primary.main}`,
                     },
-                    '& .gover-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"])': {
+                    '& .prosuna-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"])': {
                         minHeight: editorMinHeight,
                         maxHeight: editorMaxHeight,
                         overflowY: 'auto',
@@ -402,26 +402,26 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                             duration: theme.transitions.duration.shorter,
                         }),
                     },
-                    '& .gover-mdx-editor .mdxeditor-diff-source-wrapper': {
+                    '& .prosuna-mdx-editor .mdxeditor-diff-source-wrapper': {
                         minHeight: 0,
                     },
-                    '& .gover-mdx-editor .cm-sourceView': {
+                    '& .prosuna-mdx-editor .cm-sourceView': {
                         minHeight: editorMinHeight,
                         maxHeight: editorMaxHeight,
                         overflow: 'hidden',
                     },
-                    '& .gover-mdx-editor .cm-sourceView .cm-editor': {
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-editor': {
                         maxHeight: editorMaxHeight,
                         overflow: 'hidden',
                         color: editorContentColor,
                     },
-                    '& .gover-mdx-editor .cm-sourceView .cm-scroller': {
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-scroller': {
                         minHeight: editorMinHeight,
                         maxHeight: editorMaxHeight,
                         overflowY: 'auto',
                         overflowX: 'auto',
                     },
-                    '& .gover-mdx-editor [class*="_placeholder_"]': {
+                    '& .prosuna-mdx-editor [class*="_placeholder_"]': {
                         color: 'text.disabled',
                         padding: theme.spacing(1.5, 2),
                         fontSize: theme.typography.body1.fontSize,
@@ -434,24 +434,24 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                             duration: theme.transitions.duration.shorter,
                         }),
                     },
-                    '& .gover-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) p:first-of-type': {
+                    '& .prosuna-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) p:first-of-type': {
                         marginTop: 0,
                     },
-                    '& .gover-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) p:last-of-type': {
+                    '& .prosuna-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) p:last-of-type': {
                         marginBottom: 0,
                     },
-                    '& .gover-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) blockquote': {
+                    '& .prosuna-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) blockquote': {
                         borderLeft: `3px solid ${theme.palette.divider}`,
                         paddingLeft: theme.spacing(1.5),
                         marginLeft: 0,
                         color: editorSecondaryContentColor,
                     },
-                    '& .gover-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) code': {
+                    '& .prosuna-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) code': {
                         backgroundColor: alpha(theme.palette.text.primary, 0.08),
                         borderRadius: 1,
                         padding: theme.spacing(0.1, 0.5),
                     },
-                    '& .gover-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) a': {
+                    '& .prosuna-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) a': {
                         color: editorLinkColor,
                         textDecorationColor: isReadOnly
                             ? alpha('#000000', 0.2)
@@ -463,7 +463,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                                 borderColor: error != null ? 'error.main' : outlinedBorderColor,
                                 boxShadow: 'none',
                             },
-                            '& .gover-mdx-editor [class*="_toolbarRoot_"], & .gover-mdx-editor .cm-sourceView': {
+                            '& .prosuna-mdx-editor [class*="_toolbarRoot_"], & .prosuna-mdx-editor .cm-sourceView': {
                                 pointerEvents: 'none',
                             },
                         }
@@ -472,7 +472,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
             >
                 <MDXEditor
                     ref={editorRef}
-                    className="gover-mdx-editor"
+                    className="prosuna-mdx-editor"
                     overlayContainer={overlayContainer}
                     translation={mdxEditorGermanTranslation}
                     markdown={normalizedValue}

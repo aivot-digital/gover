@@ -77,7 +77,7 @@ const HelpDialogContent: GenericPageHeaderPropsHelpDialog = {
         <>
             <Typography>
                 Teams bündeln Mitarbeiter:innen für gemeinsame Aufgaben und Zuständigkeiten innerhalb
-                von Gover.
+                von Prosuna.
             </Typography>
             <Typography sx={{mt: 2}}>
                 Über Teammitgliedschaften und zugewiesene Domänenrollen steuern Sie, welche

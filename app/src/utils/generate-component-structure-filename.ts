@@ -3,7 +3,7 @@ import {type AnyElement} from '../models/elements/any-element';
 import {generateComponentTitle} from './generate-component-title';
 import {isStringNotNullOrEmpty, stringOrDefault} from './string-utils';
 
-const COMPONENT_STRUCTURE_FILE_EXTENSION = '.uielement.gover.json';
+const COMPONENT_STRUCTURE_FILE_EXTENSION = '.uielement.prosuna.json';
 
 export function generateComponentStructureFilename(component: AnyElement): string {
     return `${resolveComponentStructureFilenameBase(component)}${COMPONENT_STRUCTURE_FILE_EXTENSION}`;

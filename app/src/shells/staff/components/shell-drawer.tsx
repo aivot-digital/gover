@@ -24,9 +24,9 @@ import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {
     selectMinimizeDrawer,
-    selectShowAboutGoverDialog,
+    selectShowAboutProsunaDialog,
     setMinimizeDrawer,
-    setShowAboutGoverDialog,
+    setShowAboutProsunaDialog,
     setShowSearchDialog,
 } from '../../../slices/shell-slice';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
@@ -48,7 +48,7 @@ import ShellDrawerUserIcon from './shell-drawer-user-icon';
 import SimpleBar from 'simplebar-react';
 import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import Description from '@aivot/mui-material-symbols-400-n25-outlined/Description';
-import {AboutGoverDialog} from './about-gover-dialog';
+import {AboutProsunaDialog} from './about-prosuna-dialog';
 import {ShellNotificationsMenu} from './shell-notifications-menu';
 import Api from '@aivot/mui-material-symbols-400-n25-outlined/Api';
 import ApiFilled from '@aivot/mui-material-symbols-400-n25-outlined/ApiFilled';
@@ -335,7 +335,7 @@ export function ShellDrawer() {
     const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [notificationsAnchorEl, setNotificationsAnchorEl] = useState<null | HTMLElement>(null);
     const [showBlockedMsg, setShowBlockedMsg] = useState(false);
-    const showAboutGoverDialog = useAppSelector(selectShowAboutGoverDialog) ?? false;
+    const showAboutProsunaDialog = useAppSelector(selectShowAboutProsunaDialog) ?? false;
     const [assetStorageProviderItems, setAssetStorageProviderItems] = useState<DrawerItem[]>([]);
     const [isLoadingAssetStorageProviders, setIsLoadingAssetStorageProviders] = useState(true);
     const [assignedTaskCount, setAssignedTaskCount] = useState<number | null>(null);
@@ -575,7 +575,7 @@ export function ShellDrawer() {
                         <Box sx={{
                             display: 'flex',
                             flexDirection: minimizeDrawer ? 'column' : 'row',
-                            mb: 3,
+                            mb: 2.5,
                         }}>
                             <Link
                                 to="/"
@@ -583,6 +583,7 @@ export function ShellDrawer() {
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
+                                    justifyContent: minimizeDrawer ? 'center' : 'start',
                                     textDecoration: 'none',
                                 }}
                             >
@@ -735,7 +736,7 @@ export function ShellDrawer() {
                                 <Button
                                     variant="contained"
                                     size="small"
-                                    href="https://docs.gover.digital"
+                                    href="https://docs.prosuna.de"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     startIcon={<Description fontSize="small"/>}
@@ -804,9 +805,9 @@ export function ShellDrawer() {
                 message="Menü kann nicht maximiert werden: Fenster/Bildschirm zu klein."
             />
 
-            <AboutGoverDialog
-                open={showAboutGoverDialog}
-                onClose={() => dispatch(setShowAboutGoverDialog(false))}
+            <AboutProsunaDialog
+                open={showAboutProsunaDialog}
+                onClose={() => dispatch(setShowAboutProsunaDialog(false))}
             />
         </ThemeProvider>
     );

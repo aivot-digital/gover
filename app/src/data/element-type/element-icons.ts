@@ -93,7 +93,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
 };
 
 export function getElementIcon(element: AnyElement): SvgIconComponent {
-    if (element.type === ElementType.GroupLayout && element.storeLink != null) {
+    if (element.type === ElementType.GroupLayout && element.marketplaceLink != null) {
         return ExtensionOutlinedIcon;
     }
 

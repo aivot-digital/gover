@@ -226,7 +226,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             >
                 <Box
                     component="img"
-                    src={`${AppInfo.mode == 'staff' ? '/staff' : ''}/assets/images/gover-beispiel-grafik.svg`}
+                    src={`${AppInfo.mode == 'staff' ? '/staff' : ''}/assets/images/prosuna-beispiel-grafik.jpg`}
                     alt="Beispielgrafik"
                     sx={{
                         display: 'block',

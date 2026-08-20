@@ -76,7 +76,7 @@ export function AccountDetailsPageIndex() {
         {
             label: 'Verwendeter IDP',
             icon: <ApiOutlined />,
-            children: 'Gover Identity Provider (basierend auf Keycloak)',
+            children: 'Prosuna Identity Provider (basierend auf Keycloak)',
         },
     ], [systemRoleLabel, user?.email, user?.firstName, user?.lastName]);
 

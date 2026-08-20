@@ -1,6 +1,6 @@
 Hallo,
 
-Sie wurden in Gover aus einer Organisationseinheit entfernt.
+Sie wurden in Prosuna aus einer Organisationseinheit entfernt.
 Organisationseinheit: [(${department.name})]
 Entfernt durch: [(${admin.getFullName()})]
 
