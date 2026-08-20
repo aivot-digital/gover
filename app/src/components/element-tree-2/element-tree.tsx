@@ -357,17 +357,16 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             }}
                         >
                             <Typography
-                                fontWeight="bold"
                                 component="div"
                                 title={typeLabel}
                                 sx={{
+                                    fontWeight: "bold",
                                     flex: 1,
                                     minWidth: 0,
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                }}
-                            >
+                                    whiteSpace: 'nowrap'
+                                }}>
                                 {typeLabel}
                             </Typography>
                         </Box>
@@ -584,7 +583,7 @@ function moveElementInTree<T extends AnyElement>(
             return currentParent;
         }
 
-        const updatedChildren = [...currentParent.children ?? []];
+        const updatedChildren = [...(currentParent.children ?? [])];
         updatedChildren.splice(sourceInfo.childIndex, 1);
 
         return {
@@ -606,7 +605,7 @@ function moveElementInTree<T extends AnyElement>(
             return currentParent;
         }
 
-        const updatedChildren = [...currentParent.children ?? []];
+        const updatedChildren = [...(currentParent.children ?? [])];
         updatedChildren.splice(clampedTargetIndex, 0, sourceInfo.element);
 
         return {

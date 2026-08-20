@@ -398,9 +398,10 @@ export function AssetDetailsPageIndex() {
                                 {canCreateAsset && !hasSelectedFile && (
                                     <Typography
                                         variant="body2"
-                                        color="text.secondary"
-                                        sx={{mt: 1}}
-                                    >
+                                        sx={{
+                                            color: "text.secondary",
+                                            mt: 1
+                                        }}>
                                         Metadaten sind bearbeitbar, sobald eine Datei ausgewählt wurde.
                                     </Typography>
                                 )}
@@ -475,12 +476,11 @@ export function AssetDetailsPageIndex() {
                                             children: (
                                                 <Stack
                                                     direction="row"
-                                                    alignItems="center"
                                                     spacing={1}
                                                     sx={{
-                                                        mt: 0.5,
-                                                    }}
-                                                >
+                                                        alignItems: "center",
+                                                        mt: 0.5
+                                                    }}>
                                                     <Link
                                                         href={AssetsApiService.useAssetLinkOfAsset(asset)}
                                                         target="_blank"
@@ -526,9 +526,10 @@ export function AssetDetailsPageIndex() {
                                 {canEditExistingMetadata && (
                                     <Typography
                                         variant="body2"
-                                        color="text.secondary"
-                                        sx={{mt: 1}}
-                                    >
+                                        sx={{
+                                            color: "text.secondary",
+                                            mt: 1
+                                        }}>
                                         Metadaten können unabhängig vom Dateiinhalt geändert werden. Änderungen
                                         werden erst nach dem Speichern wirksam.
                                     </Typography>
@@ -536,9 +537,10 @@ export function AssetDetailsPageIndex() {
                                 {!canEditExistingMetadata && (
                                     <Typography
                                         variant="body2"
-                                        color="text.secondary"
-                                        sx={{mt: 1}}
-                                    >
+                                        sx={{
+                                            color: "text.secondary",
+                                            mt: 1
+                                        }}>
                                         {!canUpdateAssets
                                             ? formatMissingPermissionTooltip(Permission.ASSET_UPDATE)
                                             : 'Metadaten können bei schreibgeschützten Speicheranbietern nicht geändert werden.'}

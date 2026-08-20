@@ -30,9 +30,10 @@ export function StorageMetadataAttributesEditor({
                                                 }: StorageMetadataAttributesEditorProps) {
     if (storageProvider.metadataAttributes.length === 0) {
         return (
-            <Typography color="text.secondary">
-                Für diesen Speicheranbieter sind keine Metadatenattribute konfiguriert.
-            </Typography>
+            <Typography sx={{
+                color: "text.secondary"
+            }}>Für diesen Speicheranbieter sind keine Metadatenattribute konfiguriert.
+                            </Typography>
         );
     }
 

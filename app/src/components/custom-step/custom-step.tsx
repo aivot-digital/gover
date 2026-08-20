@@ -133,19 +133,6 @@ export function CustomStep(props: CustomStepProps & StepProps) {
             ]}
         >
             <StepLabel
-                StepIconComponent={() => (
-                    <Icon
-                        sx={{
-                            fontSize: '2rem',
-                            marginLeft: '4px',
-                            color: active
-                                ? theme.palette.primary.main
-                                : completed
-                                    ? theme.palette.text.primary
-                                    : theme.palette.text.secondary,
-                        }}
-                    />
-                )}
                 sx={{
                     [theme.breakpoints.down('md')]: {
                         '.MuiStepLabel-label': {
@@ -155,6 +142,21 @@ export function CustomStep(props: CustomStepProps & StepProps) {
                     '.MuiStepLabel-label': {
                         pt: 0,
                     },
+                }}
+                slots={{
+                    stepIcon: () => (
+                        <Icon
+                            sx={{
+                                fontSize: '2rem',
+                                marginLeft: '4px',
+                                color: active
+                                    ? theme.palette.primary.main
+                                    : completed
+                                        ? theme.palette.text.primary
+                                        : theme.palette.text.secondary,
+                            }}
+                        />
+                    )
                 }}
             >
                 <h2
@@ -189,13 +191,17 @@ export function CustomStep(props: CustomStepProps & StepProps) {
                 }
             </StepLabel>
             <StepContent
-                TransitionComponent={Collapse}
-                TransitionProps={{onEnter: handleEnter, onExit: handleExit}}
                 transitionDuration={prefersReducedMotion ? 0 : 1000}
                 sx={{
                     [theme.breakpoints.down('md')]: {
                         pl: 4,
                     },
+                }}
+                slots={{
+                    transition: Collapse
+                }}
+                slotProps={{
+                    transition: {onEnter: handleEnter, onExit: handleExit}
                 }}
             >
                 <div>

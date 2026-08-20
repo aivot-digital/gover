@@ -351,7 +351,9 @@ function RuntimeContext(props: {
 }) {
     return (
         <Box sx={{pl: props.separated ? 4 : 0, borderLeft: props.separated ? '1px solid' : 0, borderColor: 'divider'}}>
-            <Typography variant="overline" color="text.secondary">
+            <Typography variant="overline" sx={{
+                color: "text.secondary"
+            }}>
                 {props.label}
             </Typography>
             <Typography variant="h6" component="div" sx={{lineHeight: 1.25}}>
@@ -372,7 +374,9 @@ function RuntimeContext(props: {
 function ContextValue(props: {label: string; value: string}) {
     return (
         <Box>
-            <Typography variant="caption" color="text.secondary" component="div">
+            <Typography variant="caption" component="div" sx={{
+                color: "text.secondary"
+            }}>
                 {props.label}
             </Typography>
             <Typography variant="body2" component="div">
@@ -395,7 +399,14 @@ function EventLogToolbar(props: {
 }) {
     const countLabel = `${props.totalEvents} ${props.totalEvents === 1 ? 'Ereignis' : 'Ereignisse'}`;
     return (
-        <Stack direction="row" alignItems="center" spacing={2} sx={{px: 3, pb: 2}}>
+        <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+                alignItems: "center",
+                px: 3,
+                pb: 2
+            }}>
             <SearchInput
                 value={props.search}
                 onChange={props.onSearchChange}
@@ -426,7 +437,12 @@ function EventLogToolbar(props: {
                 aria-label="Ereignisse werden aktualisiert"
                 sx={{visibility: props.loading ? 'visible' : 'hidden'}}
             />
-            <Typography variant="body2" color="text.secondary" sx={{whiteSpace: 'nowrap'}}>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: "text.secondary",
+                    whiteSpace: 'nowrap'
+                }}>
                 {countLabel}
             </Typography>
             <Tooltip
@@ -528,7 +544,9 @@ function EventLogContent(props: {
                                     Weitere Ereignisse laden
                                 </Button>
                             }
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
                                 {props.eventLog.events.content.length} von {props.eventLog.events.page.totalElements} angezeigt
                             </Typography>
                         </Box>
@@ -540,7 +558,9 @@ function EventLogContent(props: {
                     props.selectedEvent != null ?
                         <EventDetails event={props.selectedEvent}/> :
                         <Box sx={{height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                            <Typography color="text.secondary">Wählen Sie ein Ereignis aus.</Typography>
+                            <Typography sx={{
+                                color: "text.secondary"
+                            }}>Wählen Sie ein Ereignis aus.</Typography>
                         </Box>
                 }
             </Box>
@@ -571,28 +591,40 @@ function EventListItem(props: {
         >
             <EventLevelIcon level={props.event.level} size="small"/>
             <Box sx={{minWidth: 0, flex: 1}}>
-                <Stack direction="row" spacing={1.5} alignItems="baseline">
+                <Stack direction="row" spacing={1.5} sx={{
+                    alignItems: "baseline"
+                }}>
                     <Typography variant="subtitle2" component="div" sx={{minWidth: 0, flex: 1}}>
                         {props.event.title}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{flexShrink: 0}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            flexShrink: 0
+                        }}>
                         {formatEventTimestamp(props.event.timestamp)}
                     </Typography>
                 </Stack>
                 <Typography
                     variant="body2"
-                    color="text.secondary"
                     sx={{
+                        color: "text.secondary",
                         mt: 0.5,
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                    }}
-                >
+                        overflow: 'hidden'
+                    }}>
                     {props.event.message}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 0.75}}>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        color: "text.secondary",
+                        display: 'block',
+                        mt: 0.75
+                    }}>
                     {presentation.label} · {props.event.processNodeName ?? 'Vorgang'} · {getEventSource(props.event)}
                 </Typography>
             </Box>
@@ -637,15 +669,18 @@ function EventDetails(props: {event: ProcessInstanceEventLogEntry}) {
 
     return (
         <Box sx={{p: 3, maxWidth: 900}}>
-            <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" spacing={1.5} sx={{
+                alignItems: "center"
+            }}>
                 <EventLevelIcon level={event.level}/>
                 <Box sx={{minWidth: 0}}>
                     <Typography
                         variant="overline"
-                        color="text.secondary"
                         component="div"
-                        sx={{lineHeight: 1.25}}
-                    >
+                        sx={{
+                            color: "text.secondary",
+                            lineHeight: 1.25
+                        }}>
                         {presentation.label}
                     </Typography>
                     <Typography variant="h5" component="h2" sx={{lineHeight: 1.25, mt: 0.25}}>
@@ -680,14 +715,18 @@ function EventDetails(props: {event: ProcessInstanceEventLogEntry}) {
                 <Typography component="dt" variant="body2">Zeitpunkt</Typography>
                 <Typography component="dd" variant="body2">{formatEventTimestamp(event.timestamp)}</Typography>
                 <Typography component="dt" variant="body2">Auslöser</Typography>
-                <Stack component="dd" direction="row" spacing={1} alignItems="center">
+                <Stack component="dd" direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <SourceIcon fontSize="small" sx={{color: 'text.secondary'}}/>
                     <Typography variant="body2">{getEventSource(event)}</Typography>
                 </Stack>
                 <Typography component="dt" variant="body2">Prozesselement</Typography>
                 <Typography component="dd" variant="body2">{event.processNodeName ?? 'Vorgang'}</Typography>
                 <Typography component="dt" variant="body2">Klassifizierung</Typography>
-                <Stack component="dd" direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                <Stack component="dd" direction="row" spacing={1} useFlexGap sx={{
+                    flexWrap: "wrap"
+                }}>
                     <Chip
                         size="small"
                         variant="outlined"

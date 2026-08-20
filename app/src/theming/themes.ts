@@ -237,34 +237,55 @@ export function createAppTheme(
                 ...baseTheme?.components?.MuiButton,
                 styleOverrides: {
                     ...baseTheme?.components?.MuiButton?.styleOverrides,
-                    textPrimary: {
-                        color: resolvedColors.primaryForeground,
-                        '&:hover': {
-                            backgroundColor: alpha(resolvedColors.primaryForeground, 0.06),
+                    // MUI v9 removed variant/color-specific override keys. Root variants preserve
+                    // the appearance colors without replacing the base theme's shared button styles.
+                    root: [
+                        baseTheme?.components?.MuiButton?.styleOverrides?.root,
+                        {
+                            variants: [
+                                {
+                                    props: {variant: 'text', color: 'primary'},
+                                    style: {
+                                        color: resolvedColors.primaryForeground,
+                                        '&:hover': {
+                                            backgroundColor: alpha(resolvedColors.primaryForeground, 0.06),
+                                        },
+                                    },
+                                },
+                                {
+                                    props: {variant: 'outlined', color: 'primary'},
+                                    style: {
+                                        color: resolvedColors.primaryForeground,
+                                        borderColor: alpha(resolvedColors.primaryForeground, 0.5),
+                                        '&:hover': {
+                                            borderColor: resolvedColors.primaryForeground,
+                                            backgroundColor: alpha(resolvedColors.primaryForeground, 0.06),
+                                        },
+                                    },
+                                },
+                                {
+                                    props: {variant: 'text', color: 'secondary'},
+                                    style: {
+                                        color: resolvedColors.secondaryForeground,
+                                        '&:hover': {
+                                            backgroundColor: alpha(resolvedColors.secondaryForeground, 0.06),
+                                        },
+                                    },
+                                },
+                                {
+                                    props: {variant: 'outlined', color: 'secondary'},
+                                    style: {
+                                        color: resolvedColors.secondaryForeground,
+                                        borderColor: alpha(resolvedColors.secondaryForeground, 0.5),
+                                        '&:hover': {
+                                            borderColor: resolvedColors.secondaryForeground,
+                                            backgroundColor: alpha(resolvedColors.secondaryForeground, 0.06),
+                                        },
+                                    },
+                                },
+                            ],
                         },
-                    },
-                    outlinedPrimary: {
-                        color: resolvedColors.primaryForeground,
-                        borderColor: alpha(resolvedColors.primaryForeground, 0.5),
-                        '&:hover': {
-                            borderColor: resolvedColors.primaryForeground,
-                            backgroundColor: alpha(resolvedColors.primaryForeground, 0.06),
-                        },
-                    },
-                    textSecondary: {
-                        color: resolvedColors.secondaryForeground,
-                        '&:hover': {
-                            backgroundColor: alpha(resolvedColors.secondaryForeground, 0.06),
-                        },
-                    },
-                    outlinedSecondary: {
-                        color: resolvedColors.secondaryForeground,
-                        borderColor: alpha(resolvedColors.secondaryForeground, 0.5),
-                        '&:hover': {
-                            borderColor: resolvedColors.secondaryForeground,
-                            backgroundColor: alpha(resolvedColors.secondaryForeground, 0.06),
-                        },
-                    },
+                    ],
                 },
             },
             MuiTab: {

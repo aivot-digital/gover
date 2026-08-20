@@ -222,12 +222,10 @@ async function expectRoleSelections(): Promise<void> {
 
 function getSelect(name: string): HTMLElement {
     const label = screen.getByTitle(name);
-    const controlId = label.getAttribute('for');
+    const control = Array.from(document.querySelectorAll<HTMLElement>('[role="combobox"]'))
+        .find((element) => element.getAttribute('aria-labelledby')?.split(' ').includes(label.id));
 
-    expect(controlId).not.toBeNull();
-    const control = document.getElementById(controlId!);
-    expect(control).not.toBeNull();
-
+    expect(control).toBeDefined();
     return control!;
 }
 

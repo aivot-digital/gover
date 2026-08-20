@@ -237,9 +237,10 @@ export function FileUploadFileList({items}: {items: FileUploadListItem[]}) {
                             <Typography
                                 component="div"
                                 variant="caption"
-                                color="text.secondary"
-                                sx={{overflowWrap: 'anywhere'}}
-                            >
+                                sx={{
+                                    color: "text.secondary",
+                                    overflowWrap: 'anywhere'
+                                }}>
                                 {item.size}{item.detail != null ? ` · ${item.detail}` : ''}
                             </Typography>
                         </Box>

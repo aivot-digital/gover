@@ -209,19 +209,19 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                 <>
                                     <Typography
                                         component="span"
-                                        color={'text.secondary'}
                                         sx={{
+                                            color: 'text.secondary',
                                             fontSize: 'inherit',
-                                            px: 0.5,
-                                        }}
-                                    >
+                                            px: 0.5
+                                        }}>
                                         –
                                     </Typography>
                                     <Typography
                                         component="span"
-                                        color={'text.secondary'}
-                                        sx={{fontSize: 'inherit'}}
-                                    >
+                                        sx={{
+                                            color: 'text.secondary',
+                                            fontSize: 'inherit'
+                                        }}>
                                         {typeName}
                                     </Typography>
                                 </>

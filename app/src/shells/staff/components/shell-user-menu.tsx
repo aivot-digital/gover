@@ -56,30 +56,32 @@ export function ShellUserMenu({
                     vertical: minimizeDrawer ? 'center' : 'top',
                     horizontal: minimizeDrawer ? 'left' : 'left',
                 }}
-                PaperProps={{
-                    elevation: 6,
-                    sx: {
-                        mt: 1.5,
-                        minWidth: 260,
-                        overflow: 'visible',
-                        ...(!minimizeDrawer
-                            ? {
-                                '&::before': {
-                                    // arrow
-                                    content: '""',
-                                    display: 'block',
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 20,
-                                    width: 10,
-                                    height: 10,
-                                    background: 'inherit',
-                                    transform: 'translateY(-50%) translateX(-5px) rotate(45deg)',
-                                    boxShadow: '-1px -1px 2px rgba(0,0,0,0.1)',
-                                    zIndex: 0,
-                                },
-                            }
-                            : {}),
+                slotProps={{
+                    paper: {
+                        elevation: 6,
+                        sx: {
+                            mt: 1.5,
+                            minWidth: 260,
+                            overflow: 'visible',
+                            ...(!minimizeDrawer
+                                ? {
+                                    '&::before': {
+                                        // arrow
+                                        content: '""',
+                                        display: 'block',
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 20,
+                                        width: 10,
+                                        height: 10,
+                                        background: 'inherit',
+                                        transform: 'translateY(-50%) translateX(-5px) rotate(45deg)',
+                                        boxShadow: '-1px -1px 2px rgba(0,0,0,0.1)',
+                                        zIndex: 0,
+                                    },
+                                }
+                                : {}),
+                        },
                     },
                 }}
             >

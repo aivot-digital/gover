@@ -46,11 +46,12 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
                 <FormLabel>Symbol (Icon) für diesen Abschnitt</FormLabel>
 
                 <Box
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                    mt={1}
-                >
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mt: 1
+                    }}>
                     {IconComponent && (
                         <Tooltip title={iconLabel} arrow>
                             <Box

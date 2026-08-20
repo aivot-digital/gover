@@ -145,12 +145,14 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
             onClose={onClose}
             fullWidth
             maxWidth="sm"
-            TransitionProps={{
-                onExited: () => {
-                    setRetainedSourceNode(null);
-                    setSelectedTarget(null);
-                    setSelectedPortKey('');
-                },
+            slotProps={{
+                transition: {
+                    onExited: () => {
+                        setRetainedSourceNode(null);
+                        setSelectedTarget(null);
+                        setSelectedPortKey('');
+                    },
+                }
             }}
         >
             <DialogTitleWithClose onClose={onClose}>
@@ -164,7 +166,9 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                     gap: 2,
                 }}
             >
-                <Typography color="text.secondary">
+                <Typography sx={{
+                    color: "text.secondary"
+                }}>
                     Verbinden Sie <strong>{sourceNodeName ?? 'dieses Prozesselement'}</strong> mit einem bereits vorhandenen Ziel-Prozesselement.
                 </Typography>
 
@@ -192,8 +196,10 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                         onChange={(event) => {
                             setSelectedPortKey(event.target.value);
                         }}
-                        SelectProps={{
-                            native: true,
+                        slotProps={{
+                            select: {
+                                native: true,
+                            }
                         }}
                     >
                         <option value="" disabled>
@@ -212,10 +218,14 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                 {
                     availablePorts.length === 1 &&
                     <Box>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             Ausgang
                         </Typography>
-                        <Typography fontWeight={600}>
+                        <Typography sx={{
+                            fontWeight: 600
+                        }}>
                             {availablePorts[0].label}
                         </Typography>
                     </Box>
@@ -229,13 +239,17 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                     }}
                     getOptionLabel={(option) => option.label}
                     isOptionEqualToValue={(option, value) => option.node.id === value.node.id}
-                    renderOption={(optionProps, option) => (
-                        <Box component="li" {...optionProps}>
+                    renderOption={({key, ...optionProps}, option) => (
+                        <Box component="li" key={key} {...optionProps}>
                             <Box sx={{minWidth: 0}}>
-                                <Typography fontWeight={600}>
+                                <Typography sx={{
+                                    fontWeight: 600
+                                }}>
                                     {option.label}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     {option.provider.name}
                                 </Typography>
                             </Box>

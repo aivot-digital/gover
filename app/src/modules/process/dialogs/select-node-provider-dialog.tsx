@@ -313,7 +313,9 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                                                 color: 'text.secondary',
                                             }}
                                         />
-                                        <Typography fontWeight={700}>
+                                        <Typography sx={{
+                                            fontWeight: 700
+                                        }}>
                                             {PROCESS_NODE_TYPE_PLURAL_LABELS[type]}
                                         </Typography>
                                         <Chip

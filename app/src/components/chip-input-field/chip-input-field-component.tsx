@@ -227,65 +227,8 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
                         </Box>
                     }
                     size={size}
-                    InputLabelProps={{
-                        title: label,
-                    }}
-                    InputProps={{
-                        ...params.InputProps,
-                        endAdornment: (
-                            <>
-                                {
-                                    showCommitHint &&
-                                    <Box
-                                        component="span"
-                                        sx={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: 0.75,
-                                            ml: 0.75,
-                                            my: 0.5,
-                                            color: 'text.secondary',
-                                            typography: 'caption',
-                                            whiteSpace: 'nowrap',
-                                            pointerEvents: 'none',
-                                        }}
-                                    >
-                                        <Box component="span">mit</Box>
-                                        <Box
-                                            component="kbd"
-                                            sx={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                px: 0.75,
-                                                py: 0.25,
-                                                border: 1,
-                                                borderColor: 'divider',
-                                                borderRadius: 0.75,
-                                                bgcolor: 'action.hover',
-                                                color: 'text.primary',
-                                                fontFamily: 'inherit',
-                                                fontSize: '0.75rem',
-                                                fontWeight: 500,
-                                                lineHeight: 1,
-                                                boxShadow: (theme) => `inset 0 -1px 0 ${theme.palette.divider}`,
-                                            }}
-                                        >
-                                            Enter
-                                        </Box>
-                                        <Box component="span">bestätigen</Box>
-                                    </Box>
-                                }
-                                {params.InputProps.endAdornment}
-                            </>
-                        ),
-                    }}
-                    inputProps={{
-                        ...params.inputProps,
-                        readOnly: readOnly === true || hasReachedMaxItems,
-                    }}
                     onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
-                        (params.inputProps as any).onKeyDown?.(event);
+                        (params.slotProps.htmlInput as any).onKeyDown?.(event);
 
                         if (event.defaultPrevented || (event.key !== 'Enter' && event.key !== 'Tab')) {
                             return;
@@ -306,7 +249,70 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
                         applyUpdatedValue([...selectedValues, normalizedInput]);
                         setInputValue('');
                     }}
-                />
+                    slotProps={{
+                        ...params.slotProps,
+
+                        input: {
+                            ...params.slotProps.input,
+                            endAdornment: (
+                                <>
+                                    {
+                                        showCommitHint &&
+                                        <Box
+                                            component="span"
+                                            sx={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 0.75,
+                                                ml: 0.75,
+                                                my: 0.5,
+                                                color: 'text.secondary',
+                                                typography: 'caption',
+                                                whiteSpace: 'nowrap',
+                                                pointerEvents: 'none',
+                                            }}
+                                        >
+                                            <Box component="span">mit</Box>
+                                            <Box
+                                                component="kbd"
+                                                sx={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    px: 0.75,
+                                                    py: 0.25,
+                                                    border: 1,
+                                                    borderColor: 'divider',
+                                                    borderRadius: 0.75,
+                                                    bgcolor: 'action.hover',
+                                                    color: 'text.primary',
+                                                    fontFamily: 'inherit',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 500,
+                                                    lineHeight: 1,
+                                                    boxShadow: (theme) => `inset 0 -1px 0 ${theme.palette.divider}`,
+                                                }}
+                                            >
+                                                Enter
+                                            </Box>
+                                            <Box component="span">bestätigen</Box>
+                                        </Box>
+                                    }
+                                    {params.slotProps.input.endAdornment}
+                                </>
+                            ),
+                        },
+
+                        htmlInput: {
+                            ...params.slotProps.htmlInput,
+                            readOnly: readOnly === true || hasReachedMaxItems,
+                        },
+
+                        inputLabel: {
+                            ...params.slotProps.inputLabel,
+                            title: label,
+                        },
+                    }} />
             )}
         />
     );

@@ -66,14 +66,24 @@ function CustomLinkCard(props: CustomLinkCardProps) {
                 <Box sx={fixedCardContentSx}>
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                         <Icon sx={{fontSize: 20, color: 'text.secondary'}}/>
-                        <Typography variant="caption" color="text.secondary" sx={{fontWeight: 650}}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.secondary",
+                                fontWeight: 650
+                            }}>
                             {props.category}
                         </Typography>
                     </Box>
                     <Typography component="h3" sx={{mt: 1.75, fontSize: '1rem', lineHeight: 1.35, fontWeight: 650}}>
                         {props.title}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{mt: 0.75}}>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: "text.secondary",
+                            mt: 0.75
+                        }}>
                         <Balancer>{props.description}</Balancer>
                     </Typography>
                 </Box>
@@ -110,7 +120,9 @@ function OrganizationLinksPanel({links, canCreate}: {links: CustomLink[]; canCre
                         <Typography id="organization-links-title" variant="h6" component="h2">
                             Relevante Links
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             Interne Informationen und häufig genutzte Dienste
                         </Typography>
                     </Box>
@@ -118,10 +130,19 @@ function OrganizationLinksPanel({links, canCreate}: {links: CustomLink[]; canCre
                 <Divider/>
                 {links.length === 0 ? (
                     <Box sx={{px: 3, py: 4, textAlign: 'center'}}>
-                        <Typography fontWeight={650}>
+                        <Typography sx={{
+                            fontWeight: 650
+                        }}>
                             <Balancer>Für die Übersicht sind noch keine zusätzlichen Links eingerichtet.</Balancer>
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{mt: 0.5, mx: 'auto', maxWidth: 720}}>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: "text.secondary",
+                                mt: 0.5,
+                                mx: 'auto',
+                                maxWidth: 720
+                            }}>
                             <Balancer>
                                 Hinterlegen Sie interne Leitfäden, das Intranet, eine Statusseite oder andere häufig genutzte Dienste.
                             </Balancer>
@@ -172,15 +193,23 @@ function OrganizationLinksPanel({links, canCreate}: {links: CustomLink[]; canCre
                                     </Box>
                                     <Box sx={{minWidth: 0, flex: 1}}>
                                         <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0}}>
-                                            <Typography fontWeight={650} variant="body2" noWrap sx={{minWidth: 0}}>{link.label}</Typography>
+                                            <Typography
+                                                variant="body2"
+                                                noWrap
+                                                sx={{
+                                                    fontWeight: 650,
+                                                    minWidth: 0
+                                                }}>{link.label}</Typography>
                                             <OpenInNew sx={{fontSize: 15, color: 'text.disabled', flexShrink: 0}}/>
                                         </Box>
                                         {link.description && (
                                             <Typography
                                                 variant="caption"
-                                                color="text.secondary"
-                                                sx={{display: 'block', lineHeight: 1.4}}
-                                            >
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    display: 'block',
+                                                    lineHeight: 1.4
+                                                }}>
                                                 <Balancer>{link.description}</Balancer>
                                             </Typography>
                                         )}
@@ -241,7 +270,9 @@ export function DashboardLinksPanel() {
     return (
         <Box component="section" aria-label="Schnellzugriffe">
             {links != null && <OrganizationLinksPanel links={links} canCreate={canCreate}/>}
-            <Grid container spacing={2.5} alignItems="stretch">
+            <Grid container spacing={2.5} sx={{
+                alignItems: "stretch"
+            }}>
                 {cards.map((card) => (
                     <Grid
                         key={`${card.category}-${card.title}-${card.url}`}

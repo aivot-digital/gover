@@ -1,9 +1,31 @@
 import {describe, expect, it} from 'vitest';
+import {createElement} from 'react';
+import {render, screen} from '@testing-library/react';
+import {Button, ThemeProvider} from '@mui/material';
+import {DataGrid, gridClasses} from '@mui/x-data-grid';
 import {createTheme, getContrastRatio as getMuiContrastRatio} from '@mui/material/styles';
 import {grey as muiGrey} from '@mui/material/colors';
 import {BaseTheme} from './base-theme';
 import {createAppTheme, createDefaultAppTheme, resolveAppBackgroundColors} from './themes';
 import {getColorContrastRatio, MINIMUM_THEME_CONTRAST} from './resolve-appearance-colors';
+
+function getButtonVariantStyle(
+    theme: ReturnType<typeof createDefaultAppTheme>,
+    variant: 'text' | 'outlined',
+    color: 'primary' | 'secondary',
+): {color: string} {
+    const rootOverrides = theme.components?.MuiButton?.styleOverrides?.root as unknown[];
+    const appearanceOverride = rootOverrides[rootOverrides.length - 1] as {
+        variants: Array<{
+            props: {variant: string; color: string};
+            style: {color: string};
+        }>;
+    };
+
+    return appearanceOverride.variants.find((entry) => (
+        entry.props.variant === variant && entry.props.color === color
+    ))!.style;
+}
 
 describe('createAppTheme', () => {
     it.each([
@@ -25,6 +47,41 @@ describe('createAppTheme', () => {
 
         expect(dataGridPalette.headerBg).not.toBe(dataGridPalette.bg);
         expect(dataGridPalette.bg).toBe(theme.palette.background.paper);
+    });
+
+    it('lets the DataGrid sort button inherit custom header backgrounds', () => {
+        const theme = createDefaultAppTheme(BaseTheme, 'dark');
+        const sortButtonSelector = `& .${gridClasses.columnHeader} .${gridClasses.sortButton}`;
+        const rootOverride = theme.components?.MuiDataGrid?.styleOverrides?.root as (
+            props: {theme: typeof theme}
+        ) => Record<string, unknown>;
+
+        expect(rootOverride({theme})).toMatchObject({
+            [sortButtonSelector]: {
+                backgroundColor: 'transparent',
+                '&:hover': {
+                    backgroundColor: theme.palette.action.hover,
+                },
+            },
+        });
+
+        render(createElement(
+            ThemeProvider,
+            {theme},
+            createElement('div', {style: {width: 400, height: 240}}, createElement(DataGrid, {
+                rows: [{id: 1, name: 'Example'}],
+                columns: [{field: 'name', headerName: 'Name', width: 180}],
+                initialState: {
+                    sorting: {
+                        sortModel: [{field: 'name', sort: 'asc'}],
+                    },
+                },
+            })),
+        ));
+
+        const sortButton = document.querySelector(`.${gridClasses.sortButton}`);
+        expect(sortButton).not.toBeNull();
+        expect(window.getComputedStyle(sortButton!).backgroundColor).toBe('rgba(0, 0, 0, 0)');
     });
 
     it.each(['light', 'dark'] as const)('subtly tints the neutral palette in %s mode', (mode) => {
@@ -113,7 +170,8 @@ describe('createAppTheme', () => {
             logoKeyDark: null,
             faviconKey: null,
         }, BaseTheme);
-        const buttonOverrides = theme.components?.MuiButton?.styleOverrides as Record<string, Record<string, unknown>>;
+        const primaryTextButtonStyle = getButtonVariantStyle(theme, 'text', 'primary');
+        const secondaryTextButtonStyle = getButtonVariantStyle(theme, 'text', 'secondary');
         const tabRootOverrides = theme.components?.MuiTab?.styleOverrides?.root as unknown[];
         const appearanceTabRootOverride = tabRootOverrides[tabRootOverrides.length - 1] as {
             '&.Mui-selected': {color: string};
@@ -121,16 +179,41 @@ describe('createAppTheme', () => {
 
         expect(theme.palette.primary.main).toBe('#FF613A');
         expect(theme.palette.secondary.main).toBe('#BCE9FF');
-        expect(buttonOverrides.textPrimary.color).not.toBe(theme.palette.primary.main);
-        expect(buttonOverrides.textSecondary.color).not.toBe(theme.palette.secondary.main);
+        expect(primaryTextButtonStyle.color).not.toBe(theme.palette.primary.main);
+        expect(secondaryTextButtonStyle.color).not.toBe(theme.palette.secondary.main);
         expect(getColorContrastRatio(
-            buttonOverrides.textPrimary.color as string,
+            primaryTextButtonStyle.color,
             theme.palette.background.paper,
         )).toBeGreaterThanOrEqual(MINIMUM_THEME_CONTRAST);
         expect(getColorContrastRatio(
             appearanceTabRootOverride['&.Mui-selected'].color,
             theme.palette.background.paper,
         )).toBeGreaterThanOrEqual(MINIMUM_THEME_CONTRAST);
+    });
+
+    it('applies appearance colors through the MUI v9 root variants', () => {
+        const theme = createAppTheme({
+            id: 1,
+            name: 'Rendered appearance',
+            primaryColor: '#FF613A',
+            secondaryColor: '#BCE9FF',
+            primaryColorDark: null,
+            secondaryColorDark: null,
+            logoKey: null,
+            logoKeyDark: null,
+            faviconKey: null,
+        }, BaseTheme);
+        const expectedStyle = getButtonVariantStyle(theme, 'text', 'primary');
+
+        render(createElement(
+            ThemeProvider,
+            {theme},
+            createElement(Button, {variant: 'text', color: 'primary'}, 'Primary action'),
+        ));
+
+        expect(screen.getByRole('button', {name: 'Primary action'})).toHaveStyle({
+            color: expectedStyle.color,
+        });
     });
 
     it('provides accessible contrast text for all fill colors', () => {
@@ -156,7 +239,8 @@ describe('createAppTheme', () => {
             logoKeyDark: null,
             faviconKey: null,
         }, BaseTheme, 'dark');
-        const buttonOverrides = theme.components?.MuiButton?.styleOverrides as Record<string, Record<string, unknown>>;
+        const primaryTextButtonStyle = getButtonVariantStyle(theme, 'text', 'primary');
+        const secondaryTextButtonStyle = getButtonVariantStyle(theme, 'text', 'secondary');
         const expectedBackground = resolveAppBackgroundColors('dark', '#253B5B');
 
         expect(theme.palette.mode).toBe('dark');
@@ -165,11 +249,11 @@ describe('createAppTheme', () => {
         expect(theme.palette.primary.main).toBe('#253B5B');
         expect(theme.palette.secondary.main).toBe('#5F6368');
         expect(getColorContrastRatio(
-            buttonOverrides.textPrimary.color as string,
+            primaryTextButtonStyle.color,
             theme.palette.background.paper,
         )).toBeGreaterThanOrEqual(MINIMUM_THEME_CONTRAST);
         expect(getColorContrastRatio(
-            buttonOverrides.textSecondary.color as string,
+            secondaryTextButtonStyle.color,
             theme.palette.background.paper,
         )).toBeGreaterThanOrEqual(MINIMUM_THEME_CONTRAST);
     });

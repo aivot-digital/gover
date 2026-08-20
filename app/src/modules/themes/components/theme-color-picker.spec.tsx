@@ -25,7 +25,7 @@ describe('ThemeColorPicker', () => {
     });
 
     it('keeps HEX, RGB and preset colors synchronized', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({skipHover: true});
 
         render(<ColorPickerHarness />);
 

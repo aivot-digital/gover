@@ -222,11 +222,15 @@ export function AuditLogsListPage(): ReactNode {
                     <Tooltip title={formatDateTime(params.row.timestamp)} arrow>
                         <Box>
                             <Typography variant="body2"
-                                        fontWeight={500}>
+                                        sx={{
+                                            fontWeight: 500
+                                        }}>
                                 {formatRelative(params.row.timestamp)}
                             </Typography>
                             <Typography variant="caption"
-                                        color="text.secondary">
+                                        sx={{
+                                            color: "text.secondary"
+                                        }}>
                                 {formatDateTime(params.row.timestamp)}
                             </Typography>
                         </Box>

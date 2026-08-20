@@ -66,7 +66,9 @@ export function AuditLogDetailsDialogContent(props: AuditLogDetailsDialogContent
                         label={actorLabel}
                         color={getActorTypeColor(props.row.actorType)}
                     />
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         ({actorId ?? '-'})
                     </Typography>
                 </Box>

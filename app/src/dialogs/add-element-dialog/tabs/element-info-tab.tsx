@@ -236,10 +236,14 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                         borderColor: 'divider',
                     }}
                 />
-                <Typography component="figcaption"
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{mt: 0.75, display: 'block'}}>
+                <Typography
+                    component="figcaption"
+                    variant="caption"
+                    sx={{
+                        color: "text.secondary",
+                        mt: 0.75,
+                        display: 'block'
+                    }}>
                     Beispielgrafik mit optionaler Bildunterschrift
                 </Typography>
             </Box>
@@ -750,10 +754,18 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 }}
             >
                 <Box sx={{display: 'grid', gridTemplateColumns: '1.4fr 1fr', bgcolor: 'action.selected'}}>
-                    <Typography sx={{px: 1.5, py: 1}}
-                                fontWeight={700}>Bezeichnung</Typography>
-                    <Typography sx={{px: 1.5, py: 1}}
-                                fontWeight={700}>Menge</Typography>
+                    <Typography
+                        sx={{
+                            fontWeight: 700,
+                            px: 1.5,
+                            py: 1
+                        }}>Bezeichnung</Typography>
+                    <Typography
+                        sx={{
+                            fontWeight: 700,
+                            px: 1.5,
+                            py: 1
+                        }}>Menge</Typography>
                 </Box>
                 <Box sx={{
                     display: 'grid',

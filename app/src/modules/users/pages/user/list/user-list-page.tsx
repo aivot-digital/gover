@@ -135,10 +135,11 @@ export function UserListPage() {
                 <Typography
                     component="span"
                     variant="body2"
-                    color="text.disabled"
                     title="Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden."
-                    sx={{whiteSpace: 'nowrap'}}
-                >
+                    sx={{
+                        color: "text.disabled",
+                        whiteSpace: 'nowrap'
+                    }}>
                     {String(params.value)}
                 </Typography>
             ) : (

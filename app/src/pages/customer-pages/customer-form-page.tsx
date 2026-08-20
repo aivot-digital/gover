@@ -673,9 +673,10 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                             slot.isRequired &&
                                             <Typography
                                                 variant="body2"
-                                                color="text.secondary"
-                                                mt={2}
-                                            >
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    mt: 2
+                                                }}>
                                                 Eine Authentifizierung mit einem der nachfolgenden Konten
                                                 ist zwingend erforderlich.
                                             </Typography>
@@ -685,9 +686,10 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                             slot.isOptional &&
                                             <Typography
                                                 variant="body2"
-                                                color="text.secondary"
-                                                mt={2}
-                                            >
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    mt: 2
+                                                }}>
                                                 Eine Authentifizierung mit einem der nachfolgenden Konten
                                                 ist optional möglich.
                                             </Typography>
@@ -714,7 +716,9 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                                         >
                                                             <Typography
                                                                 variant="body2"
-                                                                color="text.secondary"
+                                                                sx={{
+                                                                    color: "text.secondary"
+                                                                }}
                                                             >
                                                                 Für diese Identität steht aktuell keine Anmeldemöglichkeit zur Verfügung.
                                                             </Typography>
@@ -863,21 +867,21 @@ function CustomerInputDraftTeaser(props: { date: InstantIso }) {
 
                 <Typography
                     variant="body2"
-                    color="text.secondary"
-                    mt={1.12}
-                >
+                    sx={{
+                        color: "text.secondary",
+                        mt: 1.12
+                    }}>
                     Sie können im nächsten Schritt entscheiden, ob Sie diesen Entwurf weiterbearbeiten oder neu
                     beginnen möchten.
                 </Typography>
 
                 <Typography
                     variant="body2"
-                    color="text.secondary"
                     sx={{
+                        color: "text.secondary",
                         mt: 'auto',
-                        pt: 2,
-                    }}
-                >
+                        pt: 2
+                    }}>
                     Zuletzt bearbeitet: {formatInstantInApplicationTimeZone(
                         date,
                         'dd.MM.yyyy, HH:mm',
@@ -968,12 +972,6 @@ function CustomerFormSkeleton() {
                                 expanded={index === 0}
                             >
                                 <StepLabel
-                                    StepIconComponent={() => (
-                                        <CustomerFormSkeletonStepIcon
-                                            active={index === 0}
-                                            Icon={step.Icon}
-                                        />
-                                    )}
                                     sx={{
                                         [theme.breakpoints.down('md')]: {
                                             '.MuiStepLabel-label': {
@@ -983,6 +981,14 @@ function CustomerFormSkeleton() {
                                         '.MuiStepLabel-label': {
                                             pt: 0,
                                         },
+                                    }}
+                                    slots={{
+                                        stepIcon: () => (
+                                            <CustomerFormSkeletonStepIcon
+                                                active={index === 0}
+                                                Icon={step.Icon}
+                                            />
+                                        )
                                     }}
                                 >
                                     <Skeleton

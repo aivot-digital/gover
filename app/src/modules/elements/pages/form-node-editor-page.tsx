@@ -1451,7 +1451,9 @@ export function FormNodeEditorPage() {
                     <Typography
                         variant="body2"
                         component="div"
-                        maxWidth={600}
+                        sx={{
+                            maxWidth: 600
+                        }}
                     >
                         Diese Anmeldung dient nur zum Testen im Formulareditor. Sie können das Formular damit in einem
                         authentifizierten Zustand prüfen; Nutzer:innen sehen später die normale Anmeldeseite des
@@ -1459,11 +1461,12 @@ export function FormNodeEditorPage() {
                     </Typography>
                     <Typography
                         variant="body2"
-                        color="text.secondary"
-                        maxWidth={600}
-                        marginTop={2}
-                        marginBottom={4}
-                    >
+                        sx={{
+                            color: "text.secondary",
+                            maxWidth: 600,
+                            marginTop: 2,
+                            marginBottom: 4
+                        }}>
                         Um Ihren Authentifizierungsstatus zurückzusetzen, können Sie das formularspezifische
                         Drei-Punkte-Menü verwenden und {quoteString('Alle Formulardaten löschen')} auswählen.
                     </Typography>

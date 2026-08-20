@@ -185,9 +185,10 @@ function VersionListItem(props: VersionListItemProps) {
                     )}
                 </Box>
                 <Typography
-                    color="text.secondary"
-                    sx={{mt: 0.5}}
-                >
+                    sx={{
+                        color: "text.secondary",
+                        mt: 0.5
+                    }}>
                     {subtext}
                 </Typography>
             </Box>

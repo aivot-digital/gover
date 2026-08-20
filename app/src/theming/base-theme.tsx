@@ -1,4 +1,5 @@
 import {createTheme} from '@mui/material';
+import {gridClasses} from '@mui/x-data-grid';
 import {deDE} from '@mui/x-data-grid/locales';
 import {deDE as coreDeDE} from '@mui/material/locale';
 import CheckCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
@@ -290,6 +291,14 @@ export const BaseTheme = createTheme({
                 root: ({theme}) => ({
                     backgroundColor: `${theme.palette.background.paper} !important`,
                     borderBottom: 0,
+                    // MUI X v9 paints the sort button with the header color. Transparent custom
+                    // headers would otherwise composite that color twice and show a solid circle.
+                    [`& .${gridClasses.columnHeader} .${gridClasses.sortButton}`]: {
+                        backgroundColor: 'transparent',
+                        '&:hover': {
+                            backgroundColor: theme.palette.action.hover,
+                        },
+                    },
                 }),
                 row: ({theme}) => ({
                     '&:hover': {

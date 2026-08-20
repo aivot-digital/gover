@@ -1224,8 +1224,10 @@ function NestedMenu({
                 vertical: 'top',
                 horizontal: 'left',
             }}
-            MenuListProps={{dense: true}}
             disableAutoFocusItem
+            slotProps={{
+                list: {dense: true}
+            }}
         >
             {rootItem.children?.map((child) => (
                 <NestedMenuItem
@@ -1326,8 +1328,10 @@ function NestedMenuItem({
                         vertical: 'top',
                         horizontal: 'left',
                     }}
-                    MenuListProps={{dense: true}}
                     disableAutoFocusItem
+                    slotProps={{
+                        list: {dense: true}
+                    }}
                 >
                     {item.children!.map((child) => (
                         <NestedMenuItem key={child.label}

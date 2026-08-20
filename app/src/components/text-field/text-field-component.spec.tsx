@@ -54,8 +54,10 @@ describe('TextFieldComponent', () => {
                 onChange={vi.fn()}
                 copyable
                 muiPassTroughProps={{
-                    InputProps: {
-                        endAdornment: <span data-testid="existing-end-adornment">existing</span>,
+                    slotProps: {
+                        input: {
+                            endAdornment: <span data-testid="existing-end-adornment">existing</span>,
+                        },
                     },
                 }}
             />,
@@ -63,6 +65,51 @@ describe('TextFieldComponent', () => {
 
         expect(screen.getByTestId('copy-button')).toBeInTheDocument();
         expect(screen.getByTestId('existing-end-adornment')).toBeInTheDocument();
+    });
+
+    it('should resolve and preserve callback-based pass-through slot props', () => {
+        const inputSlot = vi.fn(() => ({
+            endAdornment: <span data-testid="existing-end-adornment">existing</span>,
+            readOnly: true,
+        }));
+        const htmlInputSlot = vi.fn(() => ({
+            'data-testid': 'native-input',
+        }));
+        const inputLabelSlot = vi.fn(() => ({
+            'data-testid': 'input-label',
+        }));
+        const formHelperTextSlot = vi.fn(() => ({
+            'data-testid': 'helper-text',
+        }));
+
+        render(
+            <TextFieldComponent
+                label="API Key"
+                hint="Keep this value private"
+                value="secret-value"
+                onChange={vi.fn()}
+                copyable
+                muiPassTroughProps={{
+                    slotProps: {
+                        input: inputSlot,
+                        htmlInput: htmlInputSlot,
+                        inputLabel: inputLabelSlot,
+                        formHelperText: formHelperTextSlot,
+                    },
+                }}
+            />,
+        );
+
+        expect(inputSlot).toHaveBeenCalled();
+        expect(htmlInputSlot).toHaveBeenCalled();
+        expect(inputLabelSlot).toHaveBeenCalled();
+        expect(formHelperTextSlot).toHaveBeenCalled();
+        expect(screen.getByTestId('copy-button')).toBeInTheDocument();
+        expect(screen.getByTestId('existing-end-adornment')).toBeInTheDocument();
+        expect(screen.getByTestId('native-input')).toHaveAccessibleName('API Key');
+        expect(screen.getByTestId('native-input')).toHaveAttribute('readonly');
+        expect(screen.getByTestId('input-label')).toHaveAttribute('title', 'API Key');
+        expect(screen.getByTestId('helper-text')).toHaveTextContent('Keep this value private');
     });
 
     it('should copy the live input value before the debounced change is flushed', () => {
@@ -121,5 +168,23 @@ describe('TextFieldComponent', () => {
         });
 
         expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it('should switch between input and display mode without changing the hook order', () => {
+        const baseProps = {
+            label: 'Name',
+            value: 'Example',
+            onChange: vi.fn(),
+        };
+        const {rerender} = render(<TextFieldComponent {...baseProps}/>);
+
+        expect(screen.getByRole('textbox', {name: 'Name'})).toBeInTheDocument();
+
+        rerender(<TextFieldComponent {...baseProps} display/>);
+        expect(screen.queryByRole('textbox', {name: 'Name'})).not.toBeInTheDocument();
+        expect(screen.getByText('Example')).toBeInTheDocument();
+
+        rerender(<TextFieldComponent {...baseProps}/>);
+        expect(screen.getByRole('textbox', {name: 'Name'})).toBeInTheDocument();
     });
 });

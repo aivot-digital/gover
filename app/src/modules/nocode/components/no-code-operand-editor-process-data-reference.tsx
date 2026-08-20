@@ -85,7 +85,9 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
             <Grid size={isNodeDataReference ? 8 : 12}>
                 <Stack
                     direction="row"
-                    alignItems="flex-start"
+                    sx={{
+                        alignItems: "flex-start"
+                    }}
                 >
                     {
                         isProcessDataReference

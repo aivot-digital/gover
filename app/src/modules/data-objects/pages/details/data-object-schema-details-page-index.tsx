@@ -321,7 +321,6 @@ export function DataObjectSchemaDetailsPageIndex() {
                 hint="Beschreibung des Datenmodells zum besseren Verständnis."
             />
 
-
             {
                 !isNewItem &&
                 <SelectFieldComponent
@@ -357,7 +356,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                                                 hint: 'Eindeutige ID des Datenobjekts',
                                                 required: true,
                                             } as TextFieldElement,
-                                            ...currentDataObject.schema.children ?? [],
+                                            ...(currentDataObject.schema.children ?? []),
                                         ],
                                     },
                                 });

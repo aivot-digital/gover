@@ -273,33 +273,35 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                                 message: 'Der URL-Namespace darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.',
                             }}
                             muiPassTroughProps={{
-                                InputProps: {
-                                    startAdornment: (
-                                        <InputAdornment position="start" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
-                                            <Box component="span" sx={{whiteSpace: 'nowrap'}}>
-                                                /element-typ/
-                                            </Box>
-                                        </InputAdornment>
-                                    ),
-                                    endAdornment: (
-                                        <InputAdornment position="end" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
-                                            <Box
-                                                component="span"
-                                                sx={{
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: 0.75,
-                                                    whiteSpace: 'nowrap',
-                                                }}
-                                            >
-                                                {
-                                                    isCheckingSlugAvailability &&
-                                                    <CircularProgress size={16} color="inherit"/>
-                                                }
-                                                /element-slug
-                                            </Box>
-                                        </InputAdornment>
-                                    ),
+                                slotProps: {
+                                    input: {
+                                        startAdornment: (
+                                            <InputAdornment position="start" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
+                                                <Box component="span" sx={{whiteSpace: 'nowrap'}}>
+                                                    /element-typ/
+                                                </Box>
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: (
+                                            <InputAdornment position="end" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
+                                                <Box
+                                                    component="span"
+                                                    sx={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: 0.75,
+                                                        whiteSpace: 'nowrap',
+                                                    }}
+                                                >
+                                                    {
+                                                        isCheckingSlugAvailability &&
+                                                        <CircularProgress size={16} color="inherit"/>
+                                                    }
+                                                    /element-slug
+                                                </Box>
+                                            </InputAdornment>
+                                        ),
+                                    },
                                 },
                             }}
                         />

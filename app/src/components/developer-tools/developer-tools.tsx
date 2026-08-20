@@ -81,17 +81,16 @@ export function DeveloperTools(props: DeveloperToolsProps) {
     return (
         <Box
             component={Paper}
-            borderRadius={0}
             sx={{
+                borderRadius: 0,
                 borderTopWidth: 1,
                 borderTopStyle: 'solid',
                 borderTopColor: 'divider',
                 zIndex: 999,
                 backgroundColor: 'background.paper',
                 boxShadow: '0 0 30px rgba(0, 0, 0, .15)',
-                height: '100%',
-            }}
-        >
+                height: '100%'
+            }}>
             <Box
                 sx={{
                     display: 'flex',

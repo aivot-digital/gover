@@ -36,7 +36,9 @@ export function Preamble(props: PreambleProps) {
                     <Grid
                         container
                         spacing={10}
-                        justifyContent={'space-between'}
+                        sx={{
+                            justifyContent: 'space-between'
+                        }}
                     >
                         <Grid
                             size={{
@@ -82,7 +84,9 @@ export function Preamble(props: PreambleProps) {
                     <Grid
                         container
                         spacing={10}
-                        justifyContent="space-between"
+                        sx={{
+                            justifyContent: "space-between"
+                        }}
                     >
                         <Grid size={12}>
                             <Box

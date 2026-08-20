@@ -139,19 +139,21 @@ export function NumberFieldComponent({
             placeholder={placeholder}
             variant="outlined"
             fullWidth
-            InputProps={{
-                endAdornment: suffix ? <InputAdornment position="end">{suffix}</InputAdornment> : undefined,
-                inputProps: {style: {textAlign: 'right'}},
-                sx: sx,
-                readOnly: readOnly,
-                'aria-disabled': readOnly || disabled,
-            }}
             error={!!error || !!internalError}
             helperText={error ?? internalError ?? hint}
             value={inputValue ?? formattedOriginalValue}
             onChange={handleChange}
             onBlur={handleBlur}
             disabled={disabled ?? false}
+            slotProps={{
+                input: {
+                    endAdornment: suffix ? <InputAdornment position="end">{suffix}</InputAdornment> : undefined,
+                    inputProps: {style: {textAlign: 'right'}},
+                    sx: sx,
+                    readOnly: readOnly,
+                    'aria-disabled': readOnly || disabled,
+                }
+            }}
         />
     );
 }

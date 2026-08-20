@@ -30,7 +30,9 @@ export function ExtensionsPage() {
                             <>
                                 <Typography
                                     variant="body1"
-                                    paragraph
+                                    sx={{
+                                        marginBottom: "16px"
+                                    }}
                                 >
                                     Auf dieser Seite finden Sie alle auf Ihrer Prosuna-Instanz installierten Erweiterungen.
                                     Erweiterungen stellen zusätzliche Komponenten wie Prozesselemente, Operatoren,
@@ -38,7 +40,9 @@ export function ExtensionsPage() {
                                 </Typography>
                                 <Typography
                                     variant="body1"
-                                    paragraph
+                                    sx={{
+                                        marginBottom: "16px"
+                                    }}
                                 >
                                     Die Übersicht fasst den aktuellen Umfang der installierten Erweiterungen zusammen.
                                     Im Reiter „Liste der Erweiterungen“ können Sie die einzelnen Plugins, deren Metadaten,

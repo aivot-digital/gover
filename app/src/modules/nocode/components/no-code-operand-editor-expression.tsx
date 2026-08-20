@@ -391,7 +391,9 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                 operator.abstractDescription != null &&
                                 <Typography
                                     variant="caption"
-                                    color="text.secondary"
+                                    sx={{
+                                        color: "text.secondary"
+                                    }}
                                 >
                                     {operator.abstractDescription}
                                 </Typography>

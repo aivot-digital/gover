@@ -312,7 +312,9 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
 
                     <Typography
                         variant={'caption'}
-                        color={'text.secondary'}
+                        sx={{
+                            color: 'text.secondary'
+                        }}
                     >
                         Wenn Sie innerhalb der Informationen zum Datenschutz auf die Datenschutzerklärung verlinken möchten,
                         umschließen Sie den entsprechenden Text für den Link mit {'{privacy}'} und {'{/privacy}'}. Zum

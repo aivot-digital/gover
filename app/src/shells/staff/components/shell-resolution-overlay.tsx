@@ -62,9 +62,10 @@ export function ShellResolutionOverlay() {
                 <DesktopWindows sx={{fontSize: 64, mb: 2, color: 'primary'}} />
                 <Typography
                     variant="h2"
-                    sx={{mb: 2}}
-                    fontWeight={600}
-                >
+                    sx={{
+                        fontWeight: 600,
+                        mb: 2
+                    }}>
                     Die Auflösung dieses Fensters oder Bildschirms wird leider nicht unterstützt.
                 </Typography>
                 <Typography sx={{mb: 3}}>

@@ -102,7 +102,6 @@ export function PreReleaseVersionNoticeDialog(): React.ReactElement {
             }}
             maxWidth="sm"
             fullWidth
-            disableEscapeKeyDown
         >
             <DialogTitle
                 sx={{
@@ -114,7 +113,9 @@ export function PreReleaseVersionNoticeDialog(): React.ReactElement {
                 <Stack
                     direction="row"
                     spacing={1.25}
-                    alignItems="center"
+                    sx={{
+                        alignItems: "center"
+                    }}
                 >
                     <ReportOutlinedIcon sx={{
                         color: 'warning.main',
@@ -177,7 +178,9 @@ export function PreReleaseVersionNoticeDialog(): React.ReactElement {
                                 }
                             </Box>
 
-                            <Typography fontWeight={700}>
+                            <Typography sx={{
+                                fontWeight: 700
+                            }}>
                                 Bitte verwenden Sie diese Version nicht im regulären Betrieb.
                             </Typography>
                         </Stack>
@@ -197,14 +200,18 @@ export function PreReleaseVersionNoticeDialog(): React.ReactElement {
                             <Box>
                                 <Typography
                                     variant="overline"
-                                    color="text.secondary"
+                                    sx={{
+                                        color: "text.secondary"
+                                    }}
                                 >
                                     Build-Informationen
                                 </Typography>
 
                                 <Typography
                                     variant="body2"
-                                    color="text.secondary"
+                                    sx={{
+                                        color: "text.secondary"
+                                    }}
                                 >
                                     Hilfreich bei Rückfragen und Fehlerberichten zu dieser Vorabversion.
                                 </Typography>
@@ -219,23 +226,29 @@ export function PreReleaseVersionNoticeDialog(): React.ReactElement {
                                                 xs: 'column',
                                                 sm: 'row',
                                             }}
-                                            justifyContent="space-between"
-                                            alignItems={{
-                                                xs: 'flex-start',
-                                                sm: 'center',
-                                            }}
                                             spacing={2}
-                                        >
-                                            <Typography color="text.secondary">
+                                            sx={{
+                                                justifyContent: "space-between",
+
+                                                alignItems: {
+                                                    xs: 'flex-start',
+                                                    sm: 'center',
+                                                }
+                                            }}>
+                                            <Typography sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 {row.label}
                                             </Typography>
                                             <Typography
-                                                fontWeight={600}
-                                                textAlign={{
-                                                    xs: 'left',
-                                                    sm: 'right',
-                                                }}
-                                            >
+                                                sx={{
+                                                    fontWeight: 600,
+
+                                                    textAlign: {
+                                                        xs: 'left',
+                                                        sm: 'right',
+                                                    }
+                                                }}>
                                                 {row.value}
                                             </Typography>
                                         </Stack>

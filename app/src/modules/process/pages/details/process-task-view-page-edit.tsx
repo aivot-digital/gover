@@ -707,7 +707,9 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
                         <Stack
                             direction="row"
-                            alignItems="flex-end"
+                            sx={{
+                                alignItems: "flex-end"
+                            }}
                         >
                             {
                                 taskView.events.length > 0 &&

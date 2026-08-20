@@ -32,7 +32,9 @@ export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputEle
                 {
                     !editable &&
                     <Typography variant="caption"
-                                color="text.secondary">
+                                sx={{
+                                    color: "text.secondary"
+                                }}>
                         Das Element befindet sich im Nur-Lesen-Modus.
                     </Typography>
                 }

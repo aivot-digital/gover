@@ -288,7 +288,9 @@ export function ElementTab({
                                 borderColor: 'divider',
                             }}
                         >
-                            <Typography fontWeight={700}>
+                            <Typography sx={{
+                                fontWeight: 700
+                            }}>
                                 Zuletzt verwendet
                             </Typography>
                             <Chip
@@ -351,7 +353,9 @@ export function ElementTab({
                                         pl: 1,
                                     }}
                                 >
-                                    <Typography fontWeight={700}>
+                                    <Typography sx={{
+                                        fontWeight: 700
+                                    }}>
                                         {elementTypeGroupLabels[group]}
                                     </Typography>
                                     <Chip

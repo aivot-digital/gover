@@ -201,25 +201,31 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
                         variant: 'outlined',
                         error: props.error != null || temporalError != null,
                         helperText: helperText,
-                        InputLabelProps: {
-                            title: props.label,
-                        },
-                        placeholder: props.placeholder,
                         onInput: handleInputChange,
                         onKeyDown: handleKeyDown,
                         onPaste: handleInputChange,
                         onBlur: handleBlur,
-                        InputProps: {
-                            startAdornment: props.startIcon && (
-                                <InputAdornment position="start">{props.startIcon}</InputAdornment>
-                            ),
-                            endAdornment: props.endAction && (
-                                <InputAdornment position="end">
-                                    {Array.isArray(props.endAction)
-                                        ? props.endAction.map(renderIconButton)
-                                        : renderIconButton(props.endAction)}
-                                </InputAdornment>
-                            ),
+
+                        slotProps: {
+                            inputLabel: {
+                                title: props.label,
+                            },
+
+                            input: {
+                                startAdornment: props.startIcon && (
+                                    <InputAdornment position="start">{props.startIcon}</InputAdornment>
+                                ),
+                                endAdornment: props.endAction && (
+                                    <InputAdornment position="end">
+                                        {Array.isArray(props.endAction)
+                                            ? props.endAction.map(renderIconButton)
+                                            : renderIconButton(props.endAction)}
+                                    </InputAdornment>
+                                ),
+                            },
+                            htmlInput: {
+                                placeholder: props.placeholder,
+                            },
                         },
                     },
                     actionBar: {

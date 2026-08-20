@@ -76,14 +76,13 @@ export function SelectionListRow(props: SelectionListRowProps): ReactNode {
                     }}
                 >
                     <Typography
-                        fontWeight={700}
                         sx={{
+                            fontWeight: 700,
                             minWidth: 0,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                        }}
-                    >
+                            whiteSpace: 'nowrap'
+                        }}>
                         {props.title}
                     </Typography>
                     {props.titleAdornment}
@@ -93,9 +92,10 @@ export function SelectionListRow(props: SelectionListRowProps): ReactNode {
                     props.description != null &&
                     <Typography
                         variant="body2"
-                        color="text.secondary"
-                        sx={{mt: 0.5}}
-                    >
+                        sx={{
+                            color: "text.secondary",
+                            mt: 0.5
+                        }}>
                         {props.description}
                     </Typography>
                 }

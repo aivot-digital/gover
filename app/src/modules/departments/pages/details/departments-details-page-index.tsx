@@ -586,11 +586,10 @@ export function DepartmentsDetailsPageIndex() {
                     >
                         <Typography
                             variant="caption"
-                            color="text.secondary"
                             sx={{
-                                display: 'block',
-                            }}
-                        >
+                                color: "text.secondary",
+                                display: 'block'
+                            }}>
                             Einordnung in der Organisationsstruktur:
                         </Typography>
                         <Breadcrumbs
@@ -617,13 +616,12 @@ export function DepartmentsDetailsPageIndex() {
                                     <Typography
                                         key={`${department.id}-${index}`}
                                         variant="caption"
-                                        color="text.secondary"
-                                        sx={{
-                                            overflowWrap: 'anywhere',
-                                            whiteSpace: 'normal',
-                                        }}
                                         title={segment}
-                                    >
+                                        sx={{
+                                            color: "text.secondary",
+                                            overflowWrap: 'anywhere',
+                                            whiteSpace: 'normal'
+                                        }}>
                                         {segment}
                                     </Typography>
                                 ))
@@ -745,7 +743,6 @@ export function DepartmentsDetailsPageIndex() {
                     />
                 </Grid>
             </Grid>
-
 
             <Typography
                 variant="h6"
@@ -1200,15 +1197,14 @@ function ShadowedInput<P, C extends ComponentType<P>>(props: ShadowedInputProps<
             >
                 <Typography
                     variant="caption"
-                    color="text.secondary"
                     sx={{
+                        color: "text.secondary",
                         display: 'block',
                         fontWeight: 400,
                         lineHeight: 1.8,
                         minWidth: 0,
-                        flex: '1 1 260px',
-                    }}
-                >
+                        flex: '1 1 260px'
+                    }}>
                     {inheritanceStatusText}
                 </Typography>
 

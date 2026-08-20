@@ -309,7 +309,13 @@ export function ThemeColorPicker({
                             </ColorAreaControl>
 
                             <Box>
-                                <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.5}}>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: "text.secondary",
+                                        display: 'block',
+                                        mb: 0.5
+                                    }}>
                                     Farbton
                                 </Typography>
                                 <ColorSliderControl colorSpace="hsb" channel="hue" aria-label="Farbton">
@@ -320,7 +326,13 @@ export function ThemeColorPicker({
                             </Box>
 
                             <Box>
-                                <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 1}}>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: "text.secondary",
+                                        display: 'block',
+                                        mb: 1
+                                    }}>
                                     RGB
                                 </Typography>
                                 <Grid container spacing={1}>
@@ -349,7 +361,13 @@ export function ThemeColorPicker({
                             </Box>
 
                             <Box>
-                                <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 1}}>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: "text.secondary",
+                                        display: 'block',
+                                        mb: 1
+                                    }}>
                                     Farbvorgaben
                                 </Typography>
                                 <Box

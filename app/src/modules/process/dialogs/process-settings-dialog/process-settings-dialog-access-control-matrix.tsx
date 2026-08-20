@@ -303,10 +303,11 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
     ) => (
         <Stack
             direction="row"
-            alignItems="center"
             spacing={1.25}
-            sx={{minWidth: 0}}
-        >
+            sx={{
+                alignItems: "center",
+                minWidth: 0
+            }}>
             <Box
                 sx={{
                     display: 'flex',
@@ -339,14 +340,13 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                 </Typography>
                 <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{
-                        display: 'block',
-                        lineHeight: 1.35,
-                    }}
                     noWrap
                     title={displayData.subLabel}
-                >
+                    sx={{
+                        color: "text.secondary",
+                        display: 'block',
+                        lineHeight: 1.35
+                    }}>
                     {displayData.subLabel}
                 </Typography>
                 {
@@ -393,8 +393,10 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                 }}
             >
                 <Stack
-                    alignItems="center"
                     spacing={0.75}
+                    sx={{
+                        alignItems: "center"
+                    }}
                 >
                     <Tooltip
                         title={formatPermissionTooltip(permission)}
@@ -420,16 +422,15 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                         <Typography
                             component="code"
                             variant="caption"
-                            color="text.secondary"
                             sx={{
+                                color: "text.secondary",
                                 display: 'block',
                                 fontFamily: 'monospace',
                                 fontSize: 11,
                                 lineHeight: 1.35,
                                 maxWidth: PERMISSION_COLUMN_WIDTH - 16,
-                                overflowWrap: 'anywhere',
-                            }}
-                        >
+                                overflowWrap: 'anywhere'
+                            }}>
                             {permission.permission}
                         </Typography>
                     }
@@ -446,10 +447,12 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                                 onChange={(event) => {
                                     handleSetPermissionForAllRows(permission.permission, event.target.checked);
                                 }}
-                                inputProps={{
-                                    'aria-label': `Berechtigung ${permission.label} für alle Domänen umschalten`,
-                                }}
                                 sx={{p: 0.5}}
+                                slotProps={{
+                                    input: {
+                                        'aria-label': `Berechtigung ${permission.label} für alle Domänen umschalten`,
+                                    }
+                                }}
                             />
                         </span>
                     </Tooltip>
@@ -537,10 +540,12 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                                 onChange={(event) => {
                                     handleTogglePermission(accessControl, permission.permission, event.target.checked);
                                 }}
-                                inputProps={{
-                                    'aria-label': `${permission.label} für ${displayData.label}`,
-                                }}
                                 sx={{p: 0.5}}
+                                slotProps={{
+                                    input: {
+                                        'aria-label': `${permission.label} für ${displayData.label}`,
+                                    }
+                                }}
                             />
                         </TableCell>
                     ))
@@ -670,10 +675,12 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                                             size="small"
                                             checked
                                             disabled
-                                            inputProps={{
-                                                'aria-label': `${permission.label} für verwaltende Organisationseinheit`,
-                                            }}
                                             sx={{p: 0.5}}
+                                            slotProps={{
+                                                input: {
+                                                    'aria-label': `${permission.label} für verwaltende Organisationseinheit`,
+                                                }
+                                            }}
                                         />
                                     </TableCell>
                                 ))
@@ -706,8 +713,9 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                     isOptionEqualToValue={(option, value) => option.type === value.type && option.value === value.value}
                     getOptionDisabled={(option) => option.disabled ?? false}
                     noOptionsText="Keine verfügbare Domäne"
-                    renderOption={(props, option) => (
+                    renderOption={({key, ...props}, option) => (
                         <Box
+                            key={key}
                             component="li"
                             {...props}
                             sx={{
@@ -749,9 +757,10 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                                     option.subLabel != null &&
                                     <Typography
                                         variant="caption"
-                                        color="text.secondary"
-                                        sx={{lineHeight: 1.2}}
-                                    >
+                                        sx={{
+                                            color: "text.secondary",
+                                            lineHeight: 1.2
+                                        }}>
                                         {option.subLabel}
                                     </Typography>
                                 }

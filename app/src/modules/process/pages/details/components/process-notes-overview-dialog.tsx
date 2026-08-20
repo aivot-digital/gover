@@ -61,12 +61,11 @@ export function ProcessNotesOverviewDialog(props: ProcessNotesOverviewDialogProp
 
             <DialogContent>
                 <Typography
-                    color="text.secondary"
                     sx={{
+                        color: "text.secondary",
                         mb: 2.5,
-                        maxWidth: 680,
-                    }}
-                >
+                        maxWidth: 680
+                    }}>
                     Diese Übersicht zeigt alle Notizen, die an Prozesselementen der aktuellen Prozessversion hinterlegt wurden.
                     Nutzen Sie sie, um offene Punkte, fachliche Annahmen oder Hinweise zur Modellierung zentral nachzuvollziehen.
                     Prozesselemente ohne Notiz werden nicht aufgeführt.
@@ -87,7 +86,9 @@ export function ProcessNotesOverviewDialog(props: ProcessNotesOverviewDialogProp
                                 textAlign: 'center',
                             }}
                         >
-                            <Typography variant="h5" color="text.primary">
+                            <Typography variant="h5" sx={{
+                                color: "text.primary"
+                            }}>
                                 Keine Notizen hinterlegt
                             </Typography>
                             <Typography>
@@ -216,28 +217,26 @@ function ProcessNotesOverviewDialogEntry(props: ProcessNotesOverviewDialogEntryP
                         }}
                     >
                         <Typography
-                            fontWeight="bold"
                             component="div"
                             title={nodeName}
                             sx={{
+                                fontWeight: "bold",
                                 flex: 1,
                                 minWidth: 0,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                            }}
-                        >
+                                whiteSpace: 'nowrap'
+                            }}>
                             {nodeName}
                         </Typography>
                     </Box>
 
                     <Typography
                         variant="body2"
-                        color="text.secondary"
                         sx={{
-                            mt: 0.25,
-                        }}
-                    >
+                            color: "text.secondary",
+                            mt: 0.25
+                        }}>
                         Datenschlüssel: {node.dataKey}
                     </Typography>
                 </Box>

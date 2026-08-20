@@ -456,10 +456,17 @@ export function ThemeDetailsPageIndex() {
                 <Typography variant="h6" component="h2" sx={{mb: 0.5}}>
                     Helles Farbschema
                 </Typography>
-                <Typography color="text.secondary" sx={{mb: 3, maxWidth: 900}}>
+                <Typography
+                    sx={{
+                        color: "text.secondary",
+                        mb: 3,
+                        maxWidth: 900
+                    }}>
                     Diese Farben werden standardmäßig in der gesamten Anwendung verwendet.
                 </Typography>
-                <Grid container columnSpacing={3} rowSpacing={3} alignItems="stretch">
+                <Grid container columnSpacing={3} rowSpacing={3} sx={{
+                    alignItems: "stretch"
+                }}>
                     <ThemeColorPicker
                         label="Primärfarbe"
                         value={theme.primaryColor}
@@ -513,13 +520,18 @@ export function ThemeDetailsPageIndex() {
                 />
                 <Typography
                     id="dark-color-scheme-description"
-                    color="text.secondary"
-                    sx={{mt: 0.5, mb: 3, maxWidth: 900}}
-                >
+                    sx={{
+                        color: "text.secondary",
+                        mt: 0.5,
+                        mb: 3,
+                        maxWidth: 900
+                    }}>
                     Eine Anpassung ist sinnvoll, wenn die Farben auf dunklen Hintergründen zu wenig Kontrast bieten
                     oder zu dunkel wirken. Ohne Anpassung werden die Farben des hellen Farbschemas übernommen.
                 </Typography>
-                <Grid container columnSpacing={3} rowSpacing={3} alignItems="stretch">
+                <Grid container columnSpacing={3} rowSpacing={3} sx={{
+                    alignItems: "stretch"
+                }}>
                     <ThemeColorPicker
                         label="Primärfarbe"
                         value={theme.primaryColorDark ?? theme.primaryColor}
@@ -697,7 +709,9 @@ function ThemePreviewPanel({label, theme, logoUrl}: {label: string; theme: MuiTh
                 <Box sx={{px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider'}}>
                     <Typography variant="subtitle1">{label}</Typography>
                 </Box>
-                <Grid container alignItems="stretch">
+                <Grid container sx={{
+                    alignItems: "stretch"
+                }}>
                     <Grid
                         size={{xs: 12, md: 6}}
                         sx={{
@@ -732,7 +746,11 @@ function ThemePreviewPanel({label, theme, logoUrl}: {label: string; theme: MuiTh
                             </Box>
                         )}
                         <Typography variant="h5">Prosuna</Typography>
-                        <Typography sx={{mt: 0.5}} color="text.secondary">
+                        <Typography
+                            sx={{
+                                color: "text.secondary",
+                                mt: 0.5
+                            }}>
                             Digitale Verwaltungsservices
                         </Typography>
                         <Stack spacing={1} sx={{mt: 3, maxWidth: 320}}>
@@ -793,7 +811,9 @@ function ThemePreviewPanel({label, theme, logoUrl}: {label: string; theme: MuiTh
                             </Box>
                         </Stack>
                         <Box sx={{mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`}}>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
                                 Organisationseinheit
                             </Typography>
                             <Typography variant="body2">Verwaltung Musterstadt</Typography>
@@ -807,7 +827,14 @@ function ThemePreviewPanel({label, theme, logoUrl}: {label: string; theme: MuiTh
                             <Tab label="Allgemeine Angaben"/>
                             <Tab label="Zuordnung"/>
                         </Tabs>
-                        <Stack direction="row" useFlexGap flexWrap="wrap" spacing={1} sx={{mb: 2}}>
+                        <Stack
+                            direction="row"
+                            useFlexGap
+                            spacing={1}
+                            sx={{
+                                flexWrap: "wrap",
+                                mb: 2
+                            }}>
                             <Button size="small" variant="contained">Primäre Aktion</Button>
                             <Button size="small" variant="outlined">Weitere Aktion</Button>
                             <Button size="small" color="secondary" variant="contained">Sekundäre Aktion</Button>

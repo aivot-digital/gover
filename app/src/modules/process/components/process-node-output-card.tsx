@@ -59,14 +59,13 @@ export function ProcessNodeOutputCard(props: ProcessNodeOutputCardProps): React.
                 >
                     <Typography
                         variant="body2"
-                        color="text.secondary"
                         sx={{
+                            color: "text.secondary",
                             fontFamily: 'monospace',
                             whiteSpace: 'nowrap',
                             fontSize: '0.8125rem',
-                            lineHeight: 1.4,
-                        }}
-                    >
+                            lineHeight: 1.4
+                        }}>
                         {outputKey}
                     </Typography>
                     <CopyToClipboardButton
@@ -85,11 +84,10 @@ export function ProcessNodeOutputCard(props: ProcessNodeOutputCardProps): React.
 
             <Typography
                 variant="body2"
-                color="text.secondary"
                 sx={{
-                    mt: 0.75,
-                }}
-            >
+                    color: "text.secondary",
+                    mt: 0.75
+                }}>
                 {description}
             </Typography>
         </Box>

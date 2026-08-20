@@ -85,12 +85,11 @@ function MetadataEntry(
             <Typography
                 component="dt"
                 variant="caption"
-                color="text.secondary"
                 sx={{
+                    color: "text.secondary",
                     mb: 0.25,
-                    fontWeight: 600,
-                }}
-            >
+                    fontWeight: 600
+                }}>
                 {label}
             </Typography>
             <Typography
@@ -264,7 +263,9 @@ function SbomContent(props: SbomContentProps): React.ReactElement {
 
     return (
         <>
-            <Typography color="text.secondary">
+            <Typography sx={{
+                color: "text.secondary"
+            }}>
                 Die SBOM dokumentiert die in diesem Prosuna-Build enthaltenen Softwarekomponenten und deren Lizenzen.
             </Typography>
 
@@ -314,9 +315,10 @@ function SbomContent(props: SbomContentProps): React.ReactElement {
             <Typography
                 variant="subtitle2"
                 component="h3"
-                color="text.secondary"
-                sx={{mb: 1}}
-            >
+                sx={{
+                    color: "text.secondary",
+                    mb: 1
+                }}>
                 Downloads
             </Typography>
             <Stack direction={{

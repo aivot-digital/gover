@@ -583,7 +583,7 @@ export function ApplicationSettings() {
 
                 const configs = [
                     ...savedAttachmentConfigs,
-                    ...await Promise.all(regularConfigs.map((config) => saveConfig(config))),
+                    ...(await Promise.all(regularConfigs.map((config) => saveConfig(config)))),
                 ];
 
                 dispatch(showSuccessSnackbar('Einstellungen erfolgreich gespeichert'));
@@ -1226,7 +1226,9 @@ export function ApplicationSettings() {
                         </Grid>
                         <Typography
                             variant="caption"
-                            color={'text.secondary'}
+                            sx={{
+                                color: 'text.secondary'
+                            }}
                         >
                             Rechtstexte werden auf Ebene der Organisationseinheiten hinterlegt und verwaltet. Sie können hier
                             die

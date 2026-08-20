@@ -716,12 +716,11 @@ function VersionListItem(props: VersionListItemProps) {
                             isCurrentOpenVersion &&
                             <Typography
                                 component="span"
-                                color="text.secondary"
                                 sx={{
+                                    color: "text.secondary",
                                     fontSize: '0.875rem',
-                                    fontWeight: 400,
-                                }}
-                            >
+                                    fontWeight: 400
+                                }}>
                                 (aktuell geöffnet)
                             </Typography>
                         }
@@ -747,12 +746,11 @@ function VersionListItem(props: VersionListItemProps) {
                     }
                 </Box>
                 <Typography
-                    color="text.secondary"
                     sx={{
+                        color: "text.secondary",
                         mt: 0.5,
-                        whiteSpace: 'pre-line',
-                    }}
-                >
+                        whiteSpace: 'pre-line'
+                    }}>
                     {subtext}
                 </Typography>
                 {

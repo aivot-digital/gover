@@ -240,7 +240,9 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                 >
                     <Typography
                         variant="body2"
-                        color="text.secondary"
+                        sx={{
+                            color: "text.secondary"
+                        }}
                     >
                         Keine Datensätze vorhanden.{' '}
                         {

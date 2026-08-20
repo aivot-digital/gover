@@ -66,7 +66,9 @@ export function PaymentProvidersListPage() {
                 <>
                     <Typography
                         variant="body1"
-                        paragraph
+                        sx={{
+                            marginBottom: "16px"
+                        }}
                     >
                         Konfigurieren Sie hier Zahlungsdienstleister, die in Ihrer Prosuna-Instanz global
                         verfügbar sein sollen.
@@ -75,7 +77,9 @@ export function PaymentProvidersListPage() {
                     </Typography>
                     <Typography
                         variant="body1"
-                        paragraph
+                        sx={{
+                            marginBottom: "16px"
+                        }}
                     >
                         Es wird empfohlen, für jeden Zahlungsdienstleister sowohl eine produktive als
                         auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.

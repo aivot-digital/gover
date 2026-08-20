@@ -562,7 +562,7 @@
     "jakarta.mail@2.0.5": {
       "license": "EPL-2.0"
     },
-    "x-charts-vendor@8.11.3": {
+    "x-charts-vendor@9.11.1": {
       "license": "MIT"
     }
   }

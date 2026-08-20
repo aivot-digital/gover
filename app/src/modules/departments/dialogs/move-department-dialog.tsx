@@ -255,8 +255,9 @@ export function MoveDepartmentDialog(props: MoveDepartmentDialogProps) {
                         isOptionEqualToValue={(option, value) => option.value === value.value}
                         getOptionDisabled={(option) => option.disabled ?? false}
                         noOptionsText="Keine gültigen Ziel-Organisationseinheiten verfügbar"
-                        renderOption={(props, option) => (
+                        renderOption={({key, ...props}, option) => (
                             <Box
+                                key={key}
                                 component="li"
                                 {...props}
                                 sx={{

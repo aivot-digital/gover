@@ -9,14 +9,11 @@ interface CellContentWrapperProps extends React.ComponentPropsWithoutRef<typeof 
 export function CellContentWrapper({children, sx, ...otherProps }: CellContentWrapperProps) {
     return (
         <Box
-            display={'flex'}
-            alignItems={'center'}
-            sx={[
-                { height: '100%' },
-                ...(Array.isArray(sx) ? sx : [sx]),
-            ]}
             {...otherProps}
-        >
+            sx={[{
+                display: 'flex',
+                alignItems: 'center'
+            }, { height: '100%' }, ...(Array.isArray(sx) ? sx : [sx])]}>
             {children}
         </Box>
     );

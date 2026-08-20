@@ -20,7 +20,9 @@ export function Hint(props: HintProps) {
                             {props.summary}
                         </Box>
                         <Box
-                            marginTop={1}
+                            sx={{
+                                marginTop: 1
+                            }}
                         >
                             <Link
                                 component="button"

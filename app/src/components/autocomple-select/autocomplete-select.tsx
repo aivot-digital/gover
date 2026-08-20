@@ -40,8 +40,9 @@ export function AutocompleteSelect(props: AutocompleteSelectProps) {
             options={autofillOptions}
             autoHighlight
             getOptionLabel={(option) => option.label + ' (' + option.value + ')'}
-            renderOption={(props, option) => (
+            renderOption={({key, ...props}, option) => (
                 <Box
+                    key={key}
                     component="li"
                     sx={{display: 'block!important'}} {...props}>
                     <Typography
@@ -65,11 +66,15 @@ export function AutocompleteSelect(props: AutocompleteSelectProps) {
                 <TextField
                     {...params}
                     label="Automatisches Ausfüllen durch den Browser (Autocomplete)"
-                    inputProps={{
-                        ...params.inputProps,
-                        autoComplete: 'new-password', // disable autocomplete and autofill
-                    }}
                     helperText={'Legen Sie fest, welches Datenfeld der Browser zur Autovervollständigung vorschlagen soll (z. B. Name, E-Mail). Vorschläge sind browserabhängig.'}
+                    slotProps={{
+                        ...params.slotProps,
+
+                        htmlInput: {
+                            ...params.slotProps.htmlInput,
+                            autoComplete: 'new-password', // disable autocomplete and autofill
+                        }
+                    }}
                 />
             )}
             disabled={!editable}

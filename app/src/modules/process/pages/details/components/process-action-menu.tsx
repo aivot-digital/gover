@@ -76,34 +76,36 @@ export function ProcessActionMenu(props: ProcessActionMenuProps): ReactNode {
             onClose={onClose}
             anchorOrigin={anchorOrigin}
             transformOrigin={transformOrigin}
-            PaperProps={{
-                elevation: 6,
-                sx: {
-                    mt: showArrow ? -0.875 : 0.5,
-                    ml: showArrow ? 0.5 : 0,
-                    minWidth,
-                    overflow: 'visible',
-                    ...(showArrow ? {
-                        '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: 19,
-                            left: 0,
-                            width: 10,
-                            height: 10,
-                            // Inherit the Paper surface including MUI's dark-mode elevation overlay.
-                            background: 'inherit',
-                            transform: 'translateX(-50%) rotate(45deg)',
-                            boxShadow: '-2px 2px 6px rgba(15, 23, 42, 0.08)',
-                            zIndex: 0,
-                        },
-                    } : {}),
+            slotProps={{
+                paper: {
+                    elevation: 6,
+                    sx: {
+                        mt: showArrow ? -0.875 : 0.5,
+                        ml: showArrow ? 0.5 : 0,
+                        minWidth,
+                        overflow: 'visible',
+                        ...(showArrow ? {
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 19,
+                                left: 0,
+                                width: 10,
+                                height: 10,
+                                // Inherit the Paper surface including MUI's dark-mode elevation overlay.
+                                background: 'inherit',
+                                transform: 'translateX(-50%) rotate(45deg)',
+                                boxShadow: '-2px 2px 6px rgba(15, 23, 42, 0.08)',
+                                zIndex: 0,
+                            },
+                        } : {}),
+                    },
                 },
-            }}
-            MenuListProps={{
-                sx: {
-                    py: 1,
-                },
+                list: {
+                    sx: {
+                        py: 1,
+                    },
+                }
             }}
         >
             {
@@ -133,8 +135,10 @@ export function ProcessActionMenu(props: ProcessActionMenuProps): ReactNode {
                             </ListItemIcon>
                             <ListItemText
                                 primary={item.label}
-                                primaryTypographyProps={{
-                                    color: item.isDangerous ? 'error.main' : 'text.primary',
+                                slotProps={{
+                                    primary: {
+                                        color: item.isDangerous ? 'error.main' : 'text.primary',
+                                    }
                                 }}
                             />
                         </MenuItem>
@@ -165,8 +169,10 @@ export function ProcessActionMenu(props: ProcessActionMenuProps): ReactNode {
                             </ListItemIcon>
                             <ListItemText
                                 primary={item.label}
-                                primaryTypographyProps={{
-                                    color: item.isDangerous ? 'error.main' : 'text.primary',
+                                slotProps={{
+                                    primary: {
+                                        color: item.isDangerous ? 'error.main' : 'text.primary',
+                                    }
                                 }}
                             />
                         </MenuItem>

@@ -220,7 +220,9 @@ export function ShellSearchDialog() {
                             <Lightbulb2 sx={{color: 'text.secondary'}} />
                             <Typography
                                 variant="body1"
-                                color="text.secondary"
+                                sx={{
+                                    color: "text.secondary"
+                                }}
                             >
                                 <strong>Tipp:</strong>{' '}
                                 Durchsuchen Sie schnell &amp; einfach Formulare, Prozesse und
@@ -266,9 +268,12 @@ export function ShellSearchDialog() {
                                     {totalElements > 0 && (
                                         <Typography
                                             variant="body2"
-                                            color="text.secondary"
-                                            sx={{mt: 2, mb: 1, fontSize: '0.875rem'}}
-                                        >
+                                            sx={{
+                                                color: "text.secondary",
+                                                mt: 2,
+                                                mb: 1,
+                                                fontSize: '0.875rem'
+                                            }}>
                                             Ergebnisse {`${renderPage * size + 1}–${Math.min((renderPage + 1) * size, totalElements)} von ${totalElements}`}
                                         </Typography>
                                     )}
