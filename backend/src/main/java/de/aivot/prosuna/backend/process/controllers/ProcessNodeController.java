@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.process.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.audit.enums.AuditAction;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
@@ -40,6 +39,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -62,7 +62,7 @@ public class ProcessNodeController {
     private final ProcessNodeExportService processNodeExportService;
     private final ProcessVersionService processDefinitionVersionService;
     private final ProcessTestClaimRepository processTestClaimRepository;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper objectMapper;
     private final ProcessNodeRepository processNodeRepository;
 
     @Nonnull
@@ -101,7 +101,7 @@ public class ProcessNodeController {
                                  ProcessNodeExportService processNodeExportService,
                                  ProcessVersionService processDefinitionVersionService,
                                  ProcessTestClaimRepository processTestClaimRepository,
-                                 ObjectMapper objectMapper, ProcessNodeRepository processNodeRepository) {
+                                 JsonMapper objectMapper, ProcessNodeRepository processNodeRepository) {
         this.auditService = auditService.createScopedAuditService(ProcessNodeController.class, "Prozesse");
         this.userService = userService;
         this.processDefinitionNodeService = processDefinitionNodeService;
