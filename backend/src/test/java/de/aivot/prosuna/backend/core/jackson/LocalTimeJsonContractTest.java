@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.JacksonConfiguration;
 import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalTime;
 
@@ -18,7 +18,16 @@ class LocalTimeJsonContractTest {
 
     @Test
     void springMapperShouldSerializeLocalTimeWithSeconds() throws Exception {
-        assertSerializesWithSeconds(springMapper());
+        var mapper = springMapper();
+
+        assertEquals(
+                "{\"time\":\"09:30:00\"}",
+                mapper.writeValueAsString(new TimePayload(LocalTime.of(9, 30)))
+        );
+        assertEquals(
+                "{\"time\":\"09:30:15\"}",
+                mapper.writeValueAsString(new TimePayload(LocalTime.of(9, 30, 15, 123_000_000)))
+        );
     }
 
     @Test
@@ -46,8 +55,8 @@ class LocalTimeJsonContractTest {
         );
     }
 
-    private ObjectMapper springMapper() {
-        var builder = Jackson2ObjectMapperBuilder.json();
+    private JsonMapper springMapper() {
+        var builder = JsonMapper.builder();
         new JacksonConfiguration()
                 .customJacksonSerializers()
                 .customize(builder);

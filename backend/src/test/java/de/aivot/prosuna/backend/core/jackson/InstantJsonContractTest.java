@@ -8,7 +8,7 @@ import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -38,7 +38,13 @@ class InstantJsonContractTest {
 
     @Test
     void springMapperShouldRejectOffsetlessInstants() {
-        assertRejectsOffsetlessInstant(springMapper());
+        assertThrows(
+                tools.jackson.databind.exc.MismatchedInputException.class,
+                () -> springMapper().readValue(
+                        "{\"timestamp\":\"2026-06-15T10:30:00\"}",
+                        TimestampPayload.class
+                )
+        );
     }
 
     @Test
@@ -48,7 +54,16 @@ class InstantJsonContractTest {
 
     @Test
     void springMapperShouldCoerceEmptyInstantsToNull() throws Exception {
-        assertCoercesEmptyInstantsToNull(springMapper());
+        var mapper = springMapper();
+
+        assertNull(mapper.readValue(
+                "{\"timestamp\":\"\"}",
+                TimestampPayload.class
+        ).timestamp());
+        assertNull(mapper.readValue(
+                "{\"timestamp\":\"   \"}",
+                TimestampPayload.class
+        ).timestamp());
     }
 
     @Test
@@ -168,8 +183,8 @@ class InstantJsonContractTest {
         ).timestamp());
     }
 
-    private ObjectMapper springMapper() {
-        var builder = Jackson2ObjectMapperBuilder.json();
+    private JsonMapper springMapper() {
+        var builder = JsonMapper.builder();
         new JacksonConfiguration()
                 .customJacksonSerializers()
                 .customize(builder);
