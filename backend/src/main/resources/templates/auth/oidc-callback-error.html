@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html
+        xmlns:th="http://www.thymeleaf.org"
+        lang="de"
+>
+    <head>
+        <title>Anmeldung fehlgeschlagen</title>
+        <meta charset="UTF-8"/>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                align-items: center;
+                background: #fff;
+                color: rgba(0, 0, 0, 0.87);
+                display: flex;
+                font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+                justify-content: center;
+                margin: 0;
+                min-height: 100vh;
+                padding: 24px;
+                text-align: center;
+            }
+
+            main {
+                max-width: 560px;
+            }
+
+            h1 {
+                font-size: 2rem;
+                font-weight: 400;
+                line-height: 1.2;
+                margin: 0 0 16px;
+            }
+
+            p {
+                font-size: 1rem;
+                line-height: 1.5;
+                margin: 0 0 16px;
+            }
+
+            .description {
+                color: rgba(0, 0, 0, 0.6);
+                margin-bottom: 32px;
+            }
+
+            .restart-button {
+                align-items: center;
+                background-color: #733635;
+                border-radius: 4px;
+                color: #fff;
+                display: inline-flex;
+                font-size: 0.875rem;
+                font-weight: 500;
+                justify-content: center;
+                line-height: 1.75;
+                min-width: 320px;
+                padding: 12px 20px;
+                text-decoration: none;
+                text-transform: none;
+                transition: background-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
+            }
+
+            .restart-button:hover,
+            .restart-button:focus {
+                background-color: #502525;
+                outline: none;
+            }
+
+            .restart-button:focus-visible {
+                outline: 2px solid #9d7271;
+                outline-offset: 2px;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>Anmeldung fehlgeschlagen</h1>
+            <p th:text="${message}">
+                Die Anmeldung konnte nicht abgeschlossen werden.
+            </p>
+            <p
+                    class="description"
+                    th:text="${description}"
+            >
+                Bitte starten Sie die Anmeldung erneut oder versuchen Sie es später noch einmal.
+            </p>
+            <p th:if="${restartLoginUrl != null}">
+                <a
+                        class="restart-button"
+                        th:href="${restartLoginUrl}"
+                >
+                    Anmeldung erneut starten
+                </a>
+            </p>
+        </main>
+    </body>
+</html>
