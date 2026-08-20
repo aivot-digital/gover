@@ -1018,7 +1018,7 @@ public class FormTriggerControllerV1 {
 
     @Nullable
     private String resolvePaymentConfirmationLogoUrl(@Nonnull FormLayoutElement formLayout) {
-        var logoResolution = getFormLogoResolution(formLayout);
+        var logoResolution = getFormLogoResolution(formLayout, false); // We never use the dark logo for printouts
         if (logoResolution.assetKey() != null) {
             return assetService.createUrl(logoResolution.assetKey());
         }
