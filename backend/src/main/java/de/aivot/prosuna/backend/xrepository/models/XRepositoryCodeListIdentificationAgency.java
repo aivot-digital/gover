@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.xrepository.models;
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import tools.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 public class XRepositoryCodeListIdentificationAgency {
     @JacksonXmlProperty(localName = "LongName")

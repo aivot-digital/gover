@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.xrepository.models;
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import tools.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import tools.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 @JacksonXmlRootElement(localName = "CodeList", namespace = "http://docs.oasis-open.org/codelist/ns/genericode/1.0/")
 public class XRepositoryCodeList {
