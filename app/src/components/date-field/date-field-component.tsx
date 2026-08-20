@@ -12,6 +12,7 @@ import {
 import {DateValueIso} from '../../utils/temporal-types';
 import {renderIconButton} from '../text-field/text-field-component';
 import {DateFieldComponentProps} from './date-field-component-props';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
 const formatMap = {
     [DateFieldComponentModelMode.Day]: 'dd.MM.yyyy',
@@ -215,7 +216,7 @@ export function DateFieldComponent({
                 sx={{
                     ...sx,
                     '& .MuiPickersInputBase-root': {
-                        backgroundColor: (busy || disabled) ? '#F8F8F8' : undefined,
+                        backgroundColor: (busy || disabled) ? getDisabledFieldBackground : undefined,
                         cursor: (busy || disabled) ? 'not-allowed' : undefined,
                     },
                 }}

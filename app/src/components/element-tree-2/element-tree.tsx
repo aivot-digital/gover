@@ -289,7 +289,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         >
             <Box
                 sx={{
-                    borderBottom: '1px solid #ccc',
+                    borderBottom: '1px solid',
+                    borderBottomColor: 'divider',
                     minWidth: 0,
                 }}
             >
@@ -316,8 +317,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             aspectRatio: '1 / 1',
                             flexShrink: 0,
                             borderRadius: '50%',
-                            bgcolor: 'grey.100',
-                            color: 'text.primary',
+                            bgcolor: 'action.selected',
+                            color: 'text.secondary',
                         }}
                     >
                         <AccountTree/>

@@ -21,6 +21,7 @@ import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 import {Permission} from '../../../../data/permissions/permission';
+import ReceiptLong from '@aivot/mui-material-symbols-400-n25-outlined/ReceiptLong';
 
 const apiService = new PaymentProvidersApiService();
 
@@ -177,6 +178,11 @@ export function PaymentProvidersListPage() {
                 disabled: !canUpdatePaymentProvider,
                 disabledTooltip: permissions.getMissingPermissionTooltip(Permission.PAYMENT_PROVIDER_UPDATE),
             },
+            {
+                icon: <ReceiptLong/>,
+                to: `/payment-providers/${item.key}/tx`,
+                tooltip: 'Transaktionen anzeigen',
+            },
         ];
     }, []);
 
@@ -208,7 +214,7 @@ export function PaymentProvidersListPage() {
                     getRowIdentifier={getRowIdentifier}
                     noDataPlaceholder={noDataPlaceholder}
                     noSearchResultsPlaceholder="Keine Zahlungsdienstleister gefunden"
-                    rowActionsCount={2}
+                    rowActionsCount={3}
                     rowActions={rowActions}
                     defaultSortField="name"
                     disableFullWidthToggle={true}

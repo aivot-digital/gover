@@ -1,5 +1,5 @@
 import Editor from '@monaco-editor/react';
-import {Box, Button, FormControlLabel, Switch} from '@mui/material';
+import {Box, Button, FormControlLabel, Switch, useTheme} from '@mui/material';
 import React, {type ChangeEvent, useCallback, useRef, useState} from 'react';
 import {type StructureTabProps} from './structure-tab-props';
 import {type AnyElement} from '../../models/elements/any-element';
@@ -16,6 +16,7 @@ import {AlertComponent} from '../alert/alert-component';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) {
+    const theme = useTheme();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
@@ -169,13 +170,15 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
             <Box
                 sx={{
                     py: 2,
-                    border: '1px solid rgba(0, 0, 0, 0.23)',
+                    border: '1px solid',
+                    borderColor: 'divider',
                     borderRadius: 1,
                 }}
             >
                 <Editor
                     height="calc(100vh - 400px)"
                     defaultLanguage="json"
+                    theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'light'}
                     value={JSON.stringify(props.elementModel, null, 4)}
                     options={{
                         minimap: {

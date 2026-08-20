@@ -216,6 +216,7 @@ export function ProcessAssignedTaskListPage() {
                             </Typography>
                             <ExpandableCodeBlock
                                 value={JSON.stringify(renderTaskData.processData, null, 2)}
+                                language="json"
                             />
 
                             <Typography variant="h6">
@@ -226,6 +227,7 @@ export function ProcessAssignedTaskListPage() {
                             </Typography>
                             <ExpandableCodeBlock
                                 value={JSON.stringify(renderTaskData.nodeData, null, 2)}
+                                language="json"
                             />
                         </>
                     }

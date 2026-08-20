@@ -44,7 +44,7 @@ public class ListingPagePrivacySystemConfigDefinition implements SystemConfigDef
     @Nonnull
     @Override
     public String getCategory() {
-        return "Öffentliche Auflistung";
+        return "Öffentliches Formularverzeichnis";
     }
 
     @Nonnull

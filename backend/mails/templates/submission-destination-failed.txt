@@ -6,6 +6,12 @@ Hinterlegte Schnittstelle: [(${destination.name})]
 Fehlermeldung: [(${submission.destinationResult})]
 Zeitpunkt des Übertragungsfehlers: [(${#numberformat.formatInstant(submission.destinationTimestamp, 'dd.MM.yyyy HH:mm')})]
 
-Sie können den Antrag über den nachfolgenden Link aufrufen: [(${base.config.createUrl('/staff/submissions/' + submission.id)})]
+Antrag öffnen:
+[(${base.config.createUrl('/staff/submissions/' + submission.id)})]
 
-Diese E-Mail ist automatisch generiert. Bitte nicht antworten.
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

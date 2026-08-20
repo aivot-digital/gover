@@ -8,9 +8,10 @@ import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {Logo} from '../../components/logo/logo';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
+import {ProsunaAttribution} from '../../components/prosuna-attribution/prosuna-attribution';
 
 const buttonStyle: SxProps = {
-    color: '#16191F',
+    color: 'text.primary',
     textTransform: 'none',
     ml: 1,
     fontSize: '1.225rem',
@@ -22,6 +23,7 @@ interface CustomerListPageFooterProps {
 export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
+    const providerName = AppConfig.providerName.trim();
 
     const imprintDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.imprintDepartmentId));
     const privacyDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.privacyDepartmentId));
@@ -32,6 +34,7 @@ export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
             role="contentinfo"
             sx={{
                 boxShadow: 'inset 0px 10px 20px rgba(0, 0, 0, 0.06)',
+                backgroundColor: 'background.paper',
             }}
         >
             <Container>
@@ -105,7 +108,7 @@ export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
                                 component={'p'}
                                 variant="h6"
                                 sx={{
-                                    color: 'rgba(0, 0, 0, 0.55)',
+                                    color: 'text.secondary',
                                     mt: 2,
                                     ml: 2.5,
                                     textAlign: 'left',
@@ -117,31 +120,18 @@ export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
                                     },
                                 }}
                             >
-                                {AppConfig.providerName} &bull; Alle Rechte vorbehalten.
+                                {
+                                    providerName.length > 0 &&
+                                    <>{providerName} &bull; </>
+                                }
+                                Alle Rechte vorbehalten.
                             </Typography>
                         </Box>
                     </Box>
                 </Box>
             </Container>
 
-            <Box
-                sx={{
-                    backgroundColor: '#F2F2F2',
-                    p: 0.5,
-                    px: 2,
-                    [theme.breakpoints.up('md')]: {
-                        textAlign: 'center',
-                    },
-                }}
-            >
-                <Typography
-                    variant="caption"
-                    color="#444444"
-                >
-                    Dieses Angebot wurde umgesetzt mit Prosuna – dem Fundament für moderne digitale Verwaltungsleistungen
-                    von Aivot
-                </Typography>
-            </Box>
+            <ProsunaAttribution placement="listing"/>
         </Box>
     );
 }

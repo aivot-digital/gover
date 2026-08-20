@@ -70,7 +70,12 @@ export function ProcessFlowEditorEmptyState(props: ProcessFlowEditorEmptyStatePr
         onAddTrigger,
         verticalOffset,
     } = props;
+    const theme = useTheme();
     const triggerTypeStyle = ProviderTypeStyles[ProcessNodeType.Trigger];
+    const isDarkMode = theme.palette.mode === 'dark';
+    const triggerRingColor = isDarkMode
+        ? lighten(triggerTypeStyle.textColor, 0.68)
+        : triggerTypeStyle.textColor;
 
     return (
         <Panel
@@ -88,8 +93,14 @@ export function ProcessFlowEditorEmptyState(props: ProcessFlowEditorEmptyStatePr
                 sx={{
                     '--process-flow-editor-empty-state-trigger-main': lighten(triggerTypeStyle.textColor, 0.14),
                     '--process-flow-editor-empty-state-trigger-soft': triggerTypeStyle.bgColor,
-                    '--process-flow-editor-empty-state-trigger-ring-strong': alpha(triggerTypeStyle.textColor, 0.44),
-                    '--process-flow-editor-empty-state-trigger-ring-soft': alpha(triggerTypeStyle.textColor, 0.24),
+                    '--process-flow-editor-empty-state-trigger-ring-strong': alpha(
+                        triggerRingColor,
+                        isDarkMode ? 0.72 : 0.44,
+                    ),
+                    '--process-flow-editor-empty-state-trigger-ring-soft': alpha(
+                        triggerRingColor,
+                        isDarkMode ? 0.48 : 0.24,
+                    ),
                 } as React.CSSProperties}
             >
                 <Box

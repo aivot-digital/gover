@@ -1,4 +1,4 @@
-import React from 'react';
+import {useState} from 'react';
 import {Box, Container, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
 import {Logo} from '../../components/logo/logo';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -8,6 +8,8 @@ import {showDialog} from '../../slices/app-slice';
 import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
+import {resolveAccessibleForeground} from '../../theming/resolve-appearance-colors';
+import {ColorModePicker} from '../../components/color-mode-picker/color-mode-picker';
 
 interface CustomerListPageHeaderProps {
 }
@@ -16,6 +18,8 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
     const accessibilityDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId));
+    const [logoStatus, setLogoStatus] = useState<'loading' | 'failed' | 'present'>('loading');
+    const hasVisibleLogo = logoStatus === 'present';
 
     return (
         <Box
@@ -25,6 +29,7 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
             <Box
                 sx={{
                     boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.06)',
+                    backgroundColor: 'background.paper',
                 }}
             >
                 <Container>
@@ -53,13 +58,14 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
                             <Logo
                                 width={200}
                                 height={100}
+                                onStatusChange={setLogoStatus}
                             />
 
                             <Box
                                 sx={{
-                                    ml: 4,
-                                    pl: 4,
-                                    borderLeft: '1px solid #E4E4E4',
+                                    ml: hasVisibleLogo ? 4 : 0,
+                                    pl: hasVisibleLogo ? 4 : 0,
+                                    borderLeft: hasVisibleLogo ? `1px solid ${theme.palette.divider}` : 'none',
                                     [theme.breakpoints.down('md')]: {
                                         borderLeft: 'none',
                                         pl: 0,
@@ -70,14 +76,17 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
                             >
                                 <Typography
                                     variant="h1"
-                                    color="primary"
                                     sx={{
+                                        color: resolveAccessibleForeground(
+                                            theme.palette.primary.main,
+                                            theme.palette.background.paper,
+                                        ),
                                         display: 'block',
                                         maxWidth: '640px',
                                         margin: 0,
                                     }}
                                 >
-                                    Online-Antrags-Management <br />
+                                    Formularverzeichnis <br />
                                     {AppConfig.providerName}
                                 </Typography>
                             </Box>
@@ -96,6 +105,7 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
                                 accessibilityDepartmentId != null &&
                                 <Tooltip
                                     title="Informationen zur Barrierefreiheit"
+                                    arrow
                                 >
                                     <IconButton
                                         color="primary"
@@ -107,6 +117,11 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
                                     </IconButton>
                                 </Tooltip>
                             }
+
+                            <ColorModePicker
+                                color="primary"
+                                iconFontSize="large"
+                            />
                         </Box>
                     </Box>
                 </Container>
@@ -114,5 +129,3 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
         </Box>
     );
 }
-
-

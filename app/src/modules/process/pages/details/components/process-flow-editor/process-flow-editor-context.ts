@@ -23,6 +23,7 @@ export interface ProcessFlowEditorContextType {
     onStartReplaceNode: (node: ProcessNodeEntity) => void;
     onStartCloneNode: (node: ProcessNodeEntity) => void;
     onShowNodeProviderDetails: (provider: ProcessNodeProvider) => void;
+    onShowTaskEvents: (taskId: number) => void;
 
     onReloadRuntimeData: () => void;
     onDownloadAttachment?: (attachment: ProcessInstanceAttachmentEntity) => void | Promise<void>;

@@ -14,7 +14,6 @@ import {ProcessInstanceTaskStatusIcon} from '../../../../components/process-inst
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';
-import {ProcessInstanceEventDialog} from '../../../../dialogs/process-instance-event-dialog';
 import News from '@aivot/mui-material-symbols-400-n25-outlined/News';
 import {getLatestTaskForEdge, getLatestTaskForNode} from './utils/runtime-task-utils';
 import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
@@ -43,7 +42,6 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const confirm = useConfirm();
     const dispatch = useAppDispatch();
     const updateNodeInternals = useUpdateNodeInternals();
-    const [showEventsDialog, setShowEventsDialog] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
     const [runtimeActionsMenuAnchorEl, setRuntimeActionsMenuAnchorEl] = useState<HTMLElement | null>(null);
     const menuButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -61,6 +59,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         onStartReplaceNode,
         onStartCloneNode,
         onShowNodeProviderDetails,
+        onShowTaskEvents,
         onDeleteEdge,
         onDeleteNode,
         showTargetHandles,
@@ -181,9 +180,13 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         return 'none';
     }, [node.id, runtimeStatusAccentColor, selectedNode?.id, theme.palette.primary.light]);
     const nodeShadow = useMemo(() => {
-        const neutralShadow = selectedNode?.id === node.id ?
-            '0px 4px 20px rgba(0, 0, 0, 0.15)' :
-            '0px 4px 20px rgba(0, 0, 0, 0.1)';
+        const neutralShadow = theme.palette.mode === 'dark'
+            ? selectedNode?.id === node.id
+                ? '0px 10px 28px rgba(0, 0, 0, 0.58)'
+                : '0px 8px 24px rgba(0, 0, 0, 0.42)'
+            : selectedNode?.id === node.id
+                ? '0px 4px 20px rgba(0, 0, 0, 0.15)'
+                : '0px 4px 20px rgba(0, 0, 0, 0.1)';
 
         if (runtimeStatusAccentColor == null) {
             return neutralShadow;
@@ -192,7 +195,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         return selectedNode?.id === node.id ?
             `0 12px 28px ${alpha(runtimeStatusAccentColor, 0.18)}, ${neutralShadow}` :
             `0 10px 24px ${alpha(runtimeStatusAccentColor, 0.16)}, ${neutralShadow}`;
-    }, [node.id, runtimeStatusAccentColor, selectedNode?.id]);
+    }, [node.id, runtimeStatusAccentColor, selectedNode?.id, theme.palette.mode]);
     const runtimeActionButtonSx = useMemo(() => ({
         minWidth: 0,
         height: 28,
@@ -427,6 +430,11 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                         width: '100%',
                         overflow: 'hidden',
                         borderRadius: '6px',
+                        border: '1px solid',
+                        borderColor: alpha(
+                            theme.palette.text.primary,
+                            theme.palette.mode === 'dark' ? 0.16 : 0.08,
+                        ),
                         outline: nodeOutline,
                         boxShadow: nodeShadow,
                     }}
@@ -566,7 +574,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                     <Divider
                         sx={{
                             width: '100%',
-                            borderColor: 'rgba(15, 23, 42, 0.12)',
+                            borderColor: 'divider',
                         }}
                     />
 
@@ -608,7 +616,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     event.preventDefault();
-                                    setShowEventsDialog(true);
+                                    onShowTaskEvents(associatedTask.id);
                                 }}
                             >
                                 Ereignisse
@@ -637,6 +645,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                                 </Typography>
                                                 <ExpandableCodeBlock
                                                     value={JSON.stringify(associatedTask?.nodeData, null, 2)}
+                                                    language="json"
                                                 />
 
                                                 <ProcessInstanceAttachmentSetList
@@ -749,19 +758,6 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             ))
                     }
                 </Box>
-            }
-
-            {
-                runtimeData != null &&
-                associatedTask != null &&
-                <ProcessInstanceEventDialog
-                    open={showEventsDialog}
-                    onClose={() => {
-                        setShowEventsDialog(false);
-                    }}
-                    instanceId={runtimeData.instance.id}
-                    taskId={associatedTask.id}
-                />
             }
         </Box>
     );

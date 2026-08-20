@@ -4,4 +4,9 @@ Sie wurden in Prosuna einer Organisationseinheit zugeordnet.
 Organisationseinheit: [(${department.name})]
 Zugeordnet durch: [(${admin.getFullName()})]
 
-Diese E-Mail ist automatisch generiert. Bitte nicht antworten.
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

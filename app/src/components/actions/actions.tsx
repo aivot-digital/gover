@@ -68,8 +68,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
                 sx={{
                     width: '1px',
                     height: '2em',
-                    backgroundColor: 'black',
-                    opacity: '.15',
+                    backgroundColor: 'divider',
                     m: 0,
                 }}
             />

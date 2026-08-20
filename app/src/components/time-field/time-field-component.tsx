@@ -12,6 +12,7 @@ import {
 import {LocalTimeIso} from '../../utils/temporal-types';
 import {EndAction} from '../text-field/text-field-component-props';
 import {renderIconButton} from '../text-field/text-field-component';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
 interface TimeFieldComponentProps {
     label: string;
@@ -187,7 +188,7 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
                 sx={{
                     ...props.sx,
                     '& .MuiPickersInputBase-root': {
-                        backgroundColor: (props.busy || props.disabled) ? '#F8F8F8' : undefined,
+                        backgroundColor: (props.busy || props.disabled) ? getDisabledFieldBackground : undefined,
                         cursor: (props.busy || props.disabled) ? 'not-allowed' : undefined,
                     },
                 }}

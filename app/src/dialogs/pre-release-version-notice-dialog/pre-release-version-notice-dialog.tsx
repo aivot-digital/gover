@@ -113,37 +113,14 @@ export function PreReleaseVersionNoticeDialog(): React.ReactElement {
             >
                 <Stack
                     direction="row"
-                    spacing={1.75}
+                    spacing={1.25}
                     alignItems="center"
                 >
-                    <Box
-                        sx={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            bgcolor: (theme) => alpha(theme.palette.warning.main, 0.12),
-                            color: 'warning.main',
-                            flexShrink: 0,
-                        }}
-                    >
-                        <ReportOutlinedIcon />
-                    </Box>
+                    <ReportOutlinedIcon sx={{
+                        color: 'warning.main',
+                    }}/>
 
                     <Box>
-                        <Typography
-                            variant="overline"
-                            sx={{
-                                display: 'block',
-                                color: 'warning.dark',
-                                lineHeight: 1.2,
-                            }}
-                        >
-                            Vorabversion
-                        </Typography>
-
                         <Typography
                             variant="h4"
                             component="div"

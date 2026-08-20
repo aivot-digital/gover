@@ -64,8 +64,9 @@ def is_mixed_license(license_str, approved, restricted):
     return allowed and bad
 
 def main():
+    sbom_path = os.path.join(os.environ.get("SBOM_DIR", "build/sbom"), "sbom.json")
     try:
-        with open("app/public/sbom/sbom.json", "r", encoding="utf-8") as f:
+        with open(sbom_path, "r", encoding="utf-8") as f:
             sbom = json.load(f)
     except Exception as e:
         with open("license_report.md", "w") as f:

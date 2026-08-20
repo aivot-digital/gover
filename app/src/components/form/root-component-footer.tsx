@@ -15,9 +15,10 @@ import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
 import {ProcessEntity} from '../../modules/process/entities/process-entity';
 import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
+import {ProsunaAttribution} from '../prosuna-attribution/prosuna-attribution';
 
 const buttonStyle: SxProps = {
-    color: '#16191F',
+    color: 'text.primary',
     textTransform: 'none',
     ml: 1,
     fontSize: '1.225rem',
@@ -29,6 +30,7 @@ interface RootComponentFooterProps {
     process: ProcessEntity;
     version: ProcessVersionEntity;
     logoUrl: string | null;
+    logoUrlDark: string | null;
 }
 
 export function RootComponentFooter(props: RootComponentFooterProps) {
@@ -38,6 +40,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
         process,
         version,
         logoUrl,
+        logoUrlDark,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -45,6 +48,8 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const disableListingPageLink = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.disableListingPageLink));
     const customListingPageLink = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.customListingPageLink));
+    const resolvedLogoUrl = theme.palette.mode === 'dark' ? logoUrlDark ?? logoUrl : logoUrl;
+    const providerName = name?.trim() ?? '';
 
     return (
         <Box
@@ -52,6 +57,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
             role="contentinfo"
             sx={{
                 boxShadow: 'inset 0px 10px 20px rgba(0, 0, 0, 0.06)',
+                backgroundColor: 'background.paper',
             }}
         >
             <Container>
@@ -71,11 +77,12 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                     }}
                 >
                     {
-                        logoUrl != null ?
+                        resolvedLogoUrl != null ?
                             <Logo
-                                key={'logo-' + logoUrl}
+                                key={'logo-' + resolvedLogoUrl}
                                 updated={version.updated}
-                                src={logoUrl}
+                                src={logoUrl ?? undefined}
+                                srcDark={logoUrlDark ?? undefined}
                                 width={200}
                                 height={100}
                             /> :
@@ -153,7 +160,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                                 component={'p'}
                                 variant="h6"
                                 sx={{
-                                    color: 'rgba(0, 0, 0, 0.55)',
+                                    color: 'text.secondary',
                                     mt: 2,
                                     ml: 2.5,
                                     textAlign: 'left',
@@ -165,30 +172,17 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                                     },
                                 }}
                             >
-                                {name} &bull; Alle Rechte vorbehalten.
+                                {
+                                    providerName.length > 0 &&
+                                    <>{providerName} &bull; </>
+                                }
+                                Alle Rechte vorbehalten.
                             </Typography>
                         </Box>
                     </Box>
                 </Box>
             </Container>
-            <Box
-                sx={{
-                    backgroundColor: '#F2F2F2',
-                    p: 0.5,
-                    px: 2,
-                    [theme.breakpoints.up('md')]: {
-                        textAlign: 'center',
-                    },
-                }}
-            >
-                <Typography
-                    variant="caption"
-                    color="#444444"
-                >
-                    Dieses Formular wurde umgesetzt mit Prosuna – dem Fundament für moderne digitale Verwaltungsleistungen
-                    von Aivot
-                </Typography>
-            </Box>
+            <ProsunaAttribution placement="form"/>
         </Box>
     );
 }

@@ -1,111 +1,40 @@
 package de.aivot.prosuna.backend.system.controllers;
 
-import de.aivot.prosuna.backend.plugin.services.PluginUtils;
-import de.aivot.prosuna.backend.plugins.form.FormPlugin;
-import de.aivot.prosuna.backend.plugins.form.v1.nodes.FormTriggerNodeV1;
-import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
-import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
-import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
-import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
-import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
-import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
-import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
-import de.aivot.prosuna.backend.system.dtos.DashboardStatsItemDTO;
-import de.aivot.prosuna.backend.user.repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
+import de.aivot.prosuna.backend.system.dtos.DashboardActivityDTO;
+import de.aivot.prosuna.backend.system.dtos.DashboardOverviewDTO;
+import de.aivot.prosuna.backend.system.services.DashboardService;
+import de.aivot.prosuna.backend.user.services.UserService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.annotation.Nullable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/system/dashboard/")
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DashboardController {
+    private final UserService userService;
+    private final DashboardService dashboardService;
 
-    private final UserRepository userRepository;
-    private final ProcessVersionRepository processVersionRepository;
-    private final ProcessInstanceRepository processInstanceRepository;
-    private final ProcessInstanceTaskRepository processInstanceTaskRepository;
-    private final ProcessNodeRepository processNodeRepository;
-
-    @Autowired
-    public DashboardController(UserRepository userRepository,
-                               ProcessVersionRepository processVersionRepository,
-                               ProcessInstanceRepository processInstanceRepository,
-                               ProcessInstanceTaskRepository processInstanceTaskRepository, ProcessNodeRepository processNodeRepository) {
-        this.userRepository = userRepository;
-        this.processVersionRepository = processVersionRepository;
-        this.processInstanceRepository = processInstanceRepository;
-        this.processInstanceTaskRepository = processInstanceTaskRepository;
-        this.processNodeRepository = processNodeRepository;
+    public DashboardController(UserService userService, DashboardService dashboardService) {
+        this.userService = userService;
+        this.dashboardService = dashboardService;
     }
 
-    @GetMapping("stats/")
-    public List<DashboardStatsItemDTO> getStats() {
-        return List.of(
-                getProcessesStat(),
-                getActiveSubmissionsStat(),
-                getPublishedFormsStat(),
-                getUsersStat()
-        );
+    @GetMapping("overview/")
+    public DashboardOverviewDTO getOverview(@Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        return dashboardService.getOverview(user);
     }
 
-    private DashboardStatsItemDTO getActiveSubmissionsStat() {
-        var workingOnSubmissions = processInstanceRepository
-                .countAllByStatusIs(ProcessInstanceStatus.Running);
-
-        var waitingSubmissions = processInstanceTaskRepository
-                .countAllByStatusIs(ProcessTaskStatus.Running);
-
-        return new DashboardStatsItemDTO(
-                "tasks",
-                "Vorgänge in Bearbeitung",
-                String.format("(%d warten auf Bearbeitung)", waitingSubmissions),
-                workingOnSubmissions,
-                "/tasks"
-        );
-    }
-
-    private DashboardStatsItemDTO getPublishedFormsStat() {
-        var publishedForms = processVersionRepository
-                .countAllByStatusIsAndHasNode(
-                        ProcessVersionStatus.Published,
-                        PluginUtils.combineComponentKey(FormPlugin.PLUGIN_KEY, FormTriggerNodeV1.NODE_KEY)
-                );
-
-        return new DashboardStatsItemDTO(
-                "published_forms",
-                "Öffentliche Online-Formulare",
-                "erlauben die digitale Antragstellung",
-                publishedForms,
-                "/forms?filter=published"
-        );
-    }
-
-    private DashboardStatsItemDTO getUsersStat() {
-        var activeUsers = userRepository
-                .countAllByDeletedInIdpIsFalseAndEnabledIsTrue();
-
-        return new DashboardStatsItemDTO(
-                "total_users",
-                "Registrierte Mitarbeiter:innen",
-                "unterstützen mit Prosuna die Digitalisierung",
-                activeUsers,
-                "/users"
-        );
-    }
-
-    private DashboardStatsItemDTO getProcessesStat() {
-        var activeProcesses = processVersionRepository
-                .countAllByStatusIs(ProcessVersionStatus.Published);
-
-        return new DashboardStatsItemDTO(
-                "processes",
-                "Modellierte Prozesse",
-                "werden von eingehenden Anträgen durchlaufen",
-                activeProcesses,
-                "/processes?filter=published"
-        );
+    @GetMapping("activity/")
+    public DashboardActivityDTO getActivity(@Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        return dashboardService.getActivity(user);
     }
 }

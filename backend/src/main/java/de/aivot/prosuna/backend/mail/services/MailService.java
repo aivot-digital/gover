@@ -1,17 +1,18 @@
 package de.aivot.prosuna.backend.mail.services;
 
-import de.aivot.prosuna.backend.asset.entities.AssetEntity;
-import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.config.services.UserConfigService;
 import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.filters.DepartmentMembershipFilter;
 import de.aivot.prosuna.backend.department.services.DepartmentMembershipService;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.exceptions.NoValidUserEMailsInDepartmentException;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.enums.MailTemplate;
+import de.aivot.prosuna.backend.mail.models.MailSendOptions;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.models.lib.MailAttachmentBytes;
 import de.aivot.prosuna.backend.services.TemplateLoaderService;
@@ -19,17 +20,12 @@ import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
-import jakarta.activation.DataHandler;
 import jakarta.activation.DataSource;
 import jakarta.activation.FileDataSource;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
-import jakarta.mail.Multipart;
-import jakarta.mail.Part;
 import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.internet.MimeMultipart;
 import jakarta.mail.util.ByteArrayDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,25 +34,29 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.templatemode.TemplateMode;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 
 @Component
 public class MailService {
     private static final Logger logger = LoggerFactory.getLogger(MailService.class);
+    private static final String SENDER_LOGO_CONTENT_ID = "sender-logo";
 
     private final ProsunaConfig prosunaConfig;
     private final JavaMailSender mailSender;
 
     private final SystemConfigService systemConfigService;
     private final DepartmentService departmentService;
+    private final VDepartmentShadowedService vDepartmentShadowedService;
     private final DepartmentMembershipService departmetMembershipService;
 
-    private final AssetRepository assetRepository;
+    private final MailLogoService mailLogoService;
     private final UserService userService;
     private final UserConfigService userConfigService;
 
@@ -69,16 +69,18 @@ public class MailService {
             JavaMailSender mailSender,
             SystemConfigService systemConfigService,
             DepartmentService departmentService,
+            VDepartmentShadowedService vDepartmentShadowedService,
             DepartmentMembershipService departmentMembershipService,
-            AssetRepository assetRepository,
+            MailLogoService mailLogoService,
             UserService userService,
             UserConfigService userConfigService) {
         this.prosunaConfig = prosunaConfig;
         this.mailSender = mailSender;
         this.systemConfigService = systemConfigService;
         this.departmentService = departmentService;
+        this.vDepartmentShadowedService = vDepartmentShadowedService;
         this.departmetMembershipService = departmentMembershipService;
-        this.assetRepository = assetRepository;
+        this.mailLogoService = mailLogoService;
         this.userService = userService;
         this.userConfigService = userConfigService;
     }
@@ -255,7 +257,7 @@ public class MailService {
             MailTemplate template,
             Map<String, Object> context
     ) throws MessagingException, IOException, ResponseException {
-        // Check if the user is deleted in the IDP
+        // Check if the user is deleted in the IdP
         if (user.getDeletedInIdp()) {
             return false;
         }
@@ -329,7 +331,47 @@ public class MailService {
             MailTemplate template,
             Map<String, Object> context,
             Optional<Collection<Path>> attachmentPaths,
+            MailSendOptions options
+    ) throws MessagingException, MailException, ResponseException {
+        sendMail(theme, to, cc, bcc, subject, template, context, attachmentPaths, Optional.empty(), options);
+    }
+
+    public void sendMail(
+            ThemeEntity theme,
+            String to,
+            Optional<String> cc,
+            Optional<String> bcc,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> context,
+            Optional<Collection<Path>> attachmentPaths,
             Optional<Collection<MailAttachmentBytes>> attachmentBytes
+    ) throws MessagingException, MailException, ResponseException {
+        sendMail(
+                theme,
+                to,
+                cc,
+                bcc,
+                subject,
+                template,
+                context,
+                attachmentPaths,
+                attachmentBytes,
+                MailSendOptions.defaults()
+        );
+    }
+
+    public void sendMail(
+            ThemeEntity theme,
+            String to,
+            Optional<String> cc,
+            Optional<String> bcc,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> context,
+            Optional<Collection<Path>> attachmentPaths,
+            Optional<Collection<MailAttachmentBytes>> attachmentBytes,
+            MailSendOptions options
     ) throws MessagingException, MailException, ResponseException {
         InternetAddress[] mailToList = InternetAddress.parse(to);
 
@@ -353,48 +395,76 @@ public class MailService {
             );
         }
 
-        context.put("base", createBaseContext(theme));
+        // Mail clients apply dark mode inconsistently. Embed one light-scheme logo on a neutral raster surface
+        // instead of attaching a second variant that clients cannot select reliably.
+        var senderLogo = mailLogoService.createSenderLogo(theme.getLogoKey());
+        context.put("base", createBaseContext(senderLogo.isPresent()));
+        context.put("mailSignature", resolveDefaultMailSignature(context, options));
 
         String textMessage = loadTemplate(template.getKey() + ".txt", context, TemplateMode.TEXT);
         String htmlMessage = loadTemplate(template.getKey() + ".html", context, TemplateMode.HTML);
 
         message.setFrom(prosunaConfig.getFromMail());
         message.setSubject(subject.replaceAll("\\r?\\n", " "), "utf-8");
-        message.setText(textMessage, "utf-8");
+        var messageHelper = new MimeMessageHelper(
+                message,
+                MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+                StandardCharsets.UTF_8.name()
+        );
+        messageHelper.setText(textMessage, htmlMessage);
 
-        MimeBodyPart mimeBodyPart = new MimeBodyPart();
-        mimeBodyPart.setContent(htmlMessage, "text/html; charset=utf-8");
-
-        Multipart multipart = new MimeMultipart();
-        multipart.addBodyPart(mimeBodyPart);
+        if (senderLogo.isPresent()) {
+            var logo = senderLogo.get();
+            messageHelper.addInline(
+                    SENDER_LOGO_CONTENT_ID,
+                    logo.filename(),
+                    new ByteArrayDataSource(logo.bytes(), logo.contentType())
+            );
+        }
 
         if (attachmentPaths.isPresent()) {
             for (Path path : attachmentPaths.get()) {
-                MimeBodyPart attachmentPart = new MimeBodyPart();
                 DataSource source = new FileDataSource(path.toFile());
-                attachmentPart.setDataHandler(new DataHandler(source));
-                attachmentPart.setDisposition(Part.ATTACHMENT);
-                attachmentPart.setFileName(path.getFileName().toString());
-                multipart.addBodyPart(attachmentPart);
+                messageHelper.addAttachment(path.getFileName().toString(), source);
             }
         }
 
         if (attachmentBytes.isPresent()) {
             for (var entry : attachmentBytes.get()) {
-                MimeBodyPart attachmentPart = new MimeBodyPart();
                 DataSource source = new ByteArrayDataSource(entry.bytes(), entry.contentType().toString());
-                attachmentPart.setDataHandler(new DataHandler(source));
-                attachmentPart.setDisposition(Part.ATTACHMENT);
-                attachmentPart.setFileName(entry.filename());
-                multipart.addBodyPart(attachmentPart);
+                messageHelper.addAttachment(entry.filename(), source);
             }
         }
-
-        message.setContent(multipart);
 
         if (!mailHost.isEmpty()) {
             mailSender.send(message);
         }
+    }
+
+    private String resolveDefaultMailSignature(
+            Map<String, Object> context,
+            MailSendOptions options
+    ) {
+        if (!options.includeDefaultMailSignature()) {
+            return null;
+        }
+
+        var department = context.get("department");
+        String signature = null;
+
+        if (department instanceof VDepartmentShadowedEntity shadowedDepartment) {
+            signature = shadowedDepartment.getDefaultMailSignature();
+        } else if (department instanceof DepartmentEntity departmentEntity) {
+            // Resolve through the hierarchy view so child departments inherit their parent's signature.
+            signature = departmentEntity.getId() == null
+                    ? departmentEntity.getDefaultMailSignature()
+                    : vDepartmentShadowedService
+                            .retrieve(departmentEntity.getId())
+                            .map(VDepartmentShadowedEntity::getDefaultMailSignature)
+                            .orElse(departmentEntity.getDefaultMailSignature());
+        }
+
+        return signature == null || signature.isBlank() ? null : signature.strip();
     }
 
     public boolean isSendingConfigured() {
@@ -407,7 +477,7 @@ public class MailService {
     }
 
     // TODO: This was copied to the pdf service. Needs unification!
-    private HashMap<String, Object> createBaseContext(ThemeEntity theme) throws ResponseException {
+    private HashMap<String, Object> createBaseContext(boolean hasLogo) throws ResponseException {
         var context = new HashMap<String, Object>();
 
         context.put("providerName", systemConfigService
@@ -415,20 +485,7 @@ public class MailService {
                 .getValue()
         );
 
-        context.put("logoAssetKey", theme.getLogoKey());
-
-        var logoAssetKey = context.get("logoAssetKey");
-        try {
-            var assetKeyUUID = UUID.fromString(logoAssetKey.toString());
-            context.put("logoAssetName", assetRepository
-                    .findById(assetKeyUUID)
-                    .map(AssetEntity::getKey)
-                    .map(UUID::toString)
-                    .orElse("")
-            );
-        } catch (Exception e) {
-            context.put("logoAssetName", "");
-        }
+        context.put("hasLogo", hasLogo);
 
         context.put("config", prosunaConfig);
 

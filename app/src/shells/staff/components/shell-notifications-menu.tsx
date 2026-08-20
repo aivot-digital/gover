@@ -1,5 +1,6 @@
 import React from 'react';
 import {Box, Divider, List, ListItem, Menu, Skeleton, Typography} from '@mui/material';
+import {alpha, darken, getOverlayAlpha, lighten, type Theme} from '@mui/material/styles';
 
 interface ShellNotificationsMenuProps {
     anchorEl: null | HTMLElement;
@@ -8,6 +9,17 @@ interface ShellNotificationsMenuProps {
 }
 
 const fetchSize = 4;
+const menuElevation = 6;
+
+function getHeaderBackgroundColor(theme: Theme): string {
+    const elevatedPaperColor = theme.palette.mode === 'dark'
+        ? lighten(theme.palette.background.paper, getOverlayAlpha(menuElevation))
+        : theme.palette.background.paper;
+
+    return theme.palette.mode === 'dark'
+        ? lighten(elevatedPaperColor, theme.palette.action.hoverOpacity)
+        : darken(elevatedPaperColor, theme.palette.action.hoverOpacity);
+}
 
 export function ShellNotificationsMenu({ anchorEl, onClose, minimizeDrawer }: ShellNotificationsMenuProps) {
     const open = Boolean(anchorEl);
@@ -26,7 +38,7 @@ export function ShellNotificationsMenu({ anchorEl, onClose, minimizeDrawer }: Sh
                 horizontal: minimizeDrawer ? 'left' : 'left',
             }}
             PaperProps={{
-                elevation: 6,
+                elevation: menuElevation,
                 sx: {
                     mt: 1.5,
                     minWidth: 400,
@@ -41,7 +53,7 @@ export function ShellNotificationsMenu({ anchorEl, onClose, minimizeDrawer }: Sh
                                 left: 16,
                                 width: 10,
                                 height: 10,
-                                bgcolor: '#f4f4f4',
+                                bgcolor: getHeaderBackgroundColor,
                                 transform: 'translateY(-50%) translateX(-5px) rotate(45deg)',
                                 boxShadow: '-1px -1px 2px rgba(0,0,0,0.1)',
                                 zIndex: 0,
@@ -52,7 +64,7 @@ export function ShellNotificationsMenu({ anchorEl, onClose, minimizeDrawer }: Sh
             }}
             sx={{ '& .MuiMenu-list': {p: 0} }}
         >
-            <Box sx={{ px: 2, py: 2, backgroundColor: '#f4f4f4', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}>
+            <Box sx={{ px: 2, py: 2, backgroundColor: getHeaderBackgroundColor, borderTopLeftRadius: 4, borderTopRightRadius: 4 }}>
                 <Typography variant="h6" component="h3" fontWeight={600} sx={{ lineHeight: 1, m: 0 }}>
                     Benachrichtigungen
                 </Typography>
@@ -100,7 +112,7 @@ export function ShellNotificationsMenu({ anchorEl, onClose, minimizeDrawer }: Sh
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        bgcolor: 'rgba(255,255,255,0.6)',
+                        bgcolor: (theme) => alpha(theme.palette.background.paper, 0.78),
                         textAlign: 'center',
                         px: 2,
                         borderBottomLeftRadius: 4,

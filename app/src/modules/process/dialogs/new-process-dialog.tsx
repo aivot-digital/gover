@@ -494,7 +494,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                             borderTop: '1px solid',
                             borderBottom: '1px solid',
                             borderColor: 'divider',
-                            bgcolor: 'rgba(15, 23, 42, 0.025)',
+                            bgcolor: 'action.hover',
                         }}
                     >
                         <Stepper
@@ -921,7 +921,7 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
                     height: '100%',
                     borderRadius: 1,
                     borderColor: isAction ? 'primary.light' : 'divider',
-                    bgcolor: isAction ? 'rgba(25, 118, 210, 0.025)' : 'background.paper',
+                    bgcolor: isAction ? 'action.hover' : 'background.paper',
                     transition: 'border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease',
                     '&:hover': {
                         borderColor: 'primary.main',
@@ -947,8 +947,10 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
                             width: 42,
                             height: 42,
                             borderRadius: '50%',
-                            bgcolor: isAction ? 'primary.main' : 'grey.100',
-                            color: isAction ? 'primary.contrastText' : 'text.secondary',
+                            bgcolor: isAction ? 'primary.main' : 'action.selected',
+                            color: (theme) => isAction
+                                ? theme.palette.primary.contrastText
+                                : theme.palette.text.secondary,
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1061,7 +1063,7 @@ function SummaryIcon(props: {children?: ReactNode}): ReactNode {
                 width: 34,
                 height: 34,
                 borderRadius: '50%',
-                bgcolor: 'grey.100',
+                bgcolor: 'action.selected',
                 color: 'text.secondary',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -1069,7 +1071,7 @@ function SummaryIcon(props: {children?: ReactNode}): ReactNode {
                 flexShrink: 0,
                 '& svg': {
                     fontSize: 19,
-                    color: 'text.secondary',
+                    color: 'inherit',
                 },
             }}
         >

@@ -37,8 +37,6 @@ export function createSearchItemLink(searchItem: SearchItemResponseDto): string 
             return '/storage-providers/' + id;
         case 'presets':
             return idTail != null ? `/presets/edit/${idHead}/${idTail}` : '/presets';
-        case 'provider_links':
-            return '/provider-links/' + id;
         case 'secrets':
             return '/secrets/' + id;
         case 'code_lists':

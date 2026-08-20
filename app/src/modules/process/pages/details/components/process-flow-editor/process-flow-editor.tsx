@@ -59,6 +59,8 @@ import {
 import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 import {AlertComponent} from '../../../../../../components/alert/alert-component';
 import {ProcessNodeProviderDetailsDialog} from '../../../../components/process-node-provider-details';
+import {getReactFlowBackgroundDotColor} from '../../../../../../theming/react-flow-theme';
+import {ProcessInstanceEventDialog} from '../../../../dialogs/process-instance-event-dialog';
 
 const FLOW_MIN_ZOOM = 0.25;
 const FLOW_MAX_ZOOM = 2;
@@ -126,6 +128,11 @@ interface ProcessFlowEditorProps {
 }
 
 type ProcessFlowEditorRuntimeData = ProcessFlowEditorProps['runtimeData'];
+
+interface ProcessFlowEditorEventDialogTarget {
+    instanceId: number;
+    taskId: number;
+}
 
 const NodeTypes = {
     [DEFAULT_FLOW_NODE_TYPE]: ProcessFlowEditorNode,
@@ -464,6 +471,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const [canvasTriggerLaneHeaderPosition, setCanvasTriggerLaneHeaderPosition] = useState<CanvasTriggerLaneHeaderPosition | null>(null);
     const [layoutError, setLayoutError] = useState<ProcessFlowEditorLayoutError | null>(null);
     const [providerDetailsDialogProvider, setProviderDetailsDialogProvider] = useState<ProcessNodeProvider | null>(null);
+    const [eventDialogTarget, setEventDialogTarget] = useState<ProcessFlowEditorEventDialogTarget | null>(null);
 
     const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
@@ -482,6 +490,16 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const handleShowNodeProviderDetails = useCallback((provider: ProcessNodeProvider): void => {
         setProviderDetailsDialogProvider(provider);
     }, []);
+    const handleShowTaskEvents = useCallback((taskId: number): void => {
+        if (runtimeData == null) {
+            return;
+        }
+
+        setEventDialogTarget({
+            instanceId: runtimeData.instance.id,
+            taskId,
+        });
+    }, [runtimeData]);
     const hasAllNodeProviders = useMemo(() => (
         processFlow.nodes.every((node) => (
             nodeProviders.some((provider) => (
@@ -510,6 +528,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onStartReplaceNode: onStartReplaceNode ?? NOOP_START_REPLACE_NODE,
         onStartCloneNode: onStartCloneNode ?? NOOP_START_CLONE_NODE,
         onShowNodeProviderDetails: handleShowNodeProviderDetails,
+        onShowTaskEvents: handleShowTaskEvents,
 
         onReloadRuntimeData: onReloadRuntimeData,
         onDownloadAttachment,
@@ -532,6 +551,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onStartReplaceNode,
         onStartCloneNode,
         handleShowNodeProviderDetails,
+        handleShowTaskEvents,
         runtimeData,
         onDownloadAttachment,
         onReloadRuntimeData,
@@ -758,6 +778,12 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                         '--process-flow-editor-top-fade-color-solid': alpha(theme.palette.background.default, 0.96),
                         '--process-flow-editor-top-fade-color-mid': alpha(theme.palette.background.default, 0.72),
                         '--process-flow-editor-top-fade-color-transparent': alpha(theme.palette.background.default, 0),
+                        '--process-flow-editor-surface': alpha(theme.palette.background.paper, 0.96),
+                        '--process-flow-editor-border': theme.palette.divider,
+                        '--process-flow-editor-text': theme.palette.text.secondary,
+                        '--process-flow-editor-text-disabled': theme.palette.text.disabled,
+                        '--process-flow-editor-hover': theme.palette.action.hover,
+                        '--process-flow-editor-shadow': theme.shadows[3],
                         opacity: isInitialViewportReady || layoutError != null ? 1 : 0,
                         transition: 'opacity 120ms ease-out',
                     } as React.CSSProperties}
@@ -867,6 +893,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     }
                     <Background
                         variant={BackgroundVariant.Dots}
+                        color={getReactFlowBackgroundDotColor(theme)}
                     />
                     <ProcessFlowEditorViewportControls
                         fitViewOptions={fitViewOptions}
@@ -879,13 +906,13 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                         zoomStep={0.8}
                         nodeBorderRadius={12}
                         nodeStrokeWidth={1.5}
-                        nodeColor={() => 'rgba(148, 163, 184, 0.34)'}
-                        nodeStrokeColor={() => 'rgba(100, 116, 139, 0.28)'}
-                        maskColor="rgba(248, 250, 252, 0.8)"
-                        maskStrokeColor="rgba(100, 116, 139, 0.28)"
+                        nodeColor={() => alpha(theme.palette.text.secondary, 0.34)}
+                        nodeStrokeColor={() => alpha(theme.palette.text.secondary, 0.28)}
+                        maskColor={alpha(theme.palette.background.default, 0.8)}
+                        maskStrokeColor={theme.palette.divider}
                         maskStrokeWidth={1}
                         style={{
-                            backgroundColor: '#ffffff',
+                            backgroundColor: theme.palette.background.paper,
                             width: 184,
                             height: 116,
                         }}
@@ -899,6 +926,18 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                         setProviderDetailsDialogProvider(null);
                     }}
                 />
+
+                {
+                    eventDialogTarget != null &&
+                    <ProcessInstanceEventDialog
+                        open
+                        onClose={() => {
+                            setEventDialogTarget(null);
+                        }}
+                        instanceId={eventDialogTarget.instanceId}
+                        taskId={eventDialogTarget.taskId}
+                    />
+                }
             </>
         </ProcessFlowEditorProvider>
     );

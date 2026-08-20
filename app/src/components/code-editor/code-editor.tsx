@@ -1,7 +1,7 @@
 import Editor, {loader, Monaco} from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import {editor} from 'monaco-editor';
-import {Box, Typography} from '@mui/material';
+import {Box, Typography, useTheme} from '@mui/material';
 import React, {useCallback, useEffect, useRef} from 'react';
 import {CodeEditorProps} from './code-editor-props';
 import {ActionsProps} from '../actions/actions-props';
@@ -24,6 +24,7 @@ loader.config({monaco});
 loader.init();
 
 export function CodeEditor(props: CodeEditorProps & ActionsProps) {
+    const theme = useTheme();
     const {
         onChange,
         value,
@@ -128,13 +129,14 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
                     mt: hasTopContent ? 2 : 0,
                     py: 2,
                     border: '1px solid',
-                    borderColor: props.error ? 'error.main' : 'rgba(0, 0, 0, 0.23)',
+                    borderColor: props.error ? 'error.main' : 'divider',
                     borderRadius: 1,
                 }}
             >
                 <Editor
                     height={props.height ?? 'max(100vh - 768px, 320px)'}
                     language={props.language ?? 'javascript'}
+                    theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'light'}
                     value={value ?? ''}
                     options={{
                         minimap: {

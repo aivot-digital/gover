@@ -17,6 +17,7 @@ jobs:
     env:
       BUILD_VERSION: ${{ inputs.build_version }}
       BUILD_DATE: ${{ inputs.build_date }}
+      SBOM_DIR: build/sbom
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -32,7 +33,7 @@ jobs:
           node-version: "24"
 
       - name: Prepare sbom output directory
-        run: mkdir -p app/public/sbom/partials
+        run: mkdir -p "$SBOM_DIR/partials"
 
       - name: Update package.json versions
         run: |
@@ -49,15 +50,15 @@ jobs:
 
       - name: Generate frontend & mail SBOMs
         run: |
-          (cd app && npx --yes @cyclonedx/cyclonedx-npm --output-file ../app/public/sbom/partials/sbom.frontend.json)
-          (cd backend/mails && npx --yes @cyclonedx/cyclonedx-npm --output-file ../../app/public/sbom/partials/sbom.mails.json)
+          (cd app && npx --yes @cyclonedx/cyclonedx-npm --output-file "../$SBOM_DIR/partials/sbom.frontend.json")
+          (cd backend/mails && npx --yes @cyclonedx/cyclonedx-npm --output-file "../../$SBOM_DIR/partials/sbom.mails.json")
 
       - name: Inject backend version and generate SBOM
         working-directory: backend
         run: |
           mvn versions:set -DnewVersion=${{ env.BUILD_VERSION }} -DgenerateBackupPoms=false
           mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
-          cp target/bom.json ../app/public/sbom/partials/sbom.backend.json
+          cp target/bom.json "../$SBOM_DIR/partials/sbom.backend.json"
 
       - name: Install cyclonedx-cli
         run: |
@@ -67,43 +68,72 @@ jobs:
 
       - name: Verify SBOM files exist
         run: |
-          test -f app/public/sbom/partials/sbom.frontend.json || (echo "Missing sbom.frontend.json" && exit 1)
-          test -f app/public/sbom/partials/sbom.mails.json || (echo "Missing sbom.mails.json" && exit 1)
-          test -f app/public/sbom/partials/sbom.backend.json || (echo "Missing sbom.backend.json" && exit 1)
+          test -f "$SBOM_DIR/partials/sbom.frontend.json" || (echo "Missing sbom.frontend.json" && exit 1)
+          test -f "$SBOM_DIR/partials/sbom.mails.json" || (echo "Missing sbom.mails.json" && exit 1)
+          test -f "$SBOM_DIR/partials/sbom.backend.json" || (echo "Missing sbom.backend.json" && exit 1)
 
       - name: Merge SBOMs
         run: |
           cyclonedx merge \
-            --input-files app/public/sbom/partials/sbom.frontend.json \
-                           app/public/sbom/partials/sbom.mails.json \
-                           app/public/sbom/partials/sbom.backend.json \
-            --output-file app/public/sbom/sbom.json
-
-      - name: Generate manifest.json
-        run: |
-          cat <<EOF > app/public/sbom/manifest.json
-          {
-            "name": "prosuna",
-            "version": "${{ env.BUILD_VERSION }}",
-            "commit": "${{ github.sha }}",
-            "buildDate": "${{ env.BUILD_DATE }}",
-            "sbomFormat": "CycloneDX",
-            "sbomSpecVersion": "1.6",
-            "sboms": {
-              "frontend": "partials/sbom.frontend.json",
-              "mails": "partials/sbom.mails.json",
-              "backend": "partials/sbom.backend.json",
-              "merged": "sbom.json"
-            },
-            "reports": [
-              "licenses.csv",
-              "licenses.txt"
-            ]
-          }
-          EOF
+            --input-files "$SBOM_DIR/partials/sbom.frontend.json" \
+                          "$SBOM_DIR/partials/sbom.mails.json" \
+                          "$SBOM_DIR/partials/sbom.backend.json" \
+            --output-file "$SBOM_DIR/sbom.json"
 
       - name: Generate license reports (CSV and TXT)
         run: python3 .github/scripts/generate_license_reports.py
+
+      - name: Generate manifest.json
+        run: |
+          sbom_format="$(jq -er '.bomFormat | select(type == "string" and length > 0)' "$SBOM_DIR/sbom.json")"
+          sbom_spec_version="$(jq -er '.specVersion | select(type == "string" and length > 0)' "$SBOM_DIR/sbom.json")"
+          generated_at="$(jq -er '.metadata.timestamp | select(type == "string" and length > 0)' "$SBOM_DIR/sbom.json")"
+          component_count="$(jq -er '.components | length' "$SBOM_DIR/sbom.json")"
+
+          jq -n \
+            --arg name "prosuna" \
+            --arg version "${{ env.BUILD_VERSION }}" \
+            --arg commit "${{ github.sha }}" \
+            --arg buildDate "${{ env.BUILD_DATE }}" \
+            --arg generatedAt "$generated_at" \
+            --arg sbomFormat "$sbom_format" \
+            --arg sbomSpecVersion "$sbom_spec_version" \
+            --argjson componentCount "$component_count" \
+            '{
+              schemaVersion: 1,
+              name: $name,
+              version: $version,
+              commit: $commit,
+              buildDate: $buildDate,
+              generatedAt: $generatedAt,
+              sbomFormat: $sbomFormat,
+              sbomSpecVersion: $sbomSpecVersion,
+              componentCount: $componentCount,
+              sboms: {
+                frontend: "partials/sbom.frontend.json",
+                mails: "partials/sbom.mails.json",
+                backend: "partials/sbom.backend.json",
+                merged: "sbom.json"
+              },
+              reports: [
+                "licenses.csv",
+                "licenses.txt"
+              ]
+            }' > "$SBOM_DIR/manifest.json"
+
+      - name: Verify SBOM bundle
+        run: |
+          jq -e \
+            --arg version "${{ env.BUILD_VERSION }}" \
+            '.schemaVersion == 1 and .name == "prosuna" and .version == $version and .componentCount >= 0' \
+            "$SBOM_DIR/manifest.json" > /dev/null
+
+          jq -r '.sboms[], .reports[]' "$SBOM_DIR/manifest.json" | while IFS= read -r relative_path; do
+            test -f "$SBOM_DIR/$relative_path" || {
+              echo "Missing referenced SBOM bundle file: $relative_path"
+              exit 1
+            }
+          done
 
       - name: Run license compliance check
         id: license-check
@@ -151,4 +181,4 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: sbom-bundle
-          path: app/public/sbom/
+          path: ${{ env.SBOM_DIR }}/

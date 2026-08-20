@@ -102,6 +102,8 @@ public class ProcessInstanceTaskEntity {
     @Convert(converter = JsonObjectConverter.class)
     private Map<String, Object> processData;
 
+    // TODO: Review whether this custom reverse-diff column and its database trigger are still needed. The process-data
+    // UI now compares complete task snapshots because this representation is ambiguous for some JSON changes.
     @Nullable
     @Column(columnDefinition = "jsonb")
     @Convert(converter = JsonObjectConverter.class)

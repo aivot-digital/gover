@@ -82,7 +82,7 @@ export function AccountDetailsPageNotifications() {
             {isBusy ? (
                 <Grid size={12}>
                     <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>Optionen werden geladen...</Typography>
-                    <Box sx={{ borderRadius: 1, overflow: 'hidden', border: '1px solid rgba(0, 0, 0, 0.12)' }}>
+                    <Box sx={{borderRadius: 1, overflow: 'hidden', border: '1px solid', borderColor: 'divider'}}>
                         {[...Array(3)].map((_, index) => (
                             <Box key={index} sx={{ px: 2, py: 1 }}>
                                 <Grid container alignItems="center" spacing={2}>
@@ -103,7 +103,7 @@ export function AccountDetailsPageNotifications() {
                 Object.entries(groupedDefinitions).map(([subCategory, items]) => (
                     <Grid key={subCategory} size={12}>
                         <Typography variant="h6" sx={{ mt: 2, mb: 1.5 }}>{subCategory}</Typography>
-                        <Box sx={{ borderRadius: 1, overflow: 'hidden', border: '1px solid rgba(0, 0, 0, 0.12)', mb: 3 }}>
+                        <Box sx={{borderRadius: 1, overflow: 'hidden', border: '1px solid', borderColor: 'divider', mb: 3}}>
                             {items.map(({ key, label, description, options }, index) => (
                                 <Box key={key}>
                                     <Grid container alignItems="center" spacing={2} sx={{ px: 2, pt: 1, pb: 1.5 }}>

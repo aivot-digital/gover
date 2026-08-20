@@ -14,10 +14,4 @@ export class SystemApiService extends BaseApiService {
     public getFileExtensions(): Promise<string[]> {
         return this.get<string[]>('/api/public/system/file-extensions/');
     }
-
-    public async testSmtp(email: string) {
-        return await this.post<{ targetMail: string }, { result?: string }>('/api/mail/test/', {
-            targetMail: email,
-        });
-    };
 }

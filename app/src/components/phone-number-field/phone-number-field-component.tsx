@@ -3,6 +3,7 @@ import {Box} from '@mui/material';
 import {MuiTelInput, type MuiTelInputCountry, type MuiTelInputInfo} from 'mui-tel-input';
 import {PhoneNumberFieldComponentProps} from './phone-number-field-component-props';
 import {isBlankPhoneNumber, normalizePhoneNumber} from '../../utils/phone-number-utils';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
 const preferredCountries: MuiTelInputCountry[] = ['DE', 'AT', 'CH'];
 
@@ -162,7 +163,7 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
             }}
             sx={{
                 ...sx,
-                backgroundColor: busy ? '#F8F8F8' : undefined,
+                backgroundColor: busy ? getDisabledFieldBackground : undefined,
                 cursor: busy ? 'not-allowed' : undefined,
             }}
         />

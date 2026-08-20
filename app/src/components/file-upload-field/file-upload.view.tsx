@@ -1,29 +1,15 @@
 import React, {useMemo, useRef, useState} from 'react';
-import {
-    Box,
-    Button,
-    FormLabel,
-    IconButton,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Typography,
-    useMediaQuery,
-    useTheme,
-} from '@mui/material';
+import {Box, FormLabel} from '@mui/material';
 import {FileUploadElement, FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar} from '../../slices/snackbar-slice';
-import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/humanization-utils';
+import {humanizeFileSize} from '../../utils/humanization-utils';
 import {BaseViewProps} from '../../views/base-view';
-import BackupOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Backup';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {BaseApiService} from '../../services/base-api-service';
+import {FileUploadFileList, FileUploadHelper, FileUploadInputArea} from './file-upload-field-layout';
 
 const PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX = 'process-instance-attachment:';
 
@@ -50,12 +36,10 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
-    const theme = useTheme();
     const dispatch = useAppDispatch();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [isDraggedOver, setIsDraggedOver] = useState(false);
-    const isBreakpointMdAndDown = useMediaQuery(theme.breakpoints.down('md'));
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files != null && event.target.files.length > 0) {
@@ -80,6 +64,9 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                 const updatedFiles = [...value];
                 updatedFiles.splice(index, 1);
                 setValue(updatedFiles.length > 0 ? updatedFiles : null);
+                if (file.uri.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.uri);
+                }
             }
         }
     };
@@ -121,7 +108,9 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         for (let i = 0; i < originalFileList.length; i++) {
             const file = originalFileList[i];
 
-            if (extensions != null) {
+            if (extensions == null || extensions.length === 0) {
+                cleanedFiles.push(file);
+            } else {
                 const fileExtension = file.name.split('.').pop();
 
                 if (fileExtension == null || extensions.every(ext => ext.toLowerCase() !== fileExtension.toLowerCase())) {
@@ -150,7 +139,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         }
 
         if (addedItems < cleanedFiles.length) {
-            dispatch(showErrorSnackbar('Einige Anlagen konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
+            dispatch(showErrorSnackbar('Einige Dateien konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
         }
 
         setValue(fileUploadItems.length > 0 ? fileUploadItems : null);
@@ -176,6 +165,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                 <FormLabel
                     htmlFor={element.id + '-input'}
                     error={errors != null && errors.length > 0}
+                    disabled={isDisabled || isBusy}
                 >
                     {element.label}
                     {element.required && ' *'}
@@ -185,245 +175,73 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
             {
                 value != null &&
                 value.length > 0 &&
-                <TableContainer sx={{mb: 2}}>
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>
-                                    Dateiname
-                                </TableCell>
-                                <TableCell align="right">
-                                    Dateigröße
-                                </TableCell>
-                                <TableCell align="right">
-                                    Aktion
-                                </TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {
-                                value.map(file => {
-                                    const isPersistedAttachment = isProcessInstanceAttachment(file);
+                <FileUploadFileList
+                    items={value.map(file => {
+                        const isPersistedAttachment = isProcessInstanceAttachment(file);
+                        const actionLabel = isPersistedAttachment
+                            ? `${file.name} herunterladen`
+                            : `${file.name} entfernen`;
 
-                                    return (
-                                        <TableRow
-                                            key={file.uri}
-                                        >
-                                            <TableCell>
-                                                {file.name}
-                                                {
-                                                    isPersistedAttachment &&
-                                                    <Typography
-                                                        variant="caption"
-                                                        component="div"
-                                                    >
-                                                        Hochgeladen als: {file.originalFileName}
-                                                    </Typography>
-                                                }
-                                            </TableCell>
-                                            <TableCell align="right">
-                                                {humanizeFileSize(file.size)}
-                                            </TableCell>
-                                            <TableCell align="right">
-                                                {
-                                                    isBreakpointMdAndDown ?
-                                                        <IconButton
-                                                            aria-label={isPersistedAttachment ? `${file.name} herunterladen` : `${file.name} entfernen`}
-                                                            onClick={() => isPersistedAttachment ? void handleDownload(file) : handleRemove(file)}
-                                                            disabled={!isPersistedAttachment && (isDisabled || isBusy)}
-                                                        >
-                                                            {
-                                                                isPersistedAttachment ?
-                                                                    <Download fontSize="small"/> :
-                                                                    <Delete fontSize="small"/>
-                                                            }
-                                                        </IconButton> :
-                                                        <Button
-                                                            variant="outlined"
-                                                            onClick={() => isPersistedAttachment ? void handleDownload(file) : handleRemove(file)}
-                                                            disabled={!isPersistedAttachment && (isDisabled || isBusy)}
-                                                            startIcon={
-                                                                isPersistedAttachment ?
-                                                                    <Download fontSize="small"/> :
-                                                                    <Delete fontSize="small"/>
-                                                            }
-                                                        >
-                                                            {isPersistedAttachment ? 'Herunterladen' : 'Entfernen'}
-                                                        </Button>
-                                                }
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })
-                            }
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                        return {
+                            key: file.uri,
+                            name: file.name,
+                            size: humanizeFileSize(file.size),
+                            detail: isPersistedAttachment && file.originalFileName != null
+                                ? `Hochgeladen als ${file.originalFileName}`
+                                : undefined,
+                            actionLabel,
+                            actionIcon: isPersistedAttachment
+                                ? <Download fontSize="small" />
+                                : <Delete fontSize="small" />,
+                            actionDisabled: !isPersistedAttachment && (isDisabled || isBusy),
+                            onAction: () => isPersistedAttachment
+                                ? void handleDownload(file)
+                                : handleRemove(file),
+                        };
+                    })}
+                />
             }
-
-            <Box
-                sx={{
-                    p: 2,
-                    border: `2px ${isFocused ? 'solid' : 'dashed'} ${errors != null && errors.length > 0 ? theme.palette.error.main : (isFocused ? theme.palette.primary.main : theme.palette.grey['500'])}`,
-                    backgroundColor: theme.palette.grey['100'],
-                    transition: 'background-color 250ms ease-in-out',
-                    '&:hover': {
-                        backgroundColor: theme.palette.grey['50'],
-                    },
-                    boxShadow: (isDraggedOver && !isDisabled) ? `0 0 0.5em ${theme.palette.primary.main}` : undefined,
-                    pointerEvents: isBusy ? 'none' : 'auto',
-                    cursor: (isBusy || isDisabled) ? 'not-allowed' : undefined,
-                }}
-                onDragOver={(event) => {
-                    event.preventDefault();
-                    if (!isBusy) {
-                        setIsDraggedOver(true);
-                    }
-                }}
-                onDragLeave={(event) => {
-                    event.preventDefault();
-                    if (!isBusy || isDraggedOver) {
-                        setIsDraggedOver(false);
-                    }
-                }}
-                onDrop={(event) => {
-                    event.preventDefault();
-                    if (!isBusy) {
-                        handleDrop(event);
-                    }
-                }}
-            >
-                <Box
-                    sx={{
-                        position: 'relative',
-                    }}
-                >
-                    <input
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            opacity: 0,
-                            width: 0.1,
-                            height: 0.1,
-                            overflow: 'hidden',
-                            zIndex: -1,
-                        }}
-                        id={element.id + '-input'}
-                        ref={inputRef}
-                        type="file"
-                        multiple={element.isMultifile ?? undefined}
-                        accept={element.extensions != null ? element.extensions.map(ext => '.' + ext).join(',') : undefined}
-                        onChange={handleChange}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
-                        disabled={isDisabled || fileMaximumReached || isBusy}
-                    />
-
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                        }}
-                    >
-
-                        <BackupOutlinedIcon
-                            fontSize="large"
-                            sx={{color: fileMaximumReached ? theme.palette.grey['500'] : theme.palette.grey['700']}}
-                        />
-
-                        <Typography
-                            sx={{
-                                ml: 1,
-                                color: fileMaximumReached ? theme.palette.grey['500'] : undefined,
-                            }}
-                        >
-                            Datei per Drag & Drop auf dieses Feld hochladen
-                        </Typography>
-
-                        <Button
-                            sx={{ml: 'auto'}}
-                            onClick={() => {
-                                if (inputRef.current != null) {
-                                    inputRef.current.click();
-                                }
-                            }}
-                            disabled={isDisabled || fileMaximumReached || isBusy}
-                        >
-                            Datei auswählen
-                        </Button>
-                    </Box>
-                    {
-                        element.extensions &&
-                        element.extensions.length > 0 &&
-                        <Typography
-                            color={theme.palette.grey['700']}
-                            variant="caption"
-                        >
-                            Erlaubte Dateitypen: {element.extensions.map(ext => '.' + ext).join(', ')}
-                        </Typography>
-                    }
-                </Box>
-            </Box>
 
             {
-                (
-                    errors != null && errors.length > 0 ||
-                    element.hint != null ||
-                    (
-                        element.minFiles != null &&
-                        element.minFiles > 0
-                    ) || (
-                        element.maxFiles != null &&
-                        element.maxFiles > 0
-                    )
-                ) &&
-                <Box
-                    sx={{
-                        display: 'flex',
-                        mt: 0.5,
-                        mx: 1.5,
-                    }}
-                >
-                    <Typography
-                        color={errors != null && errors.length > 0 ? theme.palette.error.main : theme.palette.grey['600']}
-                        variant="caption"
-                    >
-                        {errors?.join(', ') || element.hint}
-                    </Typography>
-
-                    {
-                        ((
-                            element.minFiles != null &&
-                            element.minFiles > 0
-                        ) || (
-                            element.maxFiles != null &&
-                            element.maxFiles > 0
-                        )) &&
-                        <Typography
-                            color={theme.palette.grey['600']}
-                            variant="caption"
-                            sx={{
-                                ml: 'auto',
-                            }}
-                        >
-                            {
-                                element.minFiles === element.maxFiles ?
-                                    'Genau' :
-                                    (
-                                        (element.minFiles != null && element.minFiles > 0) ?
-                                            'Mindestens' :
-                                            'Höchstens'
-                                    )
-                            } {
-                            humanizeNumber(element.minFiles != null && element.minFiles > 0 ? element.minFiles : element.maxFiles!)
-                        } {
-                            pluralize(element.minFiles != null && element.minFiles > 0 ? element.minFiles : element.maxFiles!, 'Anlage', 'Anlagen')
+                !fileMaximumReached &&
+                <FileUploadInputArea
+                    id={`${element.id}-input`}
+                    inputRef={inputRef}
+                    multiple={element.isMultifile ?? undefined}
+                    extensions={element.extensions}
+                    disabled={isDisabled || isBusy}
+                    error={errors != null && errors.length > 0}
+                    focused={isFocused}
+                    draggedOver={isDraggedOver}
+                    onChange={handleChange}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    onDragOver={(event) => {
+                        event.preventDefault();
+                        if (!isBusy && !isDisabled) {
+                            setIsDraggedOver(true);
                         }
-                        </Typography>
-                    }
-                </Box>
+                    }}
+                    onDragLeave={(event) => {
+                        event.preventDefault();
+                        setIsDraggedOver(false);
+                    }}
+                    onDrop={(event) => {
+                        event.preventDefault();
+                        if (!isBusy && !isDisabled) {
+                            handleDrop(event);
+                        }
+                    }}
+                />
             }
+
+            <FileUploadHelper
+                error={errors != null && errors.length > 0 ? errors.join(', ') : undefined}
+                hint={element.hint}
+                fileCount={(value ?? []).length}
+                minFiles={element.minFiles}
+                maxFiles={element.maxFiles}
+            />
         </Box>
     );
 }

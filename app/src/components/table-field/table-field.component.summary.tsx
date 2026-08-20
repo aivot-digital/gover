@@ -43,7 +43,8 @@ export function TableFieldComponentSummary(props: BaseSummaryProps<TableFieldEle
             <TableContainer
                 sx={{
                     mb: 3,
-                    border: '1px solid #D4D4D4',
+                    border: '1px solid',
+                    borderColor: 'divider',
                     borderBottomWidth: "2px",
                 }}
             >

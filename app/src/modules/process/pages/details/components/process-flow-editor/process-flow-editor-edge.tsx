@@ -18,10 +18,8 @@ import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';
 import {
     getLatestTaskForEdge,
-    getTransferredProcessDataDiffForEdge,
-    getTransferredProcessDataForEdge,
+    getTransferredProcessDataComparisonForEdge,
 } from './utils/runtime-task-utils';
-import {ExpandableJSONCodeBlock} from '../../../../../../components/expandable-code-block/expandable-json-code-block';
 
 const EDGE_ARROW_LENGTH = 8;
 const EDGE_ARROW_WIDTH = 12;
@@ -58,21 +56,6 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
         return optData;
     }, [optData]);
 
-    const transferredProcessDataDiff = useMemo(() => {
-        if (runtimeData == null) {
-            return null;
-        }
-
-        return getTransferredProcessDataDiffForEdge(
-            runtimeData.tasks,
-            graphEdge.edge.fromNodeId,
-            graphEdge.edge.toNodeId,
-            graphEdge.edge.viaPort,
-        );
-    }, [
-        graphEdge,
-        runtimeData,
-    ]);
     const nextTaskForEdge = useMemo(() => {
         if (runtimeData == null) {
             return null;
@@ -88,12 +71,12 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
         graphEdge,
         runtimeData,
     ]);
-    const transferredProcessData = useMemo(() => {
+    const transferredProcessDataComparison = useMemo(() => {
         if (runtimeData == null) {
             return null;
         }
 
-        return getTransferredProcessDataForEdge(
+        return getTransferredProcessDataComparisonForEdge(
             runtimeData.tasks,
             graphEdge.edge.fromNodeId,
             graphEdge.edge.toNodeId,
@@ -221,9 +204,20 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
                                             <Typography variant="h6">
                                                 Die weitergereichte Vorgangsdatenebene
                                             </Typography>
-                                            <ExpandableJSONCodeBlock
-                                                value={transferredProcessData ?? {}}
-                                                diff={transferredProcessDataDiff ?? {}}
+                                            <ExpandableCodeBlock
+                                                value={JSON.stringify(
+                                                    transferredProcessDataComparison?.currentValue ?? {},
+                                                    null,
+                                                    4,
+                                                )}
+                                                previousValue={transferredProcessDataComparison?.previousValue == null
+                                                    ? undefined
+                                                    : JSON.stringify(
+                                                        transferredProcessDataComparison.previousValue,
+                                                        null,
+                                                        4,
+                                                    )}
+                                                language="json"
                                             />
                                         </>
                                     ),

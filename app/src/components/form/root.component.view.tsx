@@ -266,6 +266,7 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
                                         isFirstStep={index === 0}
                                         isLastStep={index === allVisibleSteps.length - 1}
                                         isSubmitStep={step.type === ElementType.SubmitStep}
+                                        completed={index < activeStepIndex}
                                         onNext={handleNextStep}
                                         onPrevious={handlePreviousStep}
                                         active={activeStepIndex === index}

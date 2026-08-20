@@ -119,6 +119,7 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
 
             <ExpandableCodeBlock
                 value={jsonString}
+                language="json"
             />
         </Box>
     );

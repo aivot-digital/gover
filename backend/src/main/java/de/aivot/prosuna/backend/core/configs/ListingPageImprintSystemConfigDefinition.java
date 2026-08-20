@@ -47,7 +47,7 @@ public class ListingPageImprintSystemConfigDefinition implements SystemConfigDef
     @Nonnull
     @Override
     public String getCategory() {
-        return "Öffentliche Auflistung";
+        return "Öffentliches Formularverzeichnis";
     }
 
     @Nonnull

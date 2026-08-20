@@ -19,6 +19,8 @@ export interface ProcessInstanceTaskEntity {
     runtimeData: Record<string, any>;
     nodeData: Record<string, any>;
     processData: Record<string, any>;
+    // TODO: Review whether this custom reverse-diff format and its database generation are still needed. The
+    // process-data UI now compares complete task snapshots because this representation is ambiguous for some changes.
     processDataDiff: Record<string, any>;
     assignedUserId: string | null;
     deadline: string | null; // ISO date string

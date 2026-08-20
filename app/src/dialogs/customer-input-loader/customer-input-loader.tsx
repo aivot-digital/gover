@@ -131,7 +131,8 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
                         justifyContent="center"
                         alignItems="center"
                         sx={{
-                            border: '1px solid #DFDFDF',
+                            border: '1px solid',
+                            borderColor: 'divider',
                             px: 4,
                             py: 2,
                             mt: 3,
@@ -150,7 +151,7 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
                                 component="p"
                                 variant="h6"
                                 sx={{
-                                    color: '#16191F',
+                                    color: 'text.primary',
                                     mt: -0.5,
                                 }}
                             >

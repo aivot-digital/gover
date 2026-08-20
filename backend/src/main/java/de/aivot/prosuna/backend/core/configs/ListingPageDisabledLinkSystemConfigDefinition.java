@@ -35,19 +35,19 @@ public class ListingPageDisabledLinkSystemConfigDefinition implements SystemConf
     @Nonnull
     @Override
     public String getCategory() {
-        return "Öffentliche Auflistung";
+        return "Öffentliches Formularverzeichnis";
     }
 
     @Nonnull
     @Override
     public String getLabel() {
-        return "Externen Formular-Index-Link deaktivieren";
+        return "Link zu einem externen Formularverzeichnis deaktivieren";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Deaktiviert den Link zu einer externen Übersichtsseite der Formulare.";
+        return "Deaktiviert den Verweis auf ein extern bereitgestelltes Formularverzeichnis.";
     }
 
     @Nonnull

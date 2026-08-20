@@ -214,7 +214,8 @@ public class PermissionService {
 
     public List<Integer> getProcessesWithPermission(@Nonnull String userId,
                                                     @Nonnull String permission) {
-        // Returns process-scoped grants only. Department-derived access is resolved by the process views.
+        // Returns effective process-scoped grants, including team and department-derived access.
+        // System-wide access is intentionally handled separately by callers.
         return processRepository
                 .getProcessIdsWithPermission(userId, permission);
     }

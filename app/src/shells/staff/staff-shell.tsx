@@ -1,4 +1,4 @@
-import React, {type ReactNode, useCallback, useEffect, useMemo} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef} from 'react';
 import {type User} from '../../modules/users/models/user';
 import {selectUser, setMemberships, setPermissions, setUser} from '../../slices/user-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -7,8 +7,10 @@ import {
     addSnackbarMessage,
     type ErrorMessage,
     selectErrorMessage,
+    selectShowAboutProsunaDialog,
     selectStatus,
     setErrorMessage,
+    setShowAboutProsunaDialog,
     setStatus,
     ShellStatus,
     SnackbarSeverity,
@@ -47,16 +49,28 @@ import {
     PERMISSION_SET_INVALIDATION_KEY,
     useRefreshPermissionSet,
 } from '../../modules/permissions/hooks/use-permissions';
+import {AboutProsunaDialog} from './components/about-prosuna-dialog';
 
 export function StaffShell(): ReactNode {
     const routerError = useRouteError();
     const dispatch = useAppDispatch();
     const status = useAppSelector(selectStatus);
     const appError = useAppSelector(selectErrorMessage);
+    const showAboutProsunaDialog = useAppSelector(selectShowAboutProsunaDialog);
     const user = useAppSelector(selectUser);
     const refreshPermissionSet = useRefreshPermissionSet();
+    const contentContainerRef = useRef<HTMLElement>(null);
 
     const location = useLocation();
+
+    useLayoutEffect(() => {
+        // The staff shell owns page scrolling instead of the browser window. Reset it
+        // before paint so every internal route opens at the top without a visible jump.
+        if (contentContainerRef.current != null) {
+            contentContainerRef.current.scrollTop = 0;
+            contentContainerRef.current.scrollLeft = 0;
+        }
+    }, [location.pathname]);
 
     const handlePermissionSetInvalidation = useCallback(async () => {
         await refreshPermissionSet({broadcast: false});
@@ -191,11 +205,13 @@ export function StaffShell(): ReactNode {
                         <ShellDrawer/>
 
                         <Box
+                            ref={contentContainerRef}
                             data-confetti-container="staff-shell-content"
                             sx={{
                                 flex: 1,
                                 position: 'relative',
                                 overflowY: 'auto',
+                                backgroundColor: 'background.default',
                             }}
                         >
                             <ShellProgress/>
@@ -217,6 +233,10 @@ export function StaffShell(): ReactNode {
                     <ShellResolutionOverlay/>
                     <PreReleaseVersionNoticeDialog/>
                     <DuplicatePageWarning/>
+                    <AboutProsunaDialog
+                        open={showAboutProsunaDialog}
+                        onClose={() => dispatch(setShowAboutProsunaDialog(false))}
+                    />
                 </>
             }
         </>

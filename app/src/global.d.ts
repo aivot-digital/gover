@@ -8,24 +8,25 @@ declare var AppConfig: {
     systemTheme: {
         id: number;
         name: string;
-        main: string;
-        mainDark: string;
-        accent: string;
-        error: string;
-        warning: string;
-        info: string;
-        success: string;
+        primaryColor: string;
+        secondaryColor: string;
+        primaryColorDark: string | null;
+        secondaryColorDark: string | null;
         faviconKey: string | null;
         logoKey: string | null;
+        logoKeyDark: string | null;
     };
     systemConfigs: {
         ProviderName: string;
         SystemTheme: string;
+        'dashboard.activity.enabled'?: boolean;
+        'dashboard.activity.period'?: string;
     };
     faviconUrl: string;
     logoUrl: string;
     apiHostname: string;
     registryHostname: string;
+    supportUrl: string | null;
     applicationTimeZone: string;
     departmentLevelLabels: string[];
     sentryDsn: string;

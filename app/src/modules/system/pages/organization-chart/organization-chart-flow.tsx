@@ -50,6 +50,7 @@ import {
 } from './organization-chart-types';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {getReactFlowBackgroundDotColor} from '../../../../theming/react-flow-theme';
 
 interface OrganizationChartFlowProps {
     view: OrganizationChartFlowView;
@@ -367,6 +368,12 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
                 '--organization-chart-flow-top-fade-color-mid': alpha(theme.palette.background.default, 0.72),
                 '--organization-chart-flow-top-fade-color-transparent': alpha(theme.palette.background.default, 0),
                 '--organization-chart-flow-edge-color': theme.palette.mode === 'dark' ? theme.palette.grey[600] : theme.palette.grey[400],
+                '--organization-chart-flow-surface': alpha(theme.palette.background.paper, 0.96),
+                '--organization-chart-flow-border': theme.palette.divider,
+                '--organization-chart-flow-text': theme.palette.text.secondary,
+                '--organization-chart-flow-text-disabled': theme.palette.text.disabled,
+                '--organization-chart-flow-hover': theme.palette.action.hover,
+                '--organization-chart-flow-shadow': theme.shadows[3],
                 opacity: isLayoutReady ? 1 : 0,
                 transition: 'opacity 120ms ease-out',
             } as CSSProperties}
@@ -393,6 +400,7 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
         >
             <Background
                 variant={BackgroundVariant.Dots}
+                color={getReactFlowBackgroundDotColor(theme)}
             />
             <OrganizationChartTreeGroups
                 groups={layout.groups}

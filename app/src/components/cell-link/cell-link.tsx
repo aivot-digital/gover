@@ -1,6 +1,6 @@
 import {Link} from 'react-router-dom';
 import {ReactNode} from 'react';
-import {Box, type SxProps, type Theme} from '@mui/material';
+import {alpha, Box, type SxProps, type Theme} from '@mui/material';
 
 interface CellLinkProps {
     to: string;
@@ -27,7 +27,9 @@ export function CellLink({ to, title, children, sx }: CellLinkProps) {
 
                     "&:hover .cell-link-text": {
                         "&::after": {
-                            backgroundColor: "#ccc",
+                            backgroundColor: (theme) => theme.palette.mode === 'dark'
+                                ? alpha(theme.palette.text.primary, 0.45)
+                                : '#ccc',
                         }
                     }
                 },

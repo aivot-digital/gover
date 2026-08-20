@@ -6,7 +6,6 @@ export enum ServerEntityType {
     IdentityProviders = 'identity_providers',
     PaymentProviders = 'payment_providers',
     Presets = 'presets',
-    ProviderLinks = 'provider_links',
     Secrets = 'secrets',
     Themes = 'themes',
     SystemRoles = 'system_roles',

@@ -105,7 +105,7 @@ class FormTriggerControllerV1Test {
         when(fixture.themeService().retrieve(responsibleTheme.getId())).thenReturn(Optional.of(responsibleTheme));
 
         var response = new MockHttpServletResponse();
-        fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), testClaimAccessKey, null, response);
+        fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), testClaimAccessKey, null, null, response);
 
         assertEquals("https://assets.example/" + responsibleTheme.getLogoKey(), response.getRedirectedUrl());
         verify(fixture.processTestClaimService()).retrieveByAccessKey(fixture.process().getId(), testClaimAccessKey);
@@ -119,7 +119,7 @@ class FormTriggerControllerV1Test {
         when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
 
         var response = new MockHttpServletResponse();
-        fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), null, null, response);
+        fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), null, null, null, response);
 
         assertEquals(HttpServletResponse.SC_NOT_FOUND, response.getStatus());
     }
@@ -129,9 +129,31 @@ class FormTriggerControllerV1Test {
         var fixture = createFixture(baseFormLayout());
 
         var response = new MockHttpServletResponse();
-        fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), null, null, response);
+        fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), null, null, null, response);
 
         assertEquals("https://prosuna.example/assets/default-logo.png", response.getRedirectedUrl());
+    }
+
+    @Test
+    void getLogoShouldPreferDarkLogoAndFallbackWithinTheSameTheme() throws Exception {
+        var lightLogoKey = UUID.randomUUID();
+        var darkLogoKey = UUID.randomUUID();
+        var formTheme = createTheme(11, "Form Theme", lightLogoKey, null).setLogoKeyDark(darkLogoKey);
+        var fixture = createFixture(baseFormLayout().setThemeId(formTheme.getId()));
+        when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
+
+        var darkResponse = new MockHttpServletResponse();
+        fixture.controller().getLogo(
+                null, fixture.processSlug(), fixture.formSlug(), null, null, "dark", darkResponse
+        );
+        assertEquals("https://assets.example/" + darkLogoKey, darkResponse.getRedirectedUrl());
+
+        formTheme.setLogoKeyDark(null);
+        var fallbackResponse = new MockHttpServletResponse();
+        fixture.controller().getLogo(
+                null, fixture.processSlug(), fixture.formSlug(), null, null, "dark", fallbackResponse
+        );
+        assertEquals("https://assets.example/" + lightLogoKey, fallbackResponse.getRedirectedUrl());
     }
 
     @Test
@@ -310,12 +332,10 @@ class FormTriggerControllerV1Test {
                 name,
                 "#111111",
                 "#222222",
-                "#333333",
-                "#444444",
-                "#555555",
-                "#666666",
-                "#777777",
+                null,
+                null,
                 logoKey,
+                null,
                 faviconKey
         );
     }

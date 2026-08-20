@@ -66,7 +66,7 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
                             justifyContent: 'center',
                             borderRadius: '50%',
                             flexShrink: 0,
-                            backgroundColor: props.iconBackgroundColor ?? 'grey.100',
+                            backgroundColor: props.iconBackgroundColor ?? 'action.selected',
                             color: props.iconColor ?? 'text.secondary',
                         }}
                     >

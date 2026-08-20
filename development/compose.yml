@@ -90,7 +90,7 @@ services:
       - "5433:5432"
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.2
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3
     restart: unless-stopped
     depends_on:
       - keycloak-database
@@ -152,6 +152,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:Z
+      # Usually empty in development; generated or local bundles are served when present.
+      - ../build/sbom:/srv/sbom:ro,Z
     ports:
       - "9595:80"
     extra_hosts:

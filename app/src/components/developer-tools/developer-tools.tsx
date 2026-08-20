@@ -85,9 +85,9 @@ export function DeveloperTools(props: DeveloperToolsProps) {
             sx={{
                 borderTopWidth: 1,
                 borderTopStyle: 'solid',
-                borderTopColor: '#cfcfcf',
+                borderTopColor: 'divider',
                 zIndex: 999,
-                backgroundColor: 'white',
+                backgroundColor: 'background.paper',
                 boxShadow: '0 0 30px rgba(0, 0, 0, .15)',
                 height: '100%',
             }}

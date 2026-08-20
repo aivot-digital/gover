@@ -19,36 +19,28 @@ public class ThemeEntity {
     private String name;
 
     @Nonnull
-    @Column(length = 7)
-    private String main;
+    @Column(name = "primary_color", length = 7)
+    private String primaryColor;
 
     @Nonnull
-    @Column(length = 7)
-    private String mainDark;
+    @Column(name = "secondary_color", length = 7)
+    private String secondaryColor;
 
-    @Nonnull
-    @Column(length = 7)
-    private String accent;
+    @Nullable
+    @Column(name = "primary_color_dark", length = 7)
+    private String primaryColorDark;
 
-    @Nonnull
-    @Column(length = 7)
-    private String error;
-
-    @Nonnull
-    @Column(length = 7)
-    private String warning;
-
-    @Nonnull
-    @Column(length = 7)
-    private String info;
-
-    @Nonnull
-    @Column(length = 7)
-    private String success;
+    @Nullable
+    @Column(name = "secondary_color_dark", length = 7)
+    private String secondaryColorDark;
 
     @Nullable
     @Column(columnDefinition = "uuid")
     private UUID logoKey;
+
+    @Nullable
+    @Column(columnDefinition = "uuid")
+    private UUID logoKeyDark;
 
     @Nullable
     @Column(columnDefinition = "uuid")
@@ -64,25 +56,21 @@ public class ThemeEntity {
 
     public ThemeEntity(Integer id,
                        @Nonnull String name,
-                       @Nonnull String main,
-                       @Nonnull String mainDark,
-                       @Nonnull String accent,
-                       @Nonnull String error,
-                       @Nonnull String warning,
-                       @Nonnull String info,
-                       @Nonnull String success,
+                       @Nonnull String primaryColor,
+                       @Nonnull String secondaryColor,
+                       @Nullable String primaryColorDark,
+                       @Nullable String secondaryColorDark,
                        @Nullable UUID logoKey,
+                       @Nullable UUID logoKeyDark,
                        @Nullable UUID faviconKey) {
         this.id = id;
         this.name = name;
-        this.main = main;
-        this.mainDark = mainDark;
-        this.accent = accent;
-        this.error = error;
-        this.warning = warning;
-        this.info = info;
-        this.success = success;
+        this.primaryColor = primaryColor;
+        this.secondaryColor = secondaryColor;
+        this.primaryColorDark = primaryColorDark;
+        this.secondaryColorDark = secondaryColorDark;
         this.logoKey = logoKey;
+        this.logoKeyDark = logoKeyDark;
         this.faviconKey = faviconKey;
     }
 
@@ -110,72 +98,42 @@ public class ThemeEntity {
     }
 
     @Nonnull
-    public String getMain() {
-        return main;
+    public String getPrimaryColor() {
+        return primaryColor;
     }
 
-    public ThemeEntity setMain(@Nonnull String main) {
-        this.main = main;
+    public ThemeEntity setPrimaryColor(@Nonnull String primaryColor) {
+        this.primaryColor = primaryColor;
         return this;
     }
 
     @Nonnull
-    public String getMainDark() {
-        return mainDark;
+    public String getSecondaryColor() {
+        return secondaryColor;
     }
 
-    public ThemeEntity setMainDark(@Nonnull String mainDark) {
-        this.mainDark = mainDark;
+    public ThemeEntity setSecondaryColor(@Nonnull String secondaryColor) {
+        this.secondaryColor = secondaryColor;
         return this;
     }
 
-    @Nonnull
-    public String getAccent() {
-        return accent;
+    @Nullable
+    public String getPrimaryColorDark() {
+        return primaryColorDark;
     }
 
-    public ThemeEntity setAccent(@Nonnull String accent) {
-        this.accent = accent;
+    public ThemeEntity setPrimaryColorDark(@Nullable String primaryColorDark) {
+        this.primaryColorDark = primaryColorDark;
         return this;
     }
 
-    @Nonnull
-    public String getError() {
-        return error;
+    @Nullable
+    public String getSecondaryColorDark() {
+        return secondaryColorDark;
     }
 
-    public ThemeEntity setError(@Nonnull String error) {
-        this.error = error;
-        return this;
-    }
-
-    @Nonnull
-    public String getWarning() {
-        return warning;
-    }
-
-    public ThemeEntity setWarning(@Nonnull String warning) {
-        this.warning = warning;
-        return this;
-    }
-
-    @Nonnull
-    public String getInfo() {
-        return info;
-    }
-
-    public ThemeEntity setInfo(@Nonnull String info) {
-        this.info = info;
-        return this;
-    }
-
-    @Nonnull
-    public String getSuccess() {
-        return success;
-    }
-
-    public ThemeEntity setSuccess(@Nonnull String success) {
-        this.success = success;
+    public ThemeEntity setSecondaryColorDark(@Nullable String secondaryColorDark) {
+        this.secondaryColorDark = secondaryColorDark;
         return this;
     }
 
@@ -186,6 +144,16 @@ public class ThemeEntity {
 
     public ThemeEntity setLogoKey(@Nullable UUID logoKey) {
         this.logoKey = logoKey;
+        return this;
+    }
+
+    @Nullable
+    public UUID getLogoKeyDark() {
+        return logoKeyDark;
+    }
+
+    public ThemeEntity setLogoKeyDark(@Nullable UUID logoKeyDark) {
+        this.logoKeyDark = logoKeyDark;
         return this;
     }
 

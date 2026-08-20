@@ -1,4 +1,4 @@
-import {type SxProps} from '@mui/material';
+import {type SxProps, type Theme} from '@mui/material';
 import {type MouseEventHandler, type ReactNode} from 'react';
 
 // A separator for the actions
@@ -17,7 +17,7 @@ interface ActionBase {
     variant?: 'text' | 'outlined' | 'contained';
     color?: ActionColor;
     ignoreBusy?: boolean; // optional property to ignore the busy state (e.g. the help button should always be enabled)
-    activeStyle?: SxProps; // custom style to apply when action is active
+    activeStyle?: SxProps<Theme>; // custom style to apply when action is active
 }
 
 // Action with a click handler
@@ -44,7 +44,7 @@ export type ActionTooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
 
 export interface ActionsProps {
     actions: Action[];
-    sx?: SxProps;
+    sx?: SxProps<Theme>;
     isBusy?: boolean;
     dense?: boolean;
     color?: ActionColor;

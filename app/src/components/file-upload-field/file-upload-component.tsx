@@ -1,19 +1,17 @@
 import React, {useRef, useState} from 'react';
-import {Box, Button, FormLabel, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useMediaQuery, useTheme} from '@mui/material';
+import {Box, FormLabel} from '@mui/material';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/humanization-utils';
-import BackupOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Backup';
+import {humanizeFileSize} from '../../utils/humanization-utils';
 import {FileUploadComponentProps} from './file-upload-component-props';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import {FileUploadFileList, FileUploadHelper, FileUploadInputArea} from './file-upload-field-layout';
 
 export function FileUploadComponent(props: FileUploadComponentProps) {
-    const theme = useTheme();
     const dispatch = useAppDispatch();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [isDraggedOver, setIsDraggedOver] = useState(false);
-    const isBreakpointMdAndDown = useMediaQuery(theme.breakpoints.down('md'));
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (props.disabled) {
@@ -55,7 +53,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
         event.stopPropagation();
         event.preventDefault();
         setIsDraggedOver(true);
-    }
+    };
 
     const handleDragLeave: React.DragEventHandler<HTMLDivElement> = (event) => {
         if (props.disabled) {
@@ -65,7 +63,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
         event.stopPropagation();
         event.preventDefault();
         setIsDraggedOver(false);
-    }
+    };
 
     const handleDrop: React.DragEventHandler<HTMLDivElement> = (event) => {
         if (props.disabled) {
@@ -96,7 +94,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
         }
 
         if (addedItems < files.length) {
-            dispatch(showErrorSnackbar('Einige Anlagen konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
+            dispatch(showErrorSnackbar('Einige Dateien konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
         }
 
         props.onChange(fileUploadItems.length > 0 ? fileUploadItems : null);
@@ -123,6 +121,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
                 <FormLabel
                     htmlFor={props.id}
                     error={props.error != null}
+                    disabled={props.disabled}
                 >
                     {props.label}
                     {props.required && ' *'}
@@ -132,213 +131,47 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
             {
                 props.value != null &&
                 props.value.length > 0 &&
-                <TableContainer sx={{mb: 2}}>
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>
-                                    Dateiname
-                                </TableCell>
-                                <TableCell align="right">
-                                    Dateigröße
-                                </TableCell>
-                                <TableCell />
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {
-                                props.value.map(file => (
-                                    <TableRow
-                                        key={file.name}
-                                    >
-                                        <TableCell>
-                                            {file.name}
-                                        </TableCell>
-                                        <TableCell align="right">
-                                            {humanizeFileSize(file.size)}
-                                        </TableCell>
-                                        <TableCell align="right">
-                                            {
-                                                isBreakpointMdAndDown ?
-                                                    <IconButton
-                                                        onClick={() => handleRemove(file)}
-                                                        disabled={props.disabled}
-                                                    >
-                                                        <Delete
-                                                            fontSize={'small'}
-                                                        />
-                                                    </IconButton> :
-                                                    <Button
-                                                        color="error"
-                                                        variant="outlined"
-                                                        onClick={() => handleRemove(file)}
-                                                        disabled={props.disabled}
-                                                        startIcon={
-                                                            <Delete
-                                                                fontSize={'small'}
-                                                            />
-                                                        }
-                                                    >
-                                                        Entfernen
-                                                    </Button>
-                                            }
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            }
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                <FileUploadFileList
+                    items={props.value.map((file, index) => ({
+                        key: `${file.name}-${file.lastModified}-${index}`,
+                        name: file.name,
+                        size: humanizeFileSize(file.size),
+                        actionLabel: `${file.name} entfernen`,
+                        actionIcon: <Delete fontSize="small" />,
+                        actionDisabled: props.disabled,
+                        onAction: () => handleRemove(file),
+                    }))}
+                />
             }
-
-            <Box
-                sx={{
-                    display: fileMaximumReached ? 'none' : 'block',
-                    p: 2,
-                    border: `2px ${isFocused ? 'solid' : 'dashed'} ${props.error != null ? theme.palette.error.main : (isFocused ? theme.palette.primary.main : theme.palette.grey['500'])}`,
-                    backgroundColor: theme.palette.grey['100'],
-                    transition: 'background-color 250ms ease-in-out',
-                    '&:hover': {
-                        backgroundColor: isUploadDisabled ? theme.palette.grey['100'] : theme.palette.grey['50'],
-                    },
-                    boxShadow: isDraggedOver && !props.disabled ? `0 0 0.5em ${theme.palette.primary.main}` : undefined,
-                    opacity: props.disabled ? 0.7 : 1,
-                }}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-            >
-                <Box
-                    sx={{
-                        position: 'relative',
-                    }}
-                >
-                    <input
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            opacity: 0,
-                            width: 0.1,
-                            height: 0.1,
-                            overflow: 'hidden',
-                            zIndex: -1,
-                        }}
-                        id={props.id}
-                        ref={inputRef}
-                        type="file"
-                        multiple={props.isMultifile}
-                        accept={props.extensions != null ? props.extensions.map(ext => '.' + ext).join(',') : undefined}
-                        onChange={handleChange}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
-                        disabled={isUploadDisabled}
-                    />
-
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                        }}
-                    >
-
-                        <BackupOutlinedIcon
-                            fontSize="large"
-                            sx={{color: isUploadDisabled ? theme.palette.grey['500'] : theme.palette.grey['700']}}
-                        />
-
-                        <Typography
-                            sx={{
-                                ml: 1,
-                                color: isUploadDisabled ? theme.palette.grey['500'] : undefined,
-                            }}
-                        >
-                            Datei per Drag & Drop auf dieses Feld hochladen
-                        </Typography>
-
-                        <Button
-                            sx={{ml: 'auto'}}
-                            onClick={() => {
-                                if (inputRef.current != null) {
-                                    inputRef.current.click();
-                                }
-                            }}
-                            disabled={isUploadDisabled}
-                        >
-                            Datei auswählen
-                        </Button>
-                    </Box>
-                    {
-                        props.extensions &&
-                        props.extensions.length > 0 &&
-                        <Typography
-                            color={theme.palette.grey['700']}
-                            variant="caption"
-                        >
-                            Erlaubte Dateitypen: {props.extensions.map(ext => '.' + ext).join(', ')}
-                        </Typography>
-                    }
-                </Box>
-            </Box>
 
             {
-                (
-                    props.error != null ||
-                    props.hint != null ||
-                    (
-                        props.minFiles != null &&
-                        props.minFiles > 0
-                    ) || (
-                        props.maxFiles != null &&
-                        props.maxFiles > 0
-                    )
-                ) &&
-                <Box
-                    sx={{
-                        display: 'flex',
-                        mt: 0.5,
-                        mx: 1.5,
-                    }}
-                >
-                    <Typography
-                        color={props.error != null ? theme.palette.error.main : theme.palette.grey['600']}
-                        variant="caption"
-                    >
-                        {props.error || props.hint}
-                    </Typography>
-
-                    {
-                        ((
-                            props.minFiles != null &&
-                            props.minFiles > 0
-                        ) || (
-                            props.maxFiles != null &&
-                            props.maxFiles > 0
-                        )) &&
-                        <Typography
-                            color={theme.palette.grey['600']}
-                            variant="caption"
-                            sx={{
-                                ml: 'auto',
-                            }}
-                        >
-                            {
-                                props.minFiles === props.maxFiles ?
-                                    'Genau' :
-                                    (
-                                        (props.minFiles != null && props.minFiles > 0) ?
-                                            'Mindestens' :
-                                            'Höchstens'
-                                    )
-                            } {
-                            humanizeNumber(props.minFiles != null && props.minFiles > 0 ? props.minFiles : props.maxFiles!)
-                        } {
-                            pluralize(props.minFiles != null && props.minFiles > 0 ? props.minFiles : props.maxFiles!, 'Anlage', 'Anlagen')
-                        }
-                        </Typography>
-                    }
-                </Box>
+                !fileMaximumReached &&
+                <FileUploadInputArea
+                    id={props.id}
+                    inputRef={inputRef}
+                    multiple={props.isMultifile}
+                    extensions={props.extensions}
+                    disabled={isUploadDisabled}
+                    error={props.error != null}
+                    focused={isFocused}
+                    draggedOver={isDraggedOver}
+                    placeholder={props.placeholder}
+                    onChange={handleChange}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                />
             }
+
+            <FileUploadHelper
+                error={props.error}
+                hint={props.hint}
+                fileCount={(props.value ?? []).length}
+                minFiles={props.minFiles}
+                maxFiles={props.maxFiles}
+            />
         </Box>
     );
 }

@@ -215,6 +215,7 @@ export function ProcessInstanceTaskListPage() {
                             </Typography>
                             <ExpandableCodeBlock
                                 value={JSON.stringify(item.processData, null, 2)}
+                                language="json"
                             />
 
                             <Typography variant="h6">
@@ -225,6 +226,7 @@ export function ProcessInstanceTaskListPage() {
                             </Typography>
                             <ExpandableCodeBlock
                                 value={JSON.stringify(item.nodeData, null, 2)}
+                                language="json"
                             />
                         </>
                     ),

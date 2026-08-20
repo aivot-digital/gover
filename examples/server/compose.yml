@@ -45,6 +45,7 @@ services:
       PROSUNA_SECRETS_KEY: ${PROSUNA_SECRETS_KEY}
       PROSUNA_CAPTCHA_KEY: ${PROSUNA_CAPTCHA_KEY}
       PROSUNA_HOSTNAME: ${PROSUNA_HOSTNAME}
+      PROSUNA_SUPPORT_URL: ${PROSUNA_SUPPORT_URL:-}
       PROSUNA_TIMEZONE: Europe/Berlin
       PROSUNA_FROM_MAIL: ${PROSUNA_FROM_MAIL}
       PROSUNA_REPORT_MAIL: ${PROSUNA_REPORT_MAIL}
@@ -87,7 +88,7 @@ services:
       - prosuna
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.2
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3
     restart: unless-stopped
     depends_on:
       - keycloak_database
@@ -135,7 +136,7 @@ services:
       SMTP_USERNAME: ${PROSUNA_SMTP_USERNAME}
       SMTP_PASSWORD: ${PROSUNA_SMTP_PASSWORD}
       SMTP_FROM: ${PROSUNA_FROM_MAIL}
-      SMTP_FROM_DISPLAY: Prosuna IDP
+      SMTP_FROM_DISPLAY: Prosuna IdP
       BACKEND_CLIENT_SECRET: ${PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}
     networks:
       - keycloak

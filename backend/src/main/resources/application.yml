@@ -100,6 +100,9 @@ spring:
       mail:
         smtp:
           auth: ${PROSUNA_SMTP_AUTH:true}
+          connectiontimeout: ${PROSUNA_SMTP_CONNECTION_TIMEOUT:10000}
+          timeout: ${PROSUNA_SMTP_READ_TIMEOUT:30000}
+          writetimeout: ${PROSUNA_SMTP_WRITE_TIMEOUT:30000}
           starttls:
             enable: ${PROSUNA_SMTP_TLS:true}
 
@@ -210,6 +213,7 @@ prosuna:
   maxSubmissionCopyRetryCount: 3
   bootstrapAdminMail: "${PROSUNA_BOOTSTRAP_ADMIN_MAIL:}"
   registryHostname: "${PROSUNA_TEMPLATE_REGISTRY_URL:}"
+  supportUrl: "${PROSUNA_SUPPORT_URL:}"
   moduleFlags: "${PROSUNA_MODULE_FLAGS:form,process,portal}"
   processNodeLimits:
     trigger: "${PROSUNA_PROCESS_NODE_LIMITS_TRIGGERS:1}"

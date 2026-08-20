@@ -1,4 +1,4 @@
-import {Box, CircularProgress, Dialog, DialogContent, DialogTitle, Divider, IconButton, InputBase, List, ListItem, ListItemIcon, ListItemText, Pagination, Paper, Skeleton, Typography} from '@mui/material';
+import {Box, CircularProgress, Dialog, DialogContent, DialogTitle, Divider, IconButton, InputBase, List, ListItem, ListItemIcon, ListItemText, Pagination, Skeleton, Typography} from '@mui/material';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectShowSearchDialog, setShowSearchDialog} from '../../../slices/shell-slice';
 import {useEffect, useState} from 'react';
@@ -147,12 +147,12 @@ export function ShellSearchDialog() {
                 <span style={{display: 'none'}}>Suche</span>
             </DialogTitle>
             <DialogContent>
-                <Paper
-                    elevation={0}
+                <Box
                     sx={{
                         display: 'flex',
                         alignItems: 'center',
-                        pb: 1,
+                        px: 1,
+                        py: 0.75,
                         mb: 2,
                     }}
                 >
@@ -171,11 +171,11 @@ export function ShellSearchDialog() {
                             <CircularProgress
                                 size={28}
                                 thickness={4}
-                                sx={{color: 'primary.dark'}}
+                                sx={{color: 'primary.main'}}
                             />
                         </Box>
                     ) : (
-                        <Search sx={{color: 'primary.dark', mr: 2, fontSize: '2.1875rem'}} />
+                        <Search sx={{color: 'primary.main', mr: 2, fontSize: '2.1875rem'}} />
                     )}
                     <InputBase
                         placeholder="Suche…"
@@ -194,7 +194,7 @@ export function ShellSearchDialog() {
                     <IconButton onClick={handleClose}>
                         <Close />
                     </IconButton>
-                </Paper>
+                </Box>
 
                 <Box
                     sx={{
@@ -214,7 +214,7 @@ export function ShellSearchDialog() {
                                 py: 1.25,
                                 mb: 3.5,
                                 borderRadius: 2,
-                                bgcolor: 'rgba(0,0,0,0.05)',
+                                bgcolor: 'action.hover',
                             }}
                         >
                             <Lightbulb2 sx={{color: 'text.secondary'}} />
@@ -380,13 +380,14 @@ function SearchDialogListItem(props: ShellSearchDialogProps) {
             onClick={handleClose}
             dense={true}
             sx={{
-                borderBottom: '1px solid #eee',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
                 px: 0.25,
                 color: 'inherit',
-                '&:hover': {backgroundColor: '#f9f9f9'},
+                '&:hover': {backgroundColor: 'action.hover'},
             }}
         >
-            <ListItemIcon sx={{color: 'primary.dark', minWidth: '2.5rem', textAlign: 'center'}}>
+            <ListItemIcon sx={{color: 'primary.main', minWidth: '2.5rem', textAlign: 'center'}}>
                 {OriginTableIcons[type] ?? <HelpClinic />}
             </ListItemIcon>
             <ListItemText
@@ -420,7 +421,8 @@ function SearchDialogListItemSkeleton() {
         <ListItem
             dense={true}
             sx={{
-                borderBottom: '1px solid #eee',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
                 px: 0.25,
             }}
         >

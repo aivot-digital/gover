@@ -249,7 +249,8 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
             >
                 <Tabs
                     sx={{
-                        borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
+                        borderBottom: '1px solid',
+                        borderBottomColor: 'divider',
                     }}
                     value={currentTab}
                     onChange={(_, newValue) => {

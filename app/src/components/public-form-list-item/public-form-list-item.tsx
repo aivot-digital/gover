@@ -1,10 +1,8 @@
-import React from 'react';
 import {Box, Button, Typography} from '@mui/material';
-import styles from './public-form-list-item.module.scss';
 import {Link} from 'react-router-dom';
 import OpenInNewOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import DescriptionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Description';
-import {FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
+import {type FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
 
 interface PublicFormListItemProps {
@@ -13,18 +11,39 @@ interface PublicFormListItemProps {
 
 export function PublicFormListItem(props: PublicFormListItemProps) {
     return (
-        <Box className={styles.listItem}>
+        <Box
+            sx={{
+                mb: 2,
+                display: 'flex',
+                alignItems: 'stretch',
+                minHeight: 76,
+                overflow: 'hidden',
+                backgroundColor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                boxShadow: 1,
+            }}
+        >
             <Box
-                className={styles.listItemIcon}
+                sx={{
+                    px: 2.25,
+                    py: 1.75,
+                    display: 'flex',
+                    alignItems: 'center',
+                    borderRight: '1px solid',
+                    borderColor: 'divider',
+                }}
             >
                 <DescriptionOutlinedIcon
                     fontSize="large"
-                    sx={{color: 'primary.dark'}}
+                    sx={{color: 'primary.main'}}
                 />
             </Box>
             <Box
-                className={styles.listItemInfo}
                 sx={{
+                    flex: 1,
+                    minWidth: 0,
                     ml: 2.5,
                     py: '8px',
                 }}
@@ -32,12 +51,12 @@ export function PublicFormListItem(props: PublicFormListItemProps) {
                 <Typography
                     component={'h4'}
                     variant="h6"
+                    sx={{overflowWrap: 'anywhere'}}
                 >
                     {props.form.title.replace(/\n/g, ' ')}
                 </Typography>
                 <Typography
                     variant="body2"
-                    className={styles.metaText}
                     sx={{
                         mt: -0.6,
                         fontSize: '0.875rem',
@@ -51,20 +70,26 @@ export function PublicFormListItem(props: PublicFormListItemProps) {
                     ) ?? 'Unbekannt'} • Version: {props.form.version}
                 </Typography>
             </Box>
-            <Box className={styles.listItemActions}>
-                <Box className={styles.listItemActionsContainer}>
-                    <Button
-                        startIcon={<OpenInNewOutlinedIcon
-                            sx={{marginTop: '-2px'}}
-                        />}
-                        component={Link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        to={`/${props.form.slug}`}
-                    >
-                        Formular öffnen
-                    </Button>
-                </Box>
+            <Box
+                sx={{
+                    ml: 'auto',
+                    px: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    borderLeft: '1px solid',
+                    borderColor: 'divider',
+                }}
+            >
+                <Button
+                    startIcon={<OpenInNewOutlinedIcon sx={{mt: '-2px'}}/>}
+                    component={Link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    to={`/${props.form.slug}`}
+                    sx={{textTransform: 'none', whiteSpace: 'nowrap'}}
+                >
+                    Formular öffnen
+                </Button>
             </Box>
         </Box>
     );

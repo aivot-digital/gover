@@ -80,7 +80,7 @@ ARG BUILD_DATE=2025-05-24T10:15:00Z
 # Set app metadata
 LABEL org.opencontainers.image.created=$BUILD_DATE
 LABEL org.opencontainers.image.url="https://github.com/aivot-digital/gover"
-LABEL org.opencontainers.image.documentation="https://wiki.teamaivot.de/de/dokumentation/gover"
+LABEL org.opencontainers.image.documentation="https://docs.prosuna.de"
 LABEL org.opencontainers.image.source="https://github.com/aivot-digital/gover"
 LABEL org.opencontainers.image.version=$BUILD_VERSION
 LABEL org.opencontainers.image.vendor="Aivot"
@@ -119,6 +119,9 @@ COPY default-assets /app/default-assets
 COPY --from=build_server /app/target/backend-${BUILD_VERSION}-exec.jar /app/prosuna.jar
 COPY --from=build_app /app/build/customer /app/www
 COPY --from=build_app /app/build/staff /app/www/staff
+# Keep the SBOM separate from both frontend build outputs and expose one canonical bundle.
+COPY build/sbom /app/www/sbom
+RUN rm -f /app/www/sbom/.gitkeep
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["/app/healthcheck.sh"]
 

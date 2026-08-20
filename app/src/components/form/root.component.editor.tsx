@@ -138,8 +138,8 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     }}
                 >
                     <CheckboxFieldComponent
-                        label="Auf Formular-Index-Seite anzeigen"
-                        hint="Wenn diese Option aktiviert ist, wird das veröffentlichte Formular auf der öffentlichen Formular-Index-Seite gelistet. Wenn sie deaktiviert ist, bleibt das Formular weiterhin über direkte Links erreichbar."
+                        label="Im öffentlichen Formularverzeichnis anzeigen"
+                        hint="Wenn diese Option aktiviert ist, wird das veröffentlichte Formular im öffentlichen Formularverzeichnis aufgeführt. Wenn sie deaktiviert ist, bleibt das Formular weiterhin über direkte Links erreichbar."
                         value={form.showOnFormIndexPage !== false}
                         onChange={(val) => {
                             onPatch({

@@ -6,6 +6,12 @@ Version: [(${form.version})]
 Entwickelnde Organisationseinheit: [(${developingDepartment != null ? developingDepartment.name : '—'})]
 Angelegt durch: [(${triggeringUser.getFullName})]
 
-Sie können das Formular über den nachfolgenden Link aufrufen: [(${base.config.createUrl('/staff/forms/' + form.id + '/' + form.version)})]
+Formular öffnen:
+[(${base.config.createUrl('/staff/forms/' + form.id + '/' + form.version)})]
 
-Diese E-Mail ist automatisch generiert. Bitte nicht antworten.
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

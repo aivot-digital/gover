@@ -493,6 +493,10 @@ export function AssetDetailsPage() {
                 </DialogContent>
                 <DialogActions>
                     <Button
+                        type="button"
+                        variant="contained"
+                        color="primary"
+                        disabled={file?.[0] == null}
                         onClick={() => {
                             if (file != null && file.length > 0) {
                                 handleReplace(file[0]);

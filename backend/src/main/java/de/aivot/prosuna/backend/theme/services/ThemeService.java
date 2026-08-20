@@ -54,7 +54,12 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
 
     @Override
     public void performDelete(@Nonnull ThemeEntity entity) throws ResponseException {
-        // TODO: Check if the theme entity is references in any process node config
+        // TODO: Check whether the theme is referenced by any process node configuration.
+
+        var defaultTheme = systemService.retrieveDefaultTheme();
+        if (defaultTheme.getId().equals(entity.getId())) {
+            throw ResponseException.conflict("Das Standard-Erscheinungsbild der Prosuna-Instanz kann nicht gelöscht werden.");
+        }
 
         var depSpec = DepartmentFilter
                 .create()
@@ -78,13 +83,10 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
     @Override
     public ThemeEntity performUpdate(@Nonnull Integer id, @Nonnull ThemeEntity entity, @Nonnull ThemeEntity existingEntity) throws ResponseException {
         existingEntity.setName(entity.getName());
-        existingEntity.setMain(entity.getMain());
-        existingEntity.setMainDark(entity.getMainDark());
-        existingEntity.setAccent(entity.getAccent());
-        existingEntity.setError(entity.getError());
-        existingEntity.setWarning(entity.getWarning());
-        existingEntity.setInfo(entity.getInfo());
-        existingEntity.setSuccess(entity.getSuccess());
+        existingEntity.setPrimaryColor(entity.getPrimaryColor());
+        existingEntity.setSecondaryColor(entity.getSecondaryColor());
+        existingEntity.setPrimaryColorDark(entity.getPrimaryColorDark());
+        existingEntity.setSecondaryColorDark(entity.getSecondaryColorDark());
 
         var logoKey = entity.getLogoKey();
         if (logoKey == null) {
@@ -97,6 +99,15 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
             } else {
                 existingEntity.setLogoKey(null);
             }
+        }
+
+        var logoKeyDark = entity.getLogoKeyDark();
+        if (logoKeyDark == null) {
+            existingEntity.setLogoKeyDark(null);
+        } else if (assetRepository.existsById(logoKeyDark)) {
+            existingEntity.setLogoKeyDark(logoKeyDark);
+        } else {
+            existingEntity.setLogoKeyDark(null);
         }
 
         var faviconKey = entity.getFaviconKey();
