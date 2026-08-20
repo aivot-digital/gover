@@ -123,7 +123,7 @@ export function dateValueToDateTime(
     }
 
     const parsed = DateTime.fromFormat(value as string, format, {zone: 'UTC'});
-    return parsed.isValid ? parsed.startOf('day') : null;
+    return parsed.isValid ? parsed.startOf('day') as DateTime<true> : null;
 }
 
 export function dateTimeToDateValueIso(
@@ -164,7 +164,7 @@ export function localTimeIsoToDateTime(value: unknown): DateTime<true> | null {
         {zone: 'UTC'},
     );
 
-    return parsed.isValid ? parsed : null;
+    return parsed.isValid ? parsed as DateTime<true> : null;
 }
 
 export function dateTimeToLocalTimeIso(
@@ -187,7 +187,7 @@ export function instantToDateTime(
     }
 
     const parsed = DateTime.fromISO(value, {setZone: true}).setZone(timeZone);
-    return parsed.isValid ? parsed : null;
+    return parsed.isValid ? parsed as DateTime<true> : null;
 }
 
 export function instantToApplicationDateTime(value: unknown): DateTime<true> | null {
@@ -360,7 +360,7 @@ export function resolveLocalDateTime(
 
     return {
         resolved: true,
-        dateTime: earliestValue,
+        dateTime: earliestValue as DateTime<true>,
         // ZZ always emits a numeric offset, including +00:00, matching the API contract.
         value: earliestValue.toFormat("yyyy-MM-dd'T'HH:mm:ssZZ") as InstantIso,
     };
