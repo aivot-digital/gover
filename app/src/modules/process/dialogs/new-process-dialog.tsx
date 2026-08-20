@@ -160,7 +160,12 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                         {selectedDepartment?.name ?? 'Nicht ausgewählt'}
                         {
                             selectedDepartmentPath != null &&
-                            <Typography component="span" color="text.secondary" sx={{ml: 0.5}}>
+                            <Typography
+                                component="span"
+                                sx={{
+                                    color: "text.secondary",
+                                    ml: 0.5
+                                }}>
                                 ({selectedDepartmentPath})
                             </Typography>
                         }
@@ -408,7 +413,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
             return;
         }
 
-        if (!await validateProcessConfiguration()) {
+        if (!(await validateProcessConfiguration())) {
             setActiveStep(1);
             return;
         }
@@ -471,8 +476,10 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                 onClose={handleClose}
                 fullWidth
                 maxWidth="md"
-                TransitionProps={{
-                    onExited: resetDialogState,
+                slotProps={{
+                    transition: {
+                        onExited: resetDialogState,
+                    }
                 }}
             >
                 <DialogTitleWithClose onClose={handleClose}>
@@ -494,7 +501,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                             borderTop: '1px solid',
                             borderBottom: '1px solid',
                             borderColor: 'divider',
-                            bgcolor: 'rgba(15, 23, 42, 0.025)',
+                            bgcolor: 'action.hover',
                         }}
                     >
                         <Stepper
@@ -536,17 +543,23 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                             }}
                         >
                             <Step completed={activeStep > 0 && selectedTemplateData != null}>
-                                <StepLabel StepIconComponent={OutlinedStepIcon}>
+                                <StepLabel slots={{
+                                    stepIcon: OutlinedStepIcon
+                                }}>
                                     Startpunkt
                                 </StepLabel>
                             </Step>
                             <Step completed={activeStep > 1}>
-                                <StepLabel StepIconComponent={OutlinedStepIcon}>
+                                <StepLabel slots={{
+                                    stepIcon: OutlinedStepIcon
+                                }}>
                                     Angaben
                                 </StepLabel>
                             </Step>
                             <Step>
-                                <StepLabel StepIconComponent={OutlinedStepIcon}>
+                                <StepLabel slots={{
+                                    stepIcon: OutlinedStepIcon
+                                }}>
                                     Prüfen
                                 </StepLabel>
                             </Step>
@@ -566,10 +579,17 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                     {
                         activeStep === 0 &&
                         <Box>
-                            <Typography variant="subtitle1" fontWeight={700}>
+                            <Typography variant="subtitle1" sx={{
+                                fontWeight: 700
+                            }}>
                                 Startpunkt wählen
                             </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: "text.secondary",
+                                    mt: 0.5
+                                }}>
                                 Wählen Sie, ob Sie leer beginnen, eine Datei importieren oder eine Vorlage übernehmen.
                             </Typography>
 
@@ -651,10 +671,18 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                             }}
                         >
                             <Box>
-                                <Typography variant="subtitle1" fontWeight={700}>
+                                <Typography variant="subtitle1" sx={{
+                                    fontWeight: 700
+                                }}>
                                     Angaben zum Prozess
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{mt: 0.5, mb: 2}}>
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        color: "text.secondary",
+                                        mt: 0.5,
+                                        mb: 2
+                                    }}>
                                     Diese Angaben werden beim Anlegen übernommen und können später bearbeitet werden.
                                 </Typography>
 
@@ -729,33 +757,35 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                         message: 'Der URL-Namespace darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.',
                                     }}
                                     muiPassTroughProps={{
-                                        InputProps: {
-                                            startAdornment: (
-                                                <InputAdornment position="start" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
-                                                    <Box component="span" sx={{whiteSpace: 'nowrap'}}>
-                                                        /element-typ/
-                                                    </Box>
-                                                </InputAdornment>
-                                            ),
-                                            endAdornment: (
-                                                <InputAdornment position="end" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
-                                                    <Box
-                                                        component="span"
-                                                        sx={{
-                                                            display: 'inline-flex',
-                                                            alignItems: 'center',
-                                                            gap: 0.75,
-                                                            whiteSpace: 'nowrap',
-                                                        }}
-                                                    >
-                                                        {
-                                                            isCheckingSlugAvailability &&
-                                                            <CircularProgress size={16} color="inherit"/>
-                                                        }
-                                                        /element-slug
-                                                    </Box>
-                                                </InputAdornment>
-                                            ),
+                                        slotProps: {
+                                            input: {
+                                                startAdornment: (
+                                                    <InputAdornment position="start" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
+                                                        <Box component="span" sx={{whiteSpace: 'nowrap'}}>
+                                                            /element-typ/
+                                                        </Box>
+                                                    </InputAdornment>
+                                                ),
+                                                endAdornment: (
+                                                    <InputAdornment position="end" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
+                                                        <Box
+                                                            component="span"
+                                                            sx={{
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                gap: 0.75,
+                                                                whiteSpace: 'nowrap',
+                                                            }}
+                                                        >
+                                                            {
+                                                                isCheckingSlugAvailability &&
+                                                                <CircularProgress size={16} color="inherit"/>
+                                                            }
+                                                            /element-slug
+                                                        </Box>
+                                                    </InputAdornment>
+                                                ),
+                                            },
                                         },
                                     }}
                                     sx={{
@@ -829,10 +859,17 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                 flex: 1,
                             }}
                         >
-                            <Typography variant="subtitle1" fontWeight={700}>
+                            <Typography variant="subtitle1" sx={{
+                                fontWeight: 700
+                            }}>
                                 Angaben prüfen
                             </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: "text.secondary",
+                                    mt: 0.5
+                                }}>
                                 Klicken Sie auf {quoteString('Anlegen und Bearbeiten')}, um den neuen Prozess anzulegen.
                             </Typography>
 
@@ -921,7 +958,7 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
                     height: '100%',
                     borderRadius: 1,
                     borderColor: isAction ? 'primary.light' : 'divider',
-                    bgcolor: isAction ? 'rgba(25, 118, 210, 0.025)' : 'background.paper',
+                    bgcolor: isAction ? 'action.hover' : 'background.paper',
                     transition: 'border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease',
                     '&:hover': {
                         borderColor: 'primary.main',
@@ -947,8 +984,10 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
                             width: 42,
                             height: 42,
                             borderRadius: '50%',
-                            bgcolor: isAction ? 'primary.main' : 'grey.100',
-                            color: isAction ? 'primary.contrastText' : 'text.secondary',
+                            bgcolor: isAction ? 'primary.main' : 'action.selected',
+                            color: (theme) => isAction
+                                ? theme.palette.primary.contrastText
+                                : theme.palette.text.secondary,
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -969,27 +1008,25 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
                     >
                         <Typography
                             variant="subtitle1"
-                            fontWeight={700}
                             sx={{
-                                lineHeight: 1.25,
-                            }}
-                        >
+                                fontWeight: 700,
+                                lineHeight: 1.25
+                            }}>
                             {title}
                         </Typography>
 
                         <Typography
                             variant="body2"
-                            color="text.secondary"
                             title={description}
                             sx={{
+                                color: "text.secondary",
                                 mt: 0.75,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 display: '-webkit-box',
                                 WebkitLineClamp: '4',
-                                WebkitBoxOrient: 'vertical',
-                            }}
-                        >
+                                WebkitBoxOrient: 'vertical'
+                            }}>
                             {description}
                         </Typography>
                     </Box>
@@ -1061,7 +1098,7 @@ function SummaryIcon(props: {children?: ReactNode}): ReactNode {
                 width: 34,
                 height: 34,
                 borderRadius: '50%',
-                bgcolor: 'grey.100',
+                bgcolor: 'action.selected',
                 color: 'text.secondary',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -1069,7 +1106,7 @@ function SummaryIcon(props: {children?: ReactNode}): ReactNode {
                 flexShrink: 0,
                 '& svg': {
                     fontSize: 19,
-                    color: 'text.secondary',
+                    color: 'inherit',
                 },
             }}
         >

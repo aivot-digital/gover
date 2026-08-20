@@ -22,8 +22,9 @@ export function BoxLink(props: BoxLinkProps) {
             sx={{
                 fontSize: '1.5rem',
                 lineHeight: 1.2,
-                border: '2px solid var(--prosuna-theme-primary)',
-                color: '#16191F',
+                border: '2px solid',
+                borderColor: 'primary.main',
+                color: 'text.primary',
                 transition: '100ms all ease-in-out',
                 fontFamily: '"Public Sans", sans-serif',
                 fontWeight: 500,
@@ -36,8 +37,8 @@ export function BoxLink(props: BoxLinkProps) {
 
                 // Hover styles
                 '&:hover': {
-                    backgroundColor: 'var(--prosuna-theme-primary)',
-                    color: 'white',
+                    backgroundColor: 'primary.main',
+                    color: 'primary.contrastText',
                     cursor: 'pointer',
                 },
             }}

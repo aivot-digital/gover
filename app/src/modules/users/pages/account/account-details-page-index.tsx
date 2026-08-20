@@ -74,9 +74,18 @@ export function AccountDetailsPageIndex() {
             children: '************',
         },
         {
-            label: 'Verwendeter IDP',
+            label: 'Verwendeter IdP',
             icon: <ApiOutlined />,
-            children: 'Prosuna Identity Provider (basierend auf Keycloak)',
+            children: (
+                <>
+                    Prosuna Identity{' '}
+                    <Typography component="span" sx={{
+                        color: "text.secondary"
+                    }}>
+                        (zentraler Identitätsdienst basierend auf Keycloak)
+                    </Typography>
+                </>
+            ),
         },
     ], [systemRoleLabel, user?.email, user?.firstName, user?.lastName]);
 
@@ -96,9 +105,8 @@ export function AccountDetailsPageIndex() {
             </Typography>
 
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Ihre Kontoinformationen werden von einem Identity Provider (IDP) System bereitgestellt.
-                Zugangsdaten wie Passwort oder weitere Anmeldemethoden können Sie direkt in der
-                Verwaltungsoberfläche des IDP bearbeiten.
+                Die folgenden Kontoinformationen werden von dem Dienst bereitgestellt, über den Sie sich bei Prosuna
+                anmelden. Dieser Anmeldedienst wird als Identity Provider (IdP) bezeichnet.
             </Typography>
 
             <StatusTable
@@ -110,12 +118,23 @@ export function AccountDetailsPageIndex() {
             />
 
             <Box
+                component="section"
                 sx={{
-                    display: 'flex',
-                    marginTop: 5,
-                    gap: 2,
+                    mt: 3,
+                    maxWidth: 900,
                 }}
             >
+                <Typography
+                    variant="subtitle1"
+                    component="h3"
+                    sx={{mb: 0.5}}
+                >
+                    Anmeldedaten und Sicherheit
+                </Typography>
+                <Typography sx={{mb: 2}}>
+                    Zugangsdaten wie Passwort oder weitere Anmeldemethoden können Sie direkt in der
+                    Verwaltungsoberfläche des Identitätsdienstes bearbeiten.
+                </Typography>
                 <Button
                     target="_blank"
                     href={credentialsManagementUrl}

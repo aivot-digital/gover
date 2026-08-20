@@ -42,6 +42,7 @@ services:
       PROSUNA_SECRETS_KEY: ${PROSUNA_SECRETS_KEY}
       PROSUNA_CAPTCHA_KEY: ${PROSUNA_CAPTCHA_KEY}
       PROSUNA_HOSTNAME: http://localhost:9595
+      PROSUNA_SUPPORT_URL: https://support.aivot.de
       PROSUNA_TIMEZONE: Europe/Berlin
       PROSUNA_FROM_MAIL: mail@example.com
       PROSUNA_REPORT_MAIL: mail@example.com
@@ -70,7 +71,7 @@ services:
       PROSUNA_HOSTNAME: http://localhost:9595
 
   prosuna_database:
-    image: docker.io/postgres:18-alpine
+    image: docker.io/library/postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${PROSUNA_DB_PASSWORD}
@@ -84,7 +85,7 @@ services:
       - prosuna
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.2
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3
     restart: unless-stopped
     depends_on:
       - keycloak_database
@@ -136,7 +137,7 @@ services:
       - keycloak
 
   keycloak_database:
-    image: docker.io/postgres:18-alpine
+    image: docker.io/library/postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
@@ -149,13 +150,13 @@ services:
       - keycloak
 
   clamav:
-    image: docker.io/clamav/clamav:1.5-debian
+    image: docker.io/clamav/clamav:1.5.4-debian
     restart: unless-stopped
     networks:
       - prosuna
 
   redis:
-    image: docker.io/redis:8-alpine
+    image: docker.io/library/redis:8-alpine
     restart: unless-stopped
     networks:
       - prosuna
@@ -189,7 +190,7 @@ services:
       - mail
 
   rabbitmq:
-    image: docker.io/rabbitmq:4-alpine
+    image: docker.io/library/rabbitmq:4-alpine
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: prosuna
@@ -200,7 +201,7 @@ services:
       - prosuna
 
   caddy:
-    image: docker.io/caddy:2-alpine
+    image: docker.io/library/caddy:2-alpine
     restart: unless-stopped
     depends_on:
       prosuna_api:

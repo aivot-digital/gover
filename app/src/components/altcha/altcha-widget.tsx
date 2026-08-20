@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
 import type {CSSProperties, HTMLAttributes, Ref} from 'react';
+import {useTheme} from '@mui/material';
 
 // Importing the altcha package introduces the <altcha-widget> element
 import 'altcha';
@@ -97,6 +98,7 @@ const extractExpiresAt = (payload: string): number | undefined => {
 };
 
 export const AltchaWidget = ({onChallengeSuccess}: AltchaWidgetProps) => {
+    const theme = useTheme();
     const widgetRef = useRef<AltchaWidgetElement>(null);
     const [debuggingEnabled, setDebuggingEnabled] = useState<boolean | null>(false);
 
@@ -140,7 +142,7 @@ export const AltchaWidget = ({onChallengeSuccess}: AltchaWidgetProps) => {
             ref={widgetRef}
             style={{
                 '--altcha-max-width': '380px',
-                '--altcha-border-color': '#E0E0E0',
+                '--altcha-border-color': theme.palette.divider,
                 '--altcha-border-radius': '4px',
                 '--altcha-checkbox-border-radius': '3px',
             }}

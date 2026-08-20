@@ -1,35 +1,36 @@
 import React from 'react';
 import Typography from '@mui/material/Typography';
 
-export function FormsListPageHelp() {
+export function FormsListPageHelp(): React.ReactElement {
     return (
         <>
             <Typography
                 variant="body1"
                 component="p"
-                marginBottom={2}
+                sx={{
+                    marginBottom: 2
+                }}
             >
-                In dieser Übersicht sehen Sie alle Formulare, die als Referenzen auf Formulareingang-Prozesselemente in
-                sämtlichen Prozessen dargestellt werden, auf die Sie Zugriff haben. Ein Formular entspricht dabei einem
-                Formulareingang-Prozesselement innerhalb eines Prozesses.
+                Formulare werden als Formulareingänge innerhalb von Prozessen erstellt und gemeinsam mit einer
+                Prozessversion veröffentlicht. Sie besitzen daher keinen vom Prozess unabhängigen Lebenszyklus.
             </Typography>
             <Typography
                 variant="body1"
                 component="p"
-                marginBottom={2}
+                sx={{
+                    marginBottom: 2
+                }}
             >
-                Neue Formulare fügen Sie hinzu, indem Sie in Ihren Prozessen ein neues Formulareingang-Prozesselement
-                anlegen. In dieser Liste können Sie alle Formulare nach ihren Formulareingang-Prozesselementen einsehen,
-                den Editor für das jeweilige Formular öffnen, direkt zum zugehörigen Prozess navigieren oder die
-                Einstellungen des jeweiligen Formulareingang-Prozesselements aufrufen.
+                Unter „Veröffentlicht“ finden Sie alle Formulareingänge der aktuell veröffentlichten Prozessversionen,
+                auf die Sie Zugriff haben. Die Übersicht enthält auch Formulare, die nicht im öffentlichen
+                Formularverzeichnis erscheinen und ausschließlich über ihren Direktlink erreichbar sind.
             </Typography>
             <Typography
                 variant="body1"
                 component="p"
             >
-                Nutzen Sie diese Übersicht, um schnell auf alle Formulare zuzugreifen, Änderungen vorzunehmen oder die
-                Struktur Ihrer Prozesse zu verwalten. So behalten Sie stets den Überblick über alle Formulare und deren
-                Einsatz in Ihren Prozessen.
+                Unter „In Bearbeitung“ werden die Formulareingänge der aktuellen Prozessentwürfe angezeigt. Neue
+                Formulare legen Sie an, indem Sie einem Prozess einen Formulareingang hinzufügen.
             </Typography>
         </>
     );

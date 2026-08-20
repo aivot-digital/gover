@@ -107,34 +107,37 @@ export function SearchInput(props: SearchInputProps) {
                 sx={{
                     margin: 0,
                 }}
-                InputLabelProps={{
-                    sx: {
-                        display: hideLabel ? 'none' : undefined,
+                slotProps={{
+                    input: {
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <Search fontSize="small" />
+                            </InputAdornment>
+                        ),
+                        endAdornment: clearable && localValue.trim().length > 0 ? (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    size={props.size ?? 'small'}
+                                    onClick={handleClear}
+                                    disabled={props.disabled}
+                                    aria-label="Suche löschen"
+                                >
+                                    <Close fontSize="small" />
+                                </IconButton>
+                            </InputAdornment>
+                        ) : undefined,
                     },
-                }}
-                InputProps={{
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <Search fontSize="small" />
-                        </InputAdornment>
-                    ),
-                    endAdornment: clearable && localValue.trim().length > 0 ? (
-                        <InputAdornment position="end">
-                            <IconButton
-                                size={props.size ?? 'small'}
-                                onClick={handleClear}
-                                disabled={props.disabled}
-                                aria-label="Suche löschen"
-                            >
-                                <Close fontSize="small" />
-                            </IconButton>
-                        </InputAdornment>
-                    ) : undefined,
-                }}
-                inputProps={{
-                    'aria-label': props.ariaLabel ?? props.label,
-                }}
-            />
+
+                    htmlInput: {
+                        'aria-label': props.ariaLabel ?? props.label,
+                    },
+
+                    inputLabel: {
+                        sx: {
+                            display: hideLabel ? 'none' : undefined,
+                        },
+                    }
+                }} />
         </Box>
     );
 }

@@ -51,13 +51,13 @@ public class GlobalThemeSystemConfigDefinition implements SystemConfigDefinition
     @Nonnull
     @Override
     public String getLabel() {
-        return "Globales Erscheinungsbild";
+        return "Standard-Erscheinungsbild";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Das globale Erscheinungsbild, das in der gesamten Anwendung verwendet wird. Es wird auch genutzt, wenn für ein Formular kein eigenes Erscheinungsbild definiert ist.";
+        return "Das Standard-Erscheinungsbild der Prosuna-Instanz. Es wird überall dort genutzt, wo kein spezifischeres Erscheinungsbild einer Organisationseinheit greift.";
     }
 
     @Nonnull
@@ -80,5 +80,16 @@ public class GlobalThemeSystemConfigDefinition implements SystemConfigDefinition
             throw ResponseException.internalServerError("Ungültiger Wert für " + getLabel());
         }
         return value;
+    }
+
+    @Override
+    public void validate(@Nullable String value) throws ResponseException {
+        if (value == null || value.isEmpty()) {
+            return;
+        }
+
+        if (!themeRepository.existsById(Integer.parseInt(value))) {
+            throw ResponseException.badRequest("Das ausgewählte Erscheinungsbild existiert nicht.");
+        }
     }
 }

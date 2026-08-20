@@ -39,7 +39,8 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                 container
                 sx={{
                     mt: values.length === 0 ? 0 : 2,
-                    borderBottom: values.length === 0 ? '1px solid #D4D4D4' : 'none',
+                    borderBottom: values.length === 0 ? '1px solid' : 'none',
+                    borderBottomColor: 'divider',
                     py: 1,
                 }}
             >
@@ -88,7 +89,8 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                         <Box
                             key={val.id ?? `${model.id}-${index}`}
                             sx={{
-                                border: '1px solid #D4D4D4',
+                                border: '1px solid',
+                                borderColor: 'divider',
                                 mb: 2,
                                 px: 2,
                                 [theme.breakpoints.up('md')]: {
@@ -99,7 +101,8 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                             <Grid
                                 container
                                 sx={{
-                                    borderBottom: '1px solid #D4D4D4',
+                                    borderBottom: '1px solid',
+                                    borderBottomColor: 'divider',
                                     py: 1,
                                 }}
                             >

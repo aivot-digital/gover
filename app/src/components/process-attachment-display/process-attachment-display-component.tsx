@@ -85,9 +85,10 @@ export function ProcessAttachmentDisplayComponent(props: ProcessAttachmentDispla
                 props.previewText != null &&
                 <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{mt: 0.75}}
-                >
+                    sx={{
+                        color: "text.secondary",
+                        mt: 0.75
+                    }}>
                     {props.previewText}
                 </Typography>
             }
@@ -351,8 +352,8 @@ function AttachmentStatus(props: AttachmentStatusProps): React.JSX.Element {
         <Stack
             direction="row"
             spacing={1.25}
-            alignItems="center"
             sx={{
+                alignItems: "center",
                 minHeight: 48,
                 px: 1.5,
                 py: 1,
@@ -360,9 +361,8 @@ function AttachmentStatus(props: AttachmentStatusProps): React.JSX.Element {
                 borderStyle: 'dashed',
                 borderColor: 'divider',
                 borderRadius: 1,
-                backgroundColor: 'action.hover',
-            }}
-        >
+                backgroundColor: 'action.hover'
+            }}>
             {
                 props.loading === true ?
                     <CircularProgress size={20}/> :
@@ -370,7 +370,9 @@ function AttachmentStatus(props: AttachmentStatusProps): React.JSX.Element {
             }
             <Typography
                 variant="body2"
-                color="text.secondary"
+                sx={{
+                    color: "text.secondary"
+                }}
             >
                 {props.children}
             </Typography>

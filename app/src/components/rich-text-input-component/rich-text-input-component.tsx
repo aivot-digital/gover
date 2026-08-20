@@ -24,6 +24,7 @@ import {
     UndoRedo,
 } from '@mdxeditor/editor';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 import {placeholderPlugin} from './rich-text-input-component-placeholder-plugin';
 import '@mdxeditor/editor/style.css';
 
@@ -78,8 +79,6 @@ const mdxEditorGermanTranslation: Translation = (key, defaultValue, interpolatio
     return template.replace(/\{\{\s*([^{}\s]+)\s*}}/g, (_, token: string) => String(interpolations?.[token] ?? ''));
 };
 
-const TEXT_FIELD_READ_ONLY_BG = '#F8F8F8';
-const TEXT_FIELD_DISABLED_TEXT_COLOR = 'rgba(0, 0, 0, 0.66)';
 const AUTO_REDUCED_MODE_MAX_WIDTH = 630;
 
 export interface RichTextInputComponentProps {
@@ -125,18 +124,17 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
     const outlinedBorderColor = theme.palette.mode === 'light'
         ? 'rgba(0, 0, 0, 0.23)'
         : 'rgba(255, 255, 255, 0.23)';
-    // Match the visual surface used by TextFieldComponent while the field is read-only.
-    const baseBg = isReadOnly
-        ? TEXT_FIELD_READ_ONLY_BG
-        : theme.palette.background.paper;
+    // Apply the field state only once on the outer container. Repeating a translucent background on MDXEditor's
+    // nested layers would compound its opacity and make this control diverge from regular MUI inputs.
+    const fieldBackground = isReadOnly
+        ? getDisabledFieldBackground(theme)
+        : 'transparent';
     const editorContentColor = isReadOnly
-        ? TEXT_FIELD_DISABLED_TEXT_COLOR
+        ? theme.palette.text.secondary
         : theme.palette.text.primary;
-    const editorSecondaryContentColor = isReadOnly
-        ? TEXT_FIELD_DISABLED_TEXT_COLOR
-        : theme.palette.text.secondary;
+    const editorSecondaryContentColor = theme.palette.text.secondary;
     const editorLinkColor = isReadOnly
-        ? TEXT_FIELD_DISABLED_TEXT_COLOR
+        ? theme.palette.text.secondary
         : theme.palette.primary.main;
     const toolbarBg = isReadOnly
         ? theme.palette.action.hover
@@ -205,7 +203,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                     border: '1px solid',
                     borderColor: error != null ? 'error.main' : outlinedBorderColor,
                     borderRadius: 1,
-                    backgroundColor: baseBg,
+                    backgroundColor: fieldBackground,
                     transition: theme.transitions.create(['background-color', 'border-color', 'box-shadow'], {
                         duration: theme.transitions.duration.shorter,
                     }),
@@ -213,10 +211,11 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         borderColor: focusColor,
                         boxShadow: `0 0 0 1px ${focusColor}`,
                     },
-                    '& .prosuna-mdx-editor.mdxeditor': {
+                    // MDXEditor renders popovers into a sibling portal. Both roots need the same MUI-derived tokens;
+                    // otherwise the portal falls back to MDXEditor's own light palette even when Prosuna is dark.
+                    '& .prosuna-mdx-editor.mdxeditor, & .mdxeditor-popup-container.prosuna-mdx-editor': {
                         '--font-body': theme.typography.fontFamily,
-                        '--basePageBg': baseBg,
-                        '--baseBase': baseBg,
+                        '--baseBase': theme.palette.background.paper,
                         '--baseBgSubtle': alpha(theme.palette.text.primary, 0.025),
                         '--baseBg': toolbarBg,
                         '--baseBgHover': buttonHoverBg,
@@ -240,20 +239,29 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         '--accentText': theme.palette.primary.main,
                         '--accentTextContrast': theme.palette.primary.contrastText,
                         fontFamily: 'inherit',
-                        backgroundColor: baseBg,
+                        color: 'text.primary',
+                    },
+                    '& .prosuna-mdx-editor.mdxeditor': {
+                        '--basePageBg': 'transparent',
+                        backgroundColor: 'transparent',
                         borderRadius: 'inherit',
                         overflow: 'hidden',
                         transition: theme.transitions.create('background-color', {
                             duration: theme.transitions.duration.shorter,
                         }),
                     },
+                    '& .mdxeditor-popup-container.prosuna-mdx-editor': {
+                        '--basePageBg': theme.palette.background.paper,
+                        colorScheme: theme.palette.mode,
+                        zIndex: `${theme.zIndex.modal + 1} !important`,
+                    },
                     '& .prosuna-mdx-editor .mdxeditor-root-contenteditable': {
-                        backgroundColor: baseBg,
+                        backgroundColor: 'transparent',
                         transition: theme.transitions.create('background-color', {
                             duration: theme.transitions.duration.shorter,
                         }),
                     },
-                    '& .prosuna-mdx-editor [class*="_toolbarRoot_"]': {
+                    '& .prosuna-mdx-editor [class*="_toolbarRoot_"], & .prosuna-mdx-editor [class*="_readOnlyToolbarRoot_"]': {
                         position: 'sticky',
                         top: 0,
                         zIndex: 2,
@@ -261,7 +269,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         borderBottom: '1px solid',
                         borderColor: error != null ? alpha(theme.palette.error.main, 0.3) : 'divider',
                         borderRadius: '4px 4px 0 0',
-                        backgroundColor: baseBg,
+                        backgroundColor: 'transparent',
                         paddingInline: 1,
                         paddingBlock: 0.75,
                         minHeight: 47,
@@ -270,9 +278,6 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         transition: theme.transitions.create('background-color', {
                             duration: theme.transitions.duration.shorter,
                         }),
-                    },
-                    '& .mdxeditor-popup-container.prosuna-mdx-editor': {
-                        zIndex: `${theme.zIndex.modal + 1} !important`,
                     },
                     '& .prosuna-mdx-editor [class*="_toolbarRoot_"] [role="separator"]': {
                         width: '1px',
@@ -320,7 +325,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         border: '1px solid',
                         borderColor: 'divider',
                         minHeight: 30,
-                        backgroundColor: baseBg,
+                        backgroundColor: 'transparent',
                     },
                     '& .prosuna-mdx-editor [class*="_toolbarRoot_"] [class*="_selectTrigger_"]': {
                         width: 'auto !important',
@@ -372,19 +377,90 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                     '& [class*="_dialogInput_"], & [class*="_linkDialogInput_"], & [class*="_downshiftInput_"], & [class*="_textInput_"]': {
                         fontFamily: 'inherit',
                         color: 'text.primary',
+                        cursor: 'text',
                     },
                     '& [class*="_dialogInput_"]::placeholder, & [class*="_linkDialogInput_"]::placeholder, & [class*="_downshiftInput_"]::placeholder': {
                         color: theme.palette.text.disabled,
                     },
-                    '& [class*="_linkDialogInputWrapper_"], & [class*="_downshiftInputWrapper_"]': {
+                    '& [class*="_linkDialogInputWrapper_"], & [class*="_downshiftInputWrapper_"], & [class*="_textInput_"]': {
                         border: '1px solid',
-                        borderColor: 'divider',
+                        borderColor: outlinedBorderColor,
                         borderRadius: 1,
                         backgroundColor: 'background.paper',
+                        boxSizing: 'border-box',
+                        transition: theme.transitions.create(['border-color', 'box-shadow'], {
+                            duration: theme.transitions.duration.shorter,
+                        }),
                     },
-                    '& [class*="_linkDialogInputWrapper_"]:focus-within, & [class*="_downshiftInputWrapper_"]:focus-within': {
+                    '& [class*="_linkDialogInputWrapper_"]:hover, & [class*="_downshiftInputWrapper_"]:hover, & [class*="_textInput_"]:hover': {
+                        borderColor: 'text.primary',
+                    },
+                    '& [class*="_linkDialogInputWrapper_"]:focus-within, & [class*="_downshiftInputWrapper_"]:focus-within, & [class*="_textInput_"]:focus': {
                         borderColor: 'primary.main',
                         boxShadow: `0 0 0 1px ${theme.palette.primary.main}`,
+                    },
+                    '& [class*="_linkDialogEditForm_"]': {
+                        width: 'min(20rem, calc(100vw - 64px))',
+                        gap: 1.5,
+                    },
+                    '& [class*="_linkDialogEditForm_"] [class*="_formField_"]': {
+                        gap: 0.75,
+                    },
+                    '& [class*="_linkDialogEditForm_"] [class*="_formField_"] label': {
+                        color: 'text.secondary',
+                        fontSize: theme.typography.caption.fontSize,
+                    },
+                    '& [class*="_linkDialogEditForm_"] [class*="_linkDialogInput_"], & [class*="_linkDialogEditForm_"] [class*="_textInput_"]': {
+                        width: '100%',
+                        minWidth: 0,
+                    },
+                    '& [class*="_linkDialogEditForm_"] > div:last-child': {
+                        justifyContent: 'space-between !important',
+                        width: '100%',
+                    },
+                    '& [class*="_linkDialogPopoverContent_"]': {
+                        padding: 1.5,
+                    },
+                    '& [class*="_primaryButton_"], & [class*="_secondaryButton_"]': {
+                        minHeight: 32,
+                        padding: theme.spacing(0.5, 1.5),
+                        borderRadius: 1,
+                        fontFamily: 'inherit',
+                        fontSize: '0.9375rem',
+                        fontWeight: theme.typography.button.fontWeight,
+                        lineHeight: 1.5,
+                        cursor: 'pointer',
+                        transition: theme.transitions.create(['background-color', 'border-color', 'color'], {
+                            duration: theme.transitions.duration.shortest,
+                        }),
+                    },
+                    '& [class*="_primaryButton_"]': {
+                        borderColor: 'primary.main',
+                        backgroundColor: 'primary.main',
+                        color: 'primary.contrastText',
+                    },
+                    '& [class*="_primaryButton_"]:hover': {
+                        borderColor: 'primary.dark',
+                        backgroundColor: 'primary.dark',
+                    },
+                    '& [class*="_secondaryButton_"]': {
+                        borderColor: 'transparent',
+                        backgroundColor: 'transparent',
+                        color: 'text.primary',
+                    },
+                    '& [class*="_secondaryButton_"]:hover, & [class*="_actionButton_"]:hover': {
+                        backgroundColor: 'action.hover',
+                    },
+                    '& [class*="_actionButton_"]': {
+                        borderRadius: 1,
+                        color: 'text.secondary',
+                        cursor: 'pointer',
+                    },
+                    '& [class*="_actionButton_"]:hover': {
+                        color: 'text.primary',
+                    },
+                    '& [class*="_popoverArrow_"]': {
+                        fill: theme.palette.background.paper,
                     },
                     '& .prosuna-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"])': {
                         minHeight: editorMinHeight,
@@ -409,17 +485,43 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         minHeight: editorMinHeight,
                         maxHeight: editorMaxHeight,
                         overflow: 'hidden',
+                        backgroundColor: 'transparent',
                     },
                     '& .prosuna-mdx-editor .cm-sourceView .cm-editor': {
                         maxHeight: editorMaxHeight,
                         overflow: 'hidden',
                         color: editorContentColor,
+                        backgroundColor: 'transparent',
                     },
                     '& .prosuna-mdx-editor .cm-sourceView .cm-scroller': {
                         minHeight: editorMinHeight,
                         maxHeight: editorMaxHeight,
                         overflowY: 'auto',
                         overflowX: 'auto',
+                        backgroundColor: 'transparent',
+                    },
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-content': {
+                        color: editorContentColor,
+                        caretColor: theme.palette.primary.main,
+                    },
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-cursor, & .prosuna-mdx-editor .cm-sourceView .cm-dropCursor': {
+                        borderLeftColor: theme.palette.primary.main,
+                    },
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-gutters': {
+                        color: 'text.disabled',
+                        backgroundColor: alpha(theme.palette.text.primary, 0.025),
+                        borderRight: '1px solid',
+                        borderColor: 'divider',
+                    },
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-activeLine, & .prosuna-mdx-editor .cm-sourceView .cm-activeLineGutter': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.07),
+                    },
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-selectionBackground, & .prosuna-mdx-editor .cm-sourceView.cm-focused .cm-selectionBackground': {
+                        backgroundColor: `${alpha(theme.palette.primary.main, 0.22)} !important`,
+                    },
+                    '& .prosuna-mdx-editor .cm-sourceView .cm-panels, & .prosuna-mdx-editor .cm-sourceView .cm-tooltip': {
+                        color: 'text.primary',
+                        backgroundColor: 'background.paper',
                     },
                     '& .prosuna-mdx-editor [class*="_placeholder_"]': {
                         color: 'text.disabled',
@@ -454,7 +556,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                     '& .prosuna-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) a': {
                         color: editorLinkColor,
                         textDecorationColor: isReadOnly
-                            ? alpha('#000000', 0.2)
+                            ? alpha(theme.palette.text.disabled, 0.5)
                             : alpha(theme.palette.primary.main, 0.35),
                     },
                     ...(disabled
@@ -463,7 +565,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                                 borderColor: error != null ? 'error.main' : outlinedBorderColor,
                                 boxShadow: 'none',
                             },
-                            '& .prosuna-mdx-editor [class*="_toolbarRoot_"], & .prosuna-mdx-editor .cm-sourceView': {
+                            '& .prosuna-mdx-editor [class*="_toolbarRoot_"], & .prosuna-mdx-editor [class*="_readOnlyToolbarRoot_"], & .prosuna-mdx-editor .cm-sourceView': {
                                 pointerEvents: 'none',
                             },
                         }

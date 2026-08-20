@@ -90,7 +90,7 @@ const SnackbarConsumer = () => {
                             sx={{
                                 width: '100%',
                                 maxWidth: 460,
-                                backgroundColor: 'white',
+                                backgroundColor: 'background.paper',
                                 fontSize: '0.9375rem',
                                 borderRadius: '6px',
                                 padding: '6px 14px',

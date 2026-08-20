@@ -12,6 +12,7 @@ import {
 import {LocalTimeIso} from '../../utils/temporal-types';
 import {EndAction} from '../text-field/text-field-component-props';
 import {renderIconButton} from '../text-field/text-field-component';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
 interface TimeFieldComponentProps {
     label: string;
@@ -159,25 +160,31 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
                         variant: 'outlined',
                         error: props.error != null,
                         helperText: props.hideHelperText ? undefined : props.error ?? props.hint,
-                        InputLabelProps: {
-                            title: props.label,
-                        },
-                        autoComplete: props.autocomplete,
                         onInput: handleInputChange,
                         onKeyDown: handleKeyDown,
                         onPaste: handleInputChange,
                         onBlur: handleBlur,
-                        InputProps: {
-                            startAdornment: props.startIcon && (
-                                <InputAdornment position="start">{props.startIcon}</InputAdornment>
-                            ),
-                            endAdornment: props.endAction && (
-                                <InputAdornment position="end">
-                                    {Array.isArray(props.endAction)
-                                        ? props.endAction.map(renderIconButton)
-                                        : renderIconButton(props.endAction)}
-                                </InputAdornment>
-                            ),
+
+                        slotProps: {
+                            inputLabel: {
+                                title: props.label,
+                            },
+
+                            input: {
+                                startAdornment: props.startIcon && (
+                                    <InputAdornment position="start">{props.startIcon}</InputAdornment>
+                                ),
+                                endAdornment: props.endAction && (
+                                    <InputAdornment position="end">
+                                        {Array.isArray(props.endAction)
+                                            ? props.endAction.map(renderIconButton)
+                                            : renderIconButton(props.endAction)}
+                                    </InputAdornment>
+                                ),
+                            },
+                            htmlInput: {
+                                autoComplete: props.autocomplete,
+                            },
                         },
                     },
                     actionBar: {
@@ -187,7 +194,7 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
                 sx={{
                     ...props.sx,
                     '& .MuiPickersInputBase-root': {
-                        backgroundColor: (props.busy || props.disabled) ? '#F8F8F8' : undefined,
+                        backgroundColor: (props.busy || props.disabled) ? getDisabledFieldBackground : undefined,
                         cursor: (props.busy || props.disabled) ? 'not-allowed' : undefined,
                     },
                 }}

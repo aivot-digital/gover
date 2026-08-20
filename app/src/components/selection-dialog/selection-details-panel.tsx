@@ -66,7 +66,7 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
                             justifyContent: 'center',
                             borderRadius: '50%',
                             flexShrink: 0,
-                            backgroundColor: props.iconBackgroundColor ?? 'grey.100',
+                            backgroundColor: props.iconBackgroundColor ?? 'action.selected',
                             color: props.iconColor ?? 'text.secondary',
                         }}
                     >
@@ -95,16 +95,15 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
                         >
                             <Typography
                                 variant="h6"
-                                lineHeight={1.2}
                                 title={getTitleAttribute(props.title)}
                                 sx={{
+                                    lineHeight: 1.2,
                                     flex: 1,
                                     minWidth: 0,
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                }}
-                            >
+                                    whiteSpace: 'nowrap'
+                                }}>
                                 {props.title}
                             </Typography>
                             {props.titleAdornment}
@@ -127,7 +126,9 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
             >
                 {
                     props.description != null &&
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         {props.description}
                     </Typography>
                 }

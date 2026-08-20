@@ -272,10 +272,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             <Typography
                 variant="caption"
                 sx={{
-                    mt: 4,
-                }}
-                color={'text.secondary'}
-            >
+                    color: 'text.secondary',
+                    mt: 4
+                }}>
                 Alle mit Stern (*) gekennzeichneten Felder sind Pflichtfelder.
             </Typography>
         </>

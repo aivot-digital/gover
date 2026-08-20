@@ -5,6 +5,12 @@ Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
 Hinterlegte Schnittstelle: [(${destination.name})]
 Antragseingang: [(${#numberformat.formatInstant(submission.created, 'dd.MM.yyyy HH:mm')})] Uhr
 
-Sie können den Antrag über den nachfolgenden Link aufrufen: [(${base.config.createUrl('/staff/submissions/' + submission.id)})]
+Antrag öffnen:
+[(${base.config.createUrl('/staff/submissions/' + submission.id)})]
 
-Diese E-Mail ist automatisch generiert. Bitte nicht antworten.
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

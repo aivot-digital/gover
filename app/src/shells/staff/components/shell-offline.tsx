@@ -28,7 +28,12 @@ export function ShellOffline() {
                 }}
             >
                 <CloudOff sx={{ fontSize: 64, mb: 1, color: 'primary.main' }} />
-                <Typography variant="h2" sx={{ mb: 2 }} fontWeight={600}>
+                <Typography
+                    variant="h2"
+                    sx={{
+                        fontWeight: 600,
+                        mb: 2
+                    }}>
                     Verbindung unterbrochen
                 </Typography>
 

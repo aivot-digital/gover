@@ -80,6 +80,7 @@ export function DerivedDataDebugger(props: ElementDataDebuggerProps) {
 
             <ExpandableCodeBlock
                 value={effectiveValuesJsonString}
+                language="json"
             />
 
             <Typography variant="h6">
@@ -88,6 +89,7 @@ export function DerivedDataDebugger(props: ElementDataDebuggerProps) {
 
             <ExpandableCodeBlock
                 value={elementStatesJsonString}
+                language="json"
             />
         </Box>
     );

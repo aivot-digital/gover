@@ -4,7 +4,10 @@ import confetti from 'canvas-confetti';
 const defaultStartDelay = 200;
 const defaultDuration = 2000;
 const defaultIntervalMs = 16;
+const particlesPerBurst = 2;
 const staffShellConfettiContainerSelector = '[data-confetti-container="staff-shell-content"]';
+
+export const prosunaConfettiColors = ['#FF613A', '#A0C9CB', '#733635', '#351E1C'];
 
 interface CanvasBounds {
     top: number;
@@ -62,6 +65,7 @@ export function CanvasConfettiOverlay(props: CanvasConfettiOverlayProps) {
     const stopTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastBurstPromise = useRef<Promise<null[]> | null>(null);
     const runIdRef = useRef(0);
+    const colorOffsetRef = useRef(0);
 
     const clearTimers = useCallback(() => {
         if (startTimeoutId.current) {
@@ -97,22 +101,31 @@ export function CanvasConfettiOverlay(props: CanvasConfettiOverlayProps) {
     }, []);
 
     const nextTickAnimation = useCallback(() => {
+        if (colors.length === 0) {
+            return;
+        }
+
+        const colorOffset = colorOffsetRef.current;
+        // canvas-confetti assigns colors by particle index, so rotate the palette for two-particle bursts.
+        const burstColors = colors.map((_, index) => colors[(index + colorOffset) % colors.length]);
+        colorOffsetRef.current = (colorOffset + particlesPerBurst) % colors.length;
+
         const leftBurst = animationInstance.current?.({
-            particleCount: 2,
+            particleCount: particlesPerBurst,
             startVelocity: 40,
             spread: 80,
             angle: 60,
             origin: {x: 0},
-            colors,
+            colors: burstColors,
             disableForReducedMotion: true,
         });
         const rightBurst = animationInstance.current?.({
-            particleCount: 2,
+            particleCount: particlesPerBurst,
             startVelocity: 40,
             spread: 80,
             angle: 120,
             origin: {x: 1},
-            colors,
+            colors: burstColors,
             disableForReducedMotion: true,
         });
 
@@ -197,6 +210,7 @@ export function CanvasConfettiOverlay(props: CanvasConfettiOverlayProps) {
         }
 
         stopAnimation();
+        colorOffsetRef.current = 0;
         setIsVisible(true);
         runIdRef.current += 1;
         const currentRunId = runIdRef.current;

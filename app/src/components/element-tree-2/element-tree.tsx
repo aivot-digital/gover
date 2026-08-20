@@ -289,7 +289,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         >
             <Box
                 sx={{
-                    borderBottom: '1px solid #ccc',
+                    borderBottom: '1px solid',
+                    borderBottomColor: 'divider',
                     minWidth: 0,
                 }}
             >
@@ -316,8 +317,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             aspectRatio: '1 / 1',
                             flexShrink: 0,
                             borderRadius: '50%',
-                            bgcolor: 'grey.100',
-                            color: 'text.primary',
+                            bgcolor: 'action.selected',
+                            color: 'text.secondary',
                         }}
                     >
                         <AccountTree/>
@@ -356,17 +357,16 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             }}
                         >
                             <Typography
-                                fontWeight="bold"
                                 component="div"
                                 title={typeLabel}
                                 sx={{
+                                    fontWeight: "bold",
                                     flex: 1,
                                     minWidth: 0,
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                }}
-                            >
+                                    whiteSpace: 'nowrap'
+                                }}>
                                 {typeLabel}
                             </Typography>
                         </Box>
@@ -583,7 +583,7 @@ function moveElementInTree<T extends AnyElement>(
             return currentParent;
         }
 
-        const updatedChildren = [...currentParent.children ?? []];
+        const updatedChildren = [...(currentParent.children ?? [])];
         updatedChildren.splice(sourceInfo.childIndex, 1);
 
         return {
@@ -605,7 +605,7 @@ function moveElementInTree<T extends AnyElement>(
             return currentParent;
         }
 
-        const updatedChildren = [...currentParent.children ?? []];
+        const updatedChildren = [...(currentParent.children ?? [])];
         updatedChildren.splice(clampedTargetIndex, 0, sourceInfo.element);
 
         return {

@@ -143,6 +143,7 @@
     "SWL",
     "TCL",
     "TCP-wrappers",
+    "The W3C License",
     "TMate",
     "TOSL",
     "TTWL",
@@ -560,6 +561,9 @@
     },
     "jakarta.mail@2.0.5": {
       "license": "EPL-2.0"
+    },
+    "x-charts-vendor@9.11.1": {
+      "license": "MIT"
     }
   }
 }

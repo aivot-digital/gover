@@ -2,8 +2,8 @@ import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
 import {ProcessNodeApiService} from '../../../../services/process-node-api-service';
-import {Box, Button, IconButton, Tab, Tabs} from '@mui/material';
-import {keyframes} from '@mui/material/styles';
+import {Box, Button, IconButton, Tab, Tabs, useTheme} from '@mui/material';
+import {alpha, keyframes} from '@mui/material/styles';
 import {Link, Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {useProcessDetailsPageContext} from '../../process-details-page-context';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
@@ -43,9 +43,17 @@ import {
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
-const processNodeEditorLoadedSidebarFlash = keyframes`
+const processNodeEditorLoadedSidebarFlashLight = keyframes`
     0% {
         background-color: ${'#f6f6f6'};
+    }
+    100% {
+        background-color: transparent;
+    }
+`;
+const processNodeEditorLoadedSidebarFlashDark = keyframes`
+    0% {
+        background-color: ${'rgba(0, 0, 0, 0.34)'};
     }
     100% {
         background-color: transparent;
@@ -59,6 +67,7 @@ export function ProcessNodeEditor(): ReactNode {
     const location = useLocation();
     const confirm = useConfirm();
     const dispatch = useAppDispatch();
+    const theme = useTheme();
 
     const [originalNode, setOriginalNode] = useState<ProcessNodeEntity | null>(null);
     const [incomingMetadata, setIncomingMetadata] = useState<ProcessNodeDefinitionMetadata | null>(null);
@@ -86,6 +95,9 @@ export function ProcessNodeEditor(): ReactNode {
     const showNodeLoadingOverlay = useDelayedVisibility(isNodeLoading, PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY);
     const showInitialNodeEditorSkeleton = useDelayedVisibility(!hasEditorContent, PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY);
     const hasShownShellLoadingRef = useRef(false);
+    const nodeEditorLoadedSidebarFlash = theme.palette.mode === 'dark'
+        ? processNodeEditorLoadedSidebarFlashDark
+        : processNodeEditorLoadedSidebarFlashLight;
 
     const nodeId = (() => {
         const rawNodeId = params.nodeId;
@@ -223,11 +235,11 @@ export function ProcessNodeEditor(): ReactNode {
             {
                 Icon: () => null,
                 label: '',
-                bgColor: '#ffffff',
-                textColor: '#000000',
+                bgColor: theme.palette.background.paper,
+                textColor: theme.palette.text.primary,
             } :
             ProviderTypeStyles[provider.type];
-    }, [provider]);
+    }, [provider, theme.palette.background.paper, theme.palette.text.primary]);
 
     const ProviderIcon = useMemo(() => {
         if (provider == null) {
@@ -360,7 +372,7 @@ export function ProcessNodeEditor(): ReactNode {
                     flexDirection: 'column',
                     height: '100vh',
                     position: 'relative',
-                    animation: showNodeLoadedFeedback ? `${processNodeEditorLoadedSidebarFlash} ${PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION}ms ease-out` : 'none',
+                    animation: showNodeLoadedFeedback ? `${nodeEditorLoadedSidebarFlash} ${PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION}ms ease-out` : 'none',
                 }}
             >
                 {
@@ -370,7 +382,9 @@ export function ProcessNodeEditor(): ReactNode {
                             position: 'absolute',
                             inset: 0,
                             zIndex: 2,
-                            bgcolor: 'rgba(255, 255, 255, 0.42)',
+                            bgcolor: theme.palette.mode === 'dark'
+                                ? alpha(theme.palette.common.black, 0.42)
+                                : alpha(theme.palette.common.white, 0.42),
                             backdropFilter: 'blur(1.5px)',
                         }}
                     />
@@ -442,17 +456,16 @@ export function ProcessNodeEditor(): ReactNode {
                                 }}
                             >
                                 <Typography
-                                    fontWeight="bold"
                                     component="div"
                                     title={provider.name}
                                     sx={{
+                                        fontWeight: "bold",
                                         flex: 1,
                                         minWidth: 0,
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                    }}
-                                >
+                                        whiteSpace: 'nowrap'
+                                    }}>
                                     {provider.name}
                                 </Typography>
                                 <Chip
@@ -486,7 +499,8 @@ export function ProcessNodeEditor(): ReactNode {
                         }}
                         sx={{
                             mt: 0.25,
-                            borderBottom: '1px solid #ddd',
+                            borderBottom: '1px solid',
+                            borderBottomColor: 'divider',
                         }}
                     >
                         <Tab
@@ -550,7 +564,8 @@ export function ProcessNodeEditor(): ReactNode {
 
                 <Box
                     sx={{
-                        borderTop: '1px solid #ddd',
+                        borderTop: '1px solid',
+                        borderTopColor: 'divider',
                         mt: 'auto',
                         px: 2,
                         pt: 2,

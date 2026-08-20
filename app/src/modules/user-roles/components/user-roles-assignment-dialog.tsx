@@ -309,8 +309,10 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
             onClose={handleClose}
             fullWidth
             maxWidth="md"
-            TransitionProps={{
-                onExited: resetDialogState,
+            slotProps={{
+                transition: {
+                    onExited: resetDialogState,
+                }
             }}
         >
             <DialogTitleWithClose onClose={handleClose}>
@@ -325,7 +327,9 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                         </Typography>
                         <Typography
                             variant="body2"
-                            color="text.secondary"
+                            sx={{
+                                color: "text.secondary"
+                            }}
                         >
                             {renderParentType === 'orgUnit' ? 'Organisationseinheit' : 'Team'}:{' '}
                             {renderParentLabel ?? 'wird geladen...'}
@@ -338,22 +342,27 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                             sm: 'row',
                         }}
                         spacing={1}
-                        alignItems={{
-                            xs: 'stretch',
-                            sm: 'center',
-                        }}
-                        justifyContent="space-between"
-                    >
+                        sx={{
+                            alignItems: {
+                                xs: 'stretch',
+                                sm: 'center',
+                            },
+
+                            justifyContent: "space-between"
+                        }}>
                         <Stack
                             direction="row"
                             spacing={1}
-                            alignItems="center"
-                            flexWrap="wrap"
                             useFlexGap
-                        >
+                            sx={{
+                                alignItems: "center",
+                                flexWrap: "wrap"
+                            }}>
                             <Typography
                                 variant="body2"
-                                color="text.secondary"
+                                sx={{
+                                    color: "text.secondary"
+                                }}
                             >
                                 {selectedCount} von {totalRolesCount} ausgewählt
                             </Typography>
@@ -413,7 +422,9 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                     {!rolesAccessDenied && !isLoading && sortedRoles.length === 0 && (
                         <Typography
                             variant="body2"
-                            color="text.secondary"
+                            sx={{
+                                color: "text.secondary"
+                            }}
                         >
                             Keine Rollen verfügbar.
                         </Typography>

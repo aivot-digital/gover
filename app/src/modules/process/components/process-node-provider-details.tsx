@@ -154,16 +154,15 @@ export function ProcessNodeProviderDetailsHeader(props: ProcessNodeProviderDetai
                 >
                     <Typography
                         variant="h6"
-                        lineHeight={1.2}
                         title={provider.name}
                         sx={{
+                            lineHeight: 1.2,
                             flex: 1,
                             minWidth: 0,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                        }}
-                    >
+                            whiteSpace: 'nowrap'
+                        }}>
                         {provider.name}
                     </Typography>
                     <Chip
@@ -195,7 +194,9 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
         >
             {
                 showDescription &&
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                }}>
                     {provider.description}
                 </Typography>
             }
@@ -225,7 +226,9 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                                 secondary={port.description}
                             />
                         )) :
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             Dieses Prozesselement besitzt keine Ausgangsports.
                         </Typography>
                 }
@@ -242,7 +245,9 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                                 description={output.description}
                             />
                         )) :
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             Dieses Prozesselement erzeugt keine zusätzlichen Ausgangsdaten.
                         </Typography>
                 }
@@ -283,7 +288,9 @@ function ProcessNodeProviderDetailsRow(props: ProcessNodeProviderDetailsRowProps
                 py: 0.25,
             }}
         >
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+                color: "text.secondary"
+            }}>
                 {props.label}
             </Typography>
             <Typography variant="body2" sx={{mt: 0.25}}>
@@ -303,10 +310,17 @@ function ProcessNodeProviderDetailsListRow(props: ProcessNodeProviderDetailsList
                 borderRadius: 1.5,
             }}
         >
-            <Typography variant="body2" fontWeight={600}>
+            <Typography variant="body2" sx={{
+                fontWeight: 600
+            }}>
                 {props.primary}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: "text.secondary",
+                    mt: 0.5
+                }}>
                 {props.secondary}
             </Typography>
         </Box>

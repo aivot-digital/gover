@@ -11,7 +11,6 @@ services:
       - clamav
       - redis
       - rabbitmq
-      - gotenberg
     environment:
       PROSUNA_SERVER_PORT: 9595
       PROSUNA_DB_HOST: prosuna_database
@@ -45,6 +44,7 @@ services:
       PROSUNA_SECRETS_KEY: ${PROSUNA_SECRETS_KEY}
       PROSUNA_CAPTCHA_KEY: ${PROSUNA_CAPTCHA_KEY}
       PROSUNA_HOSTNAME: ${PROSUNA_HOSTNAME}
+      PROSUNA_SUPPORT_URL: ${PROSUNA_SUPPORT_URL:-}
       PROSUNA_TIMEZONE: Europe/Berlin
       PROSUNA_FROM_MAIL: ${PROSUNA_FROM_MAIL}
       PROSUNA_REPORT_MAIL: ${PROSUNA_REPORT_MAIL}
@@ -73,7 +73,7 @@ services:
       - proxy
 
   prosuna_database:
-    image: docker.io/postgres:18-alpine
+    image: docker.io/library/postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${PROSUNA_DB_PASSWORD}
@@ -87,7 +87,7 @@ services:
       - prosuna
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.2
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3
     restart: unless-stopped
     depends_on:
       - keycloak_database
@@ -135,13 +135,13 @@ services:
       SMTP_USERNAME: ${PROSUNA_SMTP_USERNAME}
       SMTP_PASSWORD: ${PROSUNA_SMTP_PASSWORD}
       SMTP_FROM: ${PROSUNA_FROM_MAIL}
-      SMTP_FROM_DISPLAY: Prosuna IDP
+      SMTP_FROM_DISPLAY: Prosuna IdP
       BACKEND_CLIENT_SECRET: ${PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}
     networks:
       - keycloak
 
   keycloak_database:
-    image: docker.io/postgres:18-alpine
+    image: docker.io/library/postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
@@ -154,13 +154,13 @@ services:
       - keycloak
 
   clamav:
-    image: docker.io/clamav/clamav:1.5-debian
+    image: docker.io/clamav/clamav:1.5.4-debian
     restart: unless-stopped
     networks:
       - prosuna
 
   redis:
-    image: docker.io/redis:8-alpine
+    image: docker.io/library/redis:8-alpine
     restart: unless-stopped
     networks:
       - prosuna
@@ -180,7 +180,7 @@ services:
       - prosuna
 
   rabbitmq:
-    image: docker.io/rabbitmq:4-alpine
+    image: docker.io/library/rabbitmq:4-alpine
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: prosuna
@@ -191,7 +191,7 @@ services:
       - prosuna
 
   caddy:
-    image: docker.io/caddy:2-alpine
+    image: docker.io/library/caddy:2-alpine
     restart: unless-stopped
     depends_on:
       prosuna_api:

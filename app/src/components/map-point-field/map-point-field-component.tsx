@@ -437,9 +437,10 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
             <Stack
                 direction="row"
                 spacing={1}
-                justifyContent="space-between"
-                alignItems="center"
-            >
+                sx={{
+                    justifyContent: "space-between",
+                    alignItems: "center"
+                }}>
                 <Typography
                     sx={{
                         fontWeight: 'medium',
@@ -501,7 +502,9 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
                                     <Stack
                                         direction="row"
                                         spacing={0.25}
-                                        alignItems="center"
+                                        sx={{
+                                            alignItems: "center"
+                                        }}
                                     >
                                         {
                                             canClearSearchInput &&
@@ -702,7 +705,9 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
                 <Stack
                     direction="row"
                     spacing={1}
-                    alignItems="center"
+                    sx={{
+                        alignItems: "center"
+                    }}
                 >
                     <Stack
                         sx={{

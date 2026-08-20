@@ -450,11 +450,12 @@ function buildColumns(canReadDomainRoles: boolean): Array<GridColDef<VDepartment
             flex: 1,
             renderCell: (params) => (
                 <Box
-                    display="flex"
-                    flexDirection="column"
-                    justifyContent="center"
-                    height="100%"
-                >
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        height: "100%"
+                    }}>
                     <Typography>
                         {params.row.userFullName}
                     </Typography>
@@ -463,7 +464,9 @@ function buildColumns(canReadDomainRoles: boolean): Array<GridColDef<VDepartment
                             <Typography
                                 variant="caption"
 
-                                color="text.secondary"
+                                sx={{
+                                    color: "text.secondary"
+                                }}
                             >
                                 (Stellvertretung durch {
                                     params

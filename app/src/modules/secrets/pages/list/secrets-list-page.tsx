@@ -56,14 +56,18 @@ export function SecretsListPage() {
                 <>
                     <Typography
                         variant="body1"
-                        paragraph
+                        sx={{
+                            marginBottom: "16px"
+                        }}
                     >
                         Verwalten Sie hier sicher die Geheimnisse Ihrer Webanwendung, wie API-Schlüssel, Passwörter oder andere vertrauliche Daten.
                         Diese werden getrennt vom Code gespeichert, um Sicherheitsrisiken zu minimieren und eine einfache Aktualisierung ohne Anpassung der Anwendung zu ermöglichen.
                     </Typography>
                     <Typography
                         variant="body1"
-                        paragraph
+                        sx={{
+                            marginBottom: "16px"
+                        }}
                     >
                         Alle Geheimnisse sind verschlüsselt und nur für autorisierte Nutzer:innen oder Dienste mit entsprechender Berechtigung zugänglich.
                     </Typography>

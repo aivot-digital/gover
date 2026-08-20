@@ -300,7 +300,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
 
                 startSelectionProcessing('Datei wird veröffentlicht…');
 
-                const assetToPublish = resolvedAsset ?? await loadAssetForSelection(item);
+                const assetToPublish = resolvedAsset ?? (await loadAssetForSelection(item));
                 if (assetToPublish == null) {
                     return;
                 }
@@ -408,9 +408,10 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                                                 direction="row"
                                                 spacing={0.75}
                                                 useFlexGap={true}
-                                                flexWrap="wrap"
-                                                alignItems="center"
-                                            >
+                                                sx={{
+                                                    flexWrap: "wrap",
+                                                    alignItems: "center"
+                                                }}>
                                                 {normalizedMimeTypes.length > 0 && (
                                                     <Chip
                                                         size="small"
@@ -445,12 +446,16 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                         <Stack
                             direction="row"
                             spacing={1.5}
-                            alignItems="center"
-                            sx={{py: 3, justifyContent: 'center'}}
-                        >
+                            sx={{
+                                alignItems: "center",
+                                py: 3,
+                                justifyContent: 'center'
+                            }}>
                             <CircularProgress size={18}/>
                             <Typography variant="body2"
-                                        color="text.secondary">
+                                        sx={{
+                                            color: "text.secondary"
+                                        }}>
                                 Speicheranbieter werden geladen…
                             </Typography>
                         </Stack>
@@ -511,20 +516,21 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                             {isProcessingSelection && (
                                 <Stack
                                     spacing={1.5}
-                                    alignItems="center"
-                                    justifyContent="center"
                                     sx={{
+                                        alignItems: "center",
+                                        justifyContent: "center",
                                         position: 'absolute',
                                         inset: 0,
                                         zIndex: 1,
                                         bgcolor: 'rgba(255, 255, 255, 0.5)',
-                                        pointerEvents: 'all',
-                                    }}
-                                >
+                                        pointerEvents: 'all'
+                                    }}>
                                     <CircularProgress size={20}/>
                                     <Typography
                                         variant="body2"
-                                        color="text.secondary"
+                                        sx={{
+                                            color: "text.secondary"
+                                        }}
                                     >
                                         {selectionProcessingMessage ?? 'Bitte warten…'}
                                     </Typography>

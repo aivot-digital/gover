@@ -392,15 +392,14 @@ function PortConnector(props: PortConnectorProps): ReactNode {
     return (
         <Box
             component="svg"
-            width={HANDLE_WIDTH}
-            height={connectorHeight}
             viewBox={`0 0 ${HANDLE_WIDTH} ${connectorHeight}`}
             preserveAspectRatio="none"
             sx={{
+                width: HANDLE_WIDTH,
+                height: connectorHeight,
                 display: 'block',
-                overflow: 'visible',
-            }}
-        >
+                overflow: 'visible'
+            }}>
             <line
                 x1={HANDLE_WIDTH / 2}
                 y1={HANDLE_WIDTH / 2}

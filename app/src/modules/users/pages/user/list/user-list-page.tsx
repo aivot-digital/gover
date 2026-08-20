@@ -135,10 +135,11 @@ export function UserListPage() {
                 <Typography
                     component="span"
                     variant="body2"
-                    color="text.disabled"
                     title="Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden."
-                    sx={{whiteSpace: 'nowrap'}}
-                >
+                    sx={{
+                        color: "text.disabled",
+                        whiteSpace: 'nowrap'
+                    }}>
                     {String(params.value)}
                 </Typography>
             ) : (
@@ -227,10 +228,10 @@ export function UserListPage() {
                         einsehen.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Informationen zu Mitarbeitenden werden von einem Identity Provider (IDP) System
+                        Informationen zu Mitarbeitenden werden von einem Identity Provider (IdP) System
                         bereitgestellt.
                         Änderungen an den hier angezeigten Daten sind nur über die Verwaltungsoberfläche des
-                        IDP möglich.
+                        IdP möglich.
                     </Typography>
                 </>
             ),

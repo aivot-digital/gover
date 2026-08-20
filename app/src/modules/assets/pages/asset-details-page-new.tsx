@@ -248,9 +248,10 @@ export function AssetDetailsPageNew() {
 
                     <Stack
                         direction="row"
-                        justifyContent="flex-start"
-                        alignItems="center"
-                    >
+                        sx={{
+                            justifyContent: "flex-start",
+                            alignItems: "center"
+                        }}>
                         <DisabledTooltip
                             disabled={storageProvider.readOnlyStorage}
                             title="Der Speicheranbieter ist schreibgeschützt. Neue Dateien können nicht hochgeladen werden."

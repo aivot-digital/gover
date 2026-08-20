@@ -1,8 +1,12 @@
 import {Box, Button, Typography, useTheme} from '@mui/material';
-import React, {useMemo} from 'react';
-import {IdentityProviderIcon} from '../identity-provider-icon/identity-provider-icon';
+import {alpha} from '@mui/material/styles';
+import {useMemo} from 'react';
+import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
+import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import {Chip} from '../../../../components/chip/chip';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
+import {IdentityProviderIcon} from '../identity-provider-icon/identity-provider-icon';
 
 export interface IdentityButtonProps {
     isAuthenticated: boolean;
@@ -17,7 +21,6 @@ export interface IdentityButtonProps {
 
 export function IdentityButton(props: IdentityButtonProps) {
     const theme = useTheme();
-
     const {
         isAuthenticated,
         relatedProcessNodeId,
@@ -30,78 +33,116 @@ export function IdentityButton(props: IdentityButtonProps) {
     } = props;
 
     const startUri = useMemo(() => {
-        const searchParams = new URLSearchParams(window.location.search);
-        for (const key of (additionalScopes ?? [])) {
-            searchParams.set('additionalScopes', key);
-        }
-        searchParams.set('origin', window.location.href);
+        return IdentityProvidersApiService.createLink(
+            identityProviderKey,
+            identityId,
+            relatedProcessNodeId,
+            additionalScopes,
+            window.location.href,
+        );
+    }, [additionalScopes, identityId, identityProviderKey, relatedProcessNodeId]);
 
-        return IdentityProvidersApiService
-            .createLink(identityProviderKey, identityId, relatedProcessNodeId, additionalScopes, window.location.href);
-    }, [identityProviderKey, additionalScopes]);
+    const content = (
+        <>
+            <IdentityProviderIcon
+                name={identityProviderName}
+                type={identityProviderType}
+                iconAssetKey={identityProviderAssetKey}
+            />
 
-    const successColorWithOpacity = useMemo(() => {
-        const successColor = theme.palette.success.main; // Greift auf die Haupt-"success"-Farbe zu
-        return `rgba(${parseInt(successColor.slice(1, 3), 16)}, ${parseInt(successColor.slice(3, 5), 16)}, ${parseInt(successColor.slice(5, 7), 16)}, 0.04)`;
-    }, [theme]);
+            <Box
+                sx={{
+                    minWidth: 0,
+                    flex: 1,
+                    textAlign: {
+                        xs: 'center',
+                        sm: 'left',
+                    },
+                }}
+            >
+                <Typography
+                    variant="caption"
+                    component="div"
+                    sx={{
+                        color: "text.secondary"
+                    }}
+                >
+                    Nutzerkonto
+                </Typography>
+                <Typography
+                    sx={{
+                        color: "text.primary",
+                        fontWeight: 600
+                    }}>
+                    {
+                        isAuthenticated
+                            ? <>Mit „{identityProviderName}“ angemeldet</>
+                            : <>Mit „{identityProviderName}“ anmelden</>
+                    }
+                </Typography>
+            </Box>
+        </>
+    );
+
+    if (isAuthenticated) {
+        return (
+            <Box
+                role="status"
+                sx={{
+                    width: '100%',
+                    minHeight: 88,
+                    mt: 2,
+                    p: 1.5,
+                    display: 'flex',
+                    flexDirection: {
+                        xs: 'column',
+                        sm: 'row',
+                    },
+                    alignItems: 'center',
+                    gap: 2,
+                    border: '1px solid',
+                    borderColor: alpha(theme.palette.success.main, theme.palette.mode === 'dark' ? 0.55 : 0.4),
+                    borderRadius: 1,
+                    backgroundColor: alpha(theme.palette.success.main, theme.palette.mode === 'dark' ? 0.08 : 0.04),
+                }}
+            >
+                {content}
+                <Chip
+                    mode="soft"
+                    color="success"
+                    size="small"
+                    icon={<CheckCircle/>}
+                    label="Angemeldet"
+                    sx={{flexShrink: 0}}
+                />
+            </Box>
+        );
+    }
 
     return (
         <Button
             variant="outlined"
-            color={
-                isAuthenticated
-                    ? 'success'
-                    : 'primary'
-            }
+            color="primary"
             fullWidth
-            component={isAuthenticated ? 'div' : 'a'}
+            component="a"
             href={startUri}
             sx={{
-                textTransform: 'none',
-                p: 1.5,
+                minHeight: 88,
                 mt: 2,
-                backgroundColor: isAuthenticated ? successColorWithOpacity : 'inherit',
-                justifyContent: 'start',
+                p: 1.5,
+                display: 'flex',
                 flexDirection: {
                     xs: 'column',
-                    md: 'row',
+                    sm: 'row',
                 },
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                gap: 2,
+                textTransform: 'none',
             }}
-            disabled={isAuthenticated}
         >
-            <Box
-                sx={{
-                    opacity: isAuthenticated ? 0.6 : 1,
-                    width: {md: 210},
-                    flexShrink: {md: 0},
-                    pr: {md: 4},
-                    mr: {md: 4},
-                    textAlign: {md: 'center'},
-                    borderRight: {md: '1px solid #bdbdbd'},
-                    display: 'flex',
-                    justifyContent: 'center',
-                }}
-            >
-                <IdentityProviderIcon
-                    name={identityProviderName}
-                    type={identityProviderType}
-                    iconAssetKey={identityProviderAssetKey}
-                />
-            </Box>
-            <Typography
-                color="inherit"
-                sx={{
-                    mt: {xs: 1, md: 0},
-                    maxWidth: {xs: 420, md: '100%'},
-                    textAlign: {xs: 'center', md: 'left'},
-                }}
-            >
-                {isAuthenticated ? (
-                    <>Sie haben sich erfolgreich mit dem Nutzerkonto <b>„{identityProviderName}“</b> angemeldet.</>
-                ) : (
-                    <>Mit Nutzerkonto <b>„{identityProviderName}“</b> anmelden</>
-                )}
-            </Typography>
+            {content}
+            <ArrowForward sx={{flexShrink: 0}}/>
         </Button>
     );
 }

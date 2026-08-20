@@ -43,7 +43,6 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {isFormLayoutElement} from '../../models/elements/form-layout-element';
 import {UiDefinitionEmptyState} from '../ui-definition-empty-state/ui-definition-empty-state';
 import {deepEquals} from '../../utils/equality-utils';
-import {Actions} from '../actions/actions';
 import Undo from '@aivot/mui-material-symbols-400-n25-outlined/Undo';
 import Redo from '@aivot/mui-material-symbols-400-n25-outlined/Redo';
 import DoneAll from '@aivot/mui-material-symbols-400-n25-outlined/DoneAll';
@@ -460,11 +459,10 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         <Stack
                             direction="row"
                             spacing={1}
-                            alignItems="center"
                             sx={{
-                                width: '100%',
-                            }}
-                        >
+                                alignItems: "center",
+                                width: '100%'
+                            }}>
                             <MobileLayout
                                 sx={{
                                     flexShrink: 0,
@@ -474,14 +472,13 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                             />
                             <Typography
                                 variant="body2"
-                                color="text.secondary"
                                 title={summary}
                                 sx={{
+                                    color: "text.secondary",
                                     flexGrow: 1,
                                     lineHeight: 1.4,
-                                    minWidth: 0,
-                                }}
-                            >
+                                    minWidth: 0
+                                }}>
                                 {summary}
                             </Typography>
 
@@ -562,83 +559,67 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                 maxWidth="xl"
             >
                 <DialogTitleWithClose
-                    sx={{
-                        boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.2)',
-                    }}
+                    bordered
                     onClose={() => {
                         void requestClose();
                     }}
+                    actions={[
+                        {
+                            tooltip: 'Änderung rückgängig machen',
+                            icon: <Undo/>,
+                            onClick: handleUndo,
+                            disabled: !hasPastDraftValue || !!disabled,
+                        },
+                        {
+                            tooltip: 'Änderung wiederherstellen',
+                            icon: <Redo/>,
+                            onClick: handleRedo,
+                            disabled: !hasFutureDraftValue || !!disabled,
+                        },
+                        'separator',
+                        {
+                            tooltip: 'Validierung testen',
+                            icon: <DoneAll/>,
+                            onClick: () => {
+                                notImplemented();
+                            },
+                        },
+                        {
+                            tooltip: disableVisibilities ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
+                            icon: disableVisibilities ? <Visibility/> : <VisibilityOff/>,
+                            onClick: () => {
+                                setDisableVisibilities(prev => !prev);
+                            },
+                        },
+                        'separator',
+                        {
+                            tooltip: 'Einstellungen des Wurzelelements öffnen',
+                            icon: <Settings/>,
+                            onClick: () => {
+                                if (draftValue != null) {
+                                    navigateToElementEditor(draftValue.id);
+                                }
+                            },
+                            disabled: draftValue == null,
+                        },
+                        {
+                            tooltip: 'Weitere Optionen',
+                            icon: <MoreVert/>,
+                            onClick: handleSettingsMenuOpen,
+                        },
+                    ]}
                 >
-                    <Stack
-                        direction="row"
-                        alignItems="center"
-                    >
-                        {displayLabel}
-
-                        <Actions
-                            size="small"
-                            dense={true}
-                            sx={{
-                                ml: 'auto',
-                                mr: 6,
-                            }}
-                            actions={[
-                                {
-                                    tooltip: 'Änderung rückgängig machen',
-                                    icon: <Undo/>,
-                                    onClick: handleUndo,
-                                    disabled: !hasPastDraftValue || !!disabled,
-                                },
-                                {
-                                    tooltip: 'Änderung wiederherstellen',
-                                    icon: <Redo/>,
-                                    onClick: handleRedo,
-                                    disabled: !hasFutureDraftValue || !!disabled,
-                                },
-                                'separator',
-                                {
-                                    tooltip: 'Validierung testen',
-                                    icon: <DoneAll/>,
-                                    onClick: () => {
-                                        notImplemented();
-                                    },
-                                },
-                                {
-                                    tooltip: disableVisibilities ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
-                                    icon: disableVisibilities ? <Visibility/> : <VisibilityOff/>,
-                                    onClick: () => {
-                                        setDisableVisibilities(prev => !prev);
-                                    },
-                                },
-                                'separator',
-                                {
-                                    tooltip: 'Einstellungen des Wurzelelements öffnen',
-                                    icon: <Settings/>,
-                                    onClick: () => {
-                                        if (draftValue != null) {
-                                            navigateToElementEditor(draftValue.id);
-                                        }
-                                    },
-                                    disabled: draftValue == null,
-                                },
-                                {
-                                    tooltip: 'Weitere Optionen',
-                                    icon: <MoreVert/>,
-                                    onClick: handleSettingsMenuOpen,
-                                },
-                            ]}
-                        />
-
-                        <UiDefinitionInputFieldSettingsMenu
-                            anchorEl={settingsMenuAnchorEl}
-                            elementContextMenuEnabled={!disableElementContextMenu}
-                            onToggleElementContextMenu={() => {
-                                dispatch(toggleElementContextMenu());
-                            }}
-                            onClose={handleSettingsMenuClose}
-                        />
-                    </Stack>
+                    {displayLabel}
                 </DialogTitleWithClose>
+
+                <UiDefinitionInputFieldSettingsMenu
+                    anchorEl={settingsMenuAnchorEl}
+                    elementContextMenuEnabled={!disableElementContextMenu}
+                    onToggleElementContextMenu={() => {
+                        dispatch(toggleElementContextMenu());
+                    }}
+                    onClose={handleSettingsMenuClose}
+                />
 
                 <DialogContent
                     sx={{
@@ -774,10 +755,12 @@ function UiDefinitionInputFieldSettingsMenu(props: UiDefinitionInputFieldSetting
                 horizontal: 'right',
                 vertical: 'top',
             }}
-            MenuListProps={{
-                sx: {
-                    py: 1,
-                },
+            slotProps={{
+                list: {
+                    sx: {
+                        py: 1,
+                    },
+                }
             }}
         >
             <MenuItem
@@ -799,8 +782,10 @@ function UiDefinitionInputFieldSettingsMenu(props: UiDefinitionInputFieldSetting
                 </ListItemIcon>
                 <ListItemText
                     primary="Element-Kontextmenü aktivieren"
-                    primaryTypographyProps={{
-                        noWrap: true,
+                    slotProps={{
+                        primary: {
+                            noWrap: true,
+                        }
                     }}
                 />
                 <Switch

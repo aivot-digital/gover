@@ -10,13 +10,13 @@ echo "Using runtime timezone ${TZ}"
 
 if [ "$1" = "serve" ]; then
   echo "serve" > /app/runtime-mode
-  echo "Waiting for IDP to be available at ${PROSUNA_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:-${PROSUNA_KEYCLOAK_OIDC_HOSTNAME}}/realms/staff…"
+  echo "Waiting for IdP to be available at ${PROSUNA_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:-${PROSUNA_KEYCLOAK_OIDC_HOSTNAME}}/realms/staff…"
 
   until curl --output /dev/null --silent --head --fail "${PROSUNA_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:-${PROSUNA_KEYCLOAK_OIDC_HOSTNAME}}/realms/staff/"; do
       sleep 5
   done
 
-  echo "IDP is available, starting api…"
+  echo "IdP is available, starting api…"
 
   java \
     -cp /app/prosuna.jar \

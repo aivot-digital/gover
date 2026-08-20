@@ -87,7 +87,7 @@ function TreeConnector(props: TreeConnectorProps) {
                         top: 0,
                         bottom: '50%',
                         width: '1px',
-                        bgcolor: 'grey.400',
+                        bgcolor: 'divider',
                     }}
                 />
             }
@@ -102,7 +102,7 @@ function TreeConnector(props: TreeConnectorProps) {
                         top: '50%',
                         bottom: 0,
                         width: '1px',
-                        bgcolor: 'grey.400',
+                        bgcolor: 'divider',
                     }}
                 />
             }
@@ -115,7 +115,7 @@ function TreeConnector(props: TreeConnectorProps) {
                     top: '50%',
                     transform: 'translateY(-0.5px)',
                     height: '1px',
-                    bgcolor: 'grey.400',
+                    bgcolor: 'divider',
                 }}
             />
         </Box>
@@ -337,7 +337,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                         <Box
                             sx={{
                                 position: 'relative',
-                                bgcolor: 'grey.200',
+                                bgcolor: 'action.selected',
                                 pl: 1,
                                 pr: 2,
                                 py: 1,
@@ -366,7 +366,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                             <Functions
                                 fontSize="small"
                                 sx={{
-                                    color: 'grey.800',
+                                    color: 'text.secondary',
                                 }}
                             />
 
@@ -391,7 +391,9 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                 operator.abstractDescription != null &&
                                 <Typography
                                     variant="caption"
-                                    color="text.secondary"
+                                    sx={{
+                                        color: "text.secondary"
+                                    }}
                                 >
                                     {operator.abstractDescription}
                                 </Typography>

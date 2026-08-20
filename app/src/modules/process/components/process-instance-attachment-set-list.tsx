@@ -127,24 +127,22 @@ function AttachmentSetItem(props: AttachmentSetItemProps): React.JSX.Element {
             </Typography>
 
             <Typography
-                color="text.secondary"
                 sx={{
+                    color: "text.secondary",
                     fontSize: '0.8125rem',
-                    overflowWrap: 'anywhere',
-                }}
-            >
+                    overflowWrap: 'anywhere'
+                }}>
                 Datenschlüssel: {props.item.attachmentSet.dataKey}
             </Typography>
 
             {
                 props.item.createdByLabel != null &&
                 <Typography
-                    color="text.secondary"
                     sx={{
+                        color: "text.secondary",
                         fontSize: '0.8125rem',
-                        overflowWrap: 'anywhere',
-                    }}
-                >
+                        overflowWrap: 'anywhere'
+                    }}>
                     Erstellt
                     durch: {props.item.createdByLabel}{props.item.createdBySubLabel == null ? '' : ` · ${props.item.createdBySubLabel}`}
                 </Typography>
@@ -161,9 +159,10 @@ function AttachmentSetItem(props: AttachmentSetItemProps): React.JSX.Element {
                 {
                     props.item.attachments.length === 0 ?
                         <Typography
-                            color="text.secondary"
-                            sx={{fontSize: '0.875rem'}}
-                        >
+                            sx={{
+                                color: "text.secondary",
+                                fontSize: '0.875rem'
+                            }}>
                             Keine Anhänge
                         </Typography> :
                         <AttachmentItems

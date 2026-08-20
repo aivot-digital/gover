@@ -45,7 +45,7 @@ public class ListingPageAccesibilitySystemConfigDefinition implements SystemConf
     @Nonnull
     @Override
     public String getCategory() {
-        return "Öffentliche Auflistung";
+        return "Öffentliches Formularverzeichnis";
     }
 
     @Nonnull

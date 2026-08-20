@@ -1,6 +1,12 @@
-<mjml>
+<mjml lang="de">
     <mj-head>
         <mj-include path="../partials/head.mjml" />
+
+        <mj-html-attributes>
+            <mj-selector path=".primary-action a">
+                <mj-html-attribute name="th:href">${base.config.createUrl('/staff/forms/' + form.id + '/' + form.version)}</mj-html-attribute>
+            </mj-selector>
+        </mj-html-attributes>
 
         <mj-preview>
             Benachrichtigung über die Erstellung eines neuen Formulars
@@ -29,14 +35,18 @@
                         <br/>
                         Angelegt durch: <b th:text="${triggeringUser.getFullName}">Max Mustermann</b>
                     </p>
-
-                    <p>
-                        Sie können das Formular über den nachfolgenden Link aufrufen: <a th:href="${base.config.createUrl('/staff/forms/' + form.id + '/' + form.version)}" th:text="${base.config.createUrl('/staff/forms/' + form.id + '/' + form.version)}">Beispiel-Link</a>
-                    </p>
                 </mj-text>
+
+                <mj-button align="left"
+                           css-class="primary-action"
+                           href="#"
+                           padding="24px 0 0">
+                    Formular öffnen
+                </mj-button>
             </mj-column>
         </mj-section>
 
+        <mj-include path="../partials/default-mail-signature.mjml"/>
         <mj-include path="../partials/auto-generate-hint.mjml"/>
     </mj-body>
 </mjml>

@@ -9,7 +9,8 @@ export function PageWrapper(props: PropsWithChildren<PageWrapperProps>) {
     return (
         <Box
             sx={{
-                backgroundColor: props.background ? '#F6F6F6' : 'transparent',
+                backgroundColor: props.background ? 'background.default' : 'transparent',
+                minHeight: '100%',
             }}
         >
             <LoadingWrapper isLoading={props.isLoading}>

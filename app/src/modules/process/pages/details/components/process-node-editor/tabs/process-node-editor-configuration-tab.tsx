@@ -49,10 +49,11 @@ export function ProcessNodeEditorConfigurationTab() {
             </Typography>
             <Typography
                 variant="body1"
-                mt={1}
-                mb={2}
-                maxWidth={400}
-            >
+                sx={{
+                    mt: 1,
+                    mb: 2,
+                    maxWidth: 400
+                }}>
                 Konfigurieren Sie dieses Prozesselement gemäß ihrer fachlichen Anforderungen.
             </Typography>
 

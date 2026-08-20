@@ -82,14 +82,18 @@ export function MultiCheckboxComponent(props: MultiCheckboxComponentProps) {
                                         }
                                     }}
                                     disabled={disabled}
-                                    sx={{color: busy ? 'rgba(0, 0, 0, 0.26)!important' : undefined}}
+                                    sx={{
+                                        color: busy
+                                            ? (theme) => `${theme.palette.action.disabled}!important`
+                                            : undefined,
+                                    }}
                                 />
                             }
                             label={option.label}
                             sx={{
                                 ...(displayInline ? {mr: 3} : {}),
                                 ...(busy ? {
-                                    color: 'rgba(0, 0, 0, 0.38)!important',
+                                    color: (theme) => `${theme.palette.text.disabled}!important`,
                                     cursor: 'not-allowed',
                                 } : {}),
                                 '& .MuiFormControlLabel-label': {

@@ -22,6 +22,8 @@ import {SelectFieldComponent} from '../../../../components/select-field/select-f
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 import {Permission} from '../../../../data/permissions/permission';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
+import FolderOpen from '@aivot/mui-material-symbols-400-n25-outlined/FolderOpen';
+import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 
 const availableFilter = [
     {
@@ -79,7 +81,9 @@ export function StorageProvidersListPage(): ReactNode {
                 <>
                     <Typography
                         variant="body1"
-                        paragraph
+                        sx={{
+                            marginBottom: "16px"
+                        }}
                     >
                         Konfigurieren Sie hier Speicheranbieter, die in Ihrer Prosuna-Instanz global
                         verfügbar sein sollen.
@@ -88,7 +92,9 @@ export function StorageProvidersListPage(): ReactNode {
                     </Typography>
                     <Typography
                         variant="body1"
-                        paragraph
+                        sx={{
+                            marginBottom: "16px"
+                        }}
                     >
                         Es wird empfohlen, für jeden Speicheranbieter sowohl eine produktive als
                         auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
@@ -193,6 +199,18 @@ export function StorageProvidersListPage(): ReactNode {
                 to: `/storage-providers/${item.id}`,
                 tooltip: canUpdateStorageProvider ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
             },
+            {
+                icon: <FolderOpen/>,
+                to: `/storage-providers/${item.id}/explore`,
+                tooltip: 'Dateiexplorer öffnen',
+            },
+            {
+                icon: <ScienceOutlinedIcon/>,
+                to: `/storage-providers/${item.id}/test`,
+                tooltip: 'Konfiguration testen',
+                disabled: !canUpdateStorageProvider,
+                disabledTooltip: permissions.getMissingPermissionTooltip(Permission.STORAGE_PROVIDER_UPDATE),
+            },
         ];
     }, []);
 
@@ -228,7 +246,7 @@ export function StorageProvidersListPage(): ReactNode {
                     getRowIdentifier={getRowIdentifier}
                     noDataPlaceholder={noDataPlaceholder}
                     noSearchResultsPlaceholder="Keine Speicheranbieter gefunden"
-                    rowActionsCount={1}
+                    rowActionsCount={3}
                     rowActions={rowActions}
                     defaultSortField="name"
                 />

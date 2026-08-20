@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.department.repositories.VDepartmentShadowedRepos
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.theme.repositories.ThemeRepository;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -18,19 +19,29 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class OptionalReferenceSystemConfigDefinitionTest {
     private static Stream<Named<SystemConfigDefinition<String>>> optionalReferenceDefinitions() {
         var departmentRepository = mock(VDepartmentShadowedRepository.class);
+        var themeRepository = mock(ThemeRepository.class);
+        when(themeRepository.existsById(anyInt())).thenReturn(true);
 
         return Stream.of(
                 Named.of("accessibility department", new ListingPageAccesibilitySystemConfigDefinition(departmentRepository)),
                 Named.of("imprint department", new ListingPageImprintSystemConfigDefinition(departmentRepository)),
                 Named.of("privacy department", new ListingPagePrivacySystemConfigDefinition(departmentRepository)),
-                Named.of("global theme", new GlobalThemeSystemConfigDefinition(mock(ThemeRepository.class)))
+                Named.of("global theme", new GlobalThemeSystemConfigDefinition(themeRepository))
         );
+    }
+
+    @Test
+    void globalThemeShouldRejectUnknownTheme() {
+        var definition = new GlobalThemeSystemConfigDefinition(mock(ThemeRepository.class));
+
+        assertThrows(ResponseException.class, () -> definition.validate("42"));
     }
 
     @ParameterizedTest

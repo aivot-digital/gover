@@ -12,6 +12,7 @@ import {
 import {DateValueIso} from '../../utils/temporal-types';
 import {renderIconButton} from '../text-field/text-field-component';
 import {DateFieldComponentProps} from './date-field-component-props';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
 const formatMap = {
     [DateFieldComponentModelMode.Day]: 'dd.MM.yyyy',
@@ -165,25 +166,29 @@ export function DateFieldComponent({
             variant: 'outlined' as const,
             error: error != null,
             helperText: helper,
-            autoComplete: autocomplete,
-            InputLabelProps: {
-                title: computedLabel,
-            },
             onInput: handleInputChange,
             onKeyDown: handleKeyDown,
             onPaste: handleInputChange,
             onBlur: handleBlur,
-            InputProps: {
-                startAdornment: startIcon && (
-                    <InputAdornment position="start">{startIcon}</InputAdornment>
-                ),
-                endAdornment: endAction && (
-                    <InputAdornment position="end">
-                        {Array.isArray(endAction)
-                            ? endAction.map(renderIconButton)
-                            : renderIconButton(endAction)}
-                    </InputAdornment>
-                ),
+            slotProps: {
+                inputLabel: {
+                    title: computedLabel,
+                },
+                input: {
+                    startAdornment: startIcon && (
+                        <InputAdornment position="start">{startIcon}</InputAdornment>
+                    ),
+                    endAdornment: endAction && (
+                        <InputAdornment position="end">
+                            {Array.isArray(endAction)
+                                ? endAction.map(renderIconButton)
+                                : renderIconButton(endAction)}
+                        </InputAdornment>
+                    ),
+                },
+                htmlInput: {
+                    autoComplete: autocomplete,
+                },
             },
         },
         actionBar: {
@@ -215,7 +220,7 @@ export function DateFieldComponent({
                 sx={{
                     ...sx,
                     '& .MuiPickersInputBase-root': {
-                        backgroundColor: (busy || disabled) ? '#F8F8F8' : undefined,
+                        backgroundColor: (busy || disabled) ? getDisabledFieldBackground : undefined,
                         cursor: (busy || disabled) ? 'not-allowed' : undefined,
                     },
                 }}

@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -65,15 +66,19 @@ public class SystemController {
     @Deprecated
     @GetMapping("logo/")
     public void getLogo(
+            @Nullable @RequestParam(value = "color-scheme", required = false) String colorScheme,
             HttpServletResponse response
     ) throws IOException, ResponseException {
         var theme = getSystemTheme();
+        var logoKey = "dark".equalsIgnoreCase(colorScheme) && theme.getLogoKeyDark() != null
+                ? theme.getLogoKeyDark()
+                : theme.getLogoKey();
 
         String redirectUrl;
-        if (theme.getLogoKey() == null) {
+        if (logoKey == null) {
             redirectUrl = prosunaConfig.getDefaultLogoUrl();
         } else {
-            redirectUrl = assetService.createUrl(theme.getLogoKey());
+            redirectUrl = assetService.createUrl(logoKey);
         }
 
         response.sendRedirect(redirectUrl);

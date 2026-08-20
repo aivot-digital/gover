@@ -14,6 +14,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
@@ -163,9 +164,9 @@ class AuthControllerTest {
 
         var response = new MockHttpServletResponse();
 
-        controller.idpCallback(response, "state", "authorization-code", "state");
+        var modelAndView = controller.idpCallback(response, "state", "authorization-code", "state");
 
-        assertEquals("/staff/dashboard", response.getRedirectedUrl());
+        assertEquals("redirect:/staff/dashboard", modelAndView.getViewName());
         assertNotNull(findCookie(response, AuthController.ACCESS_COOKIE_NAME, "/api/"));
         assertNotNull(findCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/"));
         assertClearsCookie(response, AuthController.AUTH_FLOW_COOKIE_NAME, "/api/auth/");
@@ -179,8 +180,16 @@ class AuthControllerTest {
 
         var response = new MockHttpServletResponse();
 
-        assertThrows(ResponseException.class, () -> controller.idpCallback(response, "state", "authorization-code", "state"));
+        var modelAndView = controller.idpCallback(response, "state", "authorization-code", "state");
 
+        assertCallbackError(
+                modelAndView,
+                response,
+                400,
+                "Die App-Weiterleitungsadresse ist nicht erlaubt.",
+                "Die gespeicherte Rücksprungadresse der Anwendung ist ungültig oder nicht erlaubt. Die Anmeldung kann über den Standardbereich neu gestartet werden.",
+                "/api/auth/login?app_uri=/staff"
+        );
         verifyNoInteractions(httpService);
         assertClearsCookie(response, AuthController.AUTH_FLOW_COOKIE_NAME, "/api/auth/");
     }
@@ -189,8 +198,16 @@ class AuthControllerTest {
     void callbackShouldRejectMismatchedStateWithoutTokenRequest() {
         var response = new MockHttpServletResponse();
 
-        assertThrows(ResponseException.class, () -> controller.idpCallback(response, "state", "code", "other-state"));
+        var modelAndView = controller.idpCallback(response, "state", "code", "other-state");
 
+        assertCallbackError(
+                modelAndView,
+                response,
+                400,
+                "Der state-Parameter ist ungültig.",
+                "Die Sicherheitsprüfung der Anmeldung ist fehlgeschlagen. Das kann passieren, wenn der Link aus einem alten Browser-Tab stammt, Cookies fehlen oder parallel eine neue Anmeldung gestartet wurde.",
+                "/api/auth/login?app_uri=/staff"
+        );
         verify(valueOperations, never()).getAndDelete(anyString());
         verifyNoInteractions(httpService);
         assertClearsCookie(response, AuthController.AUTH_FLOW_COOKIE_NAME, "/api/auth/");
@@ -202,9 +219,66 @@ class AuthControllerTest {
 
         var response = new MockHttpServletResponse();
 
-        assertThrows(ResponseException.class, () -> controller.idpCallback(response, "state", "code", "state"));
+        var modelAndView = controller.idpCallback(response, "state", "code", "state");
 
+        assertCallbackError(
+                modelAndView,
+                response,
+                400,
+                "Die Authentifizierungssitzung ist abgelaufen.",
+                "Ihre Anmeldesitzung ist abgelaufen. Starten Sie die Anmeldung erneut, damit eine neue sichere Sitzung erstellt wird.",
+                "/api/auth/login?app_uri=/staff"
+        );
         verifyNoInteractions(httpService);
+        assertClearsCookie(response, AuthController.AUTH_FLOW_COOKIE_NAME, "/api/auth/");
+    }
+
+    @Test
+    void callbackShouldReuseStoredAppRedirectWhenCodeIsMissing() {
+        when(valueOperations.get("auth:pkce:state")).thenReturn("""
+                {"codeVerifier":"verifier","redirectUri":"https://prosuna.example.com/api/auth/oidc-callback","appUri":"/staff/dashboard"}
+                """);
+
+        var response = new MockHttpServletResponse();
+
+        var modelAndView = controller.idpCallback(response, "state", null, "state");
+
+        assertCallbackError(
+                modelAndView,
+                response,
+                400,
+                "Es wurde kein Autorisierungscode übergeben.",
+                "Der Identitätsanbieter hat keinen Autorisierungscode zurückgegeben. Ohne diesen Code kann Prosuna keine Sitzung erstellen. Starten Sie die Anmeldung erneut.",
+                "/api/auth/login?app_uri=/staff/dashboard"
+        );
+        verifyNoInteractions(httpService);
+        assertClearsCookie(response, AuthController.AUTH_FLOW_COOKIE_NAME, "/api/auth/");
+    }
+
+    @Test
+    void callbackShouldNotShowRestartLinkWhenTokenRequestFails() throws Exception {
+        when(valueOperations.getAndDelete("auth:pkce:state")).thenReturn("""
+                {"codeVerifier":"verifier","redirectUri":"https://prosuna.example.com/api/auth/oidc-callback","appUri":"/staff/dashboard"}
+                """);
+
+        var tokenResponse = mock(HttpResponse.class);
+        when(tokenResponse.statusCode()).thenReturn(500);
+        when(httpService.postFormUrlEncoded(any(), any())).thenReturn(tokenResponse);
+
+        var response = new MockHttpServletResponse();
+
+        var modelAndView = controller.idpCallback(response, "state", "authorization-code", "state");
+
+        assertCallbackError(
+                modelAndView,
+                response,
+                500,
+                "Failed to exchange authorization code for access token. status code: 500",
+                "Der Identitätsanbieter hat geantwortet, aber Prosuna konnte die Anmeldung nicht abschließen. Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support, falls der Fehler bestehen bleibt.",
+                null
+        );
+        assertNull(findCookie(response, AuthController.ACCESS_COOKIE_NAME, "/api/"));
+        assertNull(findCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/"));
         assertClearsCookie(response, AuthController.AUTH_FLOW_COOKIE_NAME, "/api/auth/");
     }
 
@@ -316,6 +390,21 @@ class AuthControllerTest {
                 .filter(candidate -> path.equals(candidate.getPath()))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private static void assertCallbackError(
+            ModelAndView modelAndView,
+            MockHttpServletResponse response,
+            int status,
+            String message,
+            String description,
+            String restartLoginUrl
+    ) {
+        assertEquals("auth/oidc-callback-error", modelAndView.getViewName());
+        assertEquals(status, response.getStatus());
+        assertEquals(message, modelAndView.getModel().get("message"));
+        assertEquals(description, modelAndView.getModel().get("description"));
+        assertEquals(restartLoginUrl, modelAndView.getModel().get("restartLoginUrl"));
     }
 
     private static void assertClearsCookie(

@@ -23,6 +23,21 @@ jobs:
           distribution: temurin
           architecture: x64
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.2.0
+          cache: npm
+          cache-dependency-path: backend/mails/package-lock.json
+
+      - name: Install mail template dependencies
+        working-directory: backend/mails
+        run: npm ci
+
+      - name: Build mail templates
+        working-directory: backend/mails
+        run: npm run build:dev
+
       - name: Publish the package to the GitHub package registry
         working-directory: backend
         run: mvn --batch-mode deploy

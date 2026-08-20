@@ -9,6 +9,7 @@ import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {parseGermanNumber} from '../../utils/parse-german-numbers';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {getSelectedRowIds, hasSelectedGridRows} from './table-field-selection';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
 // TODO: Unify with table-field-component.tsx
 export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, { [key: string]: string | number | null }[]>) {
@@ -225,7 +226,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
 
 
                     sx={{
-                        backgroundColor: isBusy ? '#F8F8F8' : undefined,
+                        backgroundColor: isBusy ? getDisabledFieldBackground : undefined,
                         cursor: (isBusy || element.disabled) ? 'not-allowed' : undefined,
                         pointerEvents: isBusy ? 'none' : 'auto',
                     }}

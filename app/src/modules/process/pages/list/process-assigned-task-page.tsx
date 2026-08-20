@@ -211,21 +211,27 @@ export function ProcessAssignedTaskListPage() {
                             <Typography variant="h6">
                                 Vorgangsdaten der Aufgabe
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
                                 Die Vorgangsdaten, welche die Aufgabe weitergegeben hat.
                             </Typography>
                             <ExpandableCodeBlock
                                 value={JSON.stringify(renderTaskData.processData, null, 2)}
+                                language="json"
                             />
 
                             <Typography variant="h6">
                                 Elementdaten der Aufgabe
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
                                 Die Elementdaten, die diese Aufgabe erzeugt hat.
                             </Typography>
                             <ExpandableCodeBlock
                                 value={JSON.stringify(renderTaskData.nodeData, null, 2)}
+                                language="json"
                             />
                         </>
                     }

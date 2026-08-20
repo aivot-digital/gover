@@ -50,6 +50,7 @@ import {
 } from './organization-chart-types';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {getReactFlowBackgroundDotColor} from '../../../../theming/react-flow-theme';
 
 interface OrganizationChartFlowProps {
     view: OrganizationChartFlowView;
@@ -367,6 +368,12 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
                 '--organization-chart-flow-top-fade-color-mid': alpha(theme.palette.background.default, 0.72),
                 '--organization-chart-flow-top-fade-color-transparent': alpha(theme.palette.background.default, 0),
                 '--organization-chart-flow-edge-color': theme.palette.mode === 'dark' ? theme.palette.grey[600] : theme.palette.grey[400],
+                '--organization-chart-flow-surface': alpha(theme.palette.background.paper, 0.96),
+                '--organization-chart-flow-border': theme.palette.divider,
+                '--organization-chart-flow-text': theme.palette.text.secondary,
+                '--organization-chart-flow-text-disabled': theme.palette.text.disabled,
+                '--organization-chart-flow-hover': theme.palette.action.hover,
+                '--organization-chart-flow-shadow': theme.shadows[3],
                 opacity: isLayoutReady ? 1 : 0,
                 transition: 'opacity 120ms ease-out',
             } as CSSProperties}
@@ -393,6 +400,7 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
         >
             <Background
                 variant={BackgroundVariant.Dots}
+                color={getReactFlowBackgroundDotColor(theme)}
             />
             <OrganizationChartTreeGroups
                 groups={layout.groups}
@@ -712,14 +720,13 @@ function OrganizationChartNodeCard(props: {
                     }
                     <Typography
                         variant="caption"
-                        color="text.secondary"
                         sx={{
+                            color: "text.secondary",
                             alignSelf: 'flex-start',
                             borderRadius: 1,
                             bgcolor: isDepartment ? alpha(item.color, 0.25) : undefined,
-                            mt: -0.25,
-                        }}
-                    >
+                            mt: -0.25
+                        }}>
                         {typeLabel}
                     </Typography>
                 </Box>
@@ -819,12 +826,11 @@ function OrganizationChartMembersPermissionState(props: {
         >
             <Typography
                 variant="body2"
-                color="text.secondary"
                 sx={{
+                    color: "text.secondary",
                     fontWeight: 600,
-                    lineHeight: 1.35,
-                }}
-            >
+                    lineHeight: 1.35
+                }}>
                 {`${message} (${permission}).`}
             </Typography>
         </Box>
@@ -866,13 +872,12 @@ function OrganizationChartMembersEmptyState(): ReactNode {
                 />
                 <Typography
                     variant="body2"
-                    color="text.secondary"
                     noWrap
                     sx={{
+                        color: "text.secondary",
                         ml: 1,
-                        fontWeight: 600,
-                    }}
-                >
+                        fontWeight: 600
+                    }}>
                     Keine Mitarbeiter:innen zugeordnet
                 </Typography>
             </Box>
@@ -1060,7 +1065,9 @@ function OrganizationChartFlowEmptyState(props: {
         >
             <Typography
                 variant="body2"
-                color="text.secondary"
+                sx={{
+                    color: "text.secondary"
+                }}
             >
                 {message}
             </Typography>

@@ -21,7 +21,9 @@ export function CheckboxFieldComponent(props: CheckboxFieldComponentProps) {
                             }}
                             disabled={props.disabled}
                             sx={{
-                                color: props.busy ? "rgba(0, 0, 0, 0.26)!important" : undefined,
+                                color: props.busy
+                                    ? (theme) => `${theme.palette.action.disabled}!important`
+                                    : undefined,
                             }}
                         /> :
                         <Checkbox
@@ -33,14 +35,16 @@ export function CheckboxFieldComponent(props: CheckboxFieldComponentProps) {
                             }}
                             disabled={props.disabled}
                             sx={{
-                                color: props.busy ? "rgba(0, 0, 0, 0.26)!important" : undefined,
+                                color: props.busy
+                                    ? (theme) => `${theme.palette.action.disabled}!important`
+                                    : undefined,
                             }}
                         />
                 }
                 label={props.label + (props.required === true ? ' *' : '')}
                 sx={{
                     ...(props.busy ? {
-                        color: "rgba(0, 0, 0, 0.38)!important",
+                        color: (theme) => `${theme.palette.text.disabled}!important`,
                         cursor: "not-allowed",
                     } : {}),
                     '& .MuiFormControlLabel-label': {

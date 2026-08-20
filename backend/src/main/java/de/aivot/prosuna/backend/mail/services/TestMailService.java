@@ -15,15 +15,25 @@ import java.util.Optional;
 @Component
 public class TestMailService {
     private final MailService mailService;
+    private final MailConfigurationService mailConfigurationService;
     private final SystemService systemService;
 
     @Autowired
-    public TestMailService(MailService mailService, SystemService systemService) {
+    public TestMailService(
+            MailService mailService,
+            MailConfigurationService mailConfigurationService,
+            SystemService systemService
+    ) {
         this.mailService = mailService;
+        this.mailConfigurationService = mailConfigurationService;
         this.systemService = systemService;
     }
 
     public void send(UserEntity triggeringUser, String to) throws MessagingException, IOException, ResponseException {
+        if (!mailConfigurationService.isConfigured()) {
+            throw new MessagingException("Die E-Mail-Anbindung ist nicht vollständig konfiguriert.");
+        }
+
         String title = "SMTP-Test";
 
         var context = new HashMap<String, Object>();

@@ -17,49 +17,32 @@ public record ThemeRequestDTO(
         String name,
 
         @Nonnull
-        @NotNull(message = "Die Hauptfarbe darf nicht null sein.")
-        @Length(min = 7, max = 7, message = "Die Hauptfarbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Hauptfarbe muss eine gültige HEX-Farbe sein.")
-        String main,
+        @NotNull(message = "Die Markenfarbe darf nicht null sein.")
+        @Length(min = 7, max = 7, message = "Die Markenfarbe muss eine gültige HEX-Farbe sein.")
+        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Markenfarbe muss eine gültige HEX-Farbe sein.")
+        String primaryColor,
 
         @Nonnull
-        @NotNull(message = "Die Haupt-Dunkel-Farbe darf nicht null sein.")
-        @Length(min = 7, max = 7, message = "Die Haupt-Dunkel-Farbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Haupt-Dunkel-Farbe muss eine gültige HEX-Farbe sein.")
-        String mainDark,
+        @NotNull(message = "Die Sekundärfarbe darf nicht null sein.")
+        @Length(min = 7, max = 7, message = "Die Sekundärfarbe muss eine gültige HEX-Farbe sein.")
+        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Sekundärfarbe muss eine gültige HEX-Farbe sein.")
+        String secondaryColor,
 
-        @Nonnull
-        @NotNull(message = "Die Akzentfarbe darf nicht null sein.")
-        @Length(min = 7, max = 7, message = "Die Akzentfarbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Akzentfarbe muss eine gültige HEX-Farbe sein.")
-        String accent,
+        @Nullable
+        @Length(min = 7, max = 7, message = "Die Markenfarbe für das dunkle Farbschema muss eine gültige HEX-Farbe sein.")
+        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Markenfarbe für das dunkle Farbschema muss eine gültige HEX-Farbe sein.")
+        String primaryColorDark,
 
-        @Nonnull
-        @NotNull(message = "Die Fehlerfarbe darf nicht null sein.")
-        @Length(min = 7, max = 7, message = "Die Fehlerfarbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Fehlerfarbe muss eine gültige HEX-Farbe sein.")
-        String error,
-
-        @Nonnull
-        @NotNull(message = "Die Warnfarbe darf nicht null sein.")
-        @Length(min = 7, max = 7, message = "Die Warnfarbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Warnfarbe muss eine gültige HEX-Farbe sein.")
-        String warning,
-
-        @Nonnull
-        @NotNull(message = "Die Infofarbe darf nicht null sein.")
-        @Length(min = 7, max = 7, message = "Die Infofarbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Infofarbe muss eine gültige HEX-Farbe sein.")
-        String info,
-
-        @Nonnull
-        @NotNull(message = "Die Erfolgsfarbe darf nicht null sein.")
-        @Length(min = 7, max = 7, message = "Die Erfolgsfarbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Erfolgsfarbe muss eine gültige HEX-Farbe sein.")
-        String success,
+        @Nullable
+        @Length(min = 7, max = 7, message = "Die Sekundärfarbe für das dunkle Farbschema muss eine gültige HEX-Farbe sein.")
+        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Sekundärfarbe für das dunkle Farbschema muss eine gültige HEX-Farbe sein.")
+        String secondaryColorDark,
 
         @Nullable
         UUID logoKey,
+
+        @Nullable
+        UUID logoKeyDark,
 
         @Nullable
         UUID faviconKey
@@ -69,14 +52,12 @@ public record ThemeRequestDTO(
         return new ThemeEntity(
                 null,
                 name,
-                main,
-                mainDark,
-                accent,
-                error,
-                warning,
-                info,
-                success,
+                primaryColor,
+                secondaryColor,
+                primaryColorDark,
+                secondaryColorDark,
                 logoKey,
+                logoKeyDark,
                 faviconKey
         );
     }

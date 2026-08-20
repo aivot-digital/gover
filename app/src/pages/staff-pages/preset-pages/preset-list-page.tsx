@@ -63,7 +63,13 @@ export function PresetListPage() {
             field: 'draftedVersion',
             headerName: 'Entwurf',
             renderCell: (params) => {
-                return (<CellContentWrapper>{params.row.draftedVersion ? `Version ${params.row.draftedVersion}` : (<Typography color={'text.secondary'} sx={{fontStyle: 'italic'}}>Kein Entwurf vorhanden</Typography>)}</CellContentWrapper>);
+                return (
+                    <CellContentWrapper>{params.row.draftedVersion ? `Version ${params.row.draftedVersion}` : (<Typography
+                            sx={{
+                                color: 'text.secondary',
+                                fontStyle: 'italic'
+                            }}>Kein Entwurf vorhanden</Typography>)}</CellContentWrapper>
+                );
             },
             flex: 1,
         },
@@ -71,7 +77,13 @@ export function PresetListPage() {
             field: 'publishedVersion',
             headerName: 'Veröffentlichte Version',
             renderCell: (params) => {
-                return (<CellContentWrapper>{params.row.publishedVersion ? `Version ${params.row.publishedVersion}` : (<Typography color={'text.secondary'} sx={{fontStyle: 'italic'}}>Keine Version veröffentlicht</Typography>)}</CellContentWrapper>);
+                return (
+                    <CellContentWrapper>{params.row.publishedVersion ? `Version ${params.row.publishedVersion}` : (<Typography
+                            sx={{
+                                color: 'text.secondary',
+                                fontStyle: 'italic'
+                            }}>Keine Version veröffentlicht</Typography>)}</CellContentWrapper>
+                );
             },
             flex: 1,
         },

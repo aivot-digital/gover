@@ -21,9 +21,10 @@ function normalizeMetadataValue(value: unknown): string {
 export function StorageMetadataAttributesView({storageProvider, metadata}: StorageMetadataAttributesViewProps) {
     if (storageProvider.metadataAttributes.length === 0) {
         return (
-            <Typography color="text.secondary">
-                Für diesen Speicheranbieter sind keine Metadatenattribute konfiguriert.
-            </Typography>
+            <Typography sx={{
+                color: "text.secondary"
+            }}>Für diesen Speicheranbieter sind keine Metadatenattribute konfiguriert.
+                            </Typography>
         );
     }
 

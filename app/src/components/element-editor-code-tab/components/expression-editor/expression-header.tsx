@@ -45,7 +45,9 @@ export function ExpressionHeader(props: ExpressionHeaderProps) {
                 />
 
                 <Typography
-                    fontSize="80%"
+                    sx={{
+                        fontSize: "80%"
+                    }}
                 >
                     {props.operator.label}
                 </Typography>

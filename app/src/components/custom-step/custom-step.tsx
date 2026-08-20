@@ -14,7 +14,7 @@ import {getStepIcon} from '../../data/step-icons';
 import {ElementType} from '../../data/element-type/element-type';
 import {isStepElement} from '../../models/elements/steps/step-element';
 import {getElementNameForType} from '../../data/element-type/element-names';
-import CheckCircleTwoToneIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import CheckCircleFilledIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircleFilled';
 import ArrowForwardOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 import ArrowBackOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowBack';
 import SendOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Send';
@@ -31,6 +31,7 @@ export function CustomStep(props: CustomStepProps & StepProps) {
         isLastStep,
         isSubmitStep,
         active,
+        completed = false,
         step,
         children,
         onNext,
@@ -107,22 +108,31 @@ export function CustomStep(props: CustomStepProps & StepProps) {
     return (
         <Step
             {...passTroughProps}
+            completed={completed}
             ref={ref}
             sx={[
                 (theme) => getPreviewHighlightStyles(theme, isHighlightedInPreview),
+                {
+                    '& .MuiStepContent-last': {
+                        position: 'relative',
+                    },
+                    '& .MuiStepContent-last::before': {
+                        content: '""',
+                        width: '1px',
+                        backgroundColor: 'divider',
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        position: 'absolute',
+                    },
+                    '& .Mui-disabled ~ .MuiStepContent-last::before': {
+                        display: 'none',
+                    },
+                },
                 ...(Array.isArray(passTroughProps.sx) ? passTroughProps.sx : [passTroughProps.sx]),
             ]}
         >
             <StepLabel
-                StepIconComponent={(props) => (
-                    <Icon
-                        sx={{
-                            fontSize: '2rem',
-                            marginLeft: '4px',
-                            color: props.active ? theme.palette.primary.main : 'rgba(0, 0, 0, 0.55)',
-                        }}
-                    />
-                )}
                 sx={{
                     [theme.breakpoints.down('md')]: {
                         '.MuiStepLabel-label': {
@@ -132,6 +142,21 @@ export function CustomStep(props: CustomStepProps & StepProps) {
                     '.MuiStepLabel-label': {
                         pt: 0,
                     },
+                }}
+                slots={{
+                    stepIcon: () => (
+                        <Icon
+                            sx={{
+                                fontSize: '2rem',
+                                marginLeft: '4px',
+                                color: active
+                                    ? theme.palette.primary.main
+                                    : completed
+                                        ? theme.palette.text.primary
+                                        : theme.palette.text.secondary,
+                            }}
+                        />
+                    )
                 }}
             >
                 <h2
@@ -149,26 +174,34 @@ export function CustomStep(props: CustomStepProps & StepProps) {
                         isStepElement(step) ? step.title ?? 'Unbenannter Abschnitt' : getElementNameForType(step.type)
                     }
                 </h2>
-                <Box
-                    className="completed-step-suffix"
-                    sx={{ml: 0.75}}
-                >
-                    <CheckCircleTwoToneIcon
-                        sx={{
-                            color: theme.palette.primary.main,
-                            transform: 'translateY(5px)',
-                        }}
-                    />
-                </Box>
+                {
+                    completed &&
+                    <Box
+                        component="span"
+                        className="completed-step-suffix"
+                        sx={{ml: 0.75, display: 'inline-flex'}}
+                    >
+                        <CheckCircleFilledIcon
+                            sx={{
+                                color: theme.palette.primary.main,
+                                transform: 'translateY(5px)',
+                            }}
+                        />
+                    </Box>
+                }
             </StepLabel>
             <StepContent
-                TransitionComponent={Collapse}
-                TransitionProps={{onEnter: handleEnter, onExit: handleExit}}
                 transitionDuration={prefersReducedMotion ? 0 : 1000}
                 sx={{
                     [theme.breakpoints.down('md')]: {
                         pl: 4,
                     },
+                }}
+                slots={{
+                    transition: Collapse
+                }}
+                slotProps={{
+                    transition: {onEnter: handleEnter, onExit: handleExit}
                 }}
             >
                 <div>

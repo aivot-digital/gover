@@ -53,8 +53,10 @@ export function ProcessListRowMenu(props: ProcessListRowMenuProps) {
                     <Delete/>
                 </ListItemIcon>
                 <ListItemText
-                    primaryTypographyProps={{
-                        color: 'error.main',
+                    slotProps={{
+                        primary: {
+                            color: 'error.main',
+                        }
                     }}
                 >
                     Prozess löschen

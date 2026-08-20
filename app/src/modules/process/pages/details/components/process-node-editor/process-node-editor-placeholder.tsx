@@ -61,11 +61,10 @@ export function ProcessNodeEditorPlaceholder() {
 
             <Typography
                 variant="caption"
-                color="text.secondary"
                 sx={{
-                    mt: 2,
-                }}
-            >
+                    color: "text.secondary",
+                    mt: 2
+                }}>
                 Schnellstart
             </Typography>
 

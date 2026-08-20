@@ -42,10 +42,13 @@ export function ProcessNodeEditorOutputsTab() {
             <Typography variant="h4">
                 Datenschlüssel
             </Typography>
-            <Typography variant="body1"
-                        mt={1}
-                        mb={2}
-                        maxWidth={400}>
+            <Typography
+                variant="body1"
+                sx={{
+                    mt: 1,
+                    mb: 2,
+                    maxWidth: 400
+                }}>
                 Über den eindeutigen Datenschlüssel kann auf die erzeugten Elementdaten dieses Prozesselementes zugegriffen werden (siehe {quoteString('Datenstruktur der Ausgangsdaten')} weiter unten).
             </Typography>
 
@@ -73,10 +76,13 @@ export function ProcessNodeEditorOutputsTab() {
             >
                 Ausgangsdaten
             </Typography>
-            <Typography variant="body1"
-                        mt={1}
-                        mb={2}
-                        maxWidth={400}>
+            <Typography
+                variant="body1"
+                sx={{
+                    mt: 1,
+                    mb: 2,
+                    maxWidth: 400
+                }}>
                 Die Zuweisung von Datenvariablen für die Ausgangsdaten ist optional.
                 Ohne Zuweisung sind Ergebnisse ausschließlich über die Elementdaten zugänglich.
             </Typography>
@@ -105,20 +111,25 @@ export function ProcessNodeEditorOutputsTab() {
 
             <Typography
                 variant="h4"
-                mt={4}
+                sx={{
+                    mt: 4
+                }}
             >
                 Datenstruktur der Ausgangsdaten
             </Typography>
             <Typography
                 variant="body1"
-                mt={1}
-                mb={2}
-                maxWidth={400}
-            >
+                sx={{
+                    mt: 1,
+                    mb: 2,
+                    maxWidth: 400
+                }}>
                 Struktur und Übersicht der von diesem Element erzeugten und zur Verfügung gestellten Datenvariablen.
             </Typography>
 
-            <Box mt={2}>
+            <Box sx={{
+                mt: 2
+            }}>
                 {
                     provider.outputs.map((output) => (
                         <ProcessNodeOutputCard

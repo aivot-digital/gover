@@ -1,11 +1,12 @@
 import {RouteObject} from 'react-router-dom';
 import React from 'react';
 import {CommonSettingsPage} from './pages/common-settings-page';
-import {SmtpTestPage} from './pages/smtp-test-page';
+import {EmailPage} from './pages/email-page';
 import {SystemStatusPage} from './pages/system-status-page';
 import {ExtensionsPage} from './pages/extensions-page/extensions-page';
 import {ExtensionsPageIndex} from './pages/extensions-page/extensions-page-index';
 import {ExtensionsPageList} from './pages/extensions-page/extensions-page-list';
+import {DashboardSettingsPage} from '../dashboard/pages/dashboard-settings-page';
 
 export const configsRoutes: RouteObject[] = [
     {
@@ -13,12 +14,20 @@ export const configsRoutes: RouteObject[] = [
         element: <CommonSettingsPage />,
     },
     {
-        path: '/settings/smtp',
-        element: <SmtpTestPage />,
+        path: '/mail',
+        element: <EmailPage />,
+    },
+    {
+        path: '/mail/test',
+        element: <EmailPage />,
     },
     {
         path: '/settings/status',
         element: <SystemStatusPage />,
+    },
+    {
+        path: '/settings/dashboard',
+        element: <DashboardSettingsPage />,
     },
     {
         path: '/settings/extensions/*',

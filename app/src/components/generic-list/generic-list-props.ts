@@ -52,6 +52,7 @@ export interface GenericListProps<ItemType extends GenericListRowModel> {
     onBusyChange?: (isBusy: boolean) => void;
 
     dynamicRowHeight?: boolean;
+    rowHeight?: number;
 
     controlRef?: RefObject<ListControlRef | null>;
 }

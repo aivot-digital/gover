@@ -410,13 +410,12 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                     <Stack
                         direction="row"
                         spacing={1}
-                        alignItems="center"
                         sx={{
+                            alignItems: "center",
                             width: '100%',
                             minWidth: 0,
-                            height: '100%',
-                        }}
-                    >
+                            height: '100%'
+                        }}>
                         <Box sx={{display: 'inline-flex', alignItems: 'center', color: 'text.secondary'}}>
                             {itemIsDirectory
                                 ? <FolderOutlinedIcon fontSize="small"/>
@@ -542,14 +541,18 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
             <Grid size={{xs: 12, sm: 4}}>
                 <Typography
                     variant="body2"
-                    color="text.secondary"
+                    sx={{
+                        color: "text.secondary"
+                    }}
                 >{label}</Typography>
             </Grid>
             <Grid size={{xs: 12, sm: 8}}>
                 <Stack
                     direction="row"
                     spacing={0.5}
-                    alignItems="center"
+                    sx={{
+                        alignItems: "center"
+                    }}
                 >
                     <Typography
                         variant="body2"
@@ -760,17 +763,16 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                     <Stack
                         direction="row"
                         spacing={0.5}
-                        alignItems="center"
                         sx={{
+                            alignItems: "center",
                             px: 1,
                             py: 0.5,
                             border: '1px solid',
                             borderColor: 'divider',
                             borderRadius: 1,
                             flex: 1,
-                            mr: 2,
-                        }}
-                    >
+                            mr: 2
+                        }}>
                         <Tooltip
                             title="Zum Wurzelordner"
                             arrow={true}
@@ -991,9 +993,10 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                         <Stack
                             direction="row"
                             spacing={1.25}
-                            alignItems="center"
-                            sx={{mb: 1.5}}
-                        >
+                            sx={{
+                                alignItems: "center",
+                                mb: 1.5
+                            }}>
                             <TextField
                                 size="small"
                                 placeholder="Dateien oder Ordner suchen"
@@ -1002,36 +1005,40 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                     setSearch(event.target.value);
                                 }}
                                 sx={{minWidth: 240, flexGrow: 1}}
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchOutlinedIcon fontSize="small"/>
-                                        </InputAdornment>
-                                    ),
-                                    endAdornment: search.trim().length > 0 ? (
-                                        <InputAdornment position="end">
-                                            <Tooltip
-                                                title="Suche leeren"
-                                                arrow={true}
-                                            >
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => {
-                                                        setSearch('');
-                                                    }}
+                                slotProps={{
+                                    input: {
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <SearchOutlinedIcon fontSize="small"/>
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: search.trim().length > 0 ? (
+                                            <InputAdornment position="end">
+                                                <Tooltip
+                                                    title="Suche leeren"
+                                                    arrow={true}
                                                 >
-                                                    <ClearOutlinedIcon fontSize="small"/>
-                                                </IconButton>
-                                            </Tooltip>
-                                        </InputAdornment>
-                                    ) : undefined,
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => {
+                                                            setSearch('');
+                                                        }}
+                                                    >
+                                                        <ClearOutlinedIcon fontSize="small"/>
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </InputAdornment>
+                                        ) : undefined,
+                                    }
                                 }}
                             />
                             <Typography
                                 variant="body2"
-                                color="text.secondary"
-                                sx={{whiteSpace: 'nowrap', pl: 1}}
-                            >
+                                sx={{
+                                    color: "text.secondary",
+                                    whiteSpace: 'nowrap',
+                                    pl: 1
+                                }}>
                                 {folderCount} Ordner, {fileCount} Dateien
                             </Typography>
                         </Stack>
@@ -1088,15 +1095,18 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                             slots={{
                                 noRowsOverlay: () => (
                                     <Stack
-                                        alignItems="center"
-                                        justifyContent="center"
-                                        sx={{height: '100%'}}
                                         spacing={1}
-                                    >
+                                        sx={{
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            height: '100%'
+                                        }}>
                                         <InfoOutlinedIcon color="disabled"/>
                                         <Typography
                                             variant="body2"
-                                            color="text.secondary"
+                                            sx={{
+                                                color: "text.secondary"
+                                            }}
                                         >
                                             Dieser Ordner ist leer oder es gibt keine Treffer.
                                         </Typography>
@@ -1113,17 +1123,21 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                 onClose={closeFileDialog}
                 maxWidth="sm"
                 fullWidth={true}
-                TransitionProps={{
-                    onExited: () => {
-                        setDialogItem(undefined);
-                    },
+                slotProps={{
+                    transition: {
+                        onExited: () => {
+                            setDialogItem(undefined);
+                        },
+                    }
                 }}
             >
                 <DialogTitle sx={{pr: 6}}>
                     <Stack
                         direction="row"
                         spacing={1.25}
-                        alignItems="center"
+                        sx={{
+                            alignItems: "center"
+                        }}
                     >
                         <Box
                             sx={{
@@ -1149,9 +1163,10 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                             >{dialogItem?.filename}</Typography>
                             <Typography
                                 variant="caption"
-                                color="text.secondary"
-                                sx={{mt: -0.25}}
-                            >Datei-Informationen</Typography>
+                                sx={{
+                                    color: "text.secondary",
+                                    mt: -0.25
+                                }}>Datei-Informationen</Typography>
                         </Stack>
                     </Stack>
                     <IconButton
@@ -1174,7 +1189,9 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 direction="row"
                                 spacing={1}
                                 useFlexGap={true}
-                                flexWrap="wrap"
+                                sx={{
+                                    flexWrap: "wrap"
+                                }}
                             >
                                 <Chip
                                     label={`Typ: ${dialogItem.mimeType || 'Unbekannt'}`}
@@ -1205,7 +1222,9 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 <Grid size={{xs: 12, sm: 4}}>
                                     <Typography
                                         variant="body2"
-                                        color="text.secondary"
+                                        sx={{
+                                            color: "text.secondary"
+                                        }}
                                     >Erstellt am</Typography>
                                 </Grid>
                                 <Grid size={{xs: 12, sm: 8}}>
@@ -1215,7 +1234,9 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 <Grid size={{xs: 12, sm: 4}}>
                                     <Typography
                                         variant="body2"
-                                        color="text.secondary"
+                                        sx={{
+                                            color: "text.secondary"
+                                        }}
                                     >Zuletzt aktualisiert</Typography>
                                 </Grid>
                                 <Grid size={{xs: 12, sm: 8}}>
@@ -1232,13 +1253,16 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                             key={key}
                                             direction="row"
                                             spacing={1}
-                                            alignItems="flex-start"
+                                            sx={{
+                                                alignItems: "flex-start"
+                                            }}
                                         >
                                             <Typography
                                                 variant="body2"
-                                                color="text.secondary"
-                                                sx={{minWidth: 120}}
-                                            >{key}</Typography>
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    minWidth: 120
+                                                }}>{key}</Typography>
                                             <Typography
                                                 variant="body2"
                                                 sx={{wordBreak: 'break-word'}}
@@ -1252,7 +1276,9 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 <Box sx={{mt: 2}}>
                                     <Typography
                                         variant="caption"
-                                        color="text.secondary"
+                                        sx={{
+                                            color: "text.secondary"
+                                        }}
                                     >
                                         Das Herunterladen ist in dieser Ansicht deaktiviert.
                                     </Typography>

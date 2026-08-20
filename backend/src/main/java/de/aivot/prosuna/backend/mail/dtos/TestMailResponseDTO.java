@@ -4,8 +4,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 public record TestMailResponseDTO(
-        @Nonnull
-        Boolean success,
+        boolean success,
         @Nullable
         String errorMessage
 ) {
@@ -16,6 +15,16 @@ public record TestMailResponseDTO(
 
     @Nonnull
     public static TestMailResponseDTO createError(@Nonnull Throwable error) {
-        return new TestMailResponseDTO(false, error.getMessage());
+        var current = error;
+        while ((current.getMessage() == null || current.getMessage().isBlank()) && current.getCause() != null) {
+            current = current.getCause();
+        }
+
+        var message = current.getMessage();
+        if (message == null || message.isBlank()) {
+            message = current.getClass().getSimpleName();
+        }
+
+        return new TestMailResponseDTO(false, message);
     }
 }

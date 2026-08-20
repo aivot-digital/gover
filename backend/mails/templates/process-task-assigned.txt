@@ -9,6 +9,12 @@ Aufgabe erhalten: [(${startedLabel})] Uhr
 [/]
 Zugewiesen durch: [(${assignmentSource})]
 
-Sie können die Aufgabe über den nachfolgenden Link aufrufen: [(${base.config.createUrl(taskPath)})]
+Aufgabe öffnen:
+[(${base.config.createUrl(taskPath)})]
 
-Diese E-Mail ist automatisch generiert. Bitte nicht antworten.
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

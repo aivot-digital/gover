@@ -289,18 +289,23 @@ export function DomainUserSelectFieldComponent(props: DomainUserSelectFieldCompo
             onChange={(_: SyntheticEvent, nextValues) => {
                 onChange(normalizeValues(nextValues.map((entry) => entry.value)));
             }}
-            renderTags={(tagValue, getTagProps) => {
-                return tagValue.map((option, index) => (
-                    <Chip
-                        {...getTagProps({index})}
-                        key={option.key}
-                        icon={option.icon}
-                        label={option.label}
-                    />
-                ));
+            renderValue={(tagValue, getItemProps) => {
+                return tagValue.map((option, index) => {
+                    const {key, ...itemProps} = getItemProps({index});
+
+                    return (
+                        <Chip
+                            {...itemProps}
+                            key={option.key || key}
+                            icon={option.icon}
+                            label={option.label}
+                        />
+                    );
+                });
             }}
-            renderOption={(optionProps, option, state) => (
+            renderOption={({key, ...optionProps}, option, state) => (
                 <Box
+                    key={key}
                     component="li"
                     {...optionProps}
                     sx={{
@@ -369,26 +374,31 @@ export function DomainUserSelectFieldComponent(props: DomainUserSelectFieldCompo
                     required={required}
                     error={error != null}
                     helperText={error ?? loadError ?? hint}
-                    InputLabelProps={{
-                        title: label,
-                    }}
-                    InputProps={{
-                        ...params.InputProps,
-                        endAdornment: (
-                            <>
-                                {
-                                    open && isLoading &&
-                                    <CircularProgress
-                                        color="inherit"
-                                        size={16}
-                                        sx={{mr: 1}}
-                                    />
-                                }
-                                {params.InputProps.endAdornment}
-                            </>
-                        ),
-                    }}
-                />
+                    slotProps={{
+                        ...params.slotProps,
+
+                        input: {
+                            ...params.slotProps.input,
+                            endAdornment: (
+                                <>
+                                    {
+                                        open && isLoading &&
+                                        <CircularProgress
+                                            color="inherit"
+                                            size={16}
+                                            sx={{mr: 1}}
+                                        />
+                                    }
+                                    {params.slotProps.input.endAdornment}
+                                </>
+                            ),
+                        },
+
+                        inputLabel: {
+                            ...params.slotProps.inputLabel,
+                            title: label,
+                        },
+                    }} />
             )}
         />
     );

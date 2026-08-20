@@ -285,18 +285,20 @@ export function UserDetailsPageIndex() {
             label={label}
             value={value}
             fullWidth
-            InputProps={{
-                readOnly: true,
-                endAdornment: (
-                    <InputAdornment position="end">
-                        <CopyToClipboardButton
-                            text={value}
-                            tooltip={`${copyLabel} kopieren`}
-                            copiedTooltip={`${copyLabel} kopiert`}
-                            ariaLabel={`${copyLabel} kopieren`}
-                        />
-                    </InputAdornment>
-                ),
+            slotProps={{
+                input: {
+                    readOnly: true,
+                    endAdornment: (
+                        <InputAdornment position="end">
+                            <CopyToClipboardButton
+                                text={value}
+                                tooltip={`${copyLabel} kopieren`}
+                                copiedTooltip={`${copyLabel} kopiert`}
+                                ariaLabel={`${copyLabel} kopieren`}
+                            />
+                        </InputAdornment>
+                    ),
+                }
             }}
         />
     );
@@ -643,9 +645,10 @@ export function UserDetailsPageIndex() {
                         >
                             <Typography
                                 variant="body2"
-                                color="text.secondary"
-                                sx={{maxWidth: 900}}
-                            >
+                                sx={{
+                                    color: "text.secondary",
+                                    maxWidth: 900
+                                }}>
                                 Weitergehende konto- oder sicherheitsbezogene Änderungen erfolgen direkt in Keycloak.
                                 Benutzer-ID:{' '}
                                 <Box
@@ -657,7 +660,7 @@ export function UserDetailsPageIndex() {
                                 >
                                     {editedUser.id}
                                 </Box>
-                                . Wenn die Mitarbeiter:in keinen Zugriff mehr benötigt, können Sie das Konto im IDP
+                                . Wenn die Mitarbeiter:in keinen Zugriff mehr benötigt, können Sie das Konto im IdP
                                 löschen.
                             </Typography>
 
@@ -839,9 +842,10 @@ export function UserDetailsPageIndex() {
 
                     <Typography
                         variant="body2"
-                        color="text.secondary"
-                        sx={{mt: 2}}
-                    >
+                        sx={{
+                            color: "text.secondary",
+                            mt: 2
+                        }}>
                         Das temporäre Passwort wird an dieser Stelle einmalig angezeigt. Name, E-Mail-Adresse und
                         Systemrolle können später weiterhin im Profil eingesehen und geändert werden. Die Mitarbeiter:in
                         muss beim ersten Login ein neues Passwort vergeben, die E-Mail-Adresse bestätigen und

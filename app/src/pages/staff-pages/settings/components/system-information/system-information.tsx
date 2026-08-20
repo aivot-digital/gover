@@ -4,6 +4,7 @@ import {
     Button,
     Chip,
     CircularProgress,
+    Link,
     Stack,
     Table,
     TableBody,
@@ -31,6 +32,8 @@ import AttachFileIcon from '@aivot/mui-material-symbols-400-n25-outlined/AttachF
 import ScheduleIcon from '@aivot/mui-material-symbols-400-n25-outlined/Schedule';
 import DnsIcon from '@aivot/mui-material-symbols-400-n25-outlined/Dns';
 import TravelExploreIcon from '@aivot/mui-material-symbols-400-n25-outlined/TravelExplore';
+import HeadsetMicOutlined from '@aivot/mui-material-symbols-400-n25-outlined/HeadsetMic';
+import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {ModuleFlag, ModuleFlagLabels} from '../../../../../utils/module-flags';
 import {ProcessNodeType} from '../../../../../modules/process/services/process-node-provider-api-service';
 import {humanizeFileSize, humanizeNumber} from '../../../../../utils/humanization-utils';
@@ -160,10 +163,13 @@ export function SystemInformation(): React.ReactElement {
 
     const getStatusLabel = (key: keyof HealthDataComponents): React.ReactNode => {
         if (health == null) {
-            return <Typography
-                fontStyle={'italic'}
-                color={'text.secondary'}
-            >Status wird geladen…</Typography>;
+            return (
+                <Typography
+                    sx={{
+                        fontStyle: 'italic',
+                        color: 'text.secondary'
+                    }}>Status wird geladen…</Typography>
+            );
         }
 
         const status = getStatus(key);
@@ -210,9 +216,11 @@ export function SystemInformation(): React.ReactElement {
             <Typography
                 component="span"
                 variant="body2"
-                color="text.secondary"
+                sx={{
+                    color: "text.secondary"
+                }}
             >
-                {freeSpace} frei von {totalSpace}
+                {freeSpace}frei von {totalSpace}
             </Typography>
         );
     };
@@ -246,7 +254,9 @@ export function SystemInformation(): React.ReactElement {
                     <Typography
                         component="span"
                         variant="body2"
-                        color="text.secondary"
+                        sx={{
+                            color: "text.secondary"
+                        }}
                     >
                         Zentraler Anbieter für Vorgangsanlagen: {defaultProvider.name}
                     </Typography>
@@ -266,7 +276,9 @@ export function SystemInformation(): React.ReactElement {
                     <Typography
                         component="span"
                         variant="body2"
-                        color="text.secondary"
+                        sx={{
+                            color: "text.secondary"
+                        }}
                     >
                         {formatCount(providersWithHints, 'Anbieter mit Hinweis', 'Anbieter mit Hinweisen')}
                     </Typography>
@@ -335,6 +347,7 @@ export function SystemInformation(): React.ReactElement {
     ).sort((a, b) => a.localeCompare(b, 'de')), []);
     const isProcessModuleEnabled = AppConfig.moduleFlags.includes(ModuleFlag.Process);
     const isErrorTrackingConfigured = AppConfig.sentryDsn.trim().length > 0;
+    const supportUrl = AppConfig.supportUrl?.trim();
 
     const softwareVersionItems: StatusTablePropsItem[] = useMemo(() => {
         return [
@@ -371,13 +384,43 @@ export function SystemInformation(): React.ReactElement {
                 icon: <TravelExploreIcon/>,
                 children: renderOptionalConfigValue(AppConfig.registryHostname),
             },
+            ...(supportUrl == null || supportUrl.length === 0 ? [] : [{
+                label: 'Support-Angebot',
+                icon: <HeadsetMicOutlined/>,
+                children: (
+                    <Link
+                        href={supportUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        underline="hover"
+                        sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            overflowWrap: 'anywhere',
+                        }}
+                    >
+                        {supportUrl}
+                        <OpenInNew
+                            sx={{
+                                color: 'text.secondary',
+                                flexShrink: 0,
+                                fontSize: '1rem',
+                            }}
+                        />
+                    </Link>
+                ),
+            }]),
             {
                 label: 'Externes Fehlertracking',
                 icon: <BugReport/>,
                 children: isErrorTrackingConfigured ? 'Aktiv' : 'Inaktiv',
             },
         ];
-    }, [isErrorTrackingConfigured]);
+    }, [
+        isErrorTrackingConfigured,
+        supportUrl,
+    ]);
 
     const functionalScopeItems: StatusTablePropsItem[] = useMemo(() => {
         return [
@@ -390,9 +433,10 @@ export function SystemInformation(): React.ReactElement {
                     : (
                         <Stack
                             direction="row"
-                            flexWrap="wrap"
-                            gap={0.75}
-                        >
+                            sx={{
+                                flexWrap: "wrap",
+                                gap: 0.75
+                            }}>
                             {
                                 AppConfig
                                     .moduleFlags
@@ -491,9 +535,10 @@ export function SystemInformation(): React.ReactElement {
                     ? (
                         <Stack
                             direction="row"
-                            flexWrap="wrap"
-                            gap={0.75}
-                        >
+                            sx={{
+                                flexWrap: "wrap",
+                                gap: 0.75
+                            }}>
                             {
                                 knownFileExtensions.map((extension) => (
                                     <Chip

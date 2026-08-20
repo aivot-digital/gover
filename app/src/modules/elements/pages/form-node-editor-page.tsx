@@ -123,6 +123,7 @@ import {VDepartmentShadowedApiService} from '../../departments/services/v-depart
 import {Chip} from '../../../components/chip/chip';
 import {quoteString} from '../../../utils/string-utils';
 import {PaymentRequestOverview} from '../../payment/components/payment-request-overview';
+import {resolveThemeChainLogoKey} from '../../../theming/resolve-theme-logo';
 
 export const DialogSearchParam = 'dialog';
 
@@ -494,14 +495,8 @@ export function FormNodeEditorPage() {
             return outerTheme;
         }
 
-        return createAppTheme(activeFormTheme, BaseTheme);
+        return createAppTheme(activeFormTheme, BaseTheme, outerTheme.palette.mode);
     }, [draftPreviewThemeChain, formTheme, outerTheme]);
-    const previewThemeCssVariables = useMemo(() => ({
-        '--prosuna-theme-primary': previewTheme.palette.primary.main,
-        '--prosuna-theme-primary-dark': previewTheme.palette.primary.dark,
-        '--prosuna-theme-secondary': previewTheme.palette.secondary.main,
-    }), [previewTheme]);
-
     const {
         ref: containerRef,
         size: containerSize,
@@ -982,14 +977,26 @@ export function FormNodeEditorPage() {
 
     // Use the locally resolved draft chain for logos as well. The public form logo endpoint is based
     // on the persisted form and the system logo should only appear when no custom theme is resolved.
-    const draftLogoTheme = draftPreviewThemeChain?.find((theme) => theme.logoKey != null);
-    const formLogoUrl = draftLogoTheme?.logoKey != null ?
-        AssetsApiService.useAssetLink(draftLogoTheme.logoKey) :
-        draftPreviewThemeChain != null ?
-            draftPreviewThemeChain.length === 0 ?
-                createApiPath('/api/public/system/logo/') :
-                null :
-            `/api/public/form/${process.slug}/${node.configuration.formSlug}/logo/?${formAssetQueryParams.toString()}`;
+    const resolveDraftLogoUrl = (colorScheme: 'light' | 'dark'): string | null => {
+        if (draftPreviewThemeChain == null) {
+            const queryParams = new URLSearchParams(formAssetQueryParams);
+            if (colorScheme === 'dark') {
+                queryParams.set('color-scheme', 'dark');
+            }
+            return `/api/public/form/${process.slug}/${node.configuration.formSlug}/logo/?${queryParams.toString()}`;
+        }
+
+        if (draftPreviewThemeChain.length === 0) {
+            return createApiPath(
+                `/api/public/system/logo/${colorScheme === 'dark' ? '?color-scheme=dark' : ''}`,
+            );
+        }
+
+        const logoKey = resolveThemeChainLogoKey(draftPreviewThemeChain, colorScheme);
+        return logoKey == null ? null : AssetsApiService.useAssetLink(logoKey);
+    };
+    const formLogoUrl = resolveDraftLogoUrl('light');
+    const formLogoUrlDark = resolveDraftLogoUrl('dark');
 
     const handleSubmitEvent = async (values: AuthoredElementValues, event: string): Promise<void> => {
         if (event != SUBMIT_EVENT) {
@@ -1221,13 +1228,14 @@ export function FormNodeEditorPage() {
                                         ref={scrollContainerRef}
                                     >
                                         <ThemeProvider theme={previewTheme}>
-                                            <Box sx={previewThemeCssVariables}>
+                                            <Box>
                                                 <FormHeaderComponent
                                                     form={formLayout}
                                                     node={node}
                                                     process={process}
                                                     version={processVersion}
                                                     logoUrl={formLogoUrl}
+                                                    logoUrlDark={formLogoUrlDark}
                                                     onDeleteFormData={() => {
                                                         dispatch(setCurrentStep(0));
                                                         setAuthoredElementValues({});
@@ -1278,6 +1286,7 @@ export function FormNodeEditorPage() {
                                                     process={process}
                                                     version={processVersion}
                                                     logoUrl={formLogoUrl}
+                                                    logoUrlDark={formLogoUrlDark}
                                                 />
 
                                                 <HelpDialog
@@ -1323,7 +1332,8 @@ export function FormNodeEditorPage() {
                                         <Paper
                                             sx={{
                                                 boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                                                borderLeft: '1px solid #E0E7E0',
+                                                borderLeft: '1px solid',
+                                                borderLeftColor: 'divider',
                                                 borderRadius: 0,
                                                 position: 'relative',
                                                 height: '100%',
@@ -1467,7 +1477,9 @@ export function FormNodeEditorPage() {
                     <Typography
                         variant="body2"
                         component="div"
-                        maxWidth={600}
+                        sx={{
+                            maxWidth: 600
+                        }}
                     >
                         Diese Anmeldung dient nur zum Testen im Formulareditor. Sie können das Formular damit in einem
                         authentifizierten Zustand prüfen; Nutzer:innen sehen später die normale Anmeldeseite des
@@ -1475,11 +1487,12 @@ export function FormNodeEditorPage() {
                     </Typography>
                     <Typography
                         variant="body2"
-                        color="text.secondary"
-                        maxWidth={600}
-                        marginTop={2}
-                        marginBottom={4}
-                    >
+                        sx={{
+                            color: "text.secondary",
+                            maxWidth: 600,
+                            marginTop: 2,
+                            marginBottom: 4
+                        }}>
                         Um Ihren Authentifizierungsstatus zurückzusetzen, können Sie das formularspezifische
                         Drei-Punkte-Menü verwenden und {quoteString('Alle Formulardaten löschen')} auswählen.
                     </Typography>

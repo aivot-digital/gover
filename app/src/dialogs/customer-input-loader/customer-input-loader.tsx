@@ -109,7 +109,6 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
     return (
         <Dialog
             open={dialogState === 'load'}
-            disableEscapeKeyDown={true}
         >
             <DialogTitle>
                 <Typography
@@ -127,17 +126,17 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
                     </Typography>
 
                     <Box
-                        display="flex"
-                        justifyContent="center"
-                        alignItems="center"
                         sx={{
-                            border: '1px solid #DFDFDF',
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            border: '1px solid',
+                            borderColor: 'divider',
                             px: 4,
                             py: 2,
                             mt: 3,
-                            mb: 3,
-                        }}
-                    >
+                            mb: 3
+                        }}>
                         <Box>
                             <RestorePageIcon
                                 color="primary"
@@ -150,7 +149,7 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
                                 component="p"
                                 variant="h6"
                                 sx={{
-                                    color: '#16191F',
+                                    color: 'text.primary',
                                     mt: -0.5,
                                 }}
                             >

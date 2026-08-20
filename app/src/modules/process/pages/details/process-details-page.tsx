@@ -2458,7 +2458,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                                     mx: '-12px',
                                                                     mt: 1,
                                                                     mb: 1.25,
-                                                                    borderColor: 'rgba(15, 23, 42, 0.12)',
+                                                                    borderColor: 'divider',
                                                                 }}
                                                             />
                                                             <Typography
@@ -2569,7 +2569,9 @@ export function ProcessDetailsPage(): ReactNode {
                                                 p: 2,
                                             }}
                                         >
-                                            <Typography color="text.secondary">
+                                            <Typography sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 {
                                                     hasFlowNodeProviderLoadError ?
                                                         'Die versionierten Prozesselemente konnten nicht geladen werden.' :
@@ -2594,7 +2596,8 @@ export function ProcessDetailsPage(): ReactNode {
                             sx={{
                                 px: 0,
                                 boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                                borderLeft: '1px solid #E0E7E0',
+                                borderLeft: '1px solid',
+                                borderLeftColor: 'divider',
                                 borderRadius: 0,
                                 position: 'relative',
                                 height: '100%',

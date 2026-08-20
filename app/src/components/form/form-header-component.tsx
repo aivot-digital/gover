@@ -26,6 +26,8 @@ import {FormLayoutElement, resolveFormNodeName} from '../../models/elements/form
 import {ProcessEntity} from '../../modules/process/entities/process-entity';
 import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
 import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
+import {resolveAccessibleForeground} from '../../theming/resolve-appearance-colors';
+import {ColorModePicker} from '../color-mode-picker/color-mode-picker';
 
 interface FormHeaderComponentProps {
     form: FormLayoutElement;
@@ -33,6 +35,7 @@ interface FormHeaderComponentProps {
     process: ProcessEntity;
     version: ProcessVersionEntity;
     logoUrl: string | null;
+    logoUrlDark: string | null;
     onDeleteFormData: () => void;
 }
 
@@ -43,6 +46,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
         process,
         version,
         logoUrl,
+        logoUrlDark,
         onDeleteFormData,
     } = props;
 
@@ -60,9 +64,13 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
 
     const [logoStatus, setLogoStatus] = useState<'loading' | 'failed' | 'present'>('loading');
 
+    const resolvedLogoUrl = theme.palette.mode === 'dark' ? logoUrlDark ?? logoUrl : logoUrl;
+
     useEffect(() => {
-        setLogoStatus(logoUrl == null ? 'failed' : 'loading');
-    }, [logoUrl]);
+        setLogoStatus(resolvedLogoUrl == null ? 'failed' : 'loading');
+    }, [resolvedLogoUrl]);
+
+    const hasVisibleLogo = resolvedLogoUrl != null && logoStatus === 'present';
 
     return (
         <Box
@@ -72,6 +80,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
             <Box
                 sx={{
                     boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.06)',
+                    backgroundColor: 'background.paper',
                 }}
             >
                 <Container>
@@ -98,11 +107,12 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                             }}
                         >
                             {
-                                logoUrl != null &&
+                                resolvedLogoUrl != null &&
                                 <Logo
-                                    key={'logo-' + logoUrl}
+                                    key={'logo-' + resolvedLogoUrl}
                                     updated={version.updated}
-                                    src={logoUrl}
+                                    src={logoUrl ?? undefined}
+                                    srcDark={logoUrlDark ?? undefined}
                                     width={200}
                                     height={100}
                                     onStatusChange={setLogoStatus}
@@ -111,9 +121,9 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
 
                             <Box
                                 sx={{
-                                    ml: logoStatus !== 'failed' ? 4 : 0,
-                                    pl: logoStatus !== 'failed' ? 4 : 0,
-                                    borderLeft: logoStatus !== 'failed' ? '1px solid #E4E4E4' : 'none',
+                                    ml: hasVisibleLogo ? 4 : 0,
+                                    pl: hasVisibleLogo ? 4 : 0,
+                                    borderLeft: hasVisibleLogo ? `1px solid ${theme.palette.divider}` : 'none',
                                     [theme.breakpoints.down('md')]: {
                                         borderLeft: 'none',
                                         pl: 0,
@@ -124,8 +134,11 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                             >
                                 <Typography
                                     variant="h1"
-                                    color="primary"
                                     sx={{
+                                        color: resolveAccessibleForeground(
+                                            theme.palette.primary.main,
+                                            theme.palette.background.paper,
+                                        ),
                                         display: 'block',
                                         maxWidth: '640px',
                                         margin: 0,
@@ -146,6 +159,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                         >
                             <Tooltip
                                 title="Informationen zur Barrierefreiheit"
+                                arrow
                             >
                                 <IconButton
                                     color="primary"
@@ -159,6 +173,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
 
                             <Tooltip
                                 title="Hilfe & FAQs"
+                                arrow
                             >
                                 <IconButton
                                     color="primary"
@@ -172,8 +187,14 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                                 </IconButton>
                             </Tooltip>
 
+                            <ColorModePicker
+                                color="primary"
+                                iconFontSize="large"
+                            />
+
                             <Tooltip
-                                title="Formular zurücksetzen"
+                                title="Weitere Optionen"
+                                arrow
                             >
                                 <IconButton
                                     color="primary"

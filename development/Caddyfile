@@ -28,6 +28,12 @@ http://localhost:80 {
         reverse_proxy host.docker.internal:8080
     }
 
+    handle_path /sbom/* {
+        root * /srv/sbom
+        header X-Robots-Tag "noindex, nofollow, noarchive"
+        file_server
+    }
+
     handle @staff {
         reverse_proxy host.docker.internal:3001
     }

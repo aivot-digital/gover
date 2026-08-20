@@ -21,7 +21,10 @@ import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submis
 import {ElementType} from '../../data/element-type/element-type';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {CanvasConfettiOverlay} from '../confetti/canvas-confetti-overlay';
+import {
+    CanvasConfettiOverlay,
+    prosunaConfettiColors,
+} from '../confetti/canvas-confetti-overlay';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
 import {ProcessEntity} from '../../modules/process/entities/process-entity';
@@ -43,7 +46,6 @@ interface SubmittedProps {
     version: ProcessVersionEntity;
 }
 
-const submittedConfettiColors = ['#fcaa67', '#b0413e'];
 const handledConfettiAccessKeys = new Set<string>();
 
 const useSetMailErrorWithSnackbar = (setMailError: (message: string) => void) => {
@@ -657,7 +659,7 @@ export function Submitted(props: SubmittedProps) {
             </Box>
             <CanvasConfettiOverlay
                 playKey={confettiPlayKey}
-                colors={submittedConfettiColors}
+                colors={prosunaConfettiColors}
             />
 
             <InfoDialog

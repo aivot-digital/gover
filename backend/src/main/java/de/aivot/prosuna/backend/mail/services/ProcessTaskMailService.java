@@ -78,6 +78,7 @@ public class ProcessTaskMailService {
                 : "Ihnen wurde in Prosuna eine Aufgabe zur Bearbeitung zugewiesen.");
         mailData.put("assignmentSource", triggeringUser != null ? triggeringUser.getFullName() : "System");
         mailData.put("process", process);
+        mailData.put("department", department);
         mailData.put("processInstance", processInstance);
         mailData.put("processInstanceTask", processInstanceTask);
         mailData.put("assignedUser", assignedUser);

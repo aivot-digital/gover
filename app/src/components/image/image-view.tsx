@@ -11,7 +11,14 @@ export function ImageView({element}: BaseViewProps<ImageElement, void>) {
                 width="100%"
             />
             {element.caption && (
-                <Typography component={"figcaption"} variant="caption" color="text.secondary" display="block" mt={.5}>
+                <Typography
+                    component={"figcaption"}
+                    variant="caption"
+                    sx={{
+                        color: "text.secondary",
+                        display: "block",
+                        mt: .5
+                    }}>
                     {element.caption}
                 </Typography>
             )}

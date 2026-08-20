@@ -34,10 +34,10 @@
 }
 
 .organization-chart-flow-controls.react-flow__controls {
-    background: rgba(255, 255, 255, 0.96);
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: var(--organization-chart-flow-surface);
+    border: 1px solid var(--organization-chart-flow-border);
     border-radius: 6px;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    box-shadow: var(--organization-chart-flow-shadow);
     overflow: hidden;
 }
 
@@ -52,7 +52,7 @@
 }
 
 .organization-chart-flow-controls > .organization-chart-flow-control-tooltip-anchor:not(:last-child) {
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    border-bottom: 1px solid var(--organization-chart-flow-border);
 }
 
 .organization-chart-flow-controls .react-flow__controls-button.organization-chart-flow-control-button {
@@ -61,16 +61,16 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: #475569;
+    color: var(--organization-chart-flow-text);
     box-shadow: none;
 }
 
 .organization-chart-flow-controls .react-flow__controls-button.organization-chart-flow-control-button:hover {
-    background: #f8fafc;
+    background: var(--organization-chart-flow-hover);
 }
 
 .organization-chart-flow-controls .react-flow__controls-button.organization-chart-flow-control-button:disabled {
-    color: #cbd5e1;
+    color: var(--organization-chart-flow-text-disabled);
     background: transparent;
 }
 

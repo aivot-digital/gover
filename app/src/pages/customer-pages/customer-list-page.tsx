@@ -92,12 +92,12 @@ export function CustomerListPage() {
         return (
             <>
                 <MetaElement
-                    title={'Online-Antrags-Management'}
+                    title={'Formularverzeichnis'}
                     titlePrefix={provider}
                 />
                 <NotFoundPage
-                    title={'Online-Antrags-Management von ' + provider}
-                    msg={'Dieses System besitzt keine öffentliche Index-Seite. Bitte nutzen Sie die direkten Links zu den Formularen dieses Anbieters.'}
+                    title="Formularverzeichnis nicht verfügbar"
+                    msg={'Auf diesem System ist kein öffentliches Formularverzeichnis verfügbar. Bitte nutzen Sie die direkten Links zu den einzelnen Formularen.'}
                 />
             </>
         );
@@ -113,11 +113,11 @@ export function CustomerListPage() {
         return (
             <Box
                 sx={{
-                    backgroundColor: 'white',
+                    backgroundColor: 'background.default',
                 }}
             >
                 <MetaElement
-                    title={'Online-Antrags-Management'}
+                    title={'Formularverzeichnis'}
                     titlePrefix={provider}
                 />
 
@@ -142,7 +142,7 @@ export function CustomerListPage() {
                                 }}
                             >
                                 <ListHeader
-                                    title="Unsere Formulare"
+                                    title="Formulare"
                                     search={search}
                                     onSearchChange={setSearch}
                                     searchLabel="Formular suchen"

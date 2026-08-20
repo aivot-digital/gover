@@ -47,13 +47,11 @@ public class SystemService {
         return new ThemeEntity(
                 0,
                 "Standard",
-                "#253B5B",
-                "#102334",
-                "#F8D27C",
-                "#CD362D",
-                "#B55E06",
-                "#1F7894",
-                "#378550",
+                "#733635",
+                "#A0C9CB",
+                "#FF613A",
+                "#A0C9CB",
+                null,
                 null,
                 null
         );

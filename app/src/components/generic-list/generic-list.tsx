@@ -7,7 +7,7 @@ import {
     GridPaginationModel,
     GridSortModel
 } from '@mui/x-data-grid';
-import {Box, CircularProgress, Menu, MenuItem, styled, SxProps, Tab, Tabs} from '@mui/material';
+import {Box, CircularProgress, Menu, MenuItem, styled, SxProps, Tab, Tabs, type Theme as MuiTheme} from '@mui/material';
 import React, {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import {SearchInput} from '../search-input/search-input';
 import {IconButton} from '../icon-button/icon-button';
@@ -388,8 +388,12 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
     const style: SxProps = useMemo(() => ({
         width: '100%',
         borderRadius: 0,
+        borderBottomLeftRadius: 1,
+        borderBottomRightRadius: 1,
+        overflow: 'hidden',
         borderLeft: 'none',
         borderRight: 'none',
+        borderBottom: 'none',
         backgroundColor: 'background.paper',
         '& .MuiDataGrid-columnHeader:first-of-type, & .MuiDataGrid-cell[data-colindex="0"]': {
             paddingLeft: '16px',
@@ -397,11 +401,11 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         [`& .MuiDataGrid-columnHeader:last-of-type, & .MuiDataGrid-cell[data-colindex="${lastColIndex}"]`]: {
             paddingRight: '16px',
         },
-        '& .MuiDataGrid-columnHeader': {
-            backgroundColor: 'rgba(20, 38, 56, 0.06)',
+        [`& .${gridClasses.columnHeaders}, & .${gridClasses.columnHeader}, & .${gridClasses.columnHeaders} .${gridClasses.scrollbarFiller}, & .${gridClasses.columnHeaders} .${gridClasses.filler}`]: {
+            backgroundColor: (theme: MuiTheme) => `${theme.palette.action.hover} !important`,
         },
         '& .MuiDataGrid-columnHeader .MuiDataGrid-columnSeparator': {
-            color: 'rgba(20, 38, 56, 0.2)',
+            color: 'divider',
         },
         // Remove cell focus outline
         [`& .${gridClasses.cell}:focus, & .${gridClasses.cell}:focus-within`]: {
@@ -607,6 +611,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     }}
                     getRowHeight={dynamicRowHeight ? () => 'auto' : undefined}
                     getEstimatedRowHeight={dynamicRowHeight ? () => 80 : undefined}
+                    rowHeight={props.rowHeight}
                 />
             </Box>
 
@@ -689,10 +694,7 @@ const StyledGridOverlay = styled('div')(({theme}) => ({
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%',
-    backgroundColor: 'rgba(18, 18, 18, 0.9)',
-    ...theme.applyStyles('light', {
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    }),
+    backgroundColor: theme.palette.background.paper,
 }));
 
 const LoadingOverlay = () => (

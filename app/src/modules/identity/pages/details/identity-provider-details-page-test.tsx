@@ -231,7 +231,10 @@ export function IdentityProviderDetailsPageTest() {
                         Bitte beachten Sie, dass ausschließlich im Nutzerkontenanbieter zugewiesene Attribute auch innerhalb von Prosuna verwendbar sind.
                     </Typography>
 
-                    <ExpandableCodeBlock value={JSON.stringify(identityData.attributes, null, '\t')} />
+                    <ExpandableCodeBlock
+                        value={JSON.stringify(identityData.attributes, null, '\t')}
+                        language="json"
+                    />
                 </Box>
             }
         </Box>

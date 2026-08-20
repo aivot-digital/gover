@@ -157,8 +157,9 @@ export function DataModelSelectFieldComponent(props: DataModelSelectFieldCompone
             onChange={(_: SyntheticEvent, nextValue) => {
                 onChange(nextValue?.value ?? null);
             }}
-            renderOption={(optionProps, option, state) => (
+            renderOption={({key, ...optionProps}, option, state) => (
                 <Box
+                    key={key}
                     component="li"
                     {...optionProps}
                     sx={{
@@ -227,26 +228,31 @@ export function DataModelSelectFieldComponent(props: DataModelSelectFieldCompone
                     required={required}
                     error={error != null}
                     helperText={error ?? loadError ?? hint}
-                    InputLabelProps={{
-                        title: label,
-                    }}
-                    InputProps={{
-                        ...params.InputProps,
-                        endAdornment: (
-                            <>
-                                {
-                                    open && isLoading &&
-                                    <CircularProgress
-                                        color="inherit"
-                                        size={16}
-                                        sx={{mr: 1}}
-                                    />
-                                }
-                                {params.InputProps.endAdornment}
-                            </>
-                        ),
-                    }}
-                />
+                    slotProps={{
+                        ...params.slotProps,
+
+                        input: {
+                            ...params.slotProps.input,
+                            endAdornment: (
+                                <>
+                                    {
+                                        open && isLoading &&
+                                        <CircularProgress
+                                            color="inherit"
+                                            size={16}
+                                            sx={{mr: 1}}
+                                        />
+                                    }
+                                    {params.slotProps.input.endAdornment}
+                                </>
+                            ),
+                        },
+
+                        inputLabel: {
+                            ...params.slotProps.inputLabel,
+                            title: label,
+                        },
+                    }} />
             )}
         />
     );

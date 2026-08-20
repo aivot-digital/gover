@@ -1,6 +1,12 @@
-<mjml>
+<mjml lang="de">
     <mj-head>
         <mj-include path="../partials/head.mjml" />
+
+        <mj-html-attributes>
+            <mj-selector path=".primary-action a">
+                <mj-html-attribute name="th:href">${base.config.createUrl('/staff/submissions/' + submission.id)}</mj-html-attribute>
+            </mj-selector>
+        </mj-html-attributes>
 
         <mj-preview>
             Information über eine nicht erfolgreich abgeschlossene Zahlung
@@ -14,32 +20,67 @@
                 <mj-text>
                     <p>
                         Hallo,
-                        <br/>
-                        bei der Abwicklung einer Zahlung ist ein Fehler aufgetreten.
-                        <br/>
-                        <br/>
-                        Antrag auf: <b th:text="${form.internalTitle}">Beispielformular</b> - Version
-                        <b th:text="${form.version}">1.0.0</b>
-                        <br/>
-                        Hinterlegter Zahlungsdienstleister: <b th:text="${paymentProvider.name}">Beispiel-Zahlungsdienstleister</b>
-                        <br/>
-                        Fehlermeldung:
-                        <b th:if="${#strings.isEmpty(paymentTransaction.paymentError)}">Unbekannter Fehler</b>
-                        <b th:unless="${#strings.isEmpty(paymentTransaction.paymentError)}" th:text="${paymentTransaction.paymentError}">Beispiel-Fehlermeldung</b>
-                        <br/>
-                        Zeitpunkt des Fehlers: <b th:text="${#numberformat.formatInstant(paymentTransaction.updated, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54:34</b> Uhr
                     </p>
 
                     <p>
-                        Sie können den Antrag über den nachfolgenden Link aufrufen:
-                        <a th:href="${base.config.createUrl('/staff/submissions/' + submission.id)}"
-                           th:text="${base.config.createUrl('/staff/submissions/' + submission.id)}">Beispiel-Link
-                        </a>
+                        bei der Abwicklung einer Zahlung ist ein Fehler aufgetreten.
                     </p>
                 </mj-text>
+
+                <mj-table cellpadding="0"
+                          cellspacing="0"
+                          font-size="15px"
+                          line-height="22px"
+                          padding="8px 0 0"
+                          width="100%">
+                    <tr>
+                        <th scope="row" style="border-bottom:1px solid #e5e7eb;color:#5f6368;font-weight:normal;padding:10px 16px 10px 0;text-align:left;vertical-align:top;width:38%;">
+                            Antrag
+                        </th>
+                        <td style="border-bottom:1px solid #e5e7eb;color:#242424;font-weight:bold;padding:10px 0;vertical-align:top;word-break:break-word;">
+                            <span th:text="${form.internalTitle}">Beispielformular</span>
+                            · Version <span th:text="${form.version}">1.0.0</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="border-bottom:1px solid #e5e7eb;color:#5f6368;font-weight:normal;padding:10px 16px 10px 0;text-align:left;vertical-align:top;width:38%;">
+                            Zahlungs&shy;dienstleister
+                        </th>
+                        <td style="border-bottom:1px solid #e5e7eb;color:#242424;font-weight:bold;padding:10px 0;vertical-align:top;word-break:break-word;"
+                            th:text="${paymentProvider.name}">
+                            Beispiel-Zahlungsdienstleister
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="border-bottom:1px solid #e5e7eb;color:#5f6368;font-weight:normal;padding:10px 16px 10px 0;text-align:left;vertical-align:top;width:38%;">
+                            Fehlermeldung
+                        </th>
+                        <td style="border-bottom:1px solid #e5e7eb;color:#242424;font-weight:bold;padding:10px 0;vertical-align:top;word-break:break-word;">
+                            <span th:if="${#strings.isEmpty(paymentTransaction.paymentError)}">Unbekannter Fehler</span>
+                            <span th:unless="${#strings.isEmpty(paymentTransaction.paymentError)}"
+                                  th:text="${paymentTransaction.paymentError}">Beispiel-Fehlermeldung</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="color:#5f6368;font-weight:normal;padding:10px 16px 10px 0;text-align:left;vertical-align:top;width:38%;">
+                            Zeitpunkt
+                        </th>
+                        <td style="color:#242424;font-weight:bold;padding:10px 0;vertical-align:top;">
+                            <span th:text="${#numberformat.formatInstant(paymentTransaction.updated, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54</span> Uhr
+                        </td>
+                    </tr>
+                </mj-table>
+
+                <mj-button align="left"
+                           css-class="primary-action"
+                           href="#"
+                           padding="24px 0 0">
+                    Antrag öffnen
+                </mj-button>
             </mj-column>
         </mj-section>
 
+        <mj-include path="../partials/default-mail-signature.mjml"/>
         <mj-include path="../partials/auto-generate-hint.mjml"/>
     </mj-body>
 </mjml>

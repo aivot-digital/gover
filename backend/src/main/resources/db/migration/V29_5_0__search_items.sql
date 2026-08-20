@@ -169,20 +169,6 @@ FROM preset_version_with_details
 
 UNION ALL
 
--- Provider Links
-SELECT text 'provider_links'       AS origin_table,
-       null                        AS origin_table_subset,
-       text                        AS label,
-       id::varchar                 AS id,
-       to_tsvector('german', text) AS searchable_element,
-       text                        AS search_text,
-       usp.user_id                 AS user_id,
-       usp.permissions             AS permissions
-FROM provider_links
-         CROSS JOIN v_user_system_permission AS usp
-
-UNION ALL
-
 -- Secrets
 SELECT text 'secrets'              AS origin_table,
        null                        AS origin_table_subset,

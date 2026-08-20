@@ -14,10 +14,10 @@ import HeadsetMicOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Hea
 import InfoOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import Logout from '@aivot/mui-material-symbols-400-n25-outlined/Logout';
 import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
-import {AppInfo} from '../../../app-info';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {setShowAboutProsunaDialog} from '../../../slices/shell-slice';
 import {StringAvatar} from '../../../components/avatar/string-avatar';
+import {getAboutProsunaLabel} from '../../../utils/app-info-utils';
 
 interface ShellUserMenuProps {
     anchorEl: null | HTMLElement;
@@ -35,9 +35,10 @@ export function ShellUserMenu({
     const userName = useMemo(() => getFullName(user), [user]);
     const open = Boolean(anchorEl);
     const dispatch = useAppDispatch();
+    const supportUrl = AppConfig.supportUrl;
 
     const handleExternalLink = (url: string) => {
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
         onClose();
     };
 
@@ -55,30 +56,32 @@ export function ShellUserMenu({
                     vertical: minimizeDrawer ? 'center' : 'top',
                     horizontal: minimizeDrawer ? 'left' : 'left',
                 }}
-                PaperProps={{
-                    elevation: 6,
-                    sx: {
-                        mt: 1.5,
-                        minWidth: 260,
-                        overflow: 'visible',
-                        ...(!minimizeDrawer
-                            ? {
-                                '&::before': {
-                                    // arrow
-                                    content: '""',
-                                    display: 'block',
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 20,
-                                    width: 10,
-                                    height: 10,
-                                    bgcolor: 'rgba(255,255,255,0.98)',
-                                    transform: 'translateY(-50%) translateX(-5px) rotate(45deg)',
-                                    boxShadow: '-1px -1px 2px rgba(0,0,0,0.1)',
-                                    zIndex: 0,
-                                },
-                            }
-                            : {}),
+                slotProps={{
+                    paper: {
+                        elevation: 6,
+                        sx: {
+                            mt: 1.5,
+                            minWidth: 260,
+                            overflow: 'visible',
+                            ...(!minimizeDrawer
+                                ? {
+                                    '&::before': {
+                                        // arrow
+                                        content: '""',
+                                        display: 'block',
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 20,
+                                        width: 10,
+                                        height: 10,
+                                        background: 'inherit',
+                                        transform: 'translateY(-50%) translateX(-5px) rotate(45deg)',
+                                        boxShadow: '-1px -1px 2px rgba(0,0,0,0.1)',
+                                        zIndex: 0,
+                                    },
+                                }
+                                : {}),
+                        },
                     },
                 }}
             >
@@ -112,7 +115,7 @@ export function ShellUserMenu({
                             variant="body1"
                             sx={{
                                 fontWeight: 600,
-                                color: '#111',
+                                color: 'text.primary',
                                 lineHeight: 1,
                                 mt: 0.25,
                             }}
@@ -124,7 +127,7 @@ export function ShellUserMenu({
                         <Typography
                             variant="caption"
                             sx={{
-                                color: 'rgba(0,0,0,0.5)',
+                                color: 'text.secondary',
                                 mt: 0.25,
                                 lineHeight: 1,
                             }}
@@ -167,24 +170,26 @@ export function ShellUserMenu({
                     </Box>
                 </MenuItem>
 
-                {/* Support */}
-                <MenuItem onClick={() => handleExternalLink('https://support.aivot.de')}>
-                    <ListItemIcon>
-                        <HeadsetMicOutlined fontSize="small"/>
-                    </ListItemIcon>
-                    <Box sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                    }}>
-                        <Typography variant="body1">Supportportal</Typography>
-                        <OpenInNew fontSize="inherit"
-                                   sx={{
-                                       fontSize: '1rem',
-                                       opacity: 0.6,
-                                   }}/>
-                    </Box>
-                </MenuItem>
+                {/* Support is deployment-specific and remains hidden when no destination is configured. */}
+                {supportUrl && (
+                    <MenuItem onClick={() => handleExternalLink(supportUrl)}>
+                        <ListItemIcon>
+                            <HeadsetMicOutlined fontSize="small"/>
+                        </ListItemIcon>
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                        }}>
+                            <Typography variant="body1">Support</Typography>
+                            <OpenInNew fontSize="inherit"
+                                       sx={{
+                                           fontSize: '1rem',
+                                           opacity: 0.6,
+                                       }}/>
+                        </Box>
+                    </MenuItem>
+                )}
 
                 {/* Über Prosuna */}
                 <MenuItem
@@ -196,8 +201,7 @@ export function ShellUserMenu({
                     <ListItemIcon>
                         <InfoOutlined fontSize="small"/>
                     </ListItemIcon>
-                    <Typography variant="body1">Über Prosuna
-                                                v{AppInfo.version === '@buildVersion' ? '5.x (DEV)' : AppInfo.version}</Typography>
+                    <Typography variant="body1">{getAboutProsunaLabel()}</Typography>
                 </MenuItem>
 
                 <Divider sx={{my: 1}}/>

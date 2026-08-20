@@ -431,21 +431,25 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                             notFound ?
                                 <Stack
                                     direction="column"
-                                    gap={2}
                                     sx={{
+                                        gap: 2,
                                         maxWidth: 440,
                                         margin: "40px auto 60px auto",
                                         textAlign: "center",
-                                        alignItems: "center",
-                                    }}
-                                >
+                                        alignItems: "center"
+                                    }}>
                                     <NotFoundIllustration/>
                                     <Typography variant={"h2"} sx={{marginTop: 1}}>Diese Ressource konnte leider nicht (mehr) gefunden werden</Typography>
                                     <Typography>
                                         Die angeforderte Ressource existiert nicht oder wurde möglicherweise entfernt.
                                         Bitte überprüfen Sie die URL oder nutzen Sie eine der folgenden Möglichkeiten.
                                     </Typography>
-                                    <Stack direction={"row"} gap={2} sx={{marginTop: 1.5}}>
+                                    <Stack
+                                        direction={"row"}
+                                        sx={{
+                                            gap: 2,
+                                            marginTop: 1.5
+                                        }}>
                                         {
                                             props.parentLink &&
                                             <Button

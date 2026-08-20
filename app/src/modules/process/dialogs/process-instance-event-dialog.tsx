@@ -1,46 +1,49 @@
 import {
     Box,
-    Collapse,
+    Button,
+    Chip,
+    CircularProgress,
     Dialog,
-    DialogContent, Grid, IconButton,
+    DialogContent,
+    Divider,
+    List,
+    ListItemButton,
     Skeleton,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
+    Stack,
+    ToggleButton,
+    ToggleButtonGroup,
+    Tooltip,
+    Typography,
 } from '@mui/material';
-import {useEffect, useMemo, useState} from 'react';
-import {type SvgIconComponent} from '../../../types/svg-icon-component';
-import {ProcessInstanceEventEntity, ProcessNodeExecutionLogLevel} from '../entities/process-instance-event-entity';
-import {ProcessInstanceEventApiService} from '../services/process-instance-event-api-service';
-import {ProcessInstanceApiService} from '../services/process-instance-api-service';
-import {ProcessNodeEntity} from '../entities/process-node-entity';
-import {ProcessNodeProvider, ProcessNodeProviderApiService} from '../services/process-node-provider-api-service';
-import {ProcessNodeApiService} from '../services/process-node-api-service';
-import {ProcessInstanceTaskApiService} from '../services/process-instance-task-api-service';
-import {ProcessInstanceTaskEntity} from '../entities/process-instance-task-entity';
-import {getNodeName} from '../pages/details/components/process-flow-editor/utils/node-utils';
-import {UsersApiService} from '../../users/users-api-service';
-import {User} from '../../users/models/user';
-import {resolveUserName} from '../../users/utils/resolve-user-name';
-import Typography from '@mui/material/Typography';
+import {alpha, type PaletteColor, type Theme} from '@mui/material/styles';
+import {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import AccountBox from '@aivot/mui-material-symbols-400-n25-outlined/AccountBox';
-import Memory from '@aivot/mui-material-symbols-400-n25-outlined/Memory';
-import Info from '@aivot/mui-material-symbols-400-n25-outlined/Info';
-import Warning from '@aivot/mui-material-symbols-400-n25-outlined/Warning';
-import EmergencyHome from '@aivot/mui-material-symbols-400-n25-outlined/EmergencyHome';
+import ArrowDownward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowDownward';
+import ArrowUpward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowUpward';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
+import Info from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import Memory from '@aivot/mui-material-symbols-400-n25-outlined/Memory';
+import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
+import Report from '@aivot/mui-material-symbols-400-n25-outlined/Report';
+import Warning from '@aivot/mui-material-symbols-400-n25-outlined/Warning';
+import {AlertComponent} from '../../../components/alert/alert-component';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
-import {withDelay} from '../../../utils/with-delay';
+import {EmptyDataListPlaceholder} from '../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {ExpandableCodeBlock} from '../../../components/expandable-code-block/expandable-code-block';
-import ChevronLeft from '@aivot/mui-material-symbols-400-n25-outlined/ChevronLeft';
-import {ProcessInstanceEntity} from '../entities/process-instance-entity';
-import {StatusTable} from '../../../components/status-table/status-table';
-import {StatusTablePropsItem} from '../../../components/status-table/status-table-props';
+import {SearchInput} from '../../../components/search-input/search-input';
 import {humanizeMillisecondsDuration} from '../../../utils/duration-utils';
 import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
+import {ProcessNodeExecutionLogLevel} from '../entities/process-instance-event-entity';
+import {
+    type ProcessInstanceEventLog,
+    type ProcessInstanceEventLogEntry,
+    type ProcessInstanceEventLogFilter,
+    type ProcessInstanceEventLogSortOrder,
+} from '../models/process-instance-event-log';
+import {ProcessInstanceEventApiService} from '../services/process-instance-event-api-service';
+
+const EVENT_PAGE_SIZE = 50;
+const eventApiService = new ProcessInstanceEventApiService();
 
 interface ProcessInstanceEventDialogProps {
     open: boolean;
@@ -49,114 +52,171 @@ interface ProcessInstanceEventDialogProps {
     taskId: number | null;
 }
 
+interface EventLevelPresentation {
+    label: string;
+    renderIcon: (fontSize: 'small' | 'medium') => ReactNode;
+    palette: 'info' | 'warning' | 'error' | null;
+}
+
+// The symbol package and MUI can resolve different module entry points in IDEs. Rendering here avoids
+// comparing their deeply overloaded component types while preserving the icon's supported font sizes.
+const EVENT_LEVEL_PRESENTATION: Record<ProcessNodeExecutionLogLevel, EventLevelPresentation> = {
+    [ProcessNodeExecutionLogLevel.Debug]: {
+        label: 'Debug',
+        renderIcon: fontSize => <BugReport fontSize={fontSize}/>,
+        palette: null,
+    },
+    [ProcessNodeExecutionLogLevel.Info]: {
+        label: 'Information',
+        renderIcon: fontSize => <Info fontSize={fontSize}/>,
+        palette: 'info',
+    },
+    [ProcessNodeExecutionLogLevel.Warn]: {
+        label: 'Warnung',
+        renderIcon: fontSize => <Warning fontSize={fontSize}/>,
+        palette: 'warning',
+    },
+    [ProcessNodeExecutionLogLevel.Error]: {
+        label: 'Fehler',
+        renderIcon: fontSize => <Report fontSize={fontSize}/>,
+        palette: 'error',
+    },
+};
+
 function formatEventTimestamp(value: unknown): string {
-    const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy HH:mm:ss');
+    const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy, HH:mm:ss');
     return formatted != null ? `${formatted} Uhr` : '-';
 }
 
-export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProps) {
-    const {
-        open,
-        onClose,
-        instanceId,
-        taskId,
-    } = props;
+function formatRuntime(runtime: number | null): string {
+    return runtime == null ? '-' : humanizeMillisecondsDuration(runtime);
+}
 
-    const [eventsData, setEventsData] = useState<EventsData | null>(null);
+function getEventSource(event: ProcessInstanceEventLogEntry): string {
+    if (event.triggeringUserName != null && event.triggeringUserName.trim().length > 0) {
+        return event.triggeringUserName;
+    }
+    return event.triggeringUserId == null ? 'System' : 'Unbekannte Nutzer:in';
+}
+
+export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProps) {
+    const {open, onClose, instanceId, taskId} = props;
+    const [eventLog, setEventLog] = useState<ProcessInstanceEventLog | null>(null);
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+    const [search, setSearch] = useState('');
+    const [filter, setFilter] = useState<ProcessInstanceEventLogFilter>('all');
+    const [sortOrder, setSortOrder] = useState<ProcessInstanceEventLogSortOrder>('DESC');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [loadFailed, setLoadFailed] = useState(false);
+    const [loadMoreFailed, setLoadMoreFailed] = useState(false);
+    const [reloadVersion, setReloadVersion] = useState(0);
+    const requestVersionRef = useRef(0);
+
+    const loadFirstPage = useCallback((signal?: AbortSignal) => {
+        const requestVersion = ++requestVersionRef.current;
+        setIsLoading(true);
+        setIsLoadingMore(false);
+        setLoadFailed(false);
+        setLoadMoreFailed(false);
+        setEventLog((current) => {
+            const matchesInstance = current?.instance.id === instanceId;
+            const matchesTask = taskId == null ? current?.task == null : current?.task?.id === taskId;
+            return matchesInstance && matchesTask ? current : null;
+        });
+
+        eventApiService.getEventLog({
+            processInstanceId: instanceId,
+            processInstanceTaskId: taskId ?? undefined,
+            page: 0,
+            size: EVENT_PAGE_SIZE,
+            search,
+            filter,
+            sortOrder,
+            abort: signal,
+        })
+            .then((nextEventLog) => {
+                if (requestVersion !== requestVersionRef.current) {
+                    return;
+                }
+
+                setEventLog(nextEventLog);
+                setSelectedEventId(nextEventLog.events.content[0]?.id ?? null);
+            })
+            .catch(() => {
+                if (signal?.aborted || requestVersion !== requestVersionRef.current) {
+                    return;
+                }
+                setLoadFailed(true);
+            })
+            .finally(() => {
+                if (requestVersion === requestVersionRef.current) {
+                    setIsLoading(false);
+                }
+            });
+    }, [filter, instanceId, search, sortOrder, taskId]);
 
     useEffect(() => {
         if (!open) {
             return;
         }
 
-        withDelay(getEventData(instanceId, taskId), 600)
-            .then(setEventsData);
-    }, [open, instanceId, taskId]);
+        const controller = new AbortController();
+        loadFirstPage(controller.signal);
+        return () => controller.abort();
+    }, [loadFirstPage, open, reloadVersion]);
 
-    const handleClose = () => {
-        onClose();
-        setTimeout(() => {
-            setEventsData(null);
-        }, 300);
+    const handleLoadMore = () => {
+        if (eventLog == null || isLoadingMore) {
+            return;
+        }
+
+        const nextPage = eventLog.events.page.number + 1;
+        const requestVersion = requestVersionRef.current;
+        setIsLoadingMore(true);
+        setLoadMoreFailed(false);
+        eventApiService.getEventLog({
+            processInstanceId: instanceId,
+            processInstanceTaskId: taskId ?? undefined,
+            page: nextPage,
+            size: EVENT_PAGE_SIZE,
+            search,
+            filter,
+            sortOrder,
+        })
+            .then((nextEventLog) => {
+                if (requestVersion !== requestVersionRef.current) {
+                    return;
+                }
+                setEventLog((current) => current == null ? nextEventLog : ({
+                    ...nextEventLog,
+                    events: {
+                        ...nextEventLog.events,
+                        content: [...current.events.content, ...nextEventLog.events.content],
+                    },
+                }));
+            })
+            .catch(() => {
+                if (requestVersion === requestVersionRef.current) {
+                    setLoadMoreFailed(true);
+                }
+            })
+            .finally(() => {
+                if (requestVersion === requestVersionRef.current) {
+                    setIsLoadingMore(false);
+                }
+            });
     };
 
-    const instanceRuntimeInformation: StatusTablePropsItem[] = useMemo(() => {
-        if (eventsData == null) {
-            return [];
-        }
+    const selectedEvent = useMemo(() => eventLog?.events.content
+        .find(event => event.id === selectedEventId) ?? null, [eventLog, selectedEventId]);
+    const totalEvents = eventLog?.events.page.totalElements ?? 0;
+    const hasMoreEvents = eventLog != null && eventLog.events.page.number + 1 < eventLog.events.page.totalPages;
 
-        const info: StatusTablePropsItem[] = [
-            {
-                label: 'Start',
-                children: formatEventTimestamp(eventsData.instance.started),
-            },
-        ];
-
-        if (eventsData.instance.finished != null) {
-            info.push({
-                label: 'Ende',
-                children: formatEventTimestamp(eventsData.instance.finished),
-            });
-        } else {
-            info.push({
-                label: 'Ende',
-                children: '-',
-            });
-        }
-
-        if (eventsData.instance.runtime != null) {
-            info.push({
-                label: 'Laufzeit',
-                children: humanizeMillisecondsDuration(eventsData.instance.runtime),
-            });
-        } else {
-            info.push({
-                label: 'Laufzeit',
-                children: '-'
-            });
-        }
-
-        return info;
-    }, [eventsData]);
-
-    const taskRuntimeInformation: StatusTablePropsItem[] = useMemo(() => {
-        if (eventsData == null || eventsData.task == null) {
-            return [];
-        }
-
-        const info: StatusTablePropsItem[] = [
-            {
-                label: 'Start',
-                children: formatEventTimestamp(eventsData.task.started),
-            },
-        ];
-
-        if (eventsData.task.finished != null) {
-            info.push({
-                label: 'Ende',
-                children: formatEventTimestamp(eventsData.task.finished),
-            });
-        } else {
-            info.push({
-                label: 'Ende',
-                children: '-'
-            });
-        }
-
-        if (eventsData.task.runtime != null) {
-            info.push({
-                label: 'Laufzeit',
-                children: humanizeMillisecondsDuration(eventsData.task.runtime),
-            });
-        } else {
-            info.push({
-                label: 'Laufzeit',
-                children: '-'
-            });
-        }
-
-        return info;
-    }, [eventsData]);
+    const handleClose = () => {
+        requestVersionRef.current += 1;
+        onClose();
+    };
 
     return (
         <Dialog
@@ -164,480 +224,594 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
             onClose={handleClose}
             fullWidth
             maxWidth="xl"
+            slotProps={{
+                paper: {
+                    sx: {
+                        height: 'min(52rem, calc(100vh - 4rem))',
+                        maxHeight: 'calc(100vh - 4rem)',
+                    },
+                },
+            }}
         >
             <DialogTitleWithClose onClose={handleClose}>
-                {
-                    taskId != null ?
-                        'Prozesselementereignisse' :
-                        'Vorgangsereignisse'
-                }
+                Ereignisprotokoll
             </DialogTitleWithClose>
-
-            <DialogContent>
-                <Grid
-                    container
-                    spacing={2}
-                >
-                    <Grid
-                        size={{
-                            xs: 12,
-                            md: 6,
-                        }}
-                    >
-                        <Typography
-                            variant="h6"
-                        >
-                            Laufzeitinformation des Vorgangs
-                        </Typography>
-
-                        {
-                            instanceRuntimeInformation.length === 0 &&
-                            <Skeleton height={32}/>
-                        }
-
-                        {
-                            instanceRuntimeInformation.length > 0 &&
-                            <StatusTable
-                                cardVariant="outlined"
-                                dense={true}
-                                sx={{
-                                    mt: 1,
-                                }}
-                                items={instanceRuntimeInformation}
-                            />
-                        }
-                    </Grid>
-
-                    {
-                        taskId != null &&
-                        <Grid
-                            size={{
-                                xs: 12,
-                                md: 6,
-                            }}
-                        >
-                            <Typography
-                                variant="h6"
-                            >
-                                Laufzeitinformation der Aufgabe
-                            </Typography>
-
-                            {
-                                taskRuntimeInformation.length === 0 &&
-                                <Skeleton height={32}/>
-                            }
-
-                            {
-                                taskRuntimeInformation.length > 0 &&
-                                <StatusTable
-                                    cardVariant="outlined"
-                                    dense={true}
-                                    sx={{
-                                        mt: 1,
-                                    }}
-                                    items={taskRuntimeInformation}
-                                />
-                            }
-                        </Grid>
-                    }
-                </Grid>
-            </DialogContent>
 
             <DialogContent
                 sx={{
-                    px: 0,
-                    pb: 1,
+                    p: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
                 }}
             >
-                <TableContainer
-                    sx={{
-                        maxHeight: '720px',
-                        overflow: 'auto',
-                    }}
-                >
-                    <Table
-                        size="small"
-                        stickyHeader={true}
-                    >
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>
-                                    Ereignistyp
-                                </TableCell>
-                                <TableCell>
-                                    Zeitstempel
-                                </TableCell>
-                                <TableCell>
-                                    Auslöser
-                                </TableCell>
-                                <TableCell>
-                                    Prozesselement
-                                </TableCell>
-                                <TableCell>
-                                    Nachricht
-                                </TableCell>
-                                <TableCell/>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {
-                                eventsData != null &&
-                                eventsData.items.length > 0 &&
-                                eventsData.items.map((event) => (
-                                    <EventTableRow event={event}
-                                                   key={event.id}/>
-                                ))
-                            }
-                            {
-                                eventsData != null &&
-                                eventsData.items.length === 0 &&
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={6}
-                                        align="center"
-                                        sx={{
-                                            py: 2,
-                                        }}
-                                    >
-                                        Keine Ereignisse gefunden.
-                                    </TableCell>
-                                </TableRow>
-                            }
-                            {
-                                eventsData == null &&
-                                <TableRow>
-                                    {
-                                        new Array(6)
-                                            .fill(null)
-                                            .map((_, index) => (
-                                                <TableCell
-                                                    key={index}
-                                                >
-                                                    <Skeleton
-                                                        width="100%"
-                                                    />
-                                                </TableCell>
-                                            ))
-                                    }
-                                </TableRow>
-                            }
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                <EventLogContextHeader
+                    eventLog={eventLog}
+                    isLoading={isLoading && eventLog == null}
+                    taskRequested={taskId != null}
+                />
+
+                <EventLogToolbar
+                    disabled={eventLog == null}
+                    filter={filter}
+                    loading={isLoading && eventLog != null}
+                    search={search}
+                    sortOrder={sortOrder}
+                    totalEvents={totalEvents}
+                    onFilterChange={setFilter}
+                    onSearchChange={setSearch}
+                    onSortOrderChange={setSortOrder}
+                />
+
+                <Divider/>
+
+                {
+                    loadFailed ?
+                        <EventLogError onRetry={() => setReloadVersion(version => version + 1)}/> :
+                        <EventLogContent
+                            eventLog={eventLog}
+                            filter={filter}
+                            hasMoreEvents={hasMoreEvents}
+                            isLoading={isLoading}
+                            isLoadingMore={isLoadingMore}
+                            loadMoreFailed={loadMoreFailed}
+                            search={search}
+                            selectedEvent={selectedEvent}
+                            selectedEventId={selectedEventId}
+                            onLoadMore={handleLoadMore}
+                            onSelectEvent={setSelectedEventId}
+                        />
+                }
             </DialogContent>
         </Dialog>
     );
 }
 
-interface Item extends ProcessInstanceEventEntity {
-    scope: string | null; // The name of the node or process instance scope if null
-    trigger: string | null; // The name of the user who triggered the event or null if the system triggered it
-    startedAt: Date;
-    endedAt: Date | null;
+function EventLogContextHeader(props: {
+    eventLog: ProcessInstanceEventLog | null;
+    isLoading: boolean;
+    taskRequested: boolean;
+}) {
+    if (props.isLoading) {
+        return (
+            <Box sx={{px: 3, pb: 3}}>
+                <Skeleton width={230} height={30}/>
+                <Stack direction="row" spacing={5} sx={{mt: 1.5}}>
+                    <Skeleton width={150}/>
+                    <Skeleton width={150}/>
+                    <Skeleton width={120}/>
+                </Stack>
+            </Box>
+        );
+    }
+    if (props.eventLog == null) {
+        return null;
+    }
+
+    const {instance, task} = props.eventLog;
+    return (
+        <Box
+            sx={{
+                px: 3,
+                pb: 3,
+                display: 'grid',
+                gridTemplateColumns: props.taskRequested ? '1fr 1fr' : '1fr',
+                gap: 4,
+            }}
+        >
+            <RuntimeContext
+                label="Vorgang"
+                title={instance.caseNumber}
+                started={instance.started}
+                finished={instance.finished}
+                runtime={instance.runtime}
+            />
+            {
+                props.taskRequested && task != null &&
+                <RuntimeContext
+                    label="Aufgabe"
+                    title={task.name}
+                    started={task.started}
+                    finished={task.finished}
+                    runtime={task.runtime}
+                    separated
+                />
+            }
+        </Box>
+    );
 }
 
-const ProcessNodeExecutionLogLevelLabels: Record<ProcessNodeExecutionLogLevel, string> = {
-    [ProcessNodeExecutionLogLevel.Debug]: 'Debug',
-    [ProcessNodeExecutionLogLevel.Info]: 'Info',
-    [ProcessNodeExecutionLogLevel.Warn]: 'Warnung',
-    [ProcessNodeExecutionLogLevel.Error]: 'Fehler',
-};
-
-const ProcessNodeExecutionLogLevelIcons: Record<ProcessNodeExecutionLogLevel, SvgIconComponent> = {
-    [ProcessNodeExecutionLogLevel.Debug]: BugReport,
-    [ProcessNodeExecutionLogLevel.Info]: Info,
-    [ProcessNodeExecutionLogLevel.Warn]: Warning,
-    [ProcessNodeExecutionLogLevel.Error]: EmergencyHome,
-};
-
-interface EventsData {
-    instance: ProcessInstanceEntity;
-    task: ProcessInstanceTaskEntity | null;
-    items: Item[];
+function RuntimeContext(props: {
+    label: string;
+    title: string;
+    started: string;
+    finished: string | null;
+    runtime: number | null;
+    separated?: boolean;
+}) {
+    return (
+        <Box sx={{pl: props.separated ? 4 : 0, borderLeft: props.separated ? '1px solid' : 0, borderColor: 'divider'}}>
+            <Typography variant="overline" sx={{
+                color: "text.secondary"
+            }}>
+                {props.label}
+            </Typography>
+            <Typography variant="h6" component="div" sx={{lineHeight: 1.25}}>
+                {props.title}
+            </Typography>
+            <Stack direction="row" spacing={4} sx={{mt: 1.5}}>
+                <ContextValue label="Begonnen" value={formatEventTimestamp(props.started)}/>
+                <ContextValue
+                    label="Beendet"
+                    value={props.finished == null ? 'Noch nicht beendet' : formatEventTimestamp(props.finished)}
+                />
+                <ContextValue label="Laufzeit" value={formatRuntime(props.runtime)}/>
+            </Stack>
+        </Box>
+    );
 }
 
-async function getEventData(instanceId: number, taskId: number | null): Promise<EventsData> {
-    const processInstance = await new ProcessInstanceApiService()
-        .retrieve(instanceId);
-
-    const processTasks = await new ProcessInstanceTaskApiService()
-        .listAll({
-            processInstanceId: instanceId,
-        });
-
-    const processDefinitionNodes = await new ProcessNodeApiService()
-        .listAll({
-            processId: processInstance.processId,
-        });
-
-    const providers = await new ProcessNodeProviderApiService()
-        .getNodeProviders();
-
-    const events = await new ProcessInstanceEventApiService()
-        .listAllOrdered('timestamp', 'ASC', {
-            processInstanceId: instanceId,
-            processInstanceTaskId: taskId ?? undefined,
-        });
-
-    const users = await new UsersApiService()
-        .listAll();
-
-    return {
-        instance: processInstance,
-        task: taskId != null ? (processTasks.content.find(t => t.id === taskId) || null) : null,
-        items: events.content.map((event) => {
-            const isTechnical = event.isTechnical ?? event.technical ?? false;
-            const isAudit = event.isAudit ?? event.audit ?? false;
-
-            let task: ProcessInstanceTaskEntity | null = null;
-            if (event.processInstanceTaskId != null) {
-                task = processTasks.content.find((t) => t.id === event.processInstanceTaskId)!;
-            }
-
-            let node: ProcessNodeEntity | null = null;
-            if (task != null) {
-                node = processDefinitionNodes.content.find((n) => n.id === task!.processNodeId)!;
-            }
-
-            let provider: ProcessNodeProvider | null = null;
-            if (node != null) {
-                provider = providers.find((p) => p.key === node!.processNodeDefinitionKey)!;
-            }
-
-            let user: User | null = null;
-            if (event.triggeringUserId != null) {
-                user = users.content.find((u) => u.id === event.triggeringUserId)!;
-            }
-
-            const item: Item = {
-                ...event,
-                isTechnical,
-                isAudit,
-                scope: node != null && provider != null ? getNodeName(node, provider) : null,
-                trigger: user != null ? resolveUserName(user) : null,
-                startedAt: new Date(task != null ? task.started : processInstance.started),
-                endedAt: task != null && task.finished != null ? new Date(task.finished) : (processInstance.finished != null ? new Date(processInstance.finished) : null),
-            };
-
-            return item;
-        }),
-    };
+function ContextValue(props: {label: string; value: string}) {
+    return (
+        <Box>
+            <Typography variant="caption" component="div" sx={{
+                color: "text.secondary"
+            }}>
+                {props.label}
+            </Typography>
+            <Typography variant="body2" component="div">
+                {props.value}
+            </Typography>
+        </Box>
+    );
 }
 
-function EventTableRow(props: { event: Item }) {
-    const {
-        event,
-    } = props;
+function EventLogToolbar(props: {
+    disabled: boolean;
+    filter: ProcessInstanceEventLogFilter;
+    loading: boolean;
+    search: string;
+    sortOrder: ProcessInstanceEventLogSortOrder;
+    totalEvents: number;
+    onFilterChange: (filter: ProcessInstanceEventLogFilter) => void;
+    onSearchChange: (search: string) => void;
+    onSortOrderChange: (sortOrder: ProcessInstanceEventLogSortOrder) => void;
+}) {
+    const countLabel = `${props.totalEvents} ${props.totalEvents === 1 ? 'Ereignis' : 'Ereignisse'}`;
+    return (
+        <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+                alignItems: "center",
+                px: 3,
+                pb: 2
+            }}>
+            <SearchInput
+                value={props.search}
+                onChange={props.onSearchChange}
+                label="Ereignisse durchsuchen"
+                placeholder="Titel, Nachricht, Prozesselement oder Auslöser"
+                debounce={300}
+                disabled={props.disabled}
+                sx={{width: 430, minWidth: 320}}
+            />
+            <ToggleButtonGroup
+                value={props.filter}
+                exclusive
+                size="small"
+                onChange={(_event, value: ProcessInstanceEventLogFilter | null) => {
+                    if (value != null) {
+                        props.onFilterChange(value);
+                    }
+                }}
+                aria-label="Ereignisse filtern"
+                disabled={props.disabled}
+            >
+                <ToggleButton value="all">Alle</ToggleButton>
+                <ToggleButton value="notable">Warnungen und Fehler</ToggleButton>
+            </ToggleButtonGroup>
+            <Box sx={{flex: 1}}/>
+            <CircularProgress
+                size={16}
+                aria-label="Ereignisse werden aktualisiert"
+                sx={{visibility: props.loading ? 'visible' : 'hidden'}}
+            />
+            <Typography
+                variant="body2"
+                sx={{
+                    color: "text.secondary",
+                    whiteSpace: 'nowrap'
+                }}>
+                {countLabel}
+            </Typography>
+            <Tooltip
+                arrow
+                title={props.sortOrder === 'DESC' ? 'Älteste Ereignisse zuerst anzeigen' : 'Neueste Ereignisse zuerst anzeigen'}
+            >
+                <span>
+                    <Button
+                        variant="text"
+                        size="small"
+                        disabled={props.disabled}
+                        startIcon={props.sortOrder === 'DESC' ? <ArrowDownward/> : <ArrowUpward/>}
+                        onClick={() => props.onSortOrderChange(props.sortOrder === 'DESC' ? 'ASC' : 'DESC')}
+                    >
+                        {props.sortOrder === 'DESC' ? 'Neueste zuerst' : 'Älteste zuerst'}
+                    </Button>
+                </span>
+            </Tooltip>
+        </Stack>
+    );
+}
 
-    const Icon = useMemo(() => ProcessNodeExecutionLogLevelIcons[event.level], [event.level]);
+function EventLogContent(props: {
+    eventLog: ProcessInstanceEventLog | null;
+    filter: ProcessInstanceEventLogFilter;
+    hasMoreEvents: boolean;
+    isLoading: boolean;
+    isLoadingMore: boolean;
+    loadMoreFailed: boolean;
+    search: string;
+    selectedEvent: ProcessInstanceEventLogEntry | null;
+    selectedEventId: number | null;
+    onLoadMore: () => void;
+    onSelectEvent: (eventId: number) => void;
+}) {
+    if (props.eventLog == null) {
+        return <EventLogSkeleton/>;
+    }
 
-    const [expanded, setExpanded] = useState(false);
+    if (!props.isLoading && props.eventLog.events.content.length === 0) {
+        const filtered = props.search.trim().length > 0 || props.filter !== 'all';
+        return (
+            <Box sx={{flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                <EmptyDataListPlaceholder
+                    title={filtered ? 'Keine passenden Ereignisse' : 'Noch keine Ereignisse vorhanden'}
+                    description={filtered
+                        ? 'Passen Sie die Suche oder den gewählten Filter an.'
+                        : 'Für diesen Vorgang wurden bislang keine Ereignisse protokolliert.'}
+                />
+            </Box>
+        );
+    }
 
     return (
-        <>
-            <TableRow>
-                <TableCell
-                    sx={{
-                        borderBottom: 'none',
-                    }}
-                >
-                    <Box
-                        display="flex"
-                        alignItems="center"
-                    >
-                        <Icon
-                            sx={{
-                                mr: 1,
-                            }}
-                        />
-                        {ProcessNodeExecutionLogLevelLabels[event.level]}
-                    </Box>
-                </TableCell>
-                <TableCell
-                    sx={{
-                        borderBottom: 'none',
-                    }}
-                >
-                    <Box
-                        display="flex"
-                        alignItems="center"
-                        height="100%"
-                    >
-                        {formatInstantInApplicationTimeZone(event.timestamp, 'dd.MM.yyyy HH:mm:ss') ?? '-'}
-                    </Box>
-                </TableCell>
-                <TableCell
-                    sx={{
-                        borderBottom: 'none',
-                    }}
-                >
-                    <Box
-                        display="flex"
-                        alignItems="center"
-                        height="100%"
-                    >
-                        {
-                            event.trigger != null ?
-                                <AccountBox/> :
-                                <Memory/>
-                        }
-                        {event.trigger ?? 'System'}
-                    </Box>
-                </TableCell>
-                <TableCell
-                    sx={{
-                        borderBottom: 'none',
-                    }}
-                >
-                    <Box
-                        display="flex"
-                        alignItems="center"
-                        height="100%"
-                    >
-                        {event.scope ?? '-'}
-                    </Box>
-                </TableCell>
-                <TableCell
-                    sx={{
-                        borderBottom: 'none',
-                    }}
-                >
-                    <Typography
-                        sx={{
-                            width: '400px',
-                            overflow: 'hidden',
-                            whiteSpace: 'nowrap',
-                            textOverflow: 'ellipsis',
-                        }}
-                    >
-                        {event.title}
-                    </Typography>
-                </TableCell>
-                <TableCell
-                    sx={{
-                        borderBottom: 'none',
-                    }}
-                >
-                    <IconButton
-                        onClick={() => {
-                            setExpanded(!expanded);
-                        }}
-                        size="small"
-                        sx={{
-                            transform: expanded ? 'rotate(-90deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.2s',
-                        }}
-                    >
-                        <ChevronLeft/>
-                    </IconButton>
-                </TableCell>
-            </TableRow>
-            <TableRow
+        <Box
+            sx={{
+                flex: 1,
+                minHeight: 0,
+                display: 'grid',
+                gridTemplateColumns: 'minmax(22rem, 5fr) minmax(0, 7fr)',
+            }}
+        >
+            <Box
                 sx={{
-                    p: 0,
+                    minWidth: 0,
+                    overflowY: 'auto',
+                    borderRight: '1px solid',
+                    borderColor: 'divider',
+                    position: 'relative',
                 }}
             >
-                <TableCell
-                    colSpan={6}
-                    sx={{
-                        p: 0,
-                    }}
-                >
-                    <Collapse
-                        in={expanded}
-                    >
-                        <Box
-                            sx={{
-                                pt: 1,
-                                pb: 2,
-                                pl: 8,
-                                pr: 2,
-                            }}
-                        >
-                            <Typography
-                                variant="h6"
-                                component="div"
-                                gutterBottom={true}
-                            >
-                                Nachricht
-                            </Typography>
-
-                            <Typography>
-                                {event.message}
-                            </Typography>
-
+                {
+                    <>
+                        <List disablePadding aria-label="Ereignisse" aria-busy={props.isLoading}>
+                            {props.eventLog.events.content.map(event => (
+                                <EventListItem
+                                    key={event.id}
+                                    event={event}
+                                    selected={event.id === props.selectedEventId}
+                                    onSelect={() => props.onSelectEvent(event.id)}
+                                />
+                            ))}
+                        </List>
+                        <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', py: 1.5}}>
                             {
-                                event.details != null &&
-                                Object.keys(event.details).length > 0 &&
-                                <Box
-                                    marginTop={2}
-                                >
-                                    <Typography
-                                        variant="h6"
-                                        component="div"
-                                        gutterBottom={true}
-                                    >
-                                        Details
-                                    </Typography>
-
-                                    <Box
-                                        sx={{
-                                            overflowX: 'auto',
-                                        }}
-                                    >
-                                        <ExpandableCodeBlock
-                                            value={JSON.stringify(event.details, null, 2)}
-                                            sx={{
-                                                wordWrap: 'normal',
-                                                whiteSpace: 'normal',
-                                            }}
-                                        />
-                                    </Box>
-                                </Box>
+                                props.loadMoreFailed &&
+                                <Typography variant="body2" color="error" sx={{mb: 0.5}}>
+                                    Weitere Ereignisse konnten nicht geladen werden.
+                                </Typography>
                             }
-
-                            <Box
-                                marginTop={2}
-                            >
-                                <Typography
-                                    variant="h6"
-                                    component="div"
-                                    gutterBottom={true}
-                                >
-                                    Klassifizierung
-                                </Typography>
-                                <Typography>
-                                    Level: {ProcessNodeExecutionLogLevelLabels[event.level]}
-                                </Typography>
-                                <Typography>
-                                    Technisch: {event.isTechnical ? 'Ja' : 'Nein'}
-                                </Typography>
-                                <Typography>
-                                    Audit-relevant: {event.isAudit ? 'Ja' : 'Nein'}
-                                </Typography>
-                            </Box>
                             {
-                                event.endedAt != null &&
-                                <Box
-                                    marginTop={2}
+                                props.hasMoreEvents &&
+                                <Button
+                                    variant="text"
+                                    onClick={props.onLoadMore}
+                                    disabled={props.isLoadingMore}
+                                    startIcon={props.isLoadingMore ? <CircularProgress size={16}/> : undefined}
                                 >
-                                    <Typography
-                                        variant="h6"
-                                        component="div"
-                                        gutterBottom={true}
-                                    >
-                                        Laufzeitinformationen
-                                    </Typography>
-
-                                    <Typography>
-                                        Zeitstempel: {formatEventTimestamp(event.timestamp)}
-                                    </Typography>
-                                </Box>
+                                    Weitere Ereignisse laden
+                                </Button>
                             }
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
+                                {props.eventLog.events.content.length} von {props.eventLog.events.page.totalElements} angezeigt
+                            </Typography>
                         </Box>
-                    </Collapse>
-                </TableCell>
-            </TableRow>
-        </>
+                    </>
+                }
+            </Box>
+            <Box sx={{minWidth: 0, overflowY: 'auto'}}>
+                {
+                    props.selectedEvent != null ?
+                        <EventDetails event={props.selectedEvent}/> :
+                        <Box sx={{height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                            <Typography sx={{
+                                color: "text.secondary"
+                            }}>Wählen Sie ein Ereignis aus.</Typography>
+                        </Box>
+                }
+            </Box>
+        </Box>
+    );
+}
+
+function EventListItem(props: {
+    event: ProcessInstanceEventLogEntry;
+    selected: boolean;
+    onSelect: () => void;
+}) {
+    const presentation = EVENT_LEVEL_PRESENTATION[props.event.level];
+    return (
+        <ListItemButton
+            selected={props.selected}
+            onClick={props.onSelect}
+            aria-current={props.selected ? 'true' : undefined}
+            sx={{
+                alignItems: 'flex-start',
+                gap: 1.75,
+                px: 2.5,
+                py: 1.75,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                '&:last-child': {borderBottom: 0},
+            }}
+        >
+            <EventLevelIcon level={props.event.level} size="small"/>
+            <Box sx={{minWidth: 0, flex: 1}}>
+                <Stack direction="row" spacing={1.5} sx={{
+                    alignItems: "baseline"
+                }}>
+                    <Typography variant="subtitle2" component="div" sx={{minWidth: 0, flex: 1}}>
+                        {props.event.title}
+                    </Typography>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            flexShrink: 0
+                        }}>
+                        {formatEventTimestamp(props.event.timestamp)}
+                    </Typography>
+                </Stack>
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: "text.secondary",
+                        mt: 0.5,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                    }}>
+                    {props.event.message}
+                </Typography>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        color: "text.secondary",
+                        display: 'block',
+                        mt: 0.75
+                    }}>
+                    {presentation.label} · {props.event.processNodeName ?? 'Vorgang'} · {getEventSource(props.event)}
+                </Typography>
+            </Box>
+        </ListItemButton>
+    );
+}
+
+function EventLevelIcon(props: {level: ProcessNodeExecutionLogLevel; size?: 'small' | 'medium'}) {
+    const presentation = EVENT_LEVEL_PRESENTATION[props.level];
+    const size = props.size === 'small' ? 34 : 42;
+    return (
+        <Tooltip arrow title={presentation.label}>
+            <Box
+                sx={(theme: Theme) => {
+                    const color = presentation.palette == null
+                        ? theme.palette.text.secondary
+                        : (theme.palette[presentation.palette] as PaletteColor).main;
+                    return {
+                        width: size,
+                        height: size,
+                        flex: `0 0 ${size}px`,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color,
+                        backgroundColor: alpha(color, theme.palette.mode === 'dark' ? 0.18 : 0.1),
+                    };
+                }}
+            >
+                {presentation.renderIcon(props.size === 'small' ? 'small' : 'medium')}
+            </Box>
+        </Tooltip>
+    );
+}
+
+function EventDetails(props: {event: ProcessInstanceEventLogEntry}) {
+    const {event} = props;
+    const presentation = EVENT_LEVEL_PRESENTATION[event.level];
+    const SourceIcon = event.triggeringUserId == null ? Memory : AccountBox;
+    const hasDetails = Object.keys(event.details).length > 0;
+
+    return (
+        <Box sx={{p: 3, maxWidth: 900}}>
+            <Stack direction="row" spacing={1.5} sx={{
+                alignItems: "center"
+            }}>
+                <EventLevelIcon level={event.level}/>
+                <Box sx={{minWidth: 0}}>
+                    <Typography
+                        variant="overline"
+                        component="div"
+                        sx={{
+                            color: "text.secondary",
+                            lineHeight: 1.25
+                        }}>
+                        {presentation.label}
+                    </Typography>
+                    <Typography variant="h5" component="h2" sx={{lineHeight: 1.25, mt: 0.25}}>
+                        {event.title}
+                    </Typography>
+                </Box>
+            </Stack>
+
+            <Typography sx={{mt: 2.5, whiteSpace: 'pre-line'}}>
+                {event.message}
+            </Typography>
+
+            <Divider sx={{my: 3}}/>
+
+            <Typography variant="subtitle1" component="h3" sx={{mb: 1.5}}>
+                Ereignisdetails
+            </Typography>
+            <Box
+                component="dl"
+                sx={{
+                    m: 0,
+                    display: 'grid',
+                    gridTemplateColumns: '10rem minmax(0, 1fr)',
+                    columnGap: 2,
+                    rowGap: 1.25,
+                    '& dt': {color: 'text.secondary'},
+                    '& dd': {m: 0, minWidth: 0},
+                }}
+            >
+                <Typography component="dt" variant="body2">Ereignis-ID</Typography>
+                <Typography component="dd" variant="body2">{event.id}</Typography>
+                <Typography component="dt" variant="body2">Zeitpunkt</Typography>
+                <Typography component="dd" variant="body2">{formatEventTimestamp(event.timestamp)}</Typography>
+                <Typography component="dt" variant="body2">Auslöser</Typography>
+                <Stack component="dd" direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
+                    <SourceIcon fontSize="small" sx={{color: 'text.secondary'}}/>
+                    <Typography variant="body2">{getEventSource(event)}</Typography>
+                </Stack>
+                <Typography component="dt" variant="body2">Prozesselement</Typography>
+                <Typography component="dd" variant="body2">{event.processNodeName ?? 'Vorgang'}</Typography>
+                <Typography component="dt" variant="body2">Klassifizierung</Typography>
+                <Stack component="dd" direction="row" spacing={1} useFlexGap sx={{
+                    flexWrap: "wrap"
+                }}>
+                    <Chip
+                        size="small"
+                        variant="outlined"
+                        label={event.technical ? 'Technisch' : 'Nicht technisch'}
+                    />
+                    <Chip
+                        size="small"
+                        variant="outlined"
+                        label={event.audit ? 'Audit-relevant' : 'Nicht audit-relevant'}
+                    />
+                </Stack>
+            </Box>
+
+            {
+                hasDetails &&
+                <Box sx={{mt: 3}}>
+                    <Typography variant="subtitle1" component="h3" sx={{mb: 1.5}}>
+                        Strukturierte Details
+                    </Typography>
+                    <ExpandableCodeBlock
+                        value={JSON.stringify(event.details, null, 2)}
+                        language="json"
+                        wrapLines
+                    />
+                </Box>
+            }
+        </Box>
+    );
+}
+
+function EventLogError(props: {onRetry: () => void}) {
+    return (
+        <Box sx={{p: 3}}>
+            <AlertComponent
+                color="error"
+                title="Ereignisprotokoll konnte nicht geladen werden"
+                text="Beim Laden der Ereignisse ist ein Fehler aufgetreten. Versuchen Sie es erneut."
+            >
+                <Button variant="outlined" startIcon={<Refresh/>} onClick={props.onRetry} sx={{mt: 1.5}}>
+                    Erneut versuchen
+                </Button>
+            </AlertComponent>
+        </Box>
+    );
+}
+
+function EventLogSkeleton() {
+    return (
+        <Box sx={{flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '5fr 7fr'}}>
+            <EventListSkeleton/>
+            <EventDetailsSkeleton/>
+        </Box>
+    );
+}
+
+function EventListSkeleton() {
+    return (
+        <Box sx={{borderRight: '1px solid', borderColor: 'divider', p: 2.5}}>
+            {[0, 1, 2, 3].map(index => (
+                <Stack key={index} direction="row" spacing={2} sx={{py: 1.5}}>
+                    <Skeleton variant="circular" width={34} height={34}/>
+                    <Box sx={{flex: 1}}>
+                        <Skeleton width={`${72 - index * 6}%`}/>
+                        <Skeleton width="94%"/>
+                        <Skeleton width="55%"/>
+                    </Box>
+                </Stack>
+            ))}
+        </Box>
+    );
+}
+
+function EventDetailsSkeleton() {
+    return (
+        <Box sx={{p: 3.5}}>
+            <Stack direction="row" spacing={2}>
+                <Skeleton variant="circular" width={42} height={42}/>
+                <Box sx={{flex: 1}}>
+                    <Skeleton width={90}/>
+                    <Skeleton width="45%" height={34}/>
+                </Box>
+            </Stack>
+            <Skeleton width="90%" sx={{mt: 3}}/>
+            <Skeleton width="75%"/>
+            <Skeleton width="82%"/>
+        </Box>
     );
 }

@@ -51,7 +51,9 @@ export function TimeRangeFieldComponent(props: TimeRangeFieldComponentProps) {
     return (
         <Grid container rowSpacing={0.5}>
             <Grid size={12}>
-                <Grid container columnSpacing={1} alignItems="center">
+                <Grid container columnSpacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <Grid size={{xs: 12, md: 'grow'}}>
                         <TimeFieldComponent
                             label={`${props.label} (Von)`}

@@ -175,21 +175,21 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
 
     return (
         <main role="main">
-                <span
-                    aria-live="polite"
-                    className="visually-hidden"
-                >
-                    {/* TODO: Waits for final QS by JP
-                        isDeriving != null &&
-                        isDeriving &&
-                        'Berechnungen werden durchgeführt'
-                    */}
-                    {
-                        isDeriving != null &&
-                        !isDeriving &&
-                        'Berechnungen fertig. Eingabebereit'
-                    }
-                </span>
+            <span
+                aria-live="polite"
+                className="visually-hidden"
+            >
+                {/* TODO: Waits for final QS by JP
+                    isDeriving != null &&
+                    isDeriving &&
+                    'Berechnungen werden durchgeführt'
+                */}
+                {
+                    isDeriving != null &&
+                    !isDeriving &&
+                    'Berechnungen fertig. Eingabebereit'
+                }
+            </span>
 
             <Container
                 sx={{
@@ -218,21 +218,18 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
                                 disabled={!(rootStructureActions?.canAddAtRoot ?? false)}
                             /> :
                             <Stack
-                                justifyContent="center"
                                 sx={{
                                     height: '40vh',
                                     justifyContent: 'center',
-                                    alignItems: 'center',
-                                }}
-                            >
+                                    alignItems: 'center'
+                                }}>
                                 <Typography
-                                    textAlign="center"
                                     variant="body1"
                                     component="p"
                                     sx={{
-                                        maxWidth: '480px',
-                                    }}
-                                >
+                                        textAlign: "center",
+                                        maxWidth: '480px'
+                                    }}>
                                     Dieses Formular enthält derzeit keine Abschnitte oder Elemente.
                                 </Typography>
                             </Stack>
@@ -266,6 +263,7 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
                                         isFirstStep={index === 0}
                                         isLastStep={index === allVisibleSteps.length - 1}
                                         isSubmitStep={step.type === ElementType.SubmitStep}
+                                        completed={index < activeStepIndex}
                                         onNext={handleNextStep}
                                         onPrevious={handlePreviousStep}
                                         active={activeStepIndex === index}

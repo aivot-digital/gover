@@ -17,7 +17,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
@@ -33,7 +35,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController
+@Controller
 @RequestMapping("/api/auth/")
 @Tag(name = "Authentication", description = "Endpoints for user authentication")
 public class AuthController {
@@ -62,6 +64,19 @@ public class AuthController {
     private static final String OIDC_REFRESH_TOKEN_PARAM_KEY = "refresh_token";
 
     private static final String OIDC_CALLBACK_CODE_PARAM_KEY = "code";
+    private static final String DEFAULT_APP_URI = "/staff";
+    private static final String CALLBACK_ERROR_VIEW = "auth/oidc-callback-error";
+    private static final String MISSING_AUTHORIZATION_CODE_MESSAGE = "Es wurde kein Autorisierungscode übergeben.";
+    private static final String INVALID_STATE_MESSAGE = "Der state-Parameter ist ungültig.";
+    private static final String EXPIRED_AUTH_FLOW_MESSAGE = "Die Authentifizierungssitzung ist abgelaufen.";
+    private static final String INVALID_APP_REDIRECT_MESSAGE = "Die App-Weiterleitungsadresse ist ungültig.";
+    private static final String DISALLOWED_APP_REDIRECT_MESSAGE = "Die App-Weiterleitungsadresse ist nicht erlaubt.";
+
+    private static final String MISSING_AUTHORIZATION_CODE_DESCRIPTION = "Der Identitätsanbieter hat keinen Autorisierungscode zurückgegeben. Ohne diesen Code kann Prosuna keine Sitzung erstellen. Starten Sie die Anmeldung erneut.";
+    private static final String INVALID_STATE_DESCRIPTION = "Die Sicherheitsprüfung der Anmeldung ist fehlgeschlagen. Das kann passieren, wenn der Link aus einem alten Browser-Tab stammt, Cookies fehlen oder parallel eine neue Anmeldung gestartet wurde.";
+    private static final String EXPIRED_AUTH_FLOW_DESCRIPTION = "Ihre Anmeldesitzung ist abgelaufen. Starten Sie die Anmeldung erneut, damit eine neue sichere Sitzung erstellt wird.";
+    private static final String INVALID_APP_REDIRECT_DESCRIPTION = "Die gespeicherte Rücksprungadresse der Anwendung ist ungültig oder nicht erlaubt. Die Anmeldung kann über den Standardbereich neu gestartet werden.";
+    private static final String TOKEN_EXCHANGE_ERROR_DESCRIPTION = "Der Identitätsanbieter hat geantwortet, aber Prosuna konnte die Anmeldung nicht abschließen. Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support, falls der Fehler bestehen bleibt.";
 
     public static final String ACCESS_COOKIE_NAME = "access";
     public static final String REFRESH_COOKIE_NAME = "refresh";
@@ -163,6 +178,7 @@ public class AuthController {
     }
 
     @GetMapping("refresh")
+    @ResponseBody
     @Operation(
             summary = "Login",
             description = "Redirects the user to the authentication provider login page or directly to the specified redirect URL if already authenticated."
@@ -196,19 +212,35 @@ public class AuthController {
             summary = "Login",
             description = "Redirects the user to the authentication provider login page or directly to the specified redirect URL if already authenticated."
     )
-    public void idpCallback(
+    public ModelAndView idpCallback(
             @Nonnull HttpServletResponse response,
             @Nullable @RequestParam(value = OIDC_STATE_PARAM_KEY, required = false) String state,
             @Nullable @RequestParam(value = OIDC_CALLBACK_CODE_PARAM_KEY, required = false) String code,
             @Nullable @CookieValue(value = AUTH_FLOW_COOKIE_NAME, required = false) String authFlowState
-    ) throws ResponseException, IOException {
+    ) {
         try {
             if (StringUtils.isNullOrEmpty(code)) {
-                throw ResponseException.badRequest("Es wurde kein Autorisierungscode übergeben.");
+                return getIdpCallbackErrorView(
+                        response,
+                        ResponseException.badRequest(MISSING_AUTHORIZATION_CODE_MESSAGE),
+                        MISSING_AUTHORIZATION_CODE_DESCRIPTION,
+                        getRestartLoginUrl(getAppUriForRestart(state, authFlowState))
+                );
             }
 
-            var flowState = consumeAuthFlowState(state, authFlowState);
-            var appRedirectLocation = resolveAppRedirectLocation(flowState.appUri);
+            AuthFlowState flowState;
+            try {
+                flowState = consumeAuthFlowState(state, authFlowState);
+            } catch (ResponseException e) {
+                return getIdpCallbackErrorView(response, e, getStateErrorDescription(e), getRestartLoginUrl(DEFAULT_APP_URI));
+            }
+
+            String appRedirectLocation;
+            try {
+                appRedirectLocation = resolveAppRedirectLocation(flowState.appUri);
+            } catch (ResponseException e) {
+                return getIdpCallbackErrorView(response, e, INVALID_APP_REDIRECT_DESCRIPTION, getRestartLoginUrl(DEFAULT_APP_URI));
+            }
 
             var payload = new HashMap<String, String>();
             payload.put(OIDC_GRANT_TYPE_PARAM_KEY, OIDC_GRANT_TYPE_VALUE);
@@ -222,7 +254,12 @@ public class AuthController {
                 payload.put(OIDC_CLIENT_SECRET_PARAM_KEY, oidcClientSecret);
             }
 
-            TokenResponse tokenResponse = getTokenResponse(payload);
+            TokenResponse tokenResponse;
+            try {
+                tokenResponse = getTokenResponse(payload);
+            } catch (ResponseException e) {
+                return getIdpCallbackErrorView(response, e, TOKEN_EXCHANGE_ERROR_DESCRIPTION, null);
+            }
 
             var refreshCookie = getRefreshCookie(tokenResponse);
             response.addCookie(refreshCookie);
@@ -230,7 +267,7 @@ public class AuthController {
             var accessCookie = getAccessCookie(tokenResponse);
             response.addCookie(accessCookie);
 
-            response.sendRedirect(appRedirectLocation);
+            return new ModelAndView("redirect:" + appRedirectLocation);
         } finally {
             response.addCookie(getExpiredAuthFlowCookie());
         }
@@ -307,16 +344,80 @@ public class AuthController {
     }
 
     @Nonnull
+    private ModelAndView getIdpCallbackErrorView(
+            @Nonnull HttpServletResponse response,
+            @Nonnull ResponseException exception,
+            @Nonnull String description,
+            @Nullable String restartLoginUrl
+    ) {
+        response.setStatus(exception.getStatus().value());
+
+        var modelAndView = new ModelAndView(CALLBACK_ERROR_VIEW);
+        modelAndView.setStatus(exception.getStatus());
+        modelAndView.addObject("message", exception.getTitle());
+        modelAndView.addObject("description", description);
+
+        if (StringUtils.isNotNullOrEmpty(restartLoginUrl)) {
+            modelAndView.addObject("restartLoginUrl", restartLoginUrl);
+        }
+
+        return modelAndView;
+    }
+
+    @Nonnull
+    private static String getStateErrorDescription(@Nonnull ResponseException exception) {
+        return EXPIRED_AUTH_FLOW_MESSAGE.equals(exception.getTitle()) ? EXPIRED_AUTH_FLOW_DESCRIPTION : INVALID_STATE_DESCRIPTION;
+    }
+
+    @Nonnull
+    private String getAppUriForRestart(
+            @Nullable String state,
+            @Nullable String authFlowStateCookie
+    ) {
+        if (StringUtils.isNullOrEmpty(state) || StringUtils.isNullOrEmpty(authFlowStateCookie) || !state.equals(authFlowStateCookie)) {
+            return DEFAULT_APP_URI;
+        }
+
+        var value = redis
+                .opsForValue()
+                .get(getAuthFlowRedisKey(state));
+
+        if (value == null) {
+            return DEFAULT_APP_URI;
+        }
+
+        try {
+            var flowState = ObjectMapperFactory
+                    .getInstance()
+                    .readValue(value, AuthFlowState.class);
+            return resolveAppRedirectLocation(flowState.appUri);
+        } catch (JsonProcessingException | ResponseException e) {
+            return DEFAULT_APP_URI;
+        }
+    }
+
+    @Nonnull
+    private static String getRestartLoginUrl(@Nonnull String appUri) {
+        return UriComponentsBuilder
+                .fromPath(AUTH_FLOW_COOKIE_PATH)
+                .path("login")
+                .queryParam(APP_URI_QUERY_PARAM, appUri)
+                .build()
+                .encode()
+                .toUriString();
+    }
+
+    @Nonnull
     private AuthFlowState consumeAuthFlowState(
             @Nullable String state,
             @Nullable String authFlowStateCookie
     ) throws ResponseException {
         if (StringUtils.isNullOrEmpty(state) || StringUtils.isNullOrEmpty(authFlowStateCookie)) {
-            throw ResponseException.badRequest("Der state-Parameter ist ungültig.");
+            throw ResponseException.badRequest(INVALID_STATE_MESSAGE);
         }
 
         if (!state.equals(authFlowStateCookie)) {
-            throw ResponseException.badRequest("Der state-Parameter ist ungültig.");
+            throw ResponseException.badRequest(INVALID_STATE_MESSAGE);
         }
 
         var value = redis
@@ -324,7 +425,7 @@ public class AuthController {
                 .getAndDelete(getAuthFlowRedisKey(state));
 
         if (value == null) {
-            throw ResponseException.badRequest("Die Authentifizierungssitzung ist abgelaufen.");
+            throw ResponseException.badRequest(EXPIRED_AUTH_FLOW_MESSAGE);
         }
 
         try {
@@ -347,22 +448,22 @@ public class AuthController {
         try {
             appRedirectUri = new URI(appUri);
         } catch (URISyntaxException | IllegalArgumentException e) {
-            throw ResponseException.badRequest("Die App-Weiterleitungsadresse ist ungültig.");
+            throw ResponseException.badRequest(INVALID_APP_REDIRECT_MESSAGE);
         }
 
         if (!appRedirectUri.isAbsolute()) {
             if (appUri.startsWith("/") && !appUri.startsWith("//") && appRedirectUri.getRawAuthority() == null) {
                 return appRedirectUri.toString();
             }
-            throw ResponseException.badRequest("Die App-Weiterleitungsadresse ist ungültig.");
+            throw ResponseException.badRequest(INVALID_APP_REDIRECT_MESSAGE);
         }
 
         if (!hasAllowedSchemeAndHost(appRedirectUri)) {
-            throw ResponseException.badRequest("Die App-Weiterleitungsadresse ist ungültig.");
+            throw ResponseException.badRequest(INVALID_APP_REDIRECT_MESSAGE);
         }
 
         if (!hasSameOrigin(appRedirectUri, parseConfiguredAppRedirectOrigin(hostname))) {
-            throw ResponseException.badRequest("Die App-Weiterleitungsadresse ist nicht erlaubt.");
+            throw ResponseException.badRequest(DISALLOWED_APP_REDIRECT_MESSAGE);
         }
 
         return appRedirectUri.toString();

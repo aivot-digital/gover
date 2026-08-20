@@ -7,6 +7,7 @@ import {resolveValue} from '../utils/element-data-utils';
 import {ElementType} from '../data/element-type/element-type';
 import {isStringNullOrEmpty} from '../utils/string-utils';
 import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
+import {getDisabledFieldBackground} from '../theming/field-state-colors';
 
 export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>) {
     const {
@@ -149,7 +150,7 @@ export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>
             options={options}
             emptyStatePlaceholder={emptyStatePlaceholder}
             sx={{
-                backgroundColor: isBusy ? '#F8F8F8' : undefined,
+                backgroundColor: isBusy ? getDisabledFieldBackground : undefined,
                 cursor: isBusy ? 'not-allowed' : undefined,
             }}
             readOnly={isBusy}

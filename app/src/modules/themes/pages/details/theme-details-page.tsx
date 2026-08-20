@@ -32,8 +32,9 @@ export function ThemeDetailsPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Ein Erscheinungsbild legt Farben, Logo und Favicon für die Benutzeroberfläche von Prosuna fest. Erscheinungsbilder können global oder für einzelne Formulare verwendet werden.
-                                    So können Sie z. B. für verschiedene Organisationen oder Abteilungen unterschiedliche Erscheinungsbilder anlegen und nutzen.
+                                    Ein Erscheinungsbild legt Farben, Logo und Favicon für die Benutzeroberfläche von
+                                    Prosuna fest. Es kann als Standard der Prosuna-Instanz oder für einzelne
+                                    Organisationseinheiten verwendet werden.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
                                     Ein Erscheinungsbild besteht aus einem Namen, Farben sowie optional einem Logo und Favicon. Bei der Auswahl der Farben sollte die Barrierefreiheit berücksichtigt werden.

@@ -127,9 +127,10 @@ function SupportContactBlock(props: {
                 {title}
             </Typography>
             <Typography
-                color="text.secondary"
-                sx={{mb: 1.5}}
-            >
+                sx={{
+                    color: "text.secondary",
+                    mb: 1.5
+                }}>
                 {description}
             </Typography>
             <Stack spacing={1}>
@@ -487,7 +488,9 @@ export function HelpDialog(props: HelpDialogProps) {
                     <Box sx={{mb: 4}}>
                         <Typography
                             variant={'h5'}
-                            color={'text.primary'}
+                            sx={{
+                                color: 'text.primary'
+                            }}
                         >
                             Häufig gestellte Fragen (FAQ)
                         </Typography>

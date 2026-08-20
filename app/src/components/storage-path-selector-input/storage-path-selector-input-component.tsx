@@ -282,8 +282,9 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                         getOptionDisabled={(option) => !allowReadOnlyStorageProviders && option.readOnlyStorage === true}
                         noOptionsText={allowedTypes.length === 0 ? 'Keine Speicheranbieter-Typen zugelassen' : 'Keine Speicheranbieter verfügbar'}
                         onChange={handleProviderChange}
-                        renderOption={(optionProps, option, state) => (
+                        renderOption={({key, ...optionProps}, option, state) => (
                             <Box
+                                key={key}
                                 component="li"
                                 {...optionProps}
                                 sx={{py: 0.5, minHeight: 42}}
@@ -299,8 +300,10 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                                     {option.type != null && (
                                         <Typography
                                             variant="caption"
-                                            color="text.secondary"
                                             noWrap={true}
+                                            sx={{
+                                                color: "text.secondary"
+                                            }}
                                         >
                                             {StorageProviderTypeLabels[option.type]}
                                         </Typography>
@@ -319,20 +322,24 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                                 error={error != null}
                                 placeholder="Speicheranbieter auswählen"
                                 helperText={loadError ?? storageProviderSelectHint}
-                                InputProps={{
-                                    ...params.InputProps,
-                                    endAdornment: (
-                                        <>
-                                            {isLoadingProviders && (
-                                                <CircularProgress
-                                                    color="inherit"
-                                                    size={16}
-                                                    sx={{mr: 1}}
-                                                />
-                                            )}
-                                            {params.InputProps.endAdornment}
-                                        </>
-                                    ),
+                                slotProps={{
+                                    ...params.slotProps,
+
+                                    input: {
+                                        ...params.slotProps.input,
+                                        endAdornment: (
+                                            <>
+                                                {isLoadingProviders && (
+                                                    <CircularProgress
+                                                        color="inherit"
+                                                        size={16}
+                                                        sx={{mr: 1}}
+                                                    />
+                                                )}
+                                                {params.slotProps.input.endAdornment}
+                                            </>
+                                        ),
+                                    }
                                 }}
                             />
                         )}
@@ -357,46 +364,48 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                         helperText={helperText}
                         disabled={disabled || selectedProviderIsReadOnlyDisabled || value?.storageProviderId == null}
                         fullWidth={true}
-                        InputProps={{
-                            readOnly: readOnly,
-                            endAdornment: (
-                                <InputAdornment position="end">
-                                    {value != null && !isReadonlyOrDisabled && (
+                        slotProps={{
+                            input: {
+                                readOnly: readOnly,
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        {value != null && !isReadonlyOrDisabled && (
+                                            <Tooltip
+                                                title="Auswahl löschen"
+                                                arrow={true}
+                                            >
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => {
+                                                        onChange({
+                                                            storageProviderId: value.storageProviderId,
+                                                            path: null,
+                                                        });
+                                                    }}
+                                                >
+                                                    <CloseIcon fontSize="small"/>
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
                                         <Tooltip
-                                            title="Auswahl löschen"
+                                            title={value?.storageProviderId == null ? 'Bitte zuerst einen Speicheranbieter auswählen' : 'Ordner auswählen'}
                                             arrow={true}
                                         >
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => {
-                                                    onChange({
-                                                        storageProviderId: value.storageProviderId,
-                                                        path: null,
-                                                    });
-                                                }}
-                                            >
-                                                <CloseIcon fontSize="small"/>
-                                            </IconButton>
+                                            <span>
+                                                <IconButton
+                                                    size="small"
+                                                    disabled={!canBrowse}
+                                                    onClick={() => {
+                                                        setIsDialogOpen(true);
+                                                    }}
+                                                >
+                                                    <FolderIcon fontSize="small"/>
+                                                </IconButton>
+                                            </span>
                                         </Tooltip>
-                                    )}
-                                    <Tooltip
-                                        title={value?.storageProviderId == null ? 'Bitte zuerst einen Speicheranbieter auswählen' : 'Ordner auswählen'}
-                                        arrow={true}
-                                    >
-                                        <span>
-                                            <IconButton
-                                                size="small"
-                                                disabled={!canBrowse}
-                                                onClick={() => {
-                                                    setIsDialogOpen(true);
-                                                }}
-                                            >
-                                                <FolderIcon fontSize="small"/>
-                                            </IconButton>
-                                        </span>
-                                    </Tooltip>
-                                </InputAdornment>
-                            ),
+                                    </InputAdornment>
+                                ),
+                            }
                         }}
                     />
                 </Grid>
@@ -416,8 +425,10 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                         {selectedProvider != null && (
                             <Typography
                                 variant="caption"
-                                color="text.secondary"
                                 noWrap={true}
+                                sx={{
+                                    color: "text.secondary"
+                                }}
                             >
                                 {selectedProvider.name}
                             </Typography>
