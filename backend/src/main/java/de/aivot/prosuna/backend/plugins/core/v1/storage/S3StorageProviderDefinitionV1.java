@@ -25,17 +25,14 @@ import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import io.minio.*;
 import io.minio.errors.*;
-import io.minio.messages.DeleteObject;
+import io.minio.messages.DeleteRequest;
 import io.minio.messages.Item;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -212,9 +209,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         try {
             bucketExists = client
                     .bucketExists(bucketTestRequest);
-        } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
-                 NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
-                 InternalException e) {
+        } catch (MinioException e) {
             throw new StorageException(e, "Die Verbindung zum S3-kompatiblen Speicher konnte nicht hergestellt werden.");
         }
 
@@ -232,7 +227,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                         PutObjectArgs.builder()
                                 .bucket(config.bucket)
                                 .object(testObjectName)
-                                .stream(new ByteArrayInputStream(new byte[0]), 0, -1)
+                                .stream(new ByteArrayInputStream(new byte[0]), 0L, -1L)
                                 .build()
                 );
 
@@ -249,7 +244,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 } else {
                     throw new StorageException(e, "Fehler beim Überprüfen der Schreibberechtigung im S3-kompatiblen Speicher.");
                 }
-            } catch (Exception e) {
+            } catch (MinioException e) {
                 throw new StorageException(e, "Fehler beim Überprüfen der Schreibberechtigung im S3-kompatiblen Speicher.");
             }
         }
@@ -346,14 +341,12 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                     .builder()
                     .bucket(config.bucket)
                     .object(normalizedPath.substring(1))
-                    .stream(new ByteArrayInputStream(new byte[0]), 0, -1)
+                    .stream(new ByteArrayInputStream(new byte[0]), 0L, -1L)
                     .build();
 
             try {
                 getClient(config).putObject(putObjectArgs);
-            } catch (ErrorResponseException | XmlParserException | ServerException | NoSuchAlgorithmException |
-                     IOException | InvalidResponseException | InvalidKeyException | InternalException |
-                     InsufficientDataException e) {
+            } catch (MinioException e) {
                 throw new StorageException(e, "Der Ordner konnte nicht im S3-kompatiblen Speicher erstellt werden.");
             }
         }
@@ -455,19 +448,17 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .recursive(true)
                 .build();
 
-        List<DeleteObject> objectsToDelete = new LinkedList<>();
+        List<DeleteRequest.Object> objectsToDelete = new LinkedList<>();
         var objects = client.listObjects(listArgs);
         for (var object : objects) {
             Item item;
             try {
                 item = object.get();
-            } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
-                     NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
-                     InternalException e) {
+            } catch (MinioException e) {
                 throw new StorageException(e, "Fehler beim Auflisten der Objekte im S3-kompatiblen Speicher.");
             }
 
-            objectsToDelete.add(new DeleteObject(item.objectName()));
+            objectsToDelete.add(new DeleteRequest.Object(item.objectName()));
         }
 
         var removeArgs = RemoveObjectsArgs
@@ -493,7 +484,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .builder()
                 .bucket(config.bucket)
                 .object(path.substring(1))
-                .stream(data, -1, 10 * 1024 * 1024)
+                .stream(data, -1L, 10L * 1024L * 1024L)
                 .userMetadata(userMetadata)
                 .contentType(mimeType)
                 .build();
@@ -502,9 +493,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
         try {
             client.putObject(putObjectArgs);
-        } catch (ErrorResponseException | XmlParserException | ServerException | NoSuchAlgorithmException |
-                 IOException | InvalidResponseException | InvalidKeyException | InternalException |
-                 InsufficientDataException e) {
+        } catch (MinioException e) {
             throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher gespeichert werden.");
         }
 
@@ -536,8 +525,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 throw new StorageException("Das Dokument %s konnte nicht gefunden werden.", StringUtils.quote(pathFromRoot));
             }
             throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
-        } catch (InsufficientDataException | XmlParserException | ServerException | NoSuchAlgorithmException |
-                 IOException | InvalidResponseException | InvalidKeyException | InternalException e) {
+        } catch (MinioException e) {
             throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
         }
 
@@ -546,7 +534,8 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .bucket(config.bucket)
                 .object(pathFromRoot.substring(1))
                 .source(
-                        CopySource.builder()
+                        SourceObject
+                                .builder()
                                 .bucket(config.bucket)
                                 .object(pathFromRoot.substring(1))
                                 .build()
@@ -565,8 +554,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 throw new StorageException("Das Dokument %s konnte nicht gefunden werden.", StringUtils.quote(pathFromRoot));
             }
             throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
-        } catch (InsufficientDataException | XmlParserException | ServerException | NoSuchAlgorithmException |
-                 IOException | InvalidResponseException | InvalidKeyException | InternalException e) {
+        } catch (MinioException e) {
             throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
         }
 
@@ -597,8 +585,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 return Optional.empty();
             }
             throw new StorageException(e, "Fehler beim Abrufen des Dokuments aus dem S3-kompatiblen Speicher.");
-        } catch (InsufficientDataException | XmlParserException | ServerException | NoSuchAlgorithmException |
-                 IOException | InvalidResponseException | InvalidKeyException | InternalException e) {
+        } catch (MinioException e) {
             throw new StorageException(e, "Fehler beim Abrufen des Dokuments aus dem S3-kompatiblen Speicher.");
         }
 
@@ -626,9 +613,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         InputStream inputStream;
         try {
             inputStream = client.getObject(getObjectArgs);
-        } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
-                 NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
-                 InternalException e) {
+        } catch (MinioException e) {
             throw new StorageException(e, "Fehler beim Abrufen des Dokuments aus dem S3-kompatiblen Speicher.");
         }
 
@@ -653,8 +638,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 return false;
             }
             throw new StorageException(e, "Fehler beim Überprüfen der Existenz des Dokuments im S3-kompatiblen Speicher.");
-        } catch (InsufficientDataException | XmlParserException | ServerException | NoSuchAlgorithmException |
-                 IOException | InvalidResponseException | InvalidKeyException | InternalException e) {
+        } catch (MinioException e) {
             throw new StorageException(e, "Fehler beim Überprüfen der Existenz des Dokuments im S3-kompatiblen Speicher.");
         }
     }
@@ -686,7 +670,8 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .bucket(config.bucket)
                 .object(targetPathFromRoot.substring(1))
                 .source(
-                        CopySource.builder()
+                        SourceObject
+                                .builder()
                                 .bucket(config.bucket)
                                 .object(sourcePathFromRoot.substring(1))
                                 .build()
@@ -700,8 +685,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
             }
             throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher kopiert werden.");
-        } catch (InsufficientDataException | XmlParserException | ServerException | NoSuchAlgorithmException |
-                 IOException | InvalidResponseException | InvalidKeyException | InternalException e) {
+        } catch (MinioException e) {
             throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher kopiert werden.");
         }
 
@@ -725,9 +709,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
         try {
             client.removeObject(removeObjectArgs);
-        } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
-                 NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
-                 InternalException e) {
+        } catch (MinioException e) {
             throw new StorageException(e, "Das Dokument konnte nicht aus dem S3-kompatiblen Speicher gelöscht werden.");
         }
     }
@@ -764,9 +746,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     private Item getListedObject(@Nonnull Result<Item> objectResult) throws StorageException {
         try {
             return objectResult.get();
-        } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
-                 NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
-                 InternalException e) {
+        } catch (MinioException e) {
             throw new StorageException(e, "Fehler beim Auflisten der Objekte im S3-kompatiblen Speicher.");
         }
     }
@@ -784,17 +764,18 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .builder()
                 .bucket(config.bucket)
                 .object(targetObjectName)
-                .source(CopySource.builder()
-                        .bucket(config.bucket)
-                        .object(sourceObjectName)
-                        .build())
+                .source(
+                        SourceObject
+                                .builder()
+                                .bucket(config.bucket)
+                                .object(sourceObjectName)
+                                .build()
+                )
                 .build();
 
         try {
             client.copyObject(copyArgs);
-        } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
-                 NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
-                 InternalException e) {
+        } catch (MinioException e) {
             throw new StorageException(e, "Der Ordner konnte nicht im S3-kompatiblen Speicher kopiert werden.");
         }
     }
@@ -813,7 +794,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     private static final String S3_AMZ_PREFIX = "x-amz-meta-";
 
     @Nonnull
-    private static StorageItemMetadata fromUserMetadata(@Nullable Map<String, String> userMetadata) {
+    private static StorageItemMetadata fromUserMetadata(@Nullable Http.Headers userMetadata) {
         var metadata = new StorageItemMetadata();
         if (userMetadata == null) {
             return metadata;
@@ -836,7 +817,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
     @Nonnull
     private static <T extends StorageItem> T withLastModified(@Nonnull T item,
-                                                             @Nullable ZonedDateTime lastModified) {
+                                                              @Nullable ZonedDateTime lastModified) {
         if (lastModified != null) {
             var timestamp = lastModified.toInstant();
             item
