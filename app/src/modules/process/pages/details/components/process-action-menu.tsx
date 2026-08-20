@@ -176,8 +176,10 @@ export function ProcessActionMenu(props: ProcessActionMenuProps): ReactNode {
                                         </ListItemIcon>
                                         <ListItemText
                                             primary={item.label}
-                                            primaryTypographyProps={{
-                                                color: item.isDangerous ? 'error.main' : 'text.primary',
+                                            slotProps={{
+                                                primary: {
+                                                    color: item.isDangerous ? 'error.main' : 'text.primary',
+                                                }
                                             }}
                                         />
                                     </MenuItem>
