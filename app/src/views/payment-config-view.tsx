@@ -180,8 +180,10 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
             <Stack
                 direction="row"
                 spacing={2}
-                alignItems="center"
-                justifyContent="space-between"
+                sx={{
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                }}
             >
                 <Typography variant="subtitle2">
                     {element.label}{element.required ? ' *' : ''}
@@ -226,7 +228,9 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                     <Stack
                         direction="row"
                         spacing={1}
-                        alignItems="center"
+                        sx={{
+                            alignItems: 'center',
+                        }}
                     >
                         <PaymentArrowDown
                             sx={{
@@ -508,8 +512,10 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                 <Stack
                     direction="row"
                     spacing={2}
-                    alignItems="center"
-                    justifyContent="space-between"
+                    sx={{
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                    }}
                 >
                     <Typography variant="body1">
                         Zahlungspositionen *
@@ -1203,9 +1209,11 @@ function AdditionalBookingDataEditor(props: {
             <Stack
                 direction="row"
                 spacing={2}
-                alignItems="center"
-                justifyContent="space-between"
-                sx={{mb: rows.length === 0 ? 0 : 1.5}}
+                sx={{
+                    mb: rows.length === 0 ? 0 : 1.5,
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                }}
             >
                 <Typography variant="subtitle2">
                     Buchungsdaten
@@ -1222,14 +1230,17 @@ function AdditionalBookingDataEditor(props: {
                 </Button>
             </Stack>
 
-            <Typography variant="body2" color="textSecondary"
-             sx={{
-                 maxWidth: 560,
-                 mt: 0.75,
-                 mb: 1.75,
-             }}
+            <Typography
+                variant="body2"
+                color="textSecondary"
+                sx={{
+                    maxWidth: 560,
+                    mt: 0.75,
+                    mb: 1.75,
+                }}
             >
-                In den Buchungsdaten können technisch relevante Informationen für die weitergehende Verbuchung in Folgesystemen mitgegeben werden.
+                In den Buchungsdaten können technisch relevante Informationen für die weitergehende Verbuchung in
+                Folgesystemen mitgegeben werden.
             </Typography>
 
             {
@@ -1246,7 +1257,9 @@ function AdditionalBookingDataEditor(props: {
                             key={index}
                             container
                             spacing={1.5}
-                            alignItems="flex-start"
+                            sx={{
+                                alignItems: 'flex-start',
+                            }}
                         >
                             <Grid size={{xs: 12, md: 5}}>
                                 <TextFieldComponent
@@ -1315,7 +1328,9 @@ function EmptyItemsState(props: { hasError: boolean }) {
             <Stack
                 direction="row"
                 spacing={1}
-                alignItems="center"
+                sx={{
+                    alignItems: 'center',
+                }}
             >
                 <Receipt
                     sx={{
@@ -1353,7 +1368,9 @@ function EmptyBookingDataState(props: { hasError: boolean }) {
             <Stack
                 direction="row"
                 spacing={1}
-                alignItems="center"
+                sx={{
+                    alignItems: 'center',
+                }}
             >
                 <Receipt
                     sx={{
