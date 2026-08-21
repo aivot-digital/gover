@@ -17,6 +17,7 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -171,6 +172,9 @@ class TemporalInputElementContractTest {
     }
 
     private static Object toJsonValue(Object value) {
-        return JsonMapperFactory.getInstance().convertValue(value, Object.class);
+        return assertDoesNotThrow(() -> {
+            var mapper = JsonMapperFactory.getInstance();
+            return mapper.readValue(mapper.writeValueAsString(value), Object.class);
+        });
     }
 }

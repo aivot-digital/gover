@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.core.jackson;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.JsonMapperConfiguration;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import org.junit.jupiter.api.Test;
@@ -18,7 +17,7 @@ class LocalTimeJsonContractTest {
 
     @Test
     void springMapperShouldSerializeLocalTimeWithSeconds() throws Exception {
-        var mapper = springMapper();
+        var mapper = JsonMapperFactory.getInstance();
 
         assertEquals(
                 "{\"time\":\"09:30:00\"}",
@@ -32,7 +31,7 @@ class LocalTimeJsonContractTest {
 
     @Test
     void shouldAcceptMinuteAndSecondInput() throws Exception {
-        var mapper = JsonMapperFactory.getInstance();
+        var mapper = springMapper();
 
         assertEquals(
                 LocalTime.of(9, 30),
@@ -44,7 +43,7 @@ class LocalTimeJsonContractTest {
         );
     }
 
-    private void assertSerializesWithSeconds(ObjectMapper mapper) throws Exception {
+    private void assertSerializesWithSeconds(JsonMapper mapper) throws Exception {
         assertEquals(
                 "{\"time\":\"09:30:00\"}",
                 mapper.writeValueAsString(new TimePayload(LocalTime.of(9, 30)))

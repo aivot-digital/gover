@@ -1,8 +1,9 @@
 package de.aivot.prosuna.backend.mail.services;
 
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.autoconfigure.mail.MailProperties;
+import org.springframework.boot.mail.autoconfigure.MailProperties;
 
 import static org.junit.jupiter.api.Assertions.*;
 

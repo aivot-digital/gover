@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.javascript.models;
 
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

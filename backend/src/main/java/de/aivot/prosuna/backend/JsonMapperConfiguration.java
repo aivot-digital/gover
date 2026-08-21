@@ -13,11 +13,13 @@ import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.ValueSerializer;
 import tools.jackson.databind.ext.javatime.ser.LocalTimeSerializer;
+import tools.jackson.databind.ext.javatime.ser.YearSerializer;
 import tools.jackson.databind.module.SimpleModule;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
+import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -31,6 +33,7 @@ public class JsonMapperConfiguration {
                 .addDeserializer(Instant.class, new StrictInstantValueDeserializer())
                 .addSerializer(Instant.class, new ApplicationTimeZoneInstantValueSerializer())
                 .addSerializer(LocalTime.class, new LocalTimeSerializer(DateTimeFormatter.ofPattern("HH:mm:ss")))
+                .addSerializer(Year.class, new YearSerializer(DateTimeFormatter.ofPattern("uuuu")))
                 .addSerializer(Duration.class, new DurationToMillisecondsValueSerializer()));
     }
 

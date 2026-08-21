@@ -1,13 +1,12 @@
 package de.aivot.prosuna.backend.core.jackson;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import de.aivot.prosuna.backend.JsonMapperConfiguration;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.exc.MismatchedInputException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
@@ -54,7 +53,7 @@ class InstantJsonContractTest {
 
     @Test
     void springMapperShouldCoerceEmptyInstantsToNull() throws Exception {
-        var mapper = springMapper();
+        var mapper = JsonMapperFactory.getInstance();
 
         assertNull(mapper.readValue(
                 "{\"timestamp\":\"\"}",
@@ -124,7 +123,7 @@ class InstantJsonContractTest {
 
     @Test
     void shouldSerializeSummerAndWinterInstantsWithApplicationTimeZoneOffset() throws Exception {
-        var mapper = JsonMapperFactory.getInstance();
+        var mapper = springMapper();
 
         assertEquals(
                 "{\"timestamp\":\"2026-06-15T09:30:00+02:00\"}",
@@ -162,7 +161,7 @@ class InstantJsonContractTest {
         assertEquals("{\"timestamp\":\"2026-06-15T07:30:00+00:00\"}", result);
     }
 
-    private void assertRejectsOffsetlessInstant(ObjectMapper mapper) {
+    private void assertRejectsOffsetlessInstant(JsonMapper mapper) {
         assertThrows(
                 MismatchedInputException.class,
                 () -> mapper.readValue(
@@ -172,7 +171,7 @@ class InstantJsonContractTest {
         );
     }
 
-    private void assertCoercesEmptyInstantsToNull(ObjectMapper mapper) throws Exception {
+    private void assertCoercesEmptyInstantsToNull(JsonMapper mapper) throws Exception {
         assertNull(mapper.readValue(
                 "{\"timestamp\":\"\"}",
                 TimestampPayload.class
