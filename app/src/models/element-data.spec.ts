@@ -6,6 +6,7 @@ import {
     ComputedElementValueSource,
     hasAuthoredElementValuesSomeInput,
     hasAnyErrorRecursivelyInParent,
+    resolveComputedElementSubState,
 } from './element-data';
 import {ElementType} from '../data/element-type/element-type';
 
@@ -195,6 +196,34 @@ describe('hasAnyErrorRecursivelyInParent', () => {
     });
 });
 
+describe('resolveComputedElementSubState', () => {
+    it('should not fall back to an indexed sub state with a different id', () => {
+        const indexedSubState = {
+            id: 'old-row',
+            states: {
+                field: {
+                    error: 'Stale error',
+                },
+            },
+        };
+
+        expect(resolveComputedElementSubState([indexedSubState], 'new-row', 0)).toBeNull();
+    });
+
+    it('should resolve an id-less sub state by index', () => {
+        const indexedSubState = {
+            id: null,
+            states: {
+                field: {
+                    error: 'Indexed error',
+                },
+            },
+        };
+
+        expect(resolveComputedElementSubState([indexedSubState], null, 0)).toBe(indexedSubState);
+    });
+});
+
 describe('applyComputedErrors', () => {
     it('should override existing errors without changing unrelated state fields', () => {
         const computedErrors: ComputedElementErrors = {
@@ -371,7 +400,161 @@ describe('applyComputedErrors', () => {
         });
     });
 
-    it('should clear sub states when computed errors provide an empty array', () => {
+    it('should preserve derived rows missing from computed errors', () => {
+        const computedErrors: ComputedElementErrors = {
+            list: {
+                subStates: [
+                    {
+                        id: 'row-1',
+                        states: {
+                            child: {
+                                error: 'Updated error',
+                            },
+                        },
+                    },
+                ],
+            },
+        };
+        const existingStates: ComputedElementStates = {
+            list: {
+                subStates: [
+                    {
+                        id: 'row-1',
+                        states: {
+                            child: {
+                                visible: true,
+                            },
+                        },
+                    },
+                    {
+                        id: 'row-2',
+                        states: {
+                            child: {
+                                disabled: true,
+                            },
+                        },
+                    },
+                ],
+            },
+        };
+
+        expect(applyComputedErrors(computedErrors, existingStates)).toEqual({
+            list: {
+                subStates: [
+                    {
+                        id: 'row-1',
+                        states: {
+                            child: {
+                                visible: true,
+                                error: 'Updated error',
+                            },
+                        },
+                    },
+                    {
+                        id: 'row-2',
+                        states: {
+                            child: {
+                                disabled: true,
+                            },
+                        },
+                    },
+                ],
+            },
+        });
+    });
+
+    it('should match reordered sub states by id', () => {
+        const computedErrors: ComputedElementErrors = {
+            list: {
+                subStates: [
+                    {
+                        id: 'row-1',
+                        states: {
+                            child: {
+                                error: 'First row error',
+                            },
+                        },
+                    },
+                    {
+                        id: 'row-2',
+                        states: {
+                            child: {
+                                error: 'Second row error',
+                            },
+                        },
+                    },
+                ],
+            },
+        };
+        const existingStates: ComputedElementStates = {
+            list: {
+                subStates: [
+                    {
+                        id: 'row-2',
+                        states: {
+                            child: {
+                                visible: false,
+                            },
+                        },
+                    },
+                    {
+                        id: 'row-1',
+                        states: {
+                            child: {
+                                visible: true,
+                            },
+                        },
+                    },
+                ],
+            },
+        };
+
+        const result = applyComputedErrors(computedErrors, existingStates);
+
+        expect(result.list?.subStates?.[0].states?.child).toEqual({
+            visible: false,
+            error: 'Second row error',
+        });
+        expect(result.list?.subStates?.[1].states?.child).toEqual({
+            visible: true,
+            error: 'First row error',
+        });
+    });
+
+    it('should not recreate rows missing from derived states', () => {
+        const computedErrors: ComputedElementErrors = {
+            list: {
+                subStates: [
+                    {
+                        id: 'removed-row',
+                        states: {
+                            child: {
+                                error: 'Stale error',
+                            },
+                        },
+                    },
+                ],
+            },
+        };
+        const existingStates: ComputedElementStates = {
+            list: {
+                subStates: [
+                    {
+                        id: 'current-row',
+                        states: {
+                            child: {
+                                visible: true,
+                            },
+                        },
+                    },
+                ],
+            },
+        };
+
+        expect(applyComputedErrors(computedErrors, existingStates)).toEqual(existingStates);
+    });
+
+    it('should preserve derived sub states when computed errors provide an empty array', () => {
         const computedErrors: ComputedElementErrors = {
             list: {
                 subStates: [],
@@ -392,10 +575,6 @@ describe('applyComputedErrors', () => {
             },
         };
 
-        expect(applyComputedErrors(computedErrors, existingStates)).toEqual({
-            list: {
-                subStates: [],
-            },
-        });
+        expect(applyComputedErrors(computedErrors, existingStates)).toEqual(existingStates);
     });
 });

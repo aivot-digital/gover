@@ -82,35 +82,21 @@ export function updateReplicatingContainerElementValues(row: any, values: Author
         {values};
 }
 
-export function resolveComputedElementSubStateStates(subState: ComputedElementSubState | ComputedElementStates | null | undefined): ComputedElementStates {
-    if (subState == null) {
-        return {};
-    }
-
-    if (isComputedElementSubState(subState)) {
-        return subState.states ?? {};
-    }
-
-    return subState as ComputedElementStates;
+export function resolveComputedElementSubStateStates(subState: ComputedElementSubState | null | undefined): ComputedElementStates {
+    return subState?.states ?? {};
 }
 
 export function resolveComputedElementSubState(
-    subStates: Array<ComputedElementSubState | ComputedElementStates> | null | undefined,
+    subStates: ComputedElementSubState[] | null | undefined,
     id: string | null | undefined,
     index: number,
-): ComputedElementSubState | ComputedElementStates | null {
+): ComputedElementSubState | null {
     if (subStates == null) {
         return null;
     }
 
     if (id != null) {
-        const matchingSubState = subStates.find((subState) => (
-            isComputedElementSubState(subState) &&
-            subState.id === id
-        ));
-        if (matchingSubState != null) {
-            return matchingSubState;
-        }
+        return subStates.find((subState) => subState.id === id) ?? null;
     }
 
     return index >= 0 && index < subStates.length ? subStates[index] : null;
@@ -129,17 +115,6 @@ export function isEffectiveValues(obj: any): obj is EffectiveElementValues {
 
 export function isElementStates(obj: any): obj is ComputedElementStates {
     return obj != null && typeof obj === 'object' && !Array.isArray(obj);
-}
-
-export function isComputedElementSubState(obj: any): obj is ComputedElementSubState {
-    return obj != null &&
-        typeof obj === 'object' &&
-        !Array.isArray(obj) &&
-        (
-            Object.prototype.hasOwnProperty.call(obj, 'states') ||
-            Object.prototype.hasOwnProperty.call(obj, 'id')
-        ) &&
-        (obj.states == null || isElementStates(obj.states));
 }
 
 export function isDerivedRuntimeElementData(obj: any): obj is DerivedRuntimeElementData {
@@ -215,17 +190,26 @@ export function applyComputedErrors(computedErrors: ComputedElementErrors, compu
 
         if (Object.prototype.hasOwnProperty.call(computedError, 'subStates')) {
             const computedSubStates = computedError.subStates;
+            const previousSubStates = previousState?.subStates;
+            const sourceSubStates = previousSubStates ?? computedSubStates;
 
-            nextState.subStates = computedSubStates == null ?
-                computedSubStates ?? null :
-                computedSubStates.map((computedSubState, index) => {
-                    const previousSubState = resolveComputedElementSubState(previousState?.subStates, computedSubState?.id, index);
+            nextState.subStates = sourceSubStates == null ?
+                sourceSubStates ?? null :
+                sourceSubStates.map((sourceSubState, index) => {
+                    const previousSubState = previousSubStates?.[index] ?? null;
+                    const previousSubStateId = previousSubState?.id;
+                    const computedSubState = previousSubStates == null ?
+                        sourceSubState :
+                        resolveComputedElementSubState(computedSubStates, previousSubStateId, index);
+
                     return createComputedElementSubState(
-                        computedSubState?.id ?? (isComputedElementSubState(previousSubState) ? previousSubState.id : null),
-                        applyComputedErrors(
-                            resolveComputedElementSubStateStates(computedSubState),
-                            resolveComputedElementSubStateStates(previousSubState),
-                        ),
+                        previousSubStateId ?? computedSubState?.id,
+                        computedSubState == null ?
+                            resolveComputedElementSubStateStates(previousSubState) :
+                            applyComputedErrors(
+                                resolveComputedElementSubStateStates(computedSubState),
+                                resolveComputedElementSubStateStates(previousSubState),
+                            ),
                     );
                 });
         }
