@@ -13,6 +13,7 @@ import EmailOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Mail
 import PictureAsPdfOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/PictureAsPdf';
 import PaymentOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CreditCard';
 import CheckCircleTwoToneIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import {Rating} from '../rating/rating';
 import {AlertComponent} from '../alert/alert-component';
 import qrcode from 'qrcode';
@@ -21,10 +22,7 @@ import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submis
 import {ElementType} from '../../data/element-type/element-type';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {
-    CanvasConfettiOverlay,
-    prosunaConfettiColors,
-} from '../confetti/canvas-confetti-overlay';
+import {CanvasConfettiOverlay, prosunaConfettiColors} from '../confetti/canvas-confetti-overlay';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
 import {ProcessEntity} from '../../modules/process/entities/process-entity';
@@ -36,6 +34,7 @@ import {
 import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-api-service';
 import {downloadBlobFile} from '../../utils/download-utils';
 import {ProcessTaskStatus} from '../../modules/process/enums/process-task-status';
+import {ProcessInstanceStatus} from '../../modules/process/enums/process-instance-status';
 
 interface SubmittedProps {
     startedProcessAccessKey: string;
@@ -86,7 +85,9 @@ export function Submitted(props: SubmittedProps) {
     const [qrCode, setQrCode] = useState<string>();
     const [confettiPlayKey, setConfettiPlayKey] = useState<number | null>(null);
     const [formTaskAccessKey, setFormTaskAccessKey] = useState<string>();
+    const [processFailed, setProcessFailed] = useState(false);
     const [isPrintDownloadPending, setIsPrintDownloadPending] = useState(false);
+    const SubmittedStatusIcon = processFailed ? ErrorOutlineOutlinedIcon : CheckCircleTwoToneIcon;
 
     useEffect(() => {
         const trimmedAccessKey = startedProcessAccessKey.trim();
@@ -124,6 +125,7 @@ export function Submitted(props: SubmittedProps) {
     useEffect(() => {
         const trimmedAccessKey = startedProcessAccessKey.trim();
         setFormTaskAccessKey(undefined);
+        setProcessFailed(false);
 
         if (trimmedAccessKey.length === 0) {
             return;
@@ -137,6 +139,15 @@ export function Submitted(props: SubmittedProps) {
                 .getInstanceStatus(trimmedAccessKey)
                 .then((res) => {
                     if (isCancelled) {
+                        return;
+                    }
+
+                    if (res.status === ProcessInstanceStatus.Failed) {
+                        setProcessFailed(true);
+                        setFormTaskAccessKey(undefined);
+                        if (intervalId != null) {
+                            clearInterval(intervalId);
+                        }
                         return;
                     }
 
@@ -182,13 +193,13 @@ export function Submitted(props: SubmittedProps) {
     const setMailErrorWithSnackbar = useSetMailErrorWithSnackbar(setMailError);
     const [mailSent, setMailSent] = useState(false);
     const [showMailSentDialog, setShowMailSentDialog] = useState(false);
-    const paymentTaskPath = formTaskAccessKey == null ?
+    const paymentTaskPath = processFailed || formTaskAccessKey == null ?
         undefined :
         `/process/${encodeURIComponent(startedProcessAccessKey.trim())}/tasks/${encodeURIComponent(formTaskAccessKey)}`;
 
     const downloadSubmittedPrint = (): void => {
         const formSlug = node.configuration.formSlug;
-        if (typeof formSlug !== 'string' || formSlug.trim().length === 0 || formTaskAccessKey == null) {
+        if (processFailed || typeof formSlug !== 'string' || formSlug.trim().length === 0 || formTaskAccessKey == null) {
             return;
         }
 
@@ -281,11 +292,11 @@ export function Submitted(props: SubmittedProps) {
                         m: 0,
                     }}
                 >
-                    Angaben erfolgreich übermittelt
+                    {processFailed ? 'Verarbeitung fehlgeschlagen' : 'Angaben erfolgreich übermittelt'}
                 </Typography>
-                <CheckCircleTwoToneIcon
+                <SubmittedStatusIcon
                     sx={{
-                        color: theme.palette.primary.main,
+                        color: processFailed ? theme.palette.error.main : theme.palette.primary.main,
                         flexShrink: 0,
                         mt: -0.75,
                         ml: 0.75,
@@ -293,6 +304,18 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 />
             </Box>
+
+            {
+                processFailed &&
+                <AlertComponent
+                    color="error"
+                    title="Ihr Antrag konnte nicht verarbeitet werden"
+                    sx={{my: 0, mb: 4}}
+                >
+                    Bei der Verarbeitung Ihres Antrags ist ein Fehler aufgetreten. Bitte wenden Sie sich an die
+                    zuständige Stelle. Die Kontaktdaten finden Sie unten.
+                </AlertComponent>
+            }
 
             {
                 status != null &&
@@ -349,7 +372,8 @@ export function Submitted(props: SubmittedProps) {
                                 }}
                             >
                                 <a
-                                    href={status.paymentProviderUrl}
+                                    href={processFailed ? undefined : status.paymentProviderUrl}
+                                    aria-disabled={processFailed}
                                     target={'_blank'}
                                 >
                                     <img
@@ -364,7 +388,8 @@ export function Submitted(props: SubmittedProps) {
                             <Button
                                 component="a"
                                 variant="contained"
-                                href={status.paymentProviderUrl}
+                                href={processFailed ? undefined : status.paymentProviderUrl}
+                                disabled={processFailed}
                                 size={'large'}
                                 startIcon={<PaymentOutlinedIcon
                                     sx={{marginTop: '-2px'}}
@@ -454,17 +479,22 @@ export function Submitted(props: SubmittedProps) {
                                 <Button
                                     variant="contained"
                                     disabled
-                                    startIcon={<CircularProgress
-                                        color="inherit"
-                                        size={18}
-                                    />}
+                                    startIcon={
+                                        processFailed ?
+                                            <PaymentOutlinedIcon sx={{marginTop: '-2px'}}/> :
+                                            <CircularProgress
+                                                color="inherit"
+                                                size={18}
+                                            />
+                                    }
                                 >
-                                    Zahlung wird vorbereitet
+                                    {processFailed ? 'Zahlung nicht verfügbar' : 'Zahlung wird vorbereitet'}
                                 </Button> :
                                 <Button
                                     component="a"
                                     variant="contained"
                                     href={paymentTaskPath}
+                                    disabled={processFailed}
                                     startIcon={<PaymentOutlinedIcon
                                         sx={{marginTop: '-2px'}}
                                     />}
@@ -523,10 +553,12 @@ export function Submitted(props: SubmittedProps) {
                             }
                             onClick={downloadSubmittedPrint}
                             size="large"
-                            disabled={formTaskAccessKey == null || isPrintDownloadPending}
+                            disabled={processFailed || formTaskAccessKey == null || isPrintDownloadPending}
                         >
                             {
-                                formTaskAccessKey == null ?
+                                processFailed ?
+                                    'PDF nicht verfügbar' :
+                                    formTaskAccessKey == null ?
                                     'PDF wird vorbereitet' :
                                     'Antrag als PDF herunterladen'
                             }
@@ -658,7 +690,7 @@ export function Submitted(props: SubmittedProps) {
                 />
             </Box>
             <CanvasConfettiOverlay
-                playKey={confettiPlayKey}
+                playKey={processFailed ? null : confettiPlayKey}
                 colors={prosunaConfettiColors}
             />
 
