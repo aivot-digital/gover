@@ -38,18 +38,19 @@ By combining powerful functionality with an intuitive user experience, Prosuna a
 For more information visit <https://prosuna.de>
 
 ## Who uses Prosuna?
+Prosuna is primarily used by public administrations at the local level – cities, municipalities, and counties.
+It supports authorities that aim to fully digitize their application processes end-to-end, making them more efficient and accessible for both citizens and staff.
 
-Prosuna is primarily used by public administrations at the local level – cities, municipalities, and counties. It supports authorities that aim to fully digitize their application processes end-to-end, making them more efficient and accessible for both citizens and staff.
-
-Prosuna is especially valued by administrations that want to reduce reliance on overburdened IT departments by enabling subject-matter experts in individual departments to build and manage digital processes themselves. It’s also chosen by those who care about digital sovereignty and seek to avoid vendor lock-in by using a solution that puts control back in the hands of the public sector.
+Prosuna is especially valued by administrations that want to reduce reliance on overburdened IT departments by enabling subject-matter experts in individual departments to build and manage digital processes themselves.
+It’s also chosen by those who care about digital sovereignty and seek to avoid vendor lock-in by using a solution that puts control back in the hands of the public sector.
 
 Want to learn more? Feel free to contact us anytime at <https://aivot.de/kontakt>.
 
 ## Deployment Examples
-
 The Docker Compose configurations in the `examples` directory illustrate two possible deployment shapes. They are examples only, not universal installation instructions.
 
-For an on-premises installation, only the system administrators responsible for the target environment know its infrastructure and operational requirements. They must review and adapt the networking, TLS, storage, backups, monitoring, availability, secret management, and security hardening before deploying Prosuna.
+For an on-premises installation, only the system administrators responsible for the target environment know its infrastructure and operational requirements.
+They must review and adapt the networking, TLS, storage, backups, monitoring, availability, secret management, and security hardening before deploying Prosuna.
 
 - [Local development and evaluation example](./examples/local/README.md): [Docker Compose configuration](./examples/local/compose.yml)
 - [Single-server example](./examples/server/README.md): [Docker Compose configuration](./examples/server/compose.yml)
