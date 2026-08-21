@@ -69,6 +69,7 @@ class ProcessVersionServiceTest {
                 .setPublicTitle("Alt")
                 .setCaseNumberTemplate(null)
                 .setNotes("Alte Notizen")
+                .setThemeId(6)
                 .setLegalSupportDepartmentId(1)
                 .setTechnicalSupportDepartmentId(2)
                 .setImprintDepartmentId(3)
@@ -83,6 +84,7 @@ class ProcessVersionServiceTest {
                 .setPublicTitle("Neu")
                 .setCaseNumberTemplate("AZ-%YYY-%M-%I(4)")
                 .setNotes("Neue Notizen")
+                .setThemeId(16)
                 .setLegalSupportDepartmentId(11)
                 .setTechnicalSupportDepartmentId(12)
                 .setImprintDepartmentId(13)
@@ -99,6 +101,7 @@ class ProcessVersionServiceTest {
         assertEquals("Neu", result.getPublicTitle());
         assertEquals("AZ-%YYY-%M-%I(4)", result.getCaseNumberTemplate());
         assertEquals("Neue Notizen", result.getNotes());
+        assertEquals(16, result.getThemeId());
         assertEquals(11, result.getLegalSupportDepartmentId());
         assertEquals(12, result.getTechnicalSupportDepartmentId());
         assertEquals(13, result.getImprintDepartmentId());

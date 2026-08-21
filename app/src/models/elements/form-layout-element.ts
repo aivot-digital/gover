@@ -21,8 +21,6 @@ export interface FormLayoutElement extends BaseElement<ElementType.FormLayout> {
     managingDepartmentId: number | null | undefined;
     responsibleDepartmentId: number | null | undefined;
 
-    themeId: number | null | undefined;
-
     pdfTemplateKey: string | null | undefined;
 }
 

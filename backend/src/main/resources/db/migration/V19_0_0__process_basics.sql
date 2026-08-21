@@ -56,6 +56,9 @@ create table process_versions
     -- Additional notes for this process definition version.
     notes                text         null,
 
+    -- Optional appearance for all forms of this process definition version.
+    theme_id             int          null references themes (id) on delete set null,
+
     -- Organization units for legal and support information.
     legal_support_department_id     int          null references departments (id) on delete set null,
     technical_support_department_id int          null references departments (id) on delete set null,

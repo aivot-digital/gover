@@ -163,7 +163,6 @@ const elementConstructors: {
         showOnFormIndexPage: true,
         managingDepartmentId: undefined,
         responsibleDepartmentId: undefined,
-        themeId: undefined,
         pdfTemplateKey: undefined,
     }),
     [ElementType.Step]: (id) => ({

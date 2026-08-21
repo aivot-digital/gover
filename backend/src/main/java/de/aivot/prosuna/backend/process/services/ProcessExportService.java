@@ -127,6 +127,7 @@ public class ProcessExportService {
         processVersion.setRevoked(null);
         processVersion.setNotes(null);
         processVersion.setStatus(ProcessVersionStatus.Drafted);
+        processVersion.setThemeId(null);
         processVersion.setLegalSupportDepartmentId(null);
         processVersion.setTechnicalSupportDepartmentId(null);
         processVersion.setImprintDepartmentId(null);

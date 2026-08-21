@@ -1209,6 +1209,7 @@ const EmptyProcess: ProcessExport = {
         publicTitle: 'Neuer Prozess',
         caseNumberTemplate: null,
         notes: null,
+        themeId: null,
         legalSupportDepartmentId: null,
         technicalSupportDepartmentId: null,
         imprintDepartmentId: null,

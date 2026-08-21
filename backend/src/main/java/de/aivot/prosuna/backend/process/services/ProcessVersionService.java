@@ -98,6 +98,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         existingEntity.setPublicTitle(entity.getPublicTitle());
         existingEntity.setCaseNumberTemplate(entity.getCaseNumberTemplate());
         existingEntity.setNotes(entity.getNotes());
+        existingEntity.setThemeId(entity.getThemeId());
         existingEntity.setLegalSupportDepartmentId(entity.getLegalSupportDepartmentId());
         existingEntity.setTechnicalSupportDepartmentId(entity.getTechnicalSupportDepartmentId());
         existingEntity.setImprintDepartmentId(entity.getImprintDepartmentId());

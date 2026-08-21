@@ -656,6 +656,7 @@ public class ProcessController {
                         null,
                         null
                 )
+                        .setThemeId(originalProcessVersion.getThemeId())
                         .setLegalSupportDepartmentId(originalProcessVersion.getLegalSupportDepartmentId())
                         .setTechnicalSupportDepartmentId(originalProcessVersion.getTechnicalSupportDepartmentId())
                         .setImprintDepartmentId(originalProcessVersion.getImprintDepartmentId())

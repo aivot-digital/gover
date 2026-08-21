@@ -29,8 +29,6 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
     private Integer managingDepartmentId;
     private Integer responsibleDepartmentId;
 
-    private Integer themeId;
-
     private UUID pdfTemplateKey;
 
     public FormLayoutElement() {
@@ -47,12 +45,12 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
                 Objects.equals(publicTitle, that.publicTitle) && Objects.equals(showOnFormIndexPage, that.showOnFormIndexPage) &&
                 Objects.equals(managingDepartmentId, that.managingDepartmentId) &&
                 Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) &&
-                Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey);
+                Objects.equals(pdfTemplateKey, that.pdfTemplateKey);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), tabTitle, children, offlineSubmissionText, offlineSignatureNeeded, publicTitle, showOnFormIndexPage, managingDepartmentId, responsibleDepartmentId, themeId, pdfTemplateKey);
+        return Objects.hash(super.hashCode(), tabTitle, children, offlineSubmissionText, offlineSignatureNeeded, publicTitle, showOnFormIndexPage, managingDepartmentId, responsibleDepartmentId, pdfTemplateKey);
     }
 
     @JsonIgnore
@@ -165,15 +163,6 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
 
     public FormLayoutElement setResponsibleDepartmentId(Integer responsibleDepartmentId) {
         this.responsibleDepartmentId = responsibleDepartmentId;
-        return this;
-    }
-
-    public Integer getThemeId() {
-        return themeId;
-    }
-
-    public FormLayoutElement setThemeId(Integer themeId) {
-        this.themeId = themeId;
         return this;
     }
 

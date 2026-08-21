@@ -7,6 +7,7 @@ export interface ProcessVersionEntity {
     publicTitle: string;
     caseNumberTemplate: string | null;
     notes: string | null;
+    themeId: number | null;
     legalSupportDepartmentId: number | null;
     technicalSupportDepartmentId: number | null;
     imprintDepartmentId: number | null;

@@ -41,6 +41,7 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
             publicTitle: '',
             caseNumberTemplate: null,
             notes: null,
+            themeId: null,
             legalSupportDepartmentId: null,
             technicalSupportDepartmentId: null,
             imprintDepartmentId: null,

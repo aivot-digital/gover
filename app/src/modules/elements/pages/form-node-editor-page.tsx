@@ -375,7 +375,7 @@ export function FormNodeEditorPage() {
     }, [node, process, processVersion, testClaim]);
 
     const hasFormLayout = formLayout != null;
-    const selectedFormThemeId = formLayout?.themeId ?? null;
+    const selectedProcessVersionThemeId = processVersion?.themeId ?? null;
     const selectedResponsibleDepartmentId = formLayout?.responsibleDepartmentId ?? null;
     const selectedManagingDepartmentId = formLayout?.managingDepartmentId ?? null;
 
@@ -387,8 +387,8 @@ export function FormNodeEditorPage() {
 
         let isCancelled = false;
 
-        // The public theme endpoint resolves the persisted form only. Resolve the draft chain here so
-        // unsaved theme changes, including clearing the explicit form theme, are reflected immediately.
+        // The public theme endpoint resolves persisted data only. Resolve draft department changes here
+        // so the preview reflects unsaved form configuration immediately.
         setDraftPreviewThemeChain([]);
 
         const themesApi = new ThemesApiService(api);
@@ -422,7 +422,7 @@ export function FormNodeEditorPage() {
         (async () => {
             const themeChain: AppTheme[] = [];
 
-            await appendTheme(themeChain, selectedFormThemeId);
+            await appendTheme(themeChain, selectedProcessVersionThemeId);
             await appendDepartmentTheme(themeChain, selectedResponsibleDepartmentId);
             await appendDepartmentTheme(themeChain, selectedManagingDepartmentId);
 
@@ -437,7 +437,7 @@ export function FormNodeEditorPage() {
     }, [
         api,
         hasFormLayout,
-        selectedFormThemeId,
+        selectedProcessVersionThemeId,
         selectedResponsibleDepartmentId,
         selectedManagingDepartmentId,
     ]);
@@ -970,7 +970,7 @@ export function FormNodeEditorPage() {
     const formAssetQueryParams = new URLSearchParams({
         version: processVersion.processVersion.toString(),
     });
-    formAssetQueryParams.set('theme-id', formLayout.themeId?.toString() ?? 'default');
+    formAssetQueryParams.set('theme-id', processVersion.themeId?.toString() ?? 'default');
     if (testClaim != null) {
         formAssetQueryParams.set('test-claim', testClaim.accessKey);
     }

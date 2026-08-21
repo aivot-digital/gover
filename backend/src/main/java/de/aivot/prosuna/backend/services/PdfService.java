@@ -37,7 +37,9 @@ import de.aivot.prosuna.backend.plugins.form.v1.nodes.FormTriggerConfigV1;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.services.pdf.PdfElementsGenerator;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
@@ -82,6 +84,7 @@ public class PdfService {
     private final ElementDerivationService elementDerivationService;
     private final VDepartmentShadowedRepository vDepartmentShadowedRepository;
     private final ProcessRepository processRepository;
+    private final ProcessVersionRepository processVersionRepository;
     private final ThemeService themeService;
 
     @Autowired
@@ -89,6 +92,7 @@ public class PdfService {
                       SystemConfigService systemConfigService,
                       VDepartmentShadowedRepository vDepartmentShadowedRepository,
                       ProcessRepository processRepository,
+                      ProcessVersionRepository processVersionRepository,
                       AssetRepository assetRepository,
                       ProsunaConfig prosunaConfig,
                       PaymentTransactionRepository paymentTransactionRepository,
@@ -109,6 +113,7 @@ public class PdfService {
         this.elementDerivationService = elementDerivationService;
         this.vDepartmentShadowedRepository = vDepartmentShadowedRepository;
         this.processRepository = processRepository;
+        this.processVersionRepository = processVersionRepository;
         this.themeService = themeService;
     }
 
@@ -246,7 +251,13 @@ public class PdfService {
         }
          */
 
-        return generatePdf(formLayoutElement, dto, scope, processInstance.getProcessId());
+        return generatePdf(
+                formLayoutElement,
+                dto,
+                scope,
+                processNode.getProcessId(),
+                processNode.getProcessVersion()
+        );
     }
 
     public byte[] generatePaymentConfirmation(@Nonnull PaymentTransactionEntity transaction,
@@ -315,9 +326,20 @@ public class PdfService {
         }
     }
 
-    private byte[] generatePdf(FormLayoutElement form, Map<String, Object> dto, FormPdfScope scope, @Nullable Integer processId) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+    private byte[] generatePdf(FormLayoutElement form,
+                               Map<String, Object> dto,
+                               FormPdfScope scope,
+                               Integer processId,
+                               Integer processVersion) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        var processVersionEntity = processVersionRepository
+                .findById(ProcessVersionEntityId.of(processId, processVersion))
+                .orElseThrow(() -> ResponseException.internalServerError(
+                        "Die Prozessversion %d des Prozesses %d wurde nicht gefunden.",
+                        processVersion,
+                        processId
+                ));
         var formTheme = themeService
-                .getFormThemesInOrderOfImportance(form)
+                .getFormThemesInOrderOfImportance(processVersionEntity, form)
                 .getFirst();
 
         dto.put("base", createBaseContext(formTheme, scope));

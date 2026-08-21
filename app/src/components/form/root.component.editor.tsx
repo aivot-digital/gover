@@ -2,17 +2,13 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Grid, Skeleton} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type FormLayoutElement} from '../../models/elements/form-layout-element';
-import {SelectFieldComponent} from '../select-field/select-field-component';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {type SelectFieldComponentOption} from '../select-field/select-field-component-option';
-import {useApi} from '../../hooks/use-api';
 import {Link} from 'react-router-dom';
 import {Hint} from '../hint/hint';
 import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
-import {ThemesApiService} from '../../modules/themes/themes-api-service';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {withDelay} from '../../utils/with-delay';
 import {AssetSelector} from '../../modules/assets/components/asset-selector';
@@ -22,7 +18,6 @@ import {DepartmentSelectField} from '../../modules/departments/components/depart
 
 export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
     const dispatch = useAppDispatch();
-    const api = useApi();
 
     const {
         element: form,
@@ -30,7 +25,6 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
     } = props;
 
     const [departments, setDepartments] = useState<VDepartmentShadowedEntity[] | null>(null);
-    const [themes, setThemes] = useState<SelectFieldComponentOption[] | null>(null);
 
     useEffect(() => {
         withDelay(
@@ -47,18 +41,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 dispatch(showErrorSnackbar('Fehler beim Laden der Organisationseinheiten!'));
             });
 
-        withDelay(new ThemesApiService(api)
-            .listAll(), 600)
-            .then((themes) => themes.content.map((theme) => ({
-                value: theme.id.toString(),
-                label: theme.name,
-            })))
-            .then(setThemes)
-            .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Laden der Erscheinungsbilder!'));
-            });
-    }, [api, dispatch]);
+    }, [dispatch]);
 
     const departmentsById = useMemo(() => {
         return new Map((departments ?? []).map((department) => [
@@ -212,77 +195,15 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
-                title="Erscheinungsbild"
+                title="PDF-Generierung"
                 variant="h5"
             >
-                Hinterlegen Sie bei Bedarf ein abweichendes Erscheinungsbild und wählen Sie ggf. eine PDF-Vorlage,
-                welche zur Generierung des Formulars zur Offline-Einreichung verwendet wird.
+                Wählen Sie bei Bedarf eine PDF-Vorlage für eingereichte Anträge und Formulare zur Offline-Einreichung.
             </ElementEditorSectionHeader>
             <Grid
                 container
                 columnSpacing={4}
             >
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                >
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center"
-                        }}>
-                        {
-                            themes == null &&
-                            <Skeleton
-                                width="100%"
-                                height={80}
-                            />
-                        }
-                        {
-                            themes != null &&
-                            <SelectFieldComponent
-                                label="Erscheinungsbild"
-                                value={form.themeId?.toString() ?? undefined}
-                                onChange={(val) => {
-                                    onPatch({
-                                        themeId: val != null ? parseInt(val) : null,
-                                    });
-                                }}
-                                options={themes}
-                                disabled={!props.editable}
-                            />
-                        }
-                        <Hint
-                            summary="Sie können ein abweichendes Erscheinungsbild für dieses Formular auswählen."
-                            detailsTitle="Erscheinungsbild"
-                            details={
-                                <>
-                                    <p>
-                                        Sie können hier ein abweichendes Erscheinungsbild für dieses Formular auswählen.
-                                    </p>
-                                    <p>
-                                        Erscheinungsbilder werden nach folgendem Prioritätsprinzip angewendet.
-                                        Der erste passende Eintrag in der folgenden Liste wird verwendet:
-
-                                        <ol>
-                                            <li>Das Erscheinungsbild des Formulars</li>
-                                            <li>Das Erscheinungsbild der zuständigen Organisationseinheit</li>
-                                            <li>Das Erscheinungsbild der bewirtschaftenden Organisationseinheit</li>
-                                            <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
-                                            <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
-                                        </ol>
-                                    </p>
-                                    <p>
-                                        Das Erscheinungsbild legt Farben, Logo und Favicon des Formulars fest.
-                                    </p>
-                                </>
-                            }
-                            sx={{ml: 2}}
-                        />
-                    </Box>
-                </Grid>
                 <Grid
                     size={{
                         xs: 12,

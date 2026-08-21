@@ -1,5 +1,5 @@
 import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState} from 'react';
-import {Alert, Grid, Stack} from '@mui/material';
+import {Alert, Box, Grid, Skeleton, Stack} from '@mui/material';
 import {ProcessVersionEntity} from '../../entities/process-version-entity';
 import {ElementEditorSectionHeader} from '../../../../components/element-editor-section-header/element-editor-section-header';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -19,11 +19,16 @@ import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snac
 import {RichTextInputComponent} from '../../../../components/rich-text-input-component/rich-text-input-component';
 import {VDepartmentShadowedEntity} from '../../../departments/entities/v-department-shadowed-entity';
 import {DepartmentSelectField} from '../../../departments/components/department-select-field';
+import {type ThemeResponseDTO} from '../../../themes/models/theme';
+import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
+import {type SelectFieldComponentOption} from '../../../../components/select-field/select-field-component-option';
+import {Hint} from '../../../../components/hint/hint';
 
 interface ProcessSettingsDialogVersionTabProps {
     open: boolean;
     version: ProcessVersionEntity;
     departments: VDepartmentShadowedEntity[];
+    themes: ThemeResponseDTO[] | null;
     onVersionChange: (version: ProcessVersionEntity) => void;
     onUnsavedChangesChange?: (hasUnsavedChanges: boolean) => void;
     onSavingChange?: (isSaving: boolean) => void;
@@ -57,6 +62,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
         open,
         version,
         departments,
+        themes,
         onVersionChange,
         onUnsavedChangesChange,
         onSavingChange,
@@ -68,6 +74,12 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
 
     const isEditable = version.status === ProcessStatus.Drafted;
     const caseNumberType = getCaseNumberType(draft.caseNumberTemplate);
+    const themeOptions = useMemo<SelectFieldComponentOption[]>(() => {
+        return (themes ?? []).map((theme) => ({
+            value: theme.id.toString(),
+            label: theme.name,
+        }));
+    }, [themes]);
     const departmentsById = useMemo(() => {
         return new Map(departments.map((department) => [
             department.id,
@@ -134,6 +146,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                 publicTitle: version.publicTitle,
                 caseNumberTemplate: version.caseNumberTemplate,
                 notes: version.notes,
+                themeId: version.themeId,
                 legalSupportDepartmentId: version.legalSupportDepartmentId,
                 technicalSupportDepartmentId: version.technicalSupportDepartmentId,
                 imprintDepartmentId: version.imprintDepartmentId,
@@ -146,6 +159,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                 publicTitle: draft.publicTitle,
                 caseNumberTemplate: draft.caseNumberTemplate,
                 notes: draft.notes,
+                themeId: draft.themeId,
                 legalSupportDepartmentId: draft.legalSupportDepartmentId,
                 technicalSupportDepartmentId: draft.technicalSupportDepartmentId,
                 imprintDepartmentId: draft.imprintDepartmentId,
@@ -166,6 +180,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
         draft.processSpecificPrivacyStatement,
         draft.publicTitle,
         draft.technicalSupportDepartmentId,
+        draft.themeId,
         version.accessibilityDepartmentId,
         version.caseNumberTemplate,
         version.imprintDepartmentId,
@@ -176,6 +191,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
         version.processSpecificPrivacyStatement,
         version.publicTitle,
         version.technicalSupportDepartmentId,
+        version.themeId,
     ]);
 
     useEffect(() => {
@@ -218,6 +234,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
             publicTitle: draft.publicTitle.trim(),
             caseNumberTemplate: caseNumberType === CASE_NUMBER_TYPE_TEMPLATE ? draft.caseNumberTemplate?.trim() ?? '' : null,
             notes: draft.notes?.trim() === '' ? null : draft.notes?.trim() ?? null,
+            themeId: draft.themeId,
             legalSupportDepartmentId: draft.legalSupportDepartmentId,
             technicalSupportDepartmentId: draft.technicalSupportDepartmentId,
             imprintDepartmentId: draft.imprintDepartmentId,
@@ -304,6 +321,70 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                 error={notesError}
                 hint="Halten Sie übergreifende Hinweise zur aktuell geöffneten Prozessversion fest, z. B. offene Punkte, Annahmen oder spätere Ergänzungen der Prozesskonfiguration."
             />
+
+            <ElementEditorSectionHeader
+                title="Erscheinungsbild"
+                variant="h6"
+                disableMarginTop
+                disableMarginBottom
+                maxWidth={680}
+            >
+                Das ausgewählte Erscheinungsbild gilt für alle Formulare dieser Prozessversion.
+            </ElementEditorSectionHeader>
+
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    maxWidth: 680,
+                }}
+            >
+                {
+                    themes == null &&
+                    <Skeleton
+                        width="100%"
+                        height={80}
+                    />
+                }
+                {
+                    themes != null &&
+                    <SelectFieldComponent
+                        label="Erscheinungsbild"
+                        value={draft.themeId?.toString() ?? null}
+                        onChange={(value) => {
+                            setDraft({
+                                ...draft,
+                                themeId: value != null ? parseInt(value) : null,
+                            });
+                        }}
+                        options={themeOptions}
+                        disabled={!isEditable || isSaving}
+                    />
+                }
+                <Hint
+                    summary="Sie können ein abweichendes Erscheinungsbild für alle Formulare dieser Prozessversion auswählen."
+                    detailsTitle="Erscheinungsbild"
+                    details={
+                        <>
+                            <p>
+                                Erscheinungsbilder werden nach folgendem Prioritätsprinzip angewendet. Der erste passende
+                                Eintrag in der folgenden Liste wird verwendet:
+                            </p>
+                            <ol>
+                                <li>Das Erscheinungsbild der Prozessversion</li>
+                                <li>Das Erscheinungsbild der zuständigen Organisationseinheit</li>
+                                <li>Das Erscheinungsbild der bewirtschaftenden Organisationseinheit</li>
+                                <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
+                                <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
+                            </ol>
+                            <p>
+                                Das Erscheinungsbild legt Farben, Logo und Favicon aller Formulare der Prozessversion fest.
+                            </p>
+                        </>
+                    }
+                    sx={{ml: 2}}
+                />
+            </Box>
 
             <ElementEditorSectionHeader
                 title="Rechtliche Angaben"

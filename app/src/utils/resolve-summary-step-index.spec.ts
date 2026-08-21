@@ -80,7 +80,6 @@ describe('resolveSummaryStepIndex', () => {
             showOnFormIndexPage: null,
             managingDepartmentId: null,
             responsibleDepartmentId: null,
-            themeId: null,
             pdfTemplateKey: null,
         };
 

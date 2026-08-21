@@ -733,7 +733,7 @@ public class FormTriggerControllerV1 {
                                      @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion
     ) throws ResponseException {
         var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var theme = getFormTheme(context.formLayout());
+        var theme = getFormTheme(context.processVersion(), context.formLayout());
         return ThemeResponseDTO.fromEntity(theme);
     }
 
@@ -752,7 +752,11 @@ public class FormTriggerControllerV1 {
                         @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
         var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var logoResolution = getFormLogoResolution(context.formLayout(), "dark".equalsIgnoreCase(colorScheme));
+        var logoResolution = getFormLogoResolution(
+                context.processVersion(),
+                context.formLayout(),
+                "dark".equalsIgnoreCase(colorScheme)
+        );
 
         String redirectUrl;
         if (logoResolution.assetKey() == null && logoResolution.allowDefaultFallback()) {
@@ -781,7 +785,7 @@ public class FormTriggerControllerV1 {
                            @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
         var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var faviconKey = getFormFaviconKey(context.formLayout());
+        var faviconKey = getFormFaviconKey(context.processVersion(), context.formLayout());
 
         String redirectUrl;
         if (faviconKey == null) {
@@ -860,7 +864,7 @@ public class FormTriggerControllerV1 {
         }
 
         var department = resolvePaymentConfirmationDepartment(context);
-        var logoUrl = resolvePaymentConfirmationLogoUrl(context.formLayout());
+        var logoUrl = resolvePaymentConfirmationLogoUrl(context.processVersion(), context.formLayout());
 
         byte[] pdfBytes;
         try {
@@ -957,6 +961,10 @@ public class FormTriggerControllerV1 {
             throw ResponseException.notFound();
         }
 
+        var processVersion = processVersionService
+                .retrieve(ProcessVersionEntityId.of(node.getProcessId(), node.getProcessVersion()))
+                .orElseThrow(ResponseException::notFound);
+
         var provider = getProvider(node);
         var config = getConfigurationDetails(node, provider, execUser);
         if (!Objects.equals(formSlug, config.configuration().formSlug)) {
@@ -973,6 +981,7 @@ public class FormTriggerControllerV1 {
                 instance,
                 task,
                 node,
+                processVersion,
                 formLayout
         );
     }
@@ -1016,8 +1025,9 @@ public class FormTriggerControllerV1 {
     }
 
     @Nullable
-    private String resolvePaymentConfirmationLogoUrl(@Nonnull FormLayoutElement formLayout) {
-        var logoResolution = getFormLogoResolution(formLayout, false); // We never use the dark logo for printouts
+    private String resolvePaymentConfirmationLogoUrl(@Nonnull ProcessVersionEntity processVersion,
+                                                     @Nonnull FormLayoutElement formLayout) {
+        var logoResolution = getFormLogoResolution(processVersion, formLayout, false); // We never use the dark logo for printouts
         if (logoResolution.assetKey() != null) {
             return assetService.createUrl(logoResolution.assetKey());
         }
@@ -1047,17 +1057,19 @@ public class FormTriggerControllerV1 {
     }
 
     @Nonnull
-    private ThemeEntity getFormTheme(@Nonnull FormLayoutElement formLayout) {
-        return getFormThemesInOrderOfImportance(formLayout).get(0);
+    private ThemeEntity getFormTheme(@Nonnull ProcessVersionEntity processVersion,
+                                     @Nonnull FormLayoutElement formLayout) {
+        return getFormThemesInOrderOfImportance(processVersion, formLayout).getFirst();
     }
 
     @Nonnull
-    private List<ThemeEntity> getCustomFormThemesInOrderOfImportance(@Nonnull FormLayoutElement formLayout) {
+    private List<ThemeEntity> getCustomFormThemesInOrderOfImportance(@Nonnull ProcessVersionEntity processVersion,
+                                                                     @Nonnull FormLayoutElement formLayout) {
         var themes = new ArrayList<ThemeEntity>();
 
-        if (formLayout.getThemeId() != null) {
+        if (processVersion.getThemeId() != null) {
             themeService
-                    .retrieve(formLayout.getThemeId())
+                    .retrieve(processVersion.getThemeId())
                     .ifPresent(themes::add);
         }
 
@@ -1068,8 +1080,9 @@ public class FormTriggerControllerV1 {
     }
 
     @Nonnull
-    private List<ThemeEntity> getFormThemesInOrderOfImportance(@Nonnull FormLayoutElement formLayout) {
-        var themes = getCustomFormThemesInOrderOfImportance(formLayout);
+    private List<ThemeEntity> getFormThemesInOrderOfImportance(@Nonnull ProcessVersionEntity processVersion,
+                                                               @Nonnull FormLayoutElement formLayout) {
+        var themes = getCustomFormThemesInOrderOfImportance(processVersion, formLayout);
         themes.add(systemService.retrieveDefaultTheme());
 
         return themes;
@@ -1107,8 +1120,10 @@ public class FormTriggerControllerV1 {
     }
 
     @Nonnull
-    private LogoResolution getFormLogoResolution(@Nonnull FormLayoutElement formLayout, boolean darkColorScheme) {
-        var customThemes = getCustomFormThemesInOrderOfImportance(formLayout);
+    private LogoResolution getFormLogoResolution(@Nonnull ProcessVersionEntity processVersion,
+                                                 @Nonnull FormLayoutElement formLayout,
+                                                 boolean darkColorScheme) {
+        var customThemes = getCustomFormThemesInOrderOfImportance(processVersion, formLayout);
 
         // A resolved custom theme chain without a logo should stay logo-less instead of inheriting
         // the system theme logo. Only forms without custom themes fall back to the system/default logo.
@@ -1128,8 +1143,9 @@ public class FormTriggerControllerV1 {
     }
 
     @Nullable
-    private UUID getFormFaviconKey(@Nonnull FormLayoutElement formLayout) {
-        var themes = getFormThemesInOrderOfImportance(formLayout);
+    private UUID getFormFaviconKey(@Nonnull ProcessVersionEntity processVersion,
+                                   @Nonnull FormLayoutElement formLayout) {
+        var themes = getFormThemesInOrderOfImportance(processVersion, formLayout);
 
         for (var theme : themes) {
             if (theme.getFaviconKey() != null) {
@@ -1226,6 +1242,7 @@ public class FormTriggerControllerV1 {
             @Nonnull ProcessInstanceEntity instance,
             @Nonnull ProcessInstanceTaskEntity task,
             @Nonnull ProcessNodeEntity node,
+            @Nonnull ProcessVersionEntity processVersion,
             @Nonnull FormLayoutElement formLayout
     ) {
     }

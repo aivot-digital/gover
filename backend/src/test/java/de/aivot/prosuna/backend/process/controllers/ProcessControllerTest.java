@@ -105,7 +105,7 @@ class ProcessControllerTest {
                 Instant.now(),
                 Instant.now(),
                 null
-        );
+        ).setThemeId(77);
 
         var departmentPreset = new ProcessInstanceAccessControlPresetEntity()
                 .setId(1)
@@ -144,6 +144,7 @@ class ProcessControllerTest {
         var result = controller.newVersionFromExisting(null, 42, 2);
 
         assertEquals(3, result.getProcessVersion());
+        assertEquals(77, result.getThemeId());
         verify(permissionService)
                 .requireProcessPermission("user-1", 42, ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE);
 

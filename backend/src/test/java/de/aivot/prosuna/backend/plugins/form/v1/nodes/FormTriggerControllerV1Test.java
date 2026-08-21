@@ -61,9 +61,10 @@ import static org.mockito.Mockito.*;
 
 class FormTriggerControllerV1Test {
     @Test
-    void getThemeShouldUseFormThemeFromDerivedConfiguration() throws Exception {
+    void getThemeShouldUseProcessVersionTheme() throws Exception {
         var formTheme = createTheme(11, "Form Theme", UUID.randomUUID(), UUID.randomUUID());
-        var fixture = createFixture(baseFormLayout().setThemeId(formTheme.getId()));
+        var fixture = createFixture(baseFormLayout());
+        fixture.processVersion().setThemeId(formTheme.getId());
 
         when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
 
@@ -81,10 +82,11 @@ class FormTriggerControllerV1Test {
         var testClaimAccessKey = "claim-123";
         var formTheme = createTheme(11, "Form Theme", UUID.randomUUID(), UUID.randomUUID());
         var fixture = createFixture(
-                baseFormLayout().setThemeId(formTheme.getId()),
+                baseFormLayout(),
                 testClaimAccessKey,
                 requestedProcessVersion
         );
+        fixture.processVersion().setThemeId(formTheme.getId());
 
         when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
 
@@ -112,10 +114,10 @@ class FormTriggerControllerV1Test {
         var responsibleTheme = createTheme(21, "Responsible Theme", UUID.randomUUID(), null);
         var fixture = createFixture(
                 baseFormLayout()
-                        .setThemeId(formTheme.getId())
                         .setResponsibleDepartmentId(200),
                 testClaimAccessKey
         );
+        fixture.processVersion().setThemeId(formTheme.getId());
 
         when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
         when(fixture.departmentService().retrieve(200)).thenReturn(Optional.of(new VDepartmentShadowedEntity().setId(200).setThemeId(responsibleTheme.getId())));
@@ -131,7 +133,8 @@ class FormTriggerControllerV1Test {
     @Test
     void getLogoShouldNotFallbackToDefaultLogoWhenCustomThemeChainProvidesNone() throws Exception {
         var formTheme = createTheme(11, "Form Theme", null, null);
-        var fixture = createFixture(baseFormLayout().setThemeId(formTheme.getId()));
+        var fixture = createFixture(baseFormLayout());
+        fixture.processVersion().setThemeId(formTheme.getId());
 
         when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
 
@@ -156,7 +159,8 @@ class FormTriggerControllerV1Test {
         var lightLogoKey = UUID.randomUUID();
         var darkLogoKey = UUID.randomUUID();
         var formTheme = createTheme(11, "Form Theme", lightLogoKey, null).setLogoKeyDark(darkLogoKey);
-        var fixture = createFixture(baseFormLayout().setThemeId(formTheme.getId()));
+        var fixture = createFixture(baseFormLayout());
+        fixture.processVersion().setThemeId(formTheme.getId());
         when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
 
         var darkResponse = new MockHttpServletResponse();
@@ -179,9 +183,9 @@ class FormTriggerControllerV1Test {
         var managingTheme = createTheme(31, "Managing Theme", null, UUID.randomUUID());
         var fixture = createFixture(
                 baseFormLayout()
-                        .setThemeId(formTheme.getId())
                         .setManagingDepartmentId(300)
         );
+        fixture.processVersion().setThemeId(formTheme.getId());
 
         when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
         when(fixture.departmentService().retrieve(300)).thenReturn(Optional.of(new VDepartmentShadowedEntity().setId(300).setThemeId(managingTheme.getId())));
@@ -427,6 +431,14 @@ class FormTriggerControllerV1Test {
         var userService = mock(UserService.class);
         when(userService.fromJWT(isNull())).thenReturn(Optional.empty());
 
+        var processVersion = new ProcessVersionEntity()
+                .setProcessId(node.getProcessId())
+                .setProcessVersion(node.getProcessVersion())
+                .setStatus(ProcessVersionStatus.Published);
+        var processVersionService = mock(ProcessVersionService.class);
+        when(processVersionService.retrieve(ProcessVersionEntityId.of(node.getProcessId(), node.getProcessVersion())))
+                .thenReturn(Optional.of(processVersion));
+
         var attachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
         var attachmentService = mock(ProcessInstanceAttachmentService.class);
         if (withSummaryAttachment) {
@@ -503,7 +515,7 @@ class FormTriggerControllerV1Test {
                 processService,
                 processNodeService,
                 mock(ProcessTestClaimService.class),
-                mock(ProcessVersionService.class),
+                processVersionService,
                 processNodeDefinitionService,
                 mock(SystemConfigService.class),
                 mock(StorageProviderService.class),
@@ -667,6 +679,7 @@ class FormTriggerControllerV1Test {
                 processSlug,
                 formSlug,
                 process,
+                processVersion,
                 processTestClaimService,
                 processVersionService,
                 themeService,
@@ -719,6 +732,7 @@ class FormTriggerControllerV1Test {
             String processSlug,
             String formSlug,
             ProcessEntity process,
+            ProcessVersionEntity processVersion,
             ProcessTestClaimService processTestClaimService,
             ProcessVersionService processVersionService,
             ThemeService themeService,

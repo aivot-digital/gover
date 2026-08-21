@@ -29,7 +29,6 @@ public class FormLayoutCleanerService {
             throw new RuntimeException(e);
         }
 
-        copy.setThemeId(null);
         copy.setManagingDepartmentId(null);
         copy.setResponsibleDepartmentId(null);
         copy.setPdfTemplateKey(null);

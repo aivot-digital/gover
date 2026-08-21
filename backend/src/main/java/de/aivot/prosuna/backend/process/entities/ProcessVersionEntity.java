@@ -44,6 +44,9 @@ public class ProcessVersionEntity {
     private String notes;
 
     @Nullable
+    private Integer themeId;
+
+    @Nullable
     private Integer legalSupportDepartmentId;
 
     @Nullable
@@ -246,6 +249,16 @@ public class ProcessVersionEntity {
 
     public ProcessVersionEntity setNotes(@Nullable String notes) {
         this.notes = notes;
+        return this;
+    }
+
+    @Nullable
+    public Integer getThemeId() {
+        return themeId;
+    }
+
+    public ProcessVersionEntity setThemeId(@Nullable Integer themeId) {
+        this.themeId = themeId;
         return this;
     }
 
