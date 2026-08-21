@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.elements.models.elements.layout;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
@@ -12,6 +11,7 @@ import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -49,7 +49,7 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Rep
             return null;
         }
 
-        ObjectMapper om = JsonMapperFactory.
+        JsonMapper om = JsonMapperFactory.
                 getInstance();
 
         List<ReplicatingContainerLayoutElementValue> res = new LinkedList<>();
@@ -63,7 +63,7 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Rep
         return res.isEmpty() ? null : res;
     }
 
-    private static ReplicatingContainerLayoutElementValue formatItemValue(@Nonnull ObjectMapper om, @Nullable Object itemObj) {
+    private static ReplicatingContainerLayoutElementValue formatItemValue(@Nonnull JsonMapper om, @Nullable Object itemObj) {
         if (itemObj == null) {
             return new ReplicatingContainerLayoutElementValue();
         }

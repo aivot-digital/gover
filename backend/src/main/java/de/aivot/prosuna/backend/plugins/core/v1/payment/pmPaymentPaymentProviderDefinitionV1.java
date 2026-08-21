@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.plugins.core.v1.payment;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
@@ -28,6 +27,7 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
 
 import java.net.URI;
 import java.net.http.HttpResponse;
@@ -204,7 +204,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
         try {
             body = objectMapper
                     .writeValueAsString(paymentRequest);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PaymentException(e, "Failed to serialize payment request");
         }
 
@@ -238,7 +238,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
 
         try {
             return objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction");
         }
     }
@@ -289,7 +289,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
             updatedTransaction = JsonMapperFactory
                     .getInstance()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
@@ -359,7 +359,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
                     .readTree(response.body())
                     .get("access_token")
                     .asText();
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PaymentSerializationException(e, "Failed to deserialize response body", response.body(), paymentProviderEntity);
         }
 

@@ -1,22 +1,19 @@
 package de.aivot.prosuna.backend.identity.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.identity.models.IdentityAttributeMapping;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
- * JPA attribute converter for handling the conversion of a list of
- * {@link IdentityAttributeMapping} objects to a JSON string for database storage
- * and vice versa.
+ * JPA attribute converter for handling the conversion of a list of {@link IdentityAttributeMapping} objects to a JSON string for database storage and vice versa.
  *
  * <p>This converter is used to seamlessly serialize and deserialize
- * {@link IdentityAttributeMapping} objects when persisting or retrieving
- * data from a database column of type JSON.</p>
+ * {@link IdentityAttributeMapping} objects when persisting or retrieving data from a database column of type JSON.</p>
  *
  * <p>Key functionalities:</p>
  * <ul>
@@ -37,7 +34,14 @@ import java.util.List;
  * @see IdentityAttributeMapping
  */
 @Converter
+@Component
 public class IdentityAttributesConverter implements AttributeConverter<List<IdentityAttributeMapping>, String> {
+
+    private final JsonMapper jsonMapper;
+
+    public IdentityAttributesConverter(JsonMapper jsonMapper) {
+        this.jsonMapper = jsonMapper;
+    }
 
     @Override
     public String convertToDatabaseColumn(List<IdentityAttributeMapping> attributes) {
@@ -45,12 +49,11 @@ public class IdentityAttributesConverter implements AttributeConverter<List<Iden
             return null;
         }
 
-        var objectMapper = new ObjectMapper();
 
         String dbData;
         try {
-            dbData = objectMapper.writeValueAsString(attributes);
-        } catch (JsonProcessingException e) {
+            dbData = jsonMapper.writeValueAsString(attributes);
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 
@@ -63,14 +66,14 @@ public class IdentityAttributesConverter implements AttributeConverter<List<Iden
             return null;
         }
 
-        var objectMapper = new ObjectMapper()
+        var objectMapper = jsonMapper
                 .readerForListOf(IdentityAttributeMapping.class);
 
         List<IdentityAttributeMapping> mappings;
         try {
             mappings = objectMapper
                     .readValue(dbData);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 

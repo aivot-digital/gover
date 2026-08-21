@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.system.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
@@ -13,13 +12,14 @@ import jakarta.annotation.Nullable;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.core.JacksonException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -322,7 +322,7 @@ public class AuthController {
             tokenResponse = JsonMapperFactory
                     .getInstance()
                     .readValue(res.body(), TokenResponse.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError(e, "Failed to parse access token response: " + e.getMessage());
         }
         return tokenResponse;
@@ -339,7 +339,7 @@ public class AuthController {
             redis
                     .opsForValue()
                     .set(getAuthFlowRedisKey(state), value, AUTH_FLOW_TTL);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError(e, "Failed to create auth flow state: " + e.getMessage());
         }
     }
@@ -392,7 +392,7 @@ public class AuthController {
                     .getInstance()
                     .readValue(value, AuthFlowState.class);
             return resolveAppRedirectLocation(flowState.appUri);
-        } catch (JsonProcessingException | ResponseException e) {
+        } catch (JacksonException | ResponseException e) {
             return DEFAULT_APP_URI;
         }
     }
@@ -433,7 +433,7 @@ public class AuthController {
             return JsonMapperFactory
                     .getInstance()
                     .readValue(value, AuthFlowState.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError(e, "Failed to parse auth flow state: " + e.getMessage());
         }
     }

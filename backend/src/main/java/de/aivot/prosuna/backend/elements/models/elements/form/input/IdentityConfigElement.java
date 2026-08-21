@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.enums.ElementType;
@@ -11,14 +10,9 @@ import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.utils.SpringContext;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import tools.jackson.core.JacksonException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigElementSlot>> {
     private static final Set<IdentityProviderType> IDENTITY_PROVIDER_TYPES_REQUIRING_TRUST_LEVEL = Set.of(
@@ -61,7 +55,7 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
                             .getInstance()
                             .readerForListOf(IdentityConfigElementSlot.class)
                             .readValue(valueString);
-                } catch (JsonProcessingException e) {
+                } catch (JacksonException e) {
                     throw new RuntimeException(e);
                 }
             }

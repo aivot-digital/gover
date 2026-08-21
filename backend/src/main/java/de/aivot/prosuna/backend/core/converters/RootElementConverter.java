@@ -1,10 +1,10 @@
 package de.aivot.prosuna.backend.core.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import tools.jackson.core.JacksonException;
 
 @Converter
 public class RootElementConverter implements AttributeConverter<FormLayoutElement, String> {
@@ -15,7 +15,7 @@ public class RootElementConverter implements AttributeConverter<FormLayoutElemen
 
         try {
             return mapper.writeValueAsString(baseElement);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }
@@ -27,7 +27,7 @@ public class RootElementConverter implements AttributeConverter<FormLayoutElemen
 
         try {
             return mapper.readValue(s, FormLayoutElement.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

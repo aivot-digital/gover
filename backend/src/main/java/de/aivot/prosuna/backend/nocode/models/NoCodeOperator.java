@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.nocode.models;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
@@ -9,18 +8,11 @@ import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import tools.jackson.core.JacksonException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.DateTimeException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.Year;
-import java.time.YearMonth;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
@@ -249,11 +241,7 @@ public abstract class NoCodeOperator {
                     yield false;
                 } else if (sValue.equalsIgnoreCase("false")) {
                     yield false;
-                } else if (sValue.equalsIgnoreCase("falsch")) {
-                    yield false;
-                } else {
-                    yield true;
-                }
+                } else yield !sValue.equalsIgnoreCase("falsch");
             }
             case List<?> lValue -> !lValue.isEmpty();
             case Map<?, ?> mValue -> !mValue.isEmpty();
@@ -351,14 +339,14 @@ public abstract class NoCodeOperator {
             case List<?> lValue -> {
                 try {
                     yield JsonMapperFactory.getInstance().writeValueAsString(lValue);
-                } catch (JsonProcessingException e) {
+                } catch (JacksonException e) {
                     yield "";
                 }
             }
             case Map<?, ?> mValue -> {
                 try {
                     yield JsonMapperFactory.getInstance().writeValueAsString(mValue);
-                } catch (JsonProcessingException e) {
+                } catch (JacksonException e) {
                     yield "";
                 }
             }
@@ -622,7 +610,7 @@ public abstract class NoCodeOperator {
             case String sValue -> {
                 try {
                     yield JsonMapperFactory.getInstance().readValue(sValue, Map.class);
-                } catch (JsonProcessingException e) {
+                } catch (JacksonException e) {
                     yield Map.of();
                 }
             }
@@ -650,7 +638,7 @@ public abstract class NoCodeOperator {
             case String sValue -> {
                 try {
                     yield JsonMapperFactory.getInstance().readValue(sValue, List.class);
-                } catch (JsonProcessingException e) {
+                } catch (JacksonException e) {
                     yield List.of();
                 }
             }

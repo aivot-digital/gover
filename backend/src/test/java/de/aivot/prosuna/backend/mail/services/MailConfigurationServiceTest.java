@@ -1,14 +1,10 @@
 package de.aivot.prosuna.backend.mail.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.mail.MailProperties;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class MailConfigurationServiceTest {
     @Test
@@ -37,7 +33,7 @@ class MailConfigurationServiceTest {
         assertEquals("service@example.com", result.senderAddress());
         assertTrue(result.configurationIssues().isEmpty());
 
-        var serializedResult = new ObjectMapper().writeValueAsString(result);
+        var serializedResult = JsonMapperFactory.getInstance().writeValueAsString(result);
         assertFalse(serializedResult.contains("top-secret"));
         assertFalse(serializedResult.contains("prosuna@example.com"));
         assertFalse(serializedResult.contains("\"password\":"));

@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.plugins.core.v1.payment;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
@@ -32,6 +31,7 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
 
 import java.net.URI;
 import java.net.http.HttpResponse;
@@ -222,7 +222,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         try {
             transaction = objectMapper
                     .readValue(response.body(), GiroPaymentStartResponse.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PaymentSerializationException(e, "Failed to deserialize response body", response.body(), paymentProviderEntity);
         }
 

@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *
  * <p>Example usage:</p>
  * <pre>
- *     ObjectMapper objectMapper = new ObjectMapper();
+ *     ObjectMapper objectMapper = JsonMapperFactory.getInstance();
  *     OpenIdConfiguration config = objectMapper.readValue(json, OpenIdConfiguration.class);
  *     String authorizationEndpoint = config.getAuthorizationEndpoint();
  * </pre>

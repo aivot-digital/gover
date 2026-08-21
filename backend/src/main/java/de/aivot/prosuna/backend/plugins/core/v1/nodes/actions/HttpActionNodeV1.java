@@ -1,7 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
@@ -23,11 +22,7 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
-import de.aivot.prosuna.backend.process.services.ProcessDataService;
-import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
-import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
-import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
+import de.aivot.prosuna.backend.process.services.*;
 import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
@@ -43,6 +38,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.core.JacksonException;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -397,7 +393,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         Object processedResponse;
         try {
             processedResponse = parseResponseBody(responseType, rawBody);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     e,
                     "Die HTTP-Antwort konnte nicht als %s verarbeitet werden werden: %s",
@@ -736,7 +732,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
     @Nullable
     private Object parseResponseBody(@Nonnull String responseType,
-                                     @Nullable String rawBody) throws JsonProcessingException {
+                                     @Nullable String rawBody) throws JacksonException {
         if (HttpActionNodeV1Config.ResponseConfig.RESPONSE_BODY_TYPE_OPT_TEXT.equals(responseType)) {
             return rawBody;
         }

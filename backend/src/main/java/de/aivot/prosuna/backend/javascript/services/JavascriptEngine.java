@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.javascript.services;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.javascript.exceptions.JavascriptException;
@@ -9,9 +8,13 @@ import de.aivot.prosuna.backend.javascript.models.JavascriptResult;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
-import org.graalvm.polyglot.*;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.SandboxPolicy;
+import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyObject;
+import tools.jackson.core.type.TypeReference;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;

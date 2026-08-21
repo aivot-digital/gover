@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.system.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
@@ -23,6 +22,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.core.JacksonException;
 
 import java.util.HashMap;
 
@@ -133,7 +133,7 @@ public class AppConfigController {
             configJson = JsonMapperFactory
                     .getInstance()
                     .writeValueAsString(appConfig);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError(e);
         }
 

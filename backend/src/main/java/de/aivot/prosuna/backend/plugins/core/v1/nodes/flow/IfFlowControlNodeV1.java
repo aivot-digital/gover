@@ -1,21 +1,16 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.flow;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.enums.ValueFunctionType;
-import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
-import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.CodeInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.NoCodeInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.NoCodeInputElementItem;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
@@ -46,6 +41,7 @@ import de.aivot.prosuna.backend.process.services.ProcessDataService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
 
 import java.util.List;
 import java.util.Map;
@@ -373,7 +369,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
             return JsonMapperFactory
                     .getInstance()
                     .writeValueAsString(noCodeCondition);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return "No-Code-Ausdruck";
         }
     }

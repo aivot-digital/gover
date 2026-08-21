@@ -1,7 +1,5 @@
 package de.aivot.prosuna.backend.javascript.models;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,7 +14,7 @@ class JavascriptCodeTest {
                 }
                 """;
 
-        var code = assertDoesNotThrow(() -> new ObjectMapper()
+        var code = assertDoesNotThrow(() -> JsonMapperFactory.getInstance()
                 .readValue(json, JavascriptCode.class));
 
         assertEquals("test", code.getCode());
@@ -27,7 +25,7 @@ class JavascriptCodeTest {
         var code = new JavascriptCode()
                 .setCode("test");
 
-        var json = assertDoesNotThrow(() -> new ObjectMapper()
+        var json = assertDoesNotThrow(() -> JsonMapperFactory.getInstance()
                 .writeValueAsString(code));
 
         assertEquals("{\"code\":\"test\"}", json);

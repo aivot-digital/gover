@@ -1,19 +1,28 @@
 package de.aivot.prosuna.backend.process.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.models.lib.DiffItem;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
 @Converter
+@Component
 public class DiffItemsConverter implements AttributeConverter<List<DiffItem>, String> {
+
+    private final JsonMapper jsonMapper;
+
+    public DiffItemsConverter(JsonMapper jsonMapper) {
+        this.jsonMapper = jsonMapper;
+    }
 
     @Nonnull
     @Override
@@ -22,13 +31,10 @@ public class DiffItemsConverter implements AttributeConverter<List<DiffItem>, St
             return "[]";
         }
 
-        var objectMapper = JsonMapperFactory
-                .getInstance();
-
         String dbData;
         try {
-            dbData = objectMapper.writeValueAsString(attributes);
-        } catch (JsonProcessingException e) {
+            dbData = jsonMapper.writeValueAsString(attributes);
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 
@@ -42,15 +48,14 @@ public class DiffItemsConverter implements AttributeConverter<List<DiffItem>, St
             return new LinkedList<>();
         }
 
-        var objectMapper = JsonMapperFactory
-                .getInstance()
+        var objectMapper = jsonMapper
                 .readerForListOf(DiffItem.class);
 
         List<DiffItem> mappings;
         try {
             mappings = objectMapper
                     .readValue(dbData);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 

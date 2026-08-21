@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.process.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -39,6 +38,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.core.JacksonException;
 
 import java.util.List;
 import java.util.Optional;
@@ -247,7 +247,7 @@ public class StaffProcessInstanceTaskViewController {
             inputs = JsonMapperFactory
                     .getInstance()
                     .readValue(rawInputs, AuthoredElementValues.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
         }
         inputs = fileUploadMultipartInputService.normalizeInputs(

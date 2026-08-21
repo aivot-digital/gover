@@ -55,12 +55,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -201,7 +196,7 @@ public class PdfService {
         if (authData != null) {
             IdentityData identityData = null;
             try {
-                identityData = new ObjectMapper()
+                identityData = JsonMapperFactory.getInstance()
                         .convertValue(authData, IdentityData.class);
             } catch (IllegalArgumentException e) {
                 logger.error("Failed to convert identity data to IdentityData", e);

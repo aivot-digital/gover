@@ -1,7 +1,6 @@
 package de.aivot.prosuna.backend.elements.services;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.EffectiveValueSource;
 import de.aivot.prosuna.backend.elements.exceptions.DerivationException;
 import de.aivot.prosuna.backend.elements.models.*;
@@ -31,6 +30,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.type.TypeReference;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -449,7 +449,7 @@ public class ElementDerivationService {
 
         // Determine if override generation should be done with a no code expression
         if (override.getFieldNoCodeMap() != null) {
-            var elementMapToUpdate = new ObjectMapper()
+            var elementMapToUpdate = JsonMapperFactory.getInstance()
                     .convertValue(currentElement, new TypeReference<Map<String, Object>>() {
                     });
             var patchedProcessExecutionData = processExecutionData.patchWithElementData(

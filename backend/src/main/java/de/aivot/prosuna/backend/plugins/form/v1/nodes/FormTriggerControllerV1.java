@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
@@ -61,6 +60,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.core.JacksonException;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -438,7 +438,7 @@ public class FormTriggerControllerV1 {
             inputs = JsonMapperFactory
                     .getInstance()
                     .readValue(rawInputs, AuthoredElementValues.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.badRequest();
         }
 

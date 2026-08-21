@@ -1,10 +1,9 @@
 package de.aivot.prosuna.backend.identity.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.prosuna.backend.identity.constants.IdentityBodyParameterConstants;
@@ -25,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.core.JacksonException;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -608,9 +608,10 @@ public class IdentityService {
 
         IdentityAuthTokenData accessTokenData;
         try {
-            accessTokenData = new ObjectMapper()
+            accessTokenData = JsonMapperFactory
+                    .getInstance()
                     .readValue(responseBody, IdentityAuthTokenData.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException
                     .internalServerError(
                             e,
@@ -676,10 +677,10 @@ public class IdentityService {
 
         Map<String, Object> rawData;
         try {
-            rawData = new ObjectMapper()
+            rawData = JsonMapperFactory.getInstance()
                     .readerForMapOf(String.class)
                     .readValue(response.body());
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException
                     .internalServerError(
                             e,

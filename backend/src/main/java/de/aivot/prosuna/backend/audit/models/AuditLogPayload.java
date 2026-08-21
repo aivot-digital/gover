@@ -1,12 +1,12 @@
 package de.aivot.prosuna.backend.audit.models;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import de.aivot.prosuna.backend.audit.enums.AuditAction;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import tools.jackson.core.type.TypeReference;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
