@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.core.jackson;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.prosuna.backend.JacksonConfiguration;
+import de.aivot.prosuna.backend.JsonMapperConfiguration;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
@@ -57,7 +57,7 @@ class LocalTimeJsonContractTest {
 
     private JsonMapper springMapper() {
         var builder = JsonMapper.builder();
-        new JacksonConfiguration()
+        new JsonMapperConfiguration()
                 .customJacksonSerializers()
                 .customize(builder);
         return builder.build();

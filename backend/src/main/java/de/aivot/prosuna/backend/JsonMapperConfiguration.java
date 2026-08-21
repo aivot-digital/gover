@@ -22,7 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 @Configuration
-public class JacksonConfiguration {
+public class JsonMapperConfiguration {
     @Bean
     public JsonMapperBuilderCustomizer customJacksonSerializers() {
         // Keep this HTTP mapper aligned with ObjectMapperFactory, which is used by

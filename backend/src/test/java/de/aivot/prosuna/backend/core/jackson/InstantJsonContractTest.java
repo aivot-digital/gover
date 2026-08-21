@@ -2,7 +2,7 @@ package de.aivot.prosuna.backend.core.jackson;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import de.aivot.prosuna.backend.JacksonConfiguration;
+import de.aivot.prosuna.backend.JsonMapperConfiguration;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import org.junit.jupiter.api.AfterEach;
@@ -185,7 +185,7 @@ class InstantJsonContractTest {
 
     private JsonMapper springMapper() {
         var builder = JsonMapper.builder();
-        new JacksonConfiguration()
+        new JsonMapperConfiguration()
                 .customJacksonSerializers()
                 .customize(builder);
         return builder.build();
