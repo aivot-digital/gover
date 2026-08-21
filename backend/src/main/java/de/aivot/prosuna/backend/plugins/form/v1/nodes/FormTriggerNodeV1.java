@@ -82,7 +82,6 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public static final String DATA_KEY_PAYMENT_PAYLOAD = PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD;
     public static final String DATA_KEY_PAYMENT_TRANSACTION_KEY = PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY;
 
-    public static final String DATA_KEY_AUTHORED = "authored";
     public static final String DATA_KEY_PAYLOAD = "payload";
     public static final String DATA_KEY_UNMAPPED = "unmapped";
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
