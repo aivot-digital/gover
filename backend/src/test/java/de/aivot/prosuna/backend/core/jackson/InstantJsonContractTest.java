@@ -3,7 +3,7 @@ package de.aivot.prosuna.backend.core.jackson;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import de.aivot.prosuna.backend.JacksonConfiguration;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +33,7 @@ class InstantJsonContractTest {
 
     @Test
     void objectMapperFactoryShouldRejectOffsetlessInstants() {
-        assertRejectsOffsetlessInstant(ObjectMapperFactory.getInstance());
+        assertRejectsOffsetlessInstant(JsonMapperFactory.getInstance());
     }
 
     @Test
@@ -49,7 +49,7 @@ class InstantJsonContractTest {
 
     @Test
     void objectMapperFactoryShouldCoerceEmptyInstantsToNull() throws Exception {
-        assertCoercesEmptyInstantsToNull(ObjectMapperFactory.getInstance());
+        assertCoercesEmptyInstantsToNull(JsonMapperFactory.getInstance());
     }
 
     @Test
@@ -68,7 +68,7 @@ class InstantJsonContractTest {
 
     @Test
     void shouldTreatUtcAndExplicitOffsetsAsTheSameInstant() throws Exception {
-        var mapper = ObjectMapperFactory.getInstance();
+        var mapper = JsonMapperFactory.getInstance();
 
         var utcPayload = mapper.readValue(
                 "{\"timestamp\":\"2026-06-15T07:30:00Z\"}",
@@ -85,7 +85,7 @@ class InstantJsonContractTest {
 
     @Test
     void shouldRejectNumericInstants() {
-        var mapper = ObjectMapperFactory.getInstance();
+        var mapper = JsonMapperFactory.getInstance();
 
         assertThrows(
                 MismatchedInputException.class,
@@ -98,7 +98,7 @@ class InstantJsonContractTest {
 
     @Test
     void shouldRejectInstantsWithoutSeconds() {
-        var mapper = ObjectMapperFactory.getInstance();
+        var mapper = JsonMapperFactory.getInstance();
 
         assertThrows(
                 MismatchedInputException.class,
@@ -111,7 +111,7 @@ class InstantJsonContractTest {
 
     @Test
     void shouldRejectNonCanonicalEndOfDayNotation() {
-        var mapper = ObjectMapperFactory.getInstance();
+        var mapper = JsonMapperFactory.getInstance();
 
         assertThrows(
                 MismatchedInputException.class,
@@ -124,7 +124,7 @@ class InstantJsonContractTest {
 
     @Test
     void shouldSerializeSummerAndWinterInstantsWithApplicationTimeZoneOffset() throws Exception {
-        var mapper = ObjectMapperFactory.getInstance();
+        var mapper = JsonMapperFactory.getInstance();
 
         assertEquals(
                 "{\"timestamp\":\"2026-06-15T09:30:00+02:00\"}",
@@ -153,7 +153,7 @@ class InstantJsonContractTest {
     void shouldUseNumericOffsetForUtcApplicationTimeZone() throws Exception {
         ApplicationTimeZone.configure(ZoneId.of("UTC"));
 
-        var result = ObjectMapperFactory
+        var result = JsonMapperFactory
                 .getInstance()
                 .writeValueAsString(
                         new TimestampPayload(Instant.parse("2026-06-15T07:30:00Z"))

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -477,7 +477,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Nonnull
     private String serializeExecutionData(@Nonnull ProcessExecutionData processExecutionData) throws ProcessNodeExecutionExceptionUnknown {
         try {
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getNullPreservingInstance()
                     .writeValueAsString(processExecutionData);
         } catch (Exception e) {
@@ -528,7 +528,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Nonnull
     private String serializeRequestBody(@Nonnull Map<String, Object> requestBody) throws ProcessNodeExecutionExceptionUnknown {
         try {
-            return ObjectMapperFactory.getInstance().writeValueAsString(requestBody);
+            return JsonMapperFactory.getInstance().writeValueAsString(requestBody);
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
@@ -543,7 +543,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         if (StringUtils.isNullOrEmpty(rawBody)) {
             throw new IllegalArgumentException("Die API-Antwort ist leer.");
         }
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .readValue(rawBody, ChatCompletionResponse.class);
     }
@@ -558,7 +558,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
         var jsonPayload = unwrapJsonCodeFence(normalizedCompletion);
         try {
-            JsonNode parsedNode = ObjectMapperFactory
+            JsonNode parsedNode = JsonMapperFactory
                     .getNullPreservingInstance()
                     .readTree(jsonPayload);
 
@@ -566,7 +566,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                 throw new IllegalArgumentException("Die KI-Antwort muss ein JSON-Objekt sein.");
             }
 
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getNullPreservingInstance()
                     .convertValue(parsedNode, Map.class);
         } catch (IllegalArgumentException e) {
@@ -615,7 +615,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                                                @Nonnull ChatCompletionResponse response) {
         var nodeData = new LinkedHashMap<String, Object>();
         var usage = response.usage != null
-                ? ObjectMapperFactory.getInstance().convertValue(response.usage, Map.class)
+                ? JsonMapperFactory.getInstance().convertValue(response.usage, Map.class)
                 : null;
 
         nodeData.put(OUTPUT_PROMPT, renderedPrompt);

@@ -3,7 +3,7 @@ package de.aivot.prosuna.backend.system.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -319,7 +319,7 @@ public class AuthController {
 
         TokenResponse tokenResponse;
         try {
-            tokenResponse = ObjectMapperFactory
+            tokenResponse = JsonMapperFactory
                     .getInstance()
                     .readValue(res.body(), TokenResponse.class);
         } catch (JsonProcessingException e) {
@@ -333,7 +333,7 @@ public class AuthController {
             @Nonnull AuthFlowState authFlowState
     ) throws ResponseException {
         try {
-            var value = ObjectMapperFactory
+            var value = JsonMapperFactory
                     .getInstance()
                     .writeValueAsString(authFlowState);
             redis
@@ -388,7 +388,7 @@ public class AuthController {
         }
 
         try {
-            var flowState = ObjectMapperFactory
+            var flowState = JsonMapperFactory
                     .getInstance()
                     .readValue(value, AuthFlowState.class);
             return resolveAppRedirectLocation(flowState.appUri);
@@ -430,7 +430,7 @@ public class AuthController {
         }
 
         try {
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getInstance()
                     .readValue(value, AuthFlowState.class);
         } catch (JsonProcessingException e) {

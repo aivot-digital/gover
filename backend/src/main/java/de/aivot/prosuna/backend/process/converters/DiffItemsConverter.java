@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.process.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.models.lib.DiffItem;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -22,7 +22,7 @@ public class DiffItemsConverter implements AttributeConverter<List<DiffItem>, St
             return "[]";
         }
 
-        var objectMapper = ObjectMapperFactory
+        var objectMapper = JsonMapperFactory
                 .getInstance();
 
         String dbData;
@@ -42,7 +42,7 @@ public class DiffItemsConverter implements AttributeConverter<List<DiffItem>, St
             return new LinkedList<>();
         }
 
-        var objectMapper = ObjectMapperFactory
+        var objectMapper = JsonMapperFactory
                 .getInstance()
                 .readerForListOf(DiffItem.class);
 

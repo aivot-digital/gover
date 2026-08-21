@@ -2,7 +2,7 @@ package de.aivot.prosuna.backend.core.jackson;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.JacksonConfiguration;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class LocalTimeJsonContractTest {
     @Test
     void objectMapperFactoryShouldSerializeLocalTimeWithSeconds() throws Exception {
-        assertSerializesWithSeconds(ObjectMapperFactory.getInstance());
+        assertSerializesWithSeconds(JsonMapperFactory.getInstance());
     }
 
     @Test
@@ -32,7 +32,7 @@ class LocalTimeJsonContractTest {
 
     @Test
     void shouldAcceptMinuteAndSecondInput() throws Exception {
-        var mapper = ObjectMapperFactory.getInstance();
+        var mapper = JsonMapperFactory.getInstance();
 
         assertEquals(
                 LocalTime.of(9, 30),

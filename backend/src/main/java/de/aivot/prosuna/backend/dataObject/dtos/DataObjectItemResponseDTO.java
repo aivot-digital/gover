@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.dataObject.dtos;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntity;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -21,7 +21,7 @@ public record DataObjectItemResponseDTO(
         Instant updated
 ) {
     public static DataObjectItemResponseDTO fromEntity(DataObjectItemEntity entity, DataObjectSchemaEntity schema) {
-        var elementData = ObjectMapperFactory
+        var elementData = JsonMapperFactory
                 .getInstance()
                 .convertValue(entity.getData(), AuthoredElementValues.class);
 

@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.enums.DateType;
 import de.aivot.prosuna.backend.enums.TimeType;
@@ -171,6 +171,6 @@ class TemporalInputElementContractTest {
     }
 
     private static Object toJsonValue(Object value) {
-        return ObjectMapperFactory.getInstance().convertValue(value, Object.class);
+        return JsonMapperFactory.getInstance().convertValue(value, Object.class);
     }
 }

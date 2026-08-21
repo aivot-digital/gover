@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.storage.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.storage.models.StorageProviderMetadataAttribute;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
@@ -12,7 +12,7 @@ import java.util.List;
 public class StorageProviderMetadataAttributesConverter implements AttributeConverter<List<StorageProviderMetadataAttribute>, String> {
     @Override
     public String convertToDatabaseColumn(List<StorageProviderMetadataAttribute> baseElement) {
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getInstance();
         try {
             return mapper.writeValueAsString(baseElement);
@@ -23,7 +23,7 @@ public class StorageProviderMetadataAttributesConverter implements AttributeConv
 
     @Override
     public List<StorageProviderMetadataAttribute> convertToEntityAttribute(String s) {
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getInstance()
                 .readerForListOf(StorageProviderMetadataAttribute.class);
 

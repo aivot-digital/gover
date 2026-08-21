@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.flow;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -196,7 +196,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         try {
             var rules = parseRules(context.configuration());
             var examplePayload = createExamplePayloadFromRules(rules);
-            var exampleJson = ObjectMapperFactory
+            var exampleJson = JsonMapperFactory
                     .getInstance()
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString(examplePayload);

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
@@ -563,7 +563,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
         var jsonSource = StringUtils.toNullableTrimmedString(jsonConfig.requestJsonSource);
         if (Objects.equals(jsonSource, HttpActionNodeV1Config.RequestData.RequestContentTypeJsonConfig.REQUEST_JSON_SOURCE_OPT_LOWCODE)) {
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getInstance()
                     .writeValueAsString(normalizeJsonCompatible(evaluateRequestCode(context, jsonConfig.requestJsonLowCode)));
         }
@@ -576,7 +576,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         }
 
         var payload = resolveConfiguredProcessDataValue(context, jsonConfig.requestJsonProcessDataKey);
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .writeValueAsString(payload);
     }
@@ -745,7 +745,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .readValue(rawBody, Object.class);
     }
@@ -955,11 +955,11 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             return null;
         }
 
-        byte[] serialized = ObjectMapperFactory
+        byte[] serialized = JsonMapperFactory
                 .getInstance()
                 .writeValueAsBytes(value);
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .readValue(serialized, Object.class);
     }

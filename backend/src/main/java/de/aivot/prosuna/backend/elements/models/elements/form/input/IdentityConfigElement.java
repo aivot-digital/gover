@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
@@ -37,7 +37,7 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
             return null;
         }
 
-        var om = ObjectMapperFactory
+        var om = JsonMapperFactory
                 .getInstance();
 
         return switch (value) {
@@ -57,7 +57,7 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
             }
             case String valueString -> {
                 try {
-                    yield ObjectMapperFactory
+                    yield JsonMapperFactory
                             .getInstance()
                             .readerForListOf(IdentityConfigElementSlot.class)
                             .readValue(valueString);

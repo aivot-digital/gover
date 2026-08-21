@@ -6,7 +6,7 @@ import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
@@ -215,7 +215,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
             );
         }
 
-        var objectMapper = ObjectMapperFactory
+        var objectMapper = JsonMapperFactory
                 .getInstance();
 
         GiroPaymentStartResponse transaction;
@@ -257,7 +257,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
             @Nonnull XBezahldienstePaymentTransaction paymentTransaction,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
-        var objectMapper = ObjectMapperFactory
+        var objectMapper = JsonMapperFactory
                 .getInstance();
         var callbackResponse = objectMapper
                 .convertValue(callbackData, GiroPayCallbackResponse.class);

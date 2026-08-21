@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.elements.models.elements.layout;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
@@ -49,7 +49,7 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Rep
             return null;
         }
 
-        ObjectMapper om = ObjectMapperFactory.
+        ObjectMapper om = JsonMapperFactory.
                 getInstance();
 
         List<ReplicatingContainerLayoutElementValue> res = new LinkedList<>();

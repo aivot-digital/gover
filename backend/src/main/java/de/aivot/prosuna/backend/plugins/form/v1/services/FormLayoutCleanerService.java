@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.plugins.form.v1.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.ImageContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
@@ -12,7 +12,7 @@ public class FormLayoutCleanerService {
             return null;
         }
 
-        var om = ObjectMapperFactory
+        var om = JsonMapperFactory
                 .getInstance();
 
         String json;

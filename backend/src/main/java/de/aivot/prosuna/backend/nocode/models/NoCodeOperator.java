@@ -1,8 +1,7 @@
 package de.aivot.prosuna.backend.nocode.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeWrongArgumentCountException;
@@ -351,14 +350,14 @@ public abstract class NoCodeOperator {
             case Boolean bValue -> bValue.toString();
             case List<?> lValue -> {
                 try {
-                    yield ObjectMapperFactory.getInstance().writeValueAsString(lValue);
+                    yield JsonMapperFactory.getInstance().writeValueAsString(lValue);
                 } catch (JsonProcessingException e) {
                     yield "";
                 }
             }
             case Map<?, ?> mValue -> {
                 try {
-                    yield ObjectMapperFactory.getInstance().writeValueAsString(mValue);
+                    yield JsonMapperFactory.getInstance().writeValueAsString(mValue);
                 } catch (JsonProcessingException e) {
                     yield "";
                 }
@@ -622,14 +621,14 @@ public abstract class NoCodeOperator {
             case Map<?, ?> mValue -> (Map<String, Object>) mValue;
             case String sValue -> {
                 try {
-                    yield ObjectMapperFactory.getInstance().readValue(sValue, Map.class);
+                    yield JsonMapperFactory.getInstance().readValue(sValue, Map.class);
                 } catch (JsonProcessingException e) {
                     yield Map.of();
                 }
             }
             default -> {
                 try {
-                    var res = (Map<String, Object>) ObjectMapperFactory
+                    var res = (Map<String, Object>) JsonMapperFactory
                             .getInstance()
                             .convertValue(value, Map.class);
                     yield Objects.requireNonNullElse(res, Map.of());
@@ -650,7 +649,7 @@ public abstract class NoCodeOperator {
             case List<?> lValue -> (List<Object>) lValue;
             case String sValue -> {
                 try {
-                    yield ObjectMapperFactory.getInstance().readValue(sValue, List.class);
+                    yield JsonMapperFactory.getInstance().readValue(sValue, List.class);
                 } catch (JsonProcessingException e) {
                     yield List.of();
                 }

@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.javascript.services;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.javascript.exceptions.JavascriptException;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
@@ -145,7 +145,7 @@ public class JavascriptEngine implements AutoCloseable {
      * @return this service instance.
      */
     public JavascriptEngine registerGlobalObject(String objectName, Object object) {
-        var map = ObjectMapperFactory
+        var map = JsonMapperFactory
                 .getInstance()
                 .convertValue(object, new TypeReference<Map<String, Object>>() {
                 });

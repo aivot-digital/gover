@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
@@ -197,7 +197,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
         var paymentTransactionUrl = (String) effectiveValues.get(PAYMENT_TRANSACTION_URL_FIELD);
         var normalizedPaymentTransactionUrl = StringUtils.normalizeUrl(paymentTransactionUrl);
 
-        var objectMapper = ObjectMapperFactory
+        var objectMapper = JsonMapperFactory
                 .getInstance();
 
         String body;
@@ -286,7 +286,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
 
         XBezahldienstePaymentTransaction updatedTransaction = null;
         try {
-            updatedTransaction = ObjectMapperFactory
+            updatedTransaction = JsonMapperFactory
                     .getInstance()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JsonProcessingException e) {
@@ -350,7 +350,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
             throw new PaymentHttpRequestException(response.statusCode(), paymentProviderEntity, formData.replaceAll("client_secret=.*", "client_secret=***"), response.body());
         }
 
-        var objectMapper = ObjectMapperFactory
+        var objectMapper = JsonMapperFactory
                 .getInstance();
 
         String token;

@@ -19,7 +19,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class ObjectMapperFactory {
+public class JsonMapperFactory {
     private static ObjectMapper mapper;
     private static ObjectMapper nullPreservingMapper;
 

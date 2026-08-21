@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.KeycloakConfig;
 import de.aivot.prosuna.backend.user.models.KeycloakUser;
@@ -49,7 +49,7 @@ public class KeyCloakApiService {
         userToCreate.setId(null);
         userToCreate.setEmailVerified(false);
 
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getInstance();
 
         String keycloakUserJson;
@@ -172,7 +172,7 @@ public class KeyCloakApiService {
         // Normalize the user object before updating
         userToUpdate.setId(userId);
 
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getInstance();
 
         String keycloakUserJson;
@@ -259,7 +259,7 @@ public class KeyCloakApiService {
     }
 
     public void setUserPassword(String userId, String password, boolean temporary) throws ResponseException {
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getInstance();
 
         String passwordJson;
@@ -333,7 +333,7 @@ public class KeyCloakApiService {
 
         try {
             return Optional.ofNullable(
-                    ObjectMapperFactory
+                    JsonMapperFactory
                             .getInstance()
                             .readValue(body, KeycloakUserValidationError.class)
             );

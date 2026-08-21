@@ -3,7 +3,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.payment;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.prosuna.backend.asset.repositories.VStorageIndexItemWithAssetRepository;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
@@ -199,7 +199,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         var endpointID = getEndpointID(paymentProviderEntity, config);
         var normalizedPaymentTransactionUrl = getNormalizedPaymentTransactionUrl(paymentProviderEntity, config);
 
-        var objectMapper = ObjectMapperFactory
+        var objectMapper = JsonMapperFactory
                 .getInstance();
 
         String body;
@@ -314,7 +314,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         XBezahldienstePaymentTransaction updatedTransaction;
         try {
-            updatedTransaction = ObjectMapperFactory
+            updatedTransaction = JsonMapperFactory
                     .getInstance()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JsonProcessingException e) {

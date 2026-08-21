@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.process.models;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
@@ -10,7 +10,6 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutEleme
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
@@ -149,7 +148,7 @@ class ProcessNodeDefinitionMetadataTest {
                 .empty()
                 .addForwardedAttachmentSet("documents", "Dokumente", null, true, origin());
 
-        var json = ObjectMapperFactory
+        var json = JsonMapperFactory
                 .getInstance()
                 .writeValueAsString(metadata);
 

@@ -1,8 +1,7 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.content;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.content.ProcessAttachmentDisplayContentElement;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,14 +10,14 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 class ProcessAttachmentDisplayContentElementTest {
     @Test
     void shouldRoundTripThroughBaseElementSerialization() throws Exception {
-        var serialized = ObjectMapperFactory
+        var serialized = JsonMapperFactory
                 .getInstance()
                 .writeValueAsString(new ProcessAttachmentDisplayContentElement()
                         .setAttachmentSetKey("case_documents")
                         .setLabel("Fallunterlagen")
                         .setHint("Bitte prüfen Sie den Anhang."));
 
-        var deserialized = ObjectMapperFactory
+        var deserialized = JsonMapperFactory
                 .getInstance()
                 .readValue(serialized, BaseElement.class);
 

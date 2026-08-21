@@ -2,7 +2,7 @@ package de.aivot.prosuna.backend.core.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
@@ -15,7 +15,7 @@ public class JsonObjectConverter implements AttributeConverter<Map<String, Objec
      * "cleared" authored values across reloads. The shared API mapper intentionally omits nulls,
      * so persistence uses a dedicated copy with null inclusion enabled.
      */
-    private static final ObjectMapper DATABASE_JSON_MAPPER = ObjectMapperFactory
+    private static final ObjectMapper DATABASE_JSON_MAPPER = JsonMapperFactory
             .getNullPreservingInstance();
 
     @Override

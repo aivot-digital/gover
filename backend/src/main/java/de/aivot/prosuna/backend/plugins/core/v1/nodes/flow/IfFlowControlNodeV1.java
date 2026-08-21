@@ -2,7 +2,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.flow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -370,7 +370,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
     @Nonnull
     private String serializeNoCodeOperand(@Nonnull NoCodeOperand noCodeCondition) {
         try {
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getInstance()
                     .writeValueAsString(noCodeCondition);
         } catch (JsonProcessingException e) {

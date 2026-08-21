@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.process.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import org.junit.jupiter.api.Test;
 
@@ -51,7 +51,7 @@ class ProcessTaskStatusConverterTest {
 
     @Test
     void keepsEnumNamesForJsonSerialization() throws JsonProcessingException {
-        var objectMapper = ObjectMapperFactory.getInstance();
+        var objectMapper = JsonMapperFactory.getInstance();
 
         assertEquals("\"Completed\"", objectMapper.writeValueAsString(ProcessTaskStatus.Completed));
         assertEquals(

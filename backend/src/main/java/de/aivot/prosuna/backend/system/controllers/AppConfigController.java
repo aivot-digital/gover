@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.storage.services.KnownExtensionsService;
@@ -130,7 +130,7 @@ public class AppConfigController {
 
         String configJson;
         try {
-            configJson = ObjectMapperFactory
+            configJson = JsonMapperFactory
                     .getInstance()
                     .writeValueAsString(appConfig);
         } catch (JsonProcessingException e) {

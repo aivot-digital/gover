@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.process.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
@@ -244,7 +244,7 @@ public class StaffProcessInstanceTaskViewController {
 
         AuthoredElementValues inputs;
         try {
-            inputs = ObjectMapperFactory
+            inputs = JsonMapperFactory
                     .getInstance()
                     .readValue(rawInputs, AuthoredElementValues.class);
         } catch (JsonProcessingException e) {

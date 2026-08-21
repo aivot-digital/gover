@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.core.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
@@ -12,7 +12,7 @@ import java.util.Map;
 public class JsonArrayConverter implements AttributeConverter<List<Map<String, Object>>, String> {
     @Override
     public String convertToDatabaseColumn(List<Map<String, Object>> baseElement) {
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getInstance();
         try {
             return mapper.writeValueAsString(baseElement);
@@ -23,7 +23,7 @@ public class JsonArrayConverter implements AttributeConverter<List<Map<String, O
 
     @Override
     public List<Map<String, Object>> convertToEntityAttribute(String s) {
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getInstance();
 
 

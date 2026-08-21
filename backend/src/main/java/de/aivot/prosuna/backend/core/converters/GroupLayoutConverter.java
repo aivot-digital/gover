@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.core.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
@@ -10,7 +10,7 @@ import jakarta.persistence.Converter;
 public class GroupLayoutConverter implements AttributeConverter<GroupLayoutElement, String> {
     @Override
     public String convertToDatabaseColumn(GroupLayoutElement baseElement) {
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getInstance();
 
         try {
@@ -22,7 +22,7 @@ public class GroupLayoutConverter implements AttributeConverter<GroupLayoutEleme
 
     @Override
     public GroupLayoutElement convertToEntityAttribute(String s) {
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getInstance();
 
         try {

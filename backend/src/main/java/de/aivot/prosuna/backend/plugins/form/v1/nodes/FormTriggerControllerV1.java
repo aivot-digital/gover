@@ -5,7 +5,7 @@ import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.dtos.ElementDerivationResponse;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -435,7 +435,7 @@ public class FormTriggerControllerV1 {
 
         AuthoredElementValues inputs;
         try {
-            inputs = ObjectMapperFactory
+            inputs = JsonMapperFactory
                     .getInstance()
                     .readValue(rawInputs, AuthoredElementValues.class);
         } catch (JsonProcessingException e) {

@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.core.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
@@ -10,7 +10,7 @@ import jakarta.persistence.Converter;
 public class AuthoredElementValuesConverter implements AttributeConverter<AuthoredElementValues, String> {
     @Override
     public String convertToDatabaseColumn(AuthoredElementValues baseElement) {
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getNullPreservingInstance();
 
         try {
@@ -22,7 +22,7 @@ public class AuthoredElementValuesConverter implements AttributeConverter<Author
 
     @Override
     public AuthoredElementValues convertToEntityAttribute(String s) {
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getNullPreservingInstance();
 
         try {
