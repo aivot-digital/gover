@@ -151,10 +151,11 @@ export function Submitted(props: SubmittedProps) {
                         return;
                     }
 
-                    const isAwaitingPayment = res.tasks?.[0]?.status === ProcessTaskStatus.AwaitingPayment;
-                    const firstTaskAccessKey = res.tasks?.[0]?.accessKey;
-                    if (isAwaitingPayment) {
-                        setFormTaskAccessKey(firstTaskAccessKey!);
+                    const firstTask = res.tasks?.[0];
+                    const isPrintReady = firstTask?.status === ProcessTaskStatus.AwaitingPayment ||
+                        firstTask?.status === ProcessTaskStatus.Completed;
+                    if (isPrintReady) {
+                        setFormTaskAccessKey(firstTask.accessKey);
                         if (intervalId != null) {
                             clearInterval(intervalId);
                         }
