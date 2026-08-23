@@ -372,8 +372,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                             </p>
                             <ol>
                                 <li>Das Erscheinungsbild der Prozessversion</li>
-                                <li>Das Erscheinungsbild der zuständigen Organisationseinheit</li>
-                                <li>Das Erscheinungsbild der bewirtschaftenden Organisationseinheit</li>
+                                <li>Das Erscheinungsbild der zuständigen Organisationseinheit (Nur in Formularen)</li>
+                                <li>Das Erscheinungsbild der bewirtschaftenden Organisationseinheit (Nur in Formularen)</li>
                                 <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
                                 <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
                             </ol>
