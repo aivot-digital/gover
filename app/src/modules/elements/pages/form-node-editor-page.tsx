@@ -123,6 +123,7 @@ import {VDepartmentShadowedApiService} from '../../departments/services/v-depart
 import {Chip} from '../../../components/chip/chip';
 import {quoteString} from '../../../utils/string-utils';
 import {PaymentRequestOverview} from '../../payment/components/payment-request-overview';
+import {isApiError} from '../../../models/api-error';
 import {resolveThemeChainLogoKey} from '../../../theming/resolve-theme-logo';
 
 export const DialogSearchParam = 'dialog';
@@ -1111,10 +1112,20 @@ export function FormNodeEditorPage() {
             testClaimRef.current = testClaim;
         }
 
-        const costs = await new FormTriggerApiService()
-            .calculateCosts(process.slug, node.configuration.formSlug, values, {
-                testClaim: testClaim.accessKey,
-            });
+        let costs;
+        try {
+            costs = await new FormTriggerApiService()
+                .calculateCosts(process.slug, node.configuration.formSlug, values, {
+                    testClaim: testClaim.accessKey,
+                });
+        } catch (error) {
+            dispatch(showErrorSnackbar(
+                isApiError(error) ?
+                    error.message :
+                    'Beim Berechnen der Kosten ist ein unbekannter Fehler aufgetreten.',
+            ));
+            return;
+        }
         const paymentRequired = costs.totalCost > 0;
 
         if (paymentRequired) {

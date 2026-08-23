@@ -68,7 +68,7 @@ import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info'
 import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import {PaymentRequestOverview} from '../../modules/payment/components/payment-request-overview';
-import {showWarningSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showWarningSnackbar} from '../../slices/snackbar-slice';
 import {useConfirm} from '../../providers/confirm-provider';
 import {InstantIso} from '../../utils/temporal-types';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
@@ -250,10 +250,20 @@ export function CustomerFormPage() {
             return;
         }
 
-        const costs = await new FormTriggerApiService()
-            .calculateCosts(process.slug, resolvedFormSlug, values, {
-                testClaim: testClaimKey ?? undefined,
-            });
+        let costs;
+        try {
+            costs = await new FormTriggerApiService()
+                .calculateCosts(process.slug, resolvedFormSlug, values, {
+                    testClaim: testClaimKey ?? undefined,
+                });
+        } catch (error) {
+            dispatch(showErrorSnackbar(
+                isApiError(error) ?
+                    error.message :
+                    'Beim Berechnen der Kosten ist ein unbekannter Fehler aufgetreten.',
+            ));
+            return;
+        }
         const paymentRequired = costs.totalCost > 0;
 
         if (paymentRequired) {
