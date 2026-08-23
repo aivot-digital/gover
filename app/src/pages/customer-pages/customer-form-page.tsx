@@ -68,7 +68,7 @@ import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info'
 import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import {PaymentRequestOverview} from '../../modules/payment/components/payment-request-overview';
-import {showErrorSnackbar, showWarningSnackbar} from '../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showWarningSnackbar} from '../../slices/snackbar-slice';
 import {useConfirm} from '../../providers/confirm-provider';
 import {InstantIso} from '../../utils/temporal-types';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
@@ -95,6 +95,29 @@ interface RetrieveResponse {
             additionalScopes: string[];
         }[];
     }[];
+}
+
+const CustomerFormLoadErrorMessage = 'Das Formular konnte nicht geladen werden.';
+
+function createCustomerFormLoadError(error: unknown) {
+    if (!isApiError(error)) {
+        return {
+            status: 500,
+            message: CustomerFormLoadErrorMessage,
+        };
+    }
+
+    if (error.status === 404) {
+        return {
+            status: 404,
+            message: 'Das Formular konnte nicht gefunden werden',
+        };
+    }
+
+    return {
+        status: error.status,
+        message: error.displayableToUser ? error.message : CustomerFormLoadErrorMessage,
+    };
 }
 
 export function CustomerFormPage() {
@@ -167,24 +190,7 @@ export function CustomerFormPage() {
                 dispatch(setCurrentStep(0));
             })
             .catch((err) => {
-                if (isApiError(err)) {
-                    if (err.status === 404) {
-                        dispatch(setErrorMessage({
-                            status: 404,
-                            message: 'Das Formular konnte nicht gefunden werden',
-                        }));
-                    } else if (err.displayableToUser) {
-                        dispatch(setErrorMessage({
-                            status: err.status,
-                            message: err.message,
-                        }));
-                    } else {
-                        dispatch(setErrorMessage({
-                            status: err.status,
-                            message: 'Ein unbekannter Fehler ist aufgetreten',
-                        }));
-                    }
-                }
+                dispatch(setErrorMessage(createCustomerFormLoadError(err)));
             });
     }, [processSlug, formSlug, testClaimKey, navigate, dispatch]);
 
@@ -250,74 +256,84 @@ export function CustomerFormPage() {
             return;
         }
 
-        let costs;
+        let errorMessage = 'Das Absenden des Formulars konnte nicht vorbereitet werden.';
+        let loadingStarted = false;
         try {
-            costs = await new FormTriggerApiService()
+            errorMessage = 'Beim Berechnen der Kosten ist ein unbekannter Fehler aufgetreten.';
+            const costs = await new FormTriggerApiService()
                 .calculateCosts(process.slug, resolvedFormSlug, values, {
                     testClaim: testClaimKey ?? undefined,
                 });
-        } catch (error) {
-            dispatch(showErrorSnackbar(
-                isApiError(error) ?
-                    error.message :
-                    'Beim Berechnen der Kosten ist ein unbekannter Fehler aufgetreten.',
-            ));
-            return;
-        }
-        const paymentRequired = costs.totalCost > 0;
+            const paymentRequired = costs.totalCost > 0;
 
-        if (paymentRequired) {
-            const proceedWithPaymentRequirements = await confirm({
-                title: 'Zahlung erforderlich',
-                children: (
-                    <PaymentRequestOverview
-                        request={costs}
-                    />
-                ),
-                confirmButtonText: 'Fortfahren',
+            if (paymentRequired) {
+                errorMessage = 'Die Zahlungsanforderung konnte nicht vorbereitet werden.';
+                const proceedWithPaymentRequirements = await confirm({
+                    title: 'Zahlung erforderlich',
+                    children: (
+                        <PaymentRequestOverview
+                            request={costs}
+                        />
+                    ),
+                    confirmButtonText: 'Fortfahren',
+                });
+
+                if (!proceedWithPaymentRequirements) {
+                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen.'));
+                    return;
+                }
+            }
+
+            errorMessage = 'Die Anhänge konnten nicht für das Absenden vorbereitet werden.';
+            const formData = new FormData();
+            formData.append('inputs', JSON.stringify(values));
+
+            const files: FileUploadElementItem[] = [];
+            walkAuthoredElementValues(layoutElement, values, (element, value) => {
+                if (element.type === ElementType.FileUpload && Array.isArray(value) && value.length > 0 && isFileUploadElementItem(value[0])) {
+                    files.push(...value);
+                }
             });
 
-            if (!proceedWithPaymentRequirements) {
-                dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen.'));
-                return;
+            for (const file of files) {
+                const response = await fetch(file.uri);
+                if (!response.ok) {
+                    throw new Error(`Failed to load attachment ${file.name}`);
+                }
+                const blob = await response.blob();
+                formData.append('files', blob, file.name);
+                formData.append('fileUris', file.uri);
             }
-        }
 
-        const formData = new FormData();
-        formData.append('inputs', JSON.stringify(values));
+            dispatch(setLoadingMessage({
+                blocking: true,
+                estimatedTime: 1000,
+                message: 'Formular wird abgesendet',
+            }));
+            loadingStarted = true;
+            errorMessage = 'Beim Absenden des Formulars ist ein Fehler aufgetreten.';
 
-        const files: FileUploadElementItem[] = [];
-        walkAuthoredElementValues(layoutElement, values, (element, value) => {
-            if (element.type === ElementType.FileUpload && Array.isArray(value) && value.length > 0 && isFileUploadElementItem(value[0])) {
-                files.push(...value);
-            }
-        });
-
-        for (const file of files) {
-            const blob = await fetch(file.uri).then((r) => r.blob());
-            formData.append('files', blob, file.name);
-            formData.append('fileUris', file.uri);
-        }
-
-        dispatch(setLoadingMessage({
-            blocking: true,
-            estimatedTime: 1000,
-            message: 'Formular wird abgesendet',
-        }));
-
-        try {
             const startRes = await new FormTriggerApiService()
                 .submitForm(process.slug, resolvedFormSlug, formData, {
                     testClaim: testClaimKey ?? undefined,
                 });
 
-            CustomerInputService.cleanCustomerInput(process.slug, resolvedFormSlug, version.processVersion);
             setStartedProcessAccessInfo({
                 processInstanceAccessKey: startRes.startedProcessAccessKey,
                 paymentRequired: paymentRequired,
             });
+
+            try {
+                CustomerInputService.cleanCustomerInput(process.slug, resolvedFormSlug, version.processVersion);
+            } catch (cleanupError) {
+                console.error('Error cleaning submitted customer input:', cleanupError);
+            }
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, errorMessage));
         } finally {
-            dispatch(clearLoadingMessage());
+            if (loadingStarted) {
+                dispatch(clearLoadingMessage());
+            }
         }
     };
 
