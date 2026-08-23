@@ -6,16 +6,24 @@ import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
+import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
+import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
@@ -28,6 +36,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.filters.ProcessVersionFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
+import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.*;
 import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
@@ -54,12 +63,132 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class FormTriggerControllerV1Test {
+    @Test
+    void calculateCostsShouldReturnEmptyResponseWithoutPaymentConfiguration() throws Exception {
+        var fixture = createFixture(baseFormLayout());
+
+        var result = fixture.controller().calculateCosts(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                null,
+                new AuthoredElementValues()
+        );
+
+        assertEquals(BigDecimal.ZERO, result.totalCost());
+        assertTrue(result.paymentItems().isEmpty());
+        verifyNoInteractions(fixture.paymentProviderRepository(), fixture.paymentRequestCreationService());
+    }
+
+    @Test
+    void calculateCostsShouldReturnEmptyResponseWhenPaymentCalculationHasNoPayableItems() throws Exception {
+        var fixture = createFixture(baseFormLayout());
+        var calculation = configurePaymentCalculation(fixture);
+        when(fixture.paymentRequestCreationService().createRequest(
+                same(calculation.paymentConfig()),
+                same(calculation.derivedElementData()),
+                any(ProcessExecutionData.class)
+        )).thenReturn(Optional.empty());
+
+        var result = fixture.controller().calculateCosts(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                null,
+                new AuthoredElementValues()
+        );
+
+        assertEquals(BigDecimal.ZERO, result.totalCost());
+        assertTrue(result.paymentItems().isEmpty());
+    }
+
+    @Test
+    void calculateCostsShouldReturnDescriptiveErrorWhenPaymentProviderIsMissing() throws Exception {
+        var fixture = createFixture(baseFormLayout());
+        var paymentProviderKey = UUID.randomUUID();
+        fixture.triggerConfig().payment = paymentConfig(paymentProviderKey);
+        when(fixture.paymentProviderRepository().findById(paymentProviderKey)).thenReturn(Optional.empty());
+
+        var error = assertThrows(ResponseException.class, () -> fixture.controller().calculateCosts(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                null,
+                new AuthoredElementValues()
+        ));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, error.getStatus());
+        assertEquals("Der für das Formular konfigurierte Zahlungsanbieter wurde nicht gefunden.", error.getTitle());
+        assertNull(error.getDetails());
+    }
+
+    @Test
+    void calculateCostsShouldReturnDescriptiveErrorWhenPaymentProviderDefinitionIsMissing() throws Exception {
+        var fixture = createFixture(baseFormLayout());
+        var paymentProviderKey = UUID.randomUUID();
+        var paymentProvider = paymentProvider(paymentProviderKey);
+        fixture.triggerConfig().payment = paymentConfig(paymentProviderKey);
+        when(fixture.paymentProviderRepository().findById(paymentProviderKey))
+                .thenReturn(Optional.of(paymentProvider));
+        when(fixture.paymentProviderDefinitionsService().getProviderDefinition(
+                paymentProvider.getPaymentProviderDefinitionKey(),
+                paymentProvider.getPaymentProviderDefinitionVersion()
+        )).thenReturn(Optional.empty());
+
+        var error = assertThrows(ResponseException.class, () -> fixture.controller().calculateCosts(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                null,
+                new AuthoredElementValues()
+        ));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, error.getStatus());
+        assertEquals("Für den konfigurierten Zahlungsanbieter ist keine gültige Definition verfügbar.", error.getTitle());
+        assertNull(error.getDetails());
+    }
+
+    @Test
+    void calculateCostsShouldExposeSafePaymentCalculationFailure() throws Exception {
+        var fixture = createFixture(baseFormLayout());
+        var calculation = configurePaymentCalculation(fixture);
+        var cause = new PaymentException("Die Kosten der Zahlungsposition 1 müssen eine Zahl ergeben.");
+        when(fixture.paymentRequestCreationService().createRequest(
+                same(calculation.paymentConfig()),
+                same(calculation.derivedElementData()),
+                any(ProcessExecutionData.class)
+        )).thenThrow(cause);
+
+        var error = assertThrows(ResponseException.class, () -> fixture.controller().calculateCosts(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                null,
+                new AuthoredElementValues()
+        ));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, error.getStatus());
+        assertEquals(
+                "Die Kosten für das Formular konnten nicht berechnet werden: " + cause.getMessage(),
+                error.getTitle()
+        );
+        assertEquals(cause.getMessage(), error.getDetails());
+        assertSame(cause, error.getCause());
+    }
+
     @Test
     void getThemeShouldUseProcessVersionTheme() throws Exception {
         var formTheme = createTheme(11, "Form Theme", UUID.randomUUID(), UUID.randomUUID());
@@ -550,6 +679,55 @@ class FormTriggerControllerV1Test {
         );
     }
 
+    private PaymentCalculationFixture configurePaymentCalculation(TestFixture fixture) {
+        var paymentProviderKey = UUID.randomUUID();
+        var paymentConfig = paymentConfig(paymentProviderKey);
+        var paymentProvider = paymentProvider(paymentProviderKey);
+        var paymentProviderDefinition = mock(PaymentProviderDefinition.class);
+        var derivedElementData = DerivedRuntimeElementData.empty();
+
+        fixture.triggerConfig().payment = paymentConfig;
+        when(fixture.paymentProviderRepository().findById(paymentProviderKey))
+                .thenReturn(Optional.of(paymentProvider));
+        when(fixture.paymentProviderDefinitionsService().getProviderDefinition(
+                paymentProvider.getPaymentProviderDefinitionKey(),
+                paymentProvider.getPaymentProviderDefinitionVersion()
+        )).thenReturn(Optional.of(paymentProviderDefinition));
+        when(fixture.elementDerivationService().derive(
+                any(ElementDerivationRequest.class),
+                any(IdentityDataMap.class),
+                any(ElementDerivationLogger.class)
+        )).thenReturn(derivedElementData);
+        when(fixture.elementDataTransformService().buildPayload(
+                same(fixture.triggerConfig().formLayout),
+                same(derivedElementData.getEffectiveValues()),
+                same(derivedElementData.getElementStates())
+        )).thenReturn(Map.of());
+
+        return new PaymentCalculationFixture(paymentConfig, derivedElementData);
+    }
+
+    private PaymentConfigElementValue paymentConfig(UUID paymentProviderKey) {
+        return new PaymentConfigElementValue(
+                paymentProviderKey,
+                "Buchungstext",
+                "Beschreibung",
+                false,
+                null,
+                List.of(),
+                null,
+                null
+        );
+    }
+
+    private PaymentProviderEntity paymentProvider(UUID paymentProviderKey) {
+        return new PaymentProviderEntity()
+                .setKey(paymentProviderKey)
+                .setPaymentProviderDefinitionKey("test-provider")
+                .setPaymentProviderDefinitionVersion(1)
+                .setName("Test-Zahlungsanbieter");
+    }
+
     private TestFixture createFixture(FormLayoutElement formLayout) throws Exception {
         return createFixture(formLayout, null);
     }
@@ -640,10 +818,16 @@ class FormTriggerControllerV1Test {
         when(processNodeDefinitionService.getProcessNodeDefinition(eq(node), eq(FormTriggerNodeV1.class)))
                 .thenReturn(Optional.of(provider));
 
+        var elementDerivationService = mock(ElementDerivationService.class);
+        var elementDataTransformService = mock(ElementDataTransformService.class);
+        var paymentRequestCreationService = mock(PaymentPayloadCreationService.class);
+        var paymentProviderRepository = mock(PaymentProviderRepository.class);
+        var paymentProviderDefinitionsService = mock(PaymentProviderDefinitionsService.class);
+
         var controller = new FormTriggerControllerV1(
                 prosunaConfig,
                 mock(IdentityProviderService.class),
-                mock(ElementDerivationService.class),
+                elementDerivationService,
                 assetService,
                 themeService,
                 departmentService,
@@ -663,15 +847,15 @@ class FormTriggerControllerV1Test {
                 mock(ProcessInstanceAttachmentService.class),
                 mock(StorageService.class),
                 mock(FileUploadMultipartInputService.class),
-                mock(ElementDataTransformService.class),
+                elementDataTransformService,
                 mock(ProcessNodeExecutionLoggerFactory.class),
                 provider,
                 mock(IdentityService.class),
-                mock(PaymentPayloadCreationService.class),
+                paymentRequestCreationService,
                 mock(PaymentTransactionService.class),
-                mock(PaymentProviderRepository.class),
+                paymentProviderRepository,
                 mock(PdfService.class),
-                mock(PaymentProviderDefinitionsService.class)
+                paymentProviderDefinitionsService
         );
 
         return new TestFixture(
@@ -683,7 +867,13 @@ class FormTriggerControllerV1Test {
                 processTestClaimService,
                 processVersionService,
                 themeService,
-                departmentService
+                departmentService,
+                triggerConfig,
+                elementDerivationService,
+                elementDataTransformService,
+                paymentRequestCreationService,
+                paymentProviderRepository,
+                paymentProviderDefinitionsService
         );
     }
 
@@ -736,7 +926,19 @@ class FormTriggerControllerV1Test {
             ProcessTestClaimService processTestClaimService,
             ProcessVersionService processVersionService,
             ThemeService themeService,
-            VDepartmentShadowedService departmentService
+            VDepartmentShadowedService departmentService,
+            FormTriggerConfigV1 triggerConfig,
+            ElementDerivationService elementDerivationService,
+            ElementDataTransformService elementDataTransformService,
+            PaymentPayloadCreationService paymentRequestCreationService,
+            PaymentProviderRepository paymentProviderRepository,
+            PaymentProviderDefinitionsService paymentProviderDefinitionsService
+    ) {
+    }
+
+    private record PaymentCalculationFixture(
+            PaymentConfigElementValue paymentConfig,
+            DerivedRuntimeElementData derivedElementData
     ) {
     }
 

@@ -67,6 +67,8 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -87,6 +89,7 @@ import java.util.*;
 public class FormTriggerControllerV1 {
     public static final String TEST_CLAIM_QUERY_PARAM = "test-claim";
     public static final String VERSION_QUERY_PARAM = "version";
+    private static final Logger logger = LoggerFactory.getLogger(FormTriggerControllerV1.class);
 
     private final ProsunaConfig prosunaConfig;
     private final IdentityProviderService identityProviderService;
@@ -396,7 +399,7 @@ public class FormTriggerControllerV1 {
                                                                @Nonnull @PathVariable String formSlug,
                                                                @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                                                                @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identitySessionId,
-                                                               @Nonnull @RequestBody AuthoredElementValues values) throws PaymentException, ResponseException {
+                                                               @Nonnull @RequestBody AuthoredElementValues values) throws ResponseException {
         var execUser = getExecUser(jwt);
         var process = getProcessEntity(processSlug);
         var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
@@ -419,11 +422,15 @@ public class FormTriggerControllerV1 {
 
         PaymentProviderEntity paymentProvider = paymentProviderRepository
                 .findById(paymentConfig.paymentProviderKey())
-                .orElseThrow(ResponseException::internalServerError);
+                .orElseThrow(() -> ResponseException.internalServerError(
+                        "Der für das Formular konfigurierte Zahlungsanbieter wurde nicht gefunden."
+                ));
 
         PaymentProviderDefinition paymentProviderDefinition = paymentProviderDefinitionsService
                 .getProviderDefinition(paymentProvider.getPaymentProviderDefinitionKey(), paymentProvider.getPaymentProviderDefinitionVersion())
-                .orElseThrow(ResponseException::internalServerError);
+                .orElseThrow(() -> ResponseException.internalServerError(
+                        "Für den konfigurierten Zahlungsanbieter ist keine gültige Definition verfügbar."
+                ));
 
         var options = new ElementDerivationOptions()
                 .setSkipValuesForElementIds(List.of())
@@ -450,11 +457,25 @@ public class FormTriggerControllerV1 {
         ProcessExecutionData execData = new ProcessExecutionData();
         execData.addProcessData(payloadInstanceData);
 
-        Optional<PaymentPayload> paymentRequest = paymentRequestCreationService.createRequest(
-                paymentConfig,
-                derivedElementData,
-                execData
-        );
+        Optional<PaymentPayload> paymentRequest;
+        try {
+            paymentRequest = paymentRequestCreationService.createRequest(
+                    paymentConfig,
+                    derivedElementData,
+                    execData
+            );
+        } catch (PaymentException e) {
+            logger.error(
+                    "Failed to calculate costs for form {}/{}",
+                    processSlug,
+                    formSlug,
+                    e
+            );
+            throw ResponseException.internalServerError(
+                    "Die Kosten für das Formular konnten nicht berechnet werden: " + e.getMessage(),
+                    e
+            );
+        }
 
         // No payment required
         return paymentRequest
