@@ -68,6 +68,8 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private static final String OUTPUT_RESPONSE_MODEL = "responseModel";
     private static final String OUTPUT_USAGE = "usage";
     private static final String OUTPUT_TOP_LEVEL_KEYS = "topLevelKeys";
+    private static final String OUTPUT_USAGE_TYPE_DEFINITION =
+            "{ prompt_tokens: number | null; completion_tokens: number | null; total_tokens: number | null; } | null";
 
     private static final double DEFAULT_TEMPERATURE = 0.01d;
     private static final double DEFAULT_TOP_P = 0.9d;
@@ -239,11 +241,11 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der gerenderte Anfragetext für das KI-Modell."),
-                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice."),
-                new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat."),
-                new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort."),
-                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Top-Level-Schlüssel", "Die obersten Schlüssel des neu erzeugten Prozessdatenobjekts.")
+                new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der gerenderte Anfragetext für das KI-Modell.", "string"),
+                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort.", OUTPUT_USAGE_TYPE_DEFINITION),
+                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Top-Level-Schlüssel", "Die obersten Schlüssel des neu erzeugten Prozessdatenobjekts.", "Array<string>")
         );
     }
 

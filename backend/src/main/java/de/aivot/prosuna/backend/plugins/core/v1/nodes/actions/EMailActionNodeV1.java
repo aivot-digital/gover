@@ -218,27 +218,32 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 new ProcessNodeOutput(
                         OUTPUT_NAME_TO,
                         "Empfänger:innen",
-                        "Die Empfänger:innen der versendeten E-Mail."
+                        "Die Empfänger:innen der versendeten E-Mail.",
+                        "Array<string>"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_BCC,
                         "BCC-Empfänger:innen",
-                        "Die BCC-Empfänger:innen der versendeten E-Mail."
+                        "Die BCC-Empfänger:innen der versendeten E-Mail.",
+                        "Array<string> | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_SUBJECT,
                         "Betreff",
-                        "Der Betreff der versendeten E-Mail."
+                        "Der Betreff der versendeten E-Mail.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONTENT,
                         "Inhalt",
-                        "Der HTML-Inhalt der versendeten E-Mail."
+                        "Der HTML-Inhalt der versendeten E-Mail.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_ATTACHMENT_SET_DATA_KEYS,
                         "Anlagensätze",
-                        "Die Datenschlüssel der als E-Mail-Anhang versendeten Anlagensätze."
+                        "Die Datenschlüssel der als E-Mail-Anhang versendeten Anlagensätze.",
+                        "Array<string>"
                 )
         );
     }

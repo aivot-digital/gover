@@ -32,6 +32,7 @@ export interface ProcessNodeOutput {
     key: string;
     label: string;
     description: string;
+    typeDefinition: string;
 }
 
 export class ProcessNodeProviderApiService extends BaseApiService {

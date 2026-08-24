@@ -74,6 +74,9 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     private static final String OUTPUT_NAME_STORAGE_PATHS_FROM_ROOT = "storagePathsFromRoot";
     private static final String OUTPUT_NAME_FILE_NAMES = "fileNames";
     private static final String OUTPUT_NAME_COUNT = "count";
+    private static final String OUTPUT_RESULTS_TYPE_DEFINITION =
+            "Array<{ storageProviderId: number; attachmentSetDataKey: string; targetFolderPath: string; " +
+                    "storagePathsFromRoot: Array<string>; fileNames: Array<string>; count: number; }>";
 
     private static final String METADATA_ATTRIBUTES_PREFIX = "meta__attributes";
 
@@ -243,10 +246,10 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_NAME_RESULTS, "Ablageergebnisse", "Die Ergebnisse je konfiguriertem Anlagensatz."),
-                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATHS_FROM_ROOT, "Speicherpfade", "Die Pfade der gespeicherten Dateien im Ziel-Speicheranbieter."),
-                new ProcessNodeOutput(OUTPUT_NAME_FILE_NAMES, "Dateinamen", "Die Dateinamen der gespeicherten Dateien."),
-                new ProcessNodeOutput(OUTPUT_NAME_COUNT, "Anzahl", "Die Anzahl der gespeicherten Dateien.")
+                new ProcessNodeOutput(OUTPUT_NAME_RESULTS, "Ablageergebnisse", "Die Ergebnisse je konfiguriertem Anlagensatz.", OUTPUT_RESULTS_TYPE_DEFINITION),
+                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATHS_FROM_ROOT, "Speicherpfade", "Die Pfade der gespeicherten Dateien im Ziel-Speicheranbieter.", "Array<string>"),
+                new ProcessNodeOutput(OUTPUT_NAME_FILE_NAMES, "Dateinamen", "Die Dateinamen der gespeicherten Dateien.", "Array<string>"),
+                new ProcessNodeOutput(OUTPUT_NAME_COUNT, "Anzahl", "Die Anzahl der gespeicherten Dateien.", "number")
         );
     }
 

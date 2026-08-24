@@ -66,6 +66,8 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
     private static final String OUTPUT_NAME_VALIDATED_VALUE_COUNT = "validatedValueCount";
     private static final String OUTPUT_NAME_IS_VALID = "isValid";
     private static final String OUTPUT_NAME_ERRORS = "errors";
+    private static final String OUTPUT_ERRORS_TYPE_DEFINITION =
+            "Array<{ rowIndex: number; path: string; resolvedPath?: string; error: string; }>";
 
     @Nonnull
     @Override
@@ -164,22 +166,26 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VALIDATED_RULE_COUNT,
                         "Anzahl Regeln",
-                        "Die Anzahl der erfolgreich validierten Regeln."
+                        "Die Anzahl der erfolgreich validierten Regeln.",
+                        "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VALIDATED_VALUE_COUNT,
                         "Anzahl geprüfter Werte",
-                        "Die Anzahl der konkret überprüften Werte über alle Regeln."
+                        "Die Anzahl der konkret überprüften Werte über alle Regeln.",
+                        "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_IS_VALID,
                         "Gesamtgültigkeit",
-                        "true, wenn alle Regeln erfolgreich validiert wurden, sonst false."
+                        "true, wenn alle Regeln erfolgreich validiert wurden, sonst false.",
+                        "boolean"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_ERRORS,
                         "Validierungsfehler",
-                        "Liste der Regelverletzungen mit Pfad und Fehlermeldung."
+                        "Liste der Regelverletzungen mit Pfad und Fehlermeldung.",
+                        OUTPUT_ERRORS_TYPE_DEFINITION
                 )
         );
     }

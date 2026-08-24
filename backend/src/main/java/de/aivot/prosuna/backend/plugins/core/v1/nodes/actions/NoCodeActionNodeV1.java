@@ -64,6 +64,9 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
     private static final String OUTPUT_NAME_VARIABLES = "variables";
     private static final String OUTPUT_NAME_VARIABLE_COUNT = "variableCount";
+    private static final String OUTPUT_VARIABLES_TYPE_DEFINITION =
+            "Array<{ rowIndex: number; configuredPath: string; resolvedPath: string; wildcardIndices: Array<number>; " +
+                    "targetType: \"any\" | \"string\" | \"number\" | \"boolean\" | \"date\" | \"time\" | \"datetime\"; value: unknown; }>";
 
     private static final String TARGET_TYPE_ANY = "any";
     private static final String TARGET_TYPE_STRING = "string";
@@ -177,12 +180,14 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VARIABLES,
                         "Variablen",
-                        "Die berechneten Variablen als Liste aufgelöster Zielpfade."
+                        "Die berechneten Variablen als Liste aufgelöster Zielpfade.",
+                        OUTPUT_VARIABLES_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VARIABLE_COUNT,
                         "Anzahl Variablen",
-                        "Die Anzahl der tatsächlich geschriebenen Zielwerte."
+                        "Die Anzahl der tatsächlich geschriebenen Zielwerte.",
+                        "number"
                 )
         );
     }

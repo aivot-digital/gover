@@ -391,7 +391,8 @@ class ProcessNodeServiceTest {
                     new ProcessNodeOutput(
                             "result",
                             "Result",
-                            "Mapped test result."
+                            "Mapped test result.",
+                            "string"
                     )
             );
         }

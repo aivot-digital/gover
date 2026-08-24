@@ -135,17 +135,20 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                 new ProcessNodeOutput(
                         OUTPUT_VALUE,
                         "Zählerstand",
-                        "Der neue Zählerstand nach der Erhöhung."
+                        "Der neue Zählerstand nach der Erhöhung.",
+                        "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PREVIOUS_VALUE,
                         "Vorheriger Zählerstand",
-                        "Der Zählerstand vor der Erhöhung."
+                        "Der Zählerstand vor der Erhöhung.",
+                        "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_INCREMENT,
                         "Inkrement",
-                        "Der Wert, um den der Zähler erhöht wurde."
+                        "Der Wert, um den der Zähler erhöht wurde.",
+                        "number"
                 )
         );
     }

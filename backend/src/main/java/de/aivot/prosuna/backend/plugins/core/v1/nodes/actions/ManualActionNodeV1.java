@@ -192,27 +192,32 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 new ProcessNodeOutput(
                         OUTPUT_DATA,
                         "Erfasste Daten",
-                        "Die über die optionale Prosuna-UI bestätigten oder erfassten Daten im Payload-Format."
+                        "Die über die optionale Prosuna-UI bestätigten oder erfassten Daten im Payload-Format.",
+                        "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_REMARK,
                         "Vermerk",
-                        "Der optionale interne Vermerk zur bestätigten manuellen Aktion."
+                        "Der optionale interne Vermerk zur bestätigten manuellen Aktion.",
+                        "string | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
                         "Bearbeitet durch",
-                        "Die ID der Mitarbeiter:in, die die manuelle Aktion bestätigt hat."
+                        "Die ID der Mitarbeiter:in, die die manuelle Aktion bestätigt hat.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_AT,
                         "Bearbeitet am",
-                        "Der Zeitstempel der Bestätigung im ISO-Format."
+                        "Der Zeitstempel der Bestätigung im ISO-Format.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_UNMAPPED,
                         "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht."
+                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Record<string, unknown>"
                 )
         );
     }

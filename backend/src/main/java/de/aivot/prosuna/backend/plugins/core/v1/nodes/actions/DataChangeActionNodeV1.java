@@ -181,27 +181,32 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 new ProcessNodeOutput(
                         OUTPUT_DATA,
                         "Bearbeitete Daten",
-                        "Die final übernommenen Daten aus der konfigurierten Prosuna-UI im Payload-Format."
+                        "Die final übernommenen Daten aus der konfigurierten Prosuna-UI im Payload-Format.",
+                        "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_REMARK,
                         "Änderungsvermerk",
-                        "Der optionale interne Vermerk zur vorgenommenen Datenanpassung."
+                        "Der optionale interne Vermerk zur vorgenommenen Datenanpassung.",
+                        "string | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
                         "Bearbeitet durch",
-                        "Die ID der Mitarbeiter:in, die die Datenänderung übernommen hat."
+                        "Die ID der Mitarbeiter:in, die die Datenänderung übernommen hat.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_AT,
                         "Bearbeitet am",
-                        "Der Zeitstempel der finalen Übernahme im ISO-Format."
+                        "Der Zeitstempel der finalen Übernahme im ISO-Format.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_UNMAPPED,
                         "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht."
+                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Record<string, unknown>"
                 )
         );
     }

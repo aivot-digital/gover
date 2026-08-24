@@ -65,6 +65,9 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     private static final String OUTPUT_NAME_STORAGE_PROVIDER_ID = "storageProviderId";
     private static final String OUTPUT_NAME_STORAGE_PATH_FROM_ROOT = "storagePathFromRoot";
     private static final String OUTPUT_NAME_FILES = "files";
+    private static final String OUTPUT_HEADERS_TYPE_DEFINITION = "Record<string, Array<string>>";
+    private static final String OUTPUT_FILES_TYPE_DEFINITION =
+            "Array<{ name: string; originalFileName: string; uri: string; size: number; }>";
 
     private static final Set<String> SUPPORTED_METHODS = Set.of(
             HttpActionNodeV1Config.HTTP_METHOD_OPT_GET,
@@ -199,17 +202,17 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_NAME_STATUS_CODE, "HTTP-Statuscode", "Der Statuscode der HTTP-Antwort."),
-                new ProcessNodeOutput(OUTPUT_NAME_HEADERS, "HTTP-Header", "Die Header der HTTP-Antwort."),
-                new ProcessNodeOutput(OUTPUT_NAME_RAW_BODY, "Antwort-Rohtext", "Der Antwort-Body als Text für JSON- und Text-Antworten."),
-                new ProcessNodeOutput(OUTPUT_NAME_PROCESSED_RESPONSE, "Verarbeitete Antwort", "Die verarbeitete Antwort für JSON- und Text-Antworten."),
-                new ProcessNodeOutput(OUTPUT_NAME_FILE_NAME, "Dateiname", "Der Dateiname der gespeicherten Antwortdatei."),
-                new ProcessNodeOutput(OUTPUT_NAME_MIME_TYPE, "MIME-Typ", "Der MIME-Typ der gespeicherten Antwortdatei."),
-                new ProcessNodeOutput(OUTPUT_NAME_SIZE_BYTES, "Dateigröße", "Die Größe der gespeicherten Antwortdatei in Bytes."),
-                new ProcessNodeOutput(OUTPUT_NAME_ATTACHMENT_KEY, "Anhang-Schlüssel", "Der Schlüssel des gespeicherten Prozess-Anhangs."),
-                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PROVIDER_ID, "Speicheranbieter", "Die ID des Speicheranbieters des gespeicherten Prozess-Anhangs."),
-                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, "Speicherpfad", "Der Speicherpfad des gespeicherten Prozess-Anhangs."),
-                new ProcessNodeOutput(OUTPUT_NAME_FILES, "Dateien", "Die gespeicherten Antwortdateien im Format des Datei-Anlagen-Feldes.")
+                new ProcessNodeOutput(OUTPUT_NAME_STATUS_CODE, "HTTP-Statuscode", "Der Statuscode der HTTP-Antwort.", "number"),
+                new ProcessNodeOutput(OUTPUT_NAME_HEADERS, "HTTP-Header", "Die Header der HTTP-Antwort.", OUTPUT_HEADERS_TYPE_DEFINITION),
+                new ProcessNodeOutput(OUTPUT_NAME_RAW_BODY, "Antwort-Rohtext", "Der Antwort-Body als Text für JSON- und Text-Antworten.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_PROCESSED_RESPONSE, "Verarbeitete Antwort", "Die verarbeitete Antwort für JSON- und Text-Antworten.", "unknown"),
+                new ProcessNodeOutput(OUTPUT_NAME_FILE_NAME, "Dateiname", "Der Dateiname der gespeicherten Antwortdatei.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_MIME_TYPE, "MIME-Typ", "Der MIME-Typ der gespeicherten Antwortdatei.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_SIZE_BYTES, "Dateigröße", "Die Größe der gespeicherten Antwortdatei in Bytes.", "number | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_ATTACHMENT_KEY, "Anhang-Schlüssel", "Der Schlüssel des gespeicherten Prozess-Anhangs.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PROVIDER_ID, "Speicheranbieter", "Die ID des Speicheranbieters des gespeicherten Prozess-Anhangs.", "number | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, "Speicherpfad", "Der Speicherpfad des gespeicherten Prozess-Anhangs.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_FILES, "Dateien", "Die gespeicherten Antwortdateien im Format des Datei-Anlagen-Feldes.", OUTPUT_FILES_TYPE_DEFINITION)
         );
     }
 

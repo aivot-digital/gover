@@ -61,7 +61,8 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
 
     /**
      * Get the outputs of the process node. The outputs are data produced by this node that can be mapped in the node configuration. This list must be equivalent to the data stored
-     * in the process node element data.
+     * in the process node element data. Every output must provide a non-blank, standalone TypeScript type expression that describes its runtime value. Use {@code unknown} when a
+     * more precise type cannot be guaranteed.
      *
      * @return The output fields of the process node.
      */

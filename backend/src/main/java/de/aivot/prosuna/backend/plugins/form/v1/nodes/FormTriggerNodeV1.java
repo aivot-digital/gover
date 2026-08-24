@@ -68,6 +68,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
     public static final String DATA_KEY_STARTED = "started";
     public static final String DATA_KEY_CUSTOMER_SUMMARY_FILES = "customerSummaryFiles";
+    private static final String OUTPUT_ATTACHMENTS_TYPE_DEFINITION =
+            "Array<{ key: string; fileName: string; originalFileName: string; group: string | null; " +
+                    "storageProviderId: number; storagePathFromRoot: string; }>";
+    private static final String OUTPUT_FILES_TYPE_DEFINITION =
+            "Array<{ name: string; originalFileName: string; uri: string; size: number; }>";
 
     private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processNodeRepository;
@@ -142,27 +147,32 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 new ProcessNodeOutput(
                         DATA_KEY_PAYLOAD,
                         "Zugeordnete Formulardaten",
-                        "Enthält alle Formulardaten welche über einen Datenschlüssel zugeordnet wurden."
+                        "Enthält alle Formulardaten welche über einen Datenschlüssel zugeordnet wurden.",
+                        "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_UNMAPPED,
                         "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht."
+                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_ATTACHMENTS,
                         "Anlagen",
-                        "Eine Liste aller Anlagen, die über dieses Formular hochgeladen wurden."
+                        "Eine Liste aller Anlagen, die über dieses Formular hochgeladen wurden.",
+                        OUTPUT_ATTACHMENTS_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_STARTED,
                         "Eingangszeitstempel",
-                        "Der Zeitstempel des Dateneingangs an den Auslöser"
+                        "Der Zeitstempel des Dateneingangs an den Auslöser",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_CUSTOMER_SUMMARY_FILES,
                         CUSTOMER_SUMMARY_FILE_NAME,
-                        "Die erzeugte Formularzusammenfassung der eingereichten Formulardaten im Format des Datei-Anlagen-Feldes."
+                        "Die erzeugte Formularzusammenfassung der eingereichten Formulardaten im Format des Datei-Anlagen-Feldes.",
+                        OUTPUT_FILES_TYPE_DEFINITION
                 )
         );
     }

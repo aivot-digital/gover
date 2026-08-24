@@ -206,27 +206,32 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 new ProcessNodeOutput(
                         OUTPUT_DECISION,
                         "Entscheidung",
-                        "Die getroffene Entscheidung, entweder 'approved' oder 'rejected'."
+                        "Die getroffene Entscheidung, entweder 'approved' oder 'rejected'.",
+                        "\"approved\" | \"rejected\""
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_REMARK,
                         "Vermerk",
-                        "Der bei der Freigabe oder Ablehnung erfasste Vermerk."
+                        "Der bei der Freigabe oder Ablehnung erfasste Vermerk.",
+                        "string | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
                         "Bearbeitet durch",
-                        "Die ID der Mitarbeiter:in, die die Entscheidung getroffen hat."
+                        "Die ID der Mitarbeiter:in, die die Entscheidung getroffen hat.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_AT,
                         "Bearbeitet am",
-                        "Der Zeitstempel der Entscheidung im ISO-Format."
+                        "Der Zeitstempel der Entscheidung im ISO-Format.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_UNMAPPED,
                         "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht."
+                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Record<string, unknown>"
                 )
         );
     }

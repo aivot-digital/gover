@@ -198,17 +198,20 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONDITION_EXPRESSION,
                         "Bedingungsausdruck",
-                        "Der konfigurierte Bedingungsausdruck."
+                        "Der konfigurierte Bedingungsausdruck.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONDITION_EVALUATED,
                         "Ausgewerteter Bedingungswert",
-                        "Der als JavaScript ausgewertete Rückgabewert des Bedingungsausdrucks."
+                        "Der als JavaScript ausgewertete Rückgabewert des Bedingungsausdrucks.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONDITION_VALUE,
                         "Boolesches Ergebnis",
-                        "Das boolesche Ergebnis der Bedingungsauswertung."
+                        "Das boolesche Ergebnis der Bedingungsauswertung.",
+                        "boolean"
                 )
         );
     }
