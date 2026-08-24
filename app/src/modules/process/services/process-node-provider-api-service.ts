@@ -7,6 +7,12 @@ export enum ProcessNodeType {
     Termination = 'Termination',
 }
 
+export enum ProcessNodeExecutionType {
+    Automatic = 'Automatic',
+    Manual = 'Manual',
+    SemiAutomatic = 'SemiAutomatic',
+}
+
 export interface ProcessNodeProvider {
     key: string;
     componentKey: string;
@@ -15,6 +21,7 @@ export interface ProcessNodeProvider {
     deprecationNotice: string | null;
     majorVersion: number;
     type: ProcessNodeType;
+    executionTypes: ProcessNodeExecutionType[];
     name: string;
     description: string;
     parentPluginKey: string;

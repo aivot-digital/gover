@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -380,6 +381,12 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+        }
+
+        @Nonnull
+        @Override
         public List<ProcessNodePort> getPorts() {
             return List.of();
         }
@@ -467,6 +474,12 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+        }
+
+        @Nonnull
+        @Override
         public List<ProcessNodePort> getPorts() {
             return List.of();
         }
@@ -541,6 +554,12 @@ class ProcessNodeServiceTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Trigger;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
         }
 
         @Nonnull

@@ -24,6 +24,7 @@ import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.models.*;
@@ -113,6 +114,12 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     @Override
     public ProcessNodeType getType() {
         return ProcessNodeType.Action;
+    }
+
+    @Nonnull
+    @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.SemiAutomatic};
     }
 
     @Nonnull

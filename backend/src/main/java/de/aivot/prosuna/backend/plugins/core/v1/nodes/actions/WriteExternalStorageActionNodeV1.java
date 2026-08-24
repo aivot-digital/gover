@@ -26,6 +26,7 @@ import de.aivot.prosuna.backend.plugins.core.v1.operators.object.NoCodeObjectGet
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -123,6 +124,12 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     @Override
     public ProcessNodeType getType() {
         return ProcessNodeType.Action;
+    }
+
+    @Nonnull
+    @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
     }
 
     @Nonnull

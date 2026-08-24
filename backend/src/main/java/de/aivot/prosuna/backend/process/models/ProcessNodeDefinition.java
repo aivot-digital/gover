@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugin.enums.PluginComponentType;
 import de.aivot.prosuna.backend.plugin.models.PluginComponent;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
@@ -50,6 +51,15 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      */
     @Nonnull
     ProcessNodeType getType();
+
+    /**
+     * Get the fixed execution types of the process node. The returned array must not be empty or contain duplicate values. Implementations must return a new array so callers cannot
+     * mutate the definition's execution types.
+     *
+     * @return The execution types of the process node.
+     */
+    @Nonnull
+    ProcessNodeExecutionType[] getExecutionTypes();
 
     /**
      * Get the ports of the process node. The ports are outgoing connections that can be used to connect this node to other nodes in the process definition.
