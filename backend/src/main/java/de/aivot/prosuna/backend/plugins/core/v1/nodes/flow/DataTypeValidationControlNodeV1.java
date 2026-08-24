@@ -108,8 +108,18 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Prüft, ob konfigurierte Datenpfade in den Vorgangsdaten vorhanden sind und den erwarteten Datentypen entsprechen.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Validiert ausgewählte Pfade der Vorgangsdaten anhand konfigurierter erwarteter Datentypen.
+
+                Das Element prüft sowohl das Vorhandensein der Werte als auch deren Typ und verzweigt den Prozess abhängig vom Gesamtergebnis in einen gültigen oder ungültigen Pfad. Prüfergebnis und erkannte Validierungsabweichungen stehen als Ausgänge für nachfolgende Schritte bereit.
+                """;
     }
 
     @Nonnull

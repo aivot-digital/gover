@@ -119,8 +119,18 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Löst den Prozess aus, wenn Daten über einen Webhook empfangen werden.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Startet einen neuen Prozessvorgang durch eine eingehende HTTP-Anfrage an den bereitgestellten Webhook.
+
+                Übermittelte Nutzdaten und Anlagen werden in die initialen Vorgangsdaten übernommen. Zusätzlich stellt der Auslöser die empfangenen Dateien, Anfragedetails wie Methode, Header und Query-Parameter sowie den Eingangszeitpunkt als Ausgänge bereit.
+                """;
     }
 
     @Nonnull

@@ -151,8 +151,18 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Sendet die vollständigen Laufzeitdaten eines Vorgangs an eine KI und ersetzt die Vorgangsdaten durch das zurückgegebene JSON-Objekt.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Verwendet eine kompatible KI-Completions-API, um die vollständigen Laufzeitdaten eines Vorgangs in ein neues JSON-Objekt zu transformieren.
+
+                Endpoint, API-Schlüssel, Modell und Prompt werden konfiguriert; der Prompt kann die aktuellen Vorgangsdaten einbeziehen. Das von der KI zurückgegebene JSON-Objekt ersetzt anschließend die bisherigen Vorgangsdaten vollständig. Informationen zu Modell, Abschlussgrund, Nutzung und erzeugten Top-Level-Schlüsseln stehen als Ausgänge zur Verfügung.
+                """;
     }
 
     @Nonnull

@@ -130,8 +130,18 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Sendet automatisiert oder manuell E-Mails an ausgewählte Empfänger:innen.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Versendet E-Mails innerhalb eines Prozesses entweder automatisch oder nach manueller Bearbeitung durch eine Mitarbeiter:in.
+
+                Empfänger:innen, Betreff und Inhalt werden abhängig vom gewählten Ausführungsmodus vorkonfiguriert oder in einer Aufgabe ergänzt. Nach dem Versand stellt das Element die verwendeten Nachrichten- und Bearbeitungsinformationen als Ausgänge bereit.
+                """;
     }
 
     @Nonnull

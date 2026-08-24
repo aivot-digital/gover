@@ -76,7 +76,7 @@ function getFilteredNodeProviders(
     return filter == null ? nodeProviders : nodeProviders.filter(filter);
 }
 
-function getSearchedNodeProviders(
+export function getSearchedNodeProviders(
     nodeProviders: ProcessNodeProvider[],
     search: string,
 ): ProcessNodeProvider[] {
@@ -89,11 +89,12 @@ function getSearchedNodeProviders(
         threshold: 0.32,
         ignoreLocation: true,
         keys: [
-            {name: 'name', weight: 0.45},
-            {name: 'description', weight: 0.25},
-            {name: 'key', weight: 0.1},
-            {name: 'componentKey', weight: 0.1},
-            {name: 'parentPluginKey', weight: 0.1},
+            {name: 'name', weight: 0.4},
+            {name: 'abstractDescription', weight: 0.25},
+            {name: 'description', weight: 0.15},
+            {name: 'key', weight: 0.075},
+            {name: 'componentKey', weight: 0.075},
+            {name: 'parentPluginKey', weight: 0.05},
         ],
     });
 
@@ -406,7 +407,7 @@ function SelectNodeProviderDialogRow(props: SelectNodeProviderDialogRowProps): R
                     sx={{flexShrink: 0}}
                 />
             )}
-            description={provider.description}
+            description={provider.abstractDescription}
             selected={isSelected}
             primaryActionLabel={primaryActionLabel}
             primaryActionIcon={primaryActionIcon}
@@ -455,13 +456,13 @@ function SelectNodeProviderDetails(props: SelectNodeProviderDetailsProps): React
                     sx={{flexShrink: 0}}
                 />
             )}
-            description={provider.description}
+            description={provider.abstractDescription}
             primaryActionLabel={primaryActionLabel}
             primaryActionIcon={primaryActionIcon}
             onPrimaryAction={onAdd}
             onClose={onClose}
         >
-            <ProcessNodeProviderDetailsContent provider={provider}/>
+            <ProcessNodeProviderDetailsContent provider={provider} showDescription/>
         </SelectionDetailsPanel>
     );
 }

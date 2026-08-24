@@ -81,8 +81,18 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Beendet die Ausführung eines Vorgangs und berechnet/startet die Aufbewahrungsfrist.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Schließt einen laufenden Vorgang regulär ab und beendet damit seine weitere Prozessausführung.
+
+                Beim Abschluss wird die für den Vorgang geltende Aufbewahrungsfrist berechnet und gestartet. Das Element besitzt keinen weiteren Ausgang, da mit seiner Ausführung der gesamte Vorgang beendet wird.
+                """;
     }
 
     @Nonnull

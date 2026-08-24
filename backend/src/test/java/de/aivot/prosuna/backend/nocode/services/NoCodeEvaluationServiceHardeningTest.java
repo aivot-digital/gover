@@ -65,6 +65,12 @@ class NoCodeEvaluationServiceHardeningTest {
 
             @Nonnull
             @Override
+            public String getAbstract() {
+                return "test";
+            }
+
+            @Nonnull
+            @Override
             public String getDescription() {
                 return "test";
             }
@@ -155,6 +161,12 @@ class NoCodeEvaluationServiceHardeningTest {
             @Nonnull
             @Override
             public String getName() {
+                return "test";
+            }
+
+            @Nonnull
+            @Override
+            public String getAbstract() {
                 return "test";
             }
 

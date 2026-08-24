@@ -51,8 +51,18 @@ public class HttpJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Dieses Modul stellt Funktionen zur Durchführung von HTTP-Anfragen bereit.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Ermöglicht HTTP-Aufrufe aus JavaScript-Ausdrücken, um externe Dienste anzusprechen.
+
+                Das Modul unterstützt GET- und POST-Anfragen mit frei definierbaren Headern. POST-Anfragen können zusätzlich einen Textinhalt übertragen; Status und Antwortinhalt stehen anschließend für die weitere Verarbeitung zur Verfügung.
+                """;
     }
 
     @Override

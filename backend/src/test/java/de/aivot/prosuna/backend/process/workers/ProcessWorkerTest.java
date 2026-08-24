@@ -191,6 +191,11 @@ class ProcessWorkerTest {
         }
 
         @Override
+        public String getAbstract() {
+            return "Test node";
+        }
+
+        @Override
         public String getDescription() {
             return "Test node";
         }

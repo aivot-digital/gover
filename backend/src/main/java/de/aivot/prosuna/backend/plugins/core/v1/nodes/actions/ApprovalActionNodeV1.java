@@ -131,8 +131,18 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Holt eine Freigabe durch eine Mitarbeiter:in aus einem definierten Personenkreis ein.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Erstellt eine zugewiesene Aufgabe, über die eine Mitarbeiter:in einen Vorgang freigeben oder ablehnen kann.
+
+                Der zulässige Personenkreis und die angezeigten Inhalte werden in der Elementkonfiguration festgelegt. Nach der Bearbeitung wird der Vorgang über den passenden Ausgang fortgesetzt; Entscheidung, Vermerk und Bearbeitungsinformationen stehen als Elementausgänge bereit.
+                """;
     }
 
     @Nonnull

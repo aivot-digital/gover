@@ -167,8 +167,18 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Führt HTTP-Requests zu externen Systemen durch.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Führt einen konfigurierten HTTP-Aufruf zu einem externen System aus und bereitet die Antwort für den weiteren Prozess auf.
+
+                Unterstützt werden unterschiedliche HTTP-Methoden, Authentifizierungsarten sowie JSON-, Formular- und Dateiinhalte. Antwortstatus, Header und verarbeiteter Inhalt werden als Ausgänge bereitgestellt; Dateiantworten können zusätzlich als Vorgangsanlagen gespeichert werden.
+                """;
     }
 
     @Nonnull

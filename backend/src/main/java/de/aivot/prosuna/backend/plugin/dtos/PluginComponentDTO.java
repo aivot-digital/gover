@@ -13,6 +13,7 @@ public record PluginComponentDTO(
         @Nonnull Integer majorVersion,
         @Nonnull PluginComponentType componentType,
         @Nonnull String name,
+        @Nonnull String abstractDescription,
         @Nonnull String description,
         @Nullable String deprecationNotice
 ) {
@@ -25,6 +26,7 @@ public record PluginComponentDTO(
                 component.getMajorVersion(),
                 component.getComponentType(),
                 component.getName(),
+                component.getAbstract(),
                 component.getDescription(),
                 component.getDeprecationNotice()
         );

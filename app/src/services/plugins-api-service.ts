@@ -45,6 +45,7 @@ export interface PluginDTO {
         majorVersion: number;
         name: string;
         componentType: PluginComponentType;
+        abstractDescription: string; // Plain-text abstract
         description: string; // Markdown formatted description
         deprecationNotice: null | string; // Markdown formatted deprecation notice, if applicable
     }[][];

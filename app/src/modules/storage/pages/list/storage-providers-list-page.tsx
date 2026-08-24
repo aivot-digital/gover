@@ -24,6 +24,7 @@ import {Permission} from '../../../../data/permissions/permission';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import FolderOpen from '@aivot/mui-material-symbols-400-n25-outlined/FolderOpen';
 import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
+import {createStorageProviderDefinitionOption} from '../../utils/storage-provider-definition-utils';
 
 const availableFilter = [
     {
@@ -104,11 +105,10 @@ export function StorageProvidersListPage(): ReactNode {
         },
     }), []);
 
-    const definitionOptions = useMemo(() => definitions.map((def) => ({
-        value: def.key,
-        label: def.name,
-        subLabel: def.description,
-    })), [definitions]);
+    const definitionOptions = useMemo(
+        () => definitions.map(createStorageProviderDefinitionOption),
+        [definitions],
+    );
 
     const preSearchElements = useMemo(() => [
         <SelectFieldComponent

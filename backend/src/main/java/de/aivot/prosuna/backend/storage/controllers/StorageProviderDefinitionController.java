@@ -102,6 +102,7 @@ public class StorageProviderDefinitionController {
             @Nonnull String key,
             @Nonnull Integer version,
             @Nonnull String name,
+            @Nonnull String abstractDescription,
             @Nonnull String description,
             @Nonnull Boolean supportsMetadataAttributes,
             @Nullable ConfigLayoutElement providerConfigLayout
@@ -119,6 +120,7 @@ public class StorageProviderDefinitionController {
                     definition.getKey(),
                     definition.getMajorVersion(),
                     definition.getName(),
+                    definition.getAbstract(),
                     definition.getDescription(),
                     definition.getSupportsMetadataAttributes(),
                     layout

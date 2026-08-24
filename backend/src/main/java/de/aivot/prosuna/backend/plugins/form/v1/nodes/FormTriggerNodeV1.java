@@ -119,8 +119,18 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     @Nonnull
     @Override
+    public String getAbstract() {
+        return "Startet einen Prozess, wenn ein zugeordnetes Formular eingereicht wird.";
+    }
+
+    @Nonnull
+    @Override
     public String getDescription() {
-        return "Wird durch einen Formulareingang ausgelöst";
+        return """
+                Startet einen neuen Prozessvorgang, sobald ein mit dem Prozess verknüpftes Formular erfolgreich eingereicht wurde.
+
+                Zugeordnete Formulardaten, nicht zugeordnete Rohdaten und hochgeladene Anlagen werden für die weitere Prozessausführung übernommen. Zusätzlich stehen der Eingangszeitpunkt und die erzeugte Formularzusammenfassung als Ausgänge bereit.
+                """;
     }
 
     @Nonnull

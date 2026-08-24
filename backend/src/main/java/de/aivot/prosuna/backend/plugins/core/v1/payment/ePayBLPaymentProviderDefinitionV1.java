@@ -90,8 +90,18 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
     @Nonnull
     @Override
+    public String getAbstract() {
+        return "Bindet den Zahlungsanbieter ePayBL gemäß XBezahldienste-Standard an.";
+    }
+
+    @Nonnull
+    @Override
     public String getDescription() {
-        return "Zahlungsanbieter ePayBL gemäß XBezahldienste-Standard";
+        return """
+                Integriert den Zahlungsdienstleister ePayBL über den XBezahldienste-Standard in Prosuna.
+
+                Die Komponente übermittelt standardisierte Zahlungsanfragen an eine konfigurierte ePayBL-Schnittstelle und verarbeitet die zurückgegebenen Transaktionsinformationen. So können Zahlungen aus Formularen und Prozessen heraus gestartet und ihr Status weiterverfolgt werden.
+                """;
     }
 
     @Nonnull

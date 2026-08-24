@@ -74,8 +74,18 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
     @Nonnull
     @Override
+    public String getAbstract() {
+        return "Bindet den Zahlungsanbieter ePay21 über XBezahldienste an.";
+    }
+
+    @Nonnull
+    @Override
     public String getDescription() {
-        return "Zahlungsanbieter ePay21 für XBezahldienste";
+        return """
+                Integriert den Zahlungsdienstleister ePay21 über eine XBezahldienste-kompatible Schnittstelle in Prosuna.
+
+                Die Komponente erzeugt standardisierte Zahlungsanfragen, übermittelt sie an den konfigurierten Dienst und verarbeitet die zurückgegebenen Transaktionsinformationen. Dadurch können Zahlungen in Prosuna gestartet und ihr Status im weiteren Ablauf berücksichtigt werden.
+                """;
     }
 
     @Nonnull

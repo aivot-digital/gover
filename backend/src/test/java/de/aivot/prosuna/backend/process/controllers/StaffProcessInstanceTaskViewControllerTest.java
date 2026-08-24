@@ -694,6 +694,11 @@ class StaffProcessInstanceTaskViewControllerTest {
         }
 
         @Override
+        public String getAbstract() {
+            return "Staff task event validation test provider";
+        }
+
+        @Override
         public String getDescription() {
             return "Staff task event validation test provider";
         }
@@ -780,6 +785,11 @@ class StaffProcessInstanceTaskViewControllerTest {
         @Override
         public String getName() {
             return "Staff autosave";
+        }
+
+        @Override
+        public String getAbstract() {
+            return "Staff task test provider";
         }
 
         @Override

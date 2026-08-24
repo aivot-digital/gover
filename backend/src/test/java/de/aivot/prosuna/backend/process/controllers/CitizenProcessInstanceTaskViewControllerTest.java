@@ -430,6 +430,11 @@ class CitizenProcessInstanceTaskViewControllerTest {
         }
 
         @Override
+        public String getAbstract() {
+            return "Customer task test provider";
+        }
+
+        @Override
         public String getDescription() {
             return "Customer task test provider";
         }
@@ -505,6 +510,11 @@ class CitizenProcessInstanceTaskViewControllerTest {
         @Override
         public String getName() {
             return "Citizen autosave";
+        }
+
+        @Override
+        public String getAbstract() {
+            return "Customer autosave test provider";
         }
 
         @Override

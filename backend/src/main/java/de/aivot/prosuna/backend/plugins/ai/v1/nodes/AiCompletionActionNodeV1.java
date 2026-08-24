@@ -138,8 +138,18 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Sendet ein Prompt an die Completions-API einer KI und stellt die Antwort als Knotenausgänge bereit.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Sendet einen konfigurierten Prompt an eine kompatible KI-Completions-API und stellt die erzeugte Antwort für nachfolgende Prozesselemente bereit.
+
+                Endpoint, API-Schlüssel, Modell und Prompt werden in der Elementkonfiguration festgelegt. Neben dem ersten Antworttext liefert das Element den Abschlussgrund, das tatsächlich verwendete Modell und die von der API gemeldeten Nutzungsinformationen als Ausgänge.
+                """;
     }
 
     @Nonnull

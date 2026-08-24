@@ -56,6 +56,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -143,6 +148,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -226,6 +236,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -302,6 +317,11 @@ class ProcessNodeDefinitionTest {
             @Override
             public String getName() {
                 return "Test Node";
+            }
+
+            @Override
+            public String getAbstract() {
+                return "Test node abstract";
             }
 
             @Override
@@ -391,6 +411,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -471,6 +496,11 @@ class ProcessNodeDefinitionTest {
             @Override
             public String getName() {
                 return "Test Node";
+            }
+
+            @Override
+            public String getAbstract() {
+                return "Test node abstract";
             }
 
             @Override

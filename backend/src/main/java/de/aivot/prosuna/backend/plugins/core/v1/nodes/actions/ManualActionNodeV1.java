@@ -126,8 +126,18 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Eine frei definierte, manuelle Aufgabe, welche durch eine Mitarbeiter:in (z. B. in einem dritten System) ausgeführt wird.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Erstellt eine frei definierbare Aufgabe für eine Mitarbeiter:in, um einen manuellen Arbeitsschritt innerhalb oder außerhalb von Prosuna zu bestätigen.
+
+                Aufgabenbeschreibung, zuständiger Personenkreis und eine optionale Prosuna-Oberfläche werden konfiguriert. Nach der Bestätigung setzt das Element den Prozess fort und stellt erfasste Daten, Vermerk sowie Bearbeitungszeitpunkt und bearbeitende Person als Ausgänge bereit.
+                """;
     }
 
     @Nonnull

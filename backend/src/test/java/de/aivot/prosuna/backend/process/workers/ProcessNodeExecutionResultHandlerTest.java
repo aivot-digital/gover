@@ -464,6 +464,11 @@ class ProcessNodeExecutionResultHandlerTest {
         }
 
         @Override
+        public String getAbstract() {
+            return "Test provider";
+        }
+
+        @Override
         public String getDescription() {
             return "Test provider";
         }

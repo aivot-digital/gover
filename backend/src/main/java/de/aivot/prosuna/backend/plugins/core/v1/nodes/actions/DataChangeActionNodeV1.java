@@ -121,8 +121,18 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Erlaubt einer Mitarbeiter:in, Daten in einer Prosuna-UI zu ändern, hinzuzufügen oder zu entfernen.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Erstellt eine zugewiesene Prosuna-Aufgabe, in der eine Mitarbeiter:in Vorgangsdaten prüfen und bearbeiten kann.
+
+                Die angezeigte Oberfläche und der zulässige Personenkreis werden über die Elementkonfiguration bestimmt. Nach der Bestätigung werden die erfassten Änderungen in die Vorgangsdaten übernommen; erfasste Daten, Vermerk und Bearbeitungsinformationen stehen zusätzlich als Ausgänge zur Verfügung.
+                """;
     }
 
     @Nonnull

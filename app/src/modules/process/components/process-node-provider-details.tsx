@@ -4,6 +4,7 @@ import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment'
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {useRetainedDialogValue} from '../../../hooks/use-retained-dialog-value';
 import {type SvgIconComponent} from '../../../types/svg-icon-component';
+import {MarkdownContent} from '../../../components/markdown-content/markdown-content';
 import {KnownProviderIcons} from '../data/known-provider-icons';
 import {ProviderTypeStyles} from '../data/provider-type-styles';
 import {type ProcessNodeProvider} from '../services/process-node-provider-api-service';
@@ -194,11 +195,13 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
         >
             {
                 showDescription &&
-                <Typography variant="body2" sx={{
-                    color: "text.secondary"
-                }}>
-                    {provider.description}
-                </Typography>
+                <MarkdownContent
+                    markdown={provider.description}
+                    sx={{
+                        typography: 'body2',
+                        color: 'text.secondary',
+                    }}
+                />
             }
 
             {

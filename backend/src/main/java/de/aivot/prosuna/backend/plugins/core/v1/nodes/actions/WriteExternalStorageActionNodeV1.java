@@ -140,8 +140,18 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Speichert die Anhänge eines Anlagensatzes in einem ausgewählten Speicheranbieter.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Überträgt Dateien aus Vorgangsanlagensätzen in konfigurierte externe Speicheranbieter.
+
+                Für jeden Anlagensatz werden Zielanbieter, Zielpfad und optional angepasste Dateinamen festgelegt. Das Element kann mehrere Anlagensätze in einem Schritt verarbeiten und stellt Ablageergebnisse, gespeicherte Pfade, Dateinamen und Anzahl der geschriebenen Dateien als Ausgänge bereit.
+                """;
     }
 
     @Nonnull

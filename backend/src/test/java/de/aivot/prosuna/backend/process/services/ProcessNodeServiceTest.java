@@ -369,6 +369,12 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
+        public String getAbstract() {
+            return "Test node definition for process data key hints.";
+        }
+
+        @Nonnull
+        @Override
         public String getDescription() {
             return "Test node definition for process data key hints.";
         }
@@ -462,6 +468,12 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
+        public String getAbstract() {
+            return "Test node definition for field validation errors.";
+        }
+
+        @Nonnull
+        @Override
         public String getDescription() {
             return "Test node definition for field validation errors.";
         }
@@ -542,6 +554,12 @@ class ProcessNodeServiceTest {
         @Override
         public String getName() {
             return "Form trigger";
+        }
+
+        @Nonnull
+        @Override
+        public String getAbstract() {
+            return "Test form trigger.";
         }
 
         @Nonnull

@@ -101,8 +101,18 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Erhöht einen Zählerstand bei jeder Ausführung um einen konfigurierbaren Wert.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Aktualisiert bei jeder Ausführung einen Zähler und eignet sich damit insbesondere für Schleifen und wiederholte Prozessschritte.
+
+                Der aktuelle Wert kann an einem konfigurierten Vorgangsdatenpfad gespeichert werden. Ohne Zielpfad verwendet das Element seinen zuletzt gespeicherten Elementwert. Das Inkrement ist frei konfigurierbar und beträgt standardmäßig `1`; neuer Wert, vorheriger Wert und verwendetes Inkrement werden als Ausgänge bereitgestellt.
+                """;
     }
 
     @Nonnull

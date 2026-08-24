@@ -111,8 +111,18 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Leitet den Vorgang basierend auf einer Bedingung in unterschiedliche Pfade ein.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Wertet eine Bedingung aus und führt den Prozess abhängig vom Ergebnis über den Dann- oder Sonst-Ausgang fort.
+
+                Die Bedingung kann als Low-Code- oder No-Code-Ausdruck konfiguriert werden und auf die aktuellen Laufzeitdaten zugreifen. Ergebnis, gewählter Bedingungstyp und ausgewertete Bedingung werden als Elementausgänge bereitgestellt.
+                """;
     }
 
     @Nonnull

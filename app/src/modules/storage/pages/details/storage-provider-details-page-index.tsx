@@ -15,6 +15,7 @@ import * as yup from 'yup';
 import {prosunaSchemaToYup, mapFormManagerErrorsToComputedErrors} from '../../../../utils/prosuna-schema-to-yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {type StorageProviderDefinition} from '../../entities/storage-provider-definition';
+import {createStorageProviderDefinitionOption} from '../../utils/storage-provider-definition-utils';
 import {type StorageProviderEntity, StorageProviderMetadataAttribute} from '../../entities/storage-provider-entity';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {StorageProviderType, StorageProviderTypeLabels, StorageProviderTypes} from '../../enums/storage-provider-type';
@@ -514,11 +515,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         required={true}
                         value={editedStorageProvider.storageProviderDefinitionKey}
                         onChange={handleInputChange('storageProviderDefinitionKey')}
-                        options={definitions.map((def) => ({
-                            value: def.key,
-                            label: def.name,
-                            subLabel: def.description,
-                        }))}
+                        options={definitions.map(createStorageProviderDefinitionOption)}
                         disabled={isExistingItem}
                         error={errors.storageProviderDefinitionKey}
                         hint="Diese Einstellung kann nach der Erstellung nicht mehr geändert werden."

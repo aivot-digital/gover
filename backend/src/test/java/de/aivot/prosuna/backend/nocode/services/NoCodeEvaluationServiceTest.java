@@ -160,6 +160,12 @@ class NoCodeEvaluationServiceTest {
 
             @Nonnull
             @Override
+            public String getAbstract() {
+                return "";
+            }
+
+            @Nonnull
+            @Override
             public String getDescription() {
                 return "";
             }

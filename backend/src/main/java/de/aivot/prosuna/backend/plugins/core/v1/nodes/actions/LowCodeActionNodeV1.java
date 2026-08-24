@@ -80,8 +80,18 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Führt benutzerdefinierten JavaScript-Code aus.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Führt benutzerdefinierten JavaScript-Code innerhalb der Prozessausführung aus.
+
+                Das Skript kann die aktuellen Vorgangsdaten verarbeiten und gibt das resultierende Objekt als neue Vorgangsdaten zurück. Standardausgabe und Fehlerausgabe der Ausführung werden in den Elementdaten festgehalten, um die Ausführung nachvollziehbar zu machen.
+                """;
     }
 
     @Nonnull

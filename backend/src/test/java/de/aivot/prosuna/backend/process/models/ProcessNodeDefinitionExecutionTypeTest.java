@@ -67,6 +67,9 @@ class ProcessNodeDefinitionExecutionTypeTest {
                 List.of("Automatic", "Manual", "SemiAutomatic"),
                 serializedDefinition.get("executionTypes")
         );
+        assertEquals("Concise process-node abstract.", serializedDefinition.get("abstractDescription"));
+        assertEquals("Detailed **process-node** description.", serializedDefinition.get("description"));
+        assertFalse(serializedDefinition.containsKey("abstract"));
     }
 
     private static Stream<ExecutionTypeExpectation> executionTypeExpectations() {
@@ -146,8 +149,14 @@ class ProcessNodeDefinitionExecutionTypeTest {
 
         @Nonnull
         @Override
+        public String getAbstract() {
+            return "Concise process-node abstract.";
+        }
+
+        @Nonnull
+        @Override
         public String getDescription() {
-            return "Test definition for execution type serialization.";
+            return "Detailed **process-node** description.";
         }
 
         @Nonnull
