@@ -19,6 +19,10 @@ describe('ExtensionsList', () => {
         expect(screen.getByText('Kurze **Plain-Text** Zusammenfassung.')).toBeInTheDocument();
         expect(screen.queryByText('Plain-Text', {selector: 'strong'})).not.toBeInTheDocument();
         expect(screen.queryByText('Markdownbeschreibung')).not.toBeInTheDocument();
+        expect(screen.getByText('Dokumentation öffnen').closest('a')).toHaveAttribute(
+            'href',
+            'https://docs.example.com/plugins/test',
+        );
 
         const detailButtons = screen
             .getAllByText('Details')
@@ -35,6 +39,10 @@ describe('ExtensionsList', () => {
         expect(within(dialog).getByText('Kurze **Plain-Text** Zusammenfassung.')).toBeInTheDocument();
         expect(within(dialog).getByText('Markdownbeschreibung').tagName).toBe('STRONG');
         expect(within(dialog).getByText('2.0.0')).toBeInTheDocument();
+        expect(within(dialog).getByText('Dokumentation öffnen').closest('a')).toHaveAttribute(
+            'href',
+            'https://docs.example.com/components/example/v2',
+        );
 
         await user.click(within(dialog).getByText('Schließen'));
         await waitFor(() => {
@@ -50,6 +58,7 @@ describe('ExtensionsList', () => {
         }
         expect(within(dialog).getByText('Legacy-Markdown').tagName).toBe('STRONG');
         expect(within(dialog).getByText('1.0.0')).toBeInTheDocument();
+        expect(within(dialog).queryByText('Dokumentation öffnen')).not.toBeInTheDocument();
     });
 });
 
@@ -80,6 +89,7 @@ const plugin: PluginDTO = {
     key: 'de.aivot.test',
     name: 'Test extension',
     description: 'Beschreibung der Erweiterung.',
+    documentationUrl: 'https://docs.example.com/plugins/test',
     buildDate: '2026-08-24T10:00:00Z',
     version: '1.0.0',
     vendorName: 'Aivot',
@@ -97,6 +107,7 @@ const plugin: PluginDTO = {
             componentType: PluginComponentType.ProcessNodeDefinition,
             abstractDescription: 'Kurze **Plain-Text** Zusammenfassung.',
             description: 'Ausführliche **Markdownbeschreibung** für die aktuelle Version.',
+            documentationUrl: 'https://docs.example.com/components/example/v2',
             deprecationNotice: null,
         },
         {
@@ -109,6 +120,7 @@ const plugin: PluginDTO = {
             componentType: PluginComponentType.ProcessNodeDefinition,
             abstractDescription: 'Kurze Zusammenfassung der älteren Version.',
             description: 'Ausführliche **Legacy-Markdown** Beschreibung.',
+            documentationUrl: null,
             deprecationNotice: null,
         },
     ]],

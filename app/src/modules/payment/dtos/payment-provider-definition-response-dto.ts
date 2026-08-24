@@ -5,5 +5,6 @@ export interface PaymentProviderDefinitionResponseDTO {
     version: number;
     name: string;
     description: string;
+    documentationUrl: string | null;
     configLayout?: GroupLayout | null;
 }

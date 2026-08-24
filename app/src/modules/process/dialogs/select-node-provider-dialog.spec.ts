@@ -28,6 +28,7 @@ function createProvider(): ProcessNodeProvider {
         name: 'Test node',
         abstractDescription: 'Kurze Kurzfassung für Listen.',
         description: 'Ausführlicher **Markdowninhalt** für Details.',
+        documentationUrl: null,
         parentPluginKey: 'de.aivot.test',
         ports: [],
         outputs: [],

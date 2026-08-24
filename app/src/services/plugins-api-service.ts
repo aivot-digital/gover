@@ -31,6 +31,7 @@ export interface PluginDTO {
     key: string;
     name: string;
     description: string; // Markdown formatted description
+    documentationUrl: string | null;
     buildDate: string;
     version: string;
     vendorName: string;
@@ -47,6 +48,7 @@ export interface PluginDTO {
         componentType: PluginComponentType;
         abstractDescription: string; // Plain-text abstract
         description: string; // Markdown formatted description
+        documentationUrl: string | null;
         deprecationNotice: null | string; // Markdown formatted deprecation notice, if applicable
     }[][];
 }

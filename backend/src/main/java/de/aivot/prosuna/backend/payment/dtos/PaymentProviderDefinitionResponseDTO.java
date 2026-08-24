@@ -16,6 +16,8 @@ public record PaymentProviderDefinitionResponseDTO(
         @Nonnull
         String description,
         @Nullable
+        String documentationUrl,
+        @Nullable
         GroupLayoutElement configLayout
 ) {
     @Nonnull
@@ -28,6 +30,7 @@ public record PaymentProviderDefinitionResponseDTO(
                 definition.getMajorVersion(),
                 definition.getProviderName(),
                 definition.getProviderDescription(),
+                definition.getDocumentationUrl(),
                 definition.getPaymentConfigLayout()
         );
     }

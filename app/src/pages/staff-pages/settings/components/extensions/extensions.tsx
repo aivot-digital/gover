@@ -24,6 +24,7 @@ import {
 } from '../../../../../components/generic-details-page/generic-details-page-context';
 import {isApiError} from '../../../../../models/api-error';
 import {formatInstantInApplicationTimeZone} from '../../../../../utils/temporal-utils';
+import {DocumentationLink} from '../../../../../components/documentation-link/documentation-link';
 
 export interface ExtensionsDetailsPageItem {
     plugins: PluginDTO[];
@@ -246,6 +247,11 @@ function openComponentDetails(confirm: ConfirmFn, component: PluginComponentVers
                         sx={{typography: 'body2'}}
                     />
                 </Box>
+
+                <DocumentationLink
+                    url={component.documentationUrl}
+                    sx={{alignSelf: 'flex-start'}}
+                />
             </Stack>
         ),
         hideCancelButton: true,
@@ -880,6 +886,8 @@ function ExtensionCard(props: { plugin: PluginDTO; onShowChangelog: (plugin: Plu
                             Komponenten-Hinweise
                         </Button>
                     }
+
+                    <DocumentationLink url={plugin.documentationUrl}/>
 
                     <Button
                         variant="outlined"

@@ -9,6 +9,7 @@ describe('createStorageProviderDefinitionOption', () => {
             name: 'Test storage',
             abstractDescription: 'Concise **plain-text** abstract.',
             description: 'Detailed **Markdown** description.',
+            documentationUrl: null,
             providerConfigLayout: null,
             supportsMetadataAttributes: false,
         });

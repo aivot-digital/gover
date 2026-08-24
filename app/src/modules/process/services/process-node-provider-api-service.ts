@@ -25,6 +25,7 @@ export interface ProcessNodeProvider {
     name: string;
     abstractDescription: string;
     description: string;
+    documentationUrl: string | null;
     parentPluginKey: string;
     ports: ProcessNodePort[];
     outputs: ProcessNodeOutput[];

@@ -69,6 +69,7 @@ class ProcessNodeDefinitionExecutionTypeTest {
         );
         assertEquals("Concise process-node abstract.", serializedDefinition.get("abstractDescription"));
         assertEquals("Detailed **process-node** description.", serializedDefinition.get("description"));
+        assertEquals("https://docs.example.com/process-nodes/test", serializedDefinition.get("documentationUrl"));
         assertFalse(serializedDefinition.containsKey("abstract"));
     }
 
@@ -157,6 +158,12 @@ class ProcessNodeDefinitionExecutionTypeTest {
         @Override
         public String getDescription() {
             return "Detailed **process-node** description.";
+        }
+
+        @Nonnull
+        @Override
+        public String getDocumentationUrl() {
+            return "https://docs.example.com/process-nodes/test";
         }
 
         @Nonnull

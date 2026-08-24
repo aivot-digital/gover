@@ -18,6 +18,7 @@ class StorageProviderDefinitionControllerTest {
         when(definition.getName()).thenReturn("Test storage");
         when(definition.getAbstract()).thenReturn("Concise storage abstract.");
         when(definition.getDescription()).thenReturn("Detailed **storage** description.");
+        when(definition.getDocumentationUrl()).thenReturn("https://docs.example.com/storage/test");
         when(definition.getSupportsMetadataAttributes()).thenReturn(true);
         when(definition.getProviderConfigLayout()).thenReturn(null);
 
@@ -28,6 +29,7 @@ class StorageProviderDefinitionControllerTest {
         assertEquals("Test storage", result.name());
         assertEquals("Concise storage abstract.", result.abstractDescription());
         assertEquals("Detailed **storage** description.", result.description());
+        assertEquals("https://docs.example.com/storage/test", result.documentationUrl());
         assertEquals(true, result.supportsMetadataAttributes());
         assertNull(result.providerConfigLayout());
     }

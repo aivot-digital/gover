@@ -9,6 +9,7 @@ import {KnownProviderIcons} from '../data/known-provider-icons';
 import {ProviderTypeStyles} from '../data/provider-type-styles';
 import {type ProcessNodeProvider} from '../services/process-node-provider-api-service';
 import {ProcessNodeOutputCard} from './process-node-output-card';
+import {DocumentationLink} from '../../../components/documentation-link/documentation-link';
 
 interface ProcessNodeProviderDetailsDialogProps {
     open: boolean;
@@ -203,6 +204,11 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                     }}
                 />
             }
+
+            <DocumentationLink
+                url={provider.documentationUrl}
+                sx={{alignSelf: 'flex-start'}}
+            />
 
             {
                 provider.deprecationNotice != null &&

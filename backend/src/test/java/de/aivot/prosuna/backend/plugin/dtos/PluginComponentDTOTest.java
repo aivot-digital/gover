@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.plugin.models.PluginComponent;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -21,6 +22,7 @@ class PluginComponentDTOTest {
         when(component.getName()).thenReturn("Example component");
         when(component.getAbstract()).thenReturn("Concise plain-text abstract.");
         when(component.getDescription()).thenReturn("Detailed **Markdown** description.");
+        when(component.getDocumentationUrl()).thenReturn("https://docs.example.com/components/example");
         when(component.getDeprecationNotice()).thenReturn("Use the replacement.");
 
         var result = PluginComponentDTO.from(component);
@@ -36,9 +38,19 @@ class PluginComponentDTOTest {
                         "Example component",
                         "Concise plain-text abstract.",
                         "Detailed **Markdown** description.",
+                        "https://docs.example.com/components/example",
                         "Use the replacement."
                 ),
                 result
         );
+    }
+
+    @Test
+    void from_ShouldKeepMissingDocumentationUrlNull() {
+        var component = mock(PluginComponent.class);
+
+        var result = PluginComponentDTO.from(component);
+
+        assertNull(result.documentationUrl());
     }
 }

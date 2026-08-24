@@ -125,6 +125,19 @@ public interface PluginComponent {
     String getDescription();
 
     /**
+     * Get an optional link to the documentation for this plugin component version.
+     * The link should be an absolute HTTP or HTTPS URL.
+     * If no dedicated documentation is available, this method can return null.
+     *
+     * @return The documentation URL, or null if none is available.
+     */
+    @Nullable
+    @JsonGetter("documentationUrl")
+    default String getDocumentationUrl() {
+        return null;
+    }
+
+    /**
      * Get an optional deprecation notice for this plugin component.
      * If the component is deprecated, this method should return a message indicating that the component is deprecated.
      * It should also provide information about the reason for deprecation and any recommended alternatives or migration paths for users who are currently using the component.
