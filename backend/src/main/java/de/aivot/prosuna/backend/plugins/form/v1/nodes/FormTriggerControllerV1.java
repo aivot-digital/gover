@@ -1,11 +1,10 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.dtos.ElementDerivationResponse;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -38,7 +37,6 @@ import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
@@ -77,6 +75,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.exceptions.TemplateProcessingException;
+import tools.jackson.core.JacksonException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -552,10 +551,10 @@ public class FormTriggerControllerV1 {
 
         AuthoredElementValues inputs;
         try {
-            inputs = ObjectMapperFactory
+            inputs = JsonMapperFactory
                     .getInstance()
                     .readValue(rawInputs, AuthoredElementValues.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.badRequest();
         }
 

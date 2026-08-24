@@ -25,12 +25,12 @@ jobs:
       - name: Set up Java and Node.js
         uses: actions/setup-java@v5
         with:
-          java-version: 21
+          java-version: 25
           distribution: temurin
 
       - uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version: 26.7.0
 
       - name: Prepare sbom output directory
         run: mkdir -p "$SBOM_DIR/partials"

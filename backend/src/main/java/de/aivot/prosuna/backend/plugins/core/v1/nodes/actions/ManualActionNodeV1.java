@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -400,7 +400,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
         final BaseElement element;
         try {
-            element = ObjectMapperFactory
+            element = JsonMapperFactory
                     .getInstance()
                     .convertValue(rawUiDefinition, BaseElement.class);
         } catch (IllegalArgumentException e) {
@@ -437,7 +437,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
     @Nonnull
     private static GroupLayoutElement cloneDataDefinition(@Nonnull GroupLayoutElement rawElement) {
-        var copy = ObjectMapperFactory
+        var copy = JsonMapperFactory
                 .getInstance()
                 .convertValue(rawElement, BaseElement.class);
 
@@ -473,15 +473,15 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         var payloadUpdate = config.uiDefinition() != null
                 ? elementDataTransformService.buildPayload(config.uiDefinition(), effectiveUiUpdate, derivedUiUpdate.getElementStates())
                 : Map.<String, Object>of();
-        var originalProcessData = ObjectMapperFactory.Utils.convertToMapPreservingNulls(context.getThisTask().getProcessData());
+        var originalProcessData = JsonMapperFactory.Utils.convertToMapPreservingNulls(context.getThisTask().getProcessData());
         var updatedProcessData = config.uiDefinition() != null
                 ? elementDataTransformService.buildPayload(
                         config.uiDefinition(),
                         effectiveUiUpdate,
                         derivedUiUpdate.getElementStates(),
-                        ObjectMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData)
+                        JsonMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData)
                 )
-                : ObjectMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData);
+                : JsonMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData);
         var remark = normalizeRemark(update.get(TASK_VIEW_REMARK_FIELD_ID));
 
         var nodeData = new LinkedHashMap<String, Object>();

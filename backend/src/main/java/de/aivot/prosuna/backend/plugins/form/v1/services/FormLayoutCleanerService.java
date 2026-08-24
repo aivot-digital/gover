@@ -1,10 +1,10 @@
 package de.aivot.prosuna.backend.plugins.form.v1.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.ImageContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
+import tools.jackson.core.JacksonException;
 
 public class FormLayoutCleanerService {
     public static FormLayoutElement clean(FormLayoutElement formLayoutElement) {
@@ -12,13 +12,13 @@ public class FormLayoutCleanerService {
             return null;
         }
 
-        var om = ObjectMapperFactory
+        var om = JsonMapperFactory
                 .getInstance();
 
         String json;
         try {
             json = om.writeValueAsString(formLayoutElement);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 

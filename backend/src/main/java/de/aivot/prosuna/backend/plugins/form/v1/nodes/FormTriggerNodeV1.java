@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import com.google.zxing.WriterException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.ElementDisplayContext;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -392,7 +392,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         // Clean the form layout because it has references to system specific resources like department ids.
         var rawLayout = configuration.get(FormTriggerConfigV1.FORM_LAYOUT);
-        var layout = ObjectMapperFactory
+        var layout = JsonMapperFactory
                 .getInstance()
                 .convertValue(rawLayout, FormLayoutElement.class);
         var cleanedLayout = FormLayoutCleanerService.clean(layout);
@@ -668,7 +668,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         }
 
         try {
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getNullPreservingInstance()
                     .convertValue(rawSubmission, AuthoredElementValues.class);
         } catch (IllegalArgumentException e) {

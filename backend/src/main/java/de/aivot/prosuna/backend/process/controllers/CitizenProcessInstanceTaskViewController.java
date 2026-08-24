@@ -1,8 +1,7 @@
 package de.aivot.prosuna.backend.process.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.asset.services.AssetService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -51,6 +50,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.exceptions.TemplateProcessingException;
+import tools.jackson.core.JacksonException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -298,10 +298,10 @@ public class CitizenProcessInstanceTaskViewController {
 
         AuthoredElementValues inputs;
         try {
-            inputs = ObjectMapperFactory
+            inputs = JsonMapperFactory
                     .getInstance()
                     .readValue(rawInputs, AuthoredElementValues.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
         }
         inputs = fileUploadMultipartInputService.normalizeInputs(

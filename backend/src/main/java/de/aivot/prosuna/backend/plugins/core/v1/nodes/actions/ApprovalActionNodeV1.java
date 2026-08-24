@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -358,7 +358,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getNullPreservingInstance()
                 .convertValue(runtimeData, AuthoredElementValues.class);
     }

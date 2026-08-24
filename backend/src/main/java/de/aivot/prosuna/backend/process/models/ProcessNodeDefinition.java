@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.process.models;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
@@ -100,7 +100,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      */
     default ConfigLayoutElement loadConfigLayoutFromResource(@Nonnull Resource configResource) throws ResponseException {
         try {
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getInstance()
                     .readValue(configResource.getInputStream(), ConfigLayoutElement.class);
         } catch (IOException e) {
@@ -274,7 +274,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getNullPreservingInstance()
                 .convertValue(rawSavedData, AuthoredElementValues.class);
     }
@@ -392,7 +392,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getNullPreservingInstance()
                 .convertValue(rawSavedData, AuthoredElementValues.class);
     }

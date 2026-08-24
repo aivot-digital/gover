@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.14</version>
+        <version>4.1.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -25,8 +25,28 @@
 
     <properties>
         <revision>0.0.0</revision>
-        <java.version>21</java.version>
-        <graaljs.version>25.0.3</graaljs.version>
+        <java.version>25</java.version>
+        <postgresql.version>42.7.13</postgresql.version>
+        <orgjson.version>20260814</orgjson.version>
+        <java-jwt.version>4.6.0</java-jwt.version>
+        <thymeleaf.version>3.1.5.RELEASE</thymeleaf.version>
+        <thymeleaf-extras-java8time.version>3.0.4.RELEASE</thymeleaf-extras-java8time.version>
+        <graaljs.version>25.2.4</graaljs.version>
+        <sentry.version>8.53.0</sentry.version>
+        <flyway.version>13.3.0</flyway.version>
+        <commons-codec.version>1.22.1</commons-codec.version>
+        <libphonenumber.version>9.0.37</libphonenumber.version>
+        <commons-io.version>2.22.0</commons-io.version>
+        <batik.version>1.19</batik.version>
+        <zxing.version>3.5.4</zxing.version>
+        <minio.version>9.0.3</minio.version>
+        <okhttp.version>5.4.0</okhttp.version>
+        <altcha.version>2.0.3</altcha.version>
+        <bucket4j.version>8.0.1</bucket4j.version>
+        <jackson-dataformat-xml.version>3.1.4</jackson-dataformat-xml.version>
+        <springdoc.version>3.1.0</springdoc.version>
+        <commonmark.version>0.30.0</commonmark.version>
+        <fastcsv.version>4.4.0</fastcsv.version>
     </properties>
 
     <profiles>
@@ -84,11 +104,31 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-http-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-mail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-health</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-flyway</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.9</version>
+            <version>${postgresql.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -108,31 +148,36 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20250517</version>
+            <version>${orgjson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
-            <version>4.5.0</version>
+            <version>${java-jwt.version}</version>
         </dependency>
         <dependency>
             <groupId>org.thymeleaf</groupId>
             <artifactId>thymeleaf</artifactId>
-            <version>3.1.5.RELEASE</version>
+            <version>${thymeleaf.version}</version>
         </dependency>
         <dependency>
             <groupId>org.thymeleaf.extras</groupId>
             <artifactId>thymeleaf-extras-java8time</artifactId>
-            <version>3.0.4.RELEASE</version>
+            <version>${thymeleaf-extras-java8time.version}</version>
         </dependency>
         <dependency>
             <groupId>org.thymeleaf</groupId>
             <artifactId>thymeleaf-spring6</artifactId>
-            <version>3.1.5.RELEASE</version>
+            <version>${thymeleaf.version}</version>
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
@@ -147,121 +192,121 @@
         </dependency>
         <dependency>
             <groupId>io.sentry</groupId>
-            <artifactId>sentry-spring-boot-starter-jakarta</artifactId>
-            <version>8.5.0</version>
+            <artifactId>sentry-spring-boot-4</artifactId>
+            <version>${sentry.version}</version>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>11.10.1</version>
+            <version>${flyway.version}</version>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
-            <version>11.10.1</version>
+            <version>${flyway.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>1.18.0</version>
+            <version>${commons-codec.version}</version>
         </dependency>
         <dependency>
             <groupId>com.googlecode.libphonenumber</groupId>
             <artifactId>libphonenumber</artifactId>
-            <version>9.0.34</version>
+            <version>${libphonenumber.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.19.0</version>
+            <version>${commons-io.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-transcoder</artifactId>
-            <version>1.19</version>
+            <version>${batik.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-codec</artifactId>
-            <version>1.19</version>
+            <version>${batik.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
-            <version>3.5.3</version>
+            <version>${zxing.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>javase</artifactId>
-            <version>3.5.3</version>
+            <version>${zxing.version}</version>
         </dependency>
         <dependency>
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
-            <version>8.6.0</version>
+            <version>${minio.version}</version>
         </dependency>
         <!-- Minio 8.6.0 is broken and fails to include okhttp3 correctly -->
         <!-- Error: java: cannot access okhttp3.HttpUrl class file for okhttp3.HttpUrl not found -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp-urlconnection</artifactId>
-            <version>5.3.2</version>
+            <version>${okhttp.version}</version>
         </dependency>
         <dependency>
             <groupId>org.altcha</groupId>
             <artifactId>altcha</artifactId>
-            <version>2.0.2</version>
+            <version>${altcha.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.vladimir-bukhtoyarov</groupId>
             <artifactId>bucket4j-core</artifactId>
-            <version>8.0.1</version>
+            <version>${bucket4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <groupId>tools.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
             <!-- The same version as the one in spring boot. Check via Maven dependency tree `mvn dependency:tree` -->
-            <version>2.21.2</version>
+            <version>${jackson-dataformat-xml.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.8.17</version>
+            <version>${springdoc.version}</version>
         </dependency>
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark</artifactId>
-            <version>0.27.0</version>
+            <version>${commonmark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark-ext-gfm-strikethrough</artifactId>
-            <version>0.27.0</version>
+            <version>${commonmark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark-ext-autolink</artifactId>
-            <version>0.27.0</version>
+            <version>${commonmark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark-ext-footnotes</artifactId>
-            <version>0.27.0</version>
+            <version>${commonmark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark-ext-gfm-tables</artifactId>
-            <version>0.27.0</version>
+            <version>${commonmark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark-ext-task-list-items</artifactId>
-            <version>0.27.0</version>
+            <version>${commonmark.version}</version>
         </dependency>
         <dependency>
             <groupId>de.siegmar</groupId>
             <artifactId>fastcsv</artifactId>
-            <version>4.3.1</version>
+            <version>${fastcsv.version}</version>
         </dependency>
     </dependencies>
 

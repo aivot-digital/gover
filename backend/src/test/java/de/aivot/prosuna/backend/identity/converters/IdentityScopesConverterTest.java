@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.identity.converters;
 
-import de.aivot.prosuna.backend.identity.converters.IdentityScopesConverter;
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -11,7 +11,7 @@ class IdentityScopesConverterTest {
 
     @Test
     void convertToDatabaseColumn() {
-        var converter = new IdentityScopesConverter();
+        var converter = new IdentityScopesConverter(JsonMapperTestUtils.createMapper());
         var scopes = List.of("scope1", "scope2", "scope3");
 
         var json = converter.convertToDatabaseColumn(scopes);
@@ -26,7 +26,7 @@ class IdentityScopesConverterTest {
 
     @Test
     void convertToEntityAttribute() {
-        var converter = new IdentityScopesConverter();
+        var converter = new IdentityScopesConverter(JsonMapperTestUtils.createMapper());
         String json = "[\"scope1\", \"scope2\", \"scope3\"]";
 
         var scopes = converter.convertToEntityAttribute(json);

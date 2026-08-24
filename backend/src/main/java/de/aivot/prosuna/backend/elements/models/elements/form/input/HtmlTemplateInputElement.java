@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
@@ -22,7 +22,7 @@ public class HtmlTemplateInputElement extends BaseInputElement<HtmlTemplateInput
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .convertValue(value, HtmlTemplateInputElementValue.class);
     }

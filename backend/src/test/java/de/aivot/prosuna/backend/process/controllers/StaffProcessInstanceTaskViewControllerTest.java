@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.controllers;
 
 import de.aivot.prosuna.backend.core.converters.JsonObjectConverter;
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -223,7 +224,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertTrue(savedDraft.containsKey("defaultField"));
         assertNull(savedDraft.get("defaultField"));
 
-        var converter = new JsonObjectConverter();
+        var converter = new JsonObjectConverter(JsonMapperTestUtils.createMapper());
         task.setRuntimeData(converter.convertToEntityAttribute(converter.convertToDatabaseColumn(task.getRuntimeData())));
 
         var reloadedResponse = controller.retrieve(jwt, instance.getId(), task.getId());

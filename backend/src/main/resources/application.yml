@@ -59,9 +59,10 @@ spring:
           pool_size: ${spring.datasource.hikari.maximum-pool-size}
 
   jackson:
-    serialization:
-      # Keep Instants on the HTTP API as ISO-8601 strings instead of numeric timestamps.
-      write-dates-as-timestamps: false
+    datatype:
+      datetime:
+        # Keep date/time values on the HTTP API as ISO-8601 strings instead of numeric timestamps.
+        write-dates-as-timestamps: false
 
   data:
     rest:

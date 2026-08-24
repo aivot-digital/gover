@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -330,12 +330,12 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 update,
                 derivedRuntimeData.getElementStates()
         );
-        var originalProcessData = ObjectMapperFactory.Utils.convertToMapPreservingNulls(context.getThisTask().getProcessData());
+        var originalProcessData = JsonMapperFactory.Utils.convertToMapPreservingNulls(context.getThisTask().getProcessData());
         var updatedProcessData = elementDataTransformService.buildPayload(
                 config.dataDefinition,
                 update,
                 derivedRuntimeData.getElementStates(),
-                ObjectMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData)
+                JsonMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData)
         );
         var remark = normalizeRemark(authoredUpdate.get(TASK_VIEW_REMARK_FIELD_ID));
 
@@ -355,7 +355,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
     @Nonnull
     private static GroupLayoutElement cloneDataDefinition(@Nonnull GroupLayoutElement rawElement) {
-        var copy = ObjectMapperFactory
+        var copy = JsonMapperFactory
                 .getInstance()
                 .convertValue(rawElement, BaseElement.class);
 

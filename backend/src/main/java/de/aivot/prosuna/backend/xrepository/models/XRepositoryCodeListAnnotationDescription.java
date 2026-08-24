@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.xrepository.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import tools.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class XRepositoryCodeListAnnotationDescription {

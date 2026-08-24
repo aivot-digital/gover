@@ -1,9 +1,8 @@
 package de.aivot.prosuna.backend.system.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.utils.RandomUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -21,6 +20,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.core.JacksonException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -318,10 +318,10 @@ public class AuthController {
 
         TokenResponse tokenResponse;
         try {
-            tokenResponse = ObjectMapperFactory
+            tokenResponse = JsonMapperFactory
                     .getInstance()
                     .readValue(res.body(), TokenResponse.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError(e, "Failed to parse access token response: " + e.getMessage());
         }
         return tokenResponse;
@@ -332,13 +332,13 @@ public class AuthController {
             @Nonnull AuthFlowState authFlowState
     ) throws ResponseException {
         try {
-            var value = ObjectMapperFactory
+            var value = JsonMapperFactory
                     .getInstance()
                     .writeValueAsString(authFlowState);
             redis
                     .opsForValue()
                     .set(getAuthFlowRedisKey(state), value, AUTH_FLOW_TTL);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError(e, "Failed to create auth flow state: " + e.getMessage());
         }
     }
@@ -387,11 +387,11 @@ public class AuthController {
         }
 
         try {
-            var flowState = ObjectMapperFactory
+            var flowState = JsonMapperFactory
                     .getInstance()
                     .readValue(value, AuthFlowState.class);
             return resolveAppRedirectLocation(flowState.appUri);
-        } catch (JsonProcessingException | ResponseException e) {
+        } catch (JacksonException | ResponseException e) {
             return DEFAULT_APP_URI;
         }
     }
@@ -429,10 +429,10 @@ public class AuthController {
         }
 
         try {
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getInstance()
                     .readValue(value, AuthFlowState.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError(e, "Failed to parse auth flow state: " + e.getMessage());
         }
     }
