@@ -66,6 +66,7 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -101,6 +102,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     private final PdfService pdfService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
+    private final JsonMapper jsonMapper;
 
     public FormTriggerNodeV1(PublicUrlService publicUrlService,
                              ProcessNodeRepository processNodeRepository,
@@ -113,7 +115,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                              ProsunaConfig prosunaConfig,
                              PdfService pdfService,
                              ProcessInstanceAttachmentService processInstanceAttachmentService,
-                             ProcessInstanceAttachmentSetService processInstanceAttachmentSetService) {
+                             ProcessInstanceAttachmentSetService processInstanceAttachmentSetService, JsonMapper jsonMapper) {
         this.publicUrlService = publicUrlService;
         this.processNodeRepository = processNodeRepository;
         this.pdfService = pdfService;
@@ -126,6 +128,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
         this.processService = processService;
         this.prosunaConfig = prosunaConfig;
+        this.jsonMapper = jsonMapper;
     }
 
     @Nonnull
@@ -707,8 +710,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 .getThisTask()
                 .getRuntimeData()
                 .get(DATA_KEY_PAYMENT_PAYLOAD);
-        var paymentPayload = ObjectMapperFactory
-                .getInstance()
+        var paymentPayload = jsonMapper
                 .convertValue(paymentPayloadRawData, PaymentPayload.class);
 
         var paymentProvider = paymentProviderRepository

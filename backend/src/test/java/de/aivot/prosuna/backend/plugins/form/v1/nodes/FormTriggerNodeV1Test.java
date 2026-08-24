@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
@@ -620,7 +621,8 @@ class FormTriggerNodeV1Test {
                 prosunaConfig(),
                 pdfService,
                 processInstanceAttachmentService,
-                processInstanceAttachmentSetService
+                processInstanceAttachmentSetService,
+                JsonMapperTestUtils.createMapper()
         );
     }
 

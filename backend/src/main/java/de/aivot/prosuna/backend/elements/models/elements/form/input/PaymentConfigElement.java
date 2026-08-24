@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
@@ -73,7 +73,7 @@ public class PaymentConfigElement extends BaseInputElement<PaymentConfigElementV
     @Nullable
     @Override
     public PaymentConfigElementValue formatValue(@Nullable Object value) {
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .convertValue(value, PaymentConfigElementValue.class);
     }

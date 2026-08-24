@@ -2,7 +2,6 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.zxing.WriterException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
@@ -34,13 +33,8 @@ import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsServi
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionIO;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
@@ -63,6 +57,7 @@ import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -96,6 +91,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     private final MailService mailService;
     private final ProcessService processService;
     private final DepartmentService departmentService;
+    private final JsonMapper jsonMapper;
 
     public PaymentRequestActionNodeV1(PaymentPayloadCreationService paymentPayloadCreationService,
                                       PaymentTransactionService paymentTransactionService,
@@ -105,7 +101,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                                       ProsunaConfig prosunaConfig,
                                       MailService mailService,
                                       ProcessService processService,
-                                      DepartmentService departmentService) {
+                                      DepartmentService departmentService, JsonMapper jsonMapper) {
         this.paymentPayloadCreationService = paymentPayloadCreationService;
         this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderRepository = paymentProviderRepository;
@@ -115,6 +111,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         this.mailService = mailService;
         this.processService = processService;
         this.departmentService = departmentService;
+        this.jsonMapper = jsonMapper;
     }
 
     @Nonnull
@@ -323,8 +320,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             return ProcessNodeDefinition.super.getCustomerTaskView(context);
         }
 
-        var paymentPayload = ObjectMapperFactory
-                .getInstance()
+        var paymentPayload = jsonMapper
                 .convertValue(paymentPayloadRawData, PaymentPayload.class);
 
         var paymentProvider = paymentProviderRepository
@@ -437,8 +433,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     private PaymentTransactionEntity createPaymentTransaction(@Nonnull PaymentProviderEntity paymentProvider,
-                                                             @Nonnull PaymentPayload paymentPayload,
-                                                             @Nonnull String paymentUrl) throws ProcessNodeExecutionExceptionUnknown {
+                                                              @Nonnull PaymentPayload paymentPayload,
+                                                              @Nonnull String paymentUrl) throws ProcessNodeExecutionExceptionUnknown {
         try {
             return paymentTransactionService
                     .create(paymentProvider, paymentPayload, paymentUrl);

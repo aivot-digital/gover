@@ -36,14 +36,8 @@ class InstantJsonContractTest {
     }
 
     @Test
-    void springMapperShouldRejectOffsetlessInstants() {
-        assertThrows(
-                tools.jackson.databind.exc.MismatchedInputException.class,
-                () -> springMapper().readValue(
-                        "{\"timestamp\":\"2026-06-15T10:30:00\"}",
-                        TimestampPayload.class
-                )
-        );
+    void springMapperShouldResolveOffsetlessInstantsInApplicationTimeZone() throws Exception {
+        assertResolvesOffsetlessInstant(springMapper());
     }
 
     @Test

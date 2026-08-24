@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -101,7 +102,8 @@ class PaymentRequestActionNodeV1Test {
                 prosunaConfig(),
                 mailService,
                 processService,
-                departmentService
+                departmentService,
+                JsonMapperTestUtils.createMapper()
         );
     }
 

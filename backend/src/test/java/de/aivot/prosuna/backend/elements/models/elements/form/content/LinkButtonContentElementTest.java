@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.content;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import org.junit.jupiter.api.Test;
 
@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 class LinkButtonContentElementTest {
     @Test
     void shouldRoundTripThroughBaseElementSerialization() throws Exception {
-        var serialized = ObjectMapperFactory
+        var serialized = JsonMapperFactory
                 .getInstance()
                 .writeValueAsString(new LinkButtonContentElement()
                         .setLabel("Weiterlesen")
@@ -21,7 +21,7 @@ class LinkButtonContentElementTest {
                         .setVariant("outlined")
                         .setColor("secondary"));
 
-        var deserialized = ObjectMapperFactory
+        var deserialized = JsonMapperFactory
                 .getInstance()
                 .readValue(serialized, BaseElement.class);
 

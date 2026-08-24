@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.nocode.models.NoCodeOperand;
@@ -292,7 +292,7 @@ class PaymentConfigElementValueValidationTest {
 
     @Test
     void shouldRoundTripRequestorMappingJson() throws Exception {
-        var objectMapper = ObjectMapperFactory.getInstance();
+        var objectMapper = JsonMapperFactory.getInstance();
 
         var mapping = objectMapper.readValue("""
                 {
