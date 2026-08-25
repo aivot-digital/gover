@@ -25,9 +25,9 @@ export const ProcessNodeExecutionTypeLabels: Record<ProcessNodeExecutionType, st
 };
 
 export const ProcessNodeExecutionTypeColors: Record<ProcessNodeExecutionType, string> = {
-    [ProcessNodeExecutionType.Automatic]: 'success',
-    [ProcessNodeExecutionType.Manual]: 'primary',
-    [ProcessNodeExecutionType.SemiAutomatic]: 'warning',
+    [ProcessNodeExecutionType.Automatic]: 'secondary',
+    [ProcessNodeExecutionType.Manual]: 'secondary',
+    [ProcessNodeExecutionType.SemiAutomatic]: 'secondary',
 };
 
 export const ProcessNodeExecutionTypeIcons: Record<ProcessNodeExecutionType, SvgIconComponent> = {
