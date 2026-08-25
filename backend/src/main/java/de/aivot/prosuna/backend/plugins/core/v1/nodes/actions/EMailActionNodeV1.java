@@ -119,7 +119,10 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     @Nonnull
     @Override
     public ProcessNodeExecutionType[] getExecutionTypes() {
-        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.SemiAutomatic};
+        return new ProcessNodeExecutionType[]{
+                ProcessNodeExecutionType.Automatic,
+                ProcessNodeExecutionType.SemiAutomatic,
+        };
     }
 
     @Nonnull
