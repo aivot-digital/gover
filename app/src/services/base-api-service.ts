@@ -105,7 +105,7 @@ export class BaseApiService {
     }
 
     public async fetch(method: string, path: string, body?: any, options?: RequestOptions): Promise<Response> {
-        if (!this.auth.isAccessTokenValid() || (this.requiresCsrfProtection(method) && this.auth.getCsrfToken() == null)) {
+        if (!options?.skipAuthCheck && (!this.auth.isAccessTokenValid() || (this.requiresCsrfProtection(method) && this.auth.getCsrfToken() == null))) {
             try {
                 await this.auth.refresh();
             } catch (error) {

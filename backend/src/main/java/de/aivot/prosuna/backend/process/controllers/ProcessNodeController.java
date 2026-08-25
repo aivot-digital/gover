@@ -543,7 +543,7 @@ public class ProcessNodeController {
         );
 
         return processDefinitionNodeService
-                .getProcessDataKeyHintResponses(node);
+                .getIncomingProcessNodeDefinitionMetadata(node);
     }
 
     @GetMapping("{id}/testing/")

@@ -224,22 +224,30 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
                                     .withAuthorizationBearer(accessToken)
                     );
         } catch (HttpConnectionException e) {
-            throw new PaymentException(e, "Failed to poll payment from payment provider %s", getProviderName());
+            throw new PaymentException(
+                    e,
+                    "Failed to create payment from payment provider %s at %s. Sent body was %s",
+                    getProviderName(),
+                    paymentPath,
+                    body
+            );
         }
 
         if (response.statusCode() != 200) {
             throw new PaymentException(
-                    "Failed to poll payment from payment provider %s. Status code was %d with body %s",
+                    "Failed to create payment from payment provider %s at %s. Status code was %d with body %s. Sent body was %s",
                     getProviderName(),
+                    paymentPath,
                     response.statusCode(),
-                    response.body()
+                    response.body(),
+                    body
             );
         }
 
         try {
             return objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JacksonException e) {
-            throw new PaymentException(e, "Failed to deserialize payment transaction");
+            throw new PaymentException(e, "Failed to deserialize payment transaction. Body was %s", response.body());
         }
     }
 

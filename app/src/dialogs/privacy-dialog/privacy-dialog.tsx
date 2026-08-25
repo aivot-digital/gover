@@ -12,8 +12,6 @@ import {MarkdownContent} from '../../components/markdown-content/markdown-conten
 export const PrivacyDialogId = 'privacy';
 
 export function PrivacyDialog(props: PrivacyDialogProps) {
-    const application = props.form;
-
     const [department, setDepartment] = useState<PublicDepartmentResponseDTO>();
     const privacyDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.privacyDepartmentId));
     const parsedPrivacyDepartmentId = privacyDepartmentId != null && privacyDepartmentId !== '' && !Number.isNaN(parseInt(privacyDepartmentId)) ?
@@ -21,7 +19,7 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
         null;
     const selectedPrivacyDepartmentId = props.isListingPage ?
         parsedPrivacyDepartmentId :
-        application.privacyDepartmentId ?? null;
+        props.version?.privacyDepartmentId ?? null;
 
     useEffect(() => {
         if (selectedPrivacyDepartmentId == null) {
@@ -47,8 +45,8 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
     }, [selectedPrivacyDepartmentId]);
 
     const commonPrivacy = department?.commonPrivacy;
-    const formSpecificPrivacyStatement = props.isListingPage ? undefined : application.formSpecificPrivacyStatement;
-    const hasPrivacyText = [commonPrivacy, formSpecificPrivacyStatement]
+    const processSpecificPrivacyStatement = props.isListingPage ? undefined : props.version?.processSpecificPrivacyStatement;
+    const hasPrivacyText = [commonPrivacy, processSpecificPrivacyStatement]
         .some((text) => text != null && text.trim().length > 0);
 
     return (
@@ -73,10 +71,10 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
                             <MarkdownContent markdown={commonPrivacy}/>
                         }
                         {
-                            formSpecificPrivacyStatement != null &&
-                            formSpecificPrivacyStatement.trim().length > 0 &&
+                            processSpecificPrivacyStatement != null &&
+                            processSpecificPrivacyStatement.trim().length > 0 &&
                             <Box sx={{mt: commonPrivacy != null && commonPrivacy.trim().length > 0 ? 3 : 0}}>
-                                <MarkdownContent markdown={formSpecificPrivacyStatement}/>
+                                <MarkdownContent markdown={processSpecificPrivacyStatement}/>
                             </Box>
                         }
                     </DialogContent>
@@ -84,8 +82,8 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
                     <DialogContent tabIndex={0}>
                         <Alert severity="info">
                             Für die Datenschutzerklärung wurden keine Inhalte gefunden. Wählen Sie eine Organisationseinheit
-                            mit allgemeinem Datenschutztext aus und pflegen Sie bei Bedarf den formularspezifischen Teil
-                            in den rechtlichen Angaben des Formulars.
+                            mit allgemeinem Datenschutztext aus und pflegen Sie bei Bedarf den prozessspezifischen Teil
+                            in den versionsspezifischen Einstellungen.
                         </Alert>
                     </DialogContent>
             }

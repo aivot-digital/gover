@@ -12,13 +12,15 @@ import de.aivot.prosuna.backend.plugins.form.v1.nodes.FormTriggerNodeV1;
 import de.aivot.prosuna.backend.plugins.form.v1.nodes.FormTriggerUtilsControllerV1;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
+import de.aivot.prosuna.backend.process.services.ProcessVersionService;
 import de.aivot.prosuna.backend.process.services.PublicUrlService;
 import de.aivot.prosuna.backend.services.PdfService;
-import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
@@ -28,6 +30,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ContentDisposition;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -53,12 +56,13 @@ class FormTriggerUtilsControllerV1Test {
                 .setId(300)
                 .setName("Managing Department");
         var formLayout = baseFormLayout()
-                .setThemeId(formTheme.getId())
                 .setResponsibleDepartmentId(responsibleDepartment.getId())
                 .setManagingDepartmentId(managingDepartment.getId());
         var fixture = createFixture(formLayout);
+        fixture.processVersion().setThemeId(formTheme.getId());
 
-        when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
+        when(fixture.themeService().getFormThemesInOrderOfImportance(fixture.processVersion(), formLayout))
+                .thenReturn(List.of(formTheme));
         when(fixture.departmentService().retrieve(responsibleDepartment.getId())).thenReturn(Optional.of(responsibleDepartment));
         when(fixture.departmentService().retrieve(managingDepartment.getId())).thenReturn(Optional.of(managingDepartment));
         when(fixture.pdfService().generatePrintableForm(
@@ -111,8 +115,9 @@ class FormTriggerUtilsControllerV1Test {
                 .setManagingDepartmentId(managingDepartment.getId());
         var fixture = createFixture(formLayout);
 
+        when(fixture.themeService().getFormThemesInOrderOfImportance(fixture.processVersion(), formLayout))
+                .thenReturn(List.of(managingTheme));
         when(fixture.departmentService().retrieve(managingDepartment.getId())).thenReturn(Optional.of(managingDepartment));
-        when(fixture.themeService().retrieve(managingTheme.getId())).thenReturn(Optional.of(managingTheme));
         when(fixture.pdfService().generatePrintableForm(
                 any(PrintableFormPdfData.class),
                 eq(managingTheme),
@@ -134,11 +139,13 @@ class FormTriggerUtilsControllerV1Test {
                 .setId(400)
                 .setName("Process Department");
         var systemTheme = createTheme(31, "System Theme");
-        var fixture = createFixture(baseFormLayout());
+        var formLayout = baseFormLayout();
+        var fixture = createFixture(formLayout);
         fixture.process().setDepartmentId(processDepartment.getId());
 
         when(fixture.departmentService().retrieve(processDepartment.getId())).thenReturn(Optional.of(processDepartment));
-        when(fixture.systemService().retrieveDefaultTheme()).thenReturn(systemTheme);
+        when(fixture.themeService().getFormThemesInOrderOfImportance(fixture.processVersion(), formLayout))
+                .thenReturn(List.of(systemTheme));
         when(fixture.pdfService().generatePrintableForm(
                 any(PrintableFormPdfData.class),
                 eq(systemTheme),
@@ -211,6 +218,13 @@ class FormTriggerUtilsControllerV1Test {
         var processNodeService = mock(ProcessNodeService.class);
         when(processNodeService.retrieve(node.getId())).thenReturn(Optional.of(node));
 
+        var processVersion = new ProcessVersionEntity()
+                .setProcessId(node.getProcessId())
+                .setProcessVersion(node.getProcessVersion());
+        var processVersionService = mock(ProcessVersionService.class);
+        when(processVersionService.retrieve(ProcessVersionEntityId.of(node.getProcessId(), node.getProcessVersion())))
+                .thenReturn(Optional.of(processVersion));
+
         var provider = mock(FormTriggerNodeV1.class);
         when(provider.getKey()).thenReturn("form.form");
         when(provider.getMajorVersion()).thenReturn(1);
@@ -231,8 +245,6 @@ class FormTriggerUtilsControllerV1Test {
 
         var departmentService = mock(VDepartmentShadowedService.class);
         var themeService = mock(ThemeService.class);
-        var systemService = mock(SystemService.class);
-        when(systemService.retrieveDefaultTheme()).thenReturn(createTheme(1, "System Theme"));
 
         var pdfService = mock(PdfService.class);
         when(pdfService.generatePrintableForm(
@@ -250,10 +262,10 @@ class FormTriggerUtilsControllerV1Test {
                 permissionService,
                 processService,
                 processNodeService,
+                processVersionService,
                 processNodeDefinitionService,
                 departmentService,
                 themeService,
-                systemService,
                 pdfService,
                 provider
         );
@@ -264,14 +276,15 @@ class FormTriggerUtilsControllerV1Test {
                 permissionService,
                 processService,
                 processNodeService,
+                processVersionService,
                 processNodeDefinitionService,
                 departmentService,
                 themeService,
-                systemService,
                 pdfService,
                 provider,
                 user,
                 process,
+                processVersion,
                 node,
                 formSlug
         );
@@ -295,14 +308,15 @@ class FormTriggerUtilsControllerV1Test {
             PermissionService permissionService,
             ProcessService processService,
             ProcessNodeService processNodeService,
+            ProcessVersionService processVersionService,
             ProcessNodeDefinitionService processNodeDefinitionService,
             VDepartmentShadowedService departmentService,
             ThemeService themeService,
-            SystemService systemService,
             PdfService pdfService,
             FormTriggerNodeV1 provider,
             UserEntity user,
             ProcessEntity process,
+            ProcessVersionEntity processVersion,
             ProcessNodeEntity node,
             String formSlug
     ) {

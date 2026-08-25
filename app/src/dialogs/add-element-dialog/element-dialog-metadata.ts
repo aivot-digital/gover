@@ -26,6 +26,7 @@ export const elementTypeGroupLabels: Record<ElementTypeGroups, string> = {
 export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.Alert]: ElementTypeGroups.Information,
     [ElementType.Image]: ElementTypeGroups.Information,
+    [ElementType.LinkButton]: ElementTypeGroups.Information,
     [ElementType.GroupLayout]: ElementTypeGroups.Display,
     [ElementType.Step]: ElementTypeGroups.Step,
     [ElementType.FormLayout]: null,
@@ -71,6 +72,7 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.CodeInput]: ElementTypeGroups.Input,
     [ElementType.UiDefinitionInput]: ElementTypeGroups.Input,
     [ElementType.IdentityConfigElement]: ElementTypeGroups.Input,
+    [ElementType.PaymentConfigElement]: ElementTypeGroups.Input,
     [ElementType.TabLayout]: null,
     [ElementType.SummaryLayout]: ElementTypeGroups.Display,
     [ElementType.ProcessAttachmentDisplay]: ElementTypeGroups.Display,
@@ -79,6 +81,7 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
 export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.Alert]: 'Zeigt hervorgehobene Hinweise im Formular an.',
     [ElementType.Image]: 'Bindet ein Bild in den Formularfluss ein.',
+    [ElementType.LinkButton]: 'Zeigt einen Button an, der einen Link öffnet oder in Aufgabenansichten ein Ereignis auslöst.',
     [ElementType.GroupLayout]: 'Fasst inhaltlich zusammengehörige Elemente zusammen.',
     [ElementType.Checkbox]: 'Erfasst eine einzelne Ja-/Nein-Angabe.',
     [ElementType.Date]: 'Erfasst ein einzelnes Datum.',
@@ -114,6 +117,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.RichTextInput]: 'Erfasst formatierte Texte in Markdown.',
     [ElementType.UiDefinitionInput]: 'Definiert eine Benutzeroberfläche (UI) für z. B. Formulare oder Aufgaben.',
     [ElementType.IdentityConfigElement]: 'Ermöglicht eine Identifizierung über Servicekonten oder alternativ die Eingabe einer E-Mail-Adresse.',
+    [ElementType.PaymentConfigElement]: 'Konfiguriert den Zahlungsdienstleister und die Zahlungsposten eines Formulars.',
     [ElementType.SummaryLayout]: 'Fasst mehrere Elemente zu einer Übersicht zusammen.',
     [ElementType.ProcessAttachmentDisplay]: 'Zeigt Vorgangsanhänge zur Ansicht und zum Download an.',
     [ElementType.SummaryStep]: 'Optionaler Abschnitt mit der Zusammenfassung aller eingegebenen Informationen und einer Bestätigung, dass die eingegebenen Daten korrekt sind.',

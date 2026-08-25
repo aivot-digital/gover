@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.payment;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -25,6 +26,7 @@ import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.net.URI;
@@ -195,20 +197,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         var objectMapper = JsonMapperFactory
                 .getInstance();
 
-        paymentRequest.setRequestor(null);
-        for (var item : paymentRequest.getItems()) {
-            if (item.getBookingData().isEmpty()) {
-                item.setBookingData(null);
-            }
-        }
-
-        String body;
-        try {
-            body = objectMapper
-                    .writeValueAsString(paymentRequest);
-        } catch (JacksonException e) {
-            throw new PaymentException(e, "Failed to serialize payment request");
-        }
+        var body = serializePaymentRequest(paymentRequest, objectMapper);
 
         var paymentPath = String
                 .format("%spaymenttransaction/%s/%s", normalizedPaymentTransactionUrl, originatorID, endpointID);
@@ -247,6 +236,32 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
             throw new PaymentException(e, "Failed to deserialize payment transaction");
         } finally {
             client.close();
+        }
+    }
+
+    static String serializePaymentRequest(
+            @Nonnull XBezahldienstePaymentRequest paymentRequest,
+            @Nonnull JsonMapper baseMapper
+    ) throws PaymentException {
+        for (var item : paymentRequest.getItems()) {
+            if (item.getBookingData().isEmpty()) {
+                item.setBookingData(null);
+            }
+        }
+
+        var objectMapper = baseMapper
+                .rebuild()
+                .changeDefaultPropertyInclusion(ignored -> JsonInclude.Value.construct(
+                        JsonInclude.Include.NON_NULL,
+                        JsonInclude.Include.NON_NULL
+                ))
+                .build();
+
+        try {
+            return objectMapper
+                    .writeValueAsString(paymentRequest);
+        } catch (JacksonException e) {
+            throw new PaymentException(e, "Failed to serialize payment request");
         }
     }
 

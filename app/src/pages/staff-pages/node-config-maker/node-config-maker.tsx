@@ -345,6 +345,8 @@ const ElementTypeBackendName: Record<ElementType, string> = {
     [ElementType.ProcessIdentityIdInput]: 'ProcessIdentityIdInput',
     [ElementType.HtmlTemplateInput]: 'HtmlTemplateInputElement',
     [ElementType.StoragePathSelector]: 'StoragePathSelector',
+    [ElementType.PaymentConfigElement]: 'PaymentConfig',
+    [ElementType.LinkButton]: 'LinkButton',
 };
 
 const ElementTypeBackendValueClass: Record<ElementType, string | null> = {
@@ -398,4 +400,6 @@ const ElementTypeBackendValueClass: Record<ElementType, string | null> = {
     [ElementType.ProcessIdentityIdInput]: 'List<String>',
     [ElementType.HtmlTemplateInput]: 'HtmlTemplateInputElementValue',
     [ElementType.StoragePathSelector]: 'StoragePathSelectorInputElementValue',
+    [ElementType.PaymentConfigElement]: 'PaymentConfigElementValue',
+    [ElementType.LinkButton]: null,
 };

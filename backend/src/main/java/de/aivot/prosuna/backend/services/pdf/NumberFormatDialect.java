@@ -1,6 +1,9 @@
 package de.aivot.prosuna.backend.services.pdf;
 
+import de.aivot.prosuna.backend.ServerReadyEventListener;
 import jakarta.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.thymeleaf.context.IExpressionContext;
 import org.thymeleaf.dialect.AbstractDialect;
 import org.thymeleaf.dialect.IExpressionObjectDialect;
@@ -20,6 +23,8 @@ import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
 
 public class NumberFormatDialect extends AbstractDialect implements IExpressionObjectDialect {
+    private static final Logger logger = LoggerFactory.getLogger(NumberFormatDialect.class);
+
     public NumberFormatDialect() {
         super("numberformat");
     }
@@ -64,6 +69,7 @@ public class NumberFormatDialect extends AbstractDialect implements IExpressionO
                     .atZone(displayZone)
                     .format(DateTimeFormatter.ofPattern(format));
         } catch (DateTimeException ex) {
+            logger.warn("Failed to format instant value", ex);
             return value.toString();
         }
     }

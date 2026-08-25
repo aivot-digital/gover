@@ -89,7 +89,7 @@ class CoreDateJavascriptTest {
     void testCreateDateStringInvalid() {
         assertNull(provider.createDate("not-a-date"));
         assertNull(provider.createDate("01.01.2021"));
-        assertNull(provider.createDate("2021-01-01T00:00:00"));
+        assertNull(provider.createDate("2021-01-01T00:00")); // Missing seconds
     }
 
     @Test

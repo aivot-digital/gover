@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementReferenceUtils;
@@ -40,8 +41,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.core.JacksonException;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/processes/{procId}/tasks/{taskId}/")
@@ -230,13 +233,7 @@ public class StaffProcessInstanceTaskViewController {
                 .provider
                 .getStaffTaskViewEvents(context);
 
-        // Test if the event is valid
-        var cleanEvent = events
-                .stream()
-                .filter(e -> e.event().equals(rawEvent))
-                .findFirst()
-                .map(TaskViewEvent::event)
-                .orElse(null);
+        var cleanEvent = resolveValidStaffEvent(rootLayout, events, rawEvent);
 
         if (rawEvent != null && cleanEvent == null) {
             throw ResponseException.badRequest("Invalid event: " + rawEvent);
@@ -329,6 +326,40 @@ public class StaffProcessInstanceTaskViewController {
                 updatedElementData,
                 updatedEvents
         );
+    }
+
+    @Nullable
+    private String resolveValidStaffEvent(@Nonnull BaseElement layout,
+                                          @Nonnull List<TaskViewEvent> events,
+                                          @Nullable String rawEvent) {
+        if (rawEvent == null) {
+            return null;
+        }
+
+        var validEvents = new LinkedHashSet<String>();
+        events.stream()
+                .map(TaskViewEvent::event)
+                .forEach(validEvents::add);
+        addInlineStaffEvents(layout, validEvents);
+
+        return validEvents.contains(rawEvent) ? rawEvent : null;
+    }
+
+    private void addInlineStaffEvents(@Nonnull BaseElement layout, @Nonnull Set<String> validEvents) {
+        ElementStreamUtils.applyAction(layout, element -> {
+            if (!(element instanceof LinkButtonContentElement linkButton)) {
+                return;
+            }
+
+            var staffTaskEvent = linkButton.getStaffTaskEvent();
+            if (!hasValue(linkButton.getHref()) && hasValue(staffTaskEvent)) {
+                validEvents.add(staffTaskEvent.trim());
+            }
+        });
+    }
+
+    private boolean hasValue(@Nullable String value) {
+        return value != null && !value.isBlank();
     }
 
     @PostMapping("derive/")

@@ -655,7 +655,15 @@ public class ProcessController {
                         Instant.now(),
                         null,
                         null
-                ));
+                )
+                        .setThemeId(originalProcessVersion.getThemeId())
+                        .setLegalSupportDepartmentId(originalProcessVersion.getLegalSupportDepartmentId())
+                        .setTechnicalSupportDepartmentId(originalProcessVersion.getTechnicalSupportDepartmentId())
+                        .setImprintDepartmentId(originalProcessVersion.getImprintDepartmentId())
+                        .setPrivacyDepartmentId(originalProcessVersion.getPrivacyDepartmentId())
+                        .setAccessibilityDepartmentId(originalProcessVersion.getAccessibilityDepartmentId())
+                        .setProcessSpecificPrivacyStatement(originalProcessVersion.getProcessSpecificPrivacyStatement())
+                        .setProcessSpecificAccessibilityStatement(originalProcessVersion.getProcessSpecificAccessibilityStatement()));
 
         copyProcessInstanceAccessControlPresets(
                 process.getId(),

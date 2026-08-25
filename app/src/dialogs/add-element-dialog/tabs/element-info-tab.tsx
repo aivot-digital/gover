@@ -1,7 +1,8 @@
 import React, {type ReactNode} from 'react';
-import {Box, Divider, Typography} from '@mui/material';
+import {Box, Button, Divider, Typography} from '@mui/material';
 import {DateTime} from 'luxon';
 import PersonOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Person';
+import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type ElementTypesMap} from '../../../data/element-type/element-types-map';
 import {ElementType} from '../../../data/element-type/element-type';
@@ -247,6 +248,26 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     Beispielgrafik mit optionaler Bildunterschrift
                 </Typography>
             </Box>
+        </Box>
+    ),
+    [ElementType.LinkButton]: (
+        <Box>
+            <Typography>
+                Das Link-Button-Element stellt einen Button dar, der entweder einen Link öffnet oder in
+                Aufgabenansichten ein definiertes Ereignis auslöst.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiel
+            </Divider>
+
+            <Button
+                variant="contained"
+                color="primary"
+                endIcon={<OpenInNewIcon/>}
+            >
+                Link öffnen
+            </Button>
         </Box>
     ),
     [ElementType.GroupLayout]: (
@@ -1342,6 +1363,14 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             <Typography sx={{mt: 2}}>
                 Attribute aus der Identifizierung können anschließend in andere Formularfelder
                 außerhalb von Wiederholungscontainern übernommen werden.
+            </Typography>
+        </Box>
+    ),
+    [ElementType.PaymentConfigElement]: (
+        <Box>
+            <Typography>
+                Das Element „Zahlungskonfiguration“ legt den Zahlungsdienstleister, den
+                Buchungstext und die Zahlungsposten eines Formulars fest.
             </Typography>
         </Box>
     ),
