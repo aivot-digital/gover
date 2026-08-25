@@ -66,6 +66,7 @@ public class AuthController {
     private static final String OIDC_CALLBACK_CODE_PARAM_KEY = "code";
     private static final String DEFAULT_APP_URI = "/staff";
     private static final String CALLBACK_ERROR_VIEW = "auth/oidc-callback-error";
+
     private static final String MISSING_AUTHORIZATION_CODE_MESSAGE = "Es wurde kein Autorisierungscode übergeben.";
     private static final String INVALID_STATE_MESSAGE = "Der state-Parameter ist ungültig.";
     private static final String EXPIRED_AUTH_FLOW_MESSAGE = "Die Authentifizierungssitzung ist abgelaufen.";

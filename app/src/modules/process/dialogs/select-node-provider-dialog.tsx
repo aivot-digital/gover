@@ -8,6 +8,7 @@ import {
     Box,
     Chip,
     Divider,
+    Stack,
     Typography,
 } from '@mui/material';
 import ExpandMore from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
@@ -24,6 +25,7 @@ import {
     getProcessNodeProviderIcon,
     ProcessNodeProviderDetailsContent,
 } from '../components/process-node-provider-details';
+import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
 
 const PROCESS_NODE_TYPE_ORDER = [
     ProcessNodeType.Trigger,
@@ -403,7 +405,7 @@ function SelectNodeProviderDialogRow(props: SelectNodeProviderDialogRowProps): R
             titleAdornment={(
                 <Chip
                     size="small"
-                    label={`Version ${provider.majorVersion}`}
+                    label={`Version ${provider.componentVersion}`}
                     sx={{flexShrink: 0}}
                 />
             )}
@@ -450,11 +452,20 @@ function SelectNodeProviderDetails(props: SelectNodeProviderDetailsProps): React
             label={typeLabel}
             title={provider.name}
             titleAdornment={(
-                <Chip
-                    size="small"
-                    label={`Version ${provider.majorVersion}`}
-                    sx={{flexShrink: 0}}
-                />
+                <Stack direction="row" spacing={1} useFlexGap sx={{flexWrap: 'wrap'}}>
+                    <Chip
+                        size="small"
+                        label={`Version ${provider.componentVersion}`}
+                        sx={{flexShrink: 0}}
+                    />
+                    <Chip
+                        size="small"
+                        label={isStringNotNullOrEmpty(provider.deprecationNotice) ? 'Veraltet' : 'Aktiv'}
+                        color={isStringNotNullOrEmpty(provider.deprecationNotice) ? 'warning' : 'success'}
+                        variant="outlined"
+                        sx={{flexShrink: 0}}
+                    />
+                </Stack>
             )}
             description={provider.abstractDescription}
             primaryActionLabel={primaryActionLabel}

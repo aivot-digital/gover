@@ -1,4 +1,4 @@
-import {BaseApiService} from './base-api-service';
+import {BaseApiService, type RequestOptions} from './base-api-service';
 
 export enum PluginComponentType {
     JavascriptFunctionProvider = 'JavascriptFunctionProvider',
@@ -56,5 +56,9 @@ export interface PluginDTO {
 export class PluginsApiService extends BaseApiService {
     public async getPlugins(): Promise<PluginDTO[]> {
         return this.get<PluginDTO[]>('/api/plugins/');
+    }
+
+    public async getPlugin(pluginKey: string, options?: RequestOptions): Promise<PluginDTO> {
+        return this.get<PluginDTO>(`/api/plugins/${encodeURIComponent(pluginKey)}/`, options);
     }
 }

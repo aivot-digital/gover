@@ -1,11 +1,13 @@
 import React from 'react';
-import {Box, type SxProps, type Theme, Typography} from '@mui/material';
+import {Box, Button, type SxProps, type Theme, Typography} from '@mui/material';
+import Code from '@aivot/mui-material-symbols-400-n25-outlined/Code';
 import {CopyToClipboardButton} from '../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 
 interface ProcessNodeOutputCardProps {
     label: string;
     outputKey: string;
     description: string;
+    onShowTypeDefinition?: () => void;
     sx?: SxProps<Theme>;
 }
 
@@ -14,6 +16,7 @@ export function ProcessNodeOutputCard(props: ProcessNodeOutputCardProps): React.
         label,
         outputKey,
         description,
+        onShowTypeDefinition,
         sx,
     } = props;
 
@@ -90,6 +93,23 @@ export function ProcessNodeOutputCard(props: ProcessNodeOutputCardProps): React.
                 }}>
                 {description}
             </Typography>
+
+            {
+                onShowTypeDefinition != null &&
+                <Button
+                    size="small"
+                    variant="text"
+                    startIcon={<Code/>}
+                    onClick={onShowTypeDefinition}
+                    aria-label={`TypeScript-Typdefinition für ${label} anzeigen`}
+                    sx={{
+                        mt: 1,
+                        ml: -1,
+                    }}
+                >
+                    Typdefinition anzeigen
+                </Button>
+            }
         </Box>
     );
 }
