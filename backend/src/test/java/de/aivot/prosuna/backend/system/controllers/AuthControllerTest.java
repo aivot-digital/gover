@@ -187,7 +187,7 @@ class AuthControllerTest {
                 response,
                 400,
                 "Die App-Weiterleitungsadresse ist nicht erlaubt.",
-                "Die gespeicherte Rücksprungadresse der Anwendung ist ungültig oder nicht erlaubt. Die Anmeldung kann über den Standardbereich neu gestartet werden.",
+                "Die gespeicherte Rücksprungadresse der Anwendung ist ungültig oder nicht erlaubt. Die Anmeldung kann über die Startseite neu gestartet werden.",
                 "/api/auth/login?app_uri=/staff"
         );
         verifyNoInteractions(httpService);

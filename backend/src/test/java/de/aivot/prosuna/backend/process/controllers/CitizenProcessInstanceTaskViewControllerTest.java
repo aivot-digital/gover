@@ -956,6 +956,12 @@ class CitizenProcessInstanceTaskViewControllerTest {
             return "Citizen inline event";
         }
 
+        @Nonnull
+        @Override
+        public String getAbstract() {
+            return "Customer inline task event test provider";
+        }
+
         @Override
         public String getDescription() {
             return "Customer inline task event test provider";
@@ -965,6 +971,12 @@ class CitizenProcessInstanceTaskViewControllerTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Manual};
         }
 
         @Nonnull

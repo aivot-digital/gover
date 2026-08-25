@@ -844,6 +844,11 @@ class StaffProcessInstanceTaskViewControllerTest {
         }
 
         @Override
+        public String getAbstract() {
+            return "Staff inline task event test provider";
+        }
+
+        @Override
         public String getDescription() {
             return "Staff inline task event test provider";
         }
@@ -852,6 +857,12 @@ class StaffProcessInstanceTaskViewControllerTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Manual};
         }
 
         @Nonnull

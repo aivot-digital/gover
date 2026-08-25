@@ -86,6 +86,7 @@ class ProcessNodeDefinitionExecutionTypeTest {
                 automatic(LowCodeActionNodeV1.class),
                 manual(ManualActionNodeV1.class),
                 automatic(NoCodeActionNodeV1.class),
+                semiAutomatic(PaymentRequestActionNodeV1.class),
                 automatic(PdfActionNodeV1.class),
                 automatic(WriteExternalStorageActionNodeV1.class),
                 automatic(DataTypeValidationControlNodeV1.class),
