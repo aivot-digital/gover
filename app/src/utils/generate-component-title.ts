@@ -62,6 +62,7 @@ export function generateComponentTitle(component: AnyElement | null | undefined,
         case ElementType.HtmlTemplateInput:
         case ElementType.StoragePathSelector:
         case ElementType.IdentityConfigElement:
+        case ElementType.PaymentConfigElement:
         case ElementType.RichTextInput:
         case ElementType.ReplicatingContainer:
             return stringOrDefault(component.label, defaultElementDescriptor);
@@ -70,6 +71,7 @@ export function generateComponentTitle(component: AnyElement | null | undefined,
             return title.toLowerCase().includes('technische preview') ? title : `${title}${mapPointPreviewSuffix}`;
         }
         case ElementType.ProcessAttachmentDisplay:
+        case ElementType.LinkButton:
             return stringOrDefault(component.label, defaultElementDescriptor);
         default:
             return stringOrDefault(defaultElementDescriptor, 'Unbekanntes Element');

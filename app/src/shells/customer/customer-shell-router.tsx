@@ -10,6 +10,8 @@ import {CustomerListPage} from '../../pages/customer-pages/customer-list-page';
 import {isFormModuleEnabled} from '../../utils/module-flags';
 import {NotFoundPage} from '../../components/not-found-page/not-found-page';
 import {MetaElement} from '../../components/meta-element/meta-element';
+import {CustomerInstanceView} from '../../pages/customer-pages/customer-instance-view/customer-instance-view';
+import {CustomerInstanceTaskView} from '../../pages/customer-pages/customer-instance-view/customer-instance-task-view';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -48,6 +50,14 @@ const router = sentryCreateBrowserRouter(
                         },
                     ] : []
                 ),
+                {
+                    path: '/process/:instanceAccessKey',
+                    element: <CustomerInstanceView/>,
+                    children: [{
+                        path: '/process/:instanceAccessKey/tasks/:taskAccessKey',
+                        element: <CustomerInstanceTaskView/>,
+                    }]
+                },
                 {
                     path: '*',
                     element: <NotFoundPage/>,

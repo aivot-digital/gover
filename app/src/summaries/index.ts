@@ -68,6 +68,7 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.RichTextInput]: RichTextInputSummary,
     [ElementType.UiDefinitionInput]: UiDefinitionInputSummary,
     [ElementType.IdentityConfigElement]: null,
+    [ElementType.PaymentConfigElement]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: ChipInputFieldSummary,
     [ElementType.DateTime]: DateTimeFieldSummary,
@@ -87,4 +88,5 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputSummary,
     [ElementType.StoragePathSelector]: StoragePathSelectorInputSummary,
     [ElementType.ProcessAttachmentDisplay]: null,
+    [ElementType.LinkButton]: null,
 };

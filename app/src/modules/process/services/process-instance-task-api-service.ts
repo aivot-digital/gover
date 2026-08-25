@@ -148,6 +148,7 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
             query: {
                 event: event,
             },
+            skipAuthCheck: true,
         });
     }
 

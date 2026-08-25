@@ -436,7 +436,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         downloadAttachment: handleDownloadAttachment,
     }), [handleDownloadAttachment, handleViewAttachment, isLoadingTaskAttachments, taskAttachmentSets, taskAttachments]);
 
-    const handleEventClick = async (evt: TaskViewEvent) => {
+    const handleTaskViewEvent = async (evt: TaskViewEvent, eventPayload: AuthoredElementValues) => {
         if (item == null || taskView == null) {
             return;
         }
@@ -459,9 +459,9 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             estimatedTime: 500,
         }));
 
-        const eventPayload = latestTaskInputDataRef.current;
+        latestTaskInputDataRef.current = eventPayload;
 
-        withDelay(
+        return withDelay(
             new ProcessInstanceTaskApiService()
                 .putStaffTaskView(item.task.processInstanceId, item.task.id, eventPayload, evt.event),
             500,
@@ -506,6 +506,19 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }
                 dispatch(clearLoadingMessage());
             });
+    };
+
+    const handleEventClick = async (evt: TaskViewEvent) => {
+        await handleTaskViewEvent(evt, latestTaskInputDataRef.current);
+    };
+
+    const handleInlineEvent = async (values: AuthoredElementValues, event: string): Promise<void> => {
+        const evt = taskView?.events.find((taskViewEvent) => taskViewEvent.event === event) ?? {
+            label: event,
+            event,
+        };
+
+        await handleTaskViewEvent(evt, values);
     };
 
     const handleAuthoredValuesChange = (authoredValues: AuthoredElementValues) => {
@@ -691,6 +704,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                 authoredElementValues={taskInputData}
                                 onAuthoredElementValuesChange={handleAuthoredValuesChange}
                                 computedErrors={derivedErrors?.elementStates}
+                                onEvent={handleInlineEvent}
+                                taskViewMode="staff"
                                 onDeriveOverride={(aev, skipErrorsForElements) => {
                                     if (item == null || item.instance == null || item.task == null) {
                                         return Promise.resolve({

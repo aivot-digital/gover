@@ -220,14 +220,14 @@ public class ProcessInstanceController {
                 .orElse(null);
 
         var now = Instant.now();
-        ProcessWorker.WorkerPayload payload;
+        ProcessWorker.DoWorkWorkerPayload payload;
 
         if (latestTask == null) {
             if (processInstance.getInitialPayload() == null || processInstance.getInitialPayload().isEmpty()) {
                 throw ResponseException.conflict("Der Vorgang kann nicht neu gestartet werden, weil keine Initialdaten für einen erneuten Start vorliegen.");
             }
 
-            payload = new ProcessWorker.WorkerPayload(
+            payload = new ProcessWorker.DoWorkWorkerPayload(
                     processInstance.getId(),
                     null,
                     null,
@@ -239,7 +239,7 @@ public class ProcessInstanceController {
                 throw ResponseException.conflict("Der Vorgang kann derzeit nur neu gestartet werden, wenn die letzte Aufgabe fehlgeschlagen ist oder noch keine Aufgabe angelegt wurde.");
             }
 
-            payload = new ProcessWorker.WorkerPayload(
+            payload = new ProcessWorker.DoWorkWorkerPayload(
                     latestTask.getProcessInstanceId(),
                     latestTask.getPreviousProcessInstanceTaskId(),
                     latestTask.getPreviousProcessNodeId(),

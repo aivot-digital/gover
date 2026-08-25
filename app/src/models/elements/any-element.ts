@@ -46,6 +46,8 @@ import {ProcessIdentityIdInputElement} from './form/input/process-identity-id-in
 import {HtmlTemplateInputElement} from './form/input/html-template-input-element';
 import {ConfigLayoutElement} from './form/layout/config-layout-element';
 import {StoragePathSelectorInputElement} from './form/input/storage-path-selector-input-element';
+import {PaymentConfigElement} from './form/input/payment-config-element';
+import {LinkButtonElement} from './form/content/link-button-element';
 
 export type AnyElement =
     FormLayoutElement |
@@ -101,6 +103,8 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                                                                 T extends ElementType.ProcessAttachmentDisplay ? ProcessAttachmentDisplayElement :
                                                                                                                                                                     T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
                                                                                                                                                                         T extends ElementType.IdentityConfigElement ? IdentityConfigElement :
-                                                                                                                                                                            T extends ElementType.NoCodeInput ? NoCodeInputFieldElement :
+                                                                                                                                                                            T extends ElementType.PaymentConfigElement ? PaymentConfigElement :
+                                                                                                                                                                                T extends ElementType.LinkButton ? LinkButtonElement :
+                                                                                                                                                                                    T extends ElementType.NoCodeInput ? NoCodeInputFieldElement :
                                                                                                                                                                                 T extends ElementType.SummaryLayout ? SummaryLayoutElement :
                                                                                                                                                                                     T extends ElementType.ConfigLayout ? ConfigLayoutElement : never;

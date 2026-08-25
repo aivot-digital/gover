@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
@@ -118,7 +119,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         var instance = new ProcessInstanceEntity(
                 42L,
                 null,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 process.getId(),
                 version.getProcessVersion(),
                 ProcessInstanceStatus.Running,
@@ -138,7 +139,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         var task = new ProcessInstanceTaskEntity(
                 9L,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 instance.getId(),
                 process.getId(),
                 version.getProcessVersion(),
@@ -319,6 +320,54 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertFalse(fixture.task().getRuntimeData().containsKey(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
     }
 
+    @Test
+    void update_WithInlineStaffTaskEventIsAccepted() throws ResponseException {
+        var provider = new InlineStaffTaskProcessNodeDefinition(null);
+        var elementDerivationService = new TestElementDerivationService();
+        var fixture = createFixture(provider, elementDerivationService);
+
+        var response = fixture.controller().update(
+                fixture.jwt(),
+                fixture.instance().getId(),
+                fixture.task().getId(),
+                "{}",
+                null,
+                null,
+                "inline-complete",
+                null
+        );
+
+        assertEquals("inline-complete", provider.eventInvokedWith);
+        assertEquals("inline-complete", fixture.task().getRuntimeData().get("event"));
+        assertEquals("staff-root", assertInstanceOf(BaseElement.class, response.layout()).getId());
+        assertEquals("staff-root", elementDerivationService.lastRequest.element().getId());
+    }
+
+    @Test
+    void update_WithHrefLinkButtonStaffTaskEventIsRejected() {
+        var provider = new InlineStaffTaskProcessNodeDefinition("https://example.org");
+        var elementDerivationService = new TestElementDerivationService();
+        var fixture = createFixture(provider, elementDerivationService);
+
+        var ex = assertThrows(
+                ResponseException.class,
+                () -> fixture.controller().update(
+                        fixture.jwt(),
+                        fixture.instance().getId(),
+                        fixture.task().getId(),
+                        "{}",
+                        null,
+                        null,
+                        "inline-complete",
+                        null
+                )
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        assertNull(provider.eventInvokedWith);
+        assertNull(elementDerivationService.lastRequest);
+    }
+
     private static StaffTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
                                                             TestElementDerivationService elementDerivationService) {
         var user = new UserEntity()
@@ -362,7 +411,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         var instance = new ProcessInstanceEntity(
                 42L,
                 null,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 process.getId(),
                 version.getProcessVersion(),
                 ProcessInstanceStatus.Running,
@@ -382,7 +431,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         var task = new ProcessInstanceTaskEntity(
                 9L,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 instance.getId(),
                 process.getId(),
                 version.getProcessVersion(),
@@ -752,6 +801,97 @@ class StaffProcessInstanceTaskViewControllerTest {
                                                                              @Nonnull AuthoredElementValues update,
                                                                              @Nonnull String event) {
             eventInvoked = true;
+            return new ProcessNodeExecutionResultTaskUpdated()
+                    .setRuntimeData(Map.of("event", event))
+                    .setNodeData(Map.of())
+                    .setProcessData(context.getThisTask().getProcessData())
+                    .asOptional();
+        }
+
+        @Nonnull
+        @Override
+        public Class<AuthoredElementValues> getNodeConfigurationClass() {
+            return AuthoredElementValues.class;
+        }
+    }
+
+    private static final class InlineStaffTaskProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
+        private final String href;
+        private String eventInvokedWith;
+
+        private InlineStaffTaskProcessNodeDefinition(String href) {
+            this.href = href;
+        }
+
+        @Override
+        public String getParentPluginKey() {
+            return "test";
+        }
+
+        @Override
+        public String getComponentKey() {
+            return "staff-inline-event";
+        }
+
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Override
+        public String getName() {
+            return "Staff inline event";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Staff inline task event test provider";
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeType getType() {
+            return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodePort> getPorts() {
+            return List.of();
+        }
+
+        @Override
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+            throw new UnsupportedOperationException("Not used in this test");
+        }
+
+        @Nonnull
+        @Override
+        public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+            var linkButton = new LinkButtonContentElement()
+                    .setLabel("Complete inline")
+                    .setHref(href)
+                    .setStaffTaskEvent("inline-complete");
+            linkButton.setId("inline-button");
+
+            var layout = new GroupLayoutElement();
+            layout.setId("staff-root");
+            layout.setChildren(List.of(linkButton));
+            return layout;
+        }
+
+        @Nonnull
+        @Override
+        public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+            return List.of();
+        }
+
+        @Nonnull
+        @Override
+        public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context,
+                                                                             @Nonnull AuthoredElementValues update,
+                                                                             @Nonnull String event) {
+            eventInvokedWith = event;
             return new ProcessNodeExecutionResultTaskUpdated()
                     .setRuntimeData(Map.of("event", event))
                     .setNodeData(Map.of())

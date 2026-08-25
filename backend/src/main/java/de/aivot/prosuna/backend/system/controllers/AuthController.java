@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.utils.RandomUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,7 +29,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
@@ -87,7 +87,6 @@ public class AuthController {
     private static final String AUTH_FLOW_COOKIE_PATH = "/api/auth/";
     private static final String AUTH_FLOW_REDIS_PREFIX = "auth:pkce:";
     private static final Duration AUTH_FLOW_TTL = Duration.ofMinutes(10);
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Value("${prosuna.prosunaHostname}")
     private String hostname;
@@ -598,9 +597,7 @@ public class AuthController {
 
     @Nonnull
     private static String generateOpaqueValue() {
-        var bytes = new byte[32];
-        SECURE_RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return RandomUtils.generateRandomString(64);
     }
 
     @Nonnull

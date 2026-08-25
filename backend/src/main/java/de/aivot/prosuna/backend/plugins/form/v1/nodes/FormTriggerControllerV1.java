@@ -1,10 +1,10 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.asset.services.AssetService;
-import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.dtos.ElementDerivationResponse;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -13,6 +13,7 @@ import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.SubmitStepElement;
@@ -20,7 +21,7 @@ import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementFlattenUtils;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
-import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
+import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
@@ -31,18 +32,27 @@ import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.models.dtos.MaxFileSizeDto;
+import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
+import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
-import de.aivot.prosuna.backend.payment.services.PaymentProviderService;
-import de.aivot.prosuna.backend.plugins.form.v1.services.FormPaymentService;
+import de.aivot.prosuna.backend.payment.models.PaymentPayload;
+import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
+import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
+import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
+import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
+import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.prosuna.backend.process.entities.*;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessVersionFilter;
+import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.*;
+import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
+import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.dtos.ThemeResponseDTO;
@@ -55,15 +65,21 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.thymeleaf.exceptions.TemplateProcessingException;
 import tools.jackson.core.JacksonException;
 
 import java.io.IOException;
-import java.math.BigDecimal;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 
@@ -72,9 +88,9 @@ import java.util.*;
 public class FormTriggerControllerV1 {
     public static final String TEST_CLAIM_QUERY_PARAM = "test-claim";
     public static final String VERSION_QUERY_PARAM = "version";
+    private static final Logger logger = LoggerFactory.getLogger(FormTriggerControllerV1.class);
 
     private final ProsunaConfig prosunaConfig;
-    private final FormPaymentService paymentService;
     private final IdentityProviderService identityProviderService;
     private final ElementDerivationService elementDerivationService;
     private final AssetService assetService;
@@ -91,18 +107,24 @@ public class FormTriggerControllerV1 {
     private final StorageProviderService storageProviderService;
     private final CaptchaReplayGuard captchaReplayGuard;
     private final ProcessInstanceService processInstanceService;
+    private final ProcessInstanceTaskService processInstanceTaskService;
+    private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
+    private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final StorageService storageService;
     private final FileUploadMultipartInputService fileUploadMultipartInputService;
     private final ElementDataTransformService elementDataTransformService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final FormTriggerNodeV1 formTriggerNodeV1;
     private final IdentityService identityService;
+    private final PaymentPayloadCreationService paymentRequestCreationService;
+    private final PaymentTransactionService paymentTransactionService;
+    private final PaymentProviderRepository paymentProviderRepository;
+    private final PdfService pdfService;
+    private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
 
     @Autowired
     public FormTriggerControllerV1(ProsunaConfig prosunaConfig,
-                                   FormPaymentService paymentService,
-                                   PaymentProviderService paymentProviderService,
                                    IdentityProviderService identityProviderService,
-                                   IdentityCacheRepository identityCacheRepository,
                                    ElementDerivationService elementDerivationService,
                                    AssetService assetService,
                                    ThemeService themeService,
@@ -116,17 +138,22 @@ public class FormTriggerControllerV1 {
                                    ProcessNodeDefinitionService processNodeDefinitionService,
                                    SystemConfigService systemConfigService,
                                    StorageProviderService storageProviderService,
-                                   AVService aVService,
                                    CaptchaReplayGuard captchaReplayGuard,
                                    ProcessInstanceService processInstanceService,
+                                   ProcessInstanceTaskService processInstanceTaskService,
+                                   ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
                                    ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                   StorageService storageService,
                                    FileUploadMultipartInputService fileUploadMultipartInputService,
                                    ElementDataTransformService elementDataTransformService,
                                    ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
                                    FormTriggerNodeV1 formTriggerNodeV1,
-                                   IdentityService identityService) {
+                                   IdentityService identityService,
+                                   PaymentPayloadCreationService paymentRequestCreationService,
+                                   PaymentTransactionService paymentTransactionService,
+                                   PaymentProviderRepository paymentProviderRepository,
+                                   PdfService pdfService, PaymentProviderDefinitionsService paymentProviderDefinitionsService) {
         this.prosunaConfig = prosunaConfig;
-        this.paymentService = paymentService;
         this.identityProviderService = identityProviderService;
         this.elementDerivationService = elementDerivationService;
         this.assetService = assetService;
@@ -143,11 +170,20 @@ public class FormTriggerControllerV1 {
         this.storageProviderService = storageProviderService;
         this.captchaReplayGuard = captchaReplayGuard;
         this.processInstanceService = processInstanceService;
+        this.processInstanceTaskService = processInstanceTaskService;
+        this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
+        this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.storageService = storageService;
         this.fileUploadMultipartInputService = fileUploadMultipartInputService;
         this.elementDataTransformService = elementDataTransformService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.formTriggerNodeV1 = formTriggerNodeV1;
         this.identityService = identityService;
+        this.paymentRequestCreationService = paymentRequestCreationService;
+        this.paymentTransactionService = paymentTransactionService;
+        this.paymentProviderRepository = paymentProviderRepository;
+        this.pdfService = pdfService;
+        this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
     }
 
     @GetMapping("")
@@ -319,9 +355,8 @@ public class FormTriggerControllerV1 {
 
     @Nonnull
     private ProcessNodeService.ProcessConfigurationDetails<FormTriggerConfigV1> getConfigurationDetails(ProcessNodeEntity node, FormTriggerNodeV1 provider, UserEntity execUser) throws ResponseException {
-        var config = processNodeService
+        return processNodeService
                 .deriveConfiguration(node, provider, execUser, true);
-        return config;
     }
 
     @GetMapping("max-file-size/")
@@ -363,10 +398,91 @@ public class FormTriggerControllerV1 {
                                                                @Nonnull @PathVariable String formSlug,
                                                                @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                                                                @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identitySessionId,
-                                                               @Nonnull @RequestBody AuthoredElementValues values) throws PaymentException, ResponseException {
-        // TODO: Implement with the paymentService
-        var exists = paymentService != null;
-        return new FormTriggerCostCalculationResponseV1(BigDecimal.ZERO, List.of(), "");
+                                                               @Nonnull @RequestBody AuthoredElementValues values) throws ResponseException {
+        var execUser = getExecUser(jwt);
+        var process = getProcessEntity(processSlug);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
+        var node = getProcessNodeEntity(formSlug, process, processVersion);
+
+        FormTriggerConfigV1 config = processNodeService
+                .deriveConfiguration(node, formTriggerNodeV1, execUser, true)
+                .configuration();
+
+        PaymentConfigElementValue paymentConfig = config.payment;
+
+        if (paymentConfig == null) {
+            // No payment required
+            return FormTriggerCostCalculationResponseV1.empty();
+        }
+
+        if (paymentConfig.paymentProviderKey() == null) {
+            throw ResponseException.internalServerError("Für den Formularauslöser ist kein gültiger Zahlungsanbieter hinterlegt.");
+        }
+
+        PaymentProviderEntity paymentProvider = paymentProviderRepository
+                .findById(paymentConfig.paymentProviderKey())
+                .orElseThrow(() -> ResponseException.internalServerError(
+                        "Der für das Formular konfigurierte Zahlungsanbieter wurde nicht gefunden."
+                ));
+
+        PaymentProviderDefinition paymentProviderDefinition = paymentProviderDefinitionsService
+                .getProviderDefinition(paymentProvider.getPaymentProviderDefinitionKey(), paymentProvider.getPaymentProviderDefinitionVersion())
+                .orElseThrow(() -> ResponseException.internalServerError(
+                        "Für den konfigurierten Zahlungsanbieter ist keine gültige Definition verfügbar."
+                ));
+
+        var options = new ElementDerivationOptions()
+                .setSkipValuesForElementIds(List.of())
+                .setSkipOverridesForElementIds(List.of())
+                .setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS))
+                .setSkipVisibilitiesForElementIds(List.of());
+
+        var request = new ElementDerivationRequest(
+                config.formLayout,
+                values,
+                options
+        );
+
+        var derivationLogger = new ElementDerivationLogger();
+        var derivedElementData = elementDerivationService
+                .derive(request, new IdentityDataMap(), derivationLogger);
+
+        var payloadInstanceData = elementDataTransformService.buildPayload(
+                config.formLayout,
+                derivedElementData.getEffectiveValues(),
+                derivedElementData.getElementStates()
+        );
+
+        ProcessExecutionData execData = new ProcessExecutionData();
+        execData.addProcessData(payloadInstanceData);
+
+        Optional<PaymentPayload> paymentRequest;
+        try {
+            paymentRequest = paymentRequestCreationService.createRequest(
+                    paymentConfig,
+                    derivedElementData,
+                    execData
+            );
+        } catch (PaymentException e) {
+            logger.error(
+                    "Failed to calculate costs for form {}/{}",
+                    processSlug,
+                    formSlug,
+                    e
+            );
+            throw ResponseException.internalServerError(
+                    "Die Kosten für das Formular konnten nicht berechnet werden: " + e.getMessage(),
+                    e
+            );
+        }
+
+        // No payment required
+        return paymentRequest
+                .map(paymentPayload -> FormTriggerCostCalculationResponseV1.of(
+                        paymentPayload,
+                        paymentProviderDefinition
+                ))
+                .orElseGet(FormTriggerCostCalculationResponseV1::empty);
     }
 
     @PostMapping("derive/")
@@ -470,9 +586,7 @@ public class FormTriggerControllerV1 {
                 .orElseThrow(ResponseException::notFound)
                 : null;
 
-
         testCaptchaReplayProtection(config.configuration().formLayout, effectiveValues);
-
 
         var processInstance = startProcess(
                 testClaim,
@@ -596,6 +710,7 @@ public class FormTriggerControllerV1 {
                 attachmentData.put("storagePathFromRoot", a.getStoragePathFromRoot());
                 return attachmentData;
             }).toList());
+            // TODO: Apply TimeZone here
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_STARTED, startedAt);
 
             createdInstance
@@ -638,7 +753,7 @@ public class FormTriggerControllerV1 {
                                      @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion
     ) throws ResponseException {
         var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var theme = getFormTheme(context.formLayout());
+        var theme = getFormTheme(context.processVersion(), context.formLayout());
         return ThemeResponseDTO.fromEntity(theme);
     }
 
@@ -657,7 +772,11 @@ public class FormTriggerControllerV1 {
                         @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
         var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var logoResolution = getFormLogoResolution(context.formLayout(), "dark".equalsIgnoreCase(colorScheme));
+        var logoResolution = getFormLogoResolution(
+                context.processVersion(),
+                context.formLayout(),
+                "dark".equalsIgnoreCase(colorScheme)
+        );
 
         String redirectUrl;
         if (logoResolution.assetKey() == null && logoResolution.allowDefaultFallback()) {
@@ -686,7 +805,7 @@ public class FormTriggerControllerV1 {
                            @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
         var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var faviconKey = getFormFaviconKey(context.formLayout());
+        var faviconKey = getFormFaviconKey(context.processVersion(), context.formLayout());
 
         String redirectUrl;
         if (faviconKey == null) {
@@ -698,36 +817,242 @@ public class FormTriggerControllerV1 {
         response.sendRedirect(redirectUrl);
     }
 
-    @GetMapping("submit/{instanceAccessKey}/print/")
+    @GetMapping("submit/{instanceAccessKey}/{taskAccessKey}/print/")
     @Operation(
-            summary = "Get the favicon for a form",
-            description = "Get the favicon image associated with the specified form. " +
-                    "If the form does not have a custom favicon, a default favicon URL will be provided."
+            summary = "Get submitted form summary PDF",
+            description = "Download the printable summary PDF created for a submitted form."
     )
     public void getPrint(@Nullable @AuthenticationPrincipal Jwt jwt,
                          @Nonnull @PathVariable String processSlug,
                          @Nonnull @PathVariable String formSlug,
-                         @Nonnull @PathVariable UUID instanceAccessKey,
-                         @Nullable @RequestParam(value = "version", required = false) Integer version,
+                         @Nonnull @PathVariable String instanceAccessKey,
+                         @Nonnull @PathVariable String taskAccessKey,
+                         @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer version,
                          @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
+        var attachment = resolveSubmittedSummaryAttachment(
+                jwt,
+                processSlug,
+                formSlug,
+                instanceAccessKey,
+                taskAccessKey,
+                version
+        );
 
+        response.setContentType("application/pdf");
+        response.setHeader(
+                HttpHeaders.CONTENT_DISPOSITION,
+                ContentDisposition
+                        .attachment()
+                        .filename(attachment.getFileName(), StandardCharsets.UTF_8)
+                        .build()
+                        .toString()
+        );
+
+        try (var inputStream = storageService.getDocumentContent(
+                attachment.getStorageProviderId(),
+                attachment.getStoragePathFromRoot()
+        )) {
+            inputStream.transferTo(response.getOutputStream());
+        }
     }
 
-    @GetMapping("submit/{instanceAccessKey}/status/")
+    @GetMapping("submit/{instanceAccessKey}/{taskAccessKey}/payment-confirmation/")
     @Operation(
-            summary = "Get the favicon for a form",
-            description = "Get the favicon image associated with the specified form. " +
-                    "If the form does not have a custom favicon, a default favicon URL will be provided."
+            summary = "Get submitted form payment confirmation PDF",
+            description = "Download the payment confirmation PDF for a paid submitted form."
     )
-    public void getStatus(@Nullable @AuthenticationPrincipal Jwt jwt,
-                          @Nonnull @PathVariable String processSlug,
-                          @Nonnull @PathVariable String formSlug,
-                          @Nonnull @PathVariable UUID instanceAccessKey,
-                          @Nullable @RequestParam(value = "version", required = false) Integer version,
-                          @Nonnull HttpServletResponse response
-    ) throws ResponseException, IOException {
+    public void getPaymentConfirmation(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                       @Nonnull @PathVariable String processSlug,
+                                       @Nonnull @PathVariable String formSlug,
+                                       @Nonnull @PathVariable String instanceAccessKey,
+                                       @Nonnull @PathVariable String taskAccessKey,
+                                       @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer version,
+                                       @Nonnull HttpServletResponse response) throws ResponseException, IOException {
+        var context = resolveSubmittedFormTriggerTaskContext(
+                jwt,
+                processSlug,
+                formSlug,
+                instanceAccessKey,
+                taskAccessKey,
+                version
+        );
 
+        var transaction = resolvePaymentTransaction(context, instanceAccessKey, taskAccessKey);
+        if (transaction.getStatus() != XBezahldienstStatus.PAYED) {
+            throw ResponseException.notFound();
+        }
+
+        var department = resolvePaymentConfirmationDepartment(context);
+        var logoUrl = resolvePaymentConfirmationLogoUrl(context.processVersion(), context.formLayout());
+
+        byte[] pdfBytes;
+        try {
+            pdfBytes = pdfService.generatePaymentConfirmation(
+                    transaction,
+                    context.instance().getCaseNumber(),
+                    logoUrl,
+                    department
+            );
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw ResponseException.internalServerError(e, "Die PDF-Erstellung der Zahlungsbestätigung wurde unterbrochen.");
+        } catch (IOException | URISyntaxException | TemplateProcessingException e) {
+            throw ResponseException.internalServerError(e, "Fehler beim Erzeugen der Zahlungsbestätigung: %s", e.getMessage());
+        }
+
+        response.setContentType("application/pdf");
+        response.setHeader(
+                HttpHeaders.CONTENT_DISPOSITION,
+                ContentDisposition
+                        .attachment()
+                        .filename("Zahlungsbestaetigung-" + context.instance().getCaseNumber() + ".pdf", StandardCharsets.UTF_8)
+                        .build()
+                        .toString()
+        );
+
+        response.getOutputStream().write(pdfBytes);
+    }
+
+    @Nonnull
+    private ProcessInstanceAttachmentEntity resolveSubmittedSummaryAttachment(@Nullable Jwt jwt,
+                                                                              @Nonnull String processSlug,
+                                                                              @Nonnull String formSlug,
+                                                                              @Nonnull String instanceAccessKey,
+                                                                              @Nonnull String taskAccessKey,
+                                                                              @Nullable Integer version) throws ResponseException {
+        var context = resolveSubmittedFormTriggerTaskContext(
+                jwt,
+                processSlug,
+                formSlug,
+                instanceAccessKey,
+                taskAccessKey,
+                version
+        );
+
+        var attachmentSet = processInstanceAttachmentSetService
+                .retrieveLatestByProcessInstanceIdAndTaskIdAndDataKey(
+                        context.instance().getId(),
+                        context.task().getId(),
+                        context.node().getDataKey()
+                )
+                .orElseThrow(ResponseException::notFound);
+
+        return processInstanceAttachmentService
+                .findAllByAttachmentSetId(attachmentSet.getId())
+                .stream()
+                .findFirst()
+                .orElseThrow(ResponseException::notFound);
+    }
+
+    @Nonnull
+    private ResolvedSubmittedFormTriggerTaskContext resolveSubmittedFormTriggerTaskContext(@Nullable Jwt jwt,
+                                                                                          @Nonnull String processSlug,
+                                                                                          @Nonnull String formSlug,
+                                                                                          @Nonnull String instanceAccessKey,
+                                                                                          @Nonnull String taskAccessKey,
+                                                                                          @Nullable Integer version) throws ResponseException {
+        var execUser = getExecUser(jwt);
+        var process = getProcessEntity(processSlug);
+        var instance = processInstanceService
+                .retrieveByAccessKey(instanceAccessKey)
+                .orElseThrow(ResponseException::notFound);
+
+        if (!Objects.equals(process.getId(), instance.getProcessId())) {
+            throw ResponseException.notFound();
+        }
+
+        var task = processInstanceTaskService
+                .retrieveByProcessInstanceIdAndAccessKey(instance.getId(), taskAccessKey)
+                .orElseThrow(ResponseException::notFound);
+
+        if (version != null && !Objects.equals(version, task.getProcessVersion())) {
+            throw ResponseException.notFound();
+        }
+
+        var node = processNodeService
+                .retrieve(task.getProcessNodeId())
+                .orElseThrow(ResponseException::notFound);
+
+        if (!Objects.equals(process.getId(), node.getProcessId()) ||
+                !Objects.equals(task.getProcessVersion(), node.getProcessVersion()) ||
+                !Objects.equals(formTriggerNodeV1.getKey(), node.getProcessNodeDefinitionKey()) ||
+                !Objects.equals(1, node.getProcessNodeDefinitionVersion())) {
+            throw ResponseException.notFound();
+        }
+
+        var processVersion = processVersionService
+                .retrieve(ProcessVersionEntityId.of(node.getProcessId(), node.getProcessVersion()))
+                .orElseThrow(ResponseException::notFound);
+
+        var provider = getProvider(node);
+        var config = getConfigurationDetails(node, provider, execUser);
+        if (!Objects.equals(formSlug, config.configuration().formSlug)) {
+            throw ResponseException.notFound();
+        }
+
+        var formLayout = config.configuration().formLayout;
+        if (formLayout == null) {
+            throw ResponseException.internalServerError("Die Konfiguration des Formulareingangs enthält kein Formular.");
+        }
+
+        return new ResolvedSubmittedFormTriggerTaskContext(
+                process,
+                instance,
+                task,
+                node,
+                processVersion,
+                formLayout
+        );
+    }
+
+    @Nonnull
+    private PaymentTransactionEntity resolvePaymentTransaction(@Nonnull ResolvedSubmittedFormTriggerTaskContext context,
+                                                               @Nonnull String instanceAccessKey,
+                                                               @Nonnull String taskAccessKey) throws ResponseException {
+        var expectedRedirectUrl = prosunaConfig.createUrl("/process/", instanceAccessKey, "tasks", taskAccessKey);
+        var runtimeData = context.task().getRuntimeData();
+        var transactionKey = runtimeData != null ? runtimeData.get(FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY) : null;
+
+        var transaction = transactionKey != null
+                ? paymentTransactionService
+                .retrieve(String.valueOf(transactionKey))
+                .orElseThrow(ResponseException::notFound)
+                : paymentTransactionService
+                .retrieveByRedirectUrl(expectedRedirectUrl)
+                .orElseThrow(ResponseException::notFound);
+
+        if (!Objects.equals(transaction.getRedirectUrl(), expectedRedirectUrl)) {
+            throw ResponseException.notFound();
+        }
+
+        return transaction;
+    }
+
+    @Nonnull
+    private VDepartmentShadowedEntity resolvePaymentConfirmationDepartment(@Nonnull ResolvedSubmittedFormTriggerTaskContext context) throws ResponseException {
+        var formDepartmentId = context.formLayout().getRelevantDepartmentId();
+        if (formDepartmentId != null) {
+            var formDepartment = vDepartmentShadowedService.retrieve(formDepartmentId);
+            if (formDepartment.isPresent()) {
+                return formDepartment.get();
+            }
+        }
+
+        return vDepartmentShadowedService
+                .retrieve(context.process().getDepartmentId())
+                .orElseThrow(() -> ResponseException.internalServerError("Keine zuständige Organisationseinheit für die Zahlungsbestätigung gefunden."));
+    }
+
+    @Nullable
+    private String resolvePaymentConfirmationLogoUrl(@Nonnull ProcessVersionEntity processVersion,
+                                                     @Nonnull FormLayoutElement formLayout) {
+        var logoResolution = getFormLogoResolution(processVersion, formLayout, false); // We never use the dark logo for printouts
+        if (logoResolution.assetKey() != null) {
+            return assetService.createUrl(logoResolution.assetKey());
+        }
+
+        return logoResolution.allowDefaultFallback() ? prosunaConfig.getDefaultLogoUrl() : null;
     }
 
     @Nonnull
@@ -752,17 +1077,19 @@ public class FormTriggerControllerV1 {
     }
 
     @Nonnull
-    private ThemeEntity getFormTheme(@Nonnull FormLayoutElement formLayout) {
-        return getFormThemesInOrderOfImportance(formLayout).get(0);
+    private ThemeEntity getFormTheme(@Nonnull ProcessVersionEntity processVersion,
+                                     @Nonnull FormLayoutElement formLayout) {
+        return getFormThemesInOrderOfImportance(processVersion, formLayout).getFirst();
     }
 
     @Nonnull
-    private List<ThemeEntity> getCustomFormThemesInOrderOfImportance(@Nonnull FormLayoutElement formLayout) {
+    private List<ThemeEntity> getCustomFormThemesInOrderOfImportance(@Nonnull ProcessVersionEntity processVersion,
+                                                                     @Nonnull FormLayoutElement formLayout) {
         var themes = new ArrayList<ThemeEntity>();
 
-        if (formLayout.getThemeId() != null) {
+        if (processVersion.getThemeId() != null) {
             themeService
-                    .retrieve(formLayout.getThemeId())
+                    .retrieve(processVersion.getThemeId())
                     .ifPresent(themes::add);
         }
 
@@ -773,8 +1100,9 @@ public class FormTriggerControllerV1 {
     }
 
     @Nonnull
-    private List<ThemeEntity> getFormThemesInOrderOfImportance(@Nonnull FormLayoutElement formLayout) {
-        var themes = getCustomFormThemesInOrderOfImportance(formLayout);
+    private List<ThemeEntity> getFormThemesInOrderOfImportance(@Nonnull ProcessVersionEntity processVersion,
+                                                               @Nonnull FormLayoutElement formLayout) {
+        var themes = getCustomFormThemesInOrderOfImportance(processVersion, formLayout);
         themes.add(systemService.retrieveDefaultTheme());
 
         return themes;
@@ -812,8 +1140,10 @@ public class FormTriggerControllerV1 {
     }
 
     @Nonnull
-    private LogoResolution getFormLogoResolution(@Nonnull FormLayoutElement formLayout, boolean darkColorScheme) {
-        var customThemes = getCustomFormThemesInOrderOfImportance(formLayout);
+    private LogoResolution getFormLogoResolution(@Nonnull ProcessVersionEntity processVersion,
+                                                 @Nonnull FormLayoutElement formLayout,
+                                                 boolean darkColorScheme) {
+        var customThemes = getCustomFormThemesInOrderOfImportance(processVersion, formLayout);
 
         // A resolved custom theme chain without a logo should stay logo-less instead of inheriting
         // the system theme logo. Only forms without custom themes fall back to the system/default logo.
@@ -833,8 +1163,9 @@ public class FormTriggerControllerV1 {
     }
 
     @Nullable
-    private UUID getFormFaviconKey(@Nonnull FormLayoutElement formLayout) {
-        var themes = getFormThemesInOrderOfImportance(formLayout);
+    private UUID getFormFaviconKey(@Nonnull ProcessVersionEntity processVersion,
+                                   @Nonnull FormLayoutElement formLayout) {
+        var themes = getFormThemesInOrderOfImportance(processVersion, formLayout);
 
         for (var theme : themes) {
             if (theme.getFaviconKey() != null) {
@@ -922,6 +1253,16 @@ public class FormTriggerControllerV1 {
             @Nonnull ProcessEntity process,
             @Nonnull ProcessVersionEntity processVersion,
             @Nonnull ProcessNodeEntity node,
+            @Nonnull FormLayoutElement formLayout
+    ) {
+    }
+
+    private record ResolvedSubmittedFormTriggerTaskContext(
+            @Nonnull ProcessEntity process,
+            @Nonnull ProcessInstanceEntity instance,
+            @Nonnull ProcessInstanceTaskEntity task,
+            @Nonnull ProcessNodeEntity node,
+            @Nonnull ProcessVersionEntity processVersion,
             @Nonnull FormLayoutElement formLayout
     ) {
     }

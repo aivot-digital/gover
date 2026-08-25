@@ -52,6 +52,8 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.HtmlTemplateInput]: 'HTML-Vorlage',
     [ElementType.StoragePathSelector]: 'Speicherpfad-Auswahl',
     [ElementType.ProcessAttachmentDisplay]: 'Anhang zum Vorgang',
+    [ElementType.PaymentConfigElement]: 'Zahlungskonfiguration',
+    [ElementType.LinkButton]: 'Link-Button',
 };
 
 export function getElementName(element: AnyElement): string {

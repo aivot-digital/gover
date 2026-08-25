@@ -79,7 +79,7 @@ class ProcessInstanceTaskControllerTest {
         assertEquals(ProcessTaskStatus.Restarted, result.getStatus());
         assertNotNull(result.getUpdated());
 
-        var payloadCaptor = ArgumentCaptor.forClass(ProcessWorker.WorkerPayload.class);
+        var payloadCaptor = ArgumentCaptor.forClass(ProcessWorker.DoWorkWorkerPayload.class);
         verify(processInstanceTaskService).update(task.getId(), task);
         verify(rabbitTemplate).convertAndSend(
                 org.mockito.ArgumentMatchers.eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE),
@@ -110,7 +110,7 @@ class ProcessInstanceTaskControllerTest {
     private ProcessInstanceTaskEntity createTask(ProcessTaskStatus status) {
         return new ProcessInstanceTaskEntity()
                 .setId(7L)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessInstanceId(13L)
                 .setProcessId(21)
                 .setProcessVersion(1)

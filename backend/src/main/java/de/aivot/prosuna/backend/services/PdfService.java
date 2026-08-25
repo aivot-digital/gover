@@ -26,6 +26,7 @@ import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.GotenbergConfig;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.repositories.PaymentTransactionRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
@@ -36,7 +37,9 @@ import de.aivot.prosuna.backend.plugins.form.v1.nodes.FormTriggerConfigV1;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.services.pdf.PdfElementsGenerator;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
@@ -55,6 +58,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
+import java.time.Instant;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -75,6 +79,7 @@ public class PdfService {
     private final ElementDerivationService elementDerivationService;
     private final VDepartmentShadowedRepository vDepartmentShadowedRepository;
     private final ProcessRepository processRepository;
+    private final ProcessVersionRepository processVersionRepository;
     private final ThemeService themeService;
 
     @Autowired
@@ -82,6 +87,7 @@ public class PdfService {
                       SystemConfigService systemConfigService,
                       VDepartmentShadowedRepository vDepartmentShadowedRepository,
                       ProcessRepository processRepository,
+                      ProcessVersionRepository processVersionRepository,
                       AssetRepository assetRepository,
                       ProsunaConfig prosunaConfig,
                       PaymentTransactionRepository paymentTransactionRepository,
@@ -102,6 +108,7 @@ public class PdfService {
         this.elementDerivationService = elementDerivationService;
         this.vDepartmentShadowedRepository = vDepartmentShadowedRepository;
         this.processRepository = processRepository;
+        this.processVersionRepository = processVersionRepository;
         this.themeService = themeService;
     }
 
@@ -239,7 +246,30 @@ public class PdfService {
         }
          */
 
-        return generatePdf(formLayoutElement, dto, scope, processInstance.getProcessId());
+        return generatePdf(
+                formLayoutElement,
+                dto,
+                scope,
+                processNode.getProcessId(),
+                processNode.getProcessVersion()
+        );
+    }
+
+    public byte[] generatePaymentConfirmation(@Nonnull PaymentTransactionEntity transaction,
+                                              @Nonnull String caseNumber,
+                                              @Nullable String logoUrl,
+                                              @Nonnull VDepartmentShadowedEntity department) throws IOException, InterruptedException, URISyntaxException {
+        var dto = new HashMap<String, Object>();
+        dto.put("transaction", transaction);
+        dto.put("caseNumber", caseNumber);
+        dto.put("logoUrl", logoUrl);
+        dto.put("department", department);
+        dto.put("generatedAt", Instant.now().toString());
+
+        var contentHtml = loadTemplate("payment-confirmation/form-trigger-payment-confirmation.html", dto);
+        var footerHtml = loadTemplate("payment-confirmation/form-trigger-payment-confirmation-footer.html", dto);
+
+        return generatePdfFromHtml(contentHtml, null, footerHtml);
     }
 
     private DerivedRuntimeElementData deriveBlankPrintableElementData(FormLayoutElement form) {
@@ -291,9 +321,20 @@ public class PdfService {
         }
     }
 
-    private byte[] generatePdf(FormLayoutElement form, Map<String, Object> dto, FormPdfScope scope, @Nullable Integer processId) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+    private byte[] generatePdf(FormLayoutElement form,
+                               Map<String, Object> dto,
+                               FormPdfScope scope,
+                               Integer processId,
+                               Integer processVersion) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        var processVersionEntity = processVersionRepository
+                .findById(ProcessVersionEntityId.of(processId, processVersion))
+                .orElseThrow(() -> ResponseException.internalServerError(
+                        "Die Prozessversion %d des Prozesses %d wurde nicht gefunden.",
+                        processVersion,
+                        processId
+                ));
         var formTheme = themeService
-                .getFormThemesInOrderOfImportance(form)
+                .getFormThemesInOrderOfImportance(processVersionEntity, form)
                 .getFirst();
 
         dto.put("base", createBaseContext(formTheme, scope));

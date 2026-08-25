@@ -257,7 +257,7 @@ class ProcessNodeExecutionResultHandlerTest {
         return new ProcessInstanceEntity(
                 42L,
                 null,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 7,
                 1,
                 ProcessInstanceStatus.Running,
@@ -279,7 +279,7 @@ class ProcessNodeExecutionResultHandlerTest {
     private static ProcessInstanceTaskEntity processInstanceTask(String assignedUserId) {
         return new ProcessInstanceTaskEntity(
                 null,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 42L,
                 7,
                 1,
