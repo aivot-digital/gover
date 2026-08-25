@@ -33,6 +33,7 @@ import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsServi
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
@@ -81,6 +82,16 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     private static final String OUTPUT_PAYMENT_TOTAL = "paymentTotal";
     private static final String OUTPUT_PAYMENT_STATUS = "paymentStatus";
     private static final String OUTPUT_PAYMENT_DETAILS = "paymentDetails";
+    private static final String OUTPUT_PAYMENT_STATUS_TYPE_DEFINITION =
+            "\"INITIAL\" | \"PAYED\" | \"FAILED\" | \"CANCELED\"";
+    private static final String OUTPUT_PAYMENT_DETAILS_TYPE_DEFINITION =
+            "{ transactionUrl: string | null; transactionRedirectUrl: string | null; " +
+                    "transactionId: string | null; transactionReference: string | null; " +
+                    "transactionTimestamp: string | null; " +
+                    "paymentMethod: \"GIROPAY\" | \"PAYDIRECT\" | \"CREDITCARD\" | \"PAYPAL\" | \"OTHER\" | null; " +
+                    "paymentMethodDetail: string | null; " +
+                    "status: " + OUTPUT_PAYMENT_STATUS_TYPE_DEFINITION + " | null; " +
+                    "statusDetail: string | null; } | null";
 
     private final PaymentPayloadCreationService paymentPayloadCreationService;
     private final PaymentTransactionService paymentTransactionService;
@@ -140,8 +151,20 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.SemiAutomatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Zahlung anfordern";
+    }
+
+    @Nonnull
+    @Override
+    public String getAbstract() {
+        return "Fordert eine Online-Zahlung an und wartet auf deren erfolgreichen Abschluss.";
     }
 
     @Nonnull
@@ -187,47 +210,56 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 new ProcessNodeOutput(
                         OUTPUT_RECIPIENT_EMAIL,
                         "E-Mail-Adresse",
-                        "Die Empfängeradresse, an die die Zahlungsinformationen gesendet wurden."
+                        "Die Empfängeradresse, an die die Zahlungsinformationen gesendet wurden.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_URL,
                         "Zahlungslink",
-                        "Der öffentliche Link zur Zahlungsaufgabe."
+                        "Der öffentliche Link zur Zahlungsaufgabe.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_PROVIDER_NAME,
                         "Zahlungsanbieter",
-                        "Der Name des verwendeten Zahlungsanbieters."
+                        "Der Name des verwendeten Zahlungsanbieters.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_TRANSACTION_KEY,
                         "Transaktionsschlüssel",
-                        "Der interne Schlüssel der Zahlungstransaktion."
+                        "Der interne Schlüssel der Zahlungstransaktion.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_PURPOSE,
                         "Buchungszweck",
-                        "Der gerenderte Buchungszweck der Zahlungsanforderung."
+                        "Der gerenderte Buchungszweck der Zahlungsanforderung.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_DESCRIPTION,
                         "Beschreibung",
-                        "Die gerenderte Beschreibung der Zahlungsanforderung."
+                        "Die gerenderte Beschreibung der Zahlungsanforderung.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_TOTAL,
                         "Gesamtbetrag",
-                        "Der Gesamtbetrag der Zahlungsanforderung."
+                        "Der Gesamtbetrag der Zahlungsanforderung.",
+                        "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_STATUS,
                         "Zahlungsstatus",
-                        "Der Status der Zahlungstransaktion."
+                        "Der Status der Zahlungstransaktion.",
+                        OUTPUT_PAYMENT_STATUS_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_DETAILS,
                         "Zahlungsdetails",
-                        "Die Zahlungsinformationen des Zahlungsanbieters nach Abschluss der Zahlung."
+                        "Die Zahlungsinformationen des Zahlungsanbieters nach Abschluss der Zahlung.",
+                        OUTPUT_PAYMENT_DETAILS_TYPE_DEFINITION
                 )
         );
     }
