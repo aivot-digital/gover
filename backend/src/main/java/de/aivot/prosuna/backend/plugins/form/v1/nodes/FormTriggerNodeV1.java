@@ -95,6 +95,14 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                     "storageProviderId: number; storagePathFromRoot: string; }>";
     private static final String OUTPUT_FILES_TYPE_DEFINITION =
             "Array<{ name: string; originalFileName: string; uri: string; size: number; }>";
+    private static final String OUTPUT_PAYMENT_DETAILS_TYPE_DEFINITION =
+            "{ transactionUrl: string | null; transactionRedirectUrl: string | null; " +
+                    "transactionId: string | null; transactionReference: string | null; " +
+                    "transactionTimestamp: string | null; " +
+                    "paymentMethod: \"GIROPAY\" | \"PAYDIRECT\" | \"CREDITCARD\" | \"PAYPAL\" | \"OTHER\" | null; " +
+                    "paymentMethodDetail: string | null; " +
+                    "status: \"INITIAL\" | \"PAYED\" | \"FAILED\" | \"CANCELED\" | null; " +
+                    "statusDetail: string | null; }";
 
     private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processNodeRepository;
@@ -238,7 +246,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 new ProcessNodeOutput(
                         DATA_KEY_PAYMENT_DETAILS,
                         "Zahlungsdetails",
-                        "Enthält die Zahlungsdetails, falls eine Zahlung durchgeführt wurde."
+                        "Enthält die Zahlungsdetails, falls eine Zahlung durchgeführt wurde.",
+                        OUTPUT_PAYMENT_DETAILS_TYPE_DEFINITION
                 )
         );
     }

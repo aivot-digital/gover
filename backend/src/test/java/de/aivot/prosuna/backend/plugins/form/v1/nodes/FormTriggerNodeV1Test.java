@@ -153,6 +153,28 @@ class FormTriggerNodeV1Test {
     }
 
     @Test
+    void getOutputs_ShouldExposePaymentDetailsType() {
+        var output = node
+                .getOutputs()
+                .stream()
+                .filter(candidate -> FormTriggerNodeV1.DATA_KEY_PAYMENT_DETAILS.equals(candidate.key()))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(output);
+        assertEquals(
+                "{ transactionUrl: string | null; transactionRedirectUrl: string | null; " +
+                        "transactionId: string | null; transactionReference: string | null; " +
+                        "transactionTimestamp: string | null; " +
+                        "paymentMethod: \"GIROPAY\" | \"PAYDIRECT\" | \"CREDITCARD\" | \"PAYPAL\" | \"OTHER\" | null; " +
+                        "paymentMethodDetail: string | null; " +
+                        "status: \"INITIAL\" | \"PAYED\" | \"FAILED\" | \"CANCELED\" | null; " +
+                        "statusDetail: string | null; }",
+                output.typeDefinition()
+        );
+    }
+
+    @Test
     void getMetadata_ShouldForwardCustomerSummaryAttachmentSet() {
         var metadata = node.getMetadata(
                 processNode(),
