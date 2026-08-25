@@ -8,6 +8,8 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputEle
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.StepperLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.TabLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import org.junit.jupiter.api.Test;
@@ -19,6 +21,7 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProcessNodeDefinitionMetadataTest {
@@ -41,6 +44,10 @@ class ProcessNodeDefinitionMetadataTest {
 
         var completeFormDefinition = metadata.reusableUiDefinitions().get(0);
         assertEquals("Gesamtes Formular", completeFormDefinition.label());
+        assertEquals(
+                ProcessNodeDefinitionMetadata.ReusableUiDefinitionKind.CompleteForm,
+                completeFormDefinition.kind()
+        );
 
         var completeFormGroup = assertInstanceOf(GroupLayoutElement.class, completeFormDefinition.uiDefinition());
         assertEquals("Gesamtes Formular", completeFormGroup.getName());
@@ -57,12 +64,20 @@ class ProcessNodeDefinitionMetadataTest {
 
         var namedSectionDefinition = metadata.reusableUiDefinitions().get(1);
         assertEquals("Personendaten", namedSectionDefinition.label());
+        assertEquals(
+                ProcessNodeDefinitionMetadata.ReusableUiDefinitionKind.FormSection,
+                namedSectionDefinition.kind()
+        );
         var namedSectionGroup = assertInstanceOf(GroupLayoutElement.class, namedSectionDefinition.uiDefinition());
         assertEquals("Personendaten", namedSectionGroup.getName());
         assertSectionHeadline(namedSectionGroup, "Personendaten");
 
         var unnamedSectionDefinition = metadata.reusableUiDefinitions().get(2);
         assertEquals("Unbenannter Abschnitt", unnamedSectionDefinition.label());
+        assertEquals(
+                ProcessNodeDefinitionMetadata.ReusableUiDefinitionKind.FormSection,
+                unnamedSectionDefinition.kind()
+        );
         var unnamedSectionGroup = assertInstanceOf(GroupLayoutElement.class, unnamedSectionDefinition.uiDefinition());
         assertEquals("Unbenannter Abschnitt", unnamedSectionGroup.getName());
         assertSectionHeadline(unnamedSectionGroup, "Unbenannter Abschnitt");
@@ -83,7 +98,131 @@ class ProcessNodeDefinitionMetadataTest {
 
         var reusableUiDefinition = metadata.reusableUiDefinitions().get(0);
         assertEquals("Aufgabendaten", reusableUiDefinition.label());
+        assertEquals(
+                ProcessNodeDefinitionMetadata.ReusableUiDefinitionKind.UiDefinition,
+                reusableUiDefinition.kind()
+        );
         assertInstanceOf(GroupLayoutElement.class, reusableUiDefinition.uiDefinition());
+    }
+
+    @Test
+    void withLayout_ShouldExposeCompleteStepperAndIndividualSectionsAsReusableUiDefinitions() {
+        var stepperLayout = new StepperLayoutElement();
+        stepperLayout.setId("sp_task");
+        stepperLayout.setName("Aufgabenbearbeitung");
+        stepperLayout.setChildren(List.of(
+                step("st_data", "Daten", textInput("tx_data")),
+                step("st_review", "Prüfung", textInput("tx_review"))
+        ));
+
+        var metadata = ProcessNodeDefinitionMetadata
+                .empty()
+                .withLayout(stepperLayout, origin());
+
+        assertEquals(3, metadata.reusableUiDefinitions().size());
+
+        var completeDefinition = metadata.reusableUiDefinitions().get(0);
+        assertEquals("Aufgabenbearbeitung", completeDefinition.label());
+        assertEquals(
+                ProcessNodeDefinitionMetadata.ReusableUiDefinitionKind.UiDefinition,
+                completeDefinition.kind()
+        );
+        assertSame(stepperLayout, completeDefinition.uiDefinition());
+
+        var firstSectionDefinition = metadata.reusableUiDefinitions().get(1);
+        assertEquals("Daten", firstSectionDefinition.label());
+        assertEquals(
+                ProcessNodeDefinitionMetadata.ReusableUiDefinitionKind.StepperSection,
+                firstSectionDefinition.kind()
+        );
+        assertSectionHeadline(
+                assertInstanceOf(GroupLayoutElement.class, firstSectionDefinition.uiDefinition()),
+                "Daten"
+        );
+
+        var secondSectionDefinition = metadata.reusableUiDefinitions().get(2);
+        assertEquals("Prüfung", secondSectionDefinition.label());
+        assertEquals(
+                ProcessNodeDefinitionMetadata.ReusableUiDefinitionKind.StepperSection,
+                secondSectionDefinition.kind()
+        );
+    }
+
+    @Test
+    void withLayout_ShouldExposeCompleteTabLayoutAndIndividualTabsAsReusableUiDefinitions() {
+        var tabLayout = new TabLayoutElement();
+        tabLayout.setId("tb_task");
+        tabLayout.setName("Falldetails");
+        tabLayout.setChildren(List.of(
+                step("st_master", "Stammdaten", textInput("tx_master")),
+                step("st_history", null, textInput("tx_history"))
+        ));
+
+        var metadata = ProcessNodeDefinitionMetadata
+                .empty()
+                .withLayout(tabLayout, origin());
+
+        assertEquals(3, metadata.reusableUiDefinitions().size());
+
+        var completeDefinition = metadata.reusableUiDefinitions().get(0);
+        assertEquals("Falldetails", completeDefinition.label());
+        assertEquals(
+                ProcessNodeDefinitionMetadata.ReusableUiDefinitionKind.UiDefinition,
+                completeDefinition.kind()
+        );
+        assertSame(tabLayout, completeDefinition.uiDefinition());
+
+        var namedTabDefinition = metadata.reusableUiDefinitions().get(1);
+        assertEquals("Stammdaten", namedTabDefinition.label());
+        assertEquals(
+                ProcessNodeDefinitionMetadata.ReusableUiDefinitionKind.Tab,
+                namedTabDefinition.kind()
+        );
+        assertSectionHeadline(
+                assertInstanceOf(GroupLayoutElement.class, namedTabDefinition.uiDefinition()),
+                "Stammdaten"
+        );
+
+        var unnamedTabDefinition = metadata.reusableUiDefinitions().get(2);
+        assertEquals("Unbenannter Abschnitt", unnamedTabDefinition.label());
+        assertEquals(
+                ProcessNodeDefinitionMetadata.ReusableUiDefinitionKind.Tab,
+                unnamedTabDefinition.kind()
+        );
+    }
+
+    @Test
+    void withLayout_ShouldSkipEmptyReusableUiDefinitions() {
+        assertTrue(ProcessNodeDefinitionMetadata.empty()
+                .withLayout(new GroupLayoutElement(), origin())
+                .reusableUiDefinitions()
+                .isEmpty());
+        assertTrue(ProcessNodeDefinitionMetadata.empty()
+                .withLayout(new StepperLayoutElement(), origin())
+                .reusableUiDefinitions()
+                .isEmpty());
+        assertTrue(ProcessNodeDefinitionMetadata.empty()
+                .withLayout(new TabLayoutElement(), origin())
+                .reusableUiDefinitions()
+                .isEmpty());
+    }
+
+    @Test
+    void addReusableUiDefinition_ShouldDefaultLegacyOverloadToCompleteUiDefinitionKind() throws Exception {
+        var metadata = ProcessNodeDefinitionMetadata
+                .empty()
+                .addReusableUiDefinition("Falldaten", null, group("gp_case", textInput("tx_case")), origin());
+
+        assertEquals(
+                ProcessNodeDefinitionMetadata.ReusableUiDefinitionKind.UiDefinition,
+                metadata.reusableUiDefinitions().getFirst().kind()
+        );
+
+        var json = JsonMapperFactory
+                .getInstance()
+                .writeValueAsString(metadata);
+
+        assertTrue(json.contains("\"kind\":\"UiDefinition\""));
     }
 
     @Test
