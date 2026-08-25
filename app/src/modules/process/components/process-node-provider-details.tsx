@@ -1,5 +1,18 @@
 import React, {type ReactNode} from 'react';
-import {Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, type SxProps, type Theme, Typography} from '@mui/material';
+import {
+    Alert,
+    Box,
+    Button,
+    Chip,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    Stack,
+    type SxProps,
+    type Theme,
+    Typography
+} from '@mui/material';
+import {Chip as PsChip} from '../../../components/chip/chip';
 import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {useRetainedDialogValue} from '../../../hooks/use-retained-dialog-value';
@@ -7,7 +20,11 @@ import {type SvgIconComponent} from '../../../types/svg-icon-component';
 import {MarkdownContent} from '../../../components/markdown-content/markdown-content';
 import {KnownProviderIcons} from '../data/known-provider-icons';
 import {ProviderTypeStyles} from '../data/provider-type-styles';
-import {type ProcessNodeProvider} from '../services/process-node-provider-api-service';
+import {
+    ProcessNodeExecutionTypeColors, ProcessNodeExecutionTypeIcons,
+    ProcessNodeExecutionTypeLabels,
+    type ProcessNodeProvider
+} from '../services/process-node-provider-api-service';
 import {ProcessNodeOutputCard} from './process-node-output-card';
 import {DocumentationLink} from '../../../components/documentation-link/documentation-link';
 
@@ -204,6 +221,31 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                     }}
                 />
             }
+
+            <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                    justifyContent: 'flex-start',
+                }}
+            >
+                {
+                    provider
+                        .executionTypes
+                        .map((executionType) => {
+                            const Icon = ProcessNodeExecutionTypeIcons[executionType];
+                            return (
+                                <PsChip
+                                    key={executionType}
+                                    mode="soft"
+                                    label={ProcessNodeExecutionTypeLabels[executionType]}
+                                    color={ProcessNodeExecutionTypeColors[executionType] as any}
+                                    icon={<Icon fontSize="small" />}
+                                />
+                            )
+                        })
+                }
+            </Stack>
 
             <DocumentationLink
                 url={provider.documentationUrl}

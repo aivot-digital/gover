@@ -1,4 +1,9 @@
 import {BaseApiService} from "../../../services/base-api-service";
+import {SvgIconComponent} from "../../../types/svg-icon-component";
+import Automation from "@aivot/mui-material-symbols-400-n25-outlined/Automation";
+import ApprovalDelegation from "@aivot/mui-material-symbols-400-n25-outlined/ApprovalDelegation";
+import ApprovalDelegationOff from "@aivot/mui-material-symbols-400-n25-outlined/ApprovalDelegationOff";
+import AllMatch from "@aivot/mui-material-symbols-400-n25-outlined/AllMatch";
 
 export enum ProcessNodeType {
     Trigger = 'Trigger',
@@ -12,6 +17,24 @@ export enum ProcessNodeExecutionType {
     Manual = 'Manual',
     SemiAutomatic = 'SemiAutomatic',
 }
+
+export const ProcessNodeExecutionTypeLabels: Record<ProcessNodeExecutionType, string> = {
+    [ProcessNodeExecutionType.Automatic]: 'Automatisch',
+    [ProcessNodeExecutionType.Manual]: 'Manuell',
+    [ProcessNodeExecutionType.SemiAutomatic]: 'Teilautomatisiert',
+};
+
+export const ProcessNodeExecutionTypeColors: Record<ProcessNodeExecutionType, string> = {
+    [ProcessNodeExecutionType.Automatic]: 'success',
+    [ProcessNodeExecutionType.Manual]: 'primary',
+    [ProcessNodeExecutionType.SemiAutomatic]: 'warning',
+};
+
+export const ProcessNodeExecutionTypeIcons: Record<ProcessNodeExecutionType, SvgIconComponent> = {
+    [ProcessNodeExecutionType.Automatic]: AllMatch,
+    [ProcessNodeExecutionType.Manual]: ApprovalDelegation,
+    [ProcessNodeExecutionType.SemiAutomatic]: ApprovalDelegationOff,
+};
 
 export interface ProcessNodeProvider {
     key: string;
