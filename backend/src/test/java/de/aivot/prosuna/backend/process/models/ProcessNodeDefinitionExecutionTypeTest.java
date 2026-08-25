@@ -81,7 +81,7 @@ class ProcessNodeDefinitionExecutionTypeTest {
                 automatic(CounterActionNodeV1.class),
                 manual(DataChangeActionNodeV1.class),
                 automatic(DataMappingActionNodeV1.class),
-                semiAutomatic(EMailActionNodeV1.class),
+                mixedAutomatic(EMailActionNodeV1.class),
                 automatic(HttpActionNodeV1.class),
                 automatic(LowCodeActionNodeV1.class),
                 manual(ManualActionNodeV1.class),
@@ -102,6 +102,17 @@ class ProcessNodeDefinitionExecutionTypeTest {
                 new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic}
         );
     }
+
+    private static ExecutionTypeExpectation mixedAutomatic(Class<? extends ProcessNodeDefinition<?>> definitionClass) {
+        return new ExecutionTypeExpectation(
+                definitionClass,
+                new ProcessNodeExecutionType[]{
+                        ProcessNodeExecutionType.Automatic,
+                        ProcessNodeExecutionType.SemiAutomatic,
+                }
+        );
+    }
+
 
     private static ExecutionTypeExpectation manual(Class<? extends ProcessNodeDefinition<?>> definitionClass) {
         return new ExecutionTypeExpectation(
