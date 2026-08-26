@@ -67,20 +67,52 @@ public class AuthController {
     private static final String DEFAULT_APP_URI = "/staff";
     private static final String CALLBACK_ERROR_VIEW = "auth/oidc-callback-error";
 
-    private static final String MISSING_AUTHORIZATION_CODE_MESSAGE = "Es wurde kein Autorisierungscode übergeben.";
-    private static final String MISSING_AUTHORIZATION_CODE_DESCRIPTION = "Der Identitätsanbieter hat keinen Autorisierungscode zurückgegeben. Ohne diesen Code kann Prosuna keine Sitzung erstellen. Starten Sie die Anmeldung erneut.";
+    private static final String MISSING_AUTHORIZATION_CODE_MESSAGE = "Kein Autorisierungscode erhaltens";
+    private static final String MISSING_AUTHORIZATION_CODE_DESCRIPTION = """
+            Bei der Anmeldung wurde kein erforderlicher Autorisierungscode zurückgegeben.
+            Deshalb konnte die Anmeldung nicht abgeschlossen werden.
+            Bitte starten Sie die Anmeldung erneut.
+            """;
 
-    private static final String INVALID_STATE_MESSAGE = "Der state-Parameter ist ungültig.";
-    private static final String INVALID_STATE_DESCRIPTION = "Die Sicherheitsprüfung der Anmeldung ist fehlgeschlagen. Das kann passieren, wenn der Link aus einem alten Browser-Tab stammt, Cookies fehlen oder parallel eine neue Anmeldung gestartet wurde.";
+    private static final String INVALID_STATE_MESSAGE = "Sicherheitsprüfung fehlgeschlagen";
+    private static final String INVALID_STATE_DESCRIPTION = """
+            Die Sicherheitsprüfung der Anmeldung ist fehlgeschlagen.
+            Der sogenannte „state“-Wert stimmt nicht mehr mit der gestarteten Anmeldung überein.
+            Das kann zum Beispiel bei einem alten Browser-Tab oder einer parallel gestarteten Anmeldung passieren.
+            Bitte starten Sie die Anmeldung erneut.
+            """;
 
-    private static final String EXPIRED_AUTH_FLOW_MESSAGE = "Die Authentifizierungssitzung ist abgelaufen.";
-    private static final String EXPIRED_AUTH_FLOW_DESCRIPTION = "Ihre Anmeldesitzung ist abgelaufen. Starten Sie die Anmeldung erneut, damit eine neue sichere Sitzung erstellt wird.";
+    private static final String EXPIRED_AUTH_FLOW_MESSAGE = "Anmeldung abgelaufen";
+    private static final String EXPIRED_AUTH_FLOW_DESCRIPTION = """
+            Die Anmeldung hat zu lange gedauert.
+            Aus Sicherheitsgründen kann diese Anmeldung nicht mehr fortgesetzt werden.
+            Bitte starten Sie die Anmeldung erneut.
+            """;
 
-    private static final String INVALID_APP_REDIRECT_MESSAGE = "Die App-Weiterleitungsadresse ist ungültig.";
-    private static final String INVALID_APP_REDIRECT_DESCRIPTION = "Die gespeicherte Rücksprungadresse der Anwendung ist ungültig oder nicht erlaubt. Die Anmeldung kann über die Startseite neu gestartet werden.";
+    private static final String FAILED_TO_LOAD_CACHED_AUTH_FLOW_STATE_MESSAGE = "Zwischengespeicherte Authentifizierungsdaten konnten nicht geladen werden";
+    private static final String FAILED_TO_LOAD_CACHED_AUTH_FLOW_STATE_DESCRIPTION = """
+            Die für die Anmeldung zwischengespeicherten Daten konnten nicht geladen werden.
+            Deshalb kann die Anmeldung nicht fortgesetzt werden.
+            Bitte starten Sie die Anmeldung erneut.
+            """;
 
-    private static final String DISALLOWED_APP_REDIRECT_MESSAGE = "Die App-Weiterleitungsadresse ist nicht erlaubt.";
-    private static final String TOKEN_EXCHANGE_ERROR_DESCRIPTION = "Der Identitätsanbieter hat geantwortet, aber Prosuna konnte die Anmeldung nicht abschließen. Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support, falls der Fehler bestehen bleibt.";
+    private static final String INVALID_APP_REDIRECT_MESSAGE = "Ungültige Weiterleitungsadresse";
+    private static final String INVALID_APP_REDIRECT_DESCRIPTION = """
+            Die für die Anmeldung gespeicherte Weiterleitungsadresse ist ungültig.
+            Deshalb kann die Anmeldung nicht zur Anwendung zurückgeführt werden.
+            Bitte melden Sie das Problem für eine Fehlerbehebung.
+            """;
+
+    private static final String DISALLOWED_APP_REDIRECT_MESSAGE = "Weiterleitungsadresse nicht erlaubt";
+    private static final String DISALLOWED_APP_REDIRECT_DESCRIPTION = """
+            Die Anmeldung wurde vom Identitätsanbieter beantwortet, konnte aber wegen einer nicht erlaubten Weiterleitungsadresse nicht abgeschlossen werden.
+            Bitte melden Sie das Problem für eine Fehlerbehebung.
+            """;
+
+    private static final String GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION = """
+            Die Antwort des Identitätsanbieters konnte nicht korrekt verarbeitet werden.
+            Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support, falls der Fehler bestehen bleibt.
+            """;
 
     public static final String ACCESS_COOKIE_NAME = "access";
     public static final String REFRESH_COOKIE_NAME = "refresh";
@@ -226,8 +258,7 @@ public class AuthController {
             if (StringUtils.isNullOrEmpty(code)) {
                 return getIdpCallbackErrorView(
                         response,
-                        ResponseException.badRequest(MISSING_AUTHORIZATION_CODE_MESSAGE),
-                        MISSING_AUTHORIZATION_CODE_DESCRIPTION,
+                        ResponseException.badRequestWithDetails(MISSING_AUTHORIZATION_CODE_MESSAGE, MISSING_AUTHORIZATION_CODE_DESCRIPTION),
                         getRestartLoginUrl(getAppUriForRestart(state, authFlowState))
                 );
             }
@@ -236,14 +267,14 @@ public class AuthController {
             try {
                 flowState = consumeAuthFlowState(state, authFlowState);
             } catch (ResponseException e) {
-                return getIdpCallbackErrorView(response, e, getStateErrorDescription(e), getRestartLoginUrl(DEFAULT_APP_URI));
+                return getIdpCallbackErrorView(response, e, getRestartLoginUrl(DEFAULT_APP_URI));
             }
 
             String appRedirectLocation;
             try {
                 appRedirectLocation = resolveAppRedirectLocation(flowState.appUri);
             } catch (ResponseException e) {
-                return getIdpCallbackErrorView(response, e, INVALID_APP_REDIRECT_DESCRIPTION, getRestartLoginUrl(DEFAULT_APP_URI));
+                return getIdpCallbackErrorView(response, e, getRestartLoginUrl(DEFAULT_APP_URI));
             }
 
             var payload = new HashMap<String, String>();
@@ -262,7 +293,7 @@ public class AuthController {
             try {
                 tokenResponse = getTokenResponse(payload);
             } catch (ResponseException e) {
-                return getIdpCallbackErrorView(response, e, TOKEN_EXCHANGE_ERROR_DESCRIPTION, null);
+                return getIdpCallbackErrorView(response, e, null);
             }
 
             var refreshCookie = getRefreshCookie(tokenResponse);
@@ -313,11 +344,11 @@ public class AuthController {
             res = httpService
                     .postFormUrlEncoded(tokenUri, payload);
         } catch (HttpConnectionException e) {
-            throw ResponseException.internalServerError(e, "Failed to exchange authorization code for access token: " + e.getMessage());
+            throw ResponseException.internalServerErrorWithDetails(e, "Authentifizierungscode ungültig", GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
         }
 
         if (res.statusCode() != 200) {
-            throw ResponseException.internalServerError("Failed to exchange authorization code for access token. status code: " + res.statusCode());
+            throw ResponseException.internalServerErrorWithDetails("Unerwartete Rückmeldung beim einlösen des Authentifizierungscodes: " + res.statusCode(), GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
         }
 
         TokenResponse tokenResponse;
@@ -326,7 +357,7 @@ public class AuthController {
                     .getInstance()
                     .readValue(res.body(), TokenResponse.class);
         } catch (JacksonException e) {
-            throw ResponseException.internalServerError(e, "Failed to parse access token response: " + e.getMessage());
+            throw ResponseException.internalServerErrorWithDetails(e, "Authentifizierungsdaten konnten nicht verarbeitet werden", GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
         }
         return tokenResponse;
     }
@@ -351,7 +382,6 @@ public class AuthController {
     private ModelAndView getIdpCallbackErrorView(
             @Nonnull HttpServletResponse response,
             @Nonnull ResponseException exception,
-            @Nonnull String description,
             @Nullable String restartLoginUrl
     ) {
         response.setStatus(exception.getStatus().value());
@@ -359,18 +389,17 @@ public class AuthController {
         var modelAndView = new ModelAndView(CALLBACK_ERROR_VIEW);
         modelAndView.setStatus(exception.getStatus());
         modelAndView.addObject("message", exception.getTitle());
-        modelAndView.addObject("description", description);
+        if (exception.getDetails() != null) {
+            modelAndView.addObject("description", exception.getDetails());
+        } else {
+            modelAndView.addObject("description", exception.getMessage());
+        }
 
         if (StringUtils.isNotNullOrEmpty(restartLoginUrl)) {
             modelAndView.addObject("restartLoginUrl", restartLoginUrl);
         }
 
         return modelAndView;
-    }
-
-    @Nonnull
-    private static String getStateErrorDescription(@Nonnull ResponseException exception) {
-        return EXPIRED_AUTH_FLOW_MESSAGE.equals(exception.getTitle()) ? EXPIRED_AUTH_FLOW_DESCRIPTION : INVALID_STATE_DESCRIPTION;
     }
 
     @Nonnull
@@ -417,11 +446,11 @@ public class AuthController {
             @Nullable String authFlowStateCookie
     ) throws ResponseException {
         if (StringUtils.isNullOrEmpty(state) || StringUtils.isNullOrEmpty(authFlowStateCookie)) {
-            throw ResponseException.badRequest(INVALID_STATE_MESSAGE);
+            throw ResponseException.badRequestWithDetails(INVALID_STATE_MESSAGE, INVALID_STATE_DESCRIPTION);
         }
 
         if (!state.equals(authFlowStateCookie)) {
-            throw ResponseException.badRequest(INVALID_STATE_MESSAGE);
+            throw ResponseException.badRequestWithDetails(INVALID_STATE_MESSAGE, INVALID_STATE_DESCRIPTION);
         }
 
         var value = redis
@@ -429,7 +458,7 @@ public class AuthController {
                 .getAndDelete(getAuthFlowRedisKey(state));
 
         if (value == null) {
-            throw ResponseException.badRequest(EXPIRED_AUTH_FLOW_MESSAGE);
+            throw ResponseException.badRequestWithDetails(EXPIRED_AUTH_FLOW_MESSAGE, EXPIRED_AUTH_FLOW_DESCRIPTION);
         }
 
         try {
@@ -437,7 +466,8 @@ public class AuthController {
                     .getInstance()
                     .readValue(value, AuthFlowState.class);
         } catch (JacksonException e) {
-            throw ResponseException.internalServerError(e, "Failed to parse auth flow state: " + e.getMessage());
+            throw ResponseException
+                    .internalServerErrorWithDetails(e, FAILED_TO_LOAD_CACHED_AUTH_FLOW_STATE_MESSAGE, FAILED_TO_LOAD_CACHED_AUTH_FLOW_STATE_DESCRIPTION);
         }
     }
 
@@ -452,22 +482,22 @@ public class AuthController {
         try {
             appRedirectUri = new URI(appUri);
         } catch (URISyntaxException | IllegalArgumentException e) {
-            throw ResponseException.badRequest(INVALID_APP_REDIRECT_MESSAGE);
+            throw ResponseException.badRequestWithDetails(INVALID_APP_REDIRECT_MESSAGE, INVALID_APP_REDIRECT_DESCRIPTION);
         }
 
         if (!appRedirectUri.isAbsolute()) {
             if (appUri.startsWith("/") && !appUri.startsWith("//") && appRedirectUri.getRawAuthority() == null) {
                 return appRedirectUri.toString();
             }
-            throw ResponseException.badRequest(INVALID_APP_REDIRECT_MESSAGE);
+            throw ResponseException.badRequestWithDetails(INVALID_APP_REDIRECT_MESSAGE, INVALID_APP_REDIRECT_DESCRIPTION);
         }
 
         if (!hasAllowedSchemeAndHost(appRedirectUri)) {
-            throw ResponseException.badRequest(INVALID_APP_REDIRECT_MESSAGE);
+            throw ResponseException.badRequestWithDetails(INVALID_APP_REDIRECT_MESSAGE, INVALID_APP_REDIRECT_DESCRIPTION);
         }
 
         if (!hasSameOrigin(appRedirectUri, parseConfiguredAppRedirectOrigin(hostname))) {
-            throw ResponseException.badRequest(DISALLOWED_APP_REDIRECT_MESSAGE);
+            throw ResponseException.badRequestWithDetails(DISALLOWED_APP_REDIRECT_MESSAGE, DISALLOWED_APP_REDIRECT_DESCRIPTION);
         }
 
         return appRedirectUri.toString();

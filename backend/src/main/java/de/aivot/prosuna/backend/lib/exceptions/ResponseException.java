@@ -175,16 +175,20 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, message);
     }
 
-    public static ResponseException internalServerError(String message, String details) {
-        return new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, message, details);
-    }
-
     public static ResponseException internalServerError(String format, Object... args) {
         return ResponseException.internalServerError(String.format(format, args));
     }
 
     public static ResponseException internalServerError(Throwable cause, String format, Object... args) {
         return ResponseException.internalServerError(String.format(format, args), cause);
+    }
+
+    public static ResponseException internalServerErrorWithDetails(String message, String details) {
+        return new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, message, details);
+    }
+
+    public static ResponseException internalServerErrorWithDetails(Throwable cause, String message, String details) {
+        return new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, message, details, cause);
     }
 
     public static ResponseException internalServerError(String message, Throwable cause) {

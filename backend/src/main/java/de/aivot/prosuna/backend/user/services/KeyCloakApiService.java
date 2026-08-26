@@ -118,7 +118,7 @@ public class KeyCloakApiService {
         }
 
         if (response.statusCode() != 200) {
-            throw ResponseException.internalServerError("Die Liste der Mitarbeiter:innen konnte nicht geladen werden.", "Status-Code: " + response.statusCode() + " - " + response.body());
+            throw ResponseException.internalServerErrorWithDetails("Die Liste der Mitarbeiter:innen konnte nicht geladen werden.", "Status-Code: " + response.statusCode() + " - " + response.body());
         }
 
         var mapper = JsonMapperFactory
@@ -147,7 +147,7 @@ public class KeyCloakApiService {
             if (response.statusCode() == 404) {
                 return Optional.empty();
             } else {
-                throw ResponseException.internalServerError("Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.", "Status-Code: " + response.statusCode() + " - " + response.body());
+                throw ResponseException.internalServerErrorWithDetails("Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.", "Status-Code: " + response.statusCode() + " - " + response.body());
             }
         }
 
@@ -210,7 +210,7 @@ public class KeyCloakApiService {
         }
 
         if (response.getStatusCode().isError()) {
-            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht aktualisiert werden.", "Status-Code: " + response.getStatusCode());
+            throw ResponseException.internalServerErrorWithDetails("Die Mitarbeiter:in konnte nicht aktualisiert werden.", "Status-Code: " + response.getStatusCode());
         }
 
         return retrieveUser(userId)
@@ -250,7 +250,7 @@ public class KeyCloakApiService {
         }
 
         if (response.getStatusCode().isError()) {
-            throw ResponseException.internalServerError("Der Passwort-Reset kann nicht initiiert werden.", "Status-Code: " + response.getStatusCode());
+            throw ResponseException.internalServerErrorWithDetails("Der Passwort-Reset kann nicht initiiert werden.", "Status-Code: " + response.getStatusCode());
         }
     }
 
@@ -301,7 +301,7 @@ public class KeyCloakApiService {
         }
 
         if (response.getStatusCode().isError()) {
-            throw ResponseException.internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden.", "Status-Code: " + response.getStatusCode());
+            throw ResponseException.internalServerErrorWithDetails("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden.", "Status-Code: " + response.getStatusCode());
         }
     }
 
