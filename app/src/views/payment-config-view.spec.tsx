@@ -550,6 +550,7 @@ function createPaymentProviderDefinition(definition: Partial<PaymentProviderDefi
         name: '',
         description: '',
         configLayout: null,
+        documentationUrl: null,
         ...definition,
     };
 }
