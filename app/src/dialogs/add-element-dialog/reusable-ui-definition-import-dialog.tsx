@@ -48,10 +48,19 @@ export function ReusableUiDefinitionImportDialog(
 
             <DialogContent>
                 <Typography>
-                    Möchten Sie „{renderOption?.definition.label}“ als Gruppe oder ohne Gruppen-Wrapper einfügen?
+                    Wie möchten Sie „{renderOption?.definition.label}“ einfügen?
+                    <ul>
+                        <li>
+                            <strong>Als Gruppe:</strong> Fügt alle Elemente aus „{renderOption?.definition.label}“ als Gruppe ein.
+                        </li>
+                        <li>
+                            <strong>Flach:</strong> Löst die <u>übergeordnete</u> Struktur auf und fügt alle Elemente aus „{renderOption?.definition.label}“ direkt auf der aktuellen Ebene ein.
+                        </li>
+                    </ul>
                 </Typography>
                 <Typography variant="body2" sx={{mt: 1, color: 'text.secondary'}}>
                     Die Überschrift und alle enthaltenen Elemente bleiben in beiden Varianten erhalten.
+                    Untergeordnete Gruppen werden <u>nicht</u> aufgelöst, sondern immer als Gruppe eingefügt.
                 </Typography>
             </DialogContent>
 
