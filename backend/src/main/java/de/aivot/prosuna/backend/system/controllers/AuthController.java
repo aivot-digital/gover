@@ -66,16 +66,21 @@ public class AuthController {
     private static final String OIDC_CALLBACK_CODE_PARAM_KEY = "code";
     private static final String DEFAULT_APP_URI = "/staff";
     private static final String CALLBACK_ERROR_VIEW = "auth/oidc-callback-error";
+
     private static final String MISSING_AUTHORIZATION_CODE_MESSAGE = "Es wurde kein Autorisierungscode übergeben.";
+    private static final String MISSING_AUTHORIZATION_CODE_DESCRIPTION = "Der Identitätsanbieter hat keinen Autorisierungscode zurückgegeben. Ohne diesen Code kann Prosuna keine Sitzung erstellen. Starten Sie die Anmeldung erneut.";
+
     private static final String INVALID_STATE_MESSAGE = "Der state-Parameter ist ungültig.";
+    private static final String INVALID_STATE_DESCRIPTION = "Die Sicherheitsprüfung der Anmeldung ist fehlgeschlagen. Das kann passieren, wenn der Link aus einem alten Browser-Tab stammt, Cookies fehlen oder parallel eine neue Anmeldung gestartet wurde.";
+
+    private static final String EXPIRED_AUTH_FLOW_DESCRIPTION = "Ihre Anmeldesitzung ist abgelaufen. Starten Sie die Anmeldung erneut, damit eine neue sichere Sitzung erstellt wird.";
     private static final String EXPIRED_AUTH_FLOW_MESSAGE = "Die Authentifizierungssitzung ist abgelaufen.";
+
+    private static final String INVALID_APP_REDIRECT_DESCRIPTION = "Die gespeicherte Rücksprungadresse der Anwendung ist ungültig oder nicht erlaubt. Die Anmeldung kann über den Standardbereich neu gestartet werden.";
     private static final String INVALID_APP_REDIRECT_MESSAGE = "Die App-Weiterleitungsadresse ist ungültig.";
+
     private static final String DISALLOWED_APP_REDIRECT_MESSAGE = "Die App-Weiterleitungsadresse ist nicht erlaubt.";
 
-    private static final String MISSING_AUTHORIZATION_CODE_DESCRIPTION = "Der Identitätsanbieter hat keinen Autorisierungscode zurückgegeben. Ohne diesen Code kann Prosuna keine Sitzung erstellen. Starten Sie die Anmeldung erneut.";
-    private static final String INVALID_STATE_DESCRIPTION = "Die Sicherheitsprüfung der Anmeldung ist fehlgeschlagen. Das kann passieren, wenn der Link aus einem alten Browser-Tab stammt, Cookies fehlen oder parallel eine neue Anmeldung gestartet wurde.";
-    private static final String EXPIRED_AUTH_FLOW_DESCRIPTION = "Ihre Anmeldesitzung ist abgelaufen. Starten Sie die Anmeldung erneut, damit eine neue sichere Sitzung erstellt wird.";
-    private static final String INVALID_APP_REDIRECT_DESCRIPTION = "Die gespeicherte Rücksprungadresse der Anwendung ist ungültig oder nicht erlaubt. Die Anmeldung kann über den Standardbereich neu gestartet werden.";
     private static final String TOKEN_EXCHANGE_ERROR_DESCRIPTION = "Der Identitätsanbieter hat geantwortet, aber Prosuna konnte die Anmeldung nicht abschließen. Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support, falls der Fehler bestehen bleibt.";
 
     public static final String ACCESS_COOKIE_NAME = "access";
