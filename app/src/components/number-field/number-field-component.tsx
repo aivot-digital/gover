@@ -29,6 +29,7 @@ function validateValue(inputValue: string | undefined, value: number | null | un
 }
 
 export function NumberFieldComponent({
+                                         id,
                                          label,
                                          placeholder,
                                          decimalPlaces = 0,
@@ -45,6 +46,12 @@ export function NumberFieldComponent({
                                          maxValue,
                                          bufferInputUntilBlur,
                                          debounce,
+                                         margin,
+                                         size,
+                                         ariaLabelledBy,
+                                         ariaDescribedBy,
+                                         ariaInvalid,
+                                         ariaRequired,
                                          sx,
                                      }: NumberFieldComponentProps) {
     // The currently inputted value in the text field. If this is not set, the original value is used.
@@ -135,11 +142,14 @@ export function NumberFieldComponent({
 
     return (
         <TextField
-            label={label + (required ? ' *' : '')}
+            id={id}
+            label={label.length > 0 ? label + (required ? ' *' : '') : undefined}
             placeholder={placeholder}
             variant="outlined"
+            margin={margin}
+            size={size}
             fullWidth
-            error={!!error || !!internalError}
+            error={!!error || !!internalError || ariaInvalid}
             helperText={error ?? internalError ?? hint}
             value={inputValue ?? formattedOriginalValue}
             onChange={handleChange}
@@ -152,7 +162,13 @@ export function NumberFieldComponent({
                     sx: sx,
                     readOnly: readOnly,
                     'aria-disabled': readOnly || disabled,
-                }
+                },
+                htmlInput: {
+                    'aria-labelledby': ariaLabelledBy,
+                    'aria-describedby': ariaDescribedBy,
+                    'aria-invalid': ariaInvalid || undefined,
+                    'aria-required': ariaRequired || undefined,
+                },
             }}
         />
     );

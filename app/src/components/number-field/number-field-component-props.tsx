@@ -1,6 +1,7 @@
 import {SxProps, Theme} from '@mui/material';
 
 export interface NumberFieldComponentProps {
+    id?: string;
     label: string;
     placeholder?: string;
     decimalPlaces?: number;
@@ -18,4 +19,10 @@ export interface NumberFieldComponentProps {
     sx?: SxProps<Theme>;
     bufferInputUntilBlur?: boolean;
     debounce?: number;
+    margin?: 'none' | 'dense' | 'normal';
+    size?: 'small' | 'medium';
+    ariaLabelledBy?: string;
+    ariaDescribedBy?: string;
+    ariaInvalid?: boolean;
+    ariaRequired?: boolean;
 }

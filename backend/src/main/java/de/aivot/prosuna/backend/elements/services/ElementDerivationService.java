@@ -668,6 +668,9 @@ public class ElementDerivationService {
 
         var valueFunction = inputElement.getValue();
 
+        // TODO(input-modes): Resolve and authorize a trusted, versioned authored input-mode wrapper before the
+        // existing sanitization and validation pipeline. Persisted variable references must use durable backend IDs.
+
         // Key presence represents explicit user intent. A present null value is an authored clear,
         // while an absent key allows the dynamic value function to supply the effective value.
         if (valueFunction == null || valueFunction.getType() == null || (hasAuthoredValue && !Boolean.TRUE.equals(inputElement.getDisabled()))) {

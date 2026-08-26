@@ -2,7 +2,13 @@ import {ReactNode} from 'react';
 import {SxProps, TextFieldProps} from '@mui/material';
 
 export interface TextFieldComponentProps {
+    id?: string;
     label: string;
+    ariaLabel?: string;
+    ariaLabelledBy?: string;
+    ariaDescribedBy?: string;
+    ariaInvalid?: boolean;
+    ariaRequired?: boolean;
     autocomplete?: string;
     placeholder?: string;
     required?: boolean;

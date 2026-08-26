@@ -7,6 +7,10 @@ import {renderIconButton} from '../text-field/text-field-component';
 export function SelectFieldComponent(props: SelectFieldComponentProps) {
     const {
         label,
+        ariaLabelledBy,
+        ariaDescribedBy,
+        ariaInvalid,
+        ariaRequired,
         autocomplete,
         placeholder,
         hint,
@@ -73,10 +77,10 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
         <TextField
             {...muiPassTroughProps}
             select
-            label={label}
+            label={label.length > 0 ? label : undefined}
             autoComplete={autocomplete}
             required={required}
-            error={error != null}
+            error={error != null || ariaInvalid}
             helperText={error != null ? error : hint}
             placeholder={placeholder}
             value={isValueInOptions ? val : ''}
@@ -112,6 +116,10 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
                 },
 
                 select: {
+                    'aria-labelledby': ariaLabelledBy,
+                    'aria-describedby': ariaDescribedBy,
+                    'aria-invalid': ariaInvalid || undefined,
+                    'aria-required': ariaRequired || undefined,
                     renderValue: (value) => {
                         const option = options.find((option) => option.value === value);
                         return option?.label ?? '';
@@ -128,7 +136,7 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
                 },
 
                 inputLabel: {
-                    title: label,
+                    title: label || undefined,
                 }
             }}>
             {

@@ -30,6 +30,7 @@ import {elementsRoutes} from '../../modules/elements/elements-routes';
 import {NodeConfigMaker} from '../../pages/staff-pages/node-config-maker/node-config-maker';
 import {codeListsRoutes} from '../../modules/code-lists/code-lists-routes';
 import {isFormModuleEnabled} from '../../utils/module-flags';
+import {InputModePrototype} from '../../modules/testinghall/input-mode-prototype';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -70,6 +71,10 @@ const router = sentryCreateBrowserRouter(
                 {
                     path: '/testinghall',
                     element: <Testinghall />,
+                },
+                {
+                    path: '/input-mode-prototype',
+                    element: <InputModePrototype />,
                 },
                 {
                     path: '/node-config-maker',

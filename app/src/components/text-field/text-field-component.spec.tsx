@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {fireEvent, render, screen} from '@testing-library/react';
-import {TextFieldComponent} from './text-field-component';
+import {AutocompleteTextField, TextFieldComponent} from './text-field-component';
 
 vi.mock('../copy-to-clipboard-button/copy-to-clipboard-button', () => ({
     CopyToClipboardButton: ({text, disabled, ariaLabel}: {
@@ -44,6 +44,22 @@ describe('TextFieldComponent', () => {
         );
 
         expect(screen.getByTestId('copy-button')).toBeDisabled();
+    });
+
+    it('should support an external label for autocomplete inputs', () => {
+        render(
+            <AutocompleteTextField
+                id="process-data-variable"
+                label=""
+                ariaLabel="Vorgangsdatenvariable"
+                value={null}
+                onChange={vi.fn()}
+                suggestions={['zaehler.aktuellerStand']}
+            />,
+        );
+
+        expect(screen.getByRole('combobox', {name: 'Vorgangsdatenvariable'}))
+            .toHaveAttribute('id', 'process-data-variable');
     });
 
     it('should preserve an existing end adornment when the copy button is enabled', () => {

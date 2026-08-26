@@ -146,6 +146,7 @@ export function AutocompleteTextField(props: TextFieldComponentProps & {
 
     return (
         <Autocomplete
+            id={rest.id}
             disablePortal
             freeSolo
             fullWidth
@@ -326,13 +327,14 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
     return (
         <TextField
             {...props.muiPassTroughProps}
-            label={props.label}
+            id={props.id ?? props.muiPassTroughProps?.id}
+            label={props.label.length > 0 ? props.label : undefined}
             type={props.type}
             autoComplete={props.autocomplete}
             placeholder={props.placeholder}
             variant="outlined"
             fullWidth
-            error={errorMessages.length > 0 || !!patternError}
+            error={errorMessages.length > 0 || !!patternError || props.ariaInvalid}
             multiline={props.multiline}
             rows={props.multiline ? (props.rows ?? 4) : undefined}
             helperText={
@@ -424,6 +426,11 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
                     return {
                         ...htmlInputSlotProps,
                         ...(props.maxCharacters ? {maxLength: props.maxCharacters} : undefined),
+                        ...(props.ariaLabel ? {'aria-label': props.ariaLabel} : undefined),
+                        ...(props.ariaLabelledBy ? {'aria-labelledby': props.ariaLabelledBy} : undefined),
+                        ...(props.ariaDescribedBy ? {'aria-describedby': props.ariaDescribedBy} : undefined),
+                        ...(props.ariaInvalid ? {'aria-invalid': true} : undefined),
+                        ...(props.ariaRequired ? {'aria-required': true} : undefined),
                         'aria-disabled': props.busy || props.disabled,
                     };
                 },
@@ -464,8 +471,9 @@ export function renderIconButton(action: {
             <Tooltip
                 key={key}
                 title={action.tooltip}
+                arrow
             >
-                <IconButton onClick={action.onClick}>{action.icon}</IconButton>
+                <IconButton aria-label={action.tooltip} onClick={action.onClick}>{action.icon}</IconButton>
             </Tooltip>
         );
     }

@@ -1,8 +1,9 @@
 import Typography from '@mui/material/Typography';
-import {Box, FormHelperText, SxProps} from '@mui/material';
+import {Box, FormHelperText, IconButton, SxProps, Tooltip} from '@mui/material';
 import {alpha, useTheme} from '@mui/material/styles';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState} from 'react';
 import {
+    activeEditor$,
     BlockTypeSelect,
     BoldItalicUnderlineToggles,
     CodeToggle,
@@ -22,10 +23,23 @@ import {
     toolbarPlugin,
     type Translation,
     UndoRedo,
+    useCellValues,
+    currentSelection$,
 } from '@mdxeditor/editor';
+import type {EditorState, LexicalEditor} from 'lexical';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
-import {placeholderPlugin} from './rich-text-input-component-placeholder-plugin';
+import type {EndAction} from '../text-field/text-field-component-props';
+import {
+    DynamicTextTokenNode,
+    getDynamicTextTokenStyles,
+    useDynamicTextSyntaxHighlights,
+} from '../dynamic-text/dynamic-text-lexical';
+import {
+    type DynamicTextVariableMetadata,
+    useDynamicTextTokenTitles,
+} from '../dynamic-text/dynamic-text-metadata';
+import {dynamicTextPlugin} from './rich-text-input-component-dynamic-text-plugin';
 import '@mdxeditor/editor/style.css';
 
 const MDX_EDITOR_DE_TRANSLATIONS: Record<string, string> = {
@@ -82,33 +96,148 @@ const mdxEditorGermanTranslation: Translation = (key, defaultValue, interpolatio
 const AUTO_REDUCED_MODE_MAX_WIDTH = 630;
 
 export interface RichTextInputComponentProps {
+    id?: string;
+    ariaLabelledBy?: string;
+    ariaDescribedBy?: string;
     label?: string | null | undefined;
     hint?: string | null | undefined;
     error?: string | null | undefined;
+    invalid?: boolean | null | undefined;
     required?: boolean | null | undefined;
     disabled?: boolean | null | undefined;
     readOnly?: boolean | null | undefined;
+    busy?: boolean | null | undefined;
     reducedMode?: boolean | null | undefined;
+    dynamicText?: boolean | null | undefined;
+    dynamicTextVariableMetadata?: readonly DynamicTextVariableMetadata[] | null | undefined;
     value: string | null | undefined;
     onChange: (value: string | null) => void;
+    endAction?: EndAction;
     sx?: SxProps | null | undefined;
 }
 
-export function RichTextInputComponent(props: RichTextInputComponentProps) {
+type EditorAccessibilityProps = Pick<
+RichTextInputComponentProps,
+'id' | 'ariaLabelledBy' | 'ariaDescribedBy' | 'required' | 'disabled' | 'readOnly' | 'busy'
+> & {
+    invalid: boolean;
+};
+
+function useEditorAccessibility(container: HTMLElement | null, props: EditorAccessibilityProps) {
+    useEffect(() => {
+        if (container == null) {
+            return;
+        }
+
+        const setOptionalAttribute = (element: HTMLElement, name: string, value: string | null) => {
+            if (value == null) {
+                element.removeAttribute(name);
+            } else {
+                element.setAttribute(name, value);
+            }
+        };
+        const updateAttributes = () => {
+            const editors = Array.from(container.querySelectorAll<HTMLElement>(
+                '[role="textbox"][contenteditable], .cm-content[contenteditable]',
+            ));
+            editors.forEach((editor, index) => {
+                setOptionalAttribute(editor, 'id', props.id == null ? null : `${props.id}${index === 0 ? '' : `-${index}`}`);
+                setOptionalAttribute(editor, 'aria-labelledby', props.ariaLabelledBy ?? null);
+                setOptionalAttribute(editor, 'aria-describedby', props.ariaDescribedBy ?? null);
+                setOptionalAttribute(editor, 'aria-invalid', props.invalid ? 'true' : null);
+                setOptionalAttribute(editor, 'aria-required', props.required ? 'true' : null);
+                setOptionalAttribute(editor, 'aria-disabled', props.disabled || props.busy ? 'true' : null);
+                setOptionalAttribute(editor, 'aria-busy', props.busy ? 'true' : null);
+                setOptionalAttribute(
+                    editor,
+                    'aria-readonly',
+                    props.readOnly || props.disabled || props.busy ? 'true' : null,
+                );
+                editor.setAttribute('aria-multiline', 'true');
+            });
+        };
+
+        updateAttributes();
+        const observer = new MutationObserver(updateAttributes);
+        observer.observe(container, {childList: true, subtree: true});
+        return () => observer.disconnect();
+    }, [
+        container,
+        props.ariaDescribedBy,
+        props.ariaLabelledBy,
+        props.busy,
+        props.disabled,
+        props.id,
+        props.invalid,
+        props.readOnly,
+        props.required,
+    ]);
+}
+
+export interface RichTextInputComponentMethods {
+    insertMarkdown: (value: string) => void;
+    focus: () => void;
+}
+
+interface SavedEditorSelection {
+    editor: LexicalEditor;
+    editorState: EditorState;
+}
+
+interface RichTextToolbarActionProps {
+    action: EndAction;
+    disabled: boolean;
+    onCaptureSelection: (selection: SavedEditorSelection) => void;
+}
+
+function RichTextToolbarAction(props: RichTextToolbarActionProps) {
+    const [activeEditor, currentSelection] = useCellValues(activeEditor$, currentSelection$);
+    const label = props.action.tooltip ?? 'Aktion ausführen';
+
+    return (
+        <Tooltip title={label} arrow>
+            <IconButton
+                aria-label={label}
+                disabled={props.disabled}
+                size="small"
+                onMouseDown={(event) => {
+                    event.preventDefault();
+                    if (activeEditor != null && currentSelection != null) {
+                        props.onCaptureSelection({
+                            editor: activeEditor,
+                            editorState: activeEditor.getEditorState().clone(currentSelection.clone()),
+                        });
+                    }
+                }}
+                onClick={props.action.onClick}
+            >
+                {props.action.icon}
+            </IconButton>
+        </Tooltip>
+    );
+}
+
+export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, RichTextInputComponentProps>((props, ref) => {
     const theme = useTheme();
     const [overlayContainer, setOverlayContainer] = useState<HTMLElement | null>(null);
     const [isAutoReducedMode, setIsAutoReducedMode] = useState(false);
     const editorRef = useRef<MDXEditorMethods | null>(null);
+    const savedSelectionRef = useRef<SavedEditorSelection | null>(null);
     const {
         label,
         hint,
         error,
+        invalid,
         required,
         disabled,
         readOnly,
+        busy,
         reducedMode,
+        dynamicText,
+        dynamicTextVariableMetadata,
         value,
         onChange,
+        endAction,
         sx,
     } = props;
 
@@ -117,10 +246,14 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
         setIsAutoReducedMode((prev) => prev === nextIsAutoReducedMode ? prev : nextIsAutoReducedMode);
     }, []);
 
-    const isReadOnly = Boolean(disabled) || Boolean(readOnly);
+    const isReadOnly = Boolean(disabled) || Boolean(readOnly) || Boolean(busy);
     const isReducedMode = reducedMode === true || isAutoReducedMode;
     const sxArray = Array.isArray(sx) ? sx : [sx];
-    const focusColor = error != null ? theme.palette.error.main : theme.palette.primary.main;
+    const hasError = error != null || invalid === true;
+    // Dynamic-text tokens are otherwise reported as misspellings. This also disables prose spellchecking and
+    // should be revisited when MDXEditor supports reliable token-level spellcheck suppression.
+    const enableSpellCheck = !dynamicText;
+    const focusColor = hasError ? theme.palette.error.main : theme.palette.primary.main;
     const outlinedBorderColor = theme.palette.mode === 'light'
         ? 'rgba(0, 0, 0, 0.23)'
         : 'rgba(255, 255, 255, 0.23)';
@@ -151,6 +284,40 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
         }
     }, [updateAutoReducedMode]);
     const normalizedValue = value ?? '';
+
+    useDynamicTextTokenTitles(
+        dynamicText ? overlayContainer : null,
+        dynamicTextVariableMetadata,
+    );
+    useDynamicTextSyntaxHighlights(dynamicText ? overlayContainer : null);
+    useEditorAccessibility(overlayContainer, {
+        id: props.id,
+        ariaLabelledBy: props.ariaLabelledBy,
+        ariaDescribedBy: props.ariaDescribedBy,
+        required: props.required,
+        disabled: props.disabled,
+        readOnly: props.readOnly,
+        busy: props.busy,
+        invalid: hasError,
+    });
+
+    useImperativeHandle(ref, () => ({
+        insertMarkdown: (markdown) => {
+            const savedSelection = savedSelectionRef.current;
+            savedSelectionRef.current = null;
+
+            if (savedSelection == null) {
+                editorRef.current?.focus(() => editorRef.current?.insertMarkdown(markdown), {preventScroll: true});
+                return;
+            }
+
+            savedSelection.editor.setEditorState(savedSelection.editorState);
+            savedSelection.editor.focus(
+                () => editorRef.current?.insertMarkdown(markdown),
+            );
+        },
+        focus: () => editorRef.current?.focus(undefined, {preventScroll: true}),
+    }), []);
 
     useEffect(() => {
         const editor = editorRef.current;
@@ -198,10 +365,12 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
 
             <Box
                 ref={handleOverlayContainerRef}
+                data-dynamic-text-multiline={dynamicText || undefined}
                 sx={{
                     position: 'relative',
+                    containerType: 'inline-size',
                     border: '1px solid',
-                    borderColor: error != null ? 'error.main' : outlinedBorderColor,
+                    borderColor: hasError ? 'error.main' : outlinedBorderColor,
                     borderRadius: 1,
                     backgroundColor: fieldBackground,
                     transition: theme.transitions.create(['background-color', 'border-color', 'box-shadow'], {
@@ -267,7 +436,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         zIndex: 2,
                         boxSizing: 'border-box',
                         borderBottom: '1px solid',
-                        borderColor: error != null ? alpha(theme.palette.error.main, 0.3) : 'divider',
+                        borderColor: hasError ? alpha(theme.palette.error.main, 0.3) : 'divider',
                         borderRadius: '4px 4px 0 0',
                         backgroundColor: 'transparent',
                         paddingInline: 1,
@@ -559,10 +728,11 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                             ? alpha(theme.palette.text.disabled, 0.5)
                             : alpha(theme.palette.primary.main, 0.35),
                     },
+                    ...(dynamicText ? getDynamicTextTokenStyles(theme) : {}),
                     ...(disabled
                         ? {
                             '&:focus-within': {
-                                borderColor: error != null ? 'error.main' : outlinedBorderColor,
+                                borderColor: hasError ? 'error.main' : outlinedBorderColor,
                                 boxShadow: 'none',
                             },
                             '& .prosuna-mdx-editor [class*="_toolbarRoot_"], & .prosuna-mdx-editor [class*="_readOnlyToolbarRoot_"], & .prosuna-mdx-editor .cm-sourceView': {
@@ -575,10 +745,12 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                 <MDXEditor
                     ref={editorRef}
                     className="prosuna-mdx-editor"
+                    additionalLexicalNodes={dynamicText ? [DynamicTextTokenNode] : undefined}
                     overlayContainer={overlayContainer}
                     translation={mdxEditorGermanTranslation}
                     markdown={normalizedValue}
                     readOnly={isReadOnly}
+                    spellCheck={enableSpellCheck}
                     onChange={(val) => {
                         if (isStringNullOrEmpty(val)) {
                             onChange(null);
@@ -587,7 +759,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         onChange(val ?? null);
                     }}
                     plugins={[
-                        placeholderPlugin(),
+                        dynamicTextPlugin({highlight: Boolean(dynamicText)}),
                         headingsPlugin(),
                         quotePlugin(),
                         listsPlugin(),
@@ -606,6 +778,15 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                                                 <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
                                                 <CreateLink/>
                                                 <ListsToggle options={['bullet', 'number']}/>
+                                                {endAction != null && (
+                                                    <RichTextToolbarAction
+                                                        action={endAction}
+                                                        disabled={isReadOnly}
+                                                        onCaptureSelection={(selection) => {
+                                                            savedSelectionRef.current = selection;
+                                                        }}
+                                                    />
+                                                )}
                                             </> :
                                             <>
                                                 <UndoRedo/>
@@ -619,6 +800,18 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                                                 <CreateLink/>
                                                 <Separator/>
                                                 <ListsToggle/>
+                                                {endAction != null && (
+                                                    <>
+                                                        <Separator/>
+                                                        <RichTextToolbarAction
+                                                            action={endAction}
+                                                            disabled={isReadOnly}
+                                                            onCaptureSelection={(selection) => {
+                                                                savedSelectionRef.current = selection;
+                                                            }}
+                                                        />
+                                                    </>
+                                                )}
                                             </>
                                     }
                                 </DiffSourceToggleWrapper>
@@ -647,4 +840,6 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
             }
         </Box>
     );
-}
+});
+
+RichTextInputComponent.displayName = 'RichTextInputComponent';

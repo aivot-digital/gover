@@ -4,6 +4,10 @@ import {EndAction} from '../text-field/text-field-component-props';
 
 export interface SelectFieldComponentProps {
     label: string;
+    ariaLabelledBy?: string;
+    ariaDescribedBy?: string;
+    ariaInvalid?: boolean;
+    ariaRequired?: boolean;
     autocomplete?: string;
     placeholder?: string;
     hint?: string;
