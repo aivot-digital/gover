@@ -79,7 +79,7 @@ class AuthControllerWebMvcTest {
                 .andExpect(view().name("auth/oidc-callback-error"))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
                 .andExpect(content().string(containsString("<title>Anmeldung fehlgeschlagen</title>")))
-                .andExpect(content().string(containsString("Der state-Parameter ist ungültig.")))
+                .andExpect(content().string(containsString("Sicherheitsprüfung fehlgeschlagen")))
                 .andReturn();
 
         assertNull(result.getResponse().getForwardedUrl());
