@@ -97,7 +97,7 @@ public class AuthController {
             """;
 
     private static final String INVALID_APP_REDIRECT_MESSAGE = "Ungültige Weiterleitungsadresse";
-    private static final String INVALID_OR_DISALLOWED_APP_REDIRECT_DESCRIPTION = """
+    private static final String INVALID_APP_REDIRECT_DESCRIPTION = """
             Die für die Anmeldung gespeicherte Weiterleitungsadresse ist ungültig.
             Deshalb kann die Anmeldung nicht zur Anwendung zurückgeführt werden.
             Bitte melden Sie das Problem für eine Fehlerbehebung.
@@ -105,13 +105,11 @@ public class AuthController {
 
     private static final String DISALLOWED_APP_REDIRECT_MESSAGE = "Weiterleitungsadresse nicht erlaubt";
     private static final String DISALLOWED_APP_REDIRECT_DESCRIPTION = """
-            Die für die Anmeldung gespeicherte Weiterleitungsadresse ist nicht erlaubt.
-            Deshalb kann die Anmeldung nicht zur Anwendung zurückgeführt werden.
+            Die Anmeldung wurde vom Identitätsanbieter beantwortet, konnte aber wegen einer nicht erlaubten Weiterleitungsadresse nicht abgeschlossen werden.
             Bitte melden Sie das Problem für eine Fehlerbehebung.
             """;
 
-
-    private static final String TOKEN_EXCHANGE_ERROR_DESCRIPTION = """
+    private static final String GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION = """
             Die Antwort des Identitätsanbieters konnte nicht korrekt verarbeitet werden.
             Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support, falls der Fehler bestehen bleibt.
             """;
@@ -346,11 +344,11 @@ public class AuthController {
             res = httpService
                     .postFormUrlEncoded(tokenUri, payload);
         } catch (HttpConnectionException e) {
-            throw ResponseException.internalServerErrorWithDetails(e, "Authentifizierungscode ungültig", TOKEN_EXCHANGE_ERROR_DESCRIPTION);
+            throw ResponseException.internalServerErrorWithDetails(e, "Authentifizierungscode ungültig", GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
         }
 
         if (res.statusCode() != 200) {
-            throw ResponseException.internalServerErrorWithDetails("Unerwartete Rückmeldung beim einlösen des Authentifizierungscodes: " + res.statusCode(), TOKEN_EXCHANGE_ERROR_DESCRIPTION);
+            throw ResponseException.internalServerErrorWithDetails("Unerwartete Rückmeldung beim einlösen des Authentifizierungscodes: " + res.statusCode(), GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
         }
 
         TokenResponse tokenResponse;
@@ -359,7 +357,7 @@ public class AuthController {
                     .getInstance()
                     .readValue(res.body(), TokenResponse.class);
         } catch (JacksonException e) {
-            throw ResponseException.internalServerErrorWithDetails(e, "Authentifizierungsdaten konnten nicht verarbeitet werden", TOKEN_EXCHANGE_ERROR_DESCRIPTION);
+            throw ResponseException.internalServerErrorWithDetails(e, "Authentifizierungsdaten konnten nicht verarbeitet werden", GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
         }
         return tokenResponse;
     }
@@ -402,11 +400,6 @@ public class AuthController {
         }
 
         return modelAndView;
-    }
-
-    @Nonnull
-    private static String getStateErrorDescription(@Nonnull ResponseException exception) {
-        return EXPIRED_AUTH_FLOW_MESSAGE.equals(exception.getTitle()) ? EXPIRED_AUTH_FLOW_DESCRIPTION : INVALID_STATE_DESCRIPTION;
     }
 
     @Nonnull
@@ -489,18 +482,18 @@ public class AuthController {
         try {
             appRedirectUri = new URI(appUri);
         } catch (URISyntaxException | IllegalArgumentException e) {
-            throw ResponseException.badRequestWithDetails(INVALID_APP_REDIRECT_MESSAGE, INVALID_STATE_DESCRIPTION);
+            throw ResponseException.badRequestWithDetails(INVALID_APP_REDIRECT_MESSAGE, INVALID_APP_REDIRECT_DESCRIPTION);
         }
 
         if (!appRedirectUri.isAbsolute()) {
             if (appUri.startsWith("/") && !appUri.startsWith("//") && appRedirectUri.getRawAuthority() == null) {
                 return appRedirectUri.toString();
             }
-            throw ResponseException.badRequestWithDetails(INVALID_APP_REDIRECT_MESSAGE, INVALID_STATE_DESCRIPTION);
+            throw ResponseException.badRequestWithDetails(INVALID_APP_REDIRECT_MESSAGE, INVALID_APP_REDIRECT_DESCRIPTION);
         }
 
         if (!hasAllowedSchemeAndHost(appRedirectUri)) {
-            throw ResponseException.badRequestWithDetails(INVALID_APP_REDIRECT_MESSAGE, INVALID_STATE_DESCRIPTION);
+            throw ResponseException.badRequestWithDetails(INVALID_APP_REDIRECT_MESSAGE, INVALID_APP_REDIRECT_DESCRIPTION);
         }
 
         if (!hasSameOrigin(appRedirectUri, parseConfiguredAppRedirectOrigin(hostname))) {
