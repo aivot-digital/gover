@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.services;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentitySelectElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.core.enums.ModuleFlags;
@@ -316,6 +317,59 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void validate_ShouldAcceptForwardedIdentitySelections() throws Exception {
+        var provider = new IdentitySelectValidationTestNodeDefinition();
+        var sourceNode = createNode(1, "source");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentitySelectValidationTestNodeDefinition.FIELD_ID, List.of("source-identity"));
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, sourceNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any()))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var result = service.validate(targetNode, provider, false);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void validate_ShouldRejectUnavailableForwardedIdentitySelections() throws Exception {
+        var provider = new IdentitySelectValidationTestNodeDefinition();
+        var sourceNode = createNode(1, "source");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentitySelectValidationTestNodeDefinition.FIELD_ID, List.of("missing-a", "missing-b"));
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, sourceNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any()))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var result = service.validate(targetNode, provider, false).orElseThrow();
+        var expectedError = "Die ausgewählten Prozessidentitäten „missing-a“, „missing-b“ sind nicht mehr verfügbar.";
+
+        assertEquals(List.of("Identities: " + expectedError), result.problems());
+        assertEquals(
+                expectedError,
+                result
+                        .derivedRuntimeElementData()
+                        .getElementStates()
+                        .get(IdentitySelectValidationTestNodeDefinition.FIELD_ID)
+                        .getError()
+        );
+    }
+
+    @Test
     void create_ShouldRejectWhenNodeTypeLimitIsReached() {
         prosunaConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, 1));
         when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
@@ -504,7 +558,87 @@ class ProcessNodeServiceTest {
                             processNodeEntity.getDataKey(),
                             null,
                             processNodeEntity
+                    )
+                    .addForwardedIdentity(
+                            processNodeEntity.getDataKey() + "-identity",
+                            processNodeEntity.getDataKey() + " identity",
+                            null,
+                            processNodeEntity
                     );
+        }
+
+        @Override
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<TestNodeConfig> context) {
+            return new ProcessNodeExecutionResultTaskCompleted();
+        }
+
+        @Nonnull
+        @Override
+        public Class<TestNodeConfig> getNodeConfigurationClass() {
+            return TestNodeConfig.class;
+        }
+
+        public static class TestNodeConfig {
+        }
+    }
+
+    private static final class IdentitySelectValidationTestNodeDefinition implements ProcessNodeDefinition<IdentitySelectValidationTestNodeDefinition.TestNodeConfig> {
+        private static final String FIELD_ID = "identities";
+
+        @Nonnull
+        @Override
+        public String getParentPluginKey() {
+            return "test.process";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentKey() {
+            return "identity-select-validation-node";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Nonnull
+        @Override
+        public String getName() {
+            return "Identity select validation node";
+        }
+
+        @Nonnull
+        @Override
+        public String getDescription() {
+            return "Test node definition for process identity selection validation.";
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeType getType() {
+            return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodePort> getPorts() {
+            return List.of();
+        }
+
+        @Nonnull
+        @Override
+        public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) {
+            var layout = new ConfigLayoutElement();
+            layout.setId(getKey() + "-config");
+
+            var field = new ProcessIdentitySelectElement();
+            field.setId(FIELD_ID);
+            field.setLabel("Identities");
+            layout.addChild(field);
+
+            return layout;
         }
 
         @Override

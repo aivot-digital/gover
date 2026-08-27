@@ -190,6 +190,7 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.ProcessAttachmentDisplay,
             ElementType.ProcessInstanceAttachmentSetSelect,
             ElementType.ProcessIdentityIdInput,
+            ElementType.ProcessIdentitySelect,
             ElementType.HtmlTemplateInput,
             ElementType.PaymentConfigElement,
             ElementType.StoragePathSelector,

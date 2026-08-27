@@ -54,6 +54,7 @@ import {IdentityConfigElement} from '../models/elements/form/input/identity-conf
 import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
 import {ProcessInstanceAttachmentSetSelectElement} from '../models/elements/form/input/process-instance-attachment-set-select-element';
 import {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
+import {ProcessIdentitySelectElement} from '../models/elements/form/input/process-identity-select-element';
 import {getDefaultElementWeight} from './element-widths';
 import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
 import {StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
@@ -143,6 +144,7 @@ const elementConstructors: {
     [ElementType.ProcessDataKeyInput]: (id: string) => ProcessDataKeyInputFieldElement;
     [ElementType.ProcessInstanceAttachmentSetSelect]: (id: string) => ProcessInstanceAttachmentSetSelectElement;
     [ElementType.ProcessIdentityIdInput]: (id: string) => ProcessIdentityIdInputElement;
+    [ElementType.ProcessIdentitySelect]: (id: string) => ProcessIdentitySelectElement;
     [ElementType.HtmlTemplateInput]: (id: string) => HtmlTemplateInputElement;
     [ElementType.StoragePathSelector]: (id: string) => StoragePathSelectorInputElement;
     [ElementType.PaymentConfigElement]: (id: string) => PaymentConfigElement;
@@ -514,6 +516,13 @@ const elementConstructors: {
         minItems: undefined,
         maxItems: undefined,
         allowDuplicates: false,
+    }),
+    [ElementType.ProcessIdentitySelect]: (id) => ({
+        ...makeInputBase(ElementType.ProcessIdentitySelect, id),
+        label: 'Prozessidentitäten',
+        placeholder: 'Prozessidentität auswählen',
+        minItems: undefined,
+        maxItems: undefined,
     }),
     [ElementType.HtmlTemplateInput]: (id) => ({
         ...makeInputBase(ElementType.HtmlTemplateInput, id),

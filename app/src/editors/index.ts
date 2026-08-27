@@ -46,6 +46,7 @@ import {
 import {StoragePathSelectorInputFieldEditor} from './storage-path-selector-input-field-editor';
 import {ProcessDataKeyInputFieldEditor} from './process-data-key-input-field-editor';
 import {LinkButtonEditor} from './link-button-editor';
+import {ProcessIdentitySelectFieldEditor} from './process-identity-select-field-editor';
 
 export interface EditorTab {
     label: string;
@@ -181,6 +182,9 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     },
     [ElementType.ProcessIdentityIdInput]: {
         default: ChipInputFieldEditor,
+    },
+    [ElementType.ProcessIdentitySelect]: {
+        default: ProcessIdentitySelectFieldEditor,
     },
     [ElementType.HtmlTemplateInput]: null,
     [ElementType.StoragePathSelector]: {

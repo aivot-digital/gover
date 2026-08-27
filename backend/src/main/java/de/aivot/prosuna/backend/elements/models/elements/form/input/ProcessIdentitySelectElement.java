@@ -12,11 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * @deprecated Use {@link ProcessIdentitySelectElement} for metadata-backed identity selection.
- */
-@Deprecated
-public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
+public class ProcessIdentitySelectElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
     @Nullable
     private String placeholder;
 
@@ -26,8 +22,8 @@ public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>
     @Nullable
     private Integer maxItems;
 
-    public ProcessIdentityIdInputElement() {
-        super(ElementType.ProcessIdentityIdInput);
+    public ProcessIdentitySelectElement() {
+        super(ElementType.ProcessIdentitySelect);
     }
 
     @Nullable
@@ -48,6 +44,10 @@ public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>
 
         if (maxItems != null && maxItems > 0 && value.size() > maxItems) {
             throw new ValidationException(this, "Maximal " + maxItems + " Einträge erlaubt.");
+        }
+
+        if (value.stream().distinct().count() != value.size()) {
+            throw new ValidationException(this, "Mehrfach vorhandene Einträge sind nicht erlaubt.");
         }
     }
 
@@ -98,26 +98,29 @@ public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>
 
     @Nullable
     public static List<String> _formatValue(@Nullable Object value) {
-        var res = switch (value) {
+        var result = switch (value) {
             case null -> null;
-            case String sValue -> List.of(sValue.trim());
-            case Collection<?> cValue -> cValue.stream()
+            case String stringValue -> {
+                var normalizedValue = stringValue.trim();
+                yield normalizedValue.isEmpty() ? null : List.of(normalizedValue);
+            }
+            case Collection<?> collectionValue -> collectionValue.stream()
                     .filter(Objects::nonNull)
-                    .map(v -> v.toString().trim())
-                    .filter(s -> !s.isEmpty())
+                    .map(item -> item.toString().trim())
+                    .filter(item -> !item.isEmpty())
                     .toList();
             default -> null;
         };
 
-        return res == null || res.isEmpty() ? null : res;
+        return result == null || result.isEmpty() ? null : result;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+    public boolean equals(Object other) {
+        if (other == null || getClass() != other.getClass()) return false;
+        if (!super.equals(other)) return false;
 
-        ProcessIdentityIdInputElement that = (ProcessIdentityIdInputElement) o;
+        ProcessIdentitySelectElement that = (ProcessIdentitySelectElement) other;
         return Objects.equals(placeholder, that.placeholder)
                 && Objects.equals(minItems, that.minItems)
                 && Objects.equals(maxItems, that.maxItems);
@@ -125,11 +128,7 @@ public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Objects.hashCode(placeholder);
-        result = 31 * result + Objects.hashCode(minItems);
-        result = 31 * result + Objects.hashCode(maxItems);
-        return result;
+        return Objects.hash(super.hashCode(), placeholder, minItems, maxItems);
     }
 
     @Nullable
@@ -137,7 +136,7 @@ public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>
         return placeholder;
     }
 
-    public ProcessIdentityIdInputElement setPlaceholder(@Nullable String placeholder) {
+    public ProcessIdentitySelectElement setPlaceholder(@Nullable String placeholder) {
         this.placeholder = placeholder;
         return this;
     }
@@ -147,7 +146,7 @@ public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>
         return minItems;
     }
 
-    public ProcessIdentityIdInputElement setMinItems(@Nullable Integer minItems) {
+    public ProcessIdentitySelectElement setMinItems(@Nullable Integer minItems) {
         this.minItems = minItems;
         return this;
     }
@@ -157,7 +156,7 @@ public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>
         return maxItems;
     }
 
-    public ProcessIdentityIdInputElement setMaxItems(@Nullable Integer maxItems) {
+    public ProcessIdentitySelectElement setMaxItems(@Nullable Integer maxItems) {
         this.maxItems = maxItems;
         return this;
     }

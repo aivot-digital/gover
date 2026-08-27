@@ -64,11 +64,16 @@ public enum ElementType implements Identifiable<Integer> {
     ProcessDataKeyInput(44),
     ProcessAttachmentDisplay(45),
     ProcessInstanceAttachmentSetSelect(46),
+    /**
+     * @deprecated Use {@link #ProcessIdentitySelect} instead.
+     */
+    @Deprecated
     ProcessIdentityIdInput(47),
     HtmlTemplateInput(48),
     StoragePathSelector(49),
     PaymentConfig(50),
     LinkButton(51),
+    ProcessIdentitySelect(52),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -123,6 +128,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_StoragePathSelector = "49";
     public static final String ID_PaymentConfig = "50";
     public static final String ID_LinkButton = "51";
+    public static final String ID_ProcessIdentitySelect = "52";
 
     private final Integer key;
 
@@ -203,6 +209,7 @@ public enum ElementType implements Identifiable<Integer> {
             case StoragePathSelector -> new StoragePathSelectorInputElement();
             case PaymentConfig -> new PaymentConfigElement();
             case LinkButton -> new LinkButtonContentElement();
+            case ProcessIdentitySelect -> new ProcessIdentitySelectElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

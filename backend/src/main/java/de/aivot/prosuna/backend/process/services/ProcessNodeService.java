@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentitySelectElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
@@ -41,6 +42,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ProcessNodeService implements EntityService<ProcessNodeEntity, Integer> {
@@ -485,6 +487,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         }
 
         if (derivedConfiguration != null) {
+            validateProcessIdentitySelections(
+                    node,
+                    layout,
+                    derivedConfiguration.derivedRuntimeElementData
+            );
+
             ElementStreamUtils.applyAction(
                     layout,
                     derivedConfiguration.derivedRuntimeElementData.getElementStates(),
@@ -503,7 +511,14 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             if (validationErrors != null) {
                 for (var err : validationErrors.entrySet()) {
                     // Mirror provider validation errors into element states so the editor can mark the field itself.
-                    var combinedValidationError = combineValidationErrors(err.getValue());
+                    var existingState = derivedConfiguration
+                            .derivedRuntimeElementData
+                            .getElementStates()
+                            .get(err.getKey());
+                    var fieldValidationErrors = new LinkedList<String>();
+                    fieldValidationErrors.add(existingState == null ? null : existingState.getError());
+                    fieldValidationErrors.addAll(err.getValue());
+                    var combinedValidationError = combineValidationErrors(fieldValidationErrors);
                     if (StringUtils.isNotNullOrEmpty(combinedValidationError)) {
                         derivedConfiguration.derivedRuntimeElementData.putError(
                                 err.getKey(),
@@ -543,6 +558,88 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             return Optional.of(new ProcessNodeProblems(node, problems, commonErrors,
                     derivedConfiguration != null ? derivedConfiguration.derivedRuntimeElementData : new DerivedRuntimeElementData()));
         }
+    }
+
+    private void validateProcessIdentitySelections(@Nonnull ProcessNodeEntity node,
+                                                   @Nonnull ConfigLayoutElement layout,
+                                                   @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) {
+        var selectionsByElement = new LinkedHashMap<ProcessIdentitySelectElement, List<String>>();
+        ElementStreamUtils.applyAction(layout, element -> {
+            if (element instanceof ProcessIdentitySelectElement identitySelectElement) {
+                var selectedIdentityIds = identitySelectElement.formatValue(
+                        derivedRuntimeElementData
+                                .getEffectiveValues()
+                                .get(identitySelectElement.getId())
+                );
+                if (selectedIdentityIds != null) {
+                    selectionsByElement.put(identitySelectElement, selectedIdentityIds);
+                }
+            }
+        });
+
+        if (selectionsByElement.isEmpty()) {
+            return;
+        }
+
+        ProcessNodeDefinitionMetadata incomingMetadata;
+        try {
+            incomingMetadata = getIncomingProcessNodeDefinitionMetadata(node);
+        } catch (ResponseException ignored) {
+            for (var identitySelectElement : selectionsByElement.keySet()) {
+                putProcessIdentityValidationError(
+                        derivedRuntimeElementData,
+                        identitySelectElement,
+                        "Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden."
+                );
+            }
+            return;
+        }
+
+        var availableIdentityIds = incomingMetadata
+                .forwardedIdentities()
+                .stream()
+                .map(ProcessNodeDefinitionMetadata.ForwardedIdentity::identityId)
+                .map(String::trim)
+                .filter(identityId -> !identityId.isEmpty())
+                .collect(Collectors.toSet());
+
+        for (var selection : selectionsByElement.entrySet()) {
+            var identitySelectElement = selection.getKey();
+            var selectedIdentityIds = selection.getValue();
+            var unavailableIdentityIds = selectedIdentityIds
+                    .stream()
+                    .filter(identityId -> !availableIdentityIds.contains(identityId))
+                    .distinct()
+                    .toList();
+            if (unavailableIdentityIds.isEmpty()) {
+                continue;
+            }
+
+            var quotedIdentityIds = unavailableIdentityIds
+                    .stream()
+                    .map(StringUtils::quote)
+                    .collect(Collectors.joining(", "));
+            var validationError = unavailableIdentityIds.size() == 1
+                    ? "Die ausgewählte Prozessidentität " + quotedIdentityIds + " ist nicht mehr verfügbar."
+                    : "Die ausgewählten Prozessidentitäten " + quotedIdentityIds + " sind nicht mehr verfügbar.";
+            putProcessIdentityValidationError(
+                    derivedRuntimeElementData,
+                    identitySelectElement,
+                    validationError
+            );
+        }
+    }
+
+    private static void putProcessIdentityValidationError(@Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
+                                                          @Nonnull ProcessIdentitySelectElement identitySelectElement,
+                                                          @Nonnull String validationError) {
+        var existingState = derivedRuntimeElementData
+                .getElementStates()
+                .get(identitySelectElement.getId());
+        var existingError = existingState == null ? null : existingState.getError();
+        var combinedError = combineValidationErrors(Arrays.asList(existingError, validationError));
+
+        derivedRuntimeElementData.putError(identitySelectElement.getId(), combinedError);
     }
 
     @Nonnull
