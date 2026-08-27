@@ -29,7 +29,6 @@ import {ProcessDataKeyInputFieldElement} from './process-data-key-input-field-el
 import {IdentityConfigElement} from './identity-config-element';
 import {ProcessInstanceAttachmentSetSelectElement} from './process-instance-attachment-set-select-element';
 import {ProcessIdentityIdInputElement} from './process-identity-id-input-element';
-import {ProcessIdentitySelectElement} from './process-identity-select-element';
 import {ElementIsInput} from '../../../../data/element-type/element-is-input';
 import {HtmlTemplateInputElement} from './html-template-input-element';
 import {StoragePathSelectorInputElement} from './storage-path-selector-input-element';
@@ -63,7 +62,6 @@ export type AnyInputElement = (
     ProcessDataKeyInputFieldElement |
     ProcessInstanceAttachmentSetSelectElement |
     ProcessIdentityIdInputElement |
-    ProcessIdentitySelectElement |
     HtmlTemplateInputElement |
     StoragePathSelectorInputElement |
     UiDefinitionInputFieldElement |

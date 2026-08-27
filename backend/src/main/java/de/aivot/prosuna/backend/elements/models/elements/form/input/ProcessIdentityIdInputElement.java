@@ -12,10 +12,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * @deprecated Use {@link ProcessIdentitySelectElement} for metadata-backed identity selection.
- */
-@Deprecated
 public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
     @Nullable
     private String placeholder;

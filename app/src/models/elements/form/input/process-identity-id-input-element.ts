@@ -1,7 +1,6 @@
 import {type BaseInputElement} from '../base-input-element';
 import {type ElementType} from '../../../../data/element-type/element-type';
 
-/** @deprecated Use `ProcessIdentitySelectElement` for metadata-backed identity selection. */
 export interface ProcessIdentityIdInputElement extends BaseInputElement<ElementType.ProcessIdentityIdInput> {
     placeholder: string | null | undefined;
     minItems: number | null | undefined;

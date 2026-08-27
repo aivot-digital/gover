@@ -115,7 +115,6 @@ const YupSchemaMap: {
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
     [ElementType.ProcessInstanceAttachmentSetSelect]: chipInputFieldToYup,
     [ElementType.ProcessIdentityIdInput]: chipInputFieldToYup,
-    [ElementType.ProcessIdentitySelect]: chipInputFieldToYup,
 };
 
 function genericFieldToYup(elem: AnyInputElement): Schema {

@@ -46,11 +46,9 @@ export enum ElementType {
     ProcessDataKeyInput = 44,
     ProcessAttachmentDisplay = 45,
     ProcessInstanceAttachmentSetSelect = 46,
-    /** @deprecated Use `ProcessIdentitySelect` instead. */
     ProcessIdentityIdInput = 47,
     HtmlTemplateInput = 48,
     StoragePathSelector = 49,
     PaymentConfigElement = 50,
     LinkButton = 51,
-    ProcessIdentitySelect = 52,
 }
