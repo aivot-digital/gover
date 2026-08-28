@@ -72,7 +72,7 @@ export const evaluators: {
     [ElementType.SummaryLayout]: null,
     [ElementType.ProcessDataKeyInput]: TextEvaluator,
     [ElementType.ProcessInstanceAttachmentSetSelect]: ChipInputEvaluator,
-    [ElementType.ProcessIdentityIdInput]: ChipInputEvaluator,
+    [ElementType.ProcessIdentityIdInput]: SelectEvaluator,
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputEvaluator,
     [ElementType.StoragePathSelector]: StoragePathSelectorInputEvaluator,
     [ElementType.ProcessAttachmentDisplay]: null,

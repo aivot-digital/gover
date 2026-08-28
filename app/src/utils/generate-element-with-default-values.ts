@@ -508,12 +508,8 @@ const elementConstructors: {
     }),
     [ElementType.ProcessIdentityIdInput]: (id) => ({
         ...makeInputBase(ElementType.ProcessIdentityIdInput, id),
-        label: 'Prozessidentitäten',
-        placeholder: 'Identität hinzufügen',
-        suggestions: undefined,
-        minItems: undefined,
-        maxItems: undefined,
-        allowDuplicates: false,
+        label: 'Prozessidentität',
+        placeholder: 'Prozessidentität auswählen',
     }),
     [ElementType.HtmlTemplateInput]: (id) => ({
         ...makeInputBase(ElementType.HtmlTemplateInput, id),

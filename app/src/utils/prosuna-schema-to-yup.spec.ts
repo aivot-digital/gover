@@ -263,6 +263,21 @@ describe('temporal range validation', () => {
     });
 });
 
+describe('process identity ID validation', () => {
+    it('should validate a scalar identity ID instead of a list', async () => {
+        const schema = prosunaSchemaToYup({
+            id: 'identity',
+            type: ElementType.ProcessIdentityIdInput,
+            label: 'Prozessidentität',
+            required: true,
+        } as any, {}).identity;
+
+        await expect(schema.validate(' citizen ')).resolves.toBe('citizen');
+        await expect(schema.validate(['citizen'])).rejects.toThrow();
+        await expect(schema.validate('')).rejects.toThrow('Prozessidentität ist ein Pflichtfeld.');
+    });
+});
+
 function createGroupLayout(children: any[]): any {
     return {
         id: 'root',

@@ -8,19 +8,11 @@ import de.aivot.prosuna.backend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 
-public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
+public class ProcessIdentityIdInputElement extends BaseInputElement<String> implements PrintableElement<String> {
     @Nullable
     private String placeholder;
-
-    @Nullable
-    private Integer minItems;
-
-    @Nullable
-    private Integer maxItems;
 
     public ProcessIdentityIdInputElement() {
         super(ElementType.ProcessIdentityIdInput);
@@ -28,84 +20,47 @@ public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>
 
     @Nullable
     @Override
-    public List<String> formatValue(@Nullable Object value) {
+    public String formatValue(@Nullable Object value) {
         return _formatValue(value);
     }
 
     @Override
-    public void performValidation(@Nullable List<String> value) throws ValidationException {
-        if (value == null) {
-            return;
-        }
-
-        if (minItems != null && minItems > 0 && value.size() < minItems) {
-            throw new ValidationException(this, "Mindestens " + minItems + " Einträge erforderlich.");
-        }
-
-        if (maxItems != null && maxItems > 0 && value.size() > maxItems) {
-            throw new ValidationException(this, "Maximal " + maxItems + " Einträge erlaubt.");
-        }
+    public void performValidation(@Nullable String value) throws ValidationException {
     }
 
     @Nonnull
     @Override
-    public String toDisplayValue(@Nullable List<String> value) {
-        if (value == null || value.isEmpty()) {
+    public String toDisplayValue(@Nullable String value) {
+        if (value == null || value.isBlank()) {
             return "Keine Angabe";
         }
 
-        return value.stream()
-                .filter(Objects::nonNull)
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("Keine Angabe");
+        return value;
     }
 
     @Nonnull
     @Override
     public Boolean evaluate(ConditionOperator operator, Object referencedValue, Object comparedValue) {
-        if (referencedValue == null) {
-            return operator == ConditionOperator.Empty;
-        }
+        var valueA = formatValue(referencedValue);
+        var valueB = formatValue(comparedValue);
 
-        if (operator == ConditionOperator.NotEmpty) {
-            return true;
-        }
-
-        if (referencedValue instanceof Collection<?> cValA) {
-            if (comparedValue instanceof String sValueB) {
-                return switch (operator) {
-                    case Includes -> cValA.stream().anyMatch(sValueB::equals);
-                    case NotIncludes -> cValA.stream().noneMatch(sValueB::equals);
-                    default -> false;
-                };
-            }
-
-            if (comparedValue instanceof Collection<?> cValB) {
-                return switch (operator) {
-                    case Includes -> cValB.stream().allMatch(cValA::contains);
-                    case NotIncludes -> cValB.stream().noneMatch(cValA::contains);
-                    default -> false;
-                };
-            }
-        }
-
-        return false;
+        return switch (operator) {
+            case Equals -> Objects.equals(valueA, valueB);
+            case NotEquals -> !Objects.equals(valueA, valueB);
+            case Empty -> valueA == null;
+            case NotEmpty -> valueA != null;
+            default -> false;
+        };
     }
 
     @Nullable
-    public static List<String> _formatValue(@Nullable Object value) {
-        var res = switch (value) {
-            case null -> null;
-            case String sValue -> List.of(sValue.trim());
-            case Collection<?> cValue -> cValue.stream()
-                    .filter(Objects::nonNull)
-                    .map(v -> v.toString().trim())
-                    .filter(s -> !s.isEmpty())
-                    .toList();
-            default -> null;
-        };
+    public static String _formatValue(@Nullable Object value) {
+        if (!(value instanceof String stringValue)) {
+            return null;
+        }
 
-        return res == null || res.isEmpty() ? null : res;
+        var normalizedValue = stringValue.trim();
+        return normalizedValue.isEmpty() ? null : normalizedValue;
     }
 
     @Override
@@ -114,18 +69,12 @@ public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>
         if (!super.equals(o)) return false;
 
         ProcessIdentityIdInputElement that = (ProcessIdentityIdInputElement) o;
-        return Objects.equals(placeholder, that.placeholder)
-                && Objects.equals(minItems, that.minItems)
-                && Objects.equals(maxItems, that.maxItems);
+        return Objects.equals(placeholder, that.placeholder);
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Objects.hashCode(placeholder);
-        result = 31 * result + Objects.hashCode(minItems);
-        result = 31 * result + Objects.hashCode(maxItems);
-        return result;
+        return Objects.hash(super.hashCode(), placeholder);
     }
 
     @Nullable
@@ -135,26 +84,6 @@ public class ProcessIdentityIdInputElement extends BaseInputElement<List<String>
 
     public ProcessIdentityIdInputElement setPlaceholder(@Nullable String placeholder) {
         this.placeholder = placeholder;
-        return this;
-    }
-
-    @Nullable
-    public Integer getMinItems() {
-        return minItems;
-    }
-
-    public ProcessIdentityIdInputElement setMinItems(@Nullable Integer minItems) {
-        this.minItems = minItems;
-        return this;
-    }
-
-    @Nullable
-    public Integer getMaxItems() {
-        return maxItems;
-    }
-
-    public ProcessIdentityIdInputElement setMaxItems(@Nullable Integer maxItems) {
-        this.maxItems = maxItems;
         return this;
     }
 }

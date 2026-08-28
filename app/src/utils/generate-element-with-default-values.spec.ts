@@ -5,6 +5,7 @@ import {type FileUploadElement} from '../models/elements/form/input/file-upload-
 import {generateElementWithDefaultValues} from './generate-element-with-default-values';
 import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
 import type {LinkButtonElement} from '../models/elements/form/content/link-button-element';
+import type {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
 
 describe('generateElementWithDefaultValues', () => {
     it('should default text fields to not being copyable', () => {
@@ -38,5 +39,16 @@ describe('generateElementWithDefaultValues', () => {
         const element = generateElementWithDefaultValues(ElementType.FileUpload) as FileUploadElement;
 
         expect(element.submittedFileName).toBe('Anlage');
+    });
+
+    it('should initialize process identity ID inputs as scalar selections', () => {
+        const element = generateElementWithDefaultValues(ElementType.ProcessIdentityIdInput) as ProcessIdentityIdInputElement;
+
+        expect(element.label).toBe('Prozessidentität');
+        expect(element.placeholder).toBe('Prozessidentität auswählen');
+        expect(element).not.toHaveProperty('minItems');
+        expect(element).not.toHaveProperty('maxItems');
+        expect(element).not.toHaveProperty('suggestions');
+        expect(element).not.toHaveProperty('allowDuplicates');
     });
 });

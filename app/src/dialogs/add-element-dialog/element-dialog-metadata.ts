@@ -110,7 +110,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.NoCodeInput]: 'Erfasst Logik über einen No-Code-Ausdruck.',
     [ElementType.ProcessDataKeyInput]: 'Erfasst einen Prozessdaten-Schlüssel und schlägt vorhandene Pfade vor.',
     [ElementType.ProcessInstanceAttachmentSetSelect]: 'Wählt einen oder mehrere Anlagensätze der Prozessinstanz aus.',
-    [ElementType.ProcessIdentityIdInput]: 'Erfasst eine Liste verfügbarer Prozessidentitäten.',
+    [ElementType.ProcessIdentityIdInput]: 'Wählt eine verfügbare Prozessidentität aus.',
     [ElementType.HtmlTemplateInput]: 'Befüllt Slots einer HTML-Vorlage mit Text, Rich-Text oder Bildern.',
     [ElementType.StoragePathSelector]: 'Wählt einen Speicheranbieter und einen Zielordner aus.',
     [ElementType.CodeInput]: 'Erfasst technischen oder ausführbaren Code.',

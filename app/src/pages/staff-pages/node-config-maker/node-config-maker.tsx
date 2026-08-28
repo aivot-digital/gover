@@ -397,7 +397,7 @@ const ElementTypeBackendValueClass: Record<ElementType, string | null> = {
     [ElementType.ProcessDataKeyInput]: 'String',
     [ElementType.ProcessAttachmentDisplay]: null,
     [ElementType.ProcessInstanceAttachmentSetSelect]: 'List<String>',
-    [ElementType.ProcessIdentityIdInput]: 'List<String>',
+    [ElementType.ProcessIdentityIdInput]: 'String',
     [ElementType.HtmlTemplateInput]: 'HtmlTemplateInputElementValue',
     [ElementType.StoragePathSelector]: 'StoragePathSelectorInputElementValue',
     [ElementType.PaymentConfigElement]: 'PaymentConfigElementValue',
