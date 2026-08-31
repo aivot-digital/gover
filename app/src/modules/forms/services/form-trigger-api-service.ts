@@ -1,6 +1,7 @@
 import type {Page} from '../../../models/dtos/page';
-import type {AuthoredElementValues} from '../../../models/element-data';
+import type {AuthoredElementValues, DerivedRuntimeElementData} from '../../../models/element-data';
 import type {FormLayoutElement} from '../../../models/elements/form-layout-element';
+import type {GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import type {SortOrder} from '../../../components/generic-list/generic-list-props';
 import type {QueryParams} from '../../../services/base-api-service';
 import {BaseApiService} from '../../../services/base-api-service';
@@ -10,6 +11,7 @@ import type {ProcessVersionEntity} from '../../process/entities/process-version-
 import type {Theme} from '../../themes/models/theme';
 import type {FormTriggerIdentityDetailsDTO} from '../dtos/form-trigger-identity-details-dto';
 import type {PaymentConfigElementValue} from '../../../models/elements/form/input/payment-config-element';
+import type {IdentityProviderType} from '../../identity/enums/identity-provider-type';
 
 export interface FormTriggerFilter {
     id: number;
@@ -81,7 +83,135 @@ export interface FormOverviewItem {
     published: string | null;
 }
 
+export type FormIdentityType = 'IdentityProvider' | 'Email';
+
+export interface FormIdentityCommunicationChoice {
+    id: number;
+    name: string;
+    description: string;
+}
+
+export interface FormIdentityCommunicationState {
+    required: boolean;
+    ready: boolean;
+    selectedBindingId: number | null;
+    choices: FormIdentityCommunicationChoice[];
+    customerLayout: GroupLayout | null;
+    customerData: AuthoredElementValues;
+    derivedData: DerivedRuntimeElementData;
+}
+
+export interface FormIdentitySlot {
+    id: string;
+    title: string | null;
+    description: string | null;
+    isOptional: boolean;
+    isRequired: boolean;
+    allowsEmail: boolean;
+    identityType: FormIdentityType | null;
+    emailAddress: string | null;
+    isReady: boolean;
+    availableIdentityProviders: {
+        identityProviderKey: string;
+        identityProviderName: string;
+        identityProviderAssetKey: string | null;
+        identityProviderType: IdentityProviderType;
+        isAuthenticatedWithThis: boolean;
+        additionalScopes: string[];
+    }[];
+    communication: FormIdentityCommunicationState | null;
+}
+
+interface FormIdentitySlotsResponse {
+    identitySlots: FormIdentitySlot[];
+}
+
 export class FormTriggerApiService extends BaseApiService {
+    public async getIdentitySlots(
+        processSlug: string,
+        formSlug: string,
+        testClaim?: string,
+    ): Promise<FormIdentitySlot[]> {
+        const response = await this.get<FormIdentitySlotsResponse>(
+            `/api/public/form/${encodeURIComponent(processSlug)}/${encodeURIComponent(formSlug)}/`,
+            {
+                query: {'test-claim': testClaim},
+                skipAuthCheck: true,
+            },
+        );
+
+        return response.identitySlots;
+    }
+
+    public createIdentityProviderStartLink(
+        processSlug: string,
+        formSlug: string,
+        identityId: string,
+        providerKey: string,
+        testClaim?: string,
+        origin?: string,
+    ): string {
+        return this.createPath(
+            `/api/public/form/${encodeURIComponent(processSlug)}/${encodeURIComponent(formSlug)}/identities/${encodeURIComponent(identityId)}/providers/${encodeURIComponent(providerKey)}/start/`,
+            {
+                origin: origin ?? window.location.href,
+                'test-claim': testClaim,
+            },
+        );
+    }
+
+    public setEmailIdentity(
+        processSlug: string,
+        formSlug: string,
+        identityId: string,
+        emailAddress: string,
+        testClaim?: string,
+    ): Promise<FormIdentitySlot> {
+        return this.put(
+            `/api/public/form/${encodeURIComponent(processSlug)}/${encodeURIComponent(formSlug)}/identities/${encodeURIComponent(identityId)}/email/`,
+            {emailAddress},
+            {query: {'test-claim': testClaim}, skipAuthCheck: true},
+        );
+    }
+
+    public clearIdentity(
+        processSlug: string,
+        formSlug: string,
+        identityId: string,
+        testClaim?: string,
+    ): Promise<void> {
+        return this.delete(
+            `/api/public/form/${encodeURIComponent(processSlug)}/${encodeURIComponent(formSlug)}/identities/${encodeURIComponent(identityId)}/`,
+            {query: {'test-claim': testClaim}, skipAuthCheck: true},
+        );
+    }
+
+    public selectCommunication(
+        identityId: string,
+        relatedProcessNodeId: number,
+        bindingId: number,
+        customerData: AuthoredElementValues,
+    ): Promise<FormIdentityCommunicationState> {
+        return this.put(
+            `/api/public/identity/${encodeURIComponent(identityId)}/communication/`,
+            {bindingId, customerData},
+            {query: {relatedProcessNodeId}, skipAuthCheck: true},
+        );
+    }
+
+    public deriveCommunication(
+        identityId: string,
+        relatedProcessNodeId: number,
+        bindingId: number,
+        customerData: AuthoredElementValues,
+    ): Promise<FormIdentityCommunicationState> {
+        return this.post(
+            `/api/public/identity/${encodeURIComponent(identityId)}/communication/derive/`,
+            {bindingId, customerData},
+            {query: {relatedProcessNodeId}, skipAuthCheck: true},
+        );
+    }
+
     public async submitForm(processSlug: string, triggerSlug: string, formData: FormData, options?: {
         testClaim?: string;
     }): Promise<FormTriggerSubmissionStatusResponseV1> {

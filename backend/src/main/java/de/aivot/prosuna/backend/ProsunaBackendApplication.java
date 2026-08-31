@@ -12,6 +12,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
         "de.aivot.prosuna.backend.audit.repositories",
         "de.aivot.prosuna.backend.codeLists.repositories",
         "de.aivot.prosuna.backend.config.repositories",
+        "de.aivot.prosuna.backend.communication.repositories",
         "de.aivot.prosuna.backend.dataObject.repositories",
         "de.aivot.prosuna.backend.department.repositories",
         "de.aivot.prosuna.backend.identity.repositories",

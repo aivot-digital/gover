@@ -266,7 +266,9 @@ class FormTriggerControllerV1SubmitTest {
                 mock(PaymentTransactionService.class),
                 mock(PaymentProviderRepository.class),
                 mock(PdfService.class),
-                mock(PaymentProviderDefinitionsService.class)
+                mock(PaymentProviderDefinitionsService.class),
+                mock(de.aivot.prosuna.backend.communication.services.IdentityCommunicationService.class),
+                mock(de.aivot.prosuna.backend.communication.services.CommunicationService.class)
         );
 
         return new SubmitFixture(

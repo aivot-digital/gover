@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
+import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
+import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
@@ -20,10 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 class IdentityConfigElementTest {
-    private static final String MISSING_OPTION_MESSAGE = "Für jede Identität muss mindestens ein Identitätsanbieter ausgewählt werden.";
+    private static final String MISSING_OPTION_MESSAGE = "Für jede Identität muss mindestens ein Nutzerkontenanbieter oder die direkte E-Mail-Eingabe aktiviert werden.";
 
     @Test
     void shouldRejectSlotWithoutSelectedOption() {
@@ -55,6 +58,16 @@ class IdentityConfigElementTest {
         var exception = assertThrows(ValidationException.class, () -> element.performValidation(List.of(slot)));
 
         assertEquals(MISSING_OPTION_MESSAGE, exception.getMessage());
+    }
+
+    @Test
+    void shouldAcceptEmailOnlySlot() {
+        var element = new IdentityConfigElement();
+        var slot = new IdentityConfigElementSlot()
+                .setAllowsMail(true)
+                .setOptions(List.of());
+
+        assertDoesNotThrow(() -> element.performValidation(List.of(slot)));
     }
 
     @Test
@@ -218,6 +231,31 @@ class IdentityConfigElementTest {
         }
     }
 
+    @Test
+    void shouldRejectProviderWithoutCommunicationBinding() throws Exception {
+        var providerKey = UUID.randomUUID();
+        var identityProvider = identityProvider(providerKey, IdentityProviderType.Custom, "Custom");
+        var identityProviderService = mockIdentityProviderService(identityProvider);
+        var communicationService = mock(CommunicationService.class);
+        when(communicationService.getUsableBindings(identityProvider)).thenReturn(List.of());
+        var slot = new IdentityConfigElementSlot()
+                .setOptions(List.of(new IdentityConfigElementOption().setIdentityProviderKey(providerKey)));
+
+        var previousContext = setServices(identityProviderService, communicationService);
+        try {
+            var exception = assertThrows(
+                    ValidationException.class,
+                    () -> new IdentityConfigElement().performValidation(List.of(slot))
+            );
+            assertEquals(
+                    "Für den Identitätsanbieter \"Custom\" ist keine verwendbare Kommunikationsanbindung konfiguriert.",
+                    exception.getMessage()
+            );
+        } finally {
+            setSpringContext(previousContext);
+        }
+    }
+
     private static IdentityProviderService mockIdentityProviderService(IdentityProviderEntity... identityProviders) throws Exception {
         var identityProviderService = mock(IdentityProviderService.class);
         for (var identityProvider : identityProviders) {
@@ -234,8 +272,16 @@ class IdentityConfigElementTest {
     }
 
     private static ApplicationContext setIdentityProviderService(IdentityProviderService identityProviderService) throws Exception {
+        var communicationService = mock(CommunicationService.class);
+        when(communicationService.getUsableBindings(any())).thenReturn(List.of(mock(CommunicationProviderBindingEntity.class)));
+        return setServices(identityProviderService, communicationService);
+    }
+
+    private static ApplicationContext setServices(IdentityProviderService identityProviderService,
+                                                  CommunicationService communicationService) throws Exception {
         var applicationContext = mock(ApplicationContext.class);
         when(applicationContext.getBean(IdentityProviderService.class)).thenReturn(identityProviderService);
+        when(applicationContext.getBean(CommunicationService.class)).thenReturn(communicationService);
         return setSpringContext(applicationContext);
     }
 

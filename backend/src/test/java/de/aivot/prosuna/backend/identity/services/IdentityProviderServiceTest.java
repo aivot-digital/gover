@@ -35,7 +35,6 @@ class IdentityProviderServiceTest {
         identityProviderRepository = mock(IdentityProviderRepository.class);
         secretRepository = mock(SecretRepository.class);
         assetRepository = mock(AssetRepository.class);
-
         identityProviderService = new IdentityProviderService(
                 identityProviderRepository,
                 secretRepository,
@@ -211,6 +210,19 @@ class IdentityProviderServiceTest {
         assertNull(result.getIconAssetKey());
         assertNotNull(result.getKey());
         assertEquals(IdentityProviderType.Custom, result.getType());
+    }
+
+    @Test
+    void create_EnabledIdentityProviderWithoutUsableBinding_IsAllowed() throws Exception {
+        var entity = new IdentityProviderEntity()
+                .setName("Custom")
+                .setIsEnabled(true);
+        when(identityProviderRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = identityProviderService.create(entity);
+
+        assertTrue(result.getIsEnabled());
+        verify(identityProviderRepository).save(result);
     }
 
     @Test

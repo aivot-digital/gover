@@ -663,7 +663,9 @@ class FormTriggerControllerV1Test {
                 paymentTransactionService,
                 mock(PaymentProviderRepository.class),
                 pdfService,
-                mock(PaymentProviderDefinitionsService.class)
+                mock(PaymentProviderDefinitionsService.class),
+                mock(de.aivot.prosuna.backend.communication.services.IdentityCommunicationService.class),
+                mock(de.aivot.prosuna.backend.communication.services.CommunicationService.class)
         );
 
         return new PrintFixture(
@@ -855,7 +857,9 @@ class FormTriggerControllerV1Test {
                 mock(PaymentTransactionService.class),
                 paymentProviderRepository,
                 mock(PdfService.class),
-                paymentProviderDefinitionsService
+                paymentProviderDefinitionsService,
+                mock(de.aivot.prosuna.backend.communication.services.IdentityCommunicationService.class),
+                mock(de.aivot.prosuna.backend.communication.services.CommunicationService.class)
         );
 
         return new TestFixture(

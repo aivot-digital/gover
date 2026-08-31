@@ -1,46 +1,30 @@
 import {Box, Button, Typography, useTheme} from '@mui/material';
 import {alpha} from '@mui/material/styles';
-import {useMemo} from 'react';
 import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 import {Chip} from '../../../../components/chip/chip';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
-import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityProviderIcon} from '../identity-provider-icon/identity-provider-icon';
 
 export interface IdentityButtonProps {
     isAuthenticated: boolean;
-    relatedProcessNodeId: number;
-    identityId: string;
-    identityProviderKey: string;
+    startUri: string;
     identityProviderAssetKey: string | null;
-    additionalScopes: string[];
     identityProviderName: string;
     identityProviderType: IdentityProviderType;
+    disabled?: boolean;
 }
 
 export function IdentityButton(props: IdentityButtonProps) {
     const theme = useTheme();
     const {
         isAuthenticated,
-        relatedProcessNodeId,
-        identityId,
-        identityProviderKey,
+        startUri,
         identityProviderAssetKey,
         identityProviderName,
         identityProviderType,
-        additionalScopes,
+        disabled,
     } = props;
-
-    const startUri = useMemo(() => {
-        return IdentityProvidersApiService.createLink(
-            identityProviderKey,
-            identityId,
-            relatedProcessNodeId,
-            additionalScopes,
-            window.location.href,
-        );
-    }, [additionalScopes, identityId, identityProviderKey, relatedProcessNodeId]);
 
     const content = (
         <>
@@ -140,6 +124,7 @@ export function IdentityButton(props: IdentityButtonProps) {
                 gap: 2,
                 textTransform: 'none',
             }}
+            disabled={disabled}
         >
             {content}
             <ArrowForward sx={{flexShrink: 0}}/>

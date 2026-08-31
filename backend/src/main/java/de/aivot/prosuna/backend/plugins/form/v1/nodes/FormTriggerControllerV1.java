@@ -23,12 +23,17 @@ import de.aivot.prosuna.backend.elements.utils.ElementFlattenUtils;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
+import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
+import de.aivot.prosuna.backend.communication.services.IdentityCommunicationService;
+import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.models.dtos.MaxFileSizeDto;
@@ -65,6 +70,8 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,6 +128,8 @@ public class FormTriggerControllerV1 {
     private final PaymentProviderRepository paymentProviderRepository;
     private final PdfService pdfService;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
+    private final IdentityCommunicationService identityCommunicationService;
+    private final CommunicationService communicationService;
 
     @Autowired
     public FormTriggerControllerV1(ProsunaConfig prosunaConfig,
@@ -152,7 +161,10 @@ public class FormTriggerControllerV1 {
                                    PaymentPayloadCreationService paymentRequestCreationService,
                                    PaymentTransactionService paymentTransactionService,
                                    PaymentProviderRepository paymentProviderRepository,
-                                   PdfService pdfService, PaymentProviderDefinitionsService paymentProviderDefinitionsService) {
+                                   PdfService pdfService,
+                                   PaymentProviderDefinitionsService paymentProviderDefinitionsService,
+                                   IdentityCommunicationService identityCommunicationService,
+                                   CommunicationService communicationService) {
         this.prosunaConfig = prosunaConfig;
         this.identityProviderService = identityProviderService;
         this.elementDerivationService = elementDerivationService;
@@ -184,6 +196,8 @@ public class FormTriggerControllerV1 {
         this.paymentProviderRepository = paymentProviderRepository;
         this.pdfService = pdfService;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
+        this.identityCommunicationService = identityCommunicationService;
+        this.communicationService = communicationService;
     }
 
     @GetMapping("")
@@ -203,7 +217,7 @@ public class FormTriggerControllerV1 {
 
         var shouldObfuscateSteps = identitySlots
                 .stream()
-                .anyMatch(s -> s.getIsRequired() && !s.isAuthenticated());
+                .anyMatch(s -> s.getIsRequired() && !s.isReady());
 
         var formLayout = config
                 .configuration()
@@ -225,10 +239,135 @@ public class FormTriggerControllerV1 {
         );
     }
 
+    @GetMapping("identities/{identityId}/providers/{providerKey}/start/")
+    public void startIdentityProviderAuthentication(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String processSlug,
+            @Nonnull @PathVariable String formSlug,
+            @Nonnull @PathVariable String identityId,
+            @Nonnull @PathVariable UUID providerKey,
+            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.ORIGIN) String origin,
+            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+            @Nonnull HttpServletResponse response
+    ) throws ResponseException, IOException {
+        var execUser = getExecUser(jwt);
+        var process = getProcessEntity(processSlug);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
+        var node = getProcessNodeEntity(formSlug, process, processVersion);
+        var formProvider = getProvider(node);
+        var config = getConfigurationDetails(node, formProvider, execUser);
+        var slot = getConfiguredIdentitySlot(config, identityId);
+        var configuredOption = Optional.ofNullable(slot.getOptions())
+                .orElse(List.of())
+                .stream()
+                .filter(option -> option != null && Objects.equals(option.getIdentityProviderKey(), providerKey))
+                .findFirst()
+                .orElseThrow(() -> ResponseException.badRequest("Der Nutzerkontenanbieter ist für diese Identität nicht konfiguriert."));
+        var identityProvider = identityProviderService.retrieve(providerKey)
+                .orElseThrow(() -> ResponseException.notFound("Der Nutzerkontenanbieter existiert nicht."));
+        if (!Boolean.TRUE.equals(identityProvider.getIsEnabled())) {
+            throw ResponseException.badRequest("Der Nutzerkontenanbieter ist nicht aktiviert.");
+        }
+        if (communicationService.getUsableBindings(identityProvider).isEmpty()) {
+            throw ResponseException.conflict("Für den Nutzerkontenanbieter ist keine verwendbare Kommunikationsanbindung konfiguriert.");
+        }
+
+        var redirectUrl = identityService.createRedirectURL(
+                identitySessionId,
+                providerKey,
+                identityId,
+                origin,
+                configuredOption.getAdditionalScopes() == null
+                        ? List.of()
+                        : configuredOption.getAdditionalScopes(),
+                node.getId()
+        );
+        response.sendRedirect(redirectUrl.toString());
+    }
+
+    @PutMapping("identities/{identityId}/email/")
+    public IdentitySlot setEmailIdentity(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String processSlug,
+            @Nonnull @PathVariable String formSlug,
+            @Nonnull @PathVariable String identityId,
+            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+            @Nonnull @Valid @RequestBody EmailIdentityRequest request,
+            @Nonnull HttpServletResponse response
+    ) throws ResponseException {
+        var execUser = getExecUser(jwt);
+        var process = getProcessEntity(processSlug);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
+        var node = getProcessNodeEntity(formSlug, process, processVersion);
+        var formProvider = getProvider(node);
+        var config = getConfigurationDetails(node, formProvider, execUser);
+        var slot = getConfiguredIdentitySlot(config, identityId);
+        if (!Boolean.TRUE.equals(slot.getAllowsMail())) {
+            throw ResponseException.badRequest("Die direkte E-Mail-Eingabe ist für diese Identität nicht erlaubt.");
+        }
+
+        final IdentityData identity;
+        try {
+            identity = IdentityData.from(identityService.setEmailIdentity(
+                    identitySessionId,
+                    node.getId(),
+                    identityId,
+                    request.emailAddress()
+            ));
+        } catch (IllegalArgumentException e) {
+            throw ResponseException.badRequest(e.getMessage());
+        }
+        response.addCookie(IdentityCookieUtils.createIdentityCookie(identity.sessionId()));
+
+        var identities = identityService.getIdentityDataMap(identity.sessionId(), node.getId());
+        return getIdentitySlot(slot, identities, identity.sessionId(), node.getId());
+    }
+
+    @DeleteMapping("identities/{identityId}/")
+    public void clearIdentity(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String processSlug,
+            @Nonnull @PathVariable String formSlug,
+            @Nonnull @PathVariable String identityId,
+            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+            @Nonnull HttpServletResponse response
+    ) throws ResponseException {
+        var execUser = getExecUser(jwt);
+        var process = getProcessEntity(processSlug);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
+        var node = getProcessNodeEntity(formSlug, process, processVersion);
+        var formProvider = getProvider(node);
+        var config = getConfigurationDetails(node, formProvider, execUser);
+        getConfiguredIdentitySlot(config, identityId);
+
+        var identitiesRemain = identityService.clearIdentity(identitySessionId, node.getId(), identityId);
+        if (!identitiesRemain) {
+            response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
+        }
+        response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+    }
+
+    @Nonnull
+    private static IdentityConfigElementSlot getConfiguredIdentitySlot(
+            @Nonnull ProcessNodeService.ProcessConfigurationDetails<FormTriggerConfigV1> config,
+            @Nonnull String identityId
+    ) throws ResponseException {
+        return Optional.ofNullable(config.configuration().identities)
+                .orElse(List.of())
+                .stream()
+                .filter(Objects::nonNull)
+                .filter(slot -> Objects.equals(slot.getId(), identityId))
+                .findFirst()
+                .orElseThrow(() -> ResponseException.notFound("Die konfigurierte Identität wurde nicht gefunden."));
+    }
+
     @Nonnull
     private List<IdentitySlot> getIdentitySlots(@Nonnull ProcessNodeEntity node,
                                                 @Nullable String identitySessionId,
-                                                @Nonnull ProcessNodeService.ProcessConfigurationDetails<FormTriggerConfigV1> config) {
+                                                @Nonnull ProcessNodeService.ProcessConfigurationDetails<FormTriggerConfigV1> config) throws ResponseException {
         if (config.configuration().identities == null) {
             return new LinkedList<>();
         }
@@ -236,60 +375,64 @@ public class FormTriggerControllerV1 {
         var identityDataMap = identityService
                 .getIdentityDataMap(identitySessionId, node.getId());
 
-        return config
-                .configuration()
-                .identities
-                .stream()
-                .map((slot) -> getIdentitySlot(slot, identityDataMap))
-                .toList();
+        var slots = new LinkedList<IdentitySlot>();
+        for (var slot : config.configuration().identities) {
+            slots.add(getIdentitySlot(slot, identityDataMap, identitySessionId, node.getId()));
+        }
+        return slots;
     }
 
     @Nonnull
-    private IdentitySlot getIdentitySlot(IdentityConfigElementSlot slot, IdentityDataMap identityDataMap) {
+    private IdentitySlot getIdentitySlot(IdentityConfigElementSlot slot,
+                                         IdentityDataMap identityDataMap,
+                                         @Nullable String identitySessionId,
+                                         @Nonnull Integer relatedProcessNodeId) throws ResponseException {
         if (slot.getId() == null) {
             throw new IllegalArgumentException("Slot ID is null");
         }
 
-        var options = slot.getOptions();
+        var identityData = identityDataMap.get(slot.getId());
+        var identityProviders = new ArrayList<IdentityProvider>();
+        for (var option : Optional.ofNullable(slot.getOptions()).orElse(List.of())) {
+            if (option == null || option.getIdentityProviderKey() == null) continue;
+            var identityProvider = identityProviderService.retrieve(option.getIdentityProviderKey()).orElse(null);
+            if (identityProvider == null || !Boolean.TRUE.equals(identityProvider.getIsEnabled())) continue;
+            if (communicationService.getUsableBindings(identityProvider).isEmpty()) continue;
 
-        if (options == null) {
-            return new IdentitySlot(
-                    slot.getId(),
-                    slot.getTitle(),
-                    slot.getDescription(),
-                    Boolean.TRUE.equals(slot.getIsOptional()),
-                    Boolean.TRUE.equals(slot.getAllowsMail()),
-                    identityDataMap.containsKey(slot.getId()),
-                    List.of()
-            );
+            identityProviders.add(new IdentityProvider(
+                    identityProvider.getKey(),
+                    identityProvider.getName(),
+                    identityProvider.getIconAssetKey(),
+                    identityProvider.getType(),
+                    identityData != null
+                            && identityData.type() == IdentityType.IdentityProvider
+                            && Objects.equals(identityData.providerKey(), identityProvider.getKey()),
+                    option.getAdditionalScopes() != null ? option.getAdditionalScopes() : List.of()
+            ));
+        }
+        identityProviders.sort(Comparator.comparing(IdentityProvider::identityProviderName));
+
+        var selectedProviderIsConfigured = identityData != null
+                && identityData.type() == IdentityType.IdentityProvider
+                && identityProviders.stream().anyMatch(IdentityProvider::isAuthenticatedWithThis);
+        IdentityCommunicationService.SelectionState communicationSelection = null;
+        if (selectedProviderIsConfigured && identitySessionId != null) {
+            try {
+                communicationSelection = identityCommunicationService.getState(
+                        identitySessionId,
+                        relatedProcessNodeId,
+                        slot.getId()
+                );
+            } catch (ResponseException ignored) {
+                // A changed staff configuration makes the selection incomplete, not the form unretrievable.
+            }
         }
 
-        var identityData = identityDataMap.get(slot.getId());
-
-        List<IdentityProvider> identityProviders = options
-                .stream()
-                .filter(opt -> opt.getIdentityProviderKey() != null)
-                .map((opt) -> {
-                    IdentityProviderEntity idpEntity;
-                    try {
-                        idpEntity = identityProviderService
-                                .retrieve(opt.getIdentityProviderKey())
-                                .orElseThrow(ResponseException::notFound);
-                    } catch (ResponseException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    return new IdentityProvider(
-                            idpEntity.getKey(),
-                            idpEntity.getName(),
-                            idpEntity.getIconAssetKey(),
-                            idpEntity.getType(),
-                            identityData != null && Objects.equals(identityData.providerKey(), idpEntity.getKey()),
-                            opt.getAdditionalScopes() != null ? opt.getAdditionalScopes() : List.of()
-                    );
-                })
-                .sorted(Comparator.comparing(IdentityProvider::identityProviderName))
-                .toList();
+        var emailIdentityIsAllowed = identityData != null
+                && identityData.type() == IdentityType.Email
+                && Boolean.TRUE.equals(slot.getAllowsMail());
+        var ready = emailIdentityIsAllowed
+                || (selectedProviderIsConfigured && communicationSelection != null && communicationSelection.ready());
 
         return new IdentitySlot(
                 slot.getId(),
@@ -297,8 +440,13 @@ public class FormTriggerControllerV1 {
                 slot.getDescription(),
                 Boolean.TRUE.equals(slot.getIsOptional()),
                 Boolean.TRUE.equals(slot.getAllowsMail()),
-                identityDataMap.containsKey(slot.getId()),
-                identityProviders
+                identityData == null ? null : identityData.type(),
+                identityData != null && identityData.type() == IdentityType.Email
+                        ? identityData.emailAddress()
+                        : null,
+                ready,
+                identityProviders,
+                communicationSelection
         );
     }
 
@@ -327,14 +475,25 @@ public class FormTriggerControllerV1 {
             Boolean isOptional,
             @Nonnull
             Boolean allowsEmail,
+            @Nullable
+            IdentityType identityType,
+            @Nullable
+            String emailAddress,
+            boolean isReady,
             @Nonnull
-            Boolean isAuthenticated,
-            @Nonnull
-            List<IdentityProvider> availableIdentityProviders
+            List<IdentityProvider> availableIdentityProviders,
+            @Nullable
+            IdentityCommunicationService.SelectionState communication
     ) {
         public Boolean getIsRequired() {
             return !isOptional;
         }
+
+    }
+
+    public record EmailIdentityRequest(
+            @NotBlank @Size(max = 254) String emailAddress
+    ) {
     }
 
     public record IdentityProvider(
@@ -397,7 +556,7 @@ public class FormTriggerControllerV1 {
                                                                @Nonnull @PathVariable String processSlug,
                                                                @Nonnull @PathVariable String formSlug,
                                                                @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                                                               @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identitySessionId,
+                                                               @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
                                                                @Nonnull @RequestBody AuthoredElementValues values) throws ResponseException {
         var execUser = getExecUser(jwt);
         var process = getProcessEntity(processSlug);
@@ -560,6 +719,14 @@ public class FormTriggerControllerV1 {
 
         var identities = identityService
                 .getIdentityDataMap(identitySessionId, node.getId());
+
+        var identitySlots = getIdentitySlots(node, identitySessionId, config);
+        if (identitySlots.stream().anyMatch(slot -> slot.getIsRequired() && !slot.isReady())) {
+            throw ResponseException.badRequest("Mindestens eine verpflichtende Identität wurde nicht vollständig angegeben.");
+        }
+        if (identitySlots.stream().anyMatch(slot -> slot.identityType() != null && !slot.isReady())) {
+            throw ResponseException.badRequest("Bitte vervollständigen Sie jede ausgewählte Identität.");
+        }
 
         // Perform derivation
         var logger = new ElementDerivationLogger();

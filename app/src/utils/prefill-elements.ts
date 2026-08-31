@@ -11,6 +11,10 @@ export function prefillIdentityData(
 ): AuthoredElementValues {
     const {metadataIdentifier, attributes} = identityData;
 
+    if (metadataIdentifier == null) {
+        return elementData;
+    }
+
     const updatedElementData = mapAuthoredElementValues(element, elementData, (element, value) => {
         const identityMapping = getMetadataMapping(element, metadataIdentifier);
         if (identityMapping == null) {

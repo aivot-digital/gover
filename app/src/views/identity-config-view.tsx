@@ -1,4 +1,4 @@
-import {Box, Button, FormHelperText, Grid, Stack, Tooltip, Typography} from '@mui/material';
+import {Box, Button, FormHelperText, Grid, Stack, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {alpha} from '@mui/material/styles';
 import {BaseViewProps} from './base-view';
@@ -413,26 +413,22 @@ function IdentityConfigSlot(props: {
                             md: 6,
                         }}
                     >
-                        <Tooltip title="Eine alternative Nutzung von E-Mail als Kommunikationskanal wird in einer zukünftigen Version ermöglicht.">
-                            <span>
-                                <CheckboxFieldComponent
-                                    label="E-Mail"
-                                    hint="Statt einer Anmeldung mittels Identitätsanbieter kann auch lediglich eine E-Mail-Adresse angegeben werden."
-                                    variant="switch"
-                                    value={item.allowsMail ?? false}
-                                    onChange={(val) => {
-                                        onChange({
-                                            ...item,
-                                            allowsMail: val,
-                                        });
-                                    }}
-                                    sx={{
-                                        my: 0,
-                                    }}
-                                    disabled={true}
-                                />
-                            </span>
-                        </Tooltip>
+                        <CheckboxFieldComponent
+                            label="E-Mail-Adresse zulassen"
+                            hint="Statt einer Anmeldung mittels Nutzerkontenanbieter kann lediglich eine E-Mail-Adresse angegeben werden. Nachrichten werden dann direkt per E-Mail versendet."
+                            variant="switch"
+                            value={item.allowsMail ?? false}
+                            onChange={(val) => {
+                                onChange({
+                                    ...item,
+                                    allowsMail: val,
+                                });
+                            }}
+                            sx={{
+                                my: 0,
+                            }}
+                            disabled={disabled}
+                        />
                     </Grid>
                 </Grid>
             </Box>

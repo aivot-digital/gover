@@ -1,4 +1,4 @@
-import {Box, Dialog, DialogContent, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {Alert, Box, CircularProgress, Dialog, DialogContent, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {showDialog} from '../../../slices/app-slice';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
@@ -99,7 +99,7 @@ import {useNotImplemented} from '../../../hooks/use-not-implemented';
 import {ViewDispatcherMode} from '../../../components/view-dispatcher/view-dispatcher.context';
 import {ProcessStatus} from '../../process/enums/process-status';
 import type {Theme as AppTheme} from '../../themes/models/theme';
-import {FormTriggerApiService} from '../../forms/services/form-trigger-api-service';
+import {FormTriggerApiService, type FormIdentitySlot} from '../../forms/services/form-trigger-api-service';
 import {createAppTheme} from '../../../theming/themes';
 import {BaseTheme} from '../../../theming/base-theme';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
@@ -114,7 +114,9 @@ import {
 import IdentityPlatform from '@aivot/mui-material-symbols-400-n25-outlined/IdentityPlatform';
 import {SearchItemService} from '../../search/search-item-service';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
-import {IdentityButton} from '../../identity/components/identity-button/identity-button';
+import {
+    FormIdentitySelectionControls,
+} from '../../identity/components/form-identity-selection-controls/form-identity-selection-controls';
 import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';
 import {useApi} from '../../../hooks/use-api';
 import {ThemesApiService} from '../../themes/themes-api-service';
@@ -125,6 +127,7 @@ import {quoteString} from '../../../utils/string-utils';
 import {PaymentRequestOverview} from '../../payment/components/payment-request-overview';
 import {isApiError} from '../../../models/api-error';
 import {resolveThemeChainLogoKey} from '../../../theming/resolve-theme-logo';
+import {RichtextComponent} from '../../../components/richtext/richtext.component';
 
 export const DialogSearchParam = 'dialog';
 
@@ -219,15 +222,21 @@ export function FormNodeEditorPage() {
 
     const [identityMappingInformation, setIdentityMappingInformation] = useState<IdentityConfigElementSlotWithProviders[]>([]);
     const [showIdentityDialog, setShowIdentityDialog] = useState(false);
-    const sortedIdentityMappingInformation = useMemo(() => {
-        return identityMappingInformation
-            .map((identity, index) => ({
-                identity,
+    const [identitySlots, setIdentitySlots] = useState<FormIdentitySlot[]>([]);
+    const [isLoadingIdentitySlots, setIsLoadingIdentitySlots] = useState(false);
+    const [identitySlotsLoadFailed, setIdentitySlotsLoadFailed] = useState(false);
+    const configuredIdentitySlots = useMemo(() => (
+        node?.configuration[IdentitiesFieldKey] as IdentityConfigElementSlot[] | null | undefined
+    ) ?? [], [node]);
+    const sortedIdentitySlots = useMemo(() => {
+        return identitySlots
+            .map((slot, index) => ({
+                slot,
                 index,
             }))
-            .sort((a, b) => Number(a.identity.isOptional === true) - Number(b.identity.isOptional === true) || a.index - b.index)
-            .map(({identity}) => identity);
-    }, [identityMappingInformation]);
+            .sort((a, b) => Number(a.slot.isOptional) - Number(b.slot.isOptional) || a.index - b.index)
+            .map(({slot}) => slot);
+    }, [identitySlots]);
 
     const [startedProcessAccessInfo, setStartedProcessAccessInfo] = useState<{
         processInstanceAccessKey: string;
@@ -293,6 +302,51 @@ export function FormNodeEditorPage() {
                 dispatch(showApiErrorSnackbar(err, 'Beim Laden der Identitätsanbieter ist ein unbekannter Fehler aufgetreten'));
             });
     }, [node]);
+
+    useEffect(() => {
+        if (!showIdentityDialog) {
+            return;
+        }
+
+        const formSlug = node?.configuration.formSlug;
+        if (node == null || process == null || testClaim == null || typeof formSlug !== 'string' || formSlug.length === 0) {
+            setIdentitySlots([]);
+            setIsLoadingIdentitySlots(false);
+            setIdentitySlotsLoadFailed(false);
+            return;
+        }
+
+        let isCancelled = false;
+        setIdentitySlots([]);
+        setIsLoadingIdentitySlots(true);
+        setIdentitySlotsLoadFailed(false);
+
+        new FormTriggerApiService()
+            .getIdentitySlots(process.slug, formSlug, testClaim.accessKey)
+            .then((slots) => {
+                if (!isCancelled) {
+                    setIdentitySlots(slots);
+                }
+            })
+            .catch((error) => {
+                if (!isCancelled) {
+                    setIdentitySlotsLoadFailed(true);
+                    dispatch(showApiErrorSnackbar(
+                        error,
+                        'Die Identitäten für den Formulartest konnten nicht geladen werden.',
+                    ));
+                }
+            })
+            .finally(() => {
+                if (!isCancelled) {
+                    setIsLoadingIdentitySlots(false);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [dispatch, node, process, showIdentityDialog, testClaim]);
 
     useEffect(() => {
         const nodeIdInt = parseInt(nodeId);
@@ -842,6 +896,19 @@ export function FormNodeEditorPage() {
         navigateToElementEditor(element.id, null);
     };
 
+    const openIdentityDialog = () => {
+        setIdentitySlots([]);
+        setIdentitySlotsLoadFailed(false);
+        setShowIdentityDialog(true);
+    };
+
+    const closeIdentityDialog = () => {
+        setShowIdentityDialog(false);
+        setIdentitySlots([]);
+        setIsLoadingIdentitySlots(false);
+        setIdentitySlotsLoadFailed(false);
+    };
+
     const moreMenuItems: FormDetailsPageMoreMenuItem[] = [
         {
             label: 'Öffentl. Link in Zwischenablage kopieren',
@@ -908,12 +975,12 @@ export function FormNodeEditorPage() {
             },
         },
         {
-            label: 'Mit Identitätsanbieter anmelden',
+            label: 'Testidentitäten auswählen',
             icon: <IdentityPlatform/>,
-            onClick: () => {
-                setShowIdentityDialog(true);
-            },
-            visible: identityMappingInformation.length > 0,
+            onClick: openIdentityDialog,
+            visible: configuredIdentitySlots.length > 0,
+            disabled: testClaim == null,
+            disabledTooltip: 'Um Identitäten für den Formulartest auszuwählen, muss sich der Prozess im Testmodus befinden.',
         },
         {
             label: 'Entwicklerwerkzeuge öffnen',
@@ -1278,6 +1345,7 @@ export function FormNodeEditorPage() {
                                                         dispatch(setCurrentStep(0));
                                                         setAuthoredElementValues({});
                                                         setStartedProcessAccessInfo(null);
+                                                        setIdentitySlots([]);
                                                         IdentityProvidersApiService.clearIdentity(node.id);
                                                     }}
                                                 />
@@ -1498,18 +1566,12 @@ export function FormNodeEditorPage() {
 
             <Dialog
                 open={showIdentityDialog}
-                onClose={() => {
-                    setShowIdentityDialog(false);
-                }}
+                onClose={closeIdentityDialog}
                 fullWidth={true}
                 maxWidth="md"
             >
-                <DialogTitleWithClose
-                    onClose={() => {
-                        setShowIdentityDialog(false);
-                    }}
-                >
-                    Mit Identitätsanbieter anmelden
+                <DialogTitleWithClose onClose={closeIdentityDialog}>
+                    Identitäten für den Formulartest auswählen
                 </DialogTitleWithClose>
                 <DialogContent>
                     <Typography
@@ -1519,9 +1581,9 @@ export function FormNodeEditorPage() {
                             maxWidth: 600
                         }}
                     >
-                        Diese Anmeldung dient nur zum Testen im Formulareditor. Sie können das Formular damit in einem
-                        authentifizierten Zustand prüfen; Nutzer:innen sehen später die normale Anmeldeseite des
-                        Formulars, nicht diesen Dialog.
+                        Diese Auswahl dient nur zum Testen im Formulareditor. Sie können Identitäten und den zugehörigen
+                        Kommunikationsweg festlegen; Nutzer:innen sehen später die normale Identitätsauswahl des
+                        Formulars und nicht diesen Dialog.
                     </Typography>
                     <Typography
                         variant="body2"
@@ -1531,68 +1593,81 @@ export function FormNodeEditorPage() {
                             marginTop: 2,
                             marginBottom: 4
                         }}>
-                        Um Ihren Authentifizierungsstatus zurückzusetzen, können Sie das formularspezifische
+                        Um die Auswahl vollständig zurückzusetzen, können Sie das formularspezifische
                         Drei-Punkte-Menü verwenden und {quoteString('Alle Formulardaten löschen')} auswählen.
                     </Typography>
 
-                    {
-                        sortedIdentityMappingInformation
-                            .map((idm) => (
+                    {isLoadingIdentitySlots &&
+                        <Box sx={{display: 'flex', justifyContent: 'center', py: 6}}>
+                            <CircularProgress size={32}/>
+                        </Box>}
+
+                    {!isLoadingIdentitySlots && identitySlotsLoadFailed &&
+                        <Alert severity="error">
+                            Die Identitäten für den Formulartest konnten nicht geladen werden. Schließen Sie den Dialog
+                            und versuchen Sie es erneut.
+                        </Alert>}
+
+                    {!isLoadingIdentitySlots && !identitySlotsLoadFailed && sortedIdentitySlots.length === 0 &&
+                        <Alert severity="info">
+                            Für diesen Formulartest sind keine Identitäten konfiguriert.
+                        </Alert>}
+
+                    {!isLoadingIdentitySlots && !identitySlotsLoadFailed && sortedIdentitySlots.map((slot) => (
+                        <Box
+                            key={slot.id}
+                            sx={{mb: 4}}
+                        >
+                            <Box>
+                                <Typography variant="caption">
+                                    Identität
+                                </Typography>
                                 <Box
-                                    key={idm.id}
                                     sx={{
-                                        mb: 4,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        flexWrap: 'wrap',
+                                        columnGap: 1.25,
+                                        rowGap: 0.5,
+                                        mt: 0.25,
                                     }}
                                 >
-                                    <Box sx={{mb: 2}}>
-                                        <Typography variant="caption">
-                                            Anmelden als
-                                        </Typography>
-                                        <Box
-                                            sx={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                flexWrap: 'wrap',
-                                                columnGap: 1.25,
-                                                rowGap: 0.5,
-                                                mt: 0.25,
-                                            }}
-                                        >
-                                            <Typography
-                                                variant="h5"
-                                                component="h3"
-                                            >
-                                                {getIdentityDisplayName(idm)}
-                                            </Typography>
+                                    <Typography
+                                        variant="h5"
+                                        component="h3"
+                                    >
+                                        {getIdentityDisplayName(slot)}
+                                    </Typography>
 
-                                            <Chip
-                                                mode="soft"
-                                                label={idm.isOptional ? 'Optional' : 'Verpflichtend'}
-                                                color={idm.isOptional ? 'info' : 'warning'}
-                                                size="small"
-                                            />
-                                        </Box>
-                                    </Box>
-
-                                    {
-                                        (idm.options ?? [])
-                                            .map((opt) => (
-                                                <IdentityButton
-                                                    key={`${idm.id}-${opt.provider.key}`}
-                                                    isAuthenticated={false}
-                                                    relatedProcessNodeId={node.id}
-                                                    identityId={idm.id ?? ''}
-                                                    identityProviderKey={opt.provider.key}
-                                                    identityProviderAssetKey={opt.provider.iconAssetKey}
-                                                    additionalScopes={opt.additionalScopes ?? []}
-                                                    identityProviderName={opt.provider.name}
-                                                    identityProviderType={opt.provider.type}
-                                                />
-                                            ))
-                                    }
+                                    <Chip
+                                        mode="soft"
+                                        label={slot.isRequired ? 'Verpflichtend' : 'Optional'}
+                                        color={slot.isRequired ? 'warning' : 'info'}
+                                        size="small"
+                                    />
                                 </Box>
-                            ))
-                    }
+                            </Box>
+
+                            {slot.description != null && slot.description.trim().length > 0 &&
+                                <RichtextComponent
+                                    content={slot.description}
+                                    sx={{mt: 2}}
+                                />}
+
+                            <FormIdentitySelectionControls
+                                slot={slot}
+                                processSlug={process.slug}
+                                formSlug={node.configuration.formSlug}
+                                relatedProcessNodeId={node.id}
+                                testClaim={testClaim?.accessKey}
+                                onChange={(nextSlot) => {
+                                    setIdentitySlots(currentSlots => currentSlots.map(currentSlot => (
+                                        currentSlot.id === nextSlot.id ? nextSlot : currentSlot
+                                    )));
+                                }}
+                            />
+                        </Box>
+                    ))}
                 </DialogContent>
             </Dialog>
 

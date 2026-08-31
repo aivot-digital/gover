@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.identity.constants.IdentityBodyParameterConstant
 import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityResultState;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityAuthTokenData;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -18,6 +19,7 @@ import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.utils.RandomUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.communication.utils.EmailAddressUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
@@ -93,6 +95,7 @@ public class IdentityService {
 
         return identityList
                 .stream()
+                .filter(identity -> identity.getIdentityData() != null)
                 .map(IdentityData::from)
                 .reduce(
                         new IdentityDataMap(),
@@ -124,6 +127,54 @@ public class IdentityService {
             identityCacheRepository.deleteAllBySessionIdAndRelatedProcessNodeId(identitySessionId, relatedProcessNodeId);
             return identityCacheRepository.existsBySessionId(identitySessionId);
         }
+    }
+
+    /** Stores a direct email identity and replaces any previous identity for the same form slot. */
+    @Nonnull
+    public IdentityCacheEntity setEmailIdentity(@Nullable String preexistingIdentitySessionId,
+                                                @Nonnull Integer relatedProcessNodeId,
+                                                @Nonnull String identityId,
+                                                @Nullable String rawEmailAddress) {
+        var sessionId = StringUtils.isNullOrEmpty(preexistingIdentitySessionId)
+                ? generateSessionId()
+                : preexistingIdentitySessionId;
+        var emailAddress = EmailAddressUtils.normalizeSingleAddress(rawEmailAddress);
+        var identity = new IdentityCacheEntity(
+                generateEntityId(),
+                sessionId,
+                relatedProcessNodeId,
+                null,
+                IdentityType.Email,
+                null,
+                identityId,
+                null,
+                emailAddress,
+                "",
+                "",
+                Map.of("email", emailAddress),
+                null,
+                null
+        );
+
+        deleteOtherIdentitiesForSlot(identity, true);
+        return identityCacheRepository.save(identity);
+    }
+
+    /** Clears one identity slot and reports whether the session still contains another identity. */
+    public boolean clearIdentity(@Nullable String identitySessionId,
+                                 @Nonnull Integer relatedProcessNodeId,
+                                 @Nonnull String identityId) {
+        if (StringUtils.isNullOrEmpty(identitySessionId)) {
+            return false;
+        }
+
+        var matching = identityCacheRepository
+                .findAllBySessionIdAndRelatedProcessNodeId(identitySessionId, relatedProcessNodeId)
+                .stream()
+                .filter(entity -> Objects.equals(entity.getIdentityId(), identityId))
+                .toList();
+        identityCacheRepository.deleteAll(matching);
+        return identityCacheRepository.existsBySessionId(identitySessionId);
     }
 
     /**
@@ -164,11 +215,15 @@ public class IdentityService {
                 preexistingIdentitySessionId,
                 relatedProcessNodeId,
                 null,
+                IdentityType.IdentityProvider,
                 providerKey,
                 identityId,
                 provider.getMetadataIdentifier(),
+                null,
                 resolvedOrigin.toString(),
                 stateNonce,
+                null,
+                null,
                 null
         );
 
@@ -260,7 +315,7 @@ public class IdentityService {
             @Nullable String authorizationCode,
             @Nonnull String state
     ) throws ResponseException {
-        var identity = getValidatedIdentitySession(identityCacheEntityId, state);
+        var identity = getValidatedIdentitySession(identityCacheEntityId, identitySessionId, state);
 
         if (authorizationCode == null) {
             throw ResponseException
@@ -268,6 +323,9 @@ public class IdentityService {
         }
 
         var provider = getIdentityProviderEntity(providerKey);
+        if (!Objects.equals(identity.getProviderKey(), provider.getKey())) {
+            throw ResponseException.badRequest("Der Nutzerkontenanbieter gehört nicht zur Identitätssitzung.");
+        }
 
         var authToken = fetchAuthToken(
                 provider,
@@ -287,6 +345,7 @@ public class IdentityService {
         );
 
         identity.setIdentityData(userInfo);
+        deleteOtherIdentitiesForSlot(identity, false);
         identityCacheRepository
                 .save(identity);
 
@@ -322,7 +381,7 @@ public class IdentityService {
             @Nonnull String error,
             @Nullable String errorDescription
     ) throws ResponseException {
-        var identity = getValidatedIdentitySession(identityCacheEntityId, state);
+        var identity = getValidatedIdentitySession(identityCacheEntityId, identitySessionId, state);
 
         return UriComponentsBuilder
                 .fromUriString(getStoredOrigin(identity))
@@ -382,13 +441,11 @@ public class IdentityService {
                 .retrieve(providerKey)
                 .orElseThrow(() -> ResponseException.notFound("Der Nutzerkontenanbieter existiert nicht."));
 
-        /*
         // Check if the provider is enabled
-        if (!provider.getIsEnabled()) {
+        if (!Boolean.TRUE.equals(provider.getIsEnabled())) {
             throw ResponseException
                     .badRequest("Der Nutzerkontenanbieter ist nicht aktiviert.");
         }
-         */
 
         return provider;
     }
@@ -488,6 +545,7 @@ public class IdentityService {
     @Nonnull
     private IdentityCacheEntity getValidatedIdentitySession(
             @Nonnull String identityCacheEntityId,
+            @Nonnull String identitySessionId,
             @Nullable String state
     ) throws ResponseException {
         var identity = identityCacheRepository
@@ -495,6 +553,10 @@ public class IdentityService {
                 .orElseThrow(() -> ResponseException
                         .badRequest("Die Identitätssitzung existiert nicht.")
                 );
+
+        if (!Objects.equals(identity.getSessionId(), identitySessionId)) {
+            throw ResponseException.badRequest("Die Identitätssitzung ist ungültig.");
+        }
 
         var storedStateNonce = getStoredStateNonce(identity);
         if (!Objects.equals(storedStateNonce, state)) {
@@ -505,6 +567,20 @@ public class IdentityService {
         getStoredOrigin(identity);
 
         return identity;
+    }
+
+    private void deleteOtherIdentitiesForSlot(@Nonnull IdentityCacheEntity identity,
+                                              boolean includeCurrentIdentity) {
+        var identitiesToDelete = identityCacheRepository
+                .findAllBySessionIdAndRelatedProcessNodeId(
+                        identity.getSessionId(),
+                        identity.getRelatedProcessNodeId()
+                )
+                .stream()
+                .filter(existing -> Objects.equals(existing.getIdentityId(), identity.getIdentityId()))
+                .filter(existing -> includeCurrentIdentity || !Objects.equals(existing.getId(), identity.getId()))
+                .toList();
+        identityCacheRepository.deleteAll(identitiesToDelete);
     }
 
     @Nonnull

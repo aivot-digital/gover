@@ -31,4 +31,23 @@ describe('FormTriggerApiService', () => {
             },
         });
     });
+
+    it('loads runtime identity slots for the selected test form', async () => {
+        const identitySlots = [{id: 'applicant'}];
+        const get = vi
+            .spyOn(BaseApiService.prototype, 'get')
+            .mockResolvedValue({identitySlots});
+
+        const result = await new FormTriggerApiService().getIdentitySlots(
+            'example process',
+            'application/form',
+            'test-claim',
+        );
+
+        expect(get).toHaveBeenCalledWith('/api/public/form/example%20process/application%2Fform/', {
+            query: {'test-claim': 'test-claim'},
+            skipAuthCheck: true,
+        });
+        expect(result).toBe(identitySlots);
+    });
 });

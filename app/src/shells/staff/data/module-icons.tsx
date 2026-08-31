@@ -53,6 +53,8 @@ import History from '@aivot/mui-material-symbols-400-n25-outlined/History';
 import HistoryFilled from '@aivot/mui-material-symbols-400-n25-outlined/HistoryFilled';
 import ListAlt from '@aivot/mui-material-symbols-400-n25-outlined/ListAlt';
 import ListAltFilled from '@aivot/mui-material-symbols-400-n25-outlined/ListAltFilled';
+import ForwardToInbox from '@aivot/mui-material-symbols-400-n25-outlined/ForwardToInbox';
+import ForwardToInboxFilled from '@aivot/mui-material-symbols-400-n25-outlined/ForwardToInboxFilled';
 
 export const ModuleIcons = {
     dashboard: <Dashboard />,
@@ -66,6 +68,7 @@ export const ModuleIcons = {
     forms: <Description />,
     identity: <IdentityPlatform />,
     payment: <Payments />,
+    communication: <ForwardToInbox />,
     presets: <CopyAll />,
     customLinks: <Link />,
     secrets: <Key />,
@@ -96,6 +99,7 @@ export const ModuleIconsFilled = {
     forms: <DescriptionFilled />,
     identity: <IdentityPlatformFilled />,
     payment: <PaymentsFilled />,
+    communication: <ForwardToInboxFilled />,
     presets: <CopyAllFilled />,
     customLinks: <LinkFilled />,
     secrets: <KeyFilled />,

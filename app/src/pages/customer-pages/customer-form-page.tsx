@@ -52,13 +52,17 @@ import {walkAuthoredElementValues} from '../../utils/element-data-utils';
 import {ElementType} from '../../data/element-type/element-type';
 import {Submitted} from '../../components/submitted/submitted';
 import {DialogSearchParam, TestClaimSearchParam} from '../../modules/forms/constants/form-trigger-search-params';
-import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-api-service';
+import {
+    FormTriggerApiService,
+    type FormIdentitySlot,
+} from '../../modules/forms/services/form-trigger-api-service';
 import {createAppTheme} from '../../theming/themes';
 import {BaseTheme} from '../../theming/base-theme';
 import {IdentityProvidersApiService} from '../../modules/identity/identity-providers-api-service';
-import {IdentityProviderType} from '../../modules/identity/enums/identity-provider-type';
 import {RichtextComponent} from '../../components/richtext/richtext.component';
-import {IdentityButton} from '../../modules/identity/components/identity-button/identity-button';
+import {
+    FormIdentitySelectionControls,
+} from '../../modules/identity/components/form-identity-selection-controls/form-identity-selection-controls';
 import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
@@ -78,23 +82,7 @@ interface RetrieveResponse {
     node: ProcessNodeEntity;
     process: ProcessEntity;
     version: ProcessVersionEntity;
-    identitySlots: {
-        id: string;
-        title: string | null;
-        description: string | null;
-        isOptional: boolean;
-        isRequired: boolean;
-        allowsEmail: boolean;
-        isAuthenticated: boolean;
-        availableIdentityProviders: {
-            identityProviderKey: string;
-            identityProviderName: string;
-            identityProviderAssetKey: string | null;
-            identityProviderType: IdentityProviderType;
-            isAuthenticatedWithThis: boolean;
-            additionalScopes: string[];
-        }[];
-    }[];
+    identitySlots: FormIdentitySlot[];
 }
 
 const CustomerFormLoadErrorMessage = 'Das Formular konnte nicht geladen werden.';
@@ -444,7 +432,10 @@ export function CustomerFormPage() {
                                     ...currentData,
                                     identitySlots: currentData.identitySlots.map((slot) => ({
                                         ...slot,
-                                        isAuthenticated: false,
+                                        identityType: null,
+                                        emailAddress: null,
+                                        isReady: false,
+                                        communication: null,
                                         availableIdentityProviders: slot.availableIdentityProviders.map((provider) => ({
                                             ...provider,
                                             isAuthenticatedWithThis: false,
@@ -460,8 +451,19 @@ export function CustomerFormPage() {
                         !dismissAuthentication &&
                         <AuthPlaceholder
                             relatedProcessNodeId={node.id}
+                            processSlug={process.slug}
+                            formSlug={resolvedFormSlug}
+                            testClaim={testClaimKey ?? undefined}
                             identitySlots={data.identitySlots}
                             customerInputDraftDate={customerInputDraft?.date ?? null}
+                            onIdentitySlotChange={(nextSlot) => {
+                                setData(currentData => currentData == null ? null : {
+                                    ...currentData,
+                                    identitySlots: currentData.identitySlots.map(slot => (
+                                        slot.id === nextSlot.id ? nextSlot : slot
+                                    )),
+                                });
+                            }}
                             onDismiss={() => {
                                 setDismissAuthentication(true);
                             }}
@@ -567,8 +569,12 @@ export function CustomerFormPage() {
 
 interface AuthPlaceholderProps {
     relatedProcessNodeId: number;
+    processSlug: string;
+    formSlug: string;
+    testClaim?: string;
     identitySlots: RetrieveResponse['identitySlots'];
     customerInputDraftDate: InstantIso | null;
+    onIdentitySlotChange: (slot: FormIdentitySlot) => void;
     onDismiss: () => void;
 }
 
@@ -581,17 +587,25 @@ function getIdentityDisplayName(identity: { title: string | null }): string {
 function AuthPlaceholder(props: AuthPlaceholderProps) {
     const {
         customerInputDraftDate,
+        formSlug,
         identitySlots,
+        onIdentitySlotChange,
         onDismiss,
+        processSlug,
         relatedProcessNodeId,
+        testClaim,
     } = props;
+    const [pendingSlotIds, setPendingSlotIds] = useState<Set<string>>(new Set());
 
     const authRequired = identitySlots
         .some(slot => slot.isRequired);
-    const allRequiredAuthenticated = identitySlots
-        .every(slot => slot.isOptional || slot.isAuthenticated);
-    const someAuthenticated = identitySlots
-        .some(slot => slot.isAuthenticated);
+    const allSelectedIdentitiesReady = identitySlots.every(slot => (
+        slot.identityType == null
+            ? slot.isOptional
+            : slot.isReady && !pendingSlotIds.has(slot.id)
+    ));
+    const someIdentitySelected = identitySlots
+        .some(slot => slot.identityType != null);
     const sortedIdentitySlots = useMemo(() => (
         identitySlots
             .map((slot, index) => ({
@@ -625,7 +639,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                         variant="h2"
                         component="div"
                     >
-                        Mit Nutzerkonto anmelden
+                        Identität auswählen
                     </Typography>
 
                     {
@@ -637,9 +651,8 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                         maxWidth: 680,
                                     }}
                                 >
-                                    Für dieses Formular ist eine Anmeldung erforderlich. Wählen Sie für jede als verpflichtend
-                                    gekennzeichnete Identität eines der verfügbaren Nutzerkonten aus. Verfügbare Daten können
-                                    anschließend automatisch in das Formular übernommen werden.
+                                    Für dieses Formular ist eine Identität erforderlich. Wählen Sie für jeden als verpflichtend
+                                    gekennzeichneten Eintrag ein Nutzerkonto oder, sofern angeboten, eine E-Mail-Adresse aus.
                                 </Typography>
                             )
                             : (
@@ -649,8 +662,8 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                         maxWidth: 680,
                                     }}
                                 >
-                                    Sie können sich mit einem Nutzerkonto anmelden, um verfügbare Daten automatisch in das
-                                    Formular übernehmen zu lassen. Alternativ können Sie das Formular ohne Anmeldung ausfüllen.
+                                    Sie können ein Nutzerkonto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können
+                                    Sie das Formular ohne Identitätsangabe ausfüllen.
                                 </Typography>
                             )
                     }
@@ -687,7 +700,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                     >
                                         <Box>
                                             <Typography variant="caption">
-                                                Anmelden als
+                                                Identität
                                             </Typography>
                                             <Box
                                                 sx={{
@@ -733,8 +746,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                                     color: "text.secondary",
                                                     mt: 2
                                                 }}>
-                                                Eine Authentifizierung mit einem der nachfolgenden Konten
-                                                ist zwingend erforderlich.
+                                                Eine der nachfolgenden Möglichkeiten ist zwingend erforderlich.
                                             </Typography>
                                         }
 
@@ -746,57 +758,29 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                                     color: "text.secondary",
                                                     mt: 2
                                                 }}>
-                                                Eine Authentifizierung mit einem der nachfolgenden Konten
-                                                ist optional möglich.
+                                                Eine der nachfolgenden Möglichkeiten kann optional verwendet werden.
                                             </Typography>
                                         }
 
-                                        <Box
-                                            sx={{
-                                                mt: 2,
+                                        <FormIdentitySelectionControls
+                                            slot={slot}
+                                            processSlug={processSlug}
+                                            formSlug={formSlug}
+                                            relatedProcessNodeId={relatedProcessNodeId}
+                                            testClaim={testClaim}
+                                            onChange={onIdentitySlotChange}
+                                            onPendingChange={(pending) => {
+                                                setPendingSlotIds(current => {
+                                                    const next = new Set(current);
+                                                    if (pending) {
+                                                        next.add(slot.id);
+                                                    } else {
+                                                        next.delete(slot.id);
+                                                    }
+                                                    return next;
+                                                });
                                             }}
-                                        >
-                                            {
-                                                slot.availableIdentityProviders.length === 0
-                                                    ? (
-                                                        <Box
-                                                            sx={(theme) => ({
-                                                                mt: 2,
-                                                                px: 2,
-                                                                py: 1.5,
-                                                                border: '1px dashed',
-                                                                borderColor: alpha(theme.palette.text.primary, 0.18),
-                                                                borderRadius: 1,
-                                                                backgroundColor: alpha(theme.palette.text.primary, 0.015),
-                                                            })}
-                                                        >
-                                                            <Typography
-                                                                variant="body2"
-                                                                sx={{
-                                                                    color: "text.secondary"
-                                                                }}
-                                                            >
-                                                                Für diese Identität steht aktuell keine Anmeldemöglichkeit zur Verfügung.
-                                                            </Typography>
-                                                        </Box>
-                                                    )
-                                                    : slot
-                                                        .availableIdentityProviders
-                                                        .map((idp) => (
-                                                            <IdentityButton
-                                                                key={`${slot.id}-${idp.identityProviderKey}`}
-                                                                relatedProcessNodeId={relatedProcessNodeId}
-                                                                identityProviderKey={idp.identityProviderKey}
-                                                                identityProviderName={idp.identityProviderName}
-                                                                identityProviderType={idp.identityProviderType}
-                                                                identityProviderAssetKey={idp.identityProviderAssetKey}
-                                                                isAuthenticated={idp.isAuthenticatedWithThis}
-                                                                identityId={slot.id}
-                                                                additionalScopes={idp.additionalScopes}
-                                                            />
-                                                        ))
-                                            }
-                                        </Box>
+                                        />
                                     </Box>
                                 </Paper>
                             </Grid>
@@ -822,7 +806,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                     >
                         {
                             !authRequired &&
-                            !someAuthenticated &&
+                            !someIdentitySelected &&
                             <Button
                                 variant="contained"
                                 endIcon={<ArrowForward/>}
@@ -838,12 +822,12 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                             </Button>
                         }
                         {
-                            (authRequired || someAuthenticated) &&
+                            (authRequired || someIdentitySelected) &&
                             <Button
                                 variant="contained"
                                 endIcon={<ArrowForward/>}
                                 onClick={onDismiss}
-                                disabled={!allRequiredAuthenticated}
+                                disabled={!allSelectedIdentitiesReady}
                                 sx={{
                                     width: {
                                         xs: '100%',
