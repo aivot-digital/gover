@@ -86,6 +86,7 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
             <Box
                 sx={{
                     display: 'flex',
+                    alignItems: 'flex-end',
                     mb: 2,
                 }}
             >

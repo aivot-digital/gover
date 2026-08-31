@@ -1,7 +1,7 @@
-import {InputAdornment, SxProps, Theme} from '@mui/material';
+import {InputAdornment, type SxProps, type Theme} from '@mui/material';
 import {LocalizationProvider, TimePicker} from '@mui/x-date-pickers';
 import {DateTime} from 'luxon';
-import React, {ReactNode, useEffect, useRef, useState} from 'react';
+import React, {type ReactNode, useEffect, useRef, useState} from 'react';
 import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
 import {ProsunaAdapterLuxon} from '../../utils/prosuna-adapter-luxon';
 import {
@@ -10,11 +10,13 @@ import {
     TemporalPrecision,
 } from '../../utils/temporal-utils';
 import {LocalTimeIso} from '../../utils/temporal-types';
-import {EndAction} from '../text-field/text-field-component-props';
+import {type EndAction} from '../text-field/text-field-component-props';
 import {renderIconButton} from '../text-field/text-field-component';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
+import {FormField, type FormFieldControlContext, type FormFieldLayoutProps} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
 
-interface TimeFieldComponentProps {
+export interface TimeFieldComponentProps extends FormFieldLayoutProps {
     label: string;
     value?: string | null;
     onChange: (value: LocalTimeIso | null) => void;
@@ -26,7 +28,8 @@ interface TimeFieldComponentProps {
     disabled?: boolean;
     busy?: boolean;
     error?: string;
-    sx?: SxProps<Theme>;
+    controlSx?: SxProps<Theme>;
+    size?: 'small' | 'medium';
     bufferInputUntilBlur?: boolean;
     debounce?: number;
     mode?: TimeFieldComponentModelMode;
@@ -137,68 +140,93 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
     };
 
     return (
-        <LocalizationProvider
-            dateAdapter={ProsunaAdapterLuxon}
-            adapterLocale="de"
+        <FormField
+            id={props.id}
+            label={props.label}
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            hint={props.hint}
+            error={props.error}
+            hideHelperText={props.hideHelperText}
+            required={props.required}
+            disabled={props.disabled}
+            readOnly={props.busy}
+            busy={props.busy}
+            margin={props.margin ?? 'normal'}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
         >
-            <TimePicker
-                ampm={false}
-                // Floating times are zone-free. UTC is only a stable MUI carrier that
-                // prevents DST or the browser timezone from changing their clock fields.
-                timezone="UTC"
-                format={mode === TimeFieldComponentModelMode.Second ? "HH:mm:ss 'Uhr'" : "HH:mm 'Uhr'"}
-                views={mode === TimeFieldComponentModelMode.Second ? ['hours', 'minutes', 'seconds'] : ['hours', 'minutes']}
-                label={`${props.label}${props.required ? ' *' : ''}`}
-                value={localValue}
-                onChange={handlePickerChange}
-                onAccept={handleAccept}
-                onOpen={handleOpen}
-                disabled={props.disabled}
-                readOnly={props.busy}
-                slotProps={{
-                    textField: {
-                        variant: 'outlined',
-                        error: props.error != null,
-                        helperText: props.hideHelperText ? undefined : props.error ?? props.hint,
-                        onInput: handleInputChange,
-                        onKeyDown: handleKeyDown,
-                        onPaste: handleInputChange,
-                        onBlur: handleBlur,
-
-                        slotProps: {
-                            inputLabel: {
-                                title: props.label,
+            {(fieldContext: FormFieldControlContext) => (
+                <LocalizationProvider
+                    dateAdapter={ProsunaAdapterLuxon}
+                    adapterLocale="de"
+                >
+                    <TimePicker
+                        ampm={false}
+                        // Floating times are zone-free. UTC is only a stable MUI carrier that
+                        // prevents DST or the browser timezone from changing their clock fields.
+                        timezone="UTC"
+                        format={mode === TimeFieldComponentModelMode.Second ? "HH:mm:ss 'Uhr'" : "HH:mm 'Uhr'"}
+                        views={mode === TimeFieldComponentModelMode.Second ? ['hours', 'minutes', 'seconds'] : ['hours', 'minutes']}
+                        label={undefined}
+                        value={localValue}
+                        onChange={handlePickerChange}
+                        onAccept={handleAccept}
+                        onOpen={handleOpen}
+                        disabled={props.disabled}
+                        readOnly={props.busy}
+                        slotProps={{
+                            textField: {
+                                id: fieldContext.controlId,
+                                variant: 'outlined',
+                                fullWidth: true,
+                                margin: 'none',
+                                size: props.size ?? 'small',
+                                required: props.required,
+                                error: fieldContext.invalid,
+                                helperText: undefined,
+                                onInput: handleInputChange,
+                                onKeyDown: handleKeyDown,
+                                onPaste: handleInputChange,
+                                onBlur: handleBlur,
+                                slotProps: {
+                                    input: {
+                                        ...fieldContext.ariaProps,
+                                        startAdornment: props.startIcon && (
+                                            <InputAdornment position="start">{props.startIcon}</InputAdornment>
+                                        ),
+                                        endAdornment: props.endAction && (
+                                            <InputAdornment position="end">
+                                                {Array.isArray(props.endAction)
+                                                    ? props.endAction.map(renderIconButton)
+                                                    : renderIconButton(props.endAction)}
+                                            </InputAdornment>
+                                        ),
+                                    },
+                                    htmlInput: {
+                                        autoComplete: props.autocomplete,
+                                    },
+                                },
                             },
-
-                            input: {
-                                startAdornment: props.startIcon && (
-                                    <InputAdornment position="start">{props.startIcon}</InputAdornment>
-                                ),
-                                endAdornment: props.endAction && (
-                                    <InputAdornment position="end">
-                                        {Array.isArray(props.endAction)
-                                            ? props.endAction.map(renderIconButton)
-                                            : renderIconButton(props.endAction)}
-                                    </InputAdornment>
-                                ),
+                            actionBar: {
+                                actions: ['accept', 'cancel', 'clear'],
                             },
-                            htmlInput: {
-                                autoComplete: props.autocomplete,
+                        }}
+                        sx={[
+                            {
+                                width: '100%',
+                                '& .MuiPickersInputBase-root': {
+                                    minHeight: FormFieldTokens.controlMinHeight,
+                                    backgroundColor: (props.busy || props.disabled) ? getDisabledFieldBackground : undefined,
+                                    cursor: (props.busy || props.disabled) ? 'not-allowed' : undefined,
+                                },
                             },
-                        },
-                    },
-                    actionBar: {
-                        actions: ['accept', 'cancel', 'clear'],
-                    },
-                }}
-                sx={{
-                    ...props.sx,
-                    '& .MuiPickersInputBase-root': {
-                        backgroundColor: (props.busy || props.disabled) ? getDisabledFieldBackground : undefined,
-                        cursor: (props.busy || props.disabled) ? 'not-allowed' : undefined,
-                    },
-                }}
-            />
-        </LocalizationProvider>
+                            ...(Array.isArray(props.controlSx) ? props.controlSx : [props.controlSx]),
+                        ]}
+                    />
+                </LocalizationProvider>
+            )}
+        </FormField>
     );
 }

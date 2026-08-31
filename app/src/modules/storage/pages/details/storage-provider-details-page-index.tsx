@@ -836,7 +836,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     </Button>
                 </DisabledTooltip>
 
-                <Tooltip title={refreshDefinitionsTooltip}>
+                <Tooltip title={refreshDefinitionsTooltip} arrow>
                     <Box component="span">
                         <Button
                             onClick={handleRefreshDefinitions}

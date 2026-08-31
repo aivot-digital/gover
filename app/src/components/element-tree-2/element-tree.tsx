@@ -403,6 +403,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                     <Box
                         sx={{
                             display: 'flex',
+                            alignItems: 'flex-end',
                             px: 2,
                             pt: 0.5,
                             pb: 2,

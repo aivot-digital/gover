@@ -3,12 +3,18 @@ import {Badge, IconButton as MuiIconButton, Tooltip} from '@mui/material';
 import {PropsWithChildren} from 'react';
 
 export function IconButton(props: PropsWithChildren<IconButtonProps>) {
+    const accessibleLabel = props.buttonProps['aria-label'] ?? (
+        typeof props.tooltipProps.title === 'string' ? props.tooltipProps.title : undefined
+    );
+
     if (props.badgeProps == null) {
         return (
-            <Tooltip {...props.tooltipProps}>
-                <MuiIconButton {...props.buttonProps}>
-                    {props.children}
-                </MuiIconButton>
+            <Tooltip arrow {...props.tooltipProps}>
+                <span style={{display: 'inline-flex'}}>
+                    <MuiIconButton {...props.buttonProps} aria-label={accessibleLabel}>
+                        {props.children}
+                    </MuiIconButton>
+                </span>
             </Tooltip>
         );
     }
@@ -16,7 +22,7 @@ export function IconButton(props: PropsWithChildren<IconButtonProps>) {
     return (
         <Tooltip arrow {...props.tooltipProps}>
             <Badge {...props.badgeProps}>
-                <MuiIconButton {...props.buttonProps}>
+                <MuiIconButton {...props.buttonProps} aria-label={accessibleLabel}>
                     {props.children}
                 </MuiIconButton>
             </Badge>

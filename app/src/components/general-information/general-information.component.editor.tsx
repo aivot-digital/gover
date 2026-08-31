@@ -151,7 +151,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                                         initiativeLogoLink: val ?? undefined,
                                     });
                                 }}
-                                hint="Optionales öffentliches Bild, das neben der Kurzbeschreibung angezeigt wird. Dieses Logo wird nur angezeigt, wenn Sie auch eine Kurzbeschreibung und einen Alternativtext angegeben haben."
+                                hint="Öffentliches Bild, das neben der Kurzbeschreibung angezeigt wird. Dieses Logo wird nur angezeigt, wenn Sie auch eine Kurzbeschreibung und einen Alternativtext angegeben haben."
                                 disabled={!props.editable}
                                 mimetype="image"
                                 onlyPublic
