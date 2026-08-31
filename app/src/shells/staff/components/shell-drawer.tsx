@@ -68,10 +68,16 @@ import {AssetsApiService} from '../../../modules/assets/assets-api-service';
 import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
 import {hasModuleFlag, ModuleFlag} from '../../../utils/module-flags';
 import {alpha, type Theme as MuiTheme} from '@mui/material/styles';
-import DashboardCustomize from '@aivot/mui-material-symbols-400-n25-outlined/DashboardCustomize';
 import {createAppTheme} from '../../../theming/themes';
 import {BaseTheme} from '../../../theming/base-theme';
 import {ColorModePicker} from '../../../components/color-mode-picker/color-mode-picker';
+import {motion, useReducedMotion} from 'motion/react';
+import {
+    SHELL_DRAWER_CONTENT_SWITCH_DELAY_MS,
+    SHELL_DRAWER_CONTENT_TRANSITION,
+    SHELL_DRAWER_REDUCED_MOTION_TRANSITION,
+    SHELL_DRAWER_TRANSITION,
+} from './shell-drawer-motion';
 
 export const COLLAPSED_DRAWER_WIDTH_REM = '4.25rem';
 export const EXPANDED_DRAWER_WIDTH_REM = '16.25rem';
@@ -313,7 +319,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                         requiredSystemPermission: Permission.PLUGIN_READ,
                     },
                     {
-                        icon: <DashboardCustomize/>,
+                        ...drawerModuleIcon('dashboardSettings'),
                         label: 'Übersicht konfigurieren',
                         to: '/settings/dashboard',
                         requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
@@ -329,10 +335,12 @@ const BaseDrawerGroups: DrawerGroup[] = [
  * ----------------------------- */
 export function ShellDrawer() {
     const baseTheme = useTheme();
+    const shouldReduceMotion = useReducedMotion() === true;
     const dispatch = useAppDispatch();
     const permissions = useAppSelector(selectPermissions);
     const user = useAppSelector(selectUser);
     const minimizeDrawer = useAppSelector(selectMinimizeDrawer) ?? false;
+    const [displayMinimizeDrawer, setDisplayMinimizeDrawer] = useState(minimizeDrawer);
     const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [notificationsAnchorEl, setNotificationsAnchorEl] = useState<null | HTMLElement>(null);
     const [showBlockedMsg, setShowBlockedMsg] = useState(false);
@@ -507,6 +515,25 @@ export function ShellDrawer() {
         dispatch(setShowSearchDialog(true));
     };
 
+    // Keep the previous content variant through the fade-out so labels and spacing do not jump
+    // while the drawer resizes.
+    useEffect(() => {
+        if (displayMinimizeDrawer === minimizeDrawer) {
+            return;
+        }
+
+        if (shouldReduceMotion) {
+            setDisplayMinimizeDrawer(minimizeDrawer);
+            return;
+        }
+
+        const timeout = window.setTimeout(() => {
+            setDisplayMinimizeDrawer(minimizeDrawer);
+        }, SHELL_DRAWER_CONTENT_SWITCH_DELAY_MS);
+
+        return () => window.clearTimeout(timeout);
+    }, [displayMinimizeDrawer, minimizeDrawer, shouldReduceMotion]);
+
     const drawerTheme = useMemo(
         () => {
             // Build from the structural base theme to avoid stacking overrides from the active app theme.
@@ -547,20 +574,67 @@ export function ShellDrawer() {
         {enableOnFormTags: false},
     );
 
+    const drawerContentAnimation = shouldReduceMotion ?
+        {
+            opacity: 1,
+            x: 0,
+        } :
+        {
+            opacity: minimizeDrawer ? [
+                1,
+                0,
+                0.001,
+                1,
+            ] : [
+                1,
+                0.001,
+                0,
+                1,
+            ],
+            x: minimizeDrawer ? [
+                0,
+                -4,
+                4,
+                0,
+            ] : [
+                0,
+                4,
+                -4,
+                0,
+            ],
+        };
+    const drawerContentTransition = shouldReduceMotion ?
+        SHELL_DRAWER_REDUCED_MOTION_TRANSITION :
+        SHELL_DRAWER_CONTENT_TRANSITION;
+
     return (
         <>
             <ThemeProvider theme={drawerTheme}>
-                <Box sx={{display: 'block'}}>
+                <motion.div
+                    initial={false}
+                    animate={{
+                        width: minimizeDrawer ? COLLAPSED_DRAWER_WIDTH_REM : EXPANDED_DRAWER_WIDTH_REM,
+                    }}
+                    transition={shouldReduceMotion ?
+                        SHELL_DRAWER_REDUCED_MOTION_TRANSITION :
+                        SHELL_DRAWER_TRANSITION}
+                    style={{
+                        display: 'block',
+                        flexShrink: 0,
+                        overflow: 'hidden',
+                    }}
+                >
                     <Paper
                         sx={{
                             display: 'flex',
                             flexDirection: 'column',
                             height: '100vh',
+                            overflowX: 'hidden',
                             overflowY: 'auto',
                             py: 1.5,
 
                             borderRadius: 0,
-                            width: minimizeDrawer ? COLLAPSED_DRAWER_WIDTH_REM : EXPANDED_DRAWER_WIDTH_REM,
+                            width: '100%',
                             backgroundColor: 'background.paper',
                             color: 'text.secondary',
                             borderRight: '1px solid',
@@ -576,7 +650,7 @@ export function ShellDrawer() {
                             {/* Header */}
                             <Box sx={{
                                 display: 'flex',
-                                flexDirection: minimizeDrawer ? 'column' : 'row',
+                                flexDirection: 'row',
                                 mb: 2.5,
                             }}>
                                 <Link
@@ -585,26 +659,39 @@ export function ShellDrawer() {
                                     style={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        justifyContent: minimizeDrawer ? 'center' : 'start',
+                                        justifyContent: 'flex-start',
                                         textDecoration: 'none',
                                     }}
                                 >
                                     <ShellDrawerLogo
                                         minimize={minimizeDrawer}
+                                        hoverBackgroundColor={drawerTheme.palette.background.paper}
                                         style={{color: drawerTheme.palette.text.primary}}
                                     />
                                 </Link>
 
-                                {!minimizeDrawer && (
-                                    <ShellDrawerUserActions minimizeDrawer={minimizeDrawer}
-                                        setUserMenuAnchorEl={setUserMenuAnchorEl}
-                                        setNotificationsAnchorEl={setNotificationsAnchorEl}/>
-                                )}
+                                <motion.div
+                                    initial={false}
+                                    animate={drawerContentAnimation}
+                                    transition={drawerContentTransition}
+                                    style={{marginLeft: 'auto'}}
+                                >
+                                    {!displayMinimizeDrawer && (
+                                        <ShellDrawerUserActions minimizeDrawer={displayMinimizeDrawer}
+                                            setUserMenuAnchorEl={setUserMenuAnchorEl}
+                                            setNotificationsAnchorEl={setNotificationsAnchorEl}/>
+                                    )}
+                                </motion.div>
                             </Box>
 
-                            {/* Search */}
-                            <Box sx={{mb: minimizeDrawer ? 0 : 2}}>
-                                {!minimizeDrawer ?
+                            <motion.div
+                                initial={false}
+                                animate={drawerContentAnimation}
+                                transition={drawerContentTransition}
+                            >
+                                {/* Search */}
+                                <Box sx={{mb: displayMinimizeDrawer ? 0 : 2}}>
+                                    {!displayMinimizeDrawer ?
                                     (
                                         <Button
                                             startIcon={<SearchFilled/>}
@@ -684,119 +771,142 @@ export function ShellDrawer() {
                                             tooltipPlacement="right"
                                         />
                                     )}
-                            </Box>
+                                </Box>
+                            </motion.div>
                         </Box>
 
-                        <Box
-                            sx={{
-                                'flexGrow': 1,
-                                'display': 'flex',
-                                'flexDirection': 'column',
-                                'minHeight': 0,
-                                '& .simplebar-scrollbar:before': {
-                                    backgroundColor: 'text.disabled',
-                                    left: '3px',
-                                    right: '3px',
-                                },
+                        <motion.div
+                            initial={false}
+                            animate={drawerContentAnimation}
+                            transition={drawerContentTransition}
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                flexGrow: 1,
+                                minHeight: 0,
                             }}
                         >
-                            <SimpleBar
-                                style={{
-                                    flexGrow: 1,
-                                    height: '100%',
-                                    minHeight: 0,
-                                    overflowX: 'hidden',
-                                    padding: '0 14px 14px',
+                            <Box
+                                sx={{
+                                    'display': 'flex',
+                                    'flexDirection': 'column',
+                                    'flexGrow': 1,
+                                    'minHeight': 0,
+                                    '& .simplebar-scrollbar:before': {
+                                        backgroundColor: 'text.disabled',
+                                        left: '3px',
+                                        right: '3px',
+                                    },
                                 }}
                             >
-                                {/* Navigation */}
-                                {drawerGroups.map((group, index) => (
-                                    <DrawerGroup
-                                        key={group.title || index}
-                                        group={group}
-                                        minimizeDrawer={minimizeDrawer}
-                                    />
-                                ))}
-                            </SimpleBar>
-                        </Box>
+                                <SimpleBar
+                                    style={{
+                                        flexGrow: 1,
+                                        height: '100%',
+                                        minHeight: 0,
+                                        overflowX: 'hidden',
+                                        padding: '0 14px 14px',
+                                    }}
+                                >
+                                    {/* Navigation */}
+                                    {drawerGroups.map((group, index) => (
+                                        <DrawerGroup
+                                            key={group.title || index}
+                                            group={group}
+                                            minimizeDrawer={displayMinimizeDrawer}
+                                        />
+                                    ))}
+                                </SimpleBar>
+                            </Box>
+                        </motion.div>
 
                         <Box sx={{flexGrow: 1}}></Box>
 
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            px: 1.75,
-                        }}>
-                            {/* Footer */}
-                            <Divider sx={{
-                                borderColor: 'divider',
-                                mx: -1.75,
-                                mb: 1.75,
-                            }}/>
+                        <motion.div
+                            initial={false}
+                            animate={drawerContentAnimation}
+                            transition={drawerContentTransition}
+                        >
                             <Box sx={{
                                 display: 'flex',
-                                flexDirection: minimizeDrawer ? 'column' : 'row',
-                                justifyContent: 'flex-start',
-                                alignItems: 'center',
-                                width: '100%',
+                                flexDirection: 'column',
+                                px: 1.75,
                             }}>
-                                {minimizeDrawer && (
-                                    <>
-                                        <ShellDrawerUserActions minimizeDrawer={minimizeDrawer}
-                                            setUserMenuAnchorEl={setUserMenuAnchorEl}
-                                            setNotificationsAnchorEl={setNotificationsAnchorEl}/>
-                                        <Box sx={{height: 10}}/>
-                                    </>
-                                )}
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        flexDirection: minimizeDrawer ? 'column' : 'row',
-                                        justifyContent: minimizeDrawer ? 'flex-start' : 'space-between',
-                                        alignItems: 'center',
-                                        gap: minimizeDrawer ? 1 : 0.25,
-                                        width: minimizeDrawer ? 'auto' : '100%',
-                                    }}
-                                >
-                                    <ColorModePicker
-                                        showLabel={!minimizeDrawer}
-                                        placement={minimizeDrawer ? 'right-end' : 'top-end'}
-                                        tooltipPlacement="right"
-                                        iconFontSize="small"
-                                        size="small"
-                                    />
-                                    <Actions
+                                {/* Footer */}
+                                <Divider sx={{
+                                    borderColor: 'divider',
+                                    mx: -1.75,
+                                    mb: 1.75,
+                                }}/>
+                                <Box sx={{
+                                    display: 'flex',
+                                    flexDirection: displayMinimizeDrawer ? 'column' : 'row',
+                                    justifyContent: 'flex-start',
+                                    alignItems: 'center',
+                                    width: '100%',
+                                }}>
+                                    {displayMinimizeDrawer && (
+                                        <>
+                                            <ShellDrawerUserActions minimizeDrawer={displayMinimizeDrawer}
+                                                setUserMenuAnchorEl={setUserMenuAnchorEl}
+                                                setNotificationsAnchorEl={setNotificationsAnchorEl}/>
+                                            <Box sx={{height: 10}}/>
+                                        </>
+                                    )}
+                                    <Box
                                         sx={{
-                                            flex: 0,
                                             display: 'flex',
-                                            justifyContent: 'right',
+                                            flexDirection: displayMinimizeDrawer ? 'column' : 'row',
+                                            justifyContent: displayMinimizeDrawer ? 'flex-start' : 'space-between',
+                                            alignItems: 'center',
+                                            gap: displayMinimizeDrawer ? 1 : 0.25,
+                                            width: displayMinimizeDrawer ? 'auto' : '100%',
                                         }}
-                                        color="inherit"
-                                        direction={minimizeDrawer ? 'column' : 'row'}
-                                        actions={[
-                                            {
-                                                tooltip: minimizeDrawer ? 'Seitenleiste maximieren' : 'Seitenleiste minimieren',
-                                                icon: minimizeDrawer ? <LeftPanelOpen /> : <LeftPanelClose />,
-                                                onClick: handleToggleDrawer,
-                                            },
-                                        ]}
-                                        tooltipPlacement={minimizeDrawer ? 'right' : 'top'}
-                                    />
+                                    >
+                                        <ColorModePicker
+                                            showLabel={!displayMinimizeDrawer}
+                                            placement={displayMinimizeDrawer ? 'right-end' : 'top-end'}
+                                            tooltipPlacement="right"
+                                            iconFontSize="small"
+                                            size="small"
+                                        />
+                                        <Actions
+                                            sx={{
+                                                flex: 0,
+                                                display: 'flex',
+                                                justifyContent: 'right',
+                                            }}
+                                            color="inherit"
+                                            direction={displayMinimizeDrawer ? 'column' : 'row'}
+                                            actions={[
+                                                {
+                                                    tooltip: displayMinimizeDrawer
+                                                        ? 'Seitenleiste maximieren'
+                                                        : 'Seitenleiste minimieren',
+                                                    icon: displayMinimizeDrawer
+                                                        ? <LeftPanelOpen />
+                                                        : <LeftPanelClose />,
+                                                    onClick: handleToggleDrawer,
+                                                },
+                                            ]}
+                                            tooltipPlacement={displayMinimizeDrawer ? 'right' : 'top'}
+                                        />
+                                    </Box>
                                 </Box>
                             </Box>
-                        </Box>
+                        </motion.div>
                     </Paper>
-                </Box>
+                </motion.div>
             </ThemeProvider>
 
             <ShellNotificationsMenu
-                minimizeDrawer={minimizeDrawer}
+                minimizeDrawer={displayMinimizeDrawer}
                 anchorEl={notificationsAnchorEl}
                 onClose={() => setNotificationsAnchorEl(null)}
             />
 
             <ShellUserMenu
-                minimizeDrawer={minimizeDrawer}
+                minimizeDrawer={displayMinimizeDrawer}
                 anchorEl={userMenuAnchorEl}
                 onClose={() => setUserMenuAnchorEl(null)}
             />

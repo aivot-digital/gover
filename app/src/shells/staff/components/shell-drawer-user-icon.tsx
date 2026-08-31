@@ -1,9 +1,10 @@
 import * as React from 'react';
 import {useTheme} from '@mui/material';
+import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
 
 const ShellDrawerUserIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => {
     const theme = useTheme();
-    const maskId = React.useId().replace(/:/g, '');
+    const maskId = useNormalizedReactId();
     const backgroundColor = theme.palette.mode === 'dark'
         ? theme.palette.grey[400]
         : theme.palette.grey[300];

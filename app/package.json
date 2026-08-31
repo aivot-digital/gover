@@ -44,6 +44,7 @@
     "libphonenumber-js": "^1.13.8",
     "monaco-editor": "^0.52.2",
     "luxon": "^3.7.2",
+    "motion": "^13.1.1",
     "mui-tel-input": "^11.0.0",
     "notistack": "^3.0.2",
     "prism-react-renderer": "^2.4.1",
