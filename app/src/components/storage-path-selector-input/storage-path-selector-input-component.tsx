@@ -14,6 +14,8 @@ import {
     TextField,
     Tooltip,
     Typography,
+    type SxProps,
+    type Theme,
 } from '@mui/material';
 import CheckIcon from '@aivot/mui-material-symbols-400-n25-outlined/Check';
 import CloseIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
@@ -31,8 +33,15 @@ import {
 import {StorageProvidersApiService} from '../../modules/storage/storage-providers-api-service';
 import {type StorageProviderEntity} from '../../modules/storage/entities/storage-provider-entity';
 import {StorageExplorer} from '../../modules/storage/components/storage-explorer';
+import {
+    FormField,
+    FormFieldGroup,
+    type FormFieldGroupLayoutProps,
+    getNativeInputAriaProps,
+} from '../form-field';
+import {formFieldInputRootSx} from '../../theming/form-field-tokens';
 
-interface StoragePathSelectorInputComponentProps {
+export interface StoragePathSelectorInputComponentProps extends FormFieldGroupLayoutProps {
     label: string;
     value?: StoragePathSelectorInputElementValue | null;
     onChange: (value: StoragePathSelectorInputElementValue | null) => void;
@@ -44,7 +53,9 @@ interface StoragePathSelectorInputComponentProps {
     disabled?: boolean;
     required?: boolean;
     readOnly?: boolean;
+    busy?: boolean;
     allowReadOnlyStorageProviders?: boolean;
+    controlSx?: SxProps<Theme>;
 }
 
 interface StorageProviderOption {
@@ -120,6 +131,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
         disabled,
         required,
         readOnly,
+        busy,
         allowReadOnlyStorageProviders = false,
     } = props;
 
@@ -184,7 +196,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                     setIsLoadingProviders(false);
                 }
             });
-    }, [allowedTypesKey]);
+    }, [allowReadOnlyStorageProviders, allowedTypesKey]);
 
     const selectedProvider = useMemo<StorageProviderOption | null>(() => {
         if (value?.storageProviderId == null) {
@@ -201,13 +213,13 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
     const explorerPath = containsTemplateTag(selectedPath)
         ? ROOT_PATH
         : normalizeDirectoryPath(selectedPath) ?? ROOT_PATH;
-    const isReadonlyOrDisabled = disabled === true || readOnly === true;
+    const isReadonlyOrDisabled = disabled === true || readOnly === true || busy === true;
     const selectedProviderIsReadOnlyDisabled = !allowReadOnlyStorageProviders && selectedProvider?.readOnlyStorage === true;
     const canBrowse = !isReadonlyOrDisabled && !selectedProviderIsReadOnlyDisabled && value?.storageProviderId != null;
-    const helperText = error ?? loadError ?? (
+    const resolvedError = error ?? (
         selectedProviderIsReadOnlyDisabled
             ? 'Dieser Speicheranbieter ist nur lesend und kann hier nicht ausgewählt werden.'
-            : hint
+            : undefined
     );
 
     const handleProviderChange = (_: SyntheticEvent, provider: StorageProviderOption | null): void => {
@@ -261,214 +273,233 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
     };
 
     return (
-        <>
-            <Grid
-                container
-                spacing={1.5}
-            >
+        <FormFieldGroup
+            id={props.id}
+            label={label}
+            hint={hint}
+            error={resolvedError}
+            required={required}
+            disabled={disabled}
+            readOnly={readOnly}
+            busy={busy}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            margin={props.margin}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
+        >
+            {(group) => (<>
                 <Grid
-                    size={{
-                        xs: 12,
-                    }}
+                    container
+                    spacing={1.5}
+                    sx={props.controlSx}
                 >
-                    <Autocomplete
-                        options={providers}
-                        loading={isLoadingProviders}
-                        disabled={disabled}
-                        readOnly={readOnly}
-                        value={selectedProvider}
-                        isOptionEqualToValue={(option, selectedOption) => option.id === selectedOption.id}
-                        getOptionLabel={(option) => option.name}
-                        getOptionDisabled={(option) => !allowReadOnlyStorageProviders && option.readOnlyStorage === true}
-                        noOptionsText={allowedTypes.length === 0 ? 'Keine Speicheranbieter-Typen zugelassen' : 'Keine Speicheranbieter verfügbar'}
-                        onChange={handleProviderChange}
-                        renderOption={({key, ...optionProps}, option, state) => (
-                            <Box
-                                key={key}
-                                component="li"
-                                {...optionProps}
-                                sx={{py: 0.5, minHeight: 42}}
-                            >
-                                <StorageIcon sx={{mr: 1, fontSize: 20, color: 'text.secondary'}}/>
-                                <Box sx={{minWidth: 0, flex: 1}}>
-                                    <Typography
-                                        variant="body2"
-                                        noWrap={true}
-                                    >
-                                        {option.name}
-                                    </Typography>
-                                    {option.type != null && (
-                                        <Typography
-                                            variant="caption"
-                                            noWrap={true}
-                                            sx={{
-                                                color: "text.secondary"
-                                            }}
+                    <Grid size={{xs: 12}}>
+                        <FormField
+                            label="Speicheranbieter"
+                            hint={storageProviderSelectHint}
+                            error={loadError}
+                            required={required}
+                            disabled={disabled}
+                            readOnly={readOnly}
+                            busy={busy || isLoadingProviders}
+                            ariaDescribedBy={group.describedBy}
+                            showOptionalIndicator={false}
+                            margin="none"
+                        >
+                            {(providerField) => (
+                                <Autocomplete
+                                    id={providerField.controlId}
+                                    options={providers}
+                                    loading={isLoadingProviders}
+                                    disabled={disabled || busy}
+                                    readOnly={readOnly || busy}
+                                    value={selectedProvider}
+                                    isOptionEqualToValue={(option, selectedOption) => option.id === selectedOption.id}
+                                    getOptionLabel={(option) => option.name}
+                                    getOptionDisabled={(option) => !allowReadOnlyStorageProviders && option.readOnlyStorage === true}
+                                    noOptionsText={allowedTypes.length === 0 ? 'Keine Speicheranbieter-Typen zugelassen' : 'Keine Speicheranbieter verfügbar'}
+                                    onChange={handleProviderChange}
+                                    sx={{
+                                        '& .MuiInputBase-root': formFieldInputRootSx,
+                                    }}
+                                    renderOption={({key, ...optionProps}, option, state) => (
+                                        <Box
+                                            key={key}
+                                            component="li"
+                                            {...optionProps}
+                                            sx={{py: 0.5, minHeight: 42}}
                                         >
-                                            {StorageProviderTypeLabels[option.type]}
-                                        </Typography>
-                                    )}
-                                </Box>
-                                <CheckIcon
-                                    sx={{ml: 1, fontSize: 18, color: 'primary.main', opacity: state.selected ? 1 : 0}}
-                                />
-                            </Box>
-                        )}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Speicheranbieter"
-                                required={required}
-                                error={error != null}
-                                placeholder="Speicheranbieter auswählen"
-                                helperText={loadError ?? storageProviderSelectHint}
-                                slotProps={{
-                                    ...params.slotProps,
-
-                                    input: {
-                                        ...params.slotProps.input,
-                                        endAdornment: (
-                                            <>
-                                                {isLoadingProviders && (
-                                                    <CircularProgress
-                                                        color="inherit"
-                                                        size={16}
-                                                        sx={{mr: 1}}
-                                                    />
+                                            <StorageIcon sx={{mr: 1, fontSize: 20, color: 'text.secondary'}}/>
+                                            <Box sx={{minWidth: 0, flex: 1}}>
+                                                <Typography variant="body2" noWrap>
+                                                    {option.name}
+                                                </Typography>
+                                                {option.type != null && (
+                                                    <Typography variant="caption" noWrap sx={{color: 'text.secondary'}}>
+                                                        {StorageProviderTypeLabels[option.type]}
+                                                    </Typography>
                                                 )}
-                                                {params.slotProps.input.endAdornment}
-                                            </>
-                                        ),
-                                    }
-                                }}
+                                            </Box>
+                                            <CheckIcon
+                                                sx={{ml: 1, fontSize: 18, color: 'primary.main', opacity: state.selected ? 1 : 0}}
+                                            />
+                                        </Box>
+                                    )}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            size="small"
+                                            margin="none"
+                                            placeholder="Speicheranbieter auswählen"
+                                            error={providerField.invalid}
+                                            slotProps={{
+                                                ...params.slotProps,
+                                                htmlInput: {
+                                                    ...params.slotProps.htmlInput,
+                                                    ...getNativeInputAriaProps(
+                                                        providerField,
+                                                        params.slotProps.htmlInput,
+                                                    ),
+                                                },
+                                                input: {
+                                                    ...params.slotProps.input,
+                                                    endAdornment: (
+                                                        <>
+                                                            {isLoadingProviders && (
+                                                                <CircularProgress color="inherit" size={16} sx={{mr: 1}}/>
+                                                            )}
+                                                            {params.slotProps.input.endAdornment}
+                                                        </>
+                                                    ),
+                                                },
+                                            }}
+                                        />
+                                    )}
+                                />
+                            )}
+                        </FormField>
+                    </Grid>
+
+                    <Grid size={{xs: 12}}>
+                        <FormField
+                            label="Pfad"
+                            required={required}
+                            disabled={disabled || selectedProviderIsReadOnlyDisabled || value?.storageProviderId == null}
+                            readOnly={readOnly}
+                            busy={busy}
+                            error={resolvedError}
+                            hideHelperText
+                            ariaDescribedBy={group.describedBy}
+                            showOptionalIndicator={false}
+                            margin="none"
+                        >
+                            {(pathField) => (
+                                <TextField
+                                    id={pathField.controlId}
+                                    size="small"
+                                    margin="none"
+                                    value={selectedPath ?? ''}
+                                    onChange={(event) => handlePathChange(event.target.value)}
+                                    onBlur={handlePathBlur}
+                                    placeholder={placeholder ?? 'Ordner auswählen'}
+                                    error={pathField.invalid}
+                                    disabled={pathField.disabled || pathField.busy}
+                                    fullWidth
+                                    slotProps={{
+                                        htmlInput: getNativeInputAriaProps(pathField),
+                                        input: {
+                                            readOnly: pathField.readOnly || pathField.busy,
+                                            sx: formFieldInputRootSx,
+                                            endAdornment: (
+                                                <InputAdornment position="end">
+                                                    {value != null && !isReadonlyOrDisabled && (
+                                                        <Tooltip title="Auswahl löschen" arrow>
+                                                            <IconButton
+                                                                size="small"
+                                                                aria-label={`${label}: Pfad löschen`}
+                                                                onClick={() => onChange({
+                                                                    storageProviderId: value.storageProviderId,
+                                                                    path: null,
+                                                                })}
+                                                            >
+                                                                <CloseIcon fontSize="small"/>
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+                                                    <Tooltip
+                                                        title={value?.storageProviderId == null ? 'Bitte zuerst einen Speicheranbieter auswählen' : 'Ordner auswählen'}
+                                                        arrow
+                                                    >
+                                                        <span>
+                                                            <IconButton
+                                                                size="small"
+                                                                aria-label={`${label}: Ordner auswählen`}
+                                                                aria-haspopup="dialog"
+                                                                aria-expanded={isDialogOpen}
+                                                                disabled={!canBrowse}
+                                                                onClick={() => setIsDialogOpen(true)}
+                                                            >
+                                                                <FolderIcon fontSize="small"/>
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+                                                </InputAdornment>
+                                            ),
+                                        },
+                                    }}
+                                />
+                            )}
+                        </FormField>
+                    </Grid>
+                </Grid>
+
+                <Dialog
+                    open={isDialogOpen && value?.storageProviderId != null}
+                    onClose={() => setIsDialogOpen(false)}
+                    maxWidth="lg"
+                    fullWidth
+                >
+                    <DialogTitle sx={{pr: 6}}>
+                        <Stack sx={{minWidth: 0}}>
+                            <Typography variant="subtitle1">Zielpfad auswählen</Typography>
+                            {selectedProvider != null && (
+                                <Typography variant="caption" noWrap sx={{color: 'text.secondary'}}>
+                                    {selectedProvider.name}
+                                </Typography>
+                            )}
+                        </Stack>
+                        <IconButton
+                            aria-label="Dialog schließen"
+                            onClick={() => setIsDialogOpen(false)}
+                            size="small"
+                            sx={{position: 'absolute', right: 12, top: 12}}
+                        >
+                            <CloseIcon fontSize="small"/>
+                        </IconButton>
+                    </DialogTitle>
+
+                    <DialogContent dividers>
+                        {value?.storageProviderId != null && (
+                            <StorageExplorer
+                                providerId={value.storageProviderId}
+                                initialPath={explorerPath}
+                                onFolderSelect={handleFolderSelect}
+                                folderSelectLabel="Diesen Ordner auswählen"
+                                disableFileDialog
+                                showTopNavigationBar
+                                minGridHeight={480}
                             />
                         )}
-                    />
-                </Grid>
+                    </DialogContent>
 
-                <Grid
-                    size={{
-                        xs: 12,
-                    }}
-                >
-                    <TextField
-                        label={label}
-                        required={required}
-                        value={selectedPath ?? ''}
-                        onChange={(event) => {
-                            handlePathChange(event.target.value);
-                        }}
-                        onBlur={handlePathBlur}
-                        placeholder={placeholder ?? 'Ordner auswählen'}
-                        error={error != null}
-                        helperText={helperText}
-                        disabled={disabled || selectedProviderIsReadOnlyDisabled || value?.storageProviderId == null}
-                        fullWidth={true}
-                        slotProps={{
-                            input: {
-                                readOnly: readOnly,
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                        {value != null && !isReadonlyOrDisabled && (
-                                            <Tooltip
-                                                title="Auswahl löschen"
-                                                arrow={true}
-                                            >
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => {
-                                                        onChange({
-                                                            storageProviderId: value.storageProviderId,
-                                                            path: null,
-                                                        });
-                                                    }}
-                                                >
-                                                    <CloseIcon fontSize="small"/>
-                                                </IconButton>
-                                            </Tooltip>
-                                        )}
-                                        <Tooltip
-                                            title={value?.storageProviderId == null ? 'Bitte zuerst einen Speicheranbieter auswählen' : 'Ordner auswählen'}
-                                            arrow={true}
-                                        >
-                                            <span>
-                                                <IconButton
-                                                    size="small"
-                                                    disabled={!canBrowse}
-                                                    onClick={() => {
-                                                        setIsDialogOpen(true);
-                                                    }}
-                                                >
-                                                    <FolderIcon fontSize="small"/>
-                                                </IconButton>
-                                            </span>
-                                        </Tooltip>
-                                    </InputAdornment>
-                                ),
-                            }
-                        }}
-                    />
-                </Grid>
-            </Grid>
-
-            <Dialog
-                open={isDialogOpen && value?.storageProviderId != null}
-                onClose={() => {
-                    setIsDialogOpen(false);
-                }}
-                maxWidth="lg"
-                fullWidth={true}
-            >
-                <DialogTitle sx={{pr: 6}}>
-                    <Stack sx={{minWidth: 0}}>
-                        <Typography variant="subtitle1">Zielpfad auswählen</Typography>
-                        {selectedProvider != null && (
-                            <Typography
-                                variant="caption"
-                                noWrap={true}
-                                sx={{
-                                    color: "text.secondary"
-                                }}
-                            >
-                                {selectedProvider.name}
-                            </Typography>
-                        )}
-                    </Stack>
-                    <IconButton
-                        onClick={() => {
-                            setIsDialogOpen(false);
-                        }}
-                        size="small"
-                        sx={{position: 'absolute', right: 12, top: 12}}
-                    >
-                        <CloseIcon fontSize="small"/>
-                    </IconButton>
-                </DialogTitle>
-
-                <DialogContent dividers={true}>
-                    {value?.storageProviderId != null && (
-                        <StorageExplorer
-                            providerId={value.storageProviderId}
-                            initialPath={explorerPath}
-                            onFolderSelect={handleFolderSelect}
-                            folderSelectLabel="Diesen Ordner auswählen"
-                            disableFileDialog={true}
-                            showTopNavigationBar={true}
-                            minGridHeight={480}
-                        />
-                    )}
-                </DialogContent>
-
-                <DialogActions sx={{pt: 2}}>
-                    <Button
-                        onClick={() => {
-                            setIsDialogOpen(false);
-                        }}
-                    >
-                        Schließen
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </>
+                    <DialogActions sx={{pt: 2}}>
+                        <Button onClick={() => setIsDialogOpen(false)}>
+                            Schließen
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            </>)}
+        </FormFieldGroup>
     );
 }

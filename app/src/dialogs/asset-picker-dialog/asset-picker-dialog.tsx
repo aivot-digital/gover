@@ -7,13 +7,8 @@ import {
     CircularProgress,
     Dialog,
     DialogContent,
-    FormControl,
     Grid,
-    InputLabel,
-    MenuItem,
-    OutlinedInput,
     Stack,
-    TextField,
     Typography,
 } from '@mui/material';
 import {Link} from 'react-router-dom';
@@ -32,10 +27,14 @@ import {useHasSystemPermission} from '../../modules/permissions/hooks/use-permis
 import {Permission} from '../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../modules/permissions/utils/permission-utils';
 import {isApiError} from '../../models/api-error';
+import {SelectFieldComponent} from '../../components/select-field/select-field-component';
+import {FormField} from '../../components/form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
 
 type ProviderLoadError = 'permission' | 'generic';
 
 export interface AssetPickerDialogProps {
+    id?: string;
     title: string;
     show: boolean;
     mimeType?: string | string[];
@@ -46,6 +45,7 @@ export interface AssetPickerDialogProps {
 
 export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProps>) {
     const {
+        id,
         title,
         show,
         mimeType,
@@ -352,6 +352,11 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
             maxWidth="lg"
             open={show}
             onClose={handleDialogClose}
+            slotProps={{
+                paper: {
+                    id,
+                },
+            }}
         >
             <DialogTitleWithClose onClose={handleDialogClose}>
                 {title}
@@ -372,46 +377,64 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                     <Grid container={true}
                           spacing={1.5}>
                         <Grid size={{xs: 12, sm: hasSelectionCriteria ? 6 : 12}}>
-                            <TextField
-                                fullWidth={true}
-                                select={true}
-                                size="small"
+                            <SelectFieldComponent
                                 label="Speicheranbieter"
-                                value={selectedProviderId ?? ''}
-                                onChange={(event) => {
-                                    const nextProviderId = Number.parseInt(event.target.value, 10);
-                                    setSelectedProviderId(Number.isNaN(nextProviderId) ? undefined : nextProviderId);
+                                value={selectedProviderId?.toString()}
+                                onChange={(nextProviderId) => {
+                                    if (nextProviderId == null) {
+                                        setSelectedProviderId(undefined);
+                                        return;
+                                    }
+
+                                    const parsedProviderId = Number.parseInt(nextProviderId, 10);
+                                    setSelectedProviderId(Number.isNaN(parsedProviderId) ? undefined : parsedProviderId);
                                 }}
+                                options={providers.map((provider) => ({
+                                    value: provider.id.toString(),
+                                    label: provider.name,
+                                }))}
+                                includeEmptyOption={false}
+                                emptyStatePlaceholder="Keine Speicheranbieter verfügbar"
                                 disabled={isLoadingProviders || providers.length === 0 || isProcessingSelection}
-                            >
-                                {providers.map((provider) => (
-                                    <MenuItem key={provider.id}
-                                              value={provider.id}>
-                                        {provider.name}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
+                                showOptionalIndicator={false}
+                                margin="none"
+                            />
                         </Grid>
 
                         {hasSelectionCriteria && (
                             <Grid size={{xs: 12, sm: 6}}>
-                                <FormControl fullWidth={true}
-                                             size="small">
-                                    <InputLabel shrink={true}>Auswahlkriterien</InputLabel>
-                                    <OutlinedInput
-                                        notched={true}
-                                        label="Auswahlkriterien"
-                                        readOnly={true}
-                                        inputProps={{tabIndex: -1}}
-                                        startAdornment={(
+                                <FormField
+                                    label="Auswahlkriterien"
+                                    readOnly
+                                    showOptionalIndicator={false}
+                                    margin="none"
+                                >
+                                    {(field) => (
+                                        <Box
+                                            id={field.controlId}
+                                            role="group"
+                                            {...field.ariaProps}
+                                            sx={{
+                                                minHeight: FormFieldTokens.controlMinHeight,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                px: 1.5,
+                                                py: 0.5,
+                                                border: '1px solid',
+                                                borderColor: 'divider',
+                                                borderRadius: 1,
+                                            }}
+                                        >
                                             <Stack
                                                 direction="row"
                                                 spacing={0.75}
-                                                useFlexGap={true}
+                                                useFlexGap
                                                 sx={{
-                                                    flexWrap: "wrap",
-                                                    alignItems: "center"
-                                                }}>
+                                                    minWidth: 0,
+                                                    flexWrap: 'wrap',
+                                                    alignItems: 'center',
+                                                }}
+                                            >
                                                 {normalizedMimeTypes.length > 0 && (
                                                     <Chip
                                                         size="small"
@@ -428,16 +451,9 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                                                     />
                                                 )}
                                             </Stack>
-                                        )}
-                                        sx={{
-                                            minHeight: 40,
-                                            alignItems: 'center',
-                                            '& .MuiOutlinedInput-input': {
-                                                display: 'none',
-                                            },
-                                        }}
-                                    />
-                                </FormControl>
+                                        </Box>
+                                    )}
+                                </FormField>
                             </Grid>
                         )}
                     </Grid>

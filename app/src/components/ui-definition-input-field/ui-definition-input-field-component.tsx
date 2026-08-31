@@ -5,7 +5,6 @@ import {
     Dialog,
     DialogActions,
     DialogContent,
-    FormHelperText,
     ListItemIcon,
     ListItemText,
     Menu,
@@ -14,6 +13,8 @@ import {
     Switch,
     Typography,
     useTheme,
+    type SxProps,
+    type Theme,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
@@ -35,6 +36,7 @@ import {ElementTreeInlineEditorContextProvider} from '../element-tree-2/componen
 import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
 import {AnyElement} from '../../models/elements/any-element';
 import {generateComponentTitle} from '../../utils/generate-component-title';
+import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {useConfirm} from '../../providers/confirm-provider';
 import {cloneElement} from '../../utils/clone-element';
@@ -60,18 +62,23 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {ViewDispatcherMode} from '../view-dispatcher/view-dispatcher.context';
 import {normalizeUiDefinitionForStorage} from '../../utils/ui-definition-utils';
 import {getSingleUseSectionAddDisabledReason} from '../../data/element-type/single-use-section-types';
+import {FormField, type FormFieldLayoutProps} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
 
-interface UiDefinitionInputFieldComponentProps {
+export interface UiDefinitionInputFieldComponentProps extends FormFieldLayoutProps {
     label: string;
     hint?: string | null;
     error?: string | null;
     required?: boolean | null;
     disabled?: boolean;
+    busy?: boolean;
+    readOnly?: boolean;
     value?: UiDefinitionInputFieldElementItem | null;
     expectedRootType?: ElementType | null;
     onChange: (value: UiDefinitionInputFieldElementItem | null) => void;
     displayContext: ElementDisplayContext;
     openOverride?: () => void;
+    controlSx?: SxProps<Theme>;
 }
 
 function buildSummary(value?: UiDefinitionInputFieldElementItem | null): string {
@@ -102,6 +109,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         error,
         required,
         disabled,
+        busy,
+        readOnly,
         value,
         expectedRootType,
         onChange,
@@ -109,7 +118,9 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         openOverride,
     } = props;
 
-    const displayLabel = `${label}${required ? ' *' : ''}`;
+    const generatedId = useNormalizedReactId();
+    const controlId = props.id ?? `ui-definition-field-${generatedId}`;
+    const dialogId = `${controlId}-dialog`;
     const [showDraftDialog, setShowDraftDialog] = useState<boolean>(false);
     const [draftValue, setDraftValue] = useState<UiDefinitionInputFieldElementItem | null>(null);
     const [initialDraftValue, setInitialDraftValue] = useState<UiDefinitionInputFieldElementItem | null>(null);
@@ -408,53 +419,65 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
 
     return (
         <>
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    mb: 0.75,
+            <FormField
+                id={controlId}
+                label={label}
+                hint={hint}
+                error={error}
+                required={Boolean(required)}
+                disabled={Boolean(disabled)}
+                readOnly={Boolean(readOnly)}
+                busy={Boolean(busy)}
+                ariaLabel={props.ariaLabel}
+                ariaDescribedBy={props.ariaDescribedBy}
+                margin={props.margin}
+                showOptionalIndicator={props.showOptionalIndicator}
+                sx={props.sx}
+                labelAction={(field) => {
+                    const suppliedLabelAction = typeof props.labelAction === 'function'
+                        ? props.labelAction(field)
+                        : props.labelAction;
+
+                    return (
+                        <Stack direction="row" spacing={0.5} sx={{alignItems: 'center'}}>
+                            {suppliedLabelAction}
+                            <Button
+                                size="small"
+                                startIcon={<Edit/>}
+                                onClick={openDialog}
+                                disabled={busy}
+                                aria-haspopup={openOverride == null ? 'dialog' : undefined}
+                                aria-controls={openOverride == null && showDraftDialog ? dialogId : undefined}
+                                aria-expanded={openOverride == null ? showDraftDialog : undefined}
+                            >
+                                {openOverride != null ? 'Editor öffnen' : (disabled || readOnly ? 'Ansehen' : 'Bearbeiten')}
+                            </Button>
+                        </Stack>
+                    );
                 }}
             >
-                <Typography variant="subtitle2">
-                    {displayLabel}
-                </Typography>
-
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<Edit/>}
-                    sx={{
-                        ml: 'auto',
-                    }}
-                    onClick={openDialog}
-                >
-                    {
-                        openOverride != null
-                            ? 'Editor öffnen'
-                            : (disabled ? ' Ansehen' : 'Bearbeiten')
-                    }
-                </Button>
-            </Box>
-
-            {
-                shouldShowEmptyState ?
+                {(field) => shouldShowEmptyState ?
                     <Box
-                        sx={(theme) => ({
-                            px: 1.5,
-                            py: 1.25,
-                            minHeight: 56,
-                            display: 'flex',
-                            alignItems: 'center',
-                            borderRadius: 1,
-                            border: error != null
-                                ? '1px solid'
-                                : '1px dashed',
-                            borderColor: error != null
-                                ? theme.palette.error.main
-                                : alpha(theme.palette.text.primary, 0.18),
-                            textAlign: 'left',
-                        })}
+                        id={field.controlId}
+                        role="group"
+                        {...field.ariaProps}
+                        sx={[
+                            (theme) => ({
+                                px: 1.5,
+                                py: 0,
+                                height: FormFieldTokens.controlMinHeight,
+                                minHeight: FormFieldTokens.controlMinHeight,
+                                display: 'flex',
+                                alignItems: 'center',
+                                borderRadius: 1,
+                                border: field.invalid ? '1px solid' : '1px dashed',
+                                borderColor: field.invalid
+                                    ? theme.palette.error.main
+                                    : alpha(theme.palette.text.primary, 0.18),
+                                textAlign: 'left',
+                            }),
+                            ...(Array.isArray(props.controlSx) ? props.controlSx : [props.controlSx]),
+                        ]}
                     >
                         <Stack
                             direction="row"
@@ -491,18 +514,25 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         </Stack>
                     </Box> :
                     <Box
-                        sx={{
-                            border: '1px solid',
-                            borderColor: error != null ? 'error.main' : 'divider',
-                            borderRadius: 1,
-                            px: 1.5,
-                            py: 1.25,
-                            minHeight: 56,
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: 1,
-                        }}
+                        id={field.controlId}
+                        role="group"
+                        {...field.ariaProps}
+                        sx={[
+                            {
+                                border: '1px solid',
+                                borderColor: field.invalid ? 'error.main' : 'divider',
+                                borderRadius: 1,
+                                px: 1.5,
+                                py: 0,
+                                height: FormFieldTokens.controlMinHeight,
+                                minHeight: FormFieldTokens.controlMinHeight,
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 1,
+                            },
+                            ...(Array.isArray(props.controlSx) ? props.controlSx : [props.controlSx]),
+                        ]}
                     >
                         <MobileLayout
                             sx={{
@@ -517,10 +547,9 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                             sx={{
                                 flexGrow: 1,
                                 color: 'text.primary',
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
                                 overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
                                 lineHeight: 1.4,
                                 minWidth: 0,
                             }}
@@ -534,21 +563,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                 {expectedRootTypeHint}
                             </Box>
                         }
-                    </Box>
-            }
-
-            {
-                (error != null || hint != null) &&
-                <FormHelperText
-                    error={error != null}
-                    sx={{
-                        mx: 1.75,
-                        mt: 0.75,
-                    }}
-                >
-                    {error ?? hint}
-                </FormHelperText>
-            }
+                    </Box>}
+            </FormField>
 
             <Dialog
                 open={showDraftDialog}
@@ -557,9 +573,9 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                 }}
                 fullWidth
                 maxWidth="xl"
+                slotProps={{paper: {id: dialogId}}}
             >
                 <DialogTitleWithClose
-                    bordered
                     onClose={() => {
                         void requestClose();
                     }}
@@ -609,7 +625,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         },
                     ]}
                 >
-                    {displayLabel}
+                    {label}
                 </DialogTitleWithClose>
 
                 <UiDefinitionInputFieldSettingsMenu

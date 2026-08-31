@@ -1,4 +1,5 @@
 export interface SelectAssetDialogProps {
+    id?: string;
     title: string;
     show: boolean;
     mimetype?: string;

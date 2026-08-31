@@ -35,7 +35,7 @@ export function DomainUserSelectFieldView(props: BaseViewProps<DomainUserSelectF
             error={errors != null ? errors.join(' ') : undefined}
             required={element.required ?? undefined}
             disabled={isDisabled}
-            readOnly={isBusy}
+            busy={isBusy}
             allowedTypes={element.allowedTypes ?? undefined}
             processAccessConstraint={element.processAccessConstraint ?? undefined}
         />
