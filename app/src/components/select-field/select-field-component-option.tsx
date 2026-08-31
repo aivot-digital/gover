@@ -1,8 +1,10 @@
 import {type ReactNode} from 'react';
 
-export interface SelectFieldComponentOption {
+export type SelectFieldValue = string | number;
+
+export interface SelectFieldComponentOption<T extends SelectFieldValue = string> {
     label: string;
     subLabel?: string;
     icon?: ReactNode;
-    value: string;
+    value: T;
 }

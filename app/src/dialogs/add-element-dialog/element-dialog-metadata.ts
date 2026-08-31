@@ -88,7 +88,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.ReplicatingContainer]: 'Wiederholt eine Elementgruppe mehrfach.',
     [ElementType.RichText]: 'Zeigt formatierten Fließtext an.',
     [ElementType.Radio]: 'Ermöglicht genau eine Auswahl per Optionsfeld.',
-    [ElementType.Select]: 'Ermöglicht genau eine Auswahl im Dropdown.',
+    [ElementType.Select]: 'Ermöglicht genau eine Auswahl aus vorgegebenen Optionen.',
     [ElementType.Spacer]: 'Erzeugt gezielten Abstand zwischen Inhalten.',
     [ElementType.Table]: 'Erfasst strukturierte Daten in Tabellenform.',
     [ElementType.Text]: 'Erfasst freie Texteingaben.',

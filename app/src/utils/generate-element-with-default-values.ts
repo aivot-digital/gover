@@ -58,6 +58,7 @@ import {getDefaultElementWeight} from './element-widths';
 import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
 import {StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
+import {SelectFieldPresentation} from '../models/elements/form/input/select-field-presentation';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -269,7 +270,7 @@ const elementConstructors: {
     }),
     [ElementType.Select]: (id) => ({
         ...makeInputBase(ElementType.Select, id),
-        label: 'Einzelauswahl (Auswahlmenü)',
+        label: 'Einzelauswahl',
         optionsSource: OptionsSourceType.Manual,
         codeListKey: undefined,
         options: [
@@ -287,6 +288,7 @@ const elementConstructors: {
             },
         ],
         autocomplete: undefined,
+        presentation: SelectFieldPresentation.Dropdown,
         dependsOnSelectFieldId: undefined,
         placeholder: undefined,
     }),

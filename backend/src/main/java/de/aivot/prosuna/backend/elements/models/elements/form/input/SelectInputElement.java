@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.elements.models.elements.form.input;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
 import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
+import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
@@ -31,6 +32,10 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
 
     @Nullable
     private String dependsOnSelectFieldId;
+
+    // Presentation changes only the input interaction; values remain constrained to the configured options.
+    @Nonnull
+    private SelectInputPresentation presentation = SelectInputPresentation.Dropdown;
 
     public SelectInputElement() {
         super(ElementType.Select);
@@ -162,7 +167,8 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
                 && Objects.equals(options, that.options)
                 && optionsSource == that.optionsSource
                 && Objects.equals(codeListKey, that.codeListKey)
-                && Objects.equals(dependsOnSelectFieldId, that.dependsOnSelectFieldId);
+                && Objects.equals(dependsOnSelectFieldId, that.dependsOnSelectFieldId)
+                && presentation == that.presentation;
     }
 
     @Override
@@ -174,6 +180,7 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
         result = 31 * result + Objects.hashCode(optionsSource);
         result = 31 * result + Objects.hashCode(codeListKey);
         result = 31 * result + Objects.hashCode(dependsOnSelectFieldId);
+        result = 31 * result + Objects.hashCode(presentation);
         return result;
     }
 
@@ -238,6 +245,16 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
 
     public SelectInputElement setDependsOnSelectFieldId(@Nullable String dependsOnSelectFieldId) {
         this.dependsOnSelectFieldId = dependsOnSelectFieldId;
+        return this;
+    }
+
+    @Nonnull
+    public SelectInputPresentation getPresentation() {
+        return presentation;
+    }
+
+    public SelectInputElement setPresentation(@Nullable SelectInputPresentation presentation) {
+        this.presentation = presentation == null ? SelectInputPresentation.Dropdown : presentation;
         return this;
     }
 

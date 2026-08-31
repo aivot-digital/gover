@@ -3,7 +3,7 @@ import React, {useMemo} from 'react';
 import {ElementEditorSectionHeader} from '../../element-editor-section-header/element-editor-section-header';
 import {useElementTreeContext} from '../element-tree-context';
 import {AnyInputElement} from '../../../models/elements/form/input/any-input-element';
-import {SelectFieldComponent} from '../../select-field-2/select-field-component';
+import {SelectFieldComponent} from '../../select-field/select-field-component';
 import {Box, Divider, Grid, Stack, Typography} from '@mui/material';
 
 interface ElementTreeEditorContentTabMetadataProps {
