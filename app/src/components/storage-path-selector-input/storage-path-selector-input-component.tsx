@@ -17,10 +17,12 @@ import {
 } from '@mui/material';
 import CheckIcon from '@aivot/mui-material-symbols-400-n25-outlined/Check';
 import CloseIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
+import FileIcon from '@aivot/mui-material-symbols-400-n25-outlined/Draft';
 import FolderIcon from '@aivot/mui-material-symbols-400-n25-outlined/Folder';
 import StorageIcon from '@aivot/mui-material-symbols-400-n25-outlined/Storage';
 import {type SyntheticEvent, useEffect, useMemo, useRef, useState} from 'react';
 import {
+    StoragePathSelectorMode,
     type StoragePathSelectorInputElementValue,
 } from '../../models/elements/form/input/storage-path-selector-input-element';
 import {
@@ -31,9 +33,11 @@ import {
 import {StorageProvidersApiService} from '../../modules/storage/storage-providers-api-service';
 import {type StorageProviderEntity} from '../../modules/storage/entities/storage-provider-entity';
 import {StorageExplorer} from '../../modules/storage/components/storage-explorer';
+import {type StorageIndexItem} from '../../modules/storage/entities/storage-index-item-entity';
 
 interface StoragePathSelectorInputComponentProps {
     label: string;
+    mode?: StoragePathSelectorMode | null;
     value?: StoragePathSelectorInputElementValue | null;
     onChange: (value: StoragePathSelectorInputElementValue | null) => void;
     allowedStorageProviderTypes?: StorageProviderType[] | null;
@@ -86,6 +90,28 @@ function normalizeTypedPath(path: string | null | undefined): string | null {
     return path.trim();
 }
 
+function getParentDirectoryPath(path: string | null | undefined): string {
+    if (path == null || path.trim().length === 0) {
+        return ROOT_PATH;
+    }
+
+    let normalized = path.trim();
+    if (!normalized.startsWith('/')) {
+        normalized = `/${normalized}`;
+    }
+
+    if (normalized.endsWith('/')) {
+        return normalizeDirectoryPath(normalized) ?? ROOT_PATH;
+    }
+
+    const lastSlashIndex = normalized.lastIndexOf('/');
+    if (lastSlashIndex <= 0) {
+        return ROOT_PATH;
+    }
+
+    return normalizeDirectoryPath(normalized.slice(0, lastSlashIndex + 1)) ?? ROOT_PATH;
+}
+
 function containsTemplateTag(path: string | null | undefined): boolean {
     return path?.includes('{{') === true ||
         path?.includes('{%') === true ||
@@ -110,6 +136,7 @@ function toOption(provider: StorageProviderEntity): StorageProviderOption {
 export function StoragePathSelectorInputComponent(props: StoragePathSelectorInputComponentProps) {
     const {
         label,
+        mode,
         value,
         onChange,
         allowedStorageProviderTypes,
@@ -123,6 +150,8 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
         allowReadOnlyStorageProviders = false,
     } = props;
 
+    const effectiveMode = mode ?? StoragePathSelectorMode.Folder;
+    const isFileMode = effectiveMode === StoragePathSelectorMode.File;
     const allowedTypes = useMemo(() => normalizeAllowedTypes(allowedStorageProviderTypes), [allowedStorageProviderTypes]);
     const allowedTypesKey = allowedTypes.join('|');
     const [providers, setProviders] = useState<StorageProviderOption[]>([]);
@@ -200,7 +229,9 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
     const selectedPath = value?.path ?? null;
     const explorerPath = containsTemplateTag(selectedPath)
         ? ROOT_PATH
-        : normalizeDirectoryPath(selectedPath) ?? ROOT_PATH;
+        : isFileMode
+            ? getParentDirectoryPath(selectedPath)
+            : normalizeDirectoryPath(selectedPath) ?? ROOT_PATH;
     const isReadonlyOrDisabled = disabled === true || readOnly === true;
     const selectedProviderIsReadOnlyDisabled = !allowReadOnlyStorageProviders && selectedProvider?.readOnlyStorage === true;
     const canBrowse = !isReadonlyOrDisabled && !selectedProviderIsReadOnlyDisabled && value?.storageProviderId != null;
@@ -209,6 +240,9 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
             ? 'Dieser Speicheranbieter ist nur lesend und kann hier nicht ausgewählt werden.'
             : hint
     );
+    const selectionLabel = isFileMode ? 'Datei auswählen' : 'Ordner auswählen';
+    const dialogTitle = isFileMode ? 'Datei auswählen' : 'Zielordner auswählen';
+    const SelectionIcon = isFileMode ? FileIcon : FolderIcon;
 
     const handleProviderChange = (_: SyntheticEvent, provider: StorageProviderOption | null): void => {
         if (provider == null) {
@@ -256,6 +290,18 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
         onChange({
             storageProviderId: value.storageProviderId,
             path: normalizeDirectoryPath(path) ?? ROOT_PATH,
+        });
+        setIsDialogOpen(false);
+    };
+
+    const handleFileSelect = (item: StorageIndexItem): void => {
+        if (value?.storageProviderId == null) {
+            return;
+        }
+
+        onChange({
+            storageProviderId: value.storageProviderId,
+            path: normalizeTypedPath(item.pathFromRoot),
         });
         setIsDialogOpen(false);
     };
@@ -359,7 +405,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                             handlePathChange(event.target.value);
                         }}
                         onBlur={handlePathBlur}
-                        placeholder={placeholder ?? 'Ordner auswählen'}
+                        placeholder={placeholder ?? selectionLabel}
                         error={error != null}
                         helperText={helperText}
                         disabled={disabled || selectedProviderIsReadOnlyDisabled || value?.storageProviderId == null}
@@ -388,18 +434,19 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                                             </Tooltip>
                                         )}
                                         <Tooltip
-                                            title={value?.storageProviderId == null ? 'Bitte zuerst einen Speicheranbieter auswählen' : 'Ordner auswählen'}
+                                            title={value?.storageProviderId == null ? 'Bitte zuerst einen Speicheranbieter auswählen' : selectionLabel}
                                             arrow={true}
                                         >
                                             <span>
                                                 <IconButton
+                                                    aria-label={selectionLabel}
                                                     size="small"
                                                     disabled={!canBrowse}
                                                     onClick={() => {
                                                         setIsDialogOpen(true);
                                                     }}
                                                 >
-                                                    <FolderIcon fontSize="small"/>
+                                                    <SelectionIcon fontSize="small"/>
                                                 </IconButton>
                                             </span>
                                         </Tooltip>
@@ -421,7 +468,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
             >
                 <DialogTitle sx={{pr: 6}}>
                     <Stack sx={{minWidth: 0}}>
-                        <Typography variant="subtitle1">Zielpfad auswählen</Typography>
+                        <Typography variant="subtitle1">{dialogTitle}</Typography>
                         {selectedProvider != null && (
                             <Typography
                                 variant="caption"
@@ -450,9 +497,10 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                         <StorageExplorer
                             providerId={value.storageProviderId}
                             initialPath={explorerPath}
-                            onFolderSelect={handleFolderSelect}
-                            folderSelectLabel="Diesen Ordner auswählen"
-                            disableFileDialog={true}
+                            onFolderSelect={isFileMode ? undefined : handleFolderSelect}
+                            folderSelectLabel={isFileMode ? undefined : 'Diesen Ordner auswählen'}
+                            onFileSelect={isFileMode ? handleFileSelect : undefined}
+                            disableFileDialog={!isFileMode}
                             showTopNavigationBar={true}
                             minGridHeight={480}
                         />

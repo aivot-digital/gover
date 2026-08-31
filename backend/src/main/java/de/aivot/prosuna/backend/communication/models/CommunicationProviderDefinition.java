@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.communication.models;
 
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
@@ -43,6 +44,12 @@ public interface CommunicationProviderDefinition<C, I> extends PluginComponent {
     @Nullable
     default GroupLayoutElement getTestingLayout() throws ResponseException {
         return null;
+    }
+
+    default void handleTest(@Nonnull CommunicationProviderContext<C, I> context,
+                            @Nonnull AuthoredElementValues inputs,
+                            @Nonnull CommunicationMessage message) throws CommunicationException {
+        throw new CommunicationException("Testing is not supported for this communication provider.");
     }
 
     @Nullable

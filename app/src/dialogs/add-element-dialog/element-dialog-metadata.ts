@@ -112,7 +112,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.ProcessInstanceAttachmentSetSelect]: 'Wählt einen oder mehrere Anlagensätze der Prozessinstanz aus.',
     [ElementType.ProcessIdentityIdInput]: 'Wählt eine verfügbare Prozessidentität aus.',
     [ElementType.HtmlTemplateInput]: 'Befüllt Slots einer HTML-Vorlage mit Text, Rich-Text oder Bildern.',
-    [ElementType.StoragePathSelector]: 'Wählt einen Speicheranbieter und einen Zielordner aus.',
+    [ElementType.StoragePathSelector]: 'Wählt einen Speicheranbieter und eine Datei oder einen Ordner aus.',
     [ElementType.CodeInput]: 'Erfasst technischen oder ausführbaren Code.',
     [ElementType.RichTextInput]: 'Erfasst formatierte Texte in Markdown.',
     [ElementType.UiDefinitionInput]: 'Definiert eine Benutzeroberfläche (UI) für z. B. Formulare oder Aufgaben.',

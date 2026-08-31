@@ -30,6 +30,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
     public static final String COMPONENT_KEY = "mail_communication_provider";
     public static final String EMAIL_ATTRIBUTE_FIELD_ID = "emailAttribute";
     public static final String CUSTOMER_EMAIL_FIELD_ID = "email";
+
     private final DefaultMailCommunicationService defaultMailCommunicationService;
 
     public MailCommunicationProviderV1(DefaultMailCommunicationService defaultMailCommunicationService) {

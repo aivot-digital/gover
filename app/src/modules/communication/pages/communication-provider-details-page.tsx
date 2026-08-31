@@ -42,6 +42,11 @@ export function CommunicationProviderDetailsPage() {
                         path: '/communication-providers/:id',
                         label: 'Konfiguration',
                     },
+                    {
+                        path: '/communication-providers/:id/test',
+                        label: 'Testen',
+                        isDisabled: () => true,
+                    },
                 ]}
                 initializeItem={() => new CommunicationProvidersApiService().initializeProvider()}
                 fetchData={(_, id) => new CommunicationProvidersApiService().retrieveProvider(Number(id))}

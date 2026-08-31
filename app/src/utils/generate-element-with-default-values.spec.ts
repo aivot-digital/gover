@@ -6,6 +6,10 @@ import {generateElementWithDefaultValues} from './generate-element-with-default-
 import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
 import type {LinkButtonElement} from '../models/elements/form/content/link-button-element';
 import type {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
+import {
+    type StoragePathSelectorInputElement,
+    StoragePathSelectorMode,
+} from '../models/elements/form/input/storage-path-selector-input-element';
 
 describe('generateElementWithDefaultValues', () => {
     it('should default text fields to not being copyable', () => {
@@ -50,5 +54,12 @@ describe('generateElementWithDefaultValues', () => {
         expect(element).not.toHaveProperty('maxItems');
         expect(element).not.toHaveProperty('suggestions');
         expect(element).not.toHaveProperty('allowDuplicates');
+    });
+
+    it('should initialize storage path selectors in folder mode', () => {
+        const element = generateElementWithDefaultValues(ElementType.StoragePathSelector) as StoragePathSelectorInputElement;
+
+        expect(element.mode).toBe(StoragePathSelectorMode.Folder);
+        expect(element.placeholder).toBe('Ordner auswählen');
     });
 });

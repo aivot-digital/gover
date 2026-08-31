@@ -56,7 +56,10 @@ import {ProcessInstanceAttachmentSetSelectElement} from '../models/elements/form
 import {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
 import {getDefaultElementWeight} from './element-widths';
 import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
-import {StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
+import {
+    StoragePathSelectorInputElement,
+    StoragePathSelectorMode,
+} from '../models/elements/form/input/storage-path-selector-input-element';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 import {PaymentConfigElement} from '../models/elements/form/input/payment-config-element';
 import {LinkButtonElement} from '../models/elements/form/content/link-button-element';
@@ -518,6 +521,7 @@ const elementConstructors: {
     [ElementType.StoragePathSelector]: (id) => ({
         ...makeInputBase(ElementType.StoragePathSelector, id),
         label: 'Speicherpfad',
+        mode: StoragePathSelectorMode.Folder,
         placeholder: 'Ordner auswählen',
         storageProviderSelectHint: undefined,
         allowedStorageProviderTypes: undefined,

@@ -196,69 +196,81 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
 
     return (
         <Stack spacing={2.5} sx={{mt: 2}}>
-            {hasIdentityProvider && slot.availableIdentityProviders.map(provider => (
-                <IdentityButton
-                    key={`${slot.id}-${provider.identityProviderKey}`}
-                    startUri={api.createIdentityProviderStartLink(
-                        processSlug,
-                        formSlug,
-                        slot.id,
-                        provider.identityProviderKey,
-                        testClaim,
-                        window.location.href,
-                    )}
-                    identityProviderName={provider.identityProviderName}
-                    identityProviderType={provider.identityProviderType}
-                    identityProviderAssetKey={provider.identityProviderAssetKey}
-                    isAuthenticated={provider.isAuthenticatedWithThis}
-                />
-            ))}
-
-            {slot.allowsEmail && <>
-                {hasIdentityProvider && <Divider>oder</Divider>}
-                <Box>
-                    <Typography variant="subtitle2" sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
-                        <Mail fontSize="small"/>
-                        Nur E-Mail-Adresse verwenden
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{mb: 1.5}}>
-                        Es wird kein Nutzerkonto und kein Kommunikationsanbieter verwendet. Nachrichten werden direkt an
-                        diese Adresse versendet.
-                    </Typography>
-                    <Stack direction={{xs: 'column', sm: 'row'}} spacing={1} sx={{alignItems: {sm: 'flex-start'}}}>
-                        <TextField
-                            type="email"
-                            label="E-Mail-Adresse"
-                            value={emailAddress}
-                            required
-                            fullWidth
-                            error={emailError != null}
-                            helperText={emailError ?? undefined}
-                            disabled={busy}
-                            slotProps={{htmlInput: {maxLength: 254}}}
-                            onChange={(event) => {
-                                setEmailAddress(event.target.value);
-                                setEmailError(null);
-                                if (slot.identityType === 'Email') {
-                                    notifyPendingChange(true);
-                                }
-                            }}
+            {
+                hasIdentityProvider &&
+                slot.availableIdentityProviders
+                    .map(provider => (
+                        <IdentityButton
+                            key={`${slot.id}-${provider.identityProviderKey}`}
+                            startUri={api.createIdentityProviderStartLink(
+                                processSlug,
+                                formSlug,
+                                slot.id,
+                                provider.identityProviderKey,
+                                testClaim,
+                                window.location.href,
+                            )}
+                            identityProviderName={provider.identityProviderName}
+                            identityProviderType={provider.identityProviderType}
+                            identityProviderAssetKey={provider.identityProviderAssetKey}
+                            isAuthenticated={provider.isAuthenticatedWithThis}
                         />
-                        <Button
-                            variant="outlined"
-                            onClick={handleEmailSave}
-                            disabled={busy || emailAddress.trim().length === 0}
-                            sx={{minHeight: 56, whiteSpace: 'nowrap'}}
-                        >
-                            E-Mail-Adresse übernehmen
-                        </Button>
-                    </Stack>
-                    {slot.identityType === 'Email' && slot.emailAddress != null &&
-                        <Alert severity="success" icon={<CheckCircle/>} sx={{mt: 1.5}}>
-                            Nachrichten werden an {slot.emailAddress} gesendet.
-                        </Alert>}
-                </Box>
-            </>}
+                    ))
+            }
+
+            {
+                slot.allowsEmail &&
+                slot.availableIdentityProviders.every(provider => !provider.isAuthenticatedWithThis) &&
+                <>
+                    {
+                        hasIdentityProvider &&
+                        <Divider>oder</Divider>
+                    }
+                    <Box>
+                        <Typography variant="subtitle2" sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
+                            <Mail fontSize="small"/>
+                            Nur E-Mail-Adresse verwenden
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{mb: 1.5}}>
+                            Es wird kein Nutzerkonto und kein Kommunikationsanbieter verwendet. Nachrichten werden
+                            direkt an
+                            diese Adresse versendet.
+                        </Typography>
+                        <Stack direction={{xs: 'column', sm: 'row'}} spacing={1} sx={{alignItems: {sm: 'flex-start'}}}>
+                            <TextField
+                                type="email"
+                                label="E-Mail-Adresse"
+                                value={emailAddress}
+                                required
+                                fullWidth
+                                error={emailError != null}
+                                helperText={emailError ?? undefined}
+                                disabled={busy}
+                                slotProps={{htmlInput: {maxLength: 254}}}
+                                onChange={(event) => {
+                                    setEmailAddress(event.target.value);
+                                    setEmailError(null);
+                                    if (slot.identityType === 'Email') {
+                                        notifyPendingChange(true);
+                                    }
+                                }}
+                            />
+                            <Button
+                                variant="outlined"
+                                onClick={handleEmailSave}
+                                disabled={busy || emailAddress.trim().length === 0}
+                                sx={{minHeight: 56, whiteSpace: 'nowrap'}}
+                            >
+                                Übernehmen
+                            </Button>
+                        </Stack>
+                        {slot.identityType === 'Email' && slot.emailAddress != null &&
+                            <Alert severity="success" icon={<CheckCircle/>} sx={{mt: 1.5}}>
+                                Nachrichten werden an {slot.emailAddress} gesendet.
+                            </Alert>}
+                    </Box>
+                </>
+            }
 
             {!hasIdentityProvider && !slot.allowsEmail &&
                 <Alert severity="warning">
@@ -270,68 +282,63 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
                     Für dieses Nutzerkonto steht derzeit kein Kommunikationsweg zur Verfügung.
                 </Alert>}
 
-            {slot.identityType === 'IdentityProvider' && communication != null && <>
-                <Divider/>
-                <FormControl>
-                    <FormLabel id={`${slot.id}-communication-provider-label`}>
-                        Kommunikationsweg auswählen
-                    </FormLabel>
-                    <RadioGroup
-                        aria-labelledby={`${slot.id}-communication-provider-label`}
-                        value={selectedBindingId?.toString() ?? ''}
-                        onChange={(_, value) => void handleBindingChange(value)}
+            {
+                slot.identityType === 'IdentityProvider' &&
+                communication != null &&
+                <>
+                    <Divider/>
+                    <FormControl>
+                        <FormLabel id={`${slot.id}-communication-provider-label`}>
+                            Kommunikationsweg auswählen
+                        </FormLabel>
+                        <RadioGroup
+                            aria-labelledby={`${slot.id}-communication-provider-label`}
+                            value={selectedBindingId?.toString() ?? ''}
+                            onChange={(_, value) => void handleBindingChange(value)}
+                        >
+                            {communication.choices.map(choice => (
+                                <FormControlLabel
+                                    key={choice.id}
+                                    value={choice.id.toString()}
+                                    control={<Radio/>}
+                                    disabled={busy}
+                                    label={<Box sx={{py: .5}}>
+                                        <Typography sx={{fontWeight: 600}}>{choice.name}</Typography>
+                                        {choice.description.trim().length > 0 &&
+                                            <Typography variant="body2" color="text.secondary">
+                                                {choice.description}
+                                            </Typography>}
+                                    </Box>}
+                                />
+                            ))}
+                        </RadioGroup>
+                    </FormControl>
+
+                    {
+                        selectedBindingId != null &&
+                        communication.customerLayout != null &&
+                        <ElementDerivationContext
+                            element={communication.customerLayout}
+                            authoredElementValues={customerData}
+                            derivedData={derivedData}
+                            onAuthoredElementValuesChange={(values) => {
+                                setCustomerData(values);
+                                notifyPendingChange(true);
+                            }}
+                            onDerivedDataChange={setDerivedData}
+                            onDeriveOverride={handleCommunicationDerive}
+                        />
+                    }
+
+                    <Button
+                        variant="outlined"
+                        onClick={handleCommunicationSave}
+                        disabled={busy || selectedBindingId == null}
                     >
-                        {communication.choices.map(choice => (
-                            <FormControlLabel
-                                key={choice.id}
-                                value={choice.id.toString()}
-                                control={<Radio/>}
-                                disabled={busy}
-                                label={<Box sx={{py: .5}}>
-                                    <Typography sx={{fontWeight: 600}}>{choice.name}</Typography>
-                                    {choice.description.trim().length > 0 &&
-                                        <Typography variant="body2" color="text.secondary">
-                                            {choice.description}
-                                        </Typography>}
-                                </Box>}
-                            />
-                        ))}
-                    </RadioGroup>
-                </FormControl>
-
-                {selectedBindingId != null && communication.customerLayout != null &&
-                    <ElementDerivationContext
-                        element={communication.customerLayout}
-                        authoredElementValues={customerData}
-                        derivedData={derivedData}
-                        onAuthoredElementValuesChange={(values) => {
-                            setCustomerData(values);
-                            notifyPendingChange(true);
-                        }}
-                        onDerivedDataChange={setDerivedData}
-                        onDeriveOverride={handleCommunicationDerive}
-                    />}
-
-                <Button
-                    variant="outlined"
-                    onClick={handleCommunicationSave}
-                    disabled={busy || selectedBindingId == null}
-                >
-                    Angaben zum Kommunikationsweg übernehmen
-                </Button>
-            </>}
-
-            {slot.identityType != null &&
-                <Button
-                    variant="text"
-                    color="error"
-                    startIcon={<Delete/>}
-                    onClick={handleClear}
-                    disabled={busy}
-                    sx={{alignSelf: 'flex-start'}}
-                >
-                    Auswahl entfernen
-                </Button>}
+                        Angaben zum Kommunikationsweg übernehmen
+                    </Button>
+                </>
+            }
         </Stack>
     );
 }

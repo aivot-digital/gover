@@ -1,14 +1,33 @@
 import {Grid} from '@mui/material';
 import {type BaseEditorProps} from './base-editor';
-import {type StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
+import {
+    type StoragePathSelectorInputElement,
+    StoragePathSelectorMode,
+} from '../models/elements/form/input/storage-path-selector-input-element';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {MultiCheckboxComponent} from '../components/multi-checkbox-field/multi-checkbox-component';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
+import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {
     StorageProviderType,
     StorageProviderTypeLabels,
     StorageProviderTypes,
 } from '../modules/storage/enums/storage-provider-type';
+
+const modeOptions = [
+    {
+        value: StoragePathSelectorMode.Folder,
+        label: 'Ordner',
+    },
+    {
+        value: StoragePathSelectorMode.File,
+        label: 'Datei',
+    },
+];
+
+function getDefaultPlaceholder(mode: StoragePathSelectorMode): string {
+    return mode === StoragePathSelectorMode.File ? 'Datei auswählen' : 'Ordner auswählen';
+}
 
 export function StoragePathSelectorInputFieldEditor(props: BaseEditorProps<StoragePathSelectorInputElement>) {
     const {
@@ -32,6 +51,32 @@ export function StoragePathSelectorInputFieldEditor(props: BaseEditorProps<Stora
             rowSpacing={2}
         >
             <Grid size={{xs: 12, lg: 6}}>
+                <SelectFieldComponent
+                    label="Auswahlmodus"
+                    value={element.mode ?? StoragePathSelectorMode.Folder}
+                    onChange={(value) => {
+                        const currentMode = element.mode ?? StoragePathSelectorMode.Folder;
+                        const nextMode = value === StoragePathSelectorMode.File
+                            ? StoragePathSelectorMode.File
+                            : StoragePathSelectorMode.Folder;
+                        const placeholder = element.placeholder === getDefaultPlaceholder(currentMode)
+                            ? getDefaultPlaceholder(nextMode)
+                            : element.placeholder;
+
+                        onPatch({
+                            mode: nextMode,
+                            placeholder,
+                        });
+                    }}
+                    options={modeOptions}
+                    includeEmptyOption={false}
+                    required={true}
+                    hint="Legt fest, ob ein Ordner oder eine Datei ausgewählt werden kann."
+                    disabled={!editable}
+                />
+            </Grid>
+
+            <Grid size={{xs: 12, lg: 6}}>
                 <TextFieldComponent
                     label="Platzhalter"
                     value={element.placeholder}
@@ -45,7 +90,7 @@ export function StoragePathSelectorInputFieldEditor(props: BaseEditorProps<Stora
                 />
             </Grid>
 
-            <Grid size={{xs: 12, lg: 6}}>
+            <Grid size={{xs: 12}}>
                 <TextFieldComponent
                     label="Hinweis Speicheranbieter-Auswahl"
                     value={element.storageProviderSelectHint}

@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.elements.enums.StoragePathSelectorMode;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
@@ -16,6 +17,9 @@ import java.util.List;
 import java.util.Objects;
 
 public class StoragePathSelectorInputElement extends BaseInputElement<StoragePathSelectorInputElementValue> implements PrintableElement<StoragePathSelectorInputElementValue> {
+    @Nonnull
+    private StoragePathSelectorMode mode = StoragePathSelectorMode.Folder;
+
     @Nullable
     private String placeholder;
 
@@ -95,7 +99,8 @@ public class StoragePathSelectorInputElement extends BaseInputElement<StoragePat
         if (!super.equals(o)) return false;
 
         StoragePathSelectorInputElement that = (StoragePathSelectorInputElement) o;
-        return Objects.equals(placeholder, that.placeholder)
+        return mode == that.mode
+                && Objects.equals(placeholder, that.placeholder)
                 && Objects.equals(storageProviderSelectHint, that.storageProviderSelectHint)
                 && Objects.equals(allowedStorageProviderTypes, that.allowedStorageProviderTypes)
                 && Objects.equals(allowReadOnlyStorageProviders, that.allowReadOnlyStorageProviders);
@@ -103,7 +108,17 @@ public class StoragePathSelectorInputElement extends BaseInputElement<StoragePat
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), placeholder, storageProviderSelectHint, allowedStorageProviderTypes, allowReadOnlyStorageProviders);
+        return Objects.hash(super.hashCode(), mode, placeholder, storageProviderSelectHint, allowedStorageProviderTypes, allowReadOnlyStorageProviders);
+    }
+
+    @Nonnull
+    public StoragePathSelectorMode getMode() {
+        return mode;
+    }
+
+    public StoragePathSelectorInputElement setMode(@Nullable StoragePathSelectorMode mode) {
+        this.mode = Objects.requireNonNullElse(mode, StoragePathSelectorMode.Folder);
+        return this;
     }
 
     @Nullable
