@@ -18,7 +18,7 @@ import {presetsRoutes} from '../../modules/presets/presets-routes';
 import {themesRoutes} from '../../modules/themes/themes-routes';
 import {Dashboard} from '../../modules/dashboard/dashboard';
 import {configsRoutes} from '../../modules/configs/configs-routes';
-import {Testinghall} from '../../modules/testinghall/testinghall';
+import {TestLab} from '../../modules/test-lab/test-lab';
 import {userRolesRoutes} from '../../modules/user-roles/user-roles-routes';
 import {teamsRoutes} from '../../modules/teams/teams-routes';
 import {OrganizationChart} from "../../modules/system/pages/organization-chart";
@@ -68,8 +68,8 @@ const router = sentryCreateBrowserRouter(
                 ...(isFormModuleEnabled() ? elementsRoutes : []),
 
                 {
-                    path: '/testinghall',
-                    element: <Testinghall />,
+                    path: '/test-lab',
+                    element: <TestLab />,
                 },
                 {
                     path: '/node-config-maker',

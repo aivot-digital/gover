@@ -25,6 +25,8 @@ import Palette from '@aivot/mui-material-symbols-400-n25-outlined/Palette';
 import PaletteFilled from '@aivot/mui-material-symbols-400-n25-outlined/PaletteFilled';
 import Dashboard from '@aivot/mui-material-symbols-400-n25-outlined/Dashboard';
 import DashboardFilled from '@aivot/mui-material-symbols-400-n25-outlined/DashboardFilled';
+import Dashboard2Gear from '@aivot/mui-material-symbols-400-n25-outlined/Dashboard2Gear';
+import Dashboard2GearFilled from '@aivot/mui-material-symbols-400-n25-outlined/Dashboard2GearFilled';
 import ShieldPerson from '@aivot/mui-material-symbols-400-n25-outlined/ShieldPerson';
 import ShieldPersonFilled from '@aivot/mui-material-symbols-400-n25-outlined/ShieldPersonFilled';
 import Group from '@aivot/mui-material-symbols-400-n25-outlined/Group';
@@ -53,9 +55,12 @@ import History from '@aivot/mui-material-symbols-400-n25-outlined/History';
 import HistoryFilled from '@aivot/mui-material-symbols-400-n25-outlined/HistoryFilled';
 import ListAlt from '@aivot/mui-material-symbols-400-n25-outlined/ListAlt';
 import ListAltFilled from '@aivot/mui-material-symbols-400-n25-outlined/ListAltFilled';
+import Experiment from '@aivot/mui-material-symbols-400-n25-outlined/Experiment';
+import ExperimentFilled from '@aivot/mui-material-symbols-400-n25-outlined/ExperimentFilled';
 
 export const ModuleIcons = {
     dashboard: <Dashboard />,
+    dashboardSettings: <Dashboard2Gear />,
     organization: <ShieldPerson />,
     assets: <DriveFolderUpload />,
     configs: <Build />,
@@ -82,10 +87,12 @@ export const ModuleIcons = {
     storage: <Storage/>,
     audit: <History/>,
     codeLists: <ListAlt/>,
+    testLab: <Experiment/>,
 };
 
 export const ModuleIconsFilled = {
     dashboard: <DashboardFilled />,
+    dashboardSettings: <Dashboard2GearFilled />,
     organization: <ShieldPersonFilled />,
     assets: <DriveFolderUploadFilled />,
     configs: <BuildFilled />,
@@ -112,4 +119,5 @@ export const ModuleIconsFilled = {
     storage: <StorageFilled/>,
     audit: <HistoryFilled/>,
     codeLists: <ListAltFilled/>,
+    testLab: <ExperimentFilled/>,
 } satisfies Record<keyof typeof ModuleIcons, React.ReactNode>;
