@@ -64,8 +64,18 @@ public class DataObjectJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Dieses Paket enthält Funktionen für Datenobjekte.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Bindet Prosuna-Datenobjekte in JavaScript-Ausdrücke ein.
+
+                Das Paket stellt Funktionen zum Abrufen von Schemas sowie zum Auflisten, Erstellen, Laden und Aktualisieren von Datenobjekt-Einträgen bereit. Feldfilter können verwendet werden, um Abfragen auf passende Einträge einzugrenzen.
+                """;
     }
 
     @Override

@@ -20,6 +20,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -66,6 +67,8 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
     private static final String OUTPUT_NAME_VALIDATED_VALUE_COUNT = "validatedValueCount";
     private static final String OUTPUT_NAME_IS_VALID = "isValid";
     private static final String OUTPUT_NAME_ERRORS = "errors";
+    private static final String OUTPUT_ERRORS_TYPE_DEFINITION =
+            "Array<{ rowIndex: number; path: string; resolvedPath?: string; error: string; }>";
 
     @Nonnull
     @Override
@@ -93,14 +96,30 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Vorgangsdaten validieren";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Prüft, ob konfigurierte Datenpfade in den Vorgangsdaten vorhanden sind und den erwarteten Datentypen entsprechen.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Validiert ausgewählte Pfade der Vorgangsdaten anhand konfigurierter erwarteter Datentypen.
+
+                Das Element prüft sowohl das Vorhandensein der Werte als auch deren Typ und verzweigt den Prozess abhängig vom Gesamtergebnis in einen gültigen oder ungültigen Pfad. Prüfergebnis und erkannte Validierungsabweichungen stehen als Ausgänge für nachfolgende Schritte bereit.
+                """;
     }
 
     @Nonnull
@@ -164,22 +183,26 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VALIDATED_RULE_COUNT,
                         "Anzahl Regeln",
-                        "Die Anzahl der erfolgreich validierten Regeln."
+                        "Die Anzahl der erfolgreich validierten Regeln.",
+                        "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VALIDATED_VALUE_COUNT,
                         "Anzahl geprüfter Werte",
-                        "Die Anzahl der konkret überprüften Werte über alle Regeln."
+                        "Die Anzahl der konkret überprüften Werte über alle Regeln.",
+                        "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_IS_VALID,
                         "Gesamtgültigkeit",
-                        "true, wenn alle Regeln erfolgreich validiert wurden, sonst false."
+                        "true, wenn alle Regeln erfolgreich validiert wurden, sonst false.",
+                        "boolean"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_ERRORS,
                         "Validierungsfehler",
-                        "Liste der Regelverletzungen mit Pfad und Fehlermeldung."
+                        "Liste der Regelverletzungen mit Pfad und Fehlermeldung.",
+                        OUTPUT_ERRORS_TYPE_DEFINITION
                 )
         );
     }

@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugin.models;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -38,6 +39,19 @@ public interface Plugin {
      */
     @Nonnull
     String getDescription();
+
+    /**
+     * An optional link to the documentation for this plugin.
+     * The link should be an absolute HTTP or HTTPS URL.
+     * If no dedicated documentation is available, this method can return null.
+     *
+     * @return The documentation URL, or null if none is available.
+     */
+    @Nullable
+    @JsonGetter("documentationUrl")
+    default String getDocumentationUrl() {
+        return null;
+    }
 
     /**
      * The build date of the plugin in the ISO 8601 format.

@@ -29,6 +29,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionIO;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -54,6 +55,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -116,8 +118,21 @@ class PaymentRequestActionNodeV1Test {
     }
 
     @Test
+    void metadata_ShouldDescribeSemiAutomaticPaymentRequest() {
+        assertArrayEquals(
+                new ProcessNodeExecutionType[]{ProcessNodeExecutionType.SemiAutomatic},
+                node.getExecutionTypes()
+        );
+        assertEquals(
+                "Fordert eine Online-Zahlung an und wartet auf deren erfolgreichen Abschluss.",
+                node.getAbstract()
+        );
+    }
+
+    @Test
     void getOutputs_ShouldMatchNodeDataKeys() {
-        var outputKeys = node.getOutputs()
+        var outputs = node.getOutputs();
+        var outputKeys = outputs
                 .stream()
                 .map(output -> output.key())
                 .toList();
@@ -133,6 +148,34 @@ class PaymentRequestActionNodeV1Test {
                 "paymentStatus",
                 "paymentDetails"
         ), outputKeys);
+
+        var outputTypes = outputs
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        output -> output.key(),
+                        output -> output.typeDefinition()
+                ));
+
+        assertEquals(Map.ofEntries(
+                Map.entry("recipientEmail", "string"),
+                Map.entry("paymentUrl", "string"),
+                Map.entry("paymentProviderName", "string"),
+                Map.entry("paymentTransactionKey", "string"),
+                Map.entry("paymentPurpose", "string"),
+                Map.entry("paymentDescription", "string"),
+                Map.entry("paymentTotal", "number"),
+                Map.entry("paymentStatus", "\"INITIAL\" | \"PAYED\" | \"FAILED\" | \"CANCELED\""),
+                Map.entry(
+                        "paymentDetails",
+                        "{ transactionUrl: string | null; transactionRedirectUrl: string | null; " +
+                                "transactionId: string | null; transactionReference: string | null; " +
+                                "transactionTimestamp: string | null; " +
+                                "paymentMethod: \"GIROPAY\" | \"PAYDIRECT\" | \"CREDITCARD\" | \"PAYPAL\" | \"OTHER\" | null; " +
+                                "paymentMethodDetail: string | null; " +
+                                "status: \"INITIAL\" | \"PAYED\" | \"FAILED\" | \"CANCELED\" | null; " +
+                                "statusDetail: string | null; } | null"
+                )
+        ), outputTypes);
     }
 
     @Test

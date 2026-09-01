@@ -132,6 +132,7 @@ class FormTriggerNodeV1Test {
         assertNotNull(output);
         assertEquals("Eingangszeitstempel", output.label());
         assertEquals("Der Zeitstempel des Dateneingangs an den Auslöser", output.description());
+        assertEquals("string", output.typeDefinition());
     }
 
     @Test
@@ -145,6 +146,32 @@ class FormTriggerNodeV1Test {
 
         assertNotNull(output);
         assertEquals("Formularzusammenfassung", output.label());
+        assertEquals(
+                "Array<{ name: string; originalFileName: string; uri: string; size: number; }>",
+                output.typeDefinition()
+        );
+    }
+
+    @Test
+    void getOutputs_ShouldExposePaymentDetailsType() {
+        var output = node
+                .getOutputs()
+                .stream()
+                .filter(candidate -> FormTriggerNodeV1.DATA_KEY_PAYMENT_DETAILS.equals(candidate.key()))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(output);
+        assertEquals(
+                "{ transactionUrl: string | null; transactionRedirectUrl: string | null; " +
+                        "transactionId: string | null; transactionReference: string | null; " +
+                        "transactionTimestamp: string | null; " +
+                        "paymentMethod: \"GIROPAY\" | \"PAYDIRECT\" | \"CREDITCARD\" | \"PAYPAL\" | \"OTHER\" | null; " +
+                        "paymentMethodDetail: string | null; " +
+                        "status: \"INITIAL\" | \"PAYED\" | \"FAILED\" | \"CANCELED\" | null; " +
+                        "statusDetail: string | null; }",
+                output.typeDefinition()
+        );
     }
 
     @Test

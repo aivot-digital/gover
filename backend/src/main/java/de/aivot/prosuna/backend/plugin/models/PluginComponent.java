@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugin.models;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import de.aivot.prosuna.backend.plugin.enums.PluginComponentType;
 import de.aivot.prosuna.backend.plugin.services.PluginUtils;
 import jakarta.annotation.Nonnull;
@@ -17,7 +18,7 @@ import jakarta.annotation.Nullable;
  * The file should have a different name, for example "S3StorageInterfaceV2.java" for version 2 of the "S3StorageInterface" component.
  * This allows users to choose which version of the component they want to use, and also allows them to use multiple versions of the same component if needed.
  * <p>
- * The plugin management interface will display the component information, including the name, description, version, and deprecation notice (if applicable), to users when they view the plugin information.
+ * The plugin management interface will display the component information, including the name, abstract, description, version, and deprecation notice (if applicable), to users when they view the plugin information.
  */
 public interface PluginComponent {
     /**
@@ -103,16 +104,38 @@ public interface PluginComponent {
     String getName();
 
     /**
-     * Get a brief description of the plugin component.
-     * The description should provide an overview of the component's purpose and functionality, helping users
-     * understand what the component does and how it can be used within the plugin.
-     * You should use Markdown formatting in the description to enhance readability and provide a better user
-     * experience when displaying the component information in the plugin management interface.
+     * Get a concise abstract of the plugin component.
+     * The abstract should summarize the component's purpose in plain text and must not contain Markdown formatting.
+     * It is intended for compact lists, selectors, and other places where a short overview is needed.
      *
-     * @return The component description.
+     * @return The plain-text component abstract.
+     */
+    @Nonnull
+    @JsonGetter("abstractDescription")
+    String getAbstract();
+
+    /**
+     * Get the detailed description of the plugin component.
+     * The description should explain the component's purpose, functionality, and intended use in more detail than
+     * the abstract. Markdown formatting is supported to improve structure and readability in detail views.
+     *
+     * @return The Markdown-formatted component description.
      */
     @Nonnull
     String getDescription();
+
+    /**
+     * Get an optional link to the documentation for this plugin component version.
+     * The link should be an absolute HTTP or HTTPS URL.
+     * If no dedicated documentation is available, this method can return null.
+     *
+     * @return The documentation URL, or null if none is available.
+     */
+    @Nullable
+    @JsonGetter("documentationUrl")
+    default String getDocumentationUrl() {
+        return null;
+    }
 
     /**
      * Get an optional deprecation notice for this plugin component.

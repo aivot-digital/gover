@@ -25,6 +25,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
@@ -742,6 +743,11 @@ class StaffProcessInstanceTaskViewControllerTest {
         }
 
         @Override
+        public String getAbstract() {
+            return "Staff task event validation test provider";
+        }
+
+        @Override
         public String getDescription() {
             return "Staff task event validation test provider";
         }
@@ -750,6 +756,12 @@ class StaffProcessInstanceTaskViewControllerTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Manual};
         }
 
         @Nonnull
@@ -832,6 +844,11 @@ class StaffProcessInstanceTaskViewControllerTest {
         }
 
         @Override
+        public String getAbstract() {
+            return "Staff inline task event test provider";
+        }
+
+        @Override
         public String getDescription() {
             return "Staff inline task event test provider";
         }
@@ -840,6 +857,12 @@ class StaffProcessInstanceTaskViewControllerTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Manual};
         }
 
         @Nonnull
@@ -916,6 +939,11 @@ class StaffProcessInstanceTaskViewControllerTest {
         }
 
         @Override
+        public String getAbstract() {
+            return "Staff task test provider";
+        }
+
+        @Override
         public String getDescription() {
             return "Staff task test provider";
         }
@@ -924,6 +952,12 @@ class StaffProcessInstanceTaskViewControllerTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Manual};
         }
 
         @Nonnull

@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
@@ -51,7 +52,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 null,
                 new TestProcessNodeDefinition("Fallback task", List.of(
-                        new ProcessNodeOutput("result", "Result", "Mapped result")
+                        new ProcessNodeOutput("result", "Result", "Mapped result", "string")
                 )),
                 processNode("Pruefung", Map.of("result", "items.0.status")),
                 processInstance(),
@@ -83,7 +84,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 null,
                 new TestProcessNodeDefinition("Fallback task", List.of(
-                        new ProcessNodeOutput("result", "Result", "Mapped result")
+                        new ProcessNodeOutput("result", "Result", "Mapped result", "string")
                 )),
                 processNode("Pruefung", Map.of("result", "items.*.status")),
                 processInstance(),
@@ -463,6 +464,11 @@ class ProcessNodeExecutionResultHandlerTest {
         }
 
         @Override
+        public String getAbstract() {
+            return "Test provider";
+        }
+
+        @Override
         public String getDescription() {
             return "Test provider";
         }
@@ -471,6 +477,12 @@ class ProcessNodeExecutionResultHandlerTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
         }
 
         @Nonnull

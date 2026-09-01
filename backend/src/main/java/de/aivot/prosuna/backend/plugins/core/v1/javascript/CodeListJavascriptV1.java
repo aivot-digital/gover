@@ -58,8 +58,18 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Dieses Paket enthält Funktionen für Codelisten.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Ermöglicht den Zugriff auf in Prosuna hinterlegte Codelisten aus JavaScript-Ausdrücken.
+
+                Eine Codeliste kann entweder als vollständige Liste ihrer Einträge oder als Auswahloptionen mit Schlüssel und Bezeichnung geladen werden. Dadurch lassen sich dieselben gepflegten Werte in Skripten, Ausdrücken und Oberflächen wiederverwenden.
+                """;
     }
 
     @Override

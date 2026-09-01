@@ -48,8 +48,18 @@ public class SecretJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Dieses Paket enthält Funktionen für Geheimnisse.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Ermöglicht JavaScript-Ausdrücken den kontrollierten Zugriff auf in Prosuna hinterlegte Geheimnisse.
+
+                Ein Geheimnis wird über seinen eindeutigen Schlüssel aufgelöst und als Zeichenkette bereitgestellt. Dadurch müssen sensible Werte nicht direkt in Skripten oder Prozesskonfigurationen hinterlegt werden.
+                """;
     }
 
     @Override

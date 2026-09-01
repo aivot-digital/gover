@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugin.enums.PluginComponentType;
 import de.aivot.prosuna.backend.plugin.models.PluginComponent;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
@@ -52,6 +53,15 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     ProcessNodeType getType();
 
     /**
+     * Get the fixed execution types of the process node. The returned array must not be empty or contain duplicate values. Implementations must return a new array so callers cannot
+     * mutate the definition's execution types.
+     *
+     * @return The execution types of the process node.
+     */
+    @Nonnull
+    ProcessNodeExecutionType[] getExecutionTypes();
+
+    /**
      * Get the ports of the process node. The ports are outgoing connections that can be used to connect this node to other nodes in the process definition.
      *
      * @return The ports of the process node.
@@ -61,7 +71,8 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
 
     /**
      * Get the outputs of the process node. The outputs are data produced by this node that can be mapped in the node configuration. This list must be equivalent to the data stored
-     * in the process node element data.
+     * in the process node element data. Every output must provide a non-blank, standalone TypeScript type expression that describes its runtime value. Use {@code unknown} when a
+     * more precise type cannot be guaranteed.
      *
      * @return The output fields of the process node.
      */
