@@ -8,6 +8,7 @@ import type {
     DerivedRuntimeElementData,
 } from '../../../models/element-data';
 import {
+    ComputedElementValueSource,
     createDerivedRuntimeElementData,
 } from '../../../models/element-data';
 import {ElementDerivationContext} from './element-derivation-context';
@@ -84,6 +85,35 @@ vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => (
                         ?.states?.rowField?.error ?? ''
                 }
             </output>
+            <output data-testid="row-2-visible">
+                {
+                    props.derivedData.elementStates.rows?.subStates
+                        ?.find((subState: any) => subState.id === 'row-2')
+                        ?.states?.rowField?.visible == null ?
+                        '' :
+                        String(props.derivedData.elementStates.rows?.subStates
+                            ?.find((subState: any) => subState.id === 'row-2')
+                            ?.states?.rowField?.visible)
+                }
+            </output>
+            <output data-testid="row-2-disabled">
+                {
+                    props.derivedData.elementStates.rows?.subStates
+                        ?.find((subState: any) => subState.id === 'row-2')
+                        ?.states?.rowField?.disabled == null ?
+                        '' :
+                        String(props.derivedData.elementStates.rows?.subStates
+                            ?.find((subState: any) => subState.id === 'row-2')
+                            ?.states?.rowField?.disabled)
+                }
+            </output>
+            <output data-testid="row-2-value-source">
+                {
+                    props.derivedData.elementStates.rows?.subStates
+                        ?.find((subState: any) => subState.id === 'row-2')
+                        ?.states?.rowField?.valueSource ?? ''
+                }
+            </output>
         </>
     ),
 }));
@@ -119,6 +149,69 @@ describe('ElementDerivationContext', () => {
         const patchedDerivedData = onDerivedDataChange.mock.calls[0][0] as DerivedRuntimeElementData;
         expect(patchedDerivedData.elementStates.field?.error).toBeUndefined();
         await waitFor(() => expect(screen.getByTestId('field-error')).toBeEmptyDOMElement());
+    });
+
+    it('should retain newly derived row states when external errors only contain older rows', async () => {
+        const onDerivedDataChange = vi.fn();
+        const computedErrors: ComputedElementErrors = {
+            rows: {
+                error: 'Container error',
+                subStates: [
+                    {
+                        id: 'row-1',
+                        states: {
+                            rowField: {
+                                error: 'External row error',
+                            },
+                        },
+                    },
+                ],
+            },
+        };
+        const onDeriveOverride = vi.fn((authoredElementValues: AuthoredElementValues) => {
+            const rows = Array.isArray(authoredElementValues.rows) ? authoredElementValues.rows : [];
+
+            return Promise.resolve(createDerivedRuntimeElementData({
+                effectiveValues: authoredElementValues,
+                elementStates: {
+                    rows: {
+                        subStates: rows.map((row: {id?: string | null}) => ({
+                            id: row.id,
+                            states: {
+                                rowField: {
+                                    visible: row.id !== 'row-2',
+                                    disabled: row.id === 'row-2',
+                                    valueSource: ComputedElementValueSource.Derived,
+                                    error: null,
+                                },
+                            },
+                        })),
+                    },
+                    dependent: {
+                        visible: true,
+                    },
+                },
+            }));
+        });
+
+        render(
+            <ReplicatingContainerDerivationHarness
+                onDerivedDataChange={onDerivedDataChange}
+                onDeriveOverride={onDeriveOverride}
+                computedErrors={computedErrors}
+            />
+        );
+
+        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(1));
+        expect(screen.getByTestId('row-1-error')).toHaveTextContent('External row error');
+
+        fireEvent.click(screen.getByRole('button', {name: 'Datensatz hinzufügen'}));
+
+        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(2));
+        expect(screen.getByTestId('row-2-visible')).toHaveTextContent('false');
+        expect(screen.getByTestId('row-2-disabled')).toHaveTextContent('true');
+        expect(screen.getByTestId('row-2-value-source')).toHaveTextContent(ComputedElementValueSource.Derived);
+        expect(screen.getByTestId('row-1-error')).toHaveTextContent('External row error');
     });
 
     it('should preserve sibling row errors while suppressing only the changed row until explicit revalidation', async () => {
@@ -210,12 +303,14 @@ describe('ElementDerivationContext', () => {
 interface ReplicatingContainerDerivationHarnessProps {
     onDerivedDataChange: (derivedData: DerivedRuntimeElementData) => void;
     onDeriveOverride: (authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[]) => Promise<DerivedRuntimeElementData>;
+    computedErrors?: ComputedElementErrors;
 }
 
 function ReplicatingContainerDerivationHarness(props: ReplicatingContainerDerivationHarnessProps) {
     const {
         onDerivedDataChange,
         onDeriveOverride,
+        computedErrors,
     } = props;
     const element = React.useMemo(() => createRootElementWithReplicatingContainer(), []);
     const [authoredElementValues, setAuthoredElementValues] = React.useState<AuthoredElementValues>({
@@ -237,6 +332,7 @@ function ReplicatingContainerDerivationHarness(props: ReplicatingContainerDeriva
             onAuthoredElementValuesChange={setAuthoredElementValues}
             onDerivedDataChange={onDerivedDataChange}
             onDeriveOverride={onDeriveOverride}
+            computedErrors={computedErrors}
         />
     );
 }

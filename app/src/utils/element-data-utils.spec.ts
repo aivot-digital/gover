@@ -748,6 +748,94 @@ describe('replicating container row values', () => {
         });
     });
 
+    it('should propagate computed state for a newly added row', () => {
+        const derivedData = createDerivedRuntimeElementData({
+            effectiveValues: {
+                rows: [
+                    {
+                        id: 'row-1',
+                        values: {},
+                    },
+                    {
+                        id: 'row-2',
+                        values: {
+                            rowField: 'derived',
+                        },
+                    },
+                ],
+            },
+            elementStates: {
+                rows: {
+                    subStates: [
+                        {
+                            id: 'row-1',
+                            states: {},
+                        },
+                        {
+                            id: 'row-2',
+                            states: {
+                                rowField: {
+                                    visible: false,
+                                    disabled: true,
+                                    valueSource: ComputedElementValueSource.Derived,
+                                },
+                            },
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(resolveReplicatingContainerItemDerivedData(list, derivedData, 1)).toEqual({
+            effectiveValues: {
+                rowField: 'derived',
+            },
+            elementStates: {
+                rowField: {
+                    visible: false,
+                    disabled: true,
+                    valueSource: ComputedElementValueSource.Derived,
+                },
+            },
+        });
+    });
+
+    it('should not use another identified row state when the requested row is missing', () => {
+        const derivedData = createDerivedRuntimeElementData({
+            effectiveValues: {
+                rows: [
+                    {
+                        id: 'new-row',
+                        values: {
+                            rowField: 'new value',
+                        },
+                    },
+                ],
+            },
+            elementStates: {
+                rows: {
+                    subStates: [
+                        {
+                            id: 'old-row',
+                            states: {
+                                rowField: {
+                                    error: 'Stale error',
+                                },
+                            },
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(resolveReplicatingContainerItemDerivedData(list, derivedData, 0)).toEqual({
+            effectiveValues: {
+                rowField: 'new value',
+            },
+            elementStates: {},
+        });
+    });
+
     it('should normalize legacy bare row values', () => {
         expect(normalizeReplicatingContainerValues(root, {
             rows: [
