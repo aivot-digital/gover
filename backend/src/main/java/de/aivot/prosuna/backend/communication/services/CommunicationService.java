@@ -20,6 +20,7 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -50,7 +51,7 @@ public class CommunicationService {
      * Sends through the binding selected while the identity was authenticated. This is the only
      * runtime entry point that invokes a communication-provider definition.
      */
-    public void sendMessage(@Nonnull IdentityData identityData, @Nonnull CommunicationMessage message) {
+    public Map<String, Object> sendMessage(@Nonnull IdentityData identityData, @Nonnull CommunicationMessage message) {
         if (identityData.type() == IdentityType.Email) {
             var emailAddress = identityData.emailAddress();
             if (emailAddress == null) {
@@ -60,11 +61,14 @@ public class CommunicationService {
                 );
             }
             defaultMailCommunicationService.sendMessage(emailAddress, message);
-            return;
+            return Map.of(
+                    "fallback", true,
+                    "recipient", emailAddress
+            );
         }
 
         var resolved = resolveSelected(identityData);
-        sendResolved(resolved, identityData, message);
+        return sendResolved(resolved, identityData, message);
     }
 
     @Nonnull
@@ -259,13 +263,14 @@ public class CommunicationService {
     }
 
     @SuppressWarnings("unchecked")
-    private <C, I> void sendResolved(@Nonnull ResolvedCommunicationProvider resolved,
-                                     @Nonnull IdentityData identityData,
-                                     @Nonnull CommunicationMessage message) {
+    private <C, I> Map<String, Object> sendResolved(@Nonnull ResolvedCommunicationProvider resolved,
+                                                    @Nonnull IdentityData identityData,
+                                                    @Nonnull CommunicationMessage message) {
         var definition = (CommunicationProviderDefinition<C, I>) resolved.definition();
         var context = (CommunicationProviderContext<C, I>) resolved.context();
+        Map<String, Object> sendResult;
         try {
-            definition.sendMessage(context, identityData, message);
+            sendResult = definition.sendMessage(context, identityData, message);
         } catch (CommunicationException e) {
             throw e;
         } catch (RuntimeException e) {
@@ -275,6 +280,7 @@ public class CommunicationService {
                     e
             );
         }
+        return sendResult;
     }
 
     @Nonnull

@@ -41,6 +41,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -210,9 +211,9 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
     }
 
     @Override
-    public void sendMessage(@Nonnull CommunicationProviderContext<Config, IdentityBinding> context,
-                            @Nonnull IdentityData identity,
-                            @Nonnull CommunicationMessage message) throws CommunicationException {
+    public Map<String, Object> sendMessage(@Nonnull CommunicationProviderContext<Config, IdentityBinding> context,
+                                           @Nonnull IdentityData identity,
+                                           @Nonnull CommunicationMessage message) throws CommunicationException {
         final Config config = context.communicationProviderConfiguration();
         final UUID destinationId = getDestinationId(config);
         final AuthorKeyPair authorKeyPair = getAuthorKeyPair(context.communicationProviderConfiguration());
@@ -249,6 +250,12 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
         if (status.getState() != EventState.ACCEPTED && status.getState() != EventState.SUBMITTED) {
             throw new CommunicationException("Failed to send message via FIT-Connect. Status: " + status);
         }
+
+        return Map.of(
+                "postfachId", postfachId.toString(),
+                "submissionId", sentSubmission.getSubmissionId().toString(),
+                "status", status.getState().name()
+        );
     }
 
     @Nonnull

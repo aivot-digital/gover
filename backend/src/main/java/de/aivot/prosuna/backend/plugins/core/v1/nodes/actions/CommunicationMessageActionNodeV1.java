@@ -43,8 +43,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
-/** Sends one synchronous message through the communication provider selected for an identity. */
+/**
+ * Sends one synchronous message through the communication provider selected for an identity.
+ */
 @Component
 public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<CommunicationMessageActionNodeV1.Configuration> {
     public static final String NODE_KEY = "communication_message";
@@ -55,6 +58,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     private static final String OUTPUT_BODY = "body";
     private static final String OUTPUT_ATTACHMENT_SET_DATA_KEYS = "attachmentSetDataKeys";
     private static final String OUTPUT_SENT_AT = "sentAt";
+    private static final String OUTPUT_SEND_RESULT = "sendResult";
 
     private final CommunicationService communicationService;
     private final TemplateRenderService templateRenderService;
@@ -146,7 +150,8 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                 new ProcessNodeOutput(OUTPUT_SUBJECT, "Betreff", "Gerenderter Betreff der Nachricht."),
                 new ProcessNodeOutput(OUTPUT_BODY, "Inhalt", "Gerenderter Inhalt der Nachricht."),
                 new ProcessNodeOutput(OUTPUT_ATTACHMENT_SET_DATA_KEYS, "Anlagensätze", "Datenschlüssel der angehängten Anlagensätze."),
-                new ProcessNodeOutput(OUTPUT_SENT_AT, "Versandzeitpunkt", "Zeitpunkt des erfolgreichen Versands.")
+                new ProcessNodeOutput(OUTPUT_SENT_AT, "Versandzeitpunkt", "Zeitpunkt des erfolgreichen Versands."),
+                new ProcessNodeOutput(OUTPUT_SEND_RESULT, "Versandresultat", "Resultat des Versandvorgangs, wie es vom Kommunikationsanbieter zurückgegeben wurde.")
         );
     }
 
@@ -195,8 +200,9 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var attachments = resolveAttachments(context, attachmentSetDataKeys);
         var sentAt = Instant.now();
 
+        Map<String, Object> communicationSendResult;
         try {
-            communicationService.sendMessage(identity, new CommunicationMessage(
+            communicationSendResult = communicationService.sendMessage(identity, new CommunicationMessage(
                     subject,
                     body,
                     sentAt,
@@ -218,6 +224,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         nodeData.put(OUTPUT_BODY, body);
         nodeData.put(OUTPUT_ATTACHMENT_SET_DATA_KEYS, attachmentSetDataKeys);
         nodeData.put(OUTPUT_SENT_AT, sentAt);
+        nodeData.put(OUTPUT_SEND_RESULT, communicationSendResult);
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_OUTPUT)
@@ -276,7 +283,9 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         return resolved;
     }
 
-    /** Configuration shown in the process-node editor. */
+    /**
+     * Configuration shown in the process-node editor.
+     */
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class Configuration {
         public static final String IDENTITY_ID_FIELD_ID = "identityId";

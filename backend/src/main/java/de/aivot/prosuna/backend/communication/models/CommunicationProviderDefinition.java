@@ -14,6 +14,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
+import java.util.Map;
 
 public interface CommunicationProviderDefinition<C, I> extends PluginComponent {
     @Nonnull
@@ -58,7 +59,7 @@ public interface CommunicationProviderDefinition<C, I> extends PluginComponent {
         return null;
     }
 
-    void sendMessage(@Nonnull CommunicationProviderContext<C, I> context,
-                     @Nonnull IdentityData identity,
-                     @Nonnull CommunicationMessage message) throws CommunicationException;
+    Map<String, Object> sendMessage(@Nonnull CommunicationProviderContext<C, I> context,
+                                    @Nonnull IdentityData identity,
+                                    @Nonnull CommunicationMessage message) throws CommunicationException;
 }

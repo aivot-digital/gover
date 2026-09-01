@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class MailCommunicationProviderV1 implements CommunicationProviderDefinition<MailCommunicationProviderV1.Config, MailCommunicationProviderV1.IdentityBinding> {
@@ -150,14 +151,23 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
     }
 
     @Override
-    public void sendMessage(@Nonnull CommunicationProviderContext<Config, IdentityBinding> context,
-                            @Nonnull IdentityData identity,
-                            @Nonnull CommunicationMessage message) throws CommunicationException {
+    public Map<String, Object> sendMessage(@Nonnull CommunicationProviderContext<Config, IdentityBinding> context,
+                                           @Nonnull IdentityData identity,
+                                           @Nonnull CommunicationMessage message) throws CommunicationException {
         var recipient = resolveEmail(context.identityProviderBindingConfiguration(), identity);
         if (recipient == null) {
             throw new CommunicationException("Für die Identität %s ist keine E-Mail-Adresse verfügbar.", identity.identityId());
         }
         defaultMailCommunicationService.sendMessage(recipient, message);
+
+        assert message.subject() != null;
+        assert message.body() != null;
+
+        return Map.of(
+                "recipient", recipient,
+                "subject", message.subject(),
+                "body", message.body()
+        );
     }
 
     private static String resolveEmail(@Nonnull IdentityBinding identityBinding, @Nonnull IdentityData identity) {
