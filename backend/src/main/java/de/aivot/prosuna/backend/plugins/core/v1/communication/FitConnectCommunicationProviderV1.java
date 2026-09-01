@@ -26,21 +26,25 @@ import dev.fitko.fitconnect.api.config.ApplicationConfig;
 import dev.fitko.fitconnect.api.config.EnvironmentName;
 import dev.fitko.fitconnect.api.config.SenderConfig;
 import dev.fitko.fitconnect.api.config.SubscriberConfig;
+import dev.fitko.fitconnect.api.domain.model.attachment.Attachment;
 import dev.fitko.fitconnect.api.domain.model.event.EventState;
 import dev.fitko.fitconnect.api.domain.model.event.Status;
 import dev.fitko.fitconnect.api.domain.model.submission.SentSubmission;
 import dev.fitko.fitconnect.api.domain.sender.SendableSubmission;
 import dev.fitko.fitconnect.api.domain.zbp.AuthorKeyPair;
+import dev.fitko.fitconnect.api.domain.zbp.attachment.ZBPAttachmentMetadata;
 import dev.fitko.fitconnect.api.domain.zbp.message.AuthenticationLevel;
 import dev.fitko.fitconnect.api.domain.zbp.message.CreateMessage;
 import dev.fitko.fitconnect.client.SenderClient;
 import dev.fitko.fitconnect.client.bootstrap.ClientFactory;
+import dev.fitko.fitconnect.client.zbp.ZBPAttachmentMetadataBuilder;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -205,6 +209,31 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
         final AuthorKeyPair authorKeyPair = getAuthorKeyPair(context.communicationProviderConfiguration());
         final UUID postfachId = getPostfachId(context, identity);
 
+        final List<ZBPAttachmentMetadata> attachments = new LinkedList<>();
+        if (message.attachments() != null) {
+            for (var att : message.attachments()) {
+                if (att.getContent() == null) {
+                    throw new CommunicationException("Attachment content is null for attachment: " + att.getName());
+                }
+
+                final byte[] attachmentData;
+                try {
+                    attachmentData = att.getContent().readAllBytes();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+                final String contentType = att.getContentType() != null ? att.getContentType() : "application/octet-stream";
+
+                final Attachment fitConnectAttachment = Attachment
+                        .fromByteArray(attachmentData, contentType, att.getName(), att.getName());
+
+                final ZBPAttachmentMetadata attachmentMetadata = ZBPAttachmentMetadataBuilder.from(fitConnectAttachment);
+
+                attachments.add(attachmentMetadata);
+            }
+        }
+
         final CreateMessage zbpMessage = CreateMessage
                 .builder()
                 .content(message.body())
@@ -215,6 +244,7 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
                 .replyAddress("reply@mail.net")
                 .mailboxUuid(postfachId)
                 .stork_qaa_level(AuthenticationLevel.ONE)
+                .attachmentMetadata(attachments)
                 .build();
 
         final SendableSubmission submission = SendableSubmission
