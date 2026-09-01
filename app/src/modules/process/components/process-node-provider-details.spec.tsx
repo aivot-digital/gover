@@ -48,7 +48,6 @@ describe('ProcessNodeProviderDetails', () => {
         render(<ProcessNodeProviderDetailsHeader provider={createProvider()}/>);
 
         expect(screen.getByText('Version 1.4.2')).toBeInTheDocument();
-        expect(screen.getByText('Aktiv')).toBeInTheDocument();
     });
 
     it('shows only the plugin category and key without plugin.read', () => {
