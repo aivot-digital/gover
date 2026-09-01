@@ -284,12 +284,6 @@ function IdentityItem(props: IdentityItemProps): React.JSX.Element {
                                 hasPermission={props.canReadIdentityProviders}
                             />
                         </DetailRow>
-                        <DetailRow label="Schlüssel">
-                            {identity.providerKey ?? 'Nicht hinterlegt'}
-                        </DetailRow>
-                        <DetailRow label="Metadatenkennung">
-                            {identity.metadataIdentifier ?? 'Nicht hinterlegt'}
-                        </DetailRow>
                     </Box>
             }
 
@@ -372,9 +366,6 @@ function CommunicationProviderDetails(props: CommunicationProviderDetailsProps):
                     hasPermission={props.hasPermission}
                 />
             </DetailRow>
-            <DetailRow label="Anbindungs-ID">
-                {props.bindingId}
-            </DetailRow>
             <DetailRow label="Anbieter">
                 {
                     props.binding == null && !props.isLoading ?
@@ -386,12 +377,6 @@ function CommunicationProviderDetails(props: CommunicationProviderDetailsProps):
                         />
                 }
             </DetailRow>
-            {
-                props.binding != null &&
-                <DetailRow label="Anbieter-ID">
-                    {props.binding.communicationProviderId}
-                </DetailRow>
-            }
         </Box>
     );
 }
