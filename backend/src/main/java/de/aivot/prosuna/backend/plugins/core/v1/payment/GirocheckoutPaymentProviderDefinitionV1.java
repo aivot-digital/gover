@@ -8,8 +8,7 @@ import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.enums.ElementType;
@@ -38,7 +37,6 @@ import java.net.http.HttpResponse;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -127,22 +125,12 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         projectIdInput.setWeight(6.0d);
         list.add(projectIdInput);
 
-        var projectPasswordInput = new SelectInputElement();
-        projectPasswordInput.setType(ElementType.Select);
+        var projectPasswordInput = new SecretSelectInputElement();
         projectPasswordInput.setId(PROJECT_PASSWORD_FIELD);
         projectPasswordInput.setRequired(true);
         projectPasswordInput.setLabel("Projekt-Passwort");
         projectPasswordInput.setPlaceholder("Projekt-Passwort");
         projectPasswordInput.setHint("Das Projekt-Passwort finden Sie in Ihrem GiroCockpit. Es muss zuvor unter \"Geheimnisse\" hinterlegt werden, um hier auswählbar zu sein.");
-        List<SelectInputElementOption> clientSecretInputOptions = secretService
-                .list()
-                .stream()
-                .map(secret -> new SelectInputElementOption()
-                        .setValue(secret.getKey().toString())
-                        .setLabel(secret.getName())
-                )
-                .toList();
-        projectPasswordInput.setOptions(clientSecretInputOptions);
         list.add(projectPasswordInput);
 
         var group = new GroupLayoutElement();

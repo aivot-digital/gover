@@ -115,6 +115,7 @@ const YupSchemaMap: {
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
     [ElementType.ProcessInstanceAttachmentSetSelect]: chipInputFieldToYup,
     [ElementType.ProcessIdentityIdInput]: dynamicSelectFieldToYup,
+    [ElementType.SecretSelectInput]: dynamicSelectFieldToYup,
 };
 
 function genericFieldToYup(elem: AnyInputElement): Schema {

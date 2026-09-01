@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.communication;
 
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
@@ -13,6 +14,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -24,6 +26,17 @@ class FitConnectCommunicationProviderV1Test {
             mock(StorageService.class),
             secretService
     );
+
+    @Test
+    void configLayoutUsesSecretSelectionWithoutLoadingSecretOptions() throws Exception {
+        var layout = definition.getConfigLayout();
+
+        assertTrue(layout.findChild(
+                FitConnectCommunicationProviderV1.Config.SENDER_CLIENT_SECRET_KEY_FIELD_ID,
+                SecretSelectInputElement.class
+        ).isPresent());
+        verifyNoInteractions(secretService);
+    }
 
     @Test
     void applicationConfigUsesConfiguredClientIdAndDecryptedSecret() throws Exception {

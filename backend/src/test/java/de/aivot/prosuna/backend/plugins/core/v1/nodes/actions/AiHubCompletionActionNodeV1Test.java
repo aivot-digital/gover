@@ -20,7 +20,6 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,7 +60,6 @@ class AiHubCompletionActionNodeV1Test {
     private static final int CONFIGURED_COMPLETION_MAX_TOKENS = 1337;
 
     private HttpService httpService;
-    private SecretRepository secretRepository;
     private SecretService secretService;
     private RecordingTemplateRenderService templateRenderService;
     private AiCompletionActionNodeV1 node;
@@ -69,14 +67,12 @@ class AiHubCompletionActionNodeV1Test {
     @BeforeEach
     void setUp() {
         httpService = mock(HttpService.class);
-        secretRepository = mock(SecretRepository.class);
         secretService = mock(SecretService.class);
         templateRenderService = new RecordingTemplateRenderService();
 
         node = new AiCompletionActionNodeV1(
                 httpService,
                 templateRenderService,
-                secretRepository,
                 secretService,
                 createAiPluginProperties(1000, CONFIGURED_COMPLETION_MAX_TOKENS, 4000)
         );
@@ -292,7 +288,6 @@ class AiHubCompletionActionNodeV1Test {
         var defaultOnlyNode = new AiCompletionActionNodeV1(
                 httpService,
                 templateRenderService,
-                secretRepository,
                 secretService,
                 createAiPluginProperties(2222, null, 4000)
         );

@@ -37,7 +37,7 @@ public class HttpActionNodeV1Config {
         public String username;
         
         public static final String PASSWORD_SECRET_KEY_FIELD_ID = "passwordSecretKey";
-        @InputElementPOJOBinding(id = PASSWORD_SECRET_KEY_FIELD_ID , type = ElementType.Select, properties = {})
+        @InputElementPOJOBinding(id = PASSWORD_SECRET_KEY_FIELD_ID , type = ElementType.SecretSelectInput, properties = {})
         public String passwordSecretKey;
         
     }

@@ -5,8 +5,7 @@ import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -127,22 +126,12 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         usernameInput.setWeight(6.0d);
         list.add(usernameInput);
 
-        var passwordInput = new SelectInputElement();
-        passwordInput.setType(ElementType.Select);
+        var passwordInput = new SecretSelectInputElement();
         passwordInput.setId(PASSWORD_SECRET_KEY_FIELD);
         passwordInput.setRequired(true);
         passwordInput.setLabel("Passwort");
         passwordInput.setPlaceholder("Passwort");
         passwordInput.setHint("Das Passwort für die Authentifizierung am Zahlungsdienstleister.");
-        List<SelectInputElementOption> clientSecretInputOptions = secretService
-                .list()
-                .stream()
-                .map(secret -> SelectInputElementOption.of(
-                        secret.getKey().toString(),
-                        secret.getName()
-                ))
-                .toList();
-        passwordInput.setOptions(clientSecretInputOptions);
         passwordInput.setWeight(6.0d);
         list.add(passwordInput);
 

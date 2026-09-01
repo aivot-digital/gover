@@ -34,6 +34,7 @@ import AttachFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined
 import PaymentsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Payments';
 import FolderOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Folder';
 import LinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
+import KeyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Key';
 
 import {type AnyElement} from '../../models/elements/any-element';
 import {type SvgIconComponent} from '../../types/svg-icon-component';
@@ -89,6 +90,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.ProcessDataKeyInput]: DataObject,
     [ElementType.ProcessInstanceAttachmentSetSelect]: AttachFileOutlinedIcon,
     [ElementType.ProcessIdentityIdInput]: LocalOfferOutlinedIcon,
+    [ElementType.SecretSelectInput]: KeyOutlinedIcon,
     [ElementType.HtmlTemplateInput]: DescriptionOutlinedIcon,
     [ElementType.StoragePathSelector]: FolderOutlinedIcon,
     [ElementType.ProcessAttachmentDisplay]: AttachFileOutlinedIcon,

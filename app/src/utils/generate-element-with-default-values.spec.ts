@@ -6,6 +6,7 @@ import {generateElementWithDefaultValues} from './generate-element-with-default-
 import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
 import type {LinkButtonElement} from '../models/elements/form/content/link-button-element';
 import type {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
+import type {SecretSelectInputElement} from '../models/elements/form/input/secret-select-input-element';
 import {
     type StoragePathSelectorInputElement,
     StoragePathSelectorMode,
@@ -54,6 +55,14 @@ describe('generateElementWithDefaultValues', () => {
         expect(element).not.toHaveProperty('maxItems');
         expect(element).not.toHaveProperty('suggestions');
         expect(element).not.toHaveProperty('allowDuplicates');
+    });
+
+    it('should initialize secret selections without embedding options', () => {
+        const element = generateElementWithDefaultValues(ElementType.SecretSelectInput) as SecretSelectInputElement;
+
+        expect(element.label).toBe('Geheimnis');
+        expect(element.placeholder).toBe('Geheimnis auswählen');
+        expect(element).not.toHaveProperty('options');
     });
 
     it('should initialize storage path selectors in folder mode', () => {

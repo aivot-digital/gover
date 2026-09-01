@@ -48,6 +48,7 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.ProcessDataKeyInput]: true,
     [ElementType.ProcessInstanceAttachmentSetSelect]: true,
     [ElementType.ProcessIdentityIdInput]: true,
+    [ElementType.SecretSelectInput]: true,
     [ElementType.HtmlTemplateInput]: true,
     [ElementType.StoragePathSelector]: true,
     [ElementType.ProcessAttachmentDisplay]: false,

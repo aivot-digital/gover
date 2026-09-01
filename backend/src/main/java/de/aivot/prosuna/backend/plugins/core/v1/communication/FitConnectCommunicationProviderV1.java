@@ -20,6 +20,7 @@ import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
+import de.aivot.prosuna.backend.storage.enums.StorageProviderType;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import dev.fitko.fitconnect.api.config.ApplicationConfig;
 import dev.fitko.fitconnect.api.config.EnvironmentName;
@@ -112,29 +113,14 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
                 .findChild(Config.ZBP_CERTIFICATE_PRIVATE_KEY_PATH_FIELD_ID, StoragePathSelectorInputElement.class)
                 .ifPresent(element -> {
                     element.setMode(StoragePathSelectorMode.File);
+                    element.setAllowedStorageProviderTypes(List.of(StorageProviderType.Assets));
                 });
 
         config
                 .findChild(Config.ZBP_CERTIFICATE_CLIENT_CERT_PATH_FIELD_ID, StoragePathSelectorInputElement.class)
                 .ifPresent(element -> {
                     element.setMode(StoragePathSelectorMode.File);
-                });
-
-        var secretOptions = secretService
-                .list()
-                .stream()
-                .map(secret -> SelectInputElementOption.of(
-                        secret.getKey().toString(),
-                        secret.getName() == null || secret.getName().isBlank()
-                                ? secret.getKey().toString()
-                                : secret.getName()
-                ))
-                .toList();
-
-        config
-                .findChild(Config.SENDER_CLIENT_SECRET_KEY_FIELD_ID, SelectInputElement.class)
-                .ifPresent(element -> {
-                    element.setOptions(secretOptions);
+                    element.setAllowedStorageProviderTypes(List.of(StorageProviderType.Assets));
                 });
 
         return config;
@@ -366,7 +352,7 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Pfad zum privaten Schlüssel des FIT-Connect-Zertifikats."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "allowReadOnlyStorageProviders", boolValue = true),
-
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public StoragePathSelectorInputElementValue zbpCertificatePrivateKeyPath;
 
@@ -376,6 +362,7 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Pfad zum Client-Zertifikat des FIT-Connect-Zertifikats."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "allowReadOnlyStorageProviders", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public StoragePathSelectorInputElementValue zbpCertificateClientCertPath;
 
@@ -384,6 +371,7 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zustellpunkt-ID"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Zustellpunkt-ID für die Nachrichtenübermittlung."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
         })
         public String destinationId;
 
@@ -392,14 +380,16 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
                 @ElementPOJOBindingProperty(key = "label", strValue = "Sender Client ID"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Client ID für den Sender."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public String senderClientId;
 
         public static final String SENDER_CLIENT_SECRET_KEY_FIELD_ID = "senderClientSecret";
-        @InputElementPOJOBinding(id = SENDER_CLIENT_SECRET_KEY_FIELD_ID, type = ElementType.Select, properties = {
+        @InputElementPOJOBinding(id = SENDER_CLIENT_SECRET_KEY_FIELD_ID, type = ElementType.SecretSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Sender Client Secret"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Client Secret für den Sender."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public String senderClientSecret;
     }

@@ -6,15 +6,12 @@ import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.exceptions.StorageException;
@@ -74,18 +71,15 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
             </d:propfind>
             """;
 
-    private final SecretRepository secretRepository;
     private final SecretService secretService;
     private final KnownExtensionsService knownExtensionsService;
     private final StorageProviderRepository storageProviderRepository;
     private final HttpServiceProperties httpServiceProperties;
 
-    public WebDavStorageProviderDefinitionV1(SecretRepository secretRepository,
-                                             SecretService secretService,
+    public WebDavStorageProviderDefinitionV1(SecretService secretService,
                                              KnownExtensionsService knownExtensionsService,
                                              StorageProviderRepository storageProviderRepository,
                                              HttpServiceProperties httpServiceProperties) {
-        this.secretRepository = secretRepository;
         this.secretService = secretService;
         this.knownExtensionsService = knownExtensionsService;
         this.storageProviderRepository = storageProviderRepository;
@@ -173,21 +167,6 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(e);
         }
-
-        layout
-                .findChild("password_secret", SelectInputElement.class)
-                .ifPresent(field -> {
-                    var options = secretRepository
-                            .findAll()
-                            .stream()
-                            .map(secret -> SelectInputElementOption.of(
-                                    secret.getKey().toString(),
-                                    secret.getName()
-                            ))
-                            .toList();
-
-                    field.setOptions(options);
-                });
 
         return layout;
     }
@@ -1258,7 +1237,7 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
         })
         public String username;
 
-        @InputElementPOJOBinding(id = "password_secret", type = ElementType.Select, properties = {
+        @InputElementPOJOBinding(id = "password_secret", type = ElementType.SecretSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Passwort"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Das Geheimnis des Passworts für den Zugriff auf den WebDAV-Speicher."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),

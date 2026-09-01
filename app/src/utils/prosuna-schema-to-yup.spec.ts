@@ -278,6 +278,21 @@ describe('process identity ID validation', () => {
     });
 });
 
+describe('secret selection validation', () => {
+    it('should validate a scalar secret key without requiring embedded options', async () => {
+        const schema = prosunaSchemaToYup({
+            id: 'secret',
+            type: ElementType.SecretSelectInput,
+            label: 'Geheimnis',
+            required: true,
+        } as any, {}).secret;
+
+        await expect(schema.validate(' secret-key ')).resolves.toBe('secret-key');
+        await expect(schema.validate(['secret-key'])).rejects.toThrow();
+        await expect(schema.validate('')).rejects.toThrow('Geheimnis ist ein Pflichtfeld.');
+    });
+});
+
 function createGroupLayout(children: any[]): any {
     return {
         id: 'root',
