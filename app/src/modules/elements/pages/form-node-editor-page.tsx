@@ -1478,13 +1478,13 @@ export function FormNodeEditorPage() {
                 parentType={formLayout.type}
                 parentElement={formLayout}
                 allParents={[formLayout]}
-                onAddElement={(e) => {
+                onAddElements={(elements) => {
                     if (isAnyElementWithChildren(formLayout)) {
                         handlePatch({
                             ...formLayout,
                             children: [
                                 ...(formLayout.children ?? []) as any[],
-                                e,
+                                ...elements,
                             ],
                         });
                     }
