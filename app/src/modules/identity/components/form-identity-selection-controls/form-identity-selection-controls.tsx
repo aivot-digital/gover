@@ -287,6 +287,12 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
                 communication != null &&
                 <>
                     <Divider/>
+
+                    <Typography>
+                        Um Nachrichten über dieses Nutzerkonto zu empfangen, wählen Sie bitte den gewünschten Kommunikationsweg aus und geben Sie die erforderlichen Angaben ein.
+                        Sie werden ausschließlich über den ausgewählten Kommunikationsweg kontaktiert. Die Angaben werden nur für die Kommunikation im Rahmen dieses Prozesses verwendet.
+                    </Typography>
+
                     <FormControl>
                         <FormLabel id={`${slot.id}-communication-provider-label`}>
                             Kommunikationsweg auswählen
