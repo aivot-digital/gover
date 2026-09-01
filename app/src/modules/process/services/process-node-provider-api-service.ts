@@ -19,7 +19,7 @@ export enum ProcessNodeExecutionType {
 }
 
 export const ProcessNodeExecutionTypeLabels: Record<ProcessNodeExecutionType, string> = {
-    [ProcessNodeExecutionType.Automatic]: 'Automatisch',
+    [ProcessNodeExecutionType.Automatic]: 'Automatisiert',
     [ProcessNodeExecutionType.Manual]: 'Manuell',
     [ProcessNodeExecutionType.SemiAutomatic]: 'Teilautomatisiert',
 };
