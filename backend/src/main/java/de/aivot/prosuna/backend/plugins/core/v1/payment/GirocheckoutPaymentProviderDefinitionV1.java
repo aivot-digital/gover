@@ -84,8 +84,18 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Zahlungsanbieter GiroCheckout für Zahlungen über GiroPay, Sofortüberweisung, PayPal und Kreditkarte.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Integriert den Zahlungsdienstleister GiroCheckout in die Zahlungsabwicklung von Prosuna.
+
+                Die Komponente erstellt Zahlungsanfragen für die von GiroCheckout unterstützten Zahlarten GiroPay, Sofortüberweisung, PayPal und Kreditkarte. Rückmeldungen des Dienstleisters werden in den Prosuna-Zahlungsstatus übernommen und können im weiteren Prozess verarbeitet werden.
+                """;
     }
 
     @Nonnull

@@ -1,11 +1,12 @@
 import {DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
-import {SxProps, TextFieldProps, Theme} from '@mui/material';
-import {ReactNode} from 'react';
-import {EndAction} from '../text-field/text-field-component-props';
-import {DateFieldProps} from '@mui/x-date-pickers';
-import {DateValueIso} from '../../utils/temporal-types';
+import {type SxProps, type Theme} from '@mui/material';
+import {type ReactNode} from 'react';
+import {type EndAction} from '../text-field/text-field-component-props';
+import {type DateFieldProps} from '@mui/x-date-pickers';
+import {type DateValueIso} from '../../utils/temporal-types';
+import {type FormFieldLayoutProps} from '../form-field';
 
-export interface DateFieldComponentProps {
+export interface DateFieldComponentProps extends FormFieldLayoutProps {
     label: string;
     error?: string;
     autocomplete?: string;
@@ -20,7 +21,8 @@ export interface DateFieldComponentProps {
     mode: DateFieldComponentModelMode;
     onChange: (val: DateValueIso | null) => void;
     onBlur?: (val: DateValueIso | null) => void;
-    sx?: SxProps<Theme>;
+    controlSx?: SxProps<Theme>;
+    size?: 'small' | 'medium';
     bufferInputUntilBlur?: boolean;
     debounce?: number;
     endAction?: EndAction | Array<EndAction>;

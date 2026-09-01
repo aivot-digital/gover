@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -55,6 +56,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -63,6 +69,12 @@ class ProcessNodeDefinitionTest {
             @Override
             public ProcessNodeType getType() {
                 return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
             }
 
             @Nonnull
@@ -136,6 +148,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -144,6 +161,12 @@ class ProcessNodeDefinitionTest {
             @Override
             public ProcessNodeType getType() {
                 return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
             }
 
             @Nonnull
@@ -213,6 +236,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -221,6 +249,12 @@ class ProcessNodeDefinitionTest {
             @Override
             public ProcessNodeType getType() {
                 return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
             }
 
             @Nonnull
@@ -286,6 +320,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -294,6 +333,12 @@ class ProcessNodeDefinitionTest {
             @Override
             public ProcessNodeType getType() {
                 return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
             }
 
             @Nonnull
@@ -366,6 +411,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -374,6 +424,12 @@ class ProcessNodeDefinitionTest {
             @Override
             public ProcessNodeType getType() {
                 return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
             }
 
             @Nonnull
@@ -443,6 +499,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -451,6 +512,12 @@ class ProcessNodeDefinitionTest {
             @Override
             public ProcessNodeType getType() {
                 return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
             }
 
             @Nonnull

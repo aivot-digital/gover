@@ -8,6 +8,7 @@ import {ElementType} from '../data/element-type/element-type';
 import {isStringNullOrEmpty} from '../utils/string-utils';
 import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
 import {getDisabledFieldBackground} from '../theming/field-state-colors';
+import {SelectFieldPresentation} from '../models/elements/form/input/select-field-presentation';
 
 export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>) {
     const {
@@ -148,8 +149,9 @@ export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>
             disabled={isDisabled}
             required={element.required ?? undefined}
             options={options}
+            presentation={element.presentation ?? SelectFieldPresentation.Dropdown}
             emptyStatePlaceholder={emptyStatePlaceholder}
-            sx={{
+            controlSx={{
                 backgroundColor: isBusy ? getDisabledFieldBackground : undefined,
                 cursor: isBusy ? 'not-allowed' : undefined,
             }}

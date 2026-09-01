@@ -9,7 +9,7 @@ import React from 'react';
 import {createApiPath} from '../../../utils/url-path-utils';
 import {DebugInformationDialog} from '../../../dialogs/debug-information-dialog/debug-information-dialog';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
-import {ProsunaLogo} from '../../../components/prosuna-logo/prosuna-logo';
+import {AnimatedProsunaLogo} from '../../../components/prosuna-logo/animated-prosuna-logo';
 import {
     SoftwareBillOfMaterialsDialog,
 } from '../../../dialogs/software-bill-of-materials-dialog/software-bill-of-materials-dialog';
@@ -106,7 +106,8 @@ export function AboutProsunaDialog({ open, onClose }: AboutProsunaDialogProps): 
                         }}
                     />
 
-                    <ProsunaLogo
+                    <AnimatedProsunaLogo
+                        active={open}
                         title="Prosuna"
                         colorVariant="monochrome"
                         color="#FFFFFF"

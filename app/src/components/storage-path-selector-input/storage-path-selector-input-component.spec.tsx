@@ -8,6 +8,8 @@ import {
 } from '../../models/elements/form/input/storage-path-selector-input-element';
 import {StoragePathSelectorInputComponent} from './storage-path-selector-input-component';
 import {type StorageIndexItem} from '../../modules/storage/entities/storage-index-item-entity';
+import {ThemeProvider} from '@mui/material';
+import {BaseTheme} from '../../theming/base-theme';
 
 interface StorageExplorerTestProps {
     initialPath?: string | null;
@@ -27,6 +29,14 @@ vi.mock('../../modules/storage/components/storage-explorer', () => ({
     },
 }));
 
+vi.mock('../../modules/storage/storage-providers-api-service', () => ({
+    StorageProvidersApiService: class {
+        listAll() {
+            return Promise.resolve({content: []});
+        }
+    },
+}));
+
 describe('StoragePathSelectorInputComponent', () => {
     beforeEach(() => {
         storageExplorerState.props = undefined;
@@ -38,7 +48,7 @@ describe('StoragePathSelectorInputComponent', () => {
 
         renderSelector(undefined, '/exports', onChange);
 
-        await user.click(screen.getByRole('button', {name: 'Ordner auswählen'}));
+        await user.click(screen.getByRole('button', {name: 'Speicherpfad: Ordner auswählen'}));
         await screen.findByTestId('storage-explorer');
 
         expect(storageExplorerState.props?.initialPath).toBe('/exports/');
@@ -62,7 +72,7 @@ describe('StoragePathSelectorInputComponent', () => {
 
         renderSelector(StoragePathSelectorMode.File, '/certificates/client.pem', onChange);
 
-        await user.click(screen.getByRole('button', {name: 'Datei auswählen'}));
+        await user.click(screen.getByRole('button', {name: 'Speicherpfad: Datei auswählen'}));
         await screen.findByTestId('storage-explorer');
 
         expect(storageExplorerState.props?.initialPath).toBe('/certificates/');
@@ -87,7 +97,7 @@ describe('StoragePathSelectorInputComponent', () => {
 
         renderSelector(StoragePathSelectorMode.File, '/certificates/{{ fileName }}', vi.fn());
 
-        await user.click(screen.getByRole('button', {name: 'Datei auswählen'}));
+        await user.click(screen.getByRole('button', {name: 'Speicherpfad: Datei auswählen'}));
         await screen.findByTestId('storage-explorer');
 
         expect(storageExplorerState.props?.initialPath).toBe('/');
@@ -112,3 +122,33 @@ function renderSelector(
         />,
     );
 }
+
+describe('StoragePathSelectorInputComponent accessibility', () => {
+    it('exposes the composite value as a labelled group with labelled subfields', async () => {
+        render(
+            <ThemeProvider theme={BaseTheme}>
+                <StoragePathSelectorInputComponent
+                    label="Ablageort"
+                    value={null}
+                    onChange={vi.fn()}
+                    storageProviderSelectHint="Wählen Sie einen Speicheranbieter."
+                    hint="Die Unterlagen werden an diesem Ort abgelegt."
+                />
+            </ThemeProvider>,
+        );
+
+        const group = screen.getByTitle('Ablageort').closest('fieldset');
+        expect(group).toHaveAccessibleName('Ablageort – optional');
+        expect(group).toHaveAccessibleDescription('Die Unterlagen werden an diesem Ort abgelegt.');
+        const providerInput = screen.getByLabelText('Speicheranbieter');
+        const pathInput = screen.getByLabelText('Pfad');
+        expect(providerInput).toHaveAccessibleDescription(/Wählen Sie einen Speicheranbieter/);
+        expect(pathInput).toBeDisabled();
+        expect(providerInput.closest('.MuiTextField-root')).not.toHaveClass('MuiFormControl-marginNormal');
+        expect(pathInput.closest('.MuiTextField-root')).not.toHaveClass('MuiFormControl-marginNormal');
+        expect(getComputedStyle(providerInput.closest('.MuiInputBase-root')!).minHeight).toBe('44px');
+        expect(getComputedStyle(pathInput.closest('.MuiInputBase-root')!).minHeight).toBe('44px');
+
+        await waitFor(() => expect(group).not.toHaveAttribute('aria-busy', 'true'));
+    });
+});

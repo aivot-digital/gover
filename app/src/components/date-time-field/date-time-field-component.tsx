@@ -1,7 +1,7 @@
-import {InputAdornment} from '@mui/material';
+import {InputAdornment, type SxProps, type Theme} from '@mui/material';
 import {LocalizationProvider, DateTimePicker} from '@mui/x-date-pickers';
 import {DateTime} from 'luxon';
-import React, {ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
 import {ProsunaAdapterLuxon, NONEXISTENT_LOCAL_DATETIME_REASON} from '../../utils/prosuna-adapter-luxon';
 import {
@@ -12,11 +12,13 @@ import {
     TemporalPrecision,
 } from '../../utils/temporal-utils';
 import {InstantIso} from '../../utils/temporal-types';
-import {EndAction} from '../text-field/text-field-component-props';
+import {type EndAction} from '../text-field/text-field-component-props';
 import {renderIconButton} from '../text-field/text-field-component';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
+import {FormField, type FormFieldControlContext, type FormFieldLayoutProps} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
 
-interface DateTimeFieldComponentProps {
+export interface DateTimeFieldComponentProps extends FormFieldLayoutProps {
     label: string;
     value?: string | null;
     onChange: (value: InstantIso | null) => void;
@@ -28,6 +30,8 @@ interface DateTimeFieldComponentProps {
     busy?: boolean;
     error?: string;
     placeholder?: string;
+    controlSx?: SxProps<Theme>;
+    size?: 'small' | 'medium';
     bufferInputUntilBlur?: boolean;
     debounce?: number;
     mode?: TimeFieldComponentModelMode;
@@ -66,13 +70,7 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
         };
     }, []);
 
-    const helperText = useMemo(() => {
-        if (temporalError != null) {
-            return temporalError;
-        }
-
-        return props.hideHelperText ? undefined : props.error ?? props.hint;
-    }, [props.error, props.hideHelperText, props.hint, temporalError]);
+    const effectiveError = temporalError ?? props.error;
 
     const triggerChange = (date: DateTime | null) => {
         if (date === null) {
@@ -180,65 +178,91 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
     };
 
     return (
-        <LocalizationProvider
-            dateAdapter={ProsunaAdapterLuxon}
-            adapterLocale="de"
+        <FormField
+            id={props.id}
+            label={props.label}
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            hint={props.hint}
+            error={effectiveError}
+            hideHelperText={props.hideHelperText && temporalError == null}
+            required={props.required}
+            disabled={props.disabled}
+            readOnly={props.busy}
+            busy={props.busy}
+            margin={props.margin ?? 'normal'}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
         >
-            <DateTimePicker
-                ampm={false}
-                timezone={applicationTimeZone}
-                format={mode === TimeFieldComponentModelMode.Second ? "dd.MM.yyyy HH:mm:ss 'Uhr'" : "dd.MM.yyyy HH:mm 'Uhr'"}
-                views={mode === TimeFieldComponentModelMode.Second ? ['year', 'month', 'day', 'hours', 'minutes', 'seconds'] : ['year', 'month', 'day', 'hours', 'minutes']}
-                label={`${props.label}${props.required ? ' *' : ''}`}
-                value={localValue}
-                onChange={handlePickerChange}
-                onAccept={handleAccept}
-                onOpen={handleOpen}
-                disabled={props.disabled}
-                readOnly={props.busy}
-                slotProps={{
-                    textField: {
-                        variant: 'outlined',
-                        error: props.error != null || temporalError != null,
-                        helperText: helperText,
-                        onInput: handleInputChange,
-                        onKeyDown: handleKeyDown,
-                        onPaste: handleInputChange,
-                        onBlur: handleBlur,
-
-                        slotProps: {
-                            inputLabel: {
-                                title: props.label,
+            {(fieldContext: FormFieldControlContext) => (
+                <LocalizationProvider
+                    dateAdapter={ProsunaAdapterLuxon}
+                    adapterLocale="de"
+                >
+                    <DateTimePicker
+                        ampm={false}
+                        timezone={applicationTimeZone}
+                        format={mode === TimeFieldComponentModelMode.Second ? "dd.MM.yyyy HH:mm:ss 'Uhr'" : "dd.MM.yyyy HH:mm 'Uhr'"}
+                        views={mode === TimeFieldComponentModelMode.Second ? ['year', 'month', 'day', 'hours', 'minutes', 'seconds'] : ['year', 'month', 'day', 'hours', 'minutes']}
+                        label={undefined}
+                        value={localValue}
+                        onChange={handlePickerChange}
+                        onAccept={handleAccept}
+                        onOpen={handleOpen}
+                        disabled={props.disabled}
+                        readOnly={props.busy}
+                        slotProps={{
+                            textField: {
+                                id: fieldContext.controlId,
+                                variant: 'outlined',
+                                fullWidth: true,
+                                margin: 'none',
+                                size: props.size ?? 'small',
+                                required: props.required,
+                                error: fieldContext.invalid,
+                                helperText: undefined,
+                                onInput: handleInputChange,
+                                onKeyDown: handleKeyDown,
+                                onPaste: handleInputChange,
+                                onBlur: handleBlur,
+                                slotProps: {
+                                    input: {
+                                        ...fieldContext.ariaProps,
+                                        startAdornment: props.startIcon && (
+                                            <InputAdornment position="start">{props.startIcon}</InputAdornment>
+                                        ),
+                                        endAdornment: props.endAction && (
+                                            <InputAdornment position="end">
+                                                {Array.isArray(props.endAction)
+                                                    ? props.endAction.map(renderIconButton)
+                                                    : renderIconButton(props.endAction)}
+                                            </InputAdornment>
+                                        ),
+                                    },
+                                    htmlInput: {
+                                        placeholder: props.placeholder,
+                                    },
+                                },
                             },
-
-                            input: {
-                                startAdornment: props.startIcon && (
-                                    <InputAdornment position="start">{props.startIcon}</InputAdornment>
-                                ),
-                                endAdornment: props.endAction && (
-                                    <InputAdornment position="end">
-                                        {Array.isArray(props.endAction)
-                                            ? props.endAction.map(renderIconButton)
-                                            : renderIconButton(props.endAction)}
-                                    </InputAdornment>
-                                ),
+                            actionBar: {
+                                actions: ['accept', 'cancel', 'clear'],
                             },
-                            htmlInput: {
-                                placeholder: props.placeholder,
+                        }}
+                        sx={[
+                            {
+                                width: '100%',
+                                '& .MuiPickersInputBase-root': {
+                                    minHeight: FormFieldTokens.controlMinHeight,
+                                    backgroundColor: (props.busy || props.disabled) ? getDisabledFieldBackground : undefined,
+                                    cursor: (props.busy || props.disabled) ? 'not-allowed' : undefined,
+                                },
                             },
-                        },
-                    },
-                    actionBar: {
-                        actions: ['accept', 'cancel', 'clear'],
-                    },
-                }}
-                sx={{
-                    '& .MuiPickersInputBase-root': {
-                        backgroundColor: (props.busy || props.disabled) ? getDisabledFieldBackground : undefined,
-                        cursor: (props.busy || props.disabled) ? 'not-allowed' : undefined,
-                    },
-                }}
-            />
-        </LocalizationProvider>
+                            ...(Array.isArray(props.controlSx) ? props.controlSx : [props.controlSx]),
+                        ]}
+                    />
+                </LocalizationProvider>
+            )}
+        </FormField>
     );
 }

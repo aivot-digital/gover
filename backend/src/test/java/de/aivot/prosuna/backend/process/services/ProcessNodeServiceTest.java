@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -582,6 +583,12 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
+        public String getAbstract() {
+            return "Test node definition for process data key hints.";
+        }
+
+        @Nonnull
+        @Override
         public String getDescription() {
             return "Test node definition for process data key hints.";
         }
@@ -590,6 +597,12 @@ class ProcessNodeServiceTest {
         @Override
         public ProcessNodeType getType() {
             return type;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
         }
 
         @Nonnull
@@ -605,7 +618,8 @@ class ProcessNodeServiceTest {
                     new ProcessNodeOutput(
                             "result",
                             "Result",
-                            "Mapped test result."
+                            "Mapped test result.",
+                            "string"
                     )
             );
         }
@@ -684,6 +698,12 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
+        public String getAbstract() {
+            return "Test node definition for process identity ID validation.";
+        }
+
+        @Nonnull
+        @Override
         public String getDescription() {
             return "Test node definition for process identity ID validation.";
         }
@@ -692,6 +712,12 @@ class ProcessNodeServiceTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
         }
 
         @Nonnull
@@ -768,6 +794,12 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
+        public String getAbstract() {
+            return "Test node definition for field validation errors.";
+        }
+
+        @Nonnull
+        @Override
         public String getDescription() {
             return "Test node definition for field validation errors.";
         }
@@ -776,6 +808,12 @@ class ProcessNodeServiceTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
         }
 
         @Nonnull
@@ -846,6 +884,12 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
+        public String getAbstract() {
+            return "Test form trigger.";
+        }
+
+        @Nonnull
+        @Override
         public String getDescription() {
             return "Test form trigger.";
         }
@@ -854,6 +898,12 @@ class ProcessNodeServiceTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Trigger;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
         }
 
         @Nonnull

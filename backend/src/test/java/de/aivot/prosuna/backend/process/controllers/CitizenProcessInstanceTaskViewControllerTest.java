@@ -22,6 +22,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
@@ -866,6 +867,11 @@ class CitizenProcessInstanceTaskViewControllerTest {
         }
 
         @Override
+        public String getAbstract() {
+            return "Customer task test provider";
+        }
+
+        @Override
         public String getDescription() {
             return "Customer task test provider";
         }
@@ -874,6 +880,12 @@ class CitizenProcessInstanceTaskViewControllerTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Manual};
         }
 
         @Nonnull
@@ -944,6 +956,12 @@ class CitizenProcessInstanceTaskViewControllerTest {
             return "Citizen inline event";
         }
 
+        @Nonnull
+        @Override
+        public String getAbstract() {
+            return "Customer inline task event test provider";
+        }
+
         @Override
         public String getDescription() {
             return "Customer inline task event test provider";
@@ -953,6 +971,12 @@ class CitizenProcessInstanceTaskViewControllerTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Manual};
         }
 
         @Nonnull
@@ -1041,6 +1065,11 @@ class CitizenProcessInstanceTaskViewControllerTest {
         }
 
         @Override
+        public String getAbstract() {
+            return "Customer autosave test provider";
+        }
+
+        @Override
         public String getDescription() {
             return "Customer autosave test provider";
         }
@@ -1049,6 +1078,12 @@ class CitizenProcessInstanceTaskViewControllerTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Manual};
         }
 
         @Nonnull

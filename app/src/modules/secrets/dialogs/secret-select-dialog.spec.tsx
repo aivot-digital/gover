@@ -37,7 +37,7 @@ describe('SecretSelectDialog', () => {
         mocks.dispatch.mockReset();
     });
 
-    it('loads the default endpoint, searches metadata locally, and selects a secret without displaying its value', async () => {
+    it('loads ordered references, searches metadata locally, and selects without displaying values', async () => {
         vi.spyOn(SecretsApiService.prototype, 'listAllOrdered').mockResolvedValue({
             content: secrets,
             page: {size: 2, number: 0, totalElements: 2, totalPages: 1},
@@ -47,6 +47,7 @@ describe('SecretSelectDialog', () => {
 
         render(
             <SecretSelectDialog
+                id="secret-dialog"
                 open
                 onSelect={onSelect}
                 onClose={onClose}
@@ -59,7 +60,7 @@ describe('SecretSelectDialog', () => {
         expect(screen.queryByText('test-password')).not.toBeInTheDocument();
         expect(SecretsApiService.prototype.listAllOrdered).toHaveBeenCalledWith('name', 'ASC');
 
-        fireEvent.change(screen.getByRole('textbox', {name: 'Geheimnis suchen'}), {
+        fireEvent.change(screen.getByRole('searchbox', {name: 'Geheimnis suchen'}), {
             target: {value: 'Produktivsystem'},
         });
 

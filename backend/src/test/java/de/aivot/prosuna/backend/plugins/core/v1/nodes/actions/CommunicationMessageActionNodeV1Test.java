@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
@@ -22,6 +23,9 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -30,6 +34,29 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class CommunicationMessageActionNodeV1Test {
+    @Test
+    void metadataExposesAutomaticExecutionAndTypedOutputs() {
+        var node = createNode(mock(CommunicationService.class), mock(TemplateRenderService.class));
+
+        assertArrayEquals(
+                new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic},
+                node.getExecutionTypes()
+        );
+        assertFalse(node.getAbstract().isBlank());
+        assertEquals(
+                java.util.List.of(
+                        "string",
+                        "number | null",
+                        "string",
+                        "string",
+                        "Array<string>",
+                        "string",
+                        "Record<string, unknown>"
+                ),
+                node.getOutputs().stream().map(output -> output.typeDefinition()).toList()
+        );
+    }
+
     @Test
     void configurationUsesProcessIdentityIdInputElement() throws Exception {
         var node = createNode(mock(CommunicationService.class), mock(TemplateRenderService.class));

@@ -25,6 +25,7 @@ import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
@@ -113,14 +114,30 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Manual};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Manuelle Aktion ausführen";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Eine frei definierte, manuelle Aufgabe, welche durch eine Mitarbeiter:in (z. B. in einem dritten System) ausgeführt wird.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Erstellt eine frei definierbare Aufgabe für eine Mitarbeiter:in, um einen manuellen Arbeitsschritt innerhalb oder außerhalb von Prosuna zu bestätigen.
+
+                Aufgabenbeschreibung, zuständiger Personenkreis und eine optionale Prosuna-Oberfläche werden konfiguriert. Nach der Bestätigung setzt das Element den Prozess fort und stellt erfasste Daten, Vermerk sowie Bearbeitungszeitpunkt und bearbeitende Person als Ausgänge bereit.
+                """;
     }
 
     @Nonnull
@@ -192,27 +209,32 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 new ProcessNodeOutput(
                         OUTPUT_DATA,
                         "Erfasste Daten",
-                        "Die über die optionale Prosuna-UI bestätigten oder erfassten Daten im Payload-Format."
+                        "Die über die optionale Prosuna-UI bestätigten oder erfassten Daten im Payload-Format.",
+                        "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_REMARK,
                         "Vermerk",
-                        "Der optionale interne Vermerk zur bestätigten manuellen Aktion."
+                        "Der optionale interne Vermerk zur bestätigten manuellen Aktion.",
+                        "string | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
                         "Bearbeitet durch",
-                        "Die ID der Mitarbeiter:in, die die manuelle Aktion bestätigt hat."
+                        "Die ID der Mitarbeiter:in, die die manuelle Aktion bestätigt hat.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_AT,
                         "Bearbeitet am",
-                        "Der Zeitstempel der Bestätigung im ISO-Format."
+                        "Der Zeitstempel der Bestätigung im ISO-Format.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_UNMAPPED,
                         "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht."
+                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Record<string, unknown>"
                 )
         );
     }

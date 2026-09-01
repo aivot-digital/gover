@@ -1,30 +1,33 @@
+import {useEffect, useMemo, useState} from 'react';
+import {CircularProgress, type SxProps, type Theme} from '@mui/material';
+import FileOpen from '@aivot/mui-material-symbols-400-n25-outlined/FileOpen';
 import {SelectAssetDialog} from '../../../dialogs/select-asset-dialog/select-asset-dialog';
-import React, {useEffect, useMemo, useState} from 'react';
-import {Box, CircularProgress, IconButton, InputAdornment, TextField, Tooltip, Typography} from '@mui/material';
-import ChevronRight from '@aivot/mui-material-symbols-400-n25-outlined/ChevronRight';
-import Close from '@aivot/mui-material-symbols-400-n25-outlined/Close';
+import {type FormFieldLayoutProps} from '../../../components/form-field';
 import {AssetsApiService} from '../assets-api-service';
 import {type VStorageIndexItemWithAssetEntity} from '../../storage/entities/storage-index-item-entity';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
-import FileOpen from '@aivot/mui-material-symbols-400-n25-outlined/FileOpen';
+import {AssetSelectionField} from './asset-selection-field';
+import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
 
-interface AssetSelectorProps {
+interface AssetSelectorProps extends FormFieldLayoutProps {
     label: string;
     hint?: string;
     selectLabel: string;
     value: string | null;
     onChange: (value: string | null) => void;
     disabled?: boolean;
+    readOnly?: boolean;
     required?: boolean;
     error?: string;
     mimetype?: string;
     onlyPublic?: boolean;
     placeholder?: string;
     isBusy?: boolean;
+    controlSx?: SxProps<Theme>;
 }
 
-export function AssetSelector(props: AssetSelectorProps): React.ReactElement {
+export function AssetSelector(props: AssetSelectorProps) {
     const {
         label,
         hint,
@@ -32,6 +35,7 @@ export function AssetSelector(props: AssetSelectorProps): React.ReactElement {
         value,
         onChange,
         disabled = false,
+        readOnly = false,
         required = false,
         error,
         mimetype,
@@ -39,17 +43,20 @@ export function AssetSelector(props: AssetSelectorProps): React.ReactElement {
         placeholder = 'Keine Datei ausgewählt',
         isBusy = false,
     } = props;
-
+    const generatedId = useNormalizedReactId();
+    const dialogId = `${props.id ?? `asset-selector-${generatedId}`}-dialog`;
     const dispatch = useAppDispatch();
     const [showSelectAssetDialog, setShowSelectAssetDialog] = useState(false);
     const [asset, setAsset] = useState<VStorageIndexItemWithAssetEntity>();
     const [storageProviderName, setStorageProviderName] = useState<string>();
+    const [assetLoadFailed, setAssetLoadFailed] = useState(false);
 
     useEffect(() => {
         let active = true;
 
         setAsset(undefined);
         setStorageProviderName(undefined);
+        setAssetLoadFailed(false);
 
         if (value == null) {
             return () => {
@@ -69,26 +76,21 @@ export function AssetSelector(props: AssetSelectorProps): React.ReactElement {
                 return new AssetsApiService()
                     .retrieveStorageProvider(res.storageProviderId)
                     .then((provider) => {
-                        if (!active) {
-                            return;
+                        if (active) {
+                            setStorageProviderName(provider.name);
                         }
-
-                        setStorageProviderName(provider.name);
                     })
                     .catch((err) => {
-                        if (!active) {
-                            return;
+                        if (active) {
+                            dispatch(showApiErrorSnackbar(err, 'Speicheranbieter konnte nicht geladen werden'));
                         }
-
-                        dispatch(showApiErrorSnackbar(err, 'Speicheranbieter konnte nicht geladen werden'));
                     });
             })
             .catch((err) => {
-                if (!active) {
-                    return;
+                if (active) {
+                    setAssetLoadFailed(true);
+                    dispatch(showApiErrorSnackbar(err, 'Asset konnte nicht geladen werden'));
                 }
-
-                dispatch(showApiErrorSnackbar(err, 'Asset konnte nicht geladen werden'));
             });
 
         return () => {
@@ -107,260 +109,65 @@ export function AssetSelector(props: AssetSelectorProps): React.ReactElement {
         return `${providerLabel}: ${asset.pathFromRoot}`;
     }, [asset, storageProviderName]);
 
-    // The native input remains available for TextField semantics while the selection is rendered in adornments.
-    const isLoadingAsset = value != null && asset == null;
-    const fieldValue = asset?.filename ?? '';
-    const interactiveCursor = disabled ? 'default' : 'pointer';
-    const primaryContentColor = disabled ? 'text.disabled' : 'text.primary';
-    const secondaryContentColor = disabled ? 'text.disabled' : 'text.secondary';
-    const iconColor = disabled ? 'text.disabled' : asset != null ? 'primary.main' : 'action.active';
-    const endIconColor = disabled ? 'text.disabled' : 'action.active';
-    const clearTooltip = disabled || value == null ? '' : 'Auswahl entfernen';
-
-    const handleOpenDialog = () => {
-        if (!disabled) {
-            setShowSelectAssetDialog(true);
-        }
-    };
-
-    const handleClear = (event: React.MouseEvent<HTMLButtonElement>) => {
-        event.stopPropagation();
-        onChange(null);
-    };
-
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (disabled) {
-            return;
-        }
-
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            setShowSelectAssetDialog(true);
-        }
-    };
+    const isLoadingAsset = value != null && asset == null && !assetLoadFailed;
+    const primaryText = isLoadingAsset
+        ? `Lade ${label}`
+        : asset?.filename ?? (assetLoadFailed ? 'Datei ausgewählt' : placeholder);
+    const secondaryText = asset != null
+        ? selectedAssetPath
+        : assetLoadFailed
+            ? 'Metadaten nicht verfügbar'
+            : undefined;
+    const isInteractionDisabled = disabled || readOnly || isBusy;
 
     return (
         <>
-            <TextField
-                fullWidth
+            <AssetSelectionField
+                id={props.id}
                 label={label}
-                value={fieldValue}
-                placeholder={placeholder}
-                disabled={disabled}
-                error={error != null}
-                helperText={error ?? hint}
+                ariaLabel={props.ariaLabel}
+                ariaDescribedBy={props.ariaDescribedBy}
+                labelAction={props.labelAction}
+                hint={hint}
+                error={error}
                 required={required}
-                onClick={handleOpenDialog}
-                onKeyDown={handleKeyDown}
-                sx={{
-                    '& .MuiOutlinedInput-root': {
-                        cursor: interactiveCursor,
-                        height: 56,
-                        minHeight: 56,
-                    },
-                    '& .MuiOutlinedInput-input': {
-                        width: 0,
-                        minWidth: 0,
-                        flex: '0 0 0',
-                        p: 0,
-                        cursor: interactiveCursor,
-                        caretColor: 'transparent',
-                    },
-                    '& .MuiInputAdornment-root': {
-                        pointerEvents: disabled ? 'none' : 'auto',
-                    },
-                }}
-                slotProps={{
-                    input: {
-                        startAdornment: (
-                            <InputAdornment
-                                position="start"
-                                sx={{
-                                    minWidth: 0,
-                                    flex: 1,
-                                    alignItems: 'center',
-                                    mr: 1,
-                                }}
-                            >
-                                <Box
-                                    component="span"
-                                    sx={{
-                                        display: 'inline-flex',
-                                        flexShrink: 0,
-                                        mr: 1.25,
-                                        color: iconColor,
-                                        '& .MuiSvgIcon-root': {
-                                            fontSize: 20,
-                                        },
-                                    }}
-                                >
-                                    {
-                                        isLoadingAsset ? (
-                                            <CircularProgress
-                                                size={20}
-                                                color="inherit"
-                                            />
-                                        ) : (
-                                            <FileOpen/>
-                                        )
-                                    }
-                                </Box>
-
-                                <Box
-                                    component="span"
-                                    sx={{
-                                        minWidth: 0,
-                                        flex: 1,
-                                    }}
-                                >
-                                    {
-                                        isLoadingAsset ? (
-                                            <Typography
-                                                variant="body2"
-                                                component="span"
-                                                color={secondaryContentColor}
-                                                sx={{
-                                                    display: 'block',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    whiteSpace: 'nowrap',
-                                                }}
-                                            >
-                                                Lade {label}
-                                            </Typography>
-                                        ) : asset != null ? (
-                                            <>
-                                                <Typography
-                                                    variant="body2"
-                                                    component="span"
-                                                    color={primaryContentColor}
-                                                    sx={{
-                                                        display: 'block',
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap',
-                                                        fontSize: '1rem',
-                                                        lineHeight: 1.25,
-                                                    }}
-                                                    title={asset.filename}
-                                                >
-                                                    {asset.filename}
-                                                </Typography>
-
-                                                {
-                                                    selectedAssetPath != null &&
-                                                    <Typography
-                                                        variant="caption"
-                                                        component="span"
-                                                        color={secondaryContentColor}
-                                                        sx={{
-                                                            display: 'block',
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis',
-                                                            whiteSpace: 'nowrap',
-                                                            fontSize: '0.75rem',
-                                                            lineHeight: 1.2,
-                                                        }}
-                                                        title={selectedAssetPath}
-                                                    >
-                                                        {selectedAssetPath}
-                                                    </Typography>
-                                                }
-                                            </>
-                                        ) : (
-                                            <Typography
-                                                variant="body2"
-                                                component="span"
-                                                color={secondaryContentColor}
-                                                sx={{
-                                                    display: 'block',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    whiteSpace: 'nowrap',
-                                                }}
-                                            >
-                                                {placeholder}
-                                            </Typography>
-                                        )
-                                    }
-                                </Box>
-                            </InputAdornment>
-                        ),
-                        endAdornment: (
-                            <InputAdornment position="end">
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 0.5,
-                                        mr: -0.5,
-                                    }}
-                                >
-                                    {
-                                        isBusy &&
-                                        <CircularProgress
-                                            size={18}
-                                            color="inherit"
-                                        />
-                                    }
-
-                                    <Tooltip
-                                        title={clearTooltip}
-                                        arrow
-                                    >
-                                        <span>
-                                            <IconButton
-                                                size="small"
-                                                onClick={handleClear}
-                                                onMouseDown={(event) => {
-                                                    event.preventDefault();
-                                                    event.stopPropagation();
-                                                }}
-                                                disabled={disabled || value == null}
-                                                aria-label="Auswahl entfernen"
-                                            >
-                                                <Close fontSize="small"/>
-                                            </IconButton>
-                                        </span>
-                                    </Tooltip>
-
-                                    <ChevronRight
-                                        fontSize="small"
-                                        sx={{color: endIconColor}}
-                                    />
-                                </Box>
-                            </InputAdornment>
-                        ),
-                    },
-
-                    htmlInput: {
-                        readOnly: true,
-                        title: asset?.filename,
-                        'aria-label': label,
-                    },
-
-                    inputLabel: {
-                        title: label,
-                    },
-
-                    formHelperText: {
-                        title: error ?? hint,
-                        sx: {
-                            whiteSpace: 'normal',
-                        },
-                    },
-                }} />
+                disabled={disabled}
+                readOnly={readOnly}
+                busy={isBusy}
+                margin={props.margin}
+                sx={props.sx}
+                showOptionalIndicator={props.showOptionalIndicator}
+                open={showSelectAssetDialog}
+                dialogId={dialogId}
+                hasValue={value != null}
+                primaryText={primaryText}
+                secondaryText={secondaryText}
+                leadingVisual={isLoadingAsset ? (
+                    <CircularProgress size={20} color="inherit" />
+                ) : (
+                    <FileOpen
+                        sx={{
+                            fontSize: 20,
+                            color: isInteractionDisabled
+                                ? 'text.disabled'
+                                : asset != null ? 'primary.main' : 'action.active',
+                        }}
+                    />
+                )}
+                onOpen={() => setShowSelectAssetDialog(true)}
+                onClear={() => onChange(null)}
+                controlSx={props.controlSx}
+            />
 
             <SelectAssetDialog
+                id={dialogId}
                 title={selectLabel}
                 show={showSelectAssetDialog}
-                onSelect={(val) => {
-                    onChange(val);
+                onSelect={(selectedValue) => {
+                    onChange(selectedValue);
                     setShowSelectAssetDialog(false);
                 }}
-                onCancel={() => {
-                    setShowSelectAssetDialog(false);
-                }}
+                onCancel={() => setShowSelectAssetDialog(false)}
                 mode={onlyPublic ? 'public' : 'all'}
                 mimetype={mimetype}
             />

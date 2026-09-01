@@ -98,6 +98,35 @@ class HttpActionNodeV1Test {
     }
 
     @Test
+    void getOutputs_ShouldExposeDynamicAndStructuredResponseTypes() {
+        var processedResponseOutput = node
+                .getOutputs()
+                .stream()
+                .filter(output -> "processedResponse".equals(output.key()))
+                .findFirst()
+                .orElseThrow();
+        var headersOutput = node
+                .getOutputs()
+                .stream()
+                .filter(output -> "headers".equals(output.key()))
+                .findFirst()
+                .orElseThrow();
+        var filesOutput = node
+                .getOutputs()
+                .stream()
+                .filter(output -> "files".equals(output.key()))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("unknown", processedResponseOutput.typeDefinition());
+        assertEquals("Record<string, Array<string>>", headersOutput.typeDefinition());
+        assertEquals(
+                "Array<{ name: string; originalFileName: string; uri: string; size: number; }>",
+                filesOutput.typeDefinition()
+        );
+    }
+
+    @Test
     void init_ShouldBuildMultipartFieldsFromConfiguredRows() throws Exception {
         when(httpService.request(
                 eq(HttpMethod.POST),

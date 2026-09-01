@@ -355,10 +355,10 @@ describe('PaymentConfigView', () => {
         });
 
         fireEvent.click(screen.getByText('Neue Zahlungskonfiguration'));
-        await screen.findByText('Zahlungspositionen *');
+        await screen.findByText('Zahlungspositionen');
 
-        const firstRow = screen.getByText('Erste Position').closest('[role="button"]') as HTMLElement | null;
-        const secondRow = screen.getByText('Zweite Position').closest('[role="button"]') as HTMLElement | null;
+        const firstRow = screen.getByText('Erste Position').closest('button');
+        const secondRow = screen.getByText('Zweite Position').closest('button');
 
         expect(firstRow).not.toBeNull();
         expect(secondRow).not.toBeNull();
@@ -402,7 +402,7 @@ describe('PaymentConfigView', () => {
         });
 
         fireEvent.click(screen.getByText('Neue Zahlungskonfiguration'));
-        await screen.findByText('Zahlungspositionen *');
+        await screen.findByText('Zahlungspositionen');
         fireEvent.click(await screen.findByText('Zweite Position'));
 
         expect(await screen.findByText('Bitte korrigieren Sie die zweite Beschreibung.')).toBeInTheDocument();
@@ -550,6 +550,7 @@ function createPaymentProviderDefinition(definition: Partial<PaymentProviderDefi
         name: '',
         description: '',
         configLayout: null,
+        documentationUrl: null,
         ...definition,
     };
 }

@@ -112,8 +112,18 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Speichert Dokumente auf einem WebDAV-kompatiblen Speicher.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Bindet einen über WebDAV erreichbaren Dokumentenspeicher als Prosuna-Speicheranbieter ein.
+
+                Nach der Konfiguration von Serveradresse und Zugangsdaten können Dokumente und Ordner über das WebDAV-Protokoll gelesen, geschrieben und verwaltet werden. Dadurch lassen sich bestehende WebDAV-kompatible Dokumentenablagen in Prozesse und Anlagenverwaltung integrieren.
+                """;
     }
 
     @Nonnull

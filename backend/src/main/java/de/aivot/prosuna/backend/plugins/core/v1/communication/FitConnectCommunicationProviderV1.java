@@ -92,8 +92,14 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
 
     @Nonnull
     @Override
+    public String getAbstract() {
+        return "Versendet Nachrichten und Anhänge über FIT-Connect an ein Behördenpostfach.";
+    }
+
+    @Nonnull
+    @Override
     public String getDescription() {
-        return "Vorbereitete, noch nicht aktivierbare Integration für FIT-Connect.";
+        return "Versendet Nachrichten einschließlich Anhängen über einen konfigurierten FIT-Connect-Zustellpunkt an das Behördenpostfach einer Identität.";
     }
 
 

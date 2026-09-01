@@ -64,6 +64,7 @@ import {
     getApplicationTimeZone,
     getCurrentApplicationDate,
 } from '../../../utils/temporal-utils';
+import {SelectFieldPresentation} from '../../../models/elements/form/input/select-field-presentation';
 
 function DateExamples() {
     const currentDate = getCurrentApplicationDate();
@@ -578,8 +579,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
             <Typography sx={{mt: 2}}>
                 Eine optische Alternative zum Einzelauswahl (Optionsfelder)-Element stellt das
-                Einzelauswahl (Auswahlmenü)-Element dar, welches die Optionen in einem platzsparenden Auswahlmenü
-                darstellt.
+                Einzelauswahl-Element dar. Es zeigt die Optionen platzsparend als Auswahlmenü oder als durchsuchbare
+                Auswahl an.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -632,12 +633,13 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Select]: (
         <Box>
             <Typography>
-                Das Einzelauswahl (Auswahlmenü)-Element dient zur Abfrage exakt einer Möglichkeit aus
-                mehreren Möglichkeiten, welche in einem per Klick erreichbaren Auswahlmenü dargestellt werden.
+                Das Einzelauswahl-Element dient zur Abfrage exakt einer Möglichkeit aus vorgegebenen Optionen.
+                Kurze Listen können als kompaktes Auswahlmenü dargestellt werden. Bei längeren Listen erleichtert
+                die durchsuchbare Auswahl das Auffinden einer Option, ohne freie Eingaben zuzulassen.
             </Typography>
 
             <Typography sx={{mt: 2}}>
-                Eine optische Alternative zum Einzelauswahl (Auswahlmenü)-Element stellt das
+                Eine optische Alternative zum Einzelauswahl-Element stellt das
                 Einzelauswahl (Optionsfelder)-Element dar, welches die Optionen mit einzelnen Optionsfeldern darstellt.
             </Typography>
 
@@ -666,6 +668,31 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     onChange={() => {
                     }}
                     hint="Hinweis zur Einzelauswahl"
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <SelectFieldComponent
+                    label="Durchsuchbare Einzelauswahl"
+                    value={undefined}
+                    options={[
+                        {
+                            label: 'Baugenehmigung',
+                            value: 'building_permit',
+                        },
+                        {
+                            label: 'Gewerbeanmeldung',
+                            value: 'business_registration',
+                        },
+                        {
+                            label: 'Meldebescheinigung',
+                            value: 'registration_certificate',
+                        },
+                    ]}
+                    onChange={() => {
+                    }}
+                    presentation={SelectFieldPresentation.Combobox}
+                    hint="Tippen Sie, um die vorgegebenen Optionen zu filtern."
                 />
             </Box>
 

@@ -9,6 +9,8 @@ import {
     TextField,
     Tooltip,
     Typography,
+    type SxProps,
+    type Theme,
 } from '@mui/material';
 import {alpha, styled} from '@mui/material/styles';
 import React, {useEffect, useId, useState} from 'react';
@@ -26,6 +28,12 @@ import {
     DEFAULT_APPEARANCE_COLORS,
     getColorContrastRatio,
 } from '../../../theming/resolve-appearance-colors';
+import {
+    FormField,
+    type FormFieldLayoutProps,
+    getNativeInputAriaProps,
+} from '../../../components/form-field';
+import {FormFieldTokens} from '../../../theming/form-field-tokens';
 
 type RgbColor = {
     red: number;
@@ -33,13 +41,17 @@ type RgbColor = {
     blue: number;
 };
 
-type ThemeColorPickerProps = {
+type ThemeColorPickerProps = FormFieldLayoutProps & {
     label: string;
     value: string;
     onChange: (value: string) => void;
     contrastTextColor?: string;
     contrastBackgroundColor?: string;
     disabled?: boolean;
+    readOnly?: boolean;
+    busy?: boolean;
+    required?: boolean;
+    controlSx?: SxProps<Theme>;
 };
 
 const presets = [
@@ -108,18 +120,21 @@ const ColorPickerThumb = styled(ColorThumb)(({theme}) => ({
     },
 }));
 
-export function ThemeColorPicker({
-    label,
-    value,
-    onChange,
-    contrastTextColor,
-    contrastBackgroundColor,
-    disabled = false,
-}: ThemeColorPickerProps) {
+export function ThemeColorPicker(props: ThemeColorPickerProps) {
+    const {
+        label,
+        value,
+        onChange,
+        contrastTextColor,
+        contrastBackgroundColor,
+        disabled = false,
+        readOnly = false,
+        busy = false,
+        required = true,
+    } = props;
     const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null);
     const [hexDraft, setHexDraft] = useState(formatHex(value));
     const [hasHexError, setHasHexError] = useState(false);
-    const descriptionId = useId();
     const popoverId = useId();
     const formattedValue = formatHex(value);
     const formattedContrastTextColor = formatHex(contrastTextColor ?? '#FFFFFF');
@@ -132,6 +147,7 @@ export function ThemeColorPicker({
         : formattedContrastTextColor === '#FFFFFF'
             ? 'weißer Schrift'
             : 'automatisch gewählter Schriftfarbe';
+    const isInteractionDisabled = disabled || readOnly || busy;
 
     useEffect(() => {
         setHexDraft(formattedValue);
@@ -139,12 +155,16 @@ export function ThemeColorPicker({
     }, [formattedValue]);
 
     useEffect(() => {
-        if (disabled) {
+        if (isInteractionDisabled) {
             setAnchorElement(null);
         }
-    }, [disabled]);
+    }, [isInteractionDisabled]);
 
     const updateColor = (nextValue: string) => {
+        if (isInteractionDisabled) {
+            return;
+        }
+
         const nextColor = formatHex(nextValue);
         setHexDraft(nextColor);
         setHasHexError(false);
@@ -176,20 +196,14 @@ export function ThemeColorPicker({
     };
 
     return (
-        <Grid
-            size={{xs: 12, md: 6, lg: 6}}
-            aria-disabled={disabled || undefined}
-            sx={{minWidth: 0}}
-        >
-            <TextField
-                fullWidth
+        <>
+            <FormField
+                id={props.id}
                 label={label}
-                value={hexDraft}
-                disabled={disabled}
-                error={hasHexError}
-                helperText={hasHexError ? (
-                    'Bitte geben Sie eine sechsstellige HEX-Farbe ein.'
-                ) : (
+                ariaLabel={props.ariaLabel}
+                ariaDescribedBy={props.ariaDescribedBy}
+                labelAction={props.labelAction}
+                hint={!hasHexError ? (
                     <Box
                         component="span"
                         sx={{display: 'flex', alignItems: 'flex-start', gap: 0.5}}
@@ -200,83 +214,113 @@ export function ThemeColorPicker({
                             {' · '}Symbol auf Standardfläche: {contrastRatioFormatter.format(iconButtonContrastRatio)}:1
                         </span>
                     </Box>
+                ) : undefined}
+                error={hasHexError ? 'Bitte geben Sie eine sechsstellige HEX-Farbe ein.' : undefined}
+                required={required}
+                disabled={disabled}
+                readOnly={readOnly}
+                busy={busy}
+                margin={props.margin ?? 'normal'}
+                showOptionalIndicator={props.showOptionalIndicator}
+                sx={props.sx}
+            >
+                {(field) => (
+                    <TextField
+                        id={field.controlId}
+                        fullWidth
+                        size="small"
+                        margin="none"
+                        label={undefined}
+                        value={hexDraft}
+                        disabled={disabled || busy}
+                        required={required}
+                        error={hasHexError}
+                        helperText={undefined}
+                        onChange={(event) => {
+                            const draft = event.target.value.toUpperCase();
+                            setHexDraft(draft);
+                            setHasHexError(false);
+
+                            const nextColor = normalizeHex(draft);
+                            if (nextColor != null && nextColor !== formattedValue) {
+                                onChange(nextColor);
+                            }
+                        }}
+                        onBlur={commitHexDraft}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                                commitHexDraft();
+                                event.currentTarget.blur();
+                            }
+
+                            if (event.key === 'Escape') {
+                                setHexDraft(formattedValue);
+                                setHasHexError(false);
+                                event.currentTarget.blur();
+                            }
+                        }}
+                        sx={[
+                            {
+                                '& .MuiInputBase-root': {
+                                    minHeight: FormFieldTokens.controlMinHeight,
+                                },
+                            },
+                            ...(Array.isArray(props.controlSx) ? props.controlSx : [props.controlSx]),
+                        ]}
+                        slotProps={{
+                            htmlInput: {
+                                ...getNativeInputAriaProps(field),
+                                maxLength: 7,
+                                spellCheck: false,
+                                readOnly: readOnly || busy,
+                            },
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <Tooltip title="Farbe auswählen" arrow>
+                                            <Box component="span" sx={{display: 'inline-flex'}}>
+                                                <IconButton
+                                                    size="small"
+                                                    disabled={isInteractionDisabled}
+                                                    aria-label={`${label} visuell auswählen`}
+                                                    aria-haspopup="dialog"
+                                                    aria-controls={anchorElement == null ? undefined : popoverId}
+                                                    aria-expanded={anchorElement != null}
+                                                    onClick={(event) => setAnchorElement(event.currentTarget)}
+                                                    sx={{p: 0.5, gap: 0.5, borderRadius: 1}}
+                                                >
+                                                    <Box
+                                                        aria-hidden="true"
+                                                        sx={{
+                                                            width: 20,
+                                                            height: 20,
+                                                            border: '1px solid',
+                                                            borderColor: 'divider',
+                                                            borderRadius: 0.75,
+                                                            backgroundColor: formattedValue,
+                                                            opacity: isInteractionDisabled ? 0.48 : 1,
+                                                        }}
+                                                    />
+                                                    <PaletteOutlinedIcon
+                                                        sx={{
+                                                            fontSize: 18,
+                                                            color: isInteractionDisabled
+                                                                ? 'text.disabled'
+                                                                : 'text.secondary',
+                                                        }}
+                                                    />
+                                                </IconButton>
+                                            </Box>
+                                        </Tooltip>
+                                    </InputAdornment>
+                                ),
+                            },
+                        }}
+                    />
                 )}
-                onChange={(event) => {
-                    const draft = event.target.value.toUpperCase();
-                    setHexDraft(draft);
-                    setHasHexError(false);
-
-                    const nextColor = normalizeHex(draft);
-                    if (nextColor != null && nextColor !== formattedValue) {
-                        onChange(nextColor);
-                    }
-                }}
-                onBlur={commitHexDraft}
-                onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                        commitHexDraft();
-                        event.currentTarget.blur();
-                    }
-
-                    if (event.key === 'Escape') {
-                        setHexDraft(formattedValue);
-                        setHasHexError(false);
-                        event.currentTarget.blur();
-                    }
-                }}
-                slotProps={{
-                    htmlInput: {
-                        maxLength: 7,
-                        spellCheck: false,
-                        'aria-describedby': descriptionId,
-                    },
-                    input: {
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <Tooltip title="Farbe auswählen" arrow>
-                                    <Box component="span" sx={{display: 'inline-flex'}}>
-                                        <IconButton
-                                            size="small"
-                                            disabled={disabled}
-                                            aria-label={`${label} visuell auswählen`}
-                                            aria-haspopup="dialog"
-                                            aria-controls={anchorElement == null ? undefined : popoverId}
-                                            aria-expanded={anchorElement != null}
-                                            onClick={(event) => setAnchorElement(event.currentTarget)}
-                                            sx={{p: 0.5, gap: 0.5, borderRadius: 1}}
-                                        >
-                                            <Box
-                                                sx={{
-                                                    width: 20,
-                                                    height: 20,
-                                                    border: '1px solid',
-                                                    borderColor: 'divider',
-                                                    borderRadius: 0.75,
-                                                    backgroundColor: formattedValue,
-                                                    opacity: disabled ? 0.48 : 1,
-                                                }}
-                                            />
-                                            <PaletteOutlinedIcon
-                                                sx={{
-                                                    fontSize: 18,
-                                                    color: disabled ? 'text.disabled' : 'text.secondary',
-                                                }}
-                                            />
-                                        </IconButton>
-                                    </Box>
-                                </Tooltip>
-                            </InputAdornment>
-                        ),
-                    },
-                    formHelperText: {
-                        id: descriptionId,
-                        component: 'div',
-                    },
-                }}
-            />
+            </FormField>
 
             <Popover
-                id={popoverId}
                 open={anchorElement != null}
                 anchorEl={anchorElement}
                 onClose={() => setAnchorElement(null)}
@@ -293,7 +337,7 @@ export function ThemeColorPicker({
                     },
                 }}
             >
-                <Box role="dialog" aria-label={`${label} auswählen`}>
+                <Box id={popoverId} role="dialog" aria-label={`${label} auswählen`}>
                     <ColorPicker
                         value={formattedValue}
                         onChange={(color) => updateColor(color.toString('hex'))}
@@ -410,7 +454,7 @@ export function ThemeColorPicker({
                     </ColorPicker>
                 </Box>
             </Popover>
-        </Grid>
+        </>
     );
 }
 
@@ -429,25 +473,40 @@ function RgbInput({
 }) {
     return (
         <Grid size={4}>
-            <TextField
-                fullWidth
-                size="small"
-                margin="none"
-                type="number"
+            <FormField
                 label={label}
-                value={value}
-                onFocus={(event) => event.currentTarget.select()}
-                onChange={(event) => onChange(channel, event.target.value)}
-                slotProps={{
-                    htmlInput: {
-                        min: 0,
-                        max: 255,
-                        step: 1,
-                        inputMode: 'numeric',
-                        'aria-label': accessibleLabel,
-                    },
-                }}
-            />
+                margin="none"
+                showOptionalIndicator={false}
+            >
+                {(field) => (
+                    <TextField
+                        id={field.controlId}
+                        fullWidth
+                        size="small"
+                        margin="none"
+                        type="number"
+                        label={undefined}
+                        value={value}
+                        onFocus={(event) => event.currentTarget.select()}
+                        onChange={(event) => onChange(channel, event.target.value)}
+                        sx={{
+                            '& .MuiInputBase-root': {
+                                minHeight: FormFieldTokens.controlMinHeight,
+                            },
+                        }}
+                        slotProps={{
+                            htmlInput: {
+                                ...getNativeInputAriaProps(field),
+                                min: 0,
+                                max: 255,
+                                step: 1,
+                                inputMode: 'numeric',
+                                'aria-label': accessibleLabel,
+                            },
+                        }}
+                    />
+                )}
+            </FormField>
         </Grid>
     );
 }

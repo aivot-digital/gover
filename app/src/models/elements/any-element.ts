@@ -49,6 +49,8 @@ import {ConfigLayoutElement} from './form/layout/config-layout-element';
 import {StoragePathSelectorInputElement} from './form/input/storage-path-selector-input-element';
 import {PaymentConfigElement} from './form/input/payment-config-element';
 import {LinkButtonElement} from './form/content/link-button-element';
+import {StepperLayoutElement} from './form/layout/stepper-layout-element';
+import {TabLayoutElement} from './form/layout/tab-layout-element';
 
 export type AnyElement =
     FormLayoutElement |
@@ -58,6 +60,9 @@ export type AnyElement =
     SubmitStepElement |
     SubmittedStepElement |
     SummaryStepElement |
+
+    StepperLayoutElement |
+    TabLayoutElement |
 
     AnyFormElement;
 
@@ -109,4 +114,6 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                                                                                 T extends ElementType.LinkButton ? LinkButtonElement :
                                                                                                                                                                                     T extends ElementType.NoCodeInput ? NoCodeInputFieldElement :
                                                                                                                                                                                 T extends ElementType.SummaryLayout ? SummaryLayoutElement :
-                                                                                                                                                                                    T extends ElementType.ConfigLayout ? ConfigLayoutElement : never;
+                                                                                                                                                                                    T extends ElementType.ConfigLayout ? ConfigLayoutElement :
+                                                                                                                                                                                        T extends ElementType.StepperLayout ? StepperLayoutElement :
+                                                                                                                                                                                            T extends ElementType.TabLayout ? TabLayoutElement : never;

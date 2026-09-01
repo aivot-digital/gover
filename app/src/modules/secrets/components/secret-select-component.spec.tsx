@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {SecretsApiService} from '../secrets-api-service';
@@ -12,12 +13,14 @@ vi.mock('../../../hooks/use-api', () => ({
 }));
 
 vi.mock('../dialogs/secret-select-dialog', () => ({
-    SecretSelectDialog: ({open, onSelect}: {
+    SecretSelectDialog: ({id, open, onSelect}: {
+        id?: string;
         open: boolean;
         onSelect: (secret: {key: string; name: string; description: string; value: string}) => void;
     }) => open ? (
-        <div role="dialog" aria-label="Geheimnisauswahl">
+        <div id={id} role="dialog" aria-label="Geheimnisauswahl">
             <button
+                type="button"
                 onClick={() => onSelect({
                     key: 'selected-secret',
                     name: 'Ausgewähltes Geheimnis',
@@ -67,22 +70,31 @@ describe('SecretSelectComponent', () => {
         });
         const onChange = vi.fn();
 
-        render(
-            <SecretSelectComponent
-                label="Geheimnis"
-                value="existing-secret"
-                onChange={onChange}
-            />,
-        );
+        function TestField() {
+            const [value, setValue] = useState<string | null>('existing-secret');
+
+            return (
+                <SecretSelectComponent
+                    label="Geheimnis"
+                    value={value}
+                    onChange={(nextValue) => {
+                        onChange(nextValue);
+                        setValue(nextValue);
+                    }}
+                />
+            );
+        }
+
+        render(<TestField/>);
 
         await screen.findByText('Bestehendes Geheimnis');
-        fireEvent.click(screen.getByRole('textbox', {name: 'Geheimnis'}));
+        fireEvent.click(getSelectionControl('Geheimnis'));
         fireEvent.click(screen.getByRole('button', {name: 'Geheimnis auswählen'}));
 
         expect(onChange).toHaveBeenCalledWith('selected-secret');
         expect(screen.queryByText('must-not-be-rendered')).not.toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('button', {name: 'Auswahl entfernen'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Geheimnis: Auswahl entfernen'}));
         expect(onChange).toHaveBeenCalledWith(null);
     });
 
@@ -103,7 +115,49 @@ describe('SecretSelectComponent', () => {
         expect(screen.getByText('Das ausgewählte Geheimnis ist nicht verfügbar.')).toBeInTheDocument();
         expect(onChange).not.toHaveBeenCalled();
 
-        fireEvent.click(screen.getByRole('button', {name: 'Auswahl entfernen'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Geheimnis: Auswahl entfernen'}));
+        expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it('provides an accessible labelled control for selecting and clearing a reference', async () => {
+        const onChange = vi.fn();
+
+        function TestField() {
+            const [value, setValue] = useState<string | null>(null);
+
+            return (
+                <SecretSelectComponent
+                    label="API-Geheimnis"
+                    value={value}
+                    onChange={(nextValue) => {
+                        onChange(nextValue);
+                        setValue(nextValue);
+                    }}
+                    hint="Das Geheimnis wird nur referenziert."
+                />
+            );
+        }
+
+        render(<TestField/>);
+
+        const control = getSelectionControl('API-Geheimnis');
+        expect(control).toHaveAccessibleName('API-Geheimnis – optional Kein Geheimnis ausgewählt');
+        expect(control).toHaveAccessibleDescription('Das Geheimnis wird nur referenziert.');
+
+        fireEvent.click(control);
+        fireEvent.click(screen.getByRole('button', {name: 'Geheimnis auswählen'}));
+        expect(onChange).toHaveBeenCalledWith('selected-secret');
+        expect(screen.queryByText('must-not-be-rendered')).not.toBeInTheDocument();
+
+        expect(await screen.findByText('Ausgewähltes Geheimnis')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: 'API-Geheimnis: Auswahl entfernen'}));
         expect(onChange).toHaveBeenCalledWith(null);
     });
 });
+
+function getSelectionControl(label: string): HTMLElement {
+    const labelElement = screen.getByTitle(label);
+    const control = document.getElementById(labelElement.getAttribute('for')!);
+    expect(control).not.toBeNull();
+    return control!;
+}

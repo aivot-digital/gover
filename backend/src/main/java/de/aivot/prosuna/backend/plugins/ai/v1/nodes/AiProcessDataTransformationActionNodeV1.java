@@ -24,6 +24,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.ai.AiPlugin;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -66,6 +67,8 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private static final String OUTPUT_RESPONSE_MODEL = "responseModel";
     private static final String OUTPUT_USAGE = "usage";
     private static final String OUTPUT_TOP_LEVEL_KEYS = "topLevelKeys";
+    private static final String OUTPUT_USAGE_TYPE_DEFINITION =
+            "{ prompt_tokens: number | null; completion_tokens: number | null; total_tokens: number | null; } | null";
 
     private static final double DEFAULT_TEMPERATURE = 0.01d;
     private static final double DEFAULT_TOP_P = 0.9d;
@@ -131,14 +134,30 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Vorgangsdaten mit KI transformieren";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Sendet die vollständigen Laufzeitdaten eines Vorgangs an eine KI und ersetzt die Vorgangsdaten durch das zurückgegebene JSON-Objekt.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Verwendet eine kompatible KI-Completions-API, um die vollständigen Laufzeitdaten eines Vorgangs in ein neues JSON-Objekt zu transformieren.
+
+                Endpoint, API-Schlüssel, Modell und Prompt werden konfiguriert; der Prompt kann die aktuellen Vorgangsdaten einbeziehen. Das von der KI zurückgegebene JSON-Objekt ersetzt anschließend die bisherigen Vorgangsdaten vollständig. Informationen zu Modell, Abschlussgrund, Nutzung und erzeugten Top-Level-Schlüsseln stehen als Ausgänge zur Verfügung.
+                """;
     }
 
     @Nonnull
@@ -227,11 +246,11 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der gerenderte Anfragetext für das KI-Modell."),
-                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice."),
-                new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat."),
-                new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort."),
-                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Top-Level-Schlüssel", "Die obersten Schlüssel des neu erzeugten Prozessdatenobjekts.")
+                new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der gerenderte Anfragetext für das KI-Modell.", "string"),
+                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort.", OUTPUT_USAGE_TYPE_DEFINITION),
+                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Top-Level-Schlüssel", "Die obersten Schlüssel des neu erzeugten Prozessdatenobjekts.", "Array<string>")
         );
     }
 

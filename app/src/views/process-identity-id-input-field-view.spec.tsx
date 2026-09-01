@@ -35,7 +35,7 @@ describe('ProcessIdentityIdInputFieldView', () => {
             />,
         );
 
-        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Prozessidentitaeten'}));
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: /^Prozessidentitaeten/}));
 
         expect(await screen.findByText('citizen - Antragstellende - Startformular')).toBeInTheDocument();
         fireEvent.click(screen.getByText('Bürgerkonto'));
@@ -64,7 +64,7 @@ describe('ProcessIdentityIdInputFieldView', () => {
             },
         );
 
-        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Prozessidentitaeten'}));
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: /^Prozessidentitaeten/}));
 
         expect(await screen.findByText('Bürgerkonto')).toBeInTheDocument();
         expect(screen.queryByText('Duplikat')).not.toBeInTheDocument();
@@ -125,7 +125,7 @@ describe('ProcessIdentityIdInputFieldView', () => {
             },
         );
 
-        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Prozessidentitaeten'}));
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: /^Prozessidentitaeten/}));
 
         expect(await screen.findByText('Keine Prozessidentitäten verfügbar')).toBeInTheDocument();
     });

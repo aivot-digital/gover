@@ -1,4 +1,4 @@
-import {alpha, Box, CircularProgress, Typography, useTheme} from '@mui/material';
+import {alpha, Box, CircularProgress, Divider, Typography, useTheme} from '@mui/material';
 import {
     AnimatedArea,
     type AnimatedAreaProps,
@@ -99,6 +99,7 @@ export function DashboardActivityPanel({activity, error = false, initialPeriod}:
                     }}>Gestartete und abgeschlossene Vorgänge {periodLabel}</Typography>
                 </Box>
             </Box>
+            <Divider sx={{mx: {xs: -2, sm: -2.75}, mt: 2}}/>
 
             {activity == null && !error && <Box sx={{height: 300, display: 'grid', placeItems: 'center'}}><CircularProgress size={28}/></Box>}
             {error && <Box sx={{height: 260, display: 'grid', placeItems: 'center', textAlign: 'center'}}><Box><Typography sx={{

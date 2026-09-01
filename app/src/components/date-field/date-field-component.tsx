@@ -1,7 +1,7 @@
 import {InputAdornment} from '@mui/material';
 import {DatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {DateTime} from 'luxon';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
 import {ProsunaAdapterLuxon} from '../../utils/prosuna-adapter-luxon';
 import {
@@ -13,6 +13,8 @@ import {DateValueIso} from '../../utils/temporal-types';
 import {renderIconButton} from '../text-field/text-field-component';
 import {DateFieldComponentProps} from './date-field-component-props';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
+import {FormField, type FormFieldControlContext} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
 
 const formatMap = {
     [DateFieldComponentModelMode.Day]: 'dd.MM.yyyy',
@@ -43,11 +45,19 @@ export function DateFieldComponent({
                                        onChange,
                                        onBlur,
                                        autocomplete,
-                                       sx,
+                                       controlSx,
                                        bufferInputUntilBlur,
                                        debounce,
                                        startIcon,
                                        endAction,
+                                       id,
+                                       ariaLabel,
+                                       ariaDescribedBy,
+                                       labelAction,
+                                       margin = 'normal',
+                                       sx,
+                                       size = 'small',
+                                       showOptionalIndicator,
                                    }: DateFieldComponentProps) {
     const precision = mode as CalendarDatePrecision;
     const dateValue = value != null ? dateValueToDateTime(value, precision) : null;
@@ -70,17 +80,8 @@ export function DateFieldComponent({
         };
     }, []);
 
-    const computedLabel = useMemo(() => {
-        if (!required) {
-            return label;
-        }
-
-        return label ? `${label} *` : '*';
-    }, [label, required]);
-
     const format = formatMap[mode];
     const views = viewsMap[mode];
-    const helper = hideHelperText ? undefined : error ?? hint;
 
     const triggerChange = (date: DateTime | null) => {
         if (date === null) {
@@ -161,71 +162,96 @@ export function DateFieldComponent({
         }
     };
 
-    const slotProps = {
-        textField: {
-            variant: 'outlined' as const,
-            error: error != null,
-            helperText: helper,
-            onInput: handleInputChange,
-            onKeyDown: handleKeyDown,
-            onPaste: handleInputChange,
-            onBlur: handleBlur,
-            slotProps: {
-                inputLabel: {
-                    title: computedLabel,
-                },
-                input: {
-                    startAdornment: startIcon && (
-                        <InputAdornment position="start">{startIcon}</InputAdornment>
-                    ),
-                    endAdornment: endAction && (
-                        <InputAdornment position="end">
-                            {Array.isArray(endAction)
-                                ? endAction.map(renderIconButton)
-                                : renderIconButton(endAction)}
-                        </InputAdornment>
-                    ),
-                },
-                htmlInput: {
-                    autoComplete: autocomplete,
-                },
-            },
-        },
-        actionBar: {
-            actions: ['accept', 'cancel', 'clear'] as Array<'accept' | 'cancel' | 'clear'>,
-        },
-    };
-
     return (
-        <LocalizationProvider
-            dateAdapter={ProsunaAdapterLuxon}
-            adapterLocale="de"
+        <FormField
+            id={id}
+            label={label}
+            ariaLabel={ariaLabel}
+            ariaDescribedBy={ariaDescribedBy}
+            labelAction={labelAction}
+            hint={hint}
+            error={error}
+            hideHelperText={hideHelperText}
+            required={required}
+            disabled={disabled}
+            readOnly={busy}
+            busy={busy}
+            margin={margin}
+            showOptionalIndicator={showOptionalIndicator}
+            sx={sx}
         >
-            <DatePicker
-                label={computedLabel}
-                // Calendar dates are zone-free. UTC is only a stable MUI carrier that
-                // prevents the browser timezone from moving the selected calendar day.
-                timezone="UTC"
-                minDate={minDate != null ? dateValueToDateTime(minDate, 'day') ?? undefined : undefined}
-                maxDate={maxDate != null ? dateValueToDateTime(maxDate, 'day') ?? undefined : undefined}
-                views={views}
-                openTo={mode}
-                format={format}
-                value={localValue}
-                onOpen={handleOpen}
-                onChange={handlePickerChange}
-                onAccept={handleAccept}
-                disabled={disabled}
-                slotProps={slotProps}
-                sx={{
-                    ...sx,
-                    '& .MuiPickersInputBase-root': {
-                        backgroundColor: (busy || disabled) ? getDisabledFieldBackground : undefined,
-                        cursor: (busy || disabled) ? 'not-allowed' : undefined,
-                    },
-                }}
-                readOnly={busy}
-            />
-        </LocalizationProvider>
+            {(fieldContext: FormFieldControlContext) => (
+                <LocalizationProvider
+                    dateAdapter={ProsunaAdapterLuxon}
+                    adapterLocale="de"
+                >
+                    <DatePicker
+                        label={undefined}
+                        // Calendar dates are zone-free. UTC is only a stable MUI carrier that
+                        // prevents the browser timezone from moving the selected calendar day.
+                        timezone="UTC"
+                        minDate={minDate != null ? dateValueToDateTime(minDate, 'day') ?? undefined : undefined}
+                        maxDate={maxDate != null ? dateValueToDateTime(maxDate, 'day') ?? undefined : undefined}
+                        views={views}
+                        openTo={mode}
+                        format={format}
+                        value={localValue}
+                        onOpen={handleOpen}
+                        onChange={handlePickerChange}
+                        onAccept={handleAccept}
+                        disabled={disabled}
+                        readOnly={busy}
+                        slotProps={{
+                            textField: {
+                                id: fieldContext.controlId,
+                                variant: 'outlined',
+                                fullWidth: true,
+                                margin: 'none',
+                                size,
+                                required,
+                                error: fieldContext.invalid,
+                                helperText: undefined,
+                                onInput: handleInputChange,
+                                onKeyDown: handleKeyDown,
+                                onPaste: handleInputChange,
+                                onBlur: handleBlur,
+                                slotProps: {
+                                    input: {
+                                        ...fieldContext.ariaProps,
+                                        startAdornment: startIcon && (
+                                            <InputAdornment position="start">{startIcon}</InputAdornment>
+                                        ),
+                                        endAdornment: endAction && (
+                                            <InputAdornment position="end">
+                                                {Array.isArray(endAction)
+                                                    ? endAction.map(renderIconButton)
+                                                    : renderIconButton(endAction)}
+                                            </InputAdornment>
+                                        ),
+                                    },
+                                    htmlInput: {
+                                        autoComplete: autocomplete,
+                                    },
+                                },
+                            },
+                            actionBar: {
+                                actions: ['accept', 'cancel', 'clear'],
+                            },
+                        }}
+                        sx={[
+                            {
+                                width: '100%',
+                                '& .MuiPickersInputBase-root': {
+                                    minHeight: FormFieldTokens.controlMinHeight,
+                                    backgroundColor: (busy || disabled) ? getDisabledFieldBackground : undefined,
+                                    cursor: (busy || disabled) ? 'not-allowed' : undefined,
+                                },
+                            },
+                            ...(Array.isArray(controlSx) ? controlSx : [controlSx]),
+                        ]}
+                    />
+                </LocalizationProvider>
+            )}
+        </FormField>
     );
 }

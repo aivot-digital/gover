@@ -16,6 +16,7 @@ import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -104,14 +105,30 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Nachricht an Identität senden";
     }
 
     @Nonnull
     @Override
+    public String getAbstract() {
+        return "Sendet eine Nachricht über den für eine Prozessidentität ausgewählten Kommunikationsweg.";
+    }
+
+    @Nonnull
+    @Override
     public String getDescription() {
-        return "Sendet eine Nachricht über den Kommunikationsweg, den die Kund:in für eine Identität ausgewählt hat.";
+        return """
+                Sendet eine Nachricht über den Kommunikationsweg, den die Kund:in für eine Identität ausgewählt hat.
+
+                Betreff und Inhalt werden aus Vorlagen erzeugt. Optional können vollständige Anlagensätze angehängt werden. Nach dem synchronen Versand stehen die verwendete Identität, die Kommunikationsanbindung, die Nachrichtendaten und das Ergebnis des Kommunikationsanbieters als Ausgänge bereit.
+                """;
     }
 
     @Nonnull
@@ -145,13 +162,13 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_IDENTITY_ID, "Identität", "ID der adressierten Prozessidentität."),
-                new ProcessNodeOutput(OUTPUT_BINDING_ID, "Kommunikationsanbindung", "ID der verwendeten Kommunikationsanbindung."),
-                new ProcessNodeOutput(OUTPUT_SUBJECT, "Betreff", "Gerenderter Betreff der Nachricht."),
-                new ProcessNodeOutput(OUTPUT_BODY, "Inhalt", "Gerenderter Inhalt der Nachricht."),
-                new ProcessNodeOutput(OUTPUT_ATTACHMENT_SET_DATA_KEYS, "Anlagensätze", "Datenschlüssel der angehängten Anlagensätze."),
-                new ProcessNodeOutput(OUTPUT_SENT_AT, "Versandzeitpunkt", "Zeitpunkt des erfolgreichen Versands."),
-                new ProcessNodeOutput(OUTPUT_SEND_RESULT, "Versandresultat", "Resultat des Versandvorgangs, wie es vom Kommunikationsanbieter zurückgegeben wurde.")
+                new ProcessNodeOutput(OUTPUT_IDENTITY_ID, "Identität", "ID der adressierten Prozessidentität.", "string"),
+                new ProcessNodeOutput(OUTPUT_BINDING_ID, "Kommunikationsanbindung", "ID der verwendeten Kommunikationsanbindung.", "number | null"),
+                new ProcessNodeOutput(OUTPUT_SUBJECT, "Betreff", "Gerenderter Betreff der Nachricht.", "string"),
+                new ProcessNodeOutput(OUTPUT_BODY, "Inhalt", "Gerenderter Inhalt der Nachricht.", "string"),
+                new ProcessNodeOutput(OUTPUT_ATTACHMENT_SET_DATA_KEYS, "Anlagensätze", "Datenschlüssel der angehängten Anlagensätze.", "Array<string>"),
+                new ProcessNodeOutput(OUTPUT_SENT_AT, "Versandzeitpunkt", "Zeitpunkt des erfolgreichen Versands.", "string"),
+                new ProcessNodeOutput(OUTPUT_SEND_RESULT, "Versandresultat", "Resultat des Versandvorgangs, wie es vom Kommunikationsanbieter zurückgegeben wurde.", "Record<string, unknown>")
         );
     }
 

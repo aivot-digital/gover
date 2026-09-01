@@ -1,4 +1,3 @@
-import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
 import Logout from '@aivot/mui-material-symbols-400-n25-outlined/Logout';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectUser} from '../../../slices/user-slice';
@@ -25,7 +24,7 @@ export function DashboardGreeting() {
     const title = firstName ? `${greeting}, ${firstName}` : greeting;
     const actions: Action[] = [
         ...(canConfigureDashboard ? [{
-            icon: <Settings/>,
+            icon: ModuleIcons.dashboardSettings,
             tooltip: 'Übersicht konfigurieren',
             ariaLabel: 'Übersicht konfigurieren',
             to: '/settings/dashboard',

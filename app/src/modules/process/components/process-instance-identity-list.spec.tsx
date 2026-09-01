@@ -124,10 +124,10 @@ describe('ProcessInstanceIdentityList', () => {
         expect(await screen.findByText('BundID Produktion')).toBeInTheDocument();
         expect(screen.getByText('BundID-Postfach')).toBeInTheDocument();
         expect(screen.getByText('Behördenpostfach')).toBeInTheDocument();
-        expect(screen.getByText(identityProviderKey)).toBeInTheDocument();
-        expect(screen.getByText('urn:bundid:metadata')).toBeInTheDocument();
-        expect(screen.getByText('17')).toBeInTheDocument();
-        expect(screen.getByText('8')).toBeInTheDocument();
+        expect(screen.queryByText(identityProviderKey)).not.toBeInTheDocument();
+        expect(screen.queryByText('urn:bundid:metadata')).not.toBeInTheDocument();
+        expect(screen.queryByText('17')).not.toBeInTheDocument();
+        expect(screen.queryByText('8')).not.toBeInTheDocument();
         expect(screen.getByText('family_name')).toBeInTheDocument();
         expect(screen.getByText('Muster')).toBeInTheDocument();
 
@@ -164,8 +164,8 @@ describe('ProcessInstanceIdentityList', () => {
 
         renderList({applicant: providerIdentity}, false, false);
 
-        expect(screen.getByText(identityProviderKey)).toBeInTheDocument();
-        expect(screen.getByText('17')).toBeInTheDocument();
+        expect(screen.queryByText(identityProviderKey)).not.toBeInTheDocument();
+        expect(screen.queryByText('17')).not.toBeInTheDocument();
         expect(screen.getAllByText('Name mangels Berechtigung nicht verfügbar').length).toBeGreaterThan(0);
         expect(screen.getByText('Über die Anbindung nicht auflösbar')).toBeInTheDocument();
         expect(listIdentityProviders).not.toHaveBeenCalled();
@@ -183,7 +183,7 @@ describe('ProcessInstanceIdentityList', () => {
         renderList({applicant: providerIdentity});
 
         expect(await screen.findByText('BundID-Postfach')).toBeInTheDocument();
-        expect(screen.getByText('8')).toBeInTheDocument();
+        expect(screen.queryByText('8')).not.toBeInTheDocument();
         expect(screen.getByText('Name nicht verfügbar')).toBeInTheDocument();
         expect(screen.getByText('BundID Produktion')).toBeInTheDocument();
     });

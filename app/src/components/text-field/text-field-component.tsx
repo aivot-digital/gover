@@ -1,13 +1,17 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Box, IconButton, InputAdornment, ListItemText, TextField, Typography} from '@mui/material';
-import {type TextFieldComponentProps} from './text-field-component-props';
+import {type EndAction, type TextFieldComponentProps} from './text-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
 import Autocomplete from '@mui/material/Autocomplete';
 import type {TextFieldOwnerState} from '@mui/material/TextField';
 import {CopyToClipboardButton} from '../copy-to-clipboard-button/copy-to-clipboard-button';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
+import {FormField, type FormFieldControlContext, getNativeInputAriaProps} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
 
 const COPY_VALUE_TEMPLATE_PLACEHOLDER = '{value}';
+const DEFAULT_MULTILINE_MIN_ROWS = 4;
+const DEFAULT_MULTILINE_MAX_ROWS = 12;
 
 // Utility function for number-to-word conversion
 function getCharacterCount(count: number): string {
@@ -146,6 +150,7 @@ export function AutocompleteTextField(props: TextFieldComponentProps & {
 
     return (
         <Autocomplete
+            id={rest.id}
             disablePortal
             freeSolo
             fullWidth
@@ -158,7 +163,7 @@ export function AutocompleteTextField(props: TextFieldComponentProps & {
                 if (value == null) {
                     rest.onChange(null);
                 } else {
-                    rest.onChange((value as any).id ?? null);
+                    rest.onChange(typeof value === 'string' ? value : value.id);
                 }
             }}
             value={rest.value ?? null}
@@ -205,6 +210,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
                 clearTimeout(debounceTimeoutRef.current);
             }
             debounceTimeoutRef.current = setTimeout(() => {
+                debounceTimeoutRef.current = null;
                 const cleanedValue = cleanValue(newValue, 'keepTrailingWhitespace');
                 props.onChange(cleanedValue);
             }, props.debounce);
@@ -216,15 +222,23 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
     // Handle blur event
     const handleBlur = () => {
         const cleanedValue = cleanValue(inputValue, 'dropTrailingWhitespace');
+        const cleanedInputValue = cleanedValue ?? '';
+
+        if (cleanedInputValue !== inputValue) {
+            setInputValue(cleanedInputValue);
+        }
 
         if (props.bufferInputUntilBlur) {
             if (cleanedValue !== props.value) {
                 props.onChange(cleanedValue);
             }
         } else {
-            // call onChange directly if debounce is pending
+            // Flush a pending debounce immediately; otherwise only emit when blur trimmed the value.
             if (debounceTimeoutRef.current) {
                 clearTimeout(debounceTimeoutRef.current);
+                debounceTimeoutRef.current = null;
+                props.onChange(cleanedValue);
+            } else if (cleanedInputValue !== inputValue) {
                 props.onChange(cleanedValue);
             }
         }
@@ -235,6 +249,10 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
 
     // Update local state if external value changes
     useEffect(() => {
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+            debounceTimeoutRef.current = null;
+        }
         setInputValue(props.value ?? '');
     }, [props.value]);
 
@@ -265,7 +283,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
     // Display mode (if should be displayed as text field only)
     if (props.display) {
         return (
-            <Box sx={props.sx}>
+            <Box sx={props.controlSx}>
                 <Typography variant="caption">{props.label}</Typography>
                 <Typography variant="body1">{inputValue || props.placeholder}</Typography>
                 {props.hint && (
@@ -322,156 +340,175 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         />
     ) : undefined;
 
+    const hasError = errorMessages.length > 0 || patternError != null;
+    const helperTextContent = hasHelperTextContent ? (
+        <>
+            {(helperMessage || showMaxCharacters || showMinCharacters) && (
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        flexWrap: {
+                            xs: 'wrap',
+                            sm: 'nowrap',
+                        },
+                        columnGap: 3,
+                        rowGap: .5,
+                    }}
+                >
+                    <Box>
+                        {helperMessage}
+                    </Box>
+
+                    {showMaxCharacters && (
+                        <Box
+                            role="text"
+                            aria-label={`${inputValue.length} von ${props.maxCharacters} Zeichen verwendet`}
+                        >
+                            <span aria-hidden="true">
+                                {`${inputValue.length}/${props.maxCharacters}`}
+                            </span>
+                        </Box>
+                    )}
+                    {showMinCharacters && (
+                        <Box>
+                            {inputValue.length === 0
+                                ? `Mindestens ${getCharacterCount(minCharacters)} Zeichen`
+                                : `Noch mindestens ${getCharacterCount(minCharacters - inputValue.length)} Zeichen`}
+                        </Box>
+                    )}
+                </Box>
+            )}
+            {showSoftLimitWarning && (
+                <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: 'warning.main',
+                        }}
+                    >
+                        {props.softLimitCharactersWarning ??
+                            `Wir empfehlen, eine Länge von ${props.softLimitCharacters} Zeichen nicht zu überschreiten.`}
+                    </Typography>
+                </Box>
+            )}
+        </>
+    ) : undefined;
+    const passThroughSx = props.muiPassTroughProps?.sx;
+    const controlSx = [
+        {
+            backgroundColor: props.busy ? getDisabledFieldBackground : undefined,
+            cursor: props.busy ? 'not-allowed' : undefined,
+            '& .MuiInputBase-root': {
+                minHeight: FormFieldTokens.controlMinHeight,
+            },
+            '& .MuiInputBase-root.MuiInputBase-multiline.MuiInputBase-sizeSmall': {
+                paddingTop: '12.5px',
+                paddingBottom: '12.5px',
+            },
+        },
+        ...(Array.isArray(passThroughSx) ? passThroughSx : [passThroughSx]),
+        ...(Array.isArray(props.controlSx) ? props.controlSx : [props.controlSx]),
+    ];
+
 
     return (
-        <TextField
-            {...props.muiPassTroughProps}
+        <FormField
+            id={props.id ?? props.muiPassTroughProps?.id}
             label={props.label}
-            type={props.type}
-            autoComplete={props.autocomplete}
-            placeholder={props.placeholder}
-            variant="outlined"
-            fullWidth
-            error={errorMessages.length > 0 || !!patternError}
-            multiline={props.multiline}
-            rows={props.multiline ? (props.rows ?? 4) : undefined}
-            helperText={
-                hasHelperTextContent ? (
-                    <>
-                        {(helperMessage || showMaxCharacters || showMinCharacters) && (
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    flexWrap: {
-                                        xs: 'wrap',
-                                        sm: 'nowrap',
-                                    },
-                                    columnGap: 3,
-                                    rowGap: .5,
-                                }}
-                            >
-                                <Box>
-                                    {helperMessage}
-                                </Box>
-
-                                {showMaxCharacters && (
-                                    <Box
-                                        role="text"
-                                        aria-label={`${inputValue.length} von ${props.maxCharacters} Zeichen verwendet`}
-                                    >
-                                        <span aria-hidden="true">
-                                            {`${inputValue.length}/${props.maxCharacters}`}
-                                        </span>
-                                    </Box>
-                                )}
-                                {showMinCharacters && (
-                                    <Box>
-                                        {inputValue.length === 0
-                                            ? `Mindestens ${getCharacterCount(minCharacters)} Zeichen`
-                                            : `Noch mindestens ${getCharacterCount(minCharacters - inputValue.length)} Zeichen`}
-                                    </Box>
-                                )}
-                            </Box>
-                        )}
-                        {showSoftLimitWarning && (
-                            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        color: "warning.main"
-                                    }}
-                                >
-                                    {props.softLimitCharactersWarning ??
-                                        `Wir empfehlen, eine Länge von ${props.softLimitCharacters} Zeichen nicht zu überschreiten.`}
-                                </Typography>
-                            </Box>
-                        )}
-                    </>
-                ) : undefined
-            }
-            value={inputValue}
-            onChange={handleChange}
-            onBlur={handleBlur}
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            hint={!hasError ? helperTextContent : undefined}
+            error={hasError ? helperTextContent : undefined}
             disabled={props.disabled}
             required={props.required}
-            sx={{
-                ...props.sx,
-                backgroundColor: props.busy ? getDisabledFieldBackground : undefined,
-                cursor: props.busy ? 'not-allowed' : undefined,
-            }}
-            size={props.size}
-            slotProps={{
-                ...passThroughSlotProps,
-                input: (ownerState: TextFieldOwnerState) => {
-                    const inputSlotProps = typeof passThroughSlotProps?.input === 'function'
-                        ? passThroughSlotProps.input(ownerState)
-                        : passThroughSlotProps?.input;
+            readOnly={props.readonly}
+            busy={props.busy}
+            margin={props.margin ?? props.muiPassTroughProps?.margin ?? 'normal'}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
+        >
+            {(fieldContext: FormFieldControlContext) => (
+                <TextField
+                    {...props.muiPassTroughProps}
+                    id={fieldContext.controlId}
+                    label={undefined}
+                    type={props.type}
+                    autoComplete={props.autocomplete}
+                    placeholder={props.placeholder}
+                    variant="outlined"
+                    margin="none"
+                    fullWidth
+                    error={hasError}
+                    multiline={props.multiline}
+                    rows={props.multiline && props.rows != null ? props.rows : undefined}
+                    minRows={props.multiline && props.rows == null ? DEFAULT_MULTILINE_MIN_ROWS : undefined}
+                    maxRows={props.multiline && props.rows == null ? DEFAULT_MULTILINE_MAX_ROWS : undefined}
+                    helperText={undefined}
+                    value={inputValue}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    disabled={props.disabled}
+                    required={props.required}
+                    sx={controlSx}
+                    size={props.size ?? 'small'}
+                    slotProps={{
+                        ...passThroughSlotProps,
+                        input: (ownerState: TextFieldOwnerState) => {
+                            const inputSlotProps = typeof passThroughSlotProps?.input === 'function'
+                                ? passThroughSlotProps.input(ownerState)
+                                : passThroughSlotProps?.input;
 
-                    return {
-                        ...inputSlotProps,
-                        startAdornment: renderStartAdornment(props.startIcon, inputSlotProps?.startAdornment),
-                        endAdornment: renderEndAdornment(props.endAction, copyButton, inputSlotProps?.endAdornment),
-                        readOnly: props.readonly || props.busy || inputSlotProps?.readOnly,
-                    };
-                },
+                            return {
+                                ...inputSlotProps,
+                                startAdornment: renderStartAdornment(props.startIcon, inputSlotProps?.startAdornment),
+                                endAdornment: renderEndAdornment(props.endAction, copyButton, inputSlotProps?.endAdornment),
+                                readOnly: props.readonly || props.busy || inputSlotProps?.readOnly,
+                            };
+                        },
 
-                htmlInput: (ownerState: TextFieldOwnerState) => {
-                    const htmlInputSlotProps = typeof passThroughSlotProps?.htmlInput === 'function'
-                        ? passThroughSlotProps.htmlInput(ownerState)
-                        : passThroughSlotProps?.htmlInput;
+                        htmlInput: (ownerState: TextFieldOwnerState) => {
+                            const htmlInputSlotProps = typeof passThroughSlotProps?.htmlInput === 'function'
+                                ? passThroughSlotProps.htmlInput(ownerState)
+                                : passThroughSlotProps?.htmlInput;
+                            const nativeAriaProps = getNativeInputAriaProps(fieldContext, htmlInputSlotProps);
 
-                    return {
-                        ...htmlInputSlotProps,
-                        ...(props.maxCharacters ? {maxLength: props.maxCharacters} : undefined),
-                        'aria-disabled': props.busy || props.disabled,
-                    };
-                },
-
-                inputLabel: (ownerState: TextFieldOwnerState) => {
-                    const inputLabelSlotProps = typeof passThroughSlotProps?.inputLabel === 'function'
-                        ? passThroughSlotProps.inputLabel(ownerState)
-                        : passThroughSlotProps?.inputLabel;
-
-                    return {
-                        ...inputLabelSlotProps,
-                        title: props.label,
-                    };
-                },
-
-                formHelperText: (ownerState: TextFieldOwnerState) => {
-                    const formHelperTextSlotProps = typeof passThroughSlotProps?.formHelperText === 'function'
-                        ? passThroughSlotProps.formHelperText(ownerState)
-                        : passThroughSlotProps?.formHelperText;
-
-                    return {
-                        ...formHelperTextSlotProps,
-                        component: 'div',
-                    };
-                },
-            }} />
+                            return {
+                                ...htmlInputSlotProps,
+                                ...(props.maxCharacters ? {maxLength: props.maxCharacters} : undefined),
+                                ...nativeAriaProps,
+                            };
+                        },
+                    }}
+                />
+            )}
+        </FormField>
     );
 }
 
 // Render function for IconButtons
-export function renderIconButton(action: {
-    icon: React.ReactNode;
-    onClick: () => void;
-    tooltip?: string
-}, key?: number) {
+export function renderIconButton(action: EndAction, key?: number) {
     if (action.tooltip != null) {
         return (
             <Tooltip
                 key={key}
                 title={action.tooltip}
+                arrow
             >
-                <IconButton onClick={action.onClick}>{action.icon}</IconButton>
+                <IconButton
+                    aria-label={action.ariaLabel ?? action.tooltip}
+                    onClick={action.onClick}
+                >
+                    {action.icon}
+                </IconButton>
             </Tooltip>
         );
     }
     return (
         <IconButton
             key={key}
+            aria-label={action.ariaLabel}
             onClick={action.onClick}
         >
             {action.icon}

@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.codeLists.entities.VCodeListItemEntity;
 import de.aivot.prosuna.backend.codeLists.repositories.CodeListRepository;
 import de.aivot.prosuna.backend.codeLists.repositories.VCodeListItemRepository;
 import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
+import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ChipInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.MultiCheckboxInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
@@ -43,6 +44,7 @@ class CodeListElementOptionsServiceTest {
         var service = new CodeListElementOptionsService(itemRepository, codeListRepository);
         var element = new SelectInputElement()
                 .setOptionsSource(OptionsSourceType.CodeList)
+                .setPresentation(SelectInputPresentation.Combobox)
                 .setCodeListKey("test")
                 .setDependsOnSelectFieldId("parent")
                 .setOptions(List.of(SelectInputElementOption.of("old", "Old")));
@@ -55,6 +57,7 @@ class CodeListElementOptionsServiceTest {
         var resolved = assertInstanceOf(SelectInputElement.class, service.resolve(element));
 
         assertEquals(List.of("001", "002"), resolved.getOptions().stream().map(SelectInputElementOption::getValue).toList());
+        assertEquals(SelectInputPresentation.Combobox, resolved.getPresentation());
         assertNull(resolved.getDependsOnSelectFieldId());
         assertEquals(List.of("old"), element.getOptions().stream().map(SelectInputElementOption::getValue).toList());
     }

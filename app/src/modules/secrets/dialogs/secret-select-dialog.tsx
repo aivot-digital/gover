@@ -1,94 +1,92 @@
-import {useEffect, useState} from 'react';
-import {Box, CircularProgress} from '@mui/material';
+import {useEffect, useMemo, useState} from 'react';
 import Key from '@aivot/mui-material-symbols-400-n25-outlined/Key';
 import {SearchBaseDialog} from '../../../dialogs/search-base-dialog/search-base-dialog';
+import {type Secret} from '../models/secret';
+import {SecretsApiService} from '../secrets-api-service';
 import {useApi} from '../../../hooks/use-api';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
-import {SecretsApiService} from '../secrets-api-service';
-import {type Secret} from '../models/secret';
 
 export interface SecretSelectDialogProps {
+    id?: string;
     open: boolean;
     onClose: () => void;
     onSelect: (secret: Secret) => void;
 }
 
 export function SecretSelectDialog(props: SecretSelectDialogProps) {
+    const {id, open, onClose, onSelect} = props;
     const api = useApi();
     const dispatch = useAppDispatch();
     const [secrets, setSecrets] = useState<Secret[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [loadFailed, setLoadFailed] = useState(false);
 
     useEffect(() => {
-        let active = true;
-
-        if (!props.open) {
-            return () => {
-                active = false;
-            };
+        if (!open) {
+            return;
         }
 
+        let active = true;
         setSecrets([]);
-        setLoading(true);
+        setIsLoading(true);
         setLoadFailed(false);
 
-        void new SecretsApiService(api)
+        new SecretsApiService(api)
             .listAllOrdered('name', 'ASC')
-            .then((page) => {
+            .then((response) => {
                 if (active) {
-                    setSecrets(page.content);
+                    setSecrets(response.content);
                 }
             })
             .catch((error) => {
                 if (active) {
+                    setSecrets([]);
                     setLoadFailed(true);
                     dispatch(showApiErrorSnackbar(error, 'Geheimnisse konnten nicht geladen werden.'));
                 }
             })
             .finally(() => {
                 if (active) {
-                    setLoading(false);
+                    setIsLoading(false);
                 }
             });
 
         return () => {
             active = false;
         };
-    }, [api, dispatch, props.open]);
+    }, [api, dispatch, open]);
+
+    const tabs = useMemo(() => [{
+        title: 'Geheimnisse',
+        options: secrets,
+        onSelect: (secret: Secret) => {
+            onSelect(secret);
+            onClose();
+        },
+        searchPlaceholder: 'Geheimnis suchen',
+        searchKeys: ['name', 'description'] as Array<keyof Secret>,
+        primaryTextKey: 'name' as const,
+        secondaryTextKey: 'description' as const,
+        getId: 'key' as const,
+        getIcon: () => <Key/>,
+        noOptionsMessage: isLoading ? (
+            'Geheimnisse werden geladen ...'
+        ) : loadFailed ? (
+            'Geheimnisse konnten nicht geladen werden.'
+        ) : (
+            'Keine Geheimnisse verfügbar.'
+        ),
+        noSearchResultsMessage: 'Keine Geheimnisse gefunden, die zum Suchbegriff passen.',
+    }], [isLoading, loadFailed, onClose, onSelect, secrets]);
 
     return (
         <SearchBaseDialog
-            open={props.open}
-            onClose={props.onClose}
+            id={id}
+            open={open}
+            onClose={onClose}
             title="Geheimnis auswählen"
-            tabs={[
-                {
-                    title: 'Geheimnisse',
-                    options: secrets,
-                    onSelect: (secret) => {
-                        props.onSelect(secret);
-                        props.onClose();
-                    },
-                    searchPlaceholder: 'Geheimnis suchen',
-                    searchKeys: ['name', 'description'],
-                    primaryTextKey: 'name',
-                    secondaryTextKey: 'description',
-                    getId: 'key',
-                    getIcon: () => <Key/>,
-                    noOptionsMessage: loading ? (
-                        <Box sx={{display: 'flex', justifyContent: 'center'}}>
-                            <CircularProgress size={24}/>
-                        </Box>
-                    ) : loadFailed ? (
-                        'Geheimnisse konnten nicht geladen werden.'
-                    ) : (
-                        'Keine Geheimnisse verfügbar.'
-                    ),
-                    noSearchResultsMessage: 'Keine passenden Geheimnisse gefunden.',
-                },
-            ]}
+            tabs={tabs}
         />
     );
 }

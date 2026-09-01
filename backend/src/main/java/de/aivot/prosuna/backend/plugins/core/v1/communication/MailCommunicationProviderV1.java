@@ -64,8 +64,14 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Versendet Nachrichten per E-Mail an die ausgewählte Identität.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return "Versendet Nachrichten an eine E-Mail-Adresse aus den Daten der ausgewählten Identität oder an eine von der Kund:in ergänzte Adresse.";
     }
 
     @Nonnull

@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {fireEvent, render, screen} from '@testing-library/react';
-import {TextFieldComponent} from './text-field-component';
+import {AutocompleteTextField, TextFieldComponent} from './text-field-component';
 
 vi.mock('../copy-to-clipboard-button/copy-to-clipboard-button', () => ({
     CopyToClipboardButton: ({text, disabled, ariaLabel}: {
@@ -75,13 +75,6 @@ describe('TextFieldComponent', () => {
         const htmlInputSlot = vi.fn(() => ({
             'data-testid': 'native-input',
         }));
-        const inputLabelSlot = vi.fn(() => ({
-            'data-testid': 'input-label',
-        }));
-        const formHelperTextSlot = vi.fn(() => ({
-            'data-testid': 'helper-text',
-        }));
-
         render(
             <TextFieldComponent
                 label="API Key"
@@ -93,8 +86,6 @@ describe('TextFieldComponent', () => {
                     slotProps: {
                         input: inputSlot,
                         htmlInput: htmlInputSlot,
-                        inputLabel: inputLabelSlot,
-                        formHelperText: formHelperTextSlot,
                     },
                 }}
             />,
@@ -102,14 +93,32 @@ describe('TextFieldComponent', () => {
 
         expect(inputSlot).toHaveBeenCalled();
         expect(htmlInputSlot).toHaveBeenCalled();
-        expect(inputLabelSlot).toHaveBeenCalled();
-        expect(formHelperTextSlot).toHaveBeenCalled();
         expect(screen.getByTestId('copy-button')).toBeInTheDocument();
         expect(screen.getByTestId('existing-end-adornment')).toBeInTheDocument();
-        expect(screen.getByTestId('native-input')).toHaveAccessibleName('API Key');
+        expect(screen.getByTestId('native-input')).toHaveAccessibleName('API Key – optional');
+        expect(screen.getByTestId('native-input')).toHaveAccessibleDescription('Keep this value private');
         expect(screen.getByTestId('native-input')).toHaveAttribute('readonly');
-        expect(screen.getByTestId('input-label')).toHaveAttribute('title', 'API Key');
-        expect(screen.getByTestId('helper-text')).toHaveTextContent('Keep this value private');
+        expect(screen.getByTestId('native-input')).not.toHaveAttribute('aria-labelledby');
+        expect(screen.getByTestId('native-input').closest('.MuiInputBase-root')).toHaveClass('MuiInputBase-sizeSmall');
+    });
+
+    it('applies sx to the field root and controlSx to the input control', () => {
+        const {container} = render(
+            <TextFieldComponent
+                label="API Key"
+                onChange={vi.fn()}
+                sx={{width: '321px'}}
+                controlSx={{backgroundColor: 'rgb(1, 2, 3)'}}
+            />,
+        );
+
+        const fieldRoot = container.querySelector<HTMLElement>('[data-form-field]');
+        const controlRoot = screen.getByRole('textbox', {name: 'API Key – optional'})
+            .closest<HTMLElement>('.MuiTextField-root');
+
+        expect(getComputedStyle(fieldRoot!).width).toBe('321px');
+        expect(getComputedStyle(controlRoot!).backgroundColor).toBe('rgb(1, 2, 3)');
+        expect(getComputedStyle(fieldRoot!).backgroundColor).not.toBe('rgb(1, 2, 3)');
     });
 
     it('should copy the live input value before the debounced change is flushed', () => {
@@ -126,7 +135,7 @@ describe('TextFieldComponent', () => {
             />,
         );
 
-        fireEvent.change(screen.getByRole('textbox', {name: 'API Key'}), {
+        fireEvent.change(screen.getByRole('textbox', {name: 'API Key – optional'}), {
             target: {
                 value: 'draft-value',
             },
@@ -134,6 +143,49 @@ describe('TextFieldComponent', () => {
 
         expect(onChange).not.toHaveBeenCalled();
         expect(screen.getByTestId('copy-button')).toHaveAttribute('data-text', 'draft-value');
+    });
+
+    it('should not emit a debounced value again when the input blurs after the timer elapsed', () => {
+        vi.useFakeTimers();
+        const onChange = vi.fn();
+
+        render(
+            <TextFieldComponent
+                label="Name"
+                value=""
+                onChange={onChange}
+                debounce={100}
+            />,
+        );
+
+        const input = screen.getByRole('textbox', {name: 'Name – optional'});
+        fireEvent.change(input, {target: {value: 'Prosuna'}});
+        vi.advanceTimersByTime(100);
+
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(onChange).toHaveBeenLastCalledWith('Prosuna');
+
+        fireEvent.blur(input);
+        expect(onChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('should trim the displayed and emitted value on blur', () => {
+        const onChange = vi.fn();
+
+        render(
+            <TextFieldComponent
+                label="Name"
+                value=""
+                onChange={onChange}
+            />,
+        );
+
+        const input = screen.getByRole('textbox', {name: 'Name – optional'});
+        fireEvent.change(input, {target: {value: '  Prosuna  '}});
+        fireEvent.blur(input);
+
+        expect(onChange).toHaveBeenLastCalledWith('Prosuna');
+        expect(input).toHaveValue('Prosuna');
     });
 
     it('should copy the templated live input value when a copy value template is configured', () => {
@@ -161,7 +213,7 @@ describe('TextFieldComponent', () => {
             />,
         );
 
-        fireEvent.change(screen.getByRole('textbox', {name: 'Name'}), {
+        fireEvent.change(screen.getByRole('textbox', {name: 'Name – optional'}), {
             target: {
                 value: '',
             },
@@ -178,13 +230,100 @@ describe('TextFieldComponent', () => {
         };
         const {rerender} = render(<TextFieldComponent {...baseProps}/>);
 
-        expect(screen.getByRole('textbox', {name: 'Name'})).toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: 'Name – optional'})).toBeInTheDocument();
 
         rerender(<TextFieldComponent {...baseProps} display/>);
-        expect(screen.queryByRole('textbox', {name: 'Name'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('textbox', {name: 'Name – optional'})).not.toBeInTheDocument();
         expect(screen.getByText('Example')).toBeInTheDocument();
 
         rerender(<TextFieldComponent {...baseProps}/>);
-        expect(screen.getByRole('textbox', {name: 'Name'})).toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: 'Name – optional'})).toBeInTheDocument();
+    });
+
+    it('should autosize multiline inputs within the default row limits', () => {
+        const inputSlot = vi.fn(() => ({}));
+
+        render(
+            <TextFieldComponent
+                label="Beschreibung"
+                multiline
+                onChange={vi.fn()}
+                muiPassTroughProps={{
+                    slotProps: {
+                        input: inputSlot,
+                    },
+                }}
+            />,
+        );
+
+        expect(inputSlot).toHaveBeenCalledWith(expect.objectContaining({
+            multiline: true,
+            rows: undefined,
+            minRows: 4,
+            maxRows: 12,
+        }));
+    });
+
+    it('should preserve explicitly configured fixed rows for multiline inputs', () => {
+        const inputSlot = vi.fn(() => ({}));
+
+        render(
+            <TextFieldComponent
+                label="Beschreibung"
+                multiline
+                rows={6}
+                onChange={vi.fn()}
+                muiPassTroughProps={{
+                    slotProps: {
+                        input: inputSlot,
+                    },
+                }}
+            />,
+        );
+
+        expect(inputSlot).toHaveBeenCalledWith(expect.objectContaining({
+            multiline: true,
+            rows: 6,
+            minRows: undefined,
+            maxRows: undefined,
+        }));
+    });
+
+    it('should preserve the autocomplete input bindings with the external label', () => {
+        render(
+            <AutocompleteTextField
+                id="city"
+                label="Ort"
+                value={null}
+                suggestions={['Berlin', 'Hamburg']}
+                onChange={vi.fn()}
+                hint="Beginnen Sie mit der Eingabe."
+            />,
+        );
+
+        const input = screen.getByRole('combobox', {name: 'Ort – optional'});
+        expect(input).toHaveAttribute('id', 'city');
+        expect(input).toHaveAttribute('aria-autocomplete', 'list');
+        expect(input).toHaveAccessibleDescription('Beginnen Sie mit der Eingabe.');
+    });
+
+    it('should preserve a free-text autocomplete value when it is confirmed', () => {
+        const onChange = vi.fn();
+
+        render(
+            <AutocompleteTextField
+                label="Ort"
+                value={null}
+                suggestions={['Berlin', 'Hamburg']}
+                onChange={onChange}
+            />,
+        );
+
+        const input = screen.getByRole('combobox', {name: 'Ort – optional'});
+        fireEvent.change(input, {target: {value: 'Leipzig'}});
+        fireEvent.keyDown(input, {key: 'Enter'});
+
+        expect(onChange).toHaveBeenLastCalledWith('Leipzig');
+        expect(onChange).not.toHaveBeenCalledWith(null);
     });
 });

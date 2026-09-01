@@ -78,8 +78,18 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Zahlungsdienstleister pmPayment zur Abwicklung von Zahlungen gemäß XBezahldienste-Standard.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Integriert den Zahlungsdienstleister pmPayment über den XBezahldienste-Standard in Prosuna.
+
+                Die Komponente übermittelt standardisierte Zahlungsanfragen an eine konfigurierte pmPayment-Schnittstelle und verarbeitet die zugehörigen Transaktionsinformationen. Zahlungen können dadurch aus Prosuna heraus initiiert und ihr weiterer Status nachverfolgt werden.
+                """;
     }
 
     @Nonnull

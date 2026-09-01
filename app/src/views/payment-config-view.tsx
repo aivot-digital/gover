@@ -1,4 +1,4 @@
-import {Box, Button, FormHelperText, Grid, Stack, Typography} from '@mui/material';
+import {Box, Button, Grid, Stack, Typography} from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import React, {FunctionComponent, useEffect, useMemo, useState} from 'react';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
@@ -20,7 +20,8 @@ import {PaymentProviderResponseDTO} from '../modules/payment/dtos/payment-provid
 import {PaymentProviderDefinitionResponseDTO} from '../modules/payment/dtos/payment-provider-definition-response-dto';
 import {isApiError} from '../models/api-error';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
-import {SelectFieldComponent, SelectFieldComponentOption} from '../components/select-field-2/select-field-component';
+import {SelectFieldComponent} from '../components/select-field/select-field-component';
+import {type SelectFieldComponentOption} from '../components/select-field/select-field-component-option';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
@@ -40,6 +41,8 @@ import {DisabledTooltip} from '../components/disabled-tooltip/disabled-tooltip';
 import {pluralize} from '../utils/humanization-utils';
 import {RadioFieldComponent} from '../components/radio-field/radio-field-component';
 import {RichTextInputComponent} from '../components/rich-text-input-component/rich-text-input-component';
+import {FormFieldGroup} from '../components/form-field';
+import {FormFieldTokens} from '../theming/form-field-tokens';
 
 const EmptyPaymentConfigValue: PaymentConfigElementValue = {
     paymentProviderKey: null,
@@ -176,25 +179,20 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
         .join(' ');
 
     return (
-        <Box>
-            <Stack
-                direction="row"
-                spacing={2}
-                sx={{
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                }}
-            >
-                <Typography variant="subtitle2">
-                    {element.label}{element.required ? ' *' : ''}
-                </Typography>
-
+        <FormFieldGroup
+            id={element.id}
+            label={element.label ?? ''}
+            hint={element.hint}
+            error={errorText || undefined}
+            required={element.required ?? false}
+            disabled={isDisabled}
+            busy={isFieldBusy}
+            labelAction={(
                 <DisabledTooltip
                     title="Es kann nur eine Zahlungskonfiguration existieren."
                     disabled={value != null}
                 >
                     <Button
-                        variant="outlined"
                         size="small"
                         startIcon={<Add/>}
                         disabled={element.disabled || isDisabled || isFieldBusy || value != null}
@@ -203,23 +201,21 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                         Hinzufügen
                     </Button>
                 </DisabledTooltip>
-            </Stack>
-
-            {
-                shouldShowEmptyState &&
+            )}
+        >
+            {shouldShowEmptyState && (
                 <Box
                     sx={(theme) => ({
                         px: 1.5,
-                        py: 1.25,
-                        mt: 0.75,
-                        minHeight: 56,
+                        py: 0.75,
+                        minHeight: FormFieldTokens.controlMinHeight,
                         display: 'flex',
                         alignItems: 'center',
                         borderRadius: 1,
-                        border: errors != null || providersError != null
+                        border: errorText.length > 0
                             ? '1px solid'
                             : '1px dashed',
-                        borderColor: errors != null || providersError != null
+                        borderColor: errorText.length > 0
                             ? theme.palette.error.main
                             : alpha(theme.palette.text.primary, 0.18),
                         textAlign: 'left',
@@ -254,54 +250,32 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                         </Typography>
                     </Stack>
                 </Box>
-            }
+            )}
 
-            {
-                !shouldShowEmptyState &&
-                <Stack
-                    direction="column"
-                    spacing={2}
-                    sx={{
-                        mt: 0.75,
+            {!shouldShowEmptyState && (
+                <DialogList
+                    dialogTitle="Zahlungskonfiguration bearbeiten"
+                    dialogViewTitle="Zahlungskonfiguration ansehen"
+                    getId={(i) => i != null ? '1' : '0'}
+                    items={[value]}
+                    title={(i) => getPaymentConfigTitle(i, paymentProviderOptions)}
+                    subTitle={getPaymentConfigSubtitle}
+                    dialogContentComponent={DialogContentComponent}
+                    onDialogSave={(value) => {
+                        setValue({
+                            ...value,
+                            paymentProviderKey: paymentProviderOptions.some((option) => option.value === value.paymentProviderKey)
+                                ? value.paymentProviderKey
+                                : null,
+                        });
                     }}
-                >
-                    <DialogList
-                        dialogTitle="Zahlungskonfiguration bearbeiten"
-                        dialogViewTitle="Zahlungskonfiguration ansehen"
-                        getId={(i) => i != null ? '1' : '0'}
-                        items={[value]}
-                        title={(i) => getPaymentConfigTitle(i, paymentProviderOptions)}
-                        subTitle={getPaymentConfigSubtitle}
-                        dialogContentComponent={DialogContentComponent}
-                        onDialogSave={(value) => {
-                            setValue({
-                                ...value,
-                                paymentProviderKey: paymentProviderOptions.some((option) => option.value === value.paymentProviderKey)
-                                    ? value.paymentProviderKey
-                                    : null,
-                            });
-                        }}
-                        onDelete={() => {
-                            setValue(null);
-                        }}
-                        disabled={element.disabled || isDisabled || isFieldBusy}
-                    />
-                </Stack>
-            }
-
-            {
-                errorText.length > 0 &&
-                <FormHelperText
-                    error
-                    sx={{
-                        mx: 1.75,
-                        mt: shouldShowEmptyState ? 0.75 : -1,
+                    onDelete={() => {
+                        setValue(null);
                     }}
-                >
-                    {errorText}
-                </FormHelperText>
-            }
-        </Box>
+                    disabled={element.disabled || isDisabled || isFieldBusy}
+                />
+            )}
+        </FormFieldGroup>
     );
 }
 
@@ -508,21 +482,16 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                 />
             }
 
-            <Box sx={{mt: 3.5}}>
-                <Stack
-                    direction="row"
-                    spacing={2}
-                    sx={{
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                    }}
-                >
-                    <Typography variant="body1">
-                        Zahlungspositionen *
-                    </Typography>
-
+            <FormFieldGroup
+                label="Zahlungspositionen"
+                required
+                disabled={isDisabled}
+                busy={isFieldBusy}
+                error={itemsError}
+                margin="none"
+                sx={{mt: 3.5}}
+                labelAction={(
                     <Button
-                        variant="outlined"
                         size="small"
                         startIcon={<Add/>}
                         disabled={isDisabled || isFieldBusy}
@@ -530,46 +499,29 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     >
                         Hinzufügen
                     </Button>
-                </Stack>
+                )}
+            >
 
-                {
-                    itemRows.length === 0 &&
-                    <>
-                        <EmptyItemsState hasError={itemsError != null}/>
-                        {
-                            itemsError != null &&
-                            <FormHelperText
-                                error
-                                sx={{
-                                    mx: 1.75,
-                                    mt: 0.75,
-                                }}
-                            >
-                                {itemsError}
-                            </FormHelperText>
-                        }
-                    </>
-                }
+                {itemRows.length === 0 && (
+                    <EmptyItemsState hasError={itemsError != null}/>
+                )}
 
-                {
-                    itemRows.length > 0 &&
-                    <Box sx={{mt: 0.75}}>
-                        <DialogList
-                            dialogTitle="Zahlungspositionen bearbeiten"
-                            dialogViewTitle="Zahlungspositionen ansehen"
-                            getId={(row) => row.index.toString()}
-                            items={itemRows}
-                            title={(row) => getPaymentItemTitle(row.item)}
-                            subTitle={(row) => getPaymentItemSubtitle(row.item, isDisabled || isFieldBusy)}
-                            dialogContentComponent={ItemDialogContent}
-                            onDialogSave={handleItemChanged}
-                            onDelete={handleDeleteItem}
-                            disabled={isDisabled || isFieldBusy}
-                            hasError={(row) => hasErrorDetails(getItemErrorDetails(errorDetails, row.index))}
-                        />
-                    </Box>
-                }
-            </Box>
+                {itemRows.length > 0 && (
+                    <DialogList
+                        dialogTitle="Zahlungspositionen bearbeiten"
+                        dialogViewTitle="Zahlungspositionen ansehen"
+                        getId={(row) => row.index.toString()}
+                        items={itemRows}
+                        title={(row) => getPaymentItemTitle(row.item)}
+                        subTitle={(row) => getPaymentItemSubtitle(row.item, isDisabled || isFieldBusy)}
+                        dialogContentComponent={ItemDialogContent}
+                        onDialogSave={handleItemChanged}
+                        onDelete={handleDeleteItem}
+                        disabled={isDisabled || isFieldBusy}
+                        hasError={(row) => hasErrorDetails(getItemErrorDetails(errorDetails, row.index))}
+                    />
+                )}
+            </FormFieldGroup>
 
             <Box
                 sx={{
@@ -1205,22 +1157,15 @@ function AdditionalBookingDataEditor(props: {
     };
 
     return (
-        <Box sx={{mt: 2}}>
-            <Stack
-                direction="row"
-                spacing={2}
-                sx={{
-                    mb: rows.length === 0 ? 0 : 1.5,
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                }}
-            >
-                <Typography variant="subtitle2">
-                    Buchungsdaten
-                </Typography>
-
+        <FormFieldGroup
+            label="Buchungsdaten"
+            hint="In den Buchungsdaten können technisch relevante Informationen für die weitergehende Verbuchung in Folgesystemen mitgegeben werden."
+            error={props.error}
+            disabled={props.disabled}
+            margin="none"
+            sx={{mt: 2}}
+            labelAction={(
                 <Button
-                    variant="outlined"
                     size="small"
                     startIcon={<Add/>}
                     disabled={props.disabled}
@@ -1228,27 +1173,14 @@ function AdditionalBookingDataEditor(props: {
                 >
                     Hinzufügen
                 </Button>
-            </Stack>
+            )}
+        >
 
-            <Typography
-                variant="body2"
-                color="textSecondary"
-                sx={{
-                    maxWidth: 560,
-                    mt: 0.75,
-                    mb: 1.75,
-                }}
-            >
-                In den Buchungsdaten können technisch relevante Informationen für die weitergehende Verbuchung in
-                Folgesystemen mitgegeben werden.
-            </Typography>
-
-            {
-                rows.length === 0 &&
+            {rows.length === 0 && (
                 <EmptyBookingDataState
                     hasError={props.error != null}
                 />
-            }
+            )}
 
             <Stack spacing={1.5}>
                 {
@@ -1272,6 +1204,7 @@ function AdditionalBookingDataEditor(props: {
                                     }}
                                     disabled={props.disabled}
                                     muiPassTroughProps={{margin: 'none'}}
+                                    required
                                     error={isStringNullOrEmpty(key) ? props.error : undefined}
                                 />
                             </Grid>
@@ -1306,7 +1239,7 @@ function AdditionalBookingDataEditor(props: {
                     ))
                 }
             </Stack>
-        </Box>
+        </FormFieldGroup>
     );
 }
 
@@ -1315,9 +1248,8 @@ function EmptyItemsState(props: { hasError: boolean }) {
         <Box
             sx={(theme) => ({
                 px: 1.5,
-                py: 1.25,
-                mt: 0.75,
-                minHeight: 56,
+                py: 0.75,
+                minHeight: FormFieldTokens.controlMinHeight,
                 display: 'flex',
                 alignItems: 'center',
                 borderRadius: 1,
@@ -1356,8 +1288,8 @@ function EmptyBookingDataState(props: { hasError: boolean }) {
         <Box
             sx={(theme) => ({
                 px: 1.5,
-                py: 1.25,
-                minHeight: 56,
+                py: 0.75,
+                minHeight: FormFieldTokens.controlMinHeight,
                 display: 'flex',
                 alignItems: 'center',
                 borderRadius: 1,

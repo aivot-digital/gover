@@ -4,6 +4,8 @@ import {MuiTelInput, type MuiTelInputCountry, type MuiTelInputInfo} from 'mui-te
 import {PhoneNumberFieldComponentProps} from './phone-number-field-component-props';
 import {isBlankPhoneNumber, normalizePhoneNumber} from '../../utils/phone-number-utils';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
+import {FormField, type FormFieldControlContext, getNativeInputAriaProps} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
 
 const preferredCountries: MuiTelInputCountry[] = ['DE', 'AT', 'CH'];
 
@@ -63,8 +65,8 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
         hint,
         onChange,
         onBlur,
-        sx,
-        size = 'medium',
+        controlSx,
+        size = 'small',
         muiPassTroughProps,
     } = props;
 
@@ -96,6 +98,15 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
             ))}
         </Box>
     ) : errorMessages[0] ?? hint;
+    const hasError = errorMessages.length > 0;
+    const passThroughSlotProps = muiPassTroughProps?.slotProps;
+    const passThroughSx = muiPassTroughProps?.sx;
+    const passThroughInputSlotProps = typeof passThroughSlotProps?.input === 'function'
+        ? undefined
+        : passThroughSlotProps?.input;
+    const passThroughHtmlInputSlotProps = typeof passThroughSlotProps?.htmlInput === 'function'
+        ? undefined
+        : passThroughSlotProps?.htmlInput;
 
     const handleChange = (newValue: string, info: MuiTelInputInfo) => {
         if (readonly || busy) {
@@ -126,46 +137,74 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
     };
 
     return (
-        <MuiTelInput
-            {...muiPassTroughProps}
+        <FormField
+            id={props.id ?? muiPassTroughProps?.id}
             label={label}
-            value={inputValue}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            placeholder={placeholder}
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            hint={!hasError ? helperText : undefined}
+            error={hasError ? helperText : undefined}
             required={required}
             disabled={disabled}
-            defaultCountry="DE"
-            preferredCountries={preferredCountries}
-            forceCallingCode
-            disableFormatting
-            focusOnSelectCountry
-            langOfCountryName="de"
-            fullWidth
-            size={size}
-            error={errorMessages.length > 0}
-            helperText={helperText}
-            getFlagElement={(isoCode, {countryName}) => CountryCodeFlagElement(isoCode, countryName)}
-            unknownFlagElement={CountryCodeFlagElement('ZZ' as MuiTelInputCountry, 'Unbekannte Ländervorwahl')}
-            slotProps={{
-                input: {
-                    readOnly: readonly || busy,
-                },
-                inputLabel: {
-                    title: label,
-                },
-                htmlInput: {
-                    'aria-disabled': busy || disabled,
-                },
-                formHelperText: {
-                    component: 'div',
-                },
+            readOnly={readonly}
+            busy={busy}
+            margin={props.margin ?? muiPassTroughProps?.margin ?? 'normal'}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
+        >
+            {(fieldContext: FormFieldControlContext) => {
+                const nativeAriaProps = getNativeInputAriaProps(fieldContext, passThroughHtmlInputSlotProps);
+
+                return (
+                    <MuiTelInput
+                        {...muiPassTroughProps}
+                        id={fieldContext.controlId}
+                        label={undefined}
+                        value={inputValue}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        placeholder={placeholder}
+                        required={required}
+                        disabled={disabled}
+                        defaultCountry="DE"
+                        preferredCountries={preferredCountries}
+                        forceCallingCode
+                        disableFormatting
+                        disableDropdown={busy}
+                        focusOnSelectCountry
+                        langOfCountryName="de"
+                        fullWidth
+                        margin="none"
+                        size={size}
+                        error={fieldContext.invalid}
+                        helperText={undefined}
+                        getFlagElement={(isoCode, {countryName}) => CountryCodeFlagElement(isoCode, countryName)}
+                        unknownFlagElement={CountryCodeFlagElement('ZZ' as MuiTelInputCountry, 'Unbekannte Ländervorwahl')}
+                        slotProps={{
+                            input: {
+                                ...passThroughInputSlotProps,
+                                readOnly: readonly || busy || passThroughInputSlotProps?.readOnly,
+                            },
+                            htmlInput: {
+                                ...passThroughHtmlInputSlotProps,
+                                ...nativeAriaProps,
+                            },
+                        }}
+                        sx={[
+                            {
+                                backgroundColor: busy ? getDisabledFieldBackground : undefined,
+                                cursor: busy ? 'not-allowed' : undefined,
+                                '& .MuiInputBase-root': {
+                                    minHeight: FormFieldTokens.controlMinHeight,
+                                },
+                            },
+                            ...(Array.isArray(passThroughSx) ? passThroughSx : [passThroughSx]),
+                            ...(Array.isArray(controlSx) ? controlSx : [controlSx]),
+                        ]}
+                    />
+                );
             }}
-            sx={{
-                ...sx,
-                backgroundColor: busy ? getDisabledFieldBackground : undefined,
-                cursor: busy ? 'not-allowed' : undefined,
-            }}
-        />
+        </FormField>
     );
 }

@@ -37,6 +37,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
@@ -89,6 +90,19 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public static final String DATA_KEY_STARTED = "started";
     public static final String DATA_KEY_CUSTOMER_SUMMARY_FILES = "customerSummaryFiles";
     public static final String DATA_KEY_PAYMENT_DETAILS = "paymentDetails";
+    private static final String OUTPUT_ATTACHMENTS_TYPE_DEFINITION =
+            "Array<{ key: string; fileName: string; originalFileName: string; group: string | null; " +
+                    "storageProviderId: number; storagePathFromRoot: string; }>";
+    private static final String OUTPUT_FILES_TYPE_DEFINITION =
+            "Array<{ name: string; originalFileName: string; uri: string; size: number; }>";
+    private static final String OUTPUT_PAYMENT_DETAILS_TYPE_DEFINITION =
+            "{ transactionUrl: string | null; transactionRedirectUrl: string | null; " +
+                    "transactionId: string | null; transactionReference: string | null; " +
+                    "transactionTimestamp: string | null; " +
+                    "paymentMethod: \"GIROPAY\" | \"PAYDIRECT\" | \"CREDITCARD\" | \"PAYPAL\" | \"OTHER\" | null; " +
+                    "paymentMethodDetail: string | null; " +
+                    "status: \"INITIAL\" | \"PAYED\" | \"FAILED\" | \"CANCELED\" | null; " +
+                    "statusDetail: string | null; }";
 
     private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processNodeRepository;
@@ -157,14 +171,30 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     @Nonnull
     @Override
+    public String getAbstract() {
+        return "Startet einen Prozess, wenn ein zugeordnetes Formular eingereicht wird.";
+    }
+
+    @Nonnull
+    @Override
     public String getDescription() {
-        return "Wird durch einen Formulareingang ausgelöst";
+        return """
+                Startet einen neuen Prozessvorgang, sobald ein mit dem Prozess verknüpftes Formular erfolgreich eingereicht wurde.
+
+                Zugeordnete Formulardaten, nicht zugeordnete Rohdaten und hochgeladene Anlagen werden für die weitere Prozessausführung übernommen. Zusätzlich stehen der Eingangszeitpunkt und die erzeugte Formularzusammenfassung als Ausgänge bereit.
+                """;
     }
 
     @Nonnull
     @Override
     public ProcessNodeType getType() {
         return ProcessNodeType.Trigger;
+    }
+
+    @Nonnull
+    @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.SemiAutomatic};
     }
 
     @Nonnull
@@ -186,32 +216,38 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 new ProcessNodeOutput(
                         DATA_KEY_PAYLOAD,
                         "Zugeordnete Formulardaten",
-                        "Enthält alle Formulardaten welche über einen Datenschlüssel zugeordnet wurden."
+                        "Enthält alle Formulardaten welche über einen Datenschlüssel zugeordnet wurden.",
+                        "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_UNMAPPED,
                         "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht."
+                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_ATTACHMENTS,
                         "Anlagen",
-                        "Eine Liste aller Anlagen, die über dieses Formular hochgeladen wurden."
+                        "Eine Liste aller Anlagen, die über dieses Formular hochgeladen wurden.",
+                        OUTPUT_ATTACHMENTS_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_STARTED,
                         "Eingangszeitstempel",
-                        "Der Zeitstempel des Dateneingangs an den Auslöser"
+                        "Der Zeitstempel des Dateneingangs an den Auslöser",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_CUSTOMER_SUMMARY_FILES,
                         CUSTOMER_SUMMARY_FILE_NAME,
-                        "Die erzeugte Formularzusammenfassung der eingereichten Formulardaten im Format des Datei-Anlagen-Feldes."
+                        "Die erzeugte Formularzusammenfassung der eingereichten Formulardaten im Format des Datei-Anlagen-Feldes.",
+                        OUTPUT_FILES_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_PAYMENT_DETAILS,
                         "Zahlungsdetails",
-                        "Enthält die Zahlungsdetails, falls eine Zahlung durchgeführt wurde."
+                        "Enthält die Zahlungsdetails, falls eine Zahlung durchgeführt wurde.",
+                        OUTPUT_PAYMENT_DETAILS_TYPE_DEFINITION
                 )
         );
     }

@@ -78,9 +78,17 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
     @Nonnull
     @Override
+    public String getAbstract() {
+        return "Speichert Dokumente auf einem S3-kompatiblen Objektspeicher.";
+    }
+
+    @Nonnull
+    @Override
     public String getDescription() {
         return """
-                Speichert Dokumente auf einem S3-kompatiblen Speicher.
+                Bindet einen Amazon-S3-kompatiblen Objektspeicher als Prosuna-Speicheranbieter ein.
+
+                Über Endpoint, Bucket und Zugangsdaten kann sowohl Amazon S3 als auch ein kompatibler Dienst angebunden werden. Der Anbieter unterstützt die Verwaltung von Dokumenten und Ordnerstrukturen sowie das Speichern von Metadatenattributen an den abgelegten Objekten.
                 """;
     }
 

@@ -24,6 +24,7 @@ import {
 } from '../../../../../components/generic-details-page/generic-details-page-context';
 import {isApiError} from '../../../../../models/api-error';
 import {formatInstantInApplicationTimeZone} from '../../../../../utils/temporal-utils';
+import {DocumentationLink} from '../../../../../components/documentation-link/documentation-link';
 
 export interface ExtensionsDetailsPageItem {
     plugins: PluginDTO[];
@@ -193,6 +194,69 @@ function openDeprecatedComponentsDialog(confirm: ConfirmFn, plugin: PluginDTO) {
         ),
         hideCancelButton: true,
         confirmButtonText: 'Schließen',
+    });
+}
+
+function openComponentDetails(confirm: ConfirmFn, component: PluginComponentVersion) {
+    confirm({
+        title: `Komponente: ${component.name}`,
+        children: (
+            <Stack spacing={2.5}>
+                <Box
+                    component="dl"
+                    sx={{
+                        m: 0,
+                        display: 'grid',
+                        gridTemplateColumns: {
+                            xs: '1fr',
+                            sm: 'repeat(2, minmax(0, 1fr))',
+                        },
+                        gap: 2,
+                    }}
+                >
+                    <MetadataItem label="Typ">
+                        {PluginComponentTypeDisplayNames[component.componentType]}
+                    </MetadataItem>
+
+                    <MetadataItem label="Version">
+                        {component.componentVersion}
+                    </MetadataItem>
+
+                    <MetadataItem label="Schlüssel">
+                        {component.key}
+                    </MetadataItem>
+                </Box>
+
+                <Box>
+                    <Typography variant="subtitle2" sx={{mb: 0.75}}>
+                        Überblick
+                    </Typography>
+
+                    <Typography variant="body2" sx={{color: 'text.secondary'}}>
+                        {component.abstractDescription}
+                    </Typography>
+                </Box>
+
+                <Box>
+                    <Typography variant="subtitle2" sx={{mb: 0.75}}>
+                        Beschreibung
+                    </Typography>
+
+                    <MarkdownContent
+                        markdown={component.description}
+                        sx={{typography: 'body2'}}
+                    />
+                </Box>
+
+                <DocumentationLink
+                    url={component.documentationUrl}
+                    sx={{alignSelf: 'flex-start'}}
+                />
+            </Stack>
+        ),
+        hideCancelButton: true,
+        confirmButtonText: 'Schließen',
+        width: 'md',
     });
 }
 
@@ -517,28 +581,36 @@ function ExtensionComponentTypeSection(props: { plugin: PluginDTO; componentType
                                                     }}
                                                 />
                                             }
+
+                                            <Button
+                                                variant="text"
+                                                size="small"
+                                                onClick={() => {
+                                                    openComponentDetails(confirm, currentVersion);
+                                                }}
+                                                sx={{
+                                                    minWidth: 'auto',
+                                                    px: 0.5,
+                                                }}
+                                            >
+                                                Details
+                                            </Button>
                                         </Box>
 
                                         {
-                                            hasText(currentVersion.description) &&
-                                            <MarkdownContent
-                                                markdown={currentVersion.description}
+                                            hasText(currentVersion.abstractDescription) &&
+                                            <Typography
+                                                variant="body2"
                                                 sx={{
                                                     gridColumn: '1 / -1',
-                                                    typography: 'body2',
                                                     color: 'text.secondary',
                                                     fontSize: (theme) => theme.typography.pxToRem(13),
-                                                    '& p': {
-                                                        my: 0,
-                                                        lineHeight: 1.25,
-                                                    },
-                                                    '& ul, & ol': {
-                                                        my: 0.2,
-                                                        pl: 2.25,
-                                                    },
+                                                    lineHeight: 1.25,
                                                     maxWidth: 600,
                                                 }}
-                                            />
+                                            >
+                                                {currentVersion.abstractDescription}
+                                            </Typography>
                                         }
 
                                         {
@@ -550,7 +622,7 @@ function ExtensionComponentTypeSection(props: { plugin: PluginDTO; componentType
                                                     alignItems: 'center',
                                                     flexWrap: 'wrap',
                                                     gap: 0.5,
-                                                    pt: hasText(currentVersion.description) ? 0.125 : 0,
+                                                    pt: hasText(currentVersion.abstractDescription) ? 0.125 : 0,
                                                 }}
                                             >
                                                 <Typography
@@ -606,6 +678,21 @@ function ExtensionComponentTypeSection(props: { plugin: PluginDTO; componentType
                                                                         }}
                                                                     />
                                                                 }
+
+                                                                <Button
+                                                                    variant="text"
+                                                                    size="small"
+                                                                    onClick={() => {
+                                                                        openComponentDetails(confirm, version);
+                                                                    }}
+                                                                    sx={{
+                                                                        minWidth: 'auto',
+                                                                        px: 0.5,
+                                                                        typography: 'caption',
+                                                                    }}
+                                                                >
+                                                                    Details
+                                                                </Button>
                                                             </Box>
                                                         ))
                                                 }
@@ -799,6 +886,8 @@ function ExtensionCard(props: { plugin: PluginDTO; onShowChangelog: (plugin: Plu
                             Komponenten-Hinweise
                         </Button>
                     }
+
+                    <DocumentationLink url={plugin.documentationUrl}/>
 
                     <Button
                         variant="outlined"
