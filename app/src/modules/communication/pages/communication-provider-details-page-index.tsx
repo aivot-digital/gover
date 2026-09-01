@@ -216,7 +216,7 @@ export function CommunicationProviderDetailsPageIndex() {
     };
 
     return (
-        <Box sx={{maxWidth: 900}}>
+        <Box>
             <Grid container spacing={2}>
                 <Grid size={{xs: 12, md: 8}}>
                     <SelectFieldComponent
