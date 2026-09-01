@@ -1,10 +1,9 @@
 package de.aivot.prosuna.backend.identity.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.prosuna.backend.identity.constants.IdentityBodyParameterConstants;
@@ -17,6 +16,7 @@ import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
+import de.aivot.prosuna.backend.utils.RandomUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.core.JacksonException;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -33,7 +34,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -59,7 +59,6 @@ public class IdentityService {
     private static final int SESSION_ID_NUM_BYTES = 96;
     private static final int ENTITY_ID_NUM_BYTES = 32;
     private static final String PKCE_METHOD_S256 = "S256";
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final ProsunaConfig prosunaConfig;
     private final SecretService secretService;
@@ -608,9 +607,10 @@ public class IdentityService {
 
         IdentityAuthTokenData accessTokenData;
         try {
-            accessTokenData = new ObjectMapper()
+            accessTokenData = JsonMapperFactory
+                    .getInstance()
                     .readValue(responseBody, IdentityAuthTokenData.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException
                     .internalServerError(
                             e,
@@ -676,10 +676,10 @@ public class IdentityService {
 
         Map<String, Object> rawData;
         try {
-            rawData = new ObjectMapper()
+            rawData = JsonMapperFactory.getInstance()
                     .readerForMapOf(String.class)
                     .readValue(response.body());
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException
                     .internalServerError(
                             e,
@@ -809,23 +809,17 @@ public class IdentityService {
 
     @Nonnull
     private static String generateStateNonce() {
-        var bytes = new byte[STATE_NONCE_NUM_BYTES];
-        SECURE_RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return RandomUtils.generateRandomString(STATE_NONCE_NUM_BYTES);
     }
 
     @Nonnull
     private static String generateSessionId() {
-        var bytes = new byte[SESSION_ID_NUM_BYTES];
-        SECURE_RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return RandomUtils.generateRandomString(SESSION_ID_NUM_BYTES);
     }
 
     @Nonnull
     private static String generateEntityId() {
-        var bytes = new byte[ENTITY_ID_NUM_BYTES];
-        SECURE_RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return RandomUtils.generateRandomString(ENTITY_ID_NUM_BYTES);
     }
 
     private String createCallbackUri(@Nonnull IdentityProviderEntity provider, @Nonnull IdentityCacheEntity cacheEntity) {

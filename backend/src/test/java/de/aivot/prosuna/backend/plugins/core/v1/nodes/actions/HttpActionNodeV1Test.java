@@ -88,6 +88,35 @@ class HttpActionNodeV1Test {
     }
 
     @Test
+    void getOutputs_ShouldExposeDynamicAndStructuredResponseTypes() {
+        var processedResponseOutput = node
+                .getOutputs()
+                .stream()
+                .filter(output -> "processedResponse".equals(output.key()))
+                .findFirst()
+                .orElseThrow();
+        var headersOutput = node
+                .getOutputs()
+                .stream()
+                .filter(output -> "headers".equals(output.key()))
+                .findFirst()
+                .orElseThrow();
+        var filesOutput = node
+                .getOutputs()
+                .stream()
+                .filter(output -> "files".equals(output.key()))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("unknown", processedResponseOutput.typeDefinition());
+        assertEquals("Record<string, Array<string>>", headersOutput.typeDefinition());
+        assertEquals(
+                "Array<{ name: string; originalFileName: string; uri: string; size: number; }>",
+                filesOutput.typeDefinition()
+        );
+    }
+
+    @Test
     void init_ShouldBuildMultipartFieldsFromConfiguredRows() throws Exception {
         when(httpService.request(
                 eq(HttpMethod.POST),
@@ -259,7 +288,7 @@ class HttpActionNodeV1Test {
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessId(PROCESS_ID)
                 .setInitialProcessVersion(PROCESS_VERSION)
                 .setStatus(ProcessInstanceStatus.Running)
@@ -276,7 +305,7 @@ class HttpActionNodeV1Test {
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessInstanceId(PROCESS_INSTANCE_ID)
                 .setProcessId(PROCESS_ID)
                 .setProcessVersion(PROCESS_VERSION)

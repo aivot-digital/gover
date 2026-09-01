@@ -1,4 +1,8 @@
-# Local Prosuna Setup
+# Local Prosuna Setup Example
+
+This example provides a self-contained Prosuna environment for local development and evaluation. It uses plain HTTP, fixed localhost addresses, development-oriented credentials, and Mailpit for local mail capture.
+
+The included [Docker Compose configuration](./compose.yml) and [Caddyfile](./Caddyfile) illustrate one local setup. They are not suitable as production or on-premises installation instructions.
 
 ## 1. Prepare Secrets
 

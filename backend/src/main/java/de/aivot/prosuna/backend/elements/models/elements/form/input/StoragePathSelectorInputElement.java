@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
@@ -39,7 +39,7 @@ public class StoragePathSelectorInputElement extends BaseInputElement<StoragePat
             return null;
         }
 
-        var formattedValue = ObjectMapperFactory
+        var formattedValue = JsonMapperFactory
                 .getInstance()
                 .convertValue(value, StoragePathSelectorInputElementValue.class);
 

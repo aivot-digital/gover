@@ -34,6 +34,7 @@ import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {DocumentationLink} from '../../../../components/documentation-link/documentation-link';
 
 type PaymentProviderEditableFields =
     'name' |
@@ -454,6 +455,11 @@ export function PaymentProviderDetailsPageIndex() {
                     }
                 </Grid>
             </Grid>
+
+            <DocumentationLink
+                url={selectedPaymentProviderDefinition?.documentationUrl}
+                sx={{mb: 2}}
+            />
 
             <TextFieldComponent
                 label="Name"

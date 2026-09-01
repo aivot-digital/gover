@@ -13,7 +13,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.filters.ProcessVersionFilter;
-import de.aivot.prosuna.backend.process.models.ProcessNodeProblems;
+import de.aivot.prosuna.backend.process.models.ProcessVersionProblems;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.process.services.ProcessVersionService;
@@ -317,7 +317,7 @@ public class ProcessVersionController {
             summary = "Validate a Process Definition Version",
             description = "Validate a process definition version by its composite ID."
     )
-    public List<ProcessNodeProblems> validate(
+    public ProcessVersionProblems validate(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer processDefinitionId,
             @Nonnull @PathVariable Integer processDefinitionVersion
@@ -367,8 +367,7 @@ public class ProcessVersionController {
 
         var hasErrors = processDefinitionVersionService
                 .validate(version)
-                .stream()
-                .anyMatch(ProcessNodeProblems::hasAnyProblems);
+                .hasAnyProblems();
         if (hasErrors) {
             throw ResponseException
                     .notAcceptable("Die Prozessdefinition enthält Fehler und kann daher nicht veröffentlicht werden. Bitte beheben Sie alle Fehler, bevor Sie die Prozessdefinition veröffentlichen.");

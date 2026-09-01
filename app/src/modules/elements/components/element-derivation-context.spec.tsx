@@ -3,10 +3,12 @@ import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {ElementType} from '../../../data/element-type/element-type';
 import type {
+    AuthoredElementValues,
     ComputedElementErrors,
     DerivedRuntimeElementData,
 } from '../../../models/element-data';
 import {
+    ComputedElementValueSource,
     createDerivedRuntimeElementData,
 } from '../../../models/element-data';
 import {ElementDerivationContext} from './element-derivation-context';
@@ -17,12 +19,102 @@ vi.mock('../../../hooks/use-app-dispatch', () => ({
 
 vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => ({
     ViewDispatcherComponent: (props: any) => (
-        <button
-            type="button"
-            onClick={() => props.onAuthoredElementValuesChange({field: 'valid'}, ['field'])}
-        >
-            Wert setzen
-        </button>
+        <>
+            <button
+                type="button"
+                onClick={() => props.onAuthoredElementValuesChange({field: 'valid'}, ['field'])}
+            >
+                Wert setzen
+            </button>
+            <button
+                type="button"
+                onClick={() => props.onDerive(props.authoredElementValues, [], [])}
+            >
+                Validieren
+            </button>
+            <button
+                type="button"
+                onClick={() => {
+                    const currentRows = Array.isArray(props.authoredElementValues.rows) ? props.authoredElementValues.rows : [];
+                    props.onAuthoredElementValuesChange({
+                        ...props.authoredElementValues,
+                        rows: [
+                            ...currentRows,
+                            {
+                                id: `row-${currentRows.length + 1}`,
+                                values: {},
+                            },
+                        ],
+                    }, ['rows', 'rowField']);
+                }}
+            >
+                Datensatz hinzufügen
+            </button>
+            <button
+                type="button"
+                onClick={() => {
+                    const currentRows = Array.isArray(props.authoredElementValues.rows) ? props.authoredElementValues.rows : [];
+                    props.onAuthoredElementValuesChange({
+                        ...props.authoredElementValues,
+                        rows: currentRows.map((row: any, index: number) => index === 0 ? {
+                            ...row,
+                            values: {
+                                ...(row.values ?? {}),
+                                rowField: 'valid',
+                            },
+                        } : row),
+                    }, ['rows', 'rowField']);
+                }}
+            >
+                Ersten Datensatz ändern
+            </button>
+            <output data-testid="field-error">
+                {props.derivedData.elementStates.field?.error ?? ''}
+            </output>
+            <output data-testid="row-1-error">
+                {
+                    props.derivedData.elementStates.rows?.subStates
+                        ?.find((subState: any) => subState.id === 'row-1')
+                        ?.states?.rowField?.error ?? ''
+                }
+            </output>
+            <output data-testid="row-2-error">
+                {
+                    props.derivedData.elementStates.rows?.subStates
+                        ?.find((subState: any) => subState.id === 'row-2')
+                        ?.states?.rowField?.error ?? ''
+                }
+            </output>
+            <output data-testid="row-2-visible">
+                {
+                    props.derivedData.elementStates.rows?.subStates
+                        ?.find((subState: any) => subState.id === 'row-2')
+                        ?.states?.rowField?.visible == null ?
+                        '' :
+                        String(props.derivedData.elementStates.rows?.subStates
+                            ?.find((subState: any) => subState.id === 'row-2')
+                            ?.states?.rowField?.visible)
+                }
+            </output>
+            <output data-testid="row-2-disabled">
+                {
+                    props.derivedData.elementStates.rows?.subStates
+                        ?.find((subState: any) => subState.id === 'row-2')
+                        ?.states?.rowField?.disabled == null ?
+                        '' :
+                        String(props.derivedData.elementStates.rows?.subStates
+                            ?.find((subState: any) => subState.id === 'row-2')
+                            ?.states?.rowField?.disabled)
+                }
+            </output>
+            <output data-testid="row-2-value-source">
+                {
+                    props.derivedData.elementStates.rows?.subStates
+                        ?.find((subState: any) => subState.id === 'row-2')
+                        ?.states?.rowField?.valueSource ?? ''
+                }
+            </output>
+        </>
     ),
 }));
 
@@ -48,6 +140,7 @@ describe('ElementDerivationContext', () => {
         );
 
         await waitFor(() => expect(onDerivedDataChange).toHaveBeenCalled());
+        expect(screen.getByTestId('field-error')).toHaveTextContent(computedErrors.field?.error as string);
         onDerivedDataChange.mockClear();
 
         fireEvent.click(screen.getByRole('button', {name: 'Wert setzen'}));
@@ -55,8 +148,194 @@ describe('ElementDerivationContext', () => {
         expect(onAuthoredElementValuesChange).toHaveBeenCalledWith({field: 'valid'});
         const patchedDerivedData = onDerivedDataChange.mock.calls[0][0] as DerivedRuntimeElementData;
         expect(patchedDerivedData.elementStates.field?.error).toBeUndefined();
+        await waitFor(() => expect(screen.getByTestId('field-error')).toBeEmptyDOMElement());
+    });
+
+    it('should retain newly derived row states when external errors only contain older rows', async () => {
+        const onDerivedDataChange = vi.fn();
+        const computedErrors: ComputedElementErrors = {
+            rows: {
+                error: 'Container error',
+                subStates: [
+                    {
+                        id: 'row-1',
+                        states: {
+                            rowField: {
+                                error: 'External row error',
+                            },
+                        },
+                    },
+                ],
+            },
+        };
+        const onDeriveOverride = vi.fn((authoredElementValues: AuthoredElementValues) => {
+            const rows = Array.isArray(authoredElementValues.rows) ? authoredElementValues.rows : [];
+
+            return Promise.resolve(createDerivedRuntimeElementData({
+                effectiveValues: authoredElementValues,
+                elementStates: {
+                    rows: {
+                        subStates: rows.map((row: {id?: string | null}) => ({
+                            id: row.id,
+                            states: {
+                                rowField: {
+                                    visible: row.id !== 'row-2',
+                                    disabled: row.id === 'row-2',
+                                    valueSource: ComputedElementValueSource.Derived,
+                                    error: null,
+                                },
+                            },
+                        })),
+                    },
+                    dependent: {
+                        visible: true,
+                    },
+                },
+            }));
+        });
+
+        render(
+            <ReplicatingContainerDerivationHarness
+                onDerivedDataChange={onDerivedDataChange}
+                onDeriveOverride={onDeriveOverride}
+                computedErrors={computedErrors}
+            />
+        );
+
+        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(1));
+        expect(screen.getByTestId('row-1-error')).toHaveTextContent('External row error');
+
+        fireEvent.click(screen.getByRole('button', {name: 'Datensatz hinzufügen'}));
+
+        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(2));
+        expect(screen.getByTestId('row-2-visible')).toHaveTextContent('false');
+        expect(screen.getByTestId('row-2-disabled')).toHaveTextContent('true');
+        expect(screen.getByTestId('row-2-value-source')).toHaveTextContent(ComputedElementValueSource.Derived);
+        expect(screen.getByTestId('row-1-error')).toHaveTextContent('External row error');
+    });
+
+    it('should preserve sibling row errors while suppressing only the changed row until explicit revalidation', async () => {
+        const onDerivedDataChange = vi.fn();
+        const validationError = 'Dieses Feld ist ein Pflichtfeld und darf nicht leer sein.';
+        let shouldReturnValidationErrors = true;
+        const onDeriveOverride = vi.fn((authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[]) => {
+            const rows = Array.isArray(authoredElementValues.rows) ? authoredElementValues.rows : [];
+            const shouldIncludeErrors = !skipErrorsForElements.includes('ALL') && shouldReturnValidationErrors;
+
+            return Promise.resolve(createDerivedRuntimeElementData({
+                effectiveValues: authoredElementValues,
+                elementStates: {
+                    field: {
+                        error: shouldIncludeErrors ? validationError : null,
+                    },
+                    rows: {
+                        subStates: rows.map((row: {id?: string | null}) => ({
+                            id: row.id,
+                            states: {
+                                rowField: {
+                                    error: shouldIncludeErrors ? `Fehler in ${row.id}` : null,
+                                },
+                            },
+                        })),
+                    },
+                    dependent: {
+                        visible: true,
+                    },
+                },
+            }));
+        });
+
+        render(
+            <ReplicatingContainerDerivationHarness
+                onDerivedDataChange={onDerivedDataChange}
+                onDeriveOverride={onDeriveOverride}
+            />
+        );
+
+        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(1));
+
+        fireEvent.click(screen.getByRole('button', {name: 'Validieren'}));
+        await waitFor(() => expect(screen.getByTestId('field-error')).toHaveTextContent(validationError));
+        expect(screen.getByTestId('row-1-error')).toHaveTextContent('Fehler in row-1');
+
+        fireEvent.click(screen.getByRole('button', {name: 'Datensatz hinzufügen'}));
+        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(3));
+        expect(onDeriveOverride).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                rows: [
+                    {
+                        id: 'row-1',
+                        values: {
+                            rowField: null,
+                        },
+                    },
+                    {
+                        id: 'row-2',
+                        values: {},
+                    },
+                ],
+            }),
+            ['ALL'],
+        );
+        expect(screen.getByTestId('field-error')).toHaveTextContent(validationError);
+        expect(screen.getByTestId('row-1-error')).toHaveTextContent('Fehler in row-1');
+        expect(screen.getByTestId('row-2-error')).toBeEmptyDOMElement();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Validieren'}));
+        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(4));
+        expect(screen.getByTestId('row-1-error')).toHaveTextContent('Fehler in row-1');
+        expect(screen.getByTestId('row-2-error')).toHaveTextContent('Fehler in row-2');
+
+        fireEvent.click(screen.getByRole('button', {name: 'Ersten Datensatz ändern'}));
+        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(5));
+        expect(screen.getByTestId('row-1-error')).toBeEmptyDOMElement();
+        expect(screen.getByTestId('row-2-error')).toHaveTextContent('Fehler in row-2');
+
+        shouldReturnValidationErrors = false;
+        fireEvent.click(screen.getByRole('button', {name: 'Validieren'}));
+        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(6));
+        expect(screen.getByTestId('field-error')).toBeEmptyDOMElement();
+        expect(screen.getByTestId('row-1-error')).toBeEmptyDOMElement();
+        expect(screen.getByTestId('row-2-error')).toBeEmptyDOMElement();
     });
 });
+
+interface ReplicatingContainerDerivationHarnessProps {
+    onDerivedDataChange: (derivedData: DerivedRuntimeElementData) => void;
+    onDeriveOverride: (authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[]) => Promise<DerivedRuntimeElementData>;
+    computedErrors?: ComputedElementErrors;
+}
+
+function ReplicatingContainerDerivationHarness(props: ReplicatingContainerDerivationHarnessProps) {
+    const {
+        onDerivedDataChange,
+        onDeriveOverride,
+        computedErrors,
+    } = props;
+    const element = React.useMemo(() => createRootElementWithReplicatingContainer(), []);
+    const [authoredElementValues, setAuthoredElementValues] = React.useState<AuthoredElementValues>({
+        field: null,
+        rows: [
+            {
+                id: 'row-1',
+                values: {
+                    rowField: null,
+                },
+            },
+        ],
+    });
+
+    return (
+        <ElementDerivationContext
+            element={element}
+            authoredElementValues={authoredElementValues}
+            onAuthoredElementValuesChange={setAuthoredElementValues}
+            onDerivedDataChange={onDerivedDataChange}
+            onDeriveOverride={onDeriveOverride}
+            computedErrors={computedErrors}
+        />
+    );
+}
 
 function createRootElement(): any {
     return {
@@ -68,6 +347,43 @@ function createRootElement(): any {
                 type: ElementType.Text,
                 disabled: false,
                 technical: false,
+            },
+        ],
+    };
+}
+
+function createRootElementWithReplicatingContainer(): any {
+    return {
+        id: 'root',
+        type: ElementType.GroupLayout,
+        children: [
+            {
+                id: 'field',
+                type: ElementType.Text,
+                disabled: false,
+                technical: false,
+            },
+            {
+                id: 'rows',
+                type: ElementType.ReplicatingContainer,
+                disabled: false,
+                technical: false,
+                children: [
+                    {
+                        id: 'rowField',
+                        type: ElementType.Text,
+                        disabled: false,
+                        technical: false,
+                    },
+                ],
+            },
+            {
+                id: 'dependent',
+                type: ElementType.Text,
+                visibility: {
+                    type: 'NoCode',
+                    referencedIds: ['rows'],
+                },
             },
         ],
     };

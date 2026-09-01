@@ -1,12 +1,13 @@
 import {FunctionComponent, useState} from 'react';
 import {
+    Box,
     Button,
     Dialog,
     DialogActions,
     DialogContent,
     List,
-    Box,
     ButtonBase,
+    Tooltip,
     Typography,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
@@ -18,6 +19,7 @@ import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
+import ErrorIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 
 export type DialogListPropsDialogContentComponent<T> = FunctionComponent<{
     item: T;
@@ -36,6 +38,7 @@ interface DialogListProps<T> {
     onDialogSave: (edited: T, original: T) => void;
     onDelete: (item: T) => void;
     disabled?: boolean;
+    hasError?: (item: T) => boolean;
 }
 
 export function DialogList<T>(props: DialogListProps<T>) {
@@ -50,6 +53,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
         onDialogSave,
         onDelete,
         disabled,
+        hasError,
     } = props;
 
     const isReadonly = disabled === true;
@@ -144,125 +148,151 @@ export function DialogList<T>(props: DialogListProps<T>) {
                 }}
             >
                 {
-                    items.map((item, index) => (
-                        <Box
-                            component="li"
-                            key={getId(item)}
-                            data-dialog-list-item
-                            sx={(theme) => ({
-                                display: 'grid',
-                                gridTemplateColumns: 'minmax(0, 1fr) auto',
-                                alignItems: 'stretch',
-                                minHeight: FormFieldTokens.groupedControlRowMinHeight,
-                                borderTop: index === 0 ? 0 : '1px solid',
-                                borderColor: 'divider',
-                                '&:hover': {
-                                    backgroundColor: alpha(theme.palette.primary.main, 0.04),
-                                },
-                            })}
-                        >
-                            <ButtonBase
-                                aria-haspopup="dialog"
-                                onClick={() => {
-                                    handleDialogOpen(item);
-                                }}
-                                sx={{
-                                    minWidth: 0,
-                                    display: 'flex',
+                    items.map((item, index) => {
+                        const itemHasError = hasError?.(item) === true;
+
+                        return (
+                            <Box
+                                component="li"
+                                key={getId(item)}
+                                data-dialog-list-item
+                                sx={(theme) => ({
+                                    display: 'grid',
+                                    gridTemplateColumns: 'minmax(0, 1fr) auto',
                                     alignItems: 'stretch',
-                                    justifyContent: 'flex-start',
-                                    px: 1.5,
-                                    py: 0.5,
-                                    textAlign: 'left',
-                                    '&.Mui-focusVisible': {
-                                        outline: '2px solid',
-                                        outlineColor: 'primary.main',
-                                        outlineOffset: '-2px',
+                                    minHeight: FormFieldTokens.groupedControlRowMinHeight,
+                                    borderTop: index === 0 ? 0 : '1px solid',
+                                    borderColor: 'divider',
+                                    boxShadow: itemHasError
+                                        ? `inset 3px 0 ${theme.palette.error.main}`
+                                        : undefined,
+                                    '&:hover': {
+                                        backgroundColor: alpha(itemHasError ? theme.palette.error.main : theme.palette.primary.main, 0.04),
                                     },
-                                }}
+                                })}
                             >
-                                <Box
+                                <ButtonBase
+                                    aria-haspopup="dialog"
+                                    aria-invalid={itemHasError || undefined}
+                                    onClick={() => {
+                                        handleDialogOpen(item);
+                                    }}
                                     sx={{
                                         minWidth: 0,
-                                        flex: 1,
                                         display: 'flex',
-                                        flexDirection: 'column',
-                                        justifyContent: 'center',
-                                        gap: 0.25,
+                                        alignItems: 'stretch',
+                                        justifyContent: 'flex-start',
+                                        px: 1.5,
+                                        py: 0.5,
+                                        textAlign: 'left',
+                                        '&.Mui-focusVisible': {
+                                            outline: '2px solid',
+                                            outlineColor: 'primary.main',
+                                            outlineOffset: '-2px',
+                                        },
                                     }}
                                 >
-                                    <Typography
-                                        title={title(item)}
+                                    <Box
                                         sx={{
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap',
-                                            fontSize: '1rem',
-                                            lineHeight: 1.25,
+                                            minWidth: 0,
+                                            flex: 1,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            justifyContent: 'center',
+                                            gap: 0.25,
                                         }}
                                     >
-                                        {title(item)}
-                                    </Typography>
-
-                                    {subTitle != null && (
                                         <Typography
-                                            variant="caption"
-                                            title={subTitle(item)}
+                                            title={title(item)}
                                             sx={{
                                                 overflow: 'hidden',
                                                 textOverflow: 'ellipsis',
                                                 whiteSpace: 'nowrap',
-                                                color: disabled ? 'text.disabled' : 'text.secondary',
-                                                fontSize: '0.75rem',
-                                                lineHeight: 1.2,
+                                                fontSize: '1rem',
+                                                lineHeight: 1.25,
                                             }}
                                         >
-                                            {subTitle(item)}
+                                            {title(item)}
                                         </Typography>
-                                    )}
-                                </Box>
-                            </ButtonBase>
 
-                            <Actions
-                                dense
-                                sx={{pr: 0.75}}
-                                actions={
-                                    isReadonly
-                                        ? [
-                                            {
-                                                icon: <Visibility/>,
-                                                tooltip: 'Ansehen',
-                                                onClick: (evt) => {
-                                                    evt.preventDefault();
-                                                    evt.stopPropagation();
-                                                    handleDialogOpen(item);
+                                        {subTitle != null && (
+                                            <Typography
+                                                variant="caption"
+                                                title={subTitle(item)}
+                                                sx={{
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    color: disabled ? 'text.disabled' : 'text.secondary',
+                                                    fontSize: '0.75rem',
+                                                    lineHeight: 1.2,
+                                                }}
+                                            >
+                                                {subTitle(item)}
+                                            </Typography>
+                                        )}
+                                    </Box>
+
+                                    {itemHasError && (
+                                        <Tooltip title="Fehler in diesem Eintrag" arrow>
+                                            <Box
+                                                component="span"
+                                                role="img"
+                                                aria-label="Fehler in diesem Eintrag"
+                                                sx={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    ml: 1,
+                                                    color: 'error.main',
+                                                }}
+                                            >
+                                                <ErrorIcon fontSize="small"/>
+                                            </Box>
+                                        </Tooltip>
+                                    )}
+                                </ButtonBase>
+
+                                <Actions
+                                    dense
+                                    sx={{pr: 0.75}}
+                                    actions={
+                                        isReadonly
+                                            ? [
+                                                {
+                                                    icon: <Visibility/>,
+                                                    tooltip: 'Ansehen',
+                                                    onClick: (evt) => {
+                                                        evt.preventDefault();
+                                                        evt.stopPropagation();
+                                                        handleDialogOpen(item);
+                                                    },
                                                 },
-                                            },
-                                        ]
-                                        : [
-                                            {
-                                                icon: <Edit/>,
-                                                tooltip: 'Bearbeiten',
-                                                onClick: (evt) => {
-                                                    evt.preventDefault();
-                                                    evt.stopPropagation();
-                                                    handleDialogOpen(item);
+                                            ]
+                                            : [
+                                                {
+                                                    icon: <Edit/>,
+                                                    tooltip: 'Bearbeiten',
+                                                    onClick: (evt) => {
+                                                        evt.preventDefault();
+                                                        evt.stopPropagation();
+                                                        handleDialogOpen(item);
+                                                    },
                                                 },
-                                            },
-                                            {
-                                                icon: <Delete/>,
-                                                tooltip: 'Eintrag löschen',
-                                                onClick: (evt) => {
-                                                    evt.preventDefault();
-                                                    evt.stopPropagation();
-                                                    handleDelete(item);
+                                                {
+                                                    icon: <Delete/>,
+                                                    tooltip: 'Eintrag löschen',
+                                                    onClick: (evt) => {
+                                                        evt.preventDefault();
+                                                        evt.stopPropagation();
+                                                        handleDelete(item);
+                                                    },
                                                 },
-                                            },
-                                        ]
-                                }
-                            />
-                        </Box>
-                    ))
+                                            ]
+                                    }
+                                />
+                            </Box>
+                        );
+                    })
                 }
             </List>
 

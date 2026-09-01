@@ -50,6 +50,7 @@ export interface NoCodeInputFieldComponentProps extends FormFieldLayoutProps {
     desiredReturnType: NoCodeDataType;
     onChange: (value: NoCodeInputFieldElementItem | null) => void;
     controlSx?: SxProps<Theme>;
+    disablePopoutModeWhenFormLayoutChild?: boolean;
 }
 
 export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps) {
@@ -68,6 +69,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
         value,
         desiredReturnType,
         onChange,
+        disablePopoutModeWhenFormLayoutChild = false,
     } = props;
     const isFormLayout = (rootElement as {type: ElementType}).type === ElementType.FormLayout;
     const contextType: NoCodeOperandEditorContextType = isFormLayout ? 'FORM' : 'PROCESS';
@@ -138,7 +140,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
         setIsDialogOpen(true);
     };
 
-    if (!isFormLayout) {
+    if (!isFormLayout || disablePopoutModeWhenFormLayoutChild) {
         return (
             <NoCodeEditorWrapper
                 parents={[rootElement]}
@@ -173,7 +175,6 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                     const suppliedLabelAction = typeof props.labelAction === 'function'
                         ? props.labelAction(field)
                         : props.labelAction;
-
                     return (
                         <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
                             {suppliedLabelAction}

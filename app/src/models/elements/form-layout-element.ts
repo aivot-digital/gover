@@ -20,21 +20,12 @@ export interface FormLayoutElement extends BaseElement<ElementType.FormLayout> {
 
     managingDepartmentId: number | null | undefined;
     responsibleDepartmentId: number | null | undefined;
-    legalSupportDepartmentId: number | null | undefined;
-    technicalSupportDepartmentId: number | null | undefined;
-    imprintDepartmentId: number | null | undefined;
-    privacyDepartmentId: number | null | undefined;
-    accessibilityDepartmentId: number | null | undefined;
-    formSpecificPrivacyStatement: string | null | undefined;
-    formSpecificAccessibilityStatement: string | null | undefined;
-
-    themeId: number | null | undefined;
 
     pdfTemplateKey: string | null | undefined;
 }
 
-export function isRootElement(obj: any): obj is FormLayoutElement {
-    return obj.type === ElementType.FormLayout;
+export function isFormLayoutElement(obj: any): obj is FormLayoutElement {
+    return obj != null && obj.type === ElementType.FormLayout;
 }
 
 export function resolveFormNodeName(layout: FormLayoutElement | undefined | null, processVersion: ProcessVersionEntity): string {

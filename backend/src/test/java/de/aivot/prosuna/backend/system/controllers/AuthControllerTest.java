@@ -186,8 +186,11 @@ class AuthControllerTest {
                 modelAndView,
                 response,
                 400,
-                "Die App-Weiterleitungsadresse ist nicht erlaubt.",
-                "Die gespeicherte Rücksprungadresse der Anwendung ist ungültig oder nicht erlaubt. Die Anmeldung kann über den Standardbereich neu gestartet werden.",
+                "Weiterleitungsadresse nicht erlaubt",
+                """
+                        Die Anmeldung wurde vom Identitätsanbieter beantwortet, konnte aber wegen einer nicht erlaubten Weiterleitungsadresse nicht abgeschlossen werden.
+                        Bitte melden Sie das Problem für eine Fehlerbehebung.
+                        """,
                 "/api/auth/login?app_uri=/staff"
         );
         verifyNoInteractions(httpService);
@@ -204,8 +207,13 @@ class AuthControllerTest {
                 modelAndView,
                 response,
                 400,
-                "Der state-Parameter ist ungültig.",
-                "Die Sicherheitsprüfung der Anmeldung ist fehlgeschlagen. Das kann passieren, wenn der Link aus einem alten Browser-Tab stammt, Cookies fehlen oder parallel eine neue Anmeldung gestartet wurde.",
+                "Sicherheitsprüfung fehlgeschlagen",
+                """
+                        Die Sicherheitsprüfung der Anmeldung ist fehlgeschlagen.
+                        Der sogenannte „state“-Wert stimmt nicht mehr mit der gestarteten Anmeldung überein.
+                        Das kann zum Beispiel bei einem alten Browser-Tab oder einer parallel gestarteten Anmeldung passieren.
+                        Bitte starten Sie die Anmeldung erneut.
+                        """,
                 "/api/auth/login?app_uri=/staff"
         );
         verify(valueOperations, never()).getAndDelete(anyString());
@@ -225,8 +233,12 @@ class AuthControllerTest {
                 modelAndView,
                 response,
                 400,
-                "Die Authentifizierungssitzung ist abgelaufen.",
-                "Ihre Anmeldesitzung ist abgelaufen. Starten Sie die Anmeldung erneut, damit eine neue sichere Sitzung erstellt wird.",
+                "Anmeldung abgelaufen",
+                """
+                        Die Anmeldung hat zu lange gedauert.
+                        Aus Sicherheitsgründen kann diese Anmeldung nicht mehr fortgesetzt werden.
+                        Bitte starten Sie die Anmeldung erneut.
+                        """,
                 "/api/auth/login?app_uri=/staff"
         );
         verifyNoInteractions(httpService);
@@ -247,8 +259,12 @@ class AuthControllerTest {
                 modelAndView,
                 response,
                 400,
-                "Es wurde kein Autorisierungscode übergeben.",
-                "Der Identitätsanbieter hat keinen Autorisierungscode zurückgegeben. Ohne diesen Code kann Prosuna keine Sitzung erstellen. Starten Sie die Anmeldung erneut.",
+                "Kein Autorisierungscode erhaltens",
+                """
+                        Bei der Anmeldung wurde kein erforderlicher Autorisierungscode zurückgegeben.
+                        Deshalb konnte die Anmeldung nicht abgeschlossen werden.
+                        Bitte starten Sie die Anmeldung erneut.
+                        """,
                 "/api/auth/login?app_uri=/staff/dashboard"
         );
         verifyNoInteractions(httpService);
@@ -273,8 +289,11 @@ class AuthControllerTest {
                 modelAndView,
                 response,
                 500,
-                "Failed to exchange authorization code for access token. status code: 500",
-                "Der Identitätsanbieter hat geantwortet, aber Prosuna konnte die Anmeldung nicht abschließen. Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support, falls der Fehler bestehen bleibt.",
+                "Unerwartete Rückmeldung beim einlösen des Authentifizierungscodes: 500",
+                """
+                        Die Antwort des Identitätsanbieters konnte nicht korrekt verarbeitet werden.
+                        Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support, falls der Fehler bestehen bleibt.
+                        """,
                 null
         );
         assertNull(findCookie(response, AuthController.ACCESS_COOKIE_NAME, "/api/"));

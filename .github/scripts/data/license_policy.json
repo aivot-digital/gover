@@ -457,28 +457,32 @@
       "_comment": "Prosuna internal package under Sustainable Use License."
     },
     "h2": {
-      "versions": ["2.3.232"],
-      "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
+      "versions": ["2.4.240"],
+      "_comment": "Reviewed under MPL-2.0; weak copyleft, used but not modified."
+    },
+    "json": {
+      "versions": ["20260814"],
+      "_comment": "Upstream declares this release Public Domain; reviewed as a non-SPDX license label."
     },
     "logback-classic": {
-      "versions": ["1.5.32"],
-      "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
+      "versions": ["1.5.38"],
+      "_comment": "Reviewed under EPL-2.0; weak copyleft, used but not modified."
     },
     "logback-core": {
-      "versions": ["1.5.32"],
-      "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
+      "versions": ["1.5.38"],
+      "_comment": "Reviewed under EPL-2.0; weak copyleft, used but not modified."
     },
     "jakarta.annotation-api": {
-      "versions": ["2.1.1"],
-      "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
+      "versions": ["3.0.0"],
+      "_comment": "Reviewed under EPL-2.0; weak copyleft, used but not modified."
     },
     "hibernate-core": {
       "versions": ["6.6.49.Final"],
       "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
     },
     "jakarta.persistence-api": {
-      "versions": ["3.1.0"],
-      "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
+      "versions": ["3.2.0"],
+      "_comment": "Reviewed under EPL-2.0; weak copyleft, used but not modified."
     },
     "jakarta.transaction-api": {
       "versions": ["2.0.1"],
@@ -488,25 +492,21 @@
       "versions": ["1.9.25.1"],
       "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
     },
-    "jakarta.mail": {
+    "jakarta.mail-api": {
+      "versions": ["2.1.5"],
+      "_comment": "Reviewed under EPL-2.0; weak copyleft, used but not modified."
+    },
+    "angus-mail": {
       "versions": ["2.0.5"],
-      "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
+      "_comment": "Reviewed under EPL-2.0; weak copyleft, used but not modified."
     },
     "javassist": {
       "versions": ["3.29.0-GA"],
       "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
     },
     "elkjs": {
-      "versions": ["0.11.1"],
-      "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
-    },
-    "logback-classic": {
-      "versions": ["1.5.32"],
-      "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
-    },
-    "logback-core": {
-      "versions": ["1.5.32"],
-      "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
+      "versions": ["0.12.0"],
+      "_comment": "Reviewed under EPL-2.0; weak copyleft, used but not modified."
     },
     "lightningcss": {
       "versions": ["1.33.0"],
@@ -529,37 +529,42 @@
     "slick@1.12.2": {
       "license": "MIT"
     },
-    "json@20250517": {
-      "license": "CC0-1.0"
-    },
-    "icu4j@25.0.3": {
-      "license": "ICU"
+    "icu4j@25.2.4": {
+      "license": "ICU",
+      "_comment": "Normalize the upstream Unicode/ICU License label to its SPDX identifier."
     },
     "jai-imageio-core@1.4.0": {
       "license": "LicenseRef-scancode-bsd-3-clause-no-nuclear-warranty"
     },
-    "bcprov-jdk18on@1.81": {
-      "license": "MIT"
+    "bcprov-jdk18on@1.84": {
+      "license": "MIT",
+      "_comment": "Normalize the upstream Bouncy Castle Licence label to MIT."
     },
-    "js-community@25.0.3": {
-      "license": "MIT"
+    "js@25.2.4": {
+      "license": "UPL-1.0",
+      "_comment": "Manual override for the GraalJS POM components with missing SBOM license information."
     },
-    "js@25.0.3": {
-      "license": "MIT"
+    "amqp-client@5.30.0": {
+      "license": "Apache-2.0",
+      "_comment": "Triple-licensed dependency; select the approved Apache-2.0 option."
     },
-    "amqp-client@5.25.0": {
-      "license": "Apache-2.0"
+    "dompurify@3.4.8": {
+      "license": "Apache-2.0",
+      "_comment": "Dual-licensed dependency; select the approved Apache-2.0 option."
     },
     "nodebox@0.1.8": {
       "license": "Sustainable Use License"
     },
-    "logback-classic@1.5.32": {
+    "logback-classic@1.5.38": {
       "license": "EPL-2.0"
     },
-    "logback-core@1.5.32": {
+    "logback-core@1.5.38": {
       "license": "EPL-2.0"
     },
-    "jakarta.mail@2.0.5": {
+    "jakarta.mail-api@2.1.5": {
+      "license": "EPL-2.0"
+    },
+    "angus-mail@2.0.5": {
       "license": "EPL-2.0"
     },
     "x-charts-vendor@9.11.1": {

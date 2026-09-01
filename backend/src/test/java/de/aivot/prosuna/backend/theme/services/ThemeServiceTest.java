@@ -2,7 +2,10 @@ package de.aivot.prosuna.backend.theme.services;
 
 import de.aivot.prosuna.backend.department.repositories.DepartmentRepository;
 import de.aivot.prosuna.backend.department.repositories.VDepartmentShadowedRepository;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
+import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
@@ -10,6 +13,8 @@ import de.aivot.prosuna.backend.theme.repositories.ThemeRepository;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -21,6 +26,45 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ThemeServiceTest {
+    @Test
+    void getFormThemesShouldPreferProcessVersionThenFormDepartmentsThenSystem() throws ResponseException {
+        var themeRepository = mock(ThemeRepository.class);
+        var departmentRepository = mock(VDepartmentShadowedRepository.class);
+        var systemService = mock(SystemService.class);
+        var processVersionTheme = new ThemeEntity().setId(1);
+        var responsibleTheme = new ThemeEntity().setId(2);
+        var managingTheme = new ThemeEntity().setId(3);
+        var systemTheme = new ThemeEntity().setId(4);
+
+        when(themeRepository.findById(1)).thenReturn(Optional.of(processVersionTheme));
+        when(themeRepository.findById(2)).thenReturn(Optional.of(responsibleTheme));
+        when(themeRepository.findById(3)).thenReturn(Optional.of(managingTheme));
+        when(departmentRepository.findById(20)).thenReturn(Optional.of(
+                new VDepartmentShadowedEntity().setId(20).setThemeId(2)
+        ));
+        when(departmentRepository.findById(30)).thenReturn(Optional.of(
+                new VDepartmentShadowedEntity().setId(30).setThemeId(3)
+        ));
+        when(systemService.retrieveDefaultTheme()).thenReturn(systemTheme);
+
+        var service = new ThemeService(
+                themeRepository,
+                mock(DepartmentRepository.class),
+                mock(AssetRepository.class),
+                departmentRepository,
+                systemService
+        );
+
+        var result = service.getFormThemesInOrderOfImportance(
+                new ProcessVersionEntity().setThemeId(1),
+                new FormLayoutElement()
+                        .setResponsibleDepartmentId(20)
+                        .setManagingDepartmentId(30)
+        );
+
+        assertEquals(List.of(processVersionTheme, responsibleTheme, managingTheme, systemTheme), result);
+    }
+
     @Test
     void performDeleteShouldRejectDefaultTheme() {
         var themeRepository = mock(ThemeRepository.class);

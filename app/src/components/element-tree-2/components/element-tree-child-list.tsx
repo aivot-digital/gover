@@ -360,8 +360,8 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                 parentElement={parents[parents.length - 1]}
                 allParents={parents}
                 title={addElementDialogTitle}
-                onAddElement={(ele) => {
-                    const updatedValue = [...value, ele];
+                onAddElements={(elements) => {
+                    const updatedValue = [...value, ...elements];
                     onChange(updatedValue as T[]);
                     setShowAddElementDialog(false);
                 }}

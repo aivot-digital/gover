@@ -1,12 +1,9 @@
 package de.aivot.prosuna.backend.user.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.KeycloakConfig;
 import de.aivot.prosuna.backend.user.models.KeycloakUser;
@@ -19,17 +16,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientResponseException;
+import tools.jackson.core.JacksonException;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Component
 public class KeyCloakApiService {
@@ -49,13 +43,13 @@ public class KeyCloakApiService {
         userToCreate.setId(null);
         userToCreate.setEmailVerified(false);
 
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getInstance();
 
         String keycloakUserJson;
         try {
             keycloakUserJson = mapper.writeValueAsString(userToCreate);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden", e);
         }
 
@@ -124,15 +118,16 @@ public class KeyCloakApiService {
         }
 
         if (response.statusCode() != 200) {
-            throw ResponseException.internalServerError("Die Liste der Mitarbeiter:innen konnte nicht geladen werden.", "Status-Code: " + response.statusCode() + " - " + response.body());
+            throw ResponseException.internalServerErrorWithDetails("Die Liste der Mitarbeiter:innen konnte nicht geladen werden.", "Status-Code: " + response.statusCode() + " - " + response.body());
         }
 
-        var mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        var mapper = JsonMapperFactory
+                .getInstance();
 
         Collection<KeycloakUser> keycloakUsers;
         try {
             keycloakUsers = mapper.readerForListOf(KeycloakUser.class).readValue(response.body());
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht geladen werden", e);
         }
 
@@ -152,16 +147,17 @@ public class KeyCloakApiService {
             if (response.statusCode() == 404) {
                 return Optional.empty();
             } else {
-                throw ResponseException.internalServerError("Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.", "Status-Code: " + response.statusCode() + " - " + response.body());
+                throw ResponseException.internalServerErrorWithDetails("Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.", "Status-Code: " + response.statusCode() + " - " + response.body());
             }
         }
 
-        var mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        var mapper = JsonMapperFactory
+                .getInstance();
 
         KeycloakUser keycloakUser;
         try {
             keycloakUser = mapper.readValue(response.body(), KeycloakUser.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht geladen werden", e);
         }
 
@@ -172,13 +168,13 @@ public class KeyCloakApiService {
         // Normalize the user object before updating
         userToUpdate.setId(userId);
 
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getInstance();
 
         String keycloakUserJson;
         try {
             keycloakUserJson = mapper.writeValueAsString(userToUpdate);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht aktualisiert werden", e);
         }
 
@@ -214,7 +210,7 @@ public class KeyCloakApiService {
         }
 
         if (response.getStatusCode().isError()) {
-            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht aktualisiert werden.", "Status-Code: " + response.getStatusCode());
+            throw ResponseException.internalServerErrorWithDetails("Die Mitarbeiter:in konnte nicht aktualisiert werden.", "Status-Code: " + response.getStatusCode());
         }
 
         return retrieveUser(userId)
@@ -254,12 +250,12 @@ public class KeyCloakApiService {
         }
 
         if (response.getStatusCode().isError()) {
-            throw ResponseException.internalServerError("Der Passwort-Reset kann nicht initiiert werden.", "Status-Code: " + response.getStatusCode());
+            throw ResponseException.internalServerErrorWithDetails("Der Passwort-Reset kann nicht initiiert werden.", "Status-Code: " + response.getStatusCode());
         }
     }
 
     public void setUserPassword(String userId, String password, boolean temporary) throws ResponseException {
-        var mapper = ObjectMapperFactory
+        var mapper = JsonMapperFactory
                 .getInstance();
 
         String passwordJson;
@@ -269,7 +265,7 @@ public class KeyCloakApiService {
             payload.put("temporary", temporary);
             payload.put("value", password);
             passwordJson = mapper.writeValueAsString(payload);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden.", e);
         }
 
@@ -305,7 +301,7 @@ public class KeyCloakApiService {
         }
 
         if (response.getStatusCode().isError()) {
-            throw ResponseException.internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden.", "Status-Code: " + response.getStatusCode());
+            throw ResponseException.internalServerErrorWithDetails("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden.", "Status-Code: " + response.getStatusCode());
         }
     }
 
@@ -333,11 +329,11 @@ public class KeyCloakApiService {
 
         try {
             return Optional.ofNullable(
-                    ObjectMapperFactory
+                    JsonMapperFactory
                             .getInstance()
                             .readValue(body, KeycloakUserValidationError.class)
             );
-        } catch (JsonProcessingException ignored) {
+        } catch (JacksonException ignored) {
             return Optional.empty();
         }
     }

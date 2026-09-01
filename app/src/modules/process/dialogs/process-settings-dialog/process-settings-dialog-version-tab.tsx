@@ -1,5 +1,5 @@
 import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState} from 'react';
-import {Alert, Stack} from '@mui/material';
+import {Alert, Box, Grid, Skeleton, Stack} from '@mui/material';
 import {ProcessVersionEntity} from '../../entities/process-version-entity';
 import {ElementEditorSectionHeader} from '../../../../components/element-editor-section-header/element-editor-section-header';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -17,10 +17,18 @@ import {ProcessDefinitionVersionApiService} from '../../services/process-definit
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {RichTextInputComponent} from '../../../../components/rich-text-input-component/rich-text-input-component';
+import {VDepartmentShadowedEntity} from '../../../departments/entities/v-department-shadowed-entity';
+import {DepartmentSelectField} from '../../../departments/components/department-select-field';
+import {type ThemeResponseDTO} from '../../../themes/models/theme';
+import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
+import {type SelectFieldComponentOption} from '../../../../components/select-field/select-field-component-option';
+import {Hint} from '../../../../components/hint/hint';
 
 interface ProcessSettingsDialogVersionTabProps {
     open: boolean;
     version: ProcessVersionEntity;
+    departments: VDepartmentShadowedEntity[];
+    themes: ThemeResponseDTO[] | null;
     onVersionChange: (version: ProcessVersionEntity) => void;
     onUnsavedChangesChange?: (hasUnsavedChanges: boolean) => void;
     onSavingChange?: (isSaving: boolean) => void;
@@ -53,6 +61,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
     const {
         open,
         version,
+        departments,
+        themes,
         onVersionChange,
         onUnsavedChangesChange,
         onSavingChange,
@@ -64,6 +74,26 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
 
     const isEditable = version.status === ProcessStatus.Drafted;
     const caseNumberType = getCaseNumberType(draft.caseNumberTemplate);
+    const themeOptions = useMemo<SelectFieldComponentOption[]>(() => {
+        return (themes ?? []).map((theme) => ({
+            value: theme.id.toString(),
+            label: theme.name,
+        }));
+    }, [themes]);
+    const departmentsById = useMemo(() => {
+        return new Map(departments.map((department) => [
+            department.id,
+            department,
+        ]));
+    }, [departments]);
+    const getDepartmentById = (departmentId: number | null | undefined) => {
+        return departmentId != null ? departmentsById.get(departmentId) : undefined;
+    };
+    const legalSupportDepartment = getDepartmentById(draft.legalSupportDepartmentId);
+    const technicalSupportDepartment = getDepartmentById(draft.technicalSupportDepartmentId);
+    const imprintDepartment = getDepartmentById(draft.imprintDepartmentId);
+    const privacyDepartment = getDepartmentById(draft.privacyDepartmentId);
+    const accessibilityDepartment = getDepartmentById(draft.accessibilityDepartmentId);
 
     useEffect(() => {
         if (open) {
@@ -105,7 +135,10 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
         return undefined;
     }, [draft.notes]);
 
-    const hasValidationError = publicTitleError != null || caseNumberTemplateError != null || notesError != null;
+    const hasValidationError =
+        publicTitleError != null ||
+        caseNumberTemplateError != null ||
+        notesError != null;
 
     const hasUnsavedChanges = useMemo(() => {
         return !deepEquals(
@@ -113,14 +146,53 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                 publicTitle: version.publicTitle,
                 caseNumberTemplate: version.caseNumberTemplate,
                 notes: version.notes,
+                themeId: version.themeId,
+                legalSupportDepartmentId: version.legalSupportDepartmentId,
+                technicalSupportDepartmentId: version.technicalSupportDepartmentId,
+                imprintDepartmentId: version.imprintDepartmentId,
+                privacyDepartmentId: version.privacyDepartmentId,
+                accessibilityDepartmentId: version.accessibilityDepartmentId,
+                processSpecificPrivacyStatement: version.processSpecificPrivacyStatement,
+                processSpecificAccessibilityStatement: version.processSpecificAccessibilityStatement,
             },
             {
                 publicTitle: draft.publicTitle,
                 caseNumberTemplate: draft.caseNumberTemplate,
                 notes: draft.notes,
+                themeId: draft.themeId,
+                legalSupportDepartmentId: draft.legalSupportDepartmentId,
+                technicalSupportDepartmentId: draft.technicalSupportDepartmentId,
+                imprintDepartmentId: draft.imprintDepartmentId,
+                privacyDepartmentId: draft.privacyDepartmentId,
+                accessibilityDepartmentId: draft.accessibilityDepartmentId,
+                processSpecificPrivacyStatement: draft.processSpecificPrivacyStatement,
+                processSpecificAccessibilityStatement: draft.processSpecificAccessibilityStatement,
             },
         );
-    }, [draft.caseNumberTemplate, draft.notes, draft.publicTitle, version.caseNumberTemplate, version.notes, version.publicTitle]);
+    }, [
+        draft.accessibilityDepartmentId,
+        draft.caseNumberTemplate,
+        draft.imprintDepartmentId,
+        draft.legalSupportDepartmentId,
+        draft.notes,
+        draft.privacyDepartmentId,
+        draft.processSpecificAccessibilityStatement,
+        draft.processSpecificPrivacyStatement,
+        draft.publicTitle,
+        draft.technicalSupportDepartmentId,
+        draft.themeId,
+        version.accessibilityDepartmentId,
+        version.caseNumberTemplate,
+        version.imprintDepartmentId,
+        version.legalSupportDepartmentId,
+        version.notes,
+        version.privacyDepartmentId,
+        version.processSpecificAccessibilityStatement,
+        version.processSpecificPrivacyStatement,
+        version.publicTitle,
+        version.technicalSupportDepartmentId,
+        version.themeId,
+    ]);
 
     useEffect(() => {
         onUnsavedChangesChange?.(hasUnsavedChanges);
@@ -162,6 +234,14 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
             publicTitle: draft.publicTitle.trim(),
             caseNumberTemplate: caseNumberType === CASE_NUMBER_TYPE_TEMPLATE ? draft.caseNumberTemplate?.trim() ?? '' : null,
             notes: draft.notes?.trim() === '' ? null : draft.notes?.trim() ?? null,
+            themeId: draft.themeId,
+            legalSupportDepartmentId: draft.legalSupportDepartmentId,
+            technicalSupportDepartmentId: draft.technicalSupportDepartmentId,
+            imprintDepartmentId: draft.imprintDepartmentId,
+            privacyDepartmentId: draft.privacyDepartmentId,
+            accessibilityDepartmentId: draft.accessibilityDepartmentId,
+            processSpecificPrivacyStatement: draft.processSpecificPrivacyStatement?.trim() === '' ? null : draft.processSpecificPrivacyStatement?.trim() ?? null,
+            processSpecificAccessibilityStatement: draft.processSpecificAccessibilityStatement?.trim() === '' ? null : draft.processSpecificAccessibilityStatement?.trim() ?? null,
         };
 
         setIsSaving(true);
@@ -182,7 +262,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
             .finally(() => {
                 setIsSaving(false);
             });
-    }, [caseNumberType, dispatch, draft.caseNumberTemplate, draft.notes, draft.publicTitle, hasUnsavedChanges, hasValidationError, isEditable, isSaving, onVersionChange, version]);
+    }, [caseNumberType, dispatch, draft, hasUnsavedChanges, hasValidationError, isEditable, isSaving, onVersionChange, version]);
 
     const handleReset = useCallback(() => {
         setDraft(version);
@@ -241,6 +321,234 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                 error={notesError}
                 hint="Halten Sie übergreifende Hinweise zur aktuell geöffneten Prozessversion fest, z. B. offene Punkte, Annahmen oder spätere Ergänzungen der Prozesskonfiguration."
             />
+
+            <ElementEditorSectionHeader
+                title="Erscheinungsbild"
+                variant="h6"
+                disableMarginTop
+                disableMarginBottom
+                maxWidth={680}
+            >
+                Das ausgewählte Erscheinungsbild gilt für alle Formulare dieser Prozessversion.
+            </ElementEditorSectionHeader>
+
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    maxWidth: 680,
+                }}
+            >
+                {
+                    themes == null &&
+                    <Skeleton
+                        width="100%"
+                        height={80}
+                    />
+                }
+                {
+                    themes != null &&
+                    <SelectFieldComponent
+                        label="Erscheinungsbild"
+                        value={draft.themeId?.toString() ?? null}
+                        onChange={(value) => {
+                            setDraft({
+                                ...draft,
+                                themeId: value != null ? parseInt(value) : null,
+                            });
+                        }}
+                        options={themeOptions}
+                        disabled={!isEditable || isSaving}
+                    />
+                }
+                <Hint
+                    summary="Sie können ein abweichendes Erscheinungsbild für alle Formulare dieser Prozessversion auswählen."
+                    detailsTitle="Erscheinungsbild"
+                    details={
+                        <>
+                            <p>
+                                Erscheinungsbilder werden nach folgendem Prioritätsprinzip angewendet. Der erste passende
+                                Eintrag in der folgenden Liste wird verwendet:
+                            </p>
+                            <ol>
+                                <li>Das Erscheinungsbild der Prozessversion</li>
+                                <li>Das Erscheinungsbild der zuständigen Organisationseinheit (Nur in Formularen)</li>
+                                <li>Das Erscheinungsbild der bewirtschaftenden Organisationseinheit (Nur in Formularen)</li>
+                                <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
+                                <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
+                            </ol>
+                            <p>
+                                Das Erscheinungsbild legt Farben, Logo und Favicon aller Formulare der Prozessversion fest.
+                            </p>
+                        </>
+                    }
+                    sx={{ml: 2}}
+                />
+            </Box>
+
+            <ElementEditorSectionHeader
+                title="Rechtliche Angaben"
+                variant="h6"
+                disableMarginTop
+                disableMarginBottom
+                maxWidth={680}
+            >
+                Rechtstexte werden auf Ebene der Organisationseinheiten hinterlegt und verwaltet. Diese Angaben gelten für alle Formulare dieser Prozessversion.
+            </ElementEditorSectionHeader>
+
+            <Grid
+                container
+                spacing={2}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 4,
+                    }}
+                >
+                    <DepartmentSelectField
+                        label="Text für das Impressum"
+                        value={imprintDepartment ?? null}
+                        onChange={(department) => {
+                            setDraft({
+                                ...draft,
+                                imprintDepartmentId: department?.id ?? null,
+                            });
+                        }}
+                        required
+                        disabled={!isEditable || isSaving}
+                    />
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 4,
+                    }}
+                >
+                    <DepartmentSelectField
+                        label="Allgemeiner Teil der Datenschutzerklärung"
+                        value={privacyDepartment ?? null}
+                        onChange={(department) => {
+                            setDraft({
+                                ...draft,
+                                privacyDepartmentId: department?.id ?? null,
+                            });
+                        }}
+                        required
+                        disabled={!isEditable || isSaving}
+                    />
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 4,
+                    }}
+                >
+                    <DepartmentSelectField
+                        label="Allgemeiner Teil der Barrierefreiheitserklärung"
+                        value={accessibilityDepartment ?? null}
+                        onChange={(department) => {
+                            setDraft({
+                                ...draft,
+                                accessibilityDepartmentId: department?.id ?? null,
+                            });
+                        }}
+                        required
+                        disabled={!isEditable || isSaving}
+                    />
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <RichTextInputComponent
+                        label="Prozessspezifischer Teil der Datenschutzerklärung"
+                        value={draft.processSpecificPrivacyStatement}
+                        hint="Beschreiben Sie hier die prozessspezifischen Datenschutzinformationen nach Art. 13 DSGVO, insbesondere konkret verarbeitete Daten, Zwecke, Rechtsgrundlagen, Empfänger, Speicherdauer und zuständige Stellen."
+                        onChange={(value) => {
+                            setDraft({
+                                ...draft,
+                                processSpecificPrivacyStatement: value,
+                            });
+                        }}
+                        disabled={!isEditable || isSaving}
+                    />
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <RichTextInputComponent
+                        label="Prozessspezifischer Teil der Barrierefreiheitserklärung"
+                        value={draft.processSpecificAccessibilityStatement}
+                        onChange={(value) => {
+                            setDraft({
+                                ...draft,
+                                processSpecificAccessibilityStatement: value,
+                            });
+                        }}
+                        disabled={!isEditable || isSaving}
+                    />
+                </Grid>
+            </Grid>
+
+            <ElementEditorSectionHeader
+                title="Kontakte"
+                variant="h6"
+                disableMarginTop
+                disableMarginBottom
+                maxWidth={680}
+            >
+                Kontaktinformationen werden auf Ebene der Organisationseinheit hinterlegt und verwaltet. Diese Angaben gelten für alle Formulare dieser Prozessversion.
+            </ElementEditorSectionHeader>
+
+            <Grid
+                container
+                spacing={2}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <DepartmentSelectField
+                        label="Fachlicher Support"
+                        value={legalSupportDepartment ?? null}
+                        onChange={(department) => {
+                            setDraft({
+                                ...draft,
+                                legalSupportDepartmentId: department?.id ?? null,
+                            });
+                        }}
+                        required
+                        disabled={!isEditable || isSaving}
+                    />
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <DepartmentSelectField
+                        label="Technischer Support"
+                        value={technicalSupportDepartment ?? null}
+                        onChange={(department) => {
+                            setDraft({
+                                ...draft,
+                                technicalSupportDepartmentId: department?.id ?? null,
+                            });
+                        }}
+                        required
+                        disabled={!isEditable || isSaving}
+                    />
+                </Grid>
+            </Grid>
 
             <ElementEditorSectionHeader
                 title="Vorgangsschlüssel"

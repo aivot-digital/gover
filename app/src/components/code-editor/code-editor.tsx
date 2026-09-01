@@ -7,22 +7,8 @@ import {CodeEditorProps} from './code-editor-props';
 import {ActionsProps} from '../actions/actions-props';
 import {Actions} from '../actions/actions';
 import {AlertComponent} from '../alert/alert-component';
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker.js?worker';
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker.js?worker';
 import {JavascriptApiService} from '../../modules/javascript/javascript-api-service';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
-
-self.MonacoEnvironment = {
-    getWorker(_, label) {
-        if (label === 'typescript' || label === 'javascript') {
-            return new tsWorker();
-        }
-        return new editorWorker();
-    },
-};
-
-loader.config({monaco});
-loader.init();
 
 export function CodeEditor(props: CodeEditorProps & ActionsProps) {
     const theme = useTheme();

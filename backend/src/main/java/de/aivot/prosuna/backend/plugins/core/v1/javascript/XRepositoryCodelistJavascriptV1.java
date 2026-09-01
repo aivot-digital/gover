@@ -55,8 +55,18 @@ public class XRepositoryCodelistJavascriptV1 implements JavascriptFunctionProvid
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Dieses Paket enthält Funktionen für Codelisten aus den XRepositories.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Bindet über eine URN referenzierte Codelisten aus den XRepositories in JavaScript-Ausdrücke ein.
+
+                Die Werte einer Codeliste können entweder vollständig oder als direkt verwendbare Auswahloptionen geladen werden. Damit stehen zentral veröffentlichte Verwaltungsstandards auch in Skripten und dynamischen Ausdrücken zur Verfügung.
+                """;
     }
 
     @Override

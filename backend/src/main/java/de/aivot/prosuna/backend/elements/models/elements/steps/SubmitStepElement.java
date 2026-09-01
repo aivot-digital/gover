@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.elements.models.elements.steps;
 
 import de.aivot.prosuna.backend.captcha.services.AltchaService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.InputElement;
@@ -111,7 +111,7 @@ public class SubmitStepElement extends BaseStepElement implements InputElement<M
 
     @Nullable
     public static Map<String, Object> _formatValue(@Nullable Object value) {
-        var om = ObjectMapperFactory
+        var om = JsonMapperFactory
                 .getInstance();
 
         if (value instanceof String sValue) {

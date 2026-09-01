@@ -1,21 +1,16 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.flow;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.enums.ValueFunctionType;
-import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
-import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.CodeInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.NoCodeInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.NoCodeInputElementItem;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
@@ -30,6 +25,7 @@ import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.bool.NoCodeOrOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -46,6 +42,7 @@ import de.aivot.prosuna.backend.process.services.ProcessDataService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
 
 import java.util.List;
 import java.util.Map;
@@ -102,14 +99,30 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Konditionelle Verzweigung (Wenn-Dann-Sonst)";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Leitet den Vorgang basierend auf einer Bedingung in unterschiedliche Pfade ein.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Wertet eine Bedingung aus und führt den Prozess abhängig vom Ergebnis über den Dann- oder Sonst-Ausgang fort.
+
+                Die Bedingung kann als Low-Code- oder No-Code-Ausdruck konfiguriert werden und auf die aktuellen Laufzeitdaten zugreifen. Ergebnis, gewählter Bedingungstyp und ausgewertete Bedingung werden als Elementausgänge bereitgestellt.
+                """;
     }
 
     @Nonnull
@@ -202,17 +215,20 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONDITION_EXPRESSION,
                         "Bedingungsausdruck",
-                        "Der konfigurierte Bedingungsausdruck."
+                        "Der konfigurierte Bedingungsausdruck.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONDITION_EVALUATED,
                         "Ausgewerteter Bedingungswert",
-                        "Der als JavaScript ausgewertete Rückgabewert des Bedingungsausdrucks."
+                        "Der als JavaScript ausgewertete Rückgabewert des Bedingungsausdrucks.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONDITION_VALUE,
                         "Boolesches Ergebnis",
-                        "Das boolesche Ergebnis der Bedingungsauswertung."
+                        "Das boolesche Ergebnis der Bedingungsauswertung.",
+                        "boolean"
                 )
         );
     }
@@ -370,10 +386,10 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
     @Nonnull
     private String serializeNoCodeOperand(@Nonnull NoCodeOperand noCodeCondition) {
         try {
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getInstance()
                     .writeValueAsString(noCodeCondition);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return "No-Code-Ausdruck";
         }
     }

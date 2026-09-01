@@ -42,7 +42,7 @@ import {useConfirm} from '../../providers/confirm-provider';
 import {cloneElement} from '../../utils/clone-element';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {isRootElement} from '../../models/elements/form-layout-element';
+import {isFormLayoutElement} from '../../models/elements/form-layout-element';
 import {UiDefinitionEmptyState} from '../ui-definition-empty-state/ui-definition-empty-state';
 import {deepEquals} from '../../utils/equality-utils';
 import Undo from '@aivot/mui-material-symbols-400-n25-outlined/Undo';
@@ -189,7 +189,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
             return null;
         }
 
-        return isRootElement(effectiveValue) ? 'section' : 'element';
+        return isFormLayoutElement(effectiveValue) ? 'section' : 'element';
     }, [allowedRootChildTypes.length, effectiveValue]);
 
     const setCurrentDraftValue = useCallback((nextDraftValue: UiDefinitionInputFieldElementItem | null) => {

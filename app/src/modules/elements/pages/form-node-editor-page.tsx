@@ -41,7 +41,7 @@ import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
 import {Allotment} from 'allotment';
 import {useElementSize} from '../../../utils/element-size';
-import {clearLoadingMessage, setLoadingMessage} from '../../../slices/shell-slice';
+import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../../slices/shell-slice';
 import {PrefillFormDialog} from '../../../dialogs/prefill-form-dialog/prefill-form-dialog';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import QrCode from '@aivot/mui-material-symbols-400-n25-outlined/QrCode';
@@ -86,7 +86,6 @@ import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {RootStructureActionsContextProvider} from '../../../components/form/root-structure-actions-context';
 import {RootComponentFooter} from '../../../components/form/root-component-footer';
 import {SUBMIT_EVENT} from '../../../components/form/root.component.view';
-import {BaseApiService} from '../../../services/base-api-service';
 import {ProcessTestClaimApiService} from '../../process/services/process-test-claim-api-service';
 import {walkAuthoredElementValues} from '../../../utils/element-data-utils';
 import {FileUploadElementItem, isFileUploadElementItem} from '../../../models/elements/form/input/file-upload-element';
@@ -123,6 +122,8 @@ import {AssetsApiService} from '../../assets/assets-api-service';
 import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
 import {Chip} from '../../../components/chip/chip';
 import {quoteString} from '../../../utils/string-utils';
+import {PaymentRequestOverview} from '../../payment/components/payment-request-overview';
+import {isApiError} from '../../../models/api-error';
 import {resolveThemeChainLogoKey} from '../../../theming/resolve-theme-logo';
 
 export const DialogSearchParam = 'dialog';
@@ -131,6 +132,14 @@ const FormLayoutFieldKey = 'formLayout';
 const IdentitiesFieldKey = 'identities';
 const PrintablePdfFallbackFilenameBase = 'Formulareingang';
 const PrintablePdfFilenameBaseMaxLength = 120;
+const EditorLoadErrorMessage = 'Der Formulareditor konnte nicht geladen werden.';
+
+function createEditorLoadError(error: unknown) {
+    return {
+        status: isApiError(error) ? error.status : 500,
+        message: isApiError(error) && error.displayableToUser ? error.message : EditorLoadErrorMessage,
+    };
+}
 
 function getIdentityDisplayName(identity: Pick<IdentityConfigElementSlot, 'title'>): string {
     const title = identity.title?.trim();
@@ -162,7 +171,6 @@ function resolvePrintablePdfFilename(layout: FormLayoutElement | null, node: Pro
         node.name,
         PrintablePdfFallbackFilenameBase,
     ];
-
 
 
     for (const candidate of candidates) {
@@ -221,7 +229,10 @@ export function FormNodeEditorPage() {
             .map(({identity}) => identity);
     }, [identityMappingInformation]);
 
-    const [startedProcessAccessKey, setStartedProcessAccessKey] = useState<string | null>(null);
+    const [startedProcessAccessInfo, setStartedProcessAccessInfo] = useState<{
+        processInstanceAccessKey: string;
+        paymentRequired: boolean;
+    } | null>(null);
 
     const {
         dialog: changeBlockerDialog,
@@ -300,7 +311,7 @@ export function FormNodeEditorPage() {
                 setFormLayout(cloneFormLayoutSnapshot(uiElement as FormLayoutElement));
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Die UI-Definition konnte nicht geladen werden.'));
+                dispatch(setErrorMessage(createEditorLoadError(err)));
             });
     }, [dispatch, nodeId]);
 
@@ -337,6 +348,9 @@ export function FormNodeEditorPage() {
                     setTestClaim(null);
                     testClaimRef.current = null;
                 }
+            })
+            .catch((err) => {
+                dispatch(setErrorMessage(createEditorLoadError(err)));
             });
     }, [node]);
 
@@ -373,7 +387,7 @@ export function FormNodeEditorPage() {
     }, [node, process, processVersion, testClaim]);
 
     const hasFormLayout = formLayout != null;
-    const selectedFormThemeId = formLayout?.themeId ?? null;
+    const selectedProcessVersionThemeId = processVersion?.themeId ?? null;
     const selectedResponsibleDepartmentId = formLayout?.responsibleDepartmentId ?? null;
     const selectedManagingDepartmentId = formLayout?.managingDepartmentId ?? null;
 
@@ -385,8 +399,8 @@ export function FormNodeEditorPage() {
 
         let isCancelled = false;
 
-        // The public theme endpoint resolves the persisted form only. Resolve the draft chain here so
-        // unsaved theme changes, including clearing the explicit form theme, are reflected immediately.
+        // The public theme endpoint resolves persisted data only. Resolve draft department changes here
+        // so the preview reflects unsaved form configuration immediately.
         setDraftPreviewThemeChain([]);
 
         const themesApi = new ThemesApiService(api);
@@ -420,7 +434,7 @@ export function FormNodeEditorPage() {
         (async () => {
             const themeChain: AppTheme[] = [];
 
-            await appendTheme(themeChain, selectedFormThemeId);
+            await appendTheme(themeChain, selectedProcessVersionThemeId);
             await appendDepartmentTheme(themeChain, selectedResponsibleDepartmentId);
             await appendDepartmentTheme(themeChain, selectedManagingDepartmentId);
 
@@ -435,7 +449,7 @@ export function FormNodeEditorPage() {
     }, [
         api,
         hasFormLayout,
-        selectedFormThemeId,
+        selectedProcessVersionThemeId,
         selectedResponsibleDepartmentId,
         selectedManagingDepartmentId,
     ]);
@@ -534,14 +548,14 @@ export function FormNodeEditorPage() {
         setFormLayout(cloneFormLayoutSnapshot(nextForm));
     };
 
-    const handleSave = () => {
+    const saveForm = async (): Promise<void> => {
         if (node == null || formLayout == null || !isEditable) {
             return;
         }
 
         const formLayoutForStorage = normalizeUiDefinitionForStorage(formLayout);
 
-        return new ProcessNodeApiService()
+        const updated = await new ProcessNodeApiService()
             .update(node.id, {
                 ...node,
                 configuration: {
@@ -552,14 +566,21 @@ export function FormNodeEditorPage() {
                 query: {
                     onlyConfigSave: FormLayoutFieldKey,
                 },
-            })
-            .then((updated) => {
-                setNode(updated);
-                setFormLayout(
-                    updated.configuration[FormLayoutFieldKey] ??
-                    generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement
-                );
             });
+
+        setNode(updated);
+        setFormLayout(
+            updated.configuration[FormLayoutFieldKey] ??
+            generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement,
+        );
+    };
+
+    const handleSave = async (): Promise<void> => {
+        try {
+            await saveForm();
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Fehler beim Speichern der Änderungen'));
+        }
     };
 
     const onBackToProcess = () => {
@@ -579,6 +600,7 @@ export function FormNodeEditorPage() {
             return;
         }
 
+        let xmlContent: string | null;
         try {
             const conf = await confirm({
                 title: 'XDatenfeld-Schema importieren',
@@ -588,7 +610,8 @@ export function FormNodeEditorPage() {
                             Sie sind im Begriff, ein XDatenfeld-Schema zu importieren.
                         </Typography>
                         <Typography>
-                            Beim Import werden ggf. bereits bestehende Formularfelder im Editor durch die importierte Struktur ersetzt.
+                            Beim Import werden ggf. bereits bestehende Formularfelder im Editor durch die importierte
+                            Struktur ersetzt.
                             Möchten Sie den Vorgang wirklich fortsetzen?
                         </Typography>
                     </>
@@ -600,25 +623,30 @@ export function FormNodeEditorPage() {
                 return;
             }
 
-            const xmlContent = await uploadTextFile('text/xml');
+            xmlContent = await uploadTextFile('text/xml');
 
             if (xmlContent == null) {
                 return;
             }
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Beim Importieren des XDatenfeld-Schemas ist ein Fehler aufgetreten.'));
+            return;
+        }
 
-            dispatch(setLoadingMessage({
-                blocking: true,
-                estimatedTime: 1000,
-                message: 'Importiere XDF',
-            }));
+        dispatch(setLoadingMessage({
+            blocking: true,
+            estimatedTime: 1000,
+            message: 'Importiere XDF',
+        }));
 
+        try {
             const transformed = await new XdfApiService().xdfTransform(xmlContent);
 
             setFormLayout(transformed);
-
-            dispatch(clearLoadingMessage());
         } catch (err) {
             dispatch(showApiErrorSnackbar(err, 'Beim Importieren des XDatenfeld-Schemas ist ein Fehler aufgetreten.'));
+        } finally {
+            dispatch(clearLoadingMessage());
         }
     };
 
@@ -694,7 +722,7 @@ export function FormNodeEditorPage() {
 
             if (saveNow) {
                 try {
-                    await handleSave();
+                    await saveForm();
                 } catch (err) {
                     console.error(err);
                     dispatch(showApiErrorSnackbar(err, 'Fehler beim Speichern der Änderungen'));
@@ -967,7 +995,7 @@ export function FormNodeEditorPage() {
     const formAssetQueryParams = new URLSearchParams({
         version: processVersion.processVersion.toString(),
     });
-    formAssetQueryParams.set('theme-id', formLayout.themeId?.toString() ?? 'default');
+    formAssetQueryParams.set('theme-id', processVersion.themeId?.toString() ?? 'default');
     if (testClaim != null) {
         formAssetQueryParams.set('test-claim', testClaim.accessKey);
     }
@@ -1000,155 +1028,186 @@ export function FormNodeEditorPage() {
             return;
         }
 
-        if (disableValidation) {
-            const confirmProcess = await confirm({
-                title: 'Fortfahren ohne Validierungen',
-                children: (
-                    <>
+        let errorMessage = 'Das Absenden des Formulars konnte nicht vorbereitet werden.';
+        let loadingStarted = false;
+        try {
+            if (disableValidation) {
+                const confirmProcess = await confirm({
+                    title: 'Fortfahren ohne Validierungen',
+                    children: (
+                        <>
+                            <Typography>
+                                Sie haben die Validierungen für dieses Formular deaktiviert.
+                                Es können ungültige oder fehlenden Eingaben vorliegen, die zu Fehlern beim Absenden des
+                                Formulars führen können.
+                                Nur wenn alle Felder gültig sind, kann das Formular korrekt abgesendet werden.
+                                Andernfalls wird die Einreichung automatisch abgelehnt.
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    mt: 2,
+                                }}
+                            >
+                                Sind Sie sicher, dass Sie fortfahren möchten?
+                            </Typography>
+                        </>
+                    ),
+                    confirmButtonText: 'Ja, fortfahren',
+                });
+
+                if (!confirmProcess) {
+                    return;
+                }
+            }
+
+            // Check if a slug is configured and break if no slug is present because we cannot submit data without a slug
+            if (node.configuration.formSlug == null || node.configuration.formSlug === '') {
+                await confirm({
+                    title: 'Keine Formular-URL vergeben',
+                    children: (
                         <Typography>
-                            Sie haben die Validierungen für dieses Formular deaktiviert.
-                            Es können ungültige oder fehlenden Eingaben vorliegen, die zu Fehlern beim Absenden des
-                            Formulars führen können.
-                            Nur wenn alle Felder gültig sind, kann das Formular korrekt abgesendet werden.
-                            Andernfalls wird die Einreichung automatisch abgelehnt.
+                            Sie haben für dieses Formular keine Formular-URL konfiguriert.
+                            Öffnen Sie die Eigenschaften des entsprechenden Formular-Eingangselements und konfigurieren
+                            Sie eine Formular-URL, damit dieses Formular abgesendet werden kann.
                         </Typography>
-                        <Typography
-                            sx={{
-                                mt: 2,
-                            }}
-                        >
-                            Sind Sie sicher, dass Sie fortfahren möchten?
+                    ),
+                    confirmButtonText: 'Ok',
+                    hideCancelButton: true,
+                });
+                return;
+            }
+
+            // Check if changes exist. If so, ask for saving them.
+            if (hasChanged) {
+                const saveNow = await confirm({
+                    title: 'Ungespeicherte Änderungen',
+                    children: (
+                        <Typography>
+                            Sie haben aktuell ungespeicherte Änderungen.
+                            Diese müssen gespeichert werden, damit sie beim Absenden des Formulars berücksichtigt
+                            werden.
+                            Sie können die Änderungen jetzt speichern.
                         </Typography>
-                    </>
-                ),
-                confirmButtonText: 'Ja, fortfahren',
-            });
+                    ),
+                    confirmButtonText: 'Jetzt speichern',
+                });
 
-            if (!confirmProcess) {
-                return;
-            }
-        }
+                if (!saveNow) {
+                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da es ungespeicherte Änderungen gibt.'));
+                    return;
+                }
 
-        // Check if a slug is configured and break if no slug is present because we cannot submit data without a slug
-        if (node.configuration.formSlug == null || node.configuration.formSlug === '') {
-            await confirm({
-                title: 'Keine Formular-URL vergeben',
-                children: (
-                    <Typography>
-                        Sie haben für dieses Formular keine Formular-URL konfiguriert.
-                        Öffnen Sie die Eigenschaften des entsprechenden Formular-Eingangselements und konfigurieren
-                        Sie eine Formular-URL, damit dieses Formular abgesendet werden kann.
-                    </Typography>
-                ),
-                confirmButtonText: 'Ok',
-                hideCancelButton: true,
-            });
-            return;
-        }
-
-        // Check if changes exist. If so, ask for saving them.
-        if (hasChanged) {
-            const saveNow = await confirm({
-                title: 'Ungespeicherte Änderungen',
-                children: (
-                    <Typography>
-                        Sie haben aktuell ungespeicherte Änderungen.
-                        Diese müssen gespeichert werden, damit sie beim Absenden des Formulars berücksichtigt
-                        werden.
-                        Sie können die Änderungen jetzt speichern.
-                    </Typography>
-                ),
-                confirmButtonText: 'Jetzt speichern',
-            });
-
-            if (!saveNow) {
-                dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da es ungespeicherte Änderungen gibt.'));
-                return;
+                errorMessage = 'Fehler beim Speichern der Änderungen';
+                await saveForm();
             }
 
-            await handleSave();
-        }
-
-        const testClaimApi = new ProcessTestClaimApiService();
-
-        let testClaim = await testClaimApi
-            .listAll({
-                processId: node.processId,
-                processVersion: node.processVersion,
-            })
-            .then(response => {
-                return response.content.length > 0 ? response.content[0] : null;
-            });
-
-        if (testClaim == null) {
-            const createTestClaim = await confirm({
-                title: 'Nicht im Test-Modus',
-                children: (
-                    <Typography>
-                        Der Prozess, für den Sie das Formular absenden möchten, befindet
-                        sich <strong>nicht</strong> im Testmodus.
-                        Sie können den Prozess jetzt in den Testmodus versetzen, um das Formular absenden zu können.
-                    </Typography>
-                ),
-                confirmButtonText: 'Testmodus starten',
-            });
-
-            if (!createTestClaim) {
-                dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da der Prozess nicht im Testmodus ist.'));
-                return;
-            }
-
-            testClaim = await testClaimApi
-                .create({
-                    ...testClaimApi.initialize(),
+            errorMessage = 'Der Testmodus für das Formular konnte nicht vorbereitet werden.';
+            const testClaimApi = new ProcessTestClaimApiService();
+            let testClaim = await testClaimApi
+                .listAll({
                     processId: node.processId,
                     processVersion: node.processVersion,
+                })
+                .then(response => {
+                    return response.content.length > 0 ? response.content[0] : null;
                 });
-            setTestClaim(testClaim);
-            testClaimRef.current = testClaim;
-        }
 
-        const formData = new FormData();
-        formData.append('inputs', JSON.stringify(values));
+            if (testClaim == null) {
+                const createTestClaim = await confirm({
+                    title: 'Nicht im Test-Modus',
+                    children: (
+                        <Typography>
+                            Der Prozess, für den Sie das Formular absenden möchten, befindet
+                            sich <strong>nicht</strong> im Testmodus.
+                            Sie können den Prozess jetzt in den Testmodus versetzen, um das Formular absenden zu können.
+                        </Typography>
+                    ),
+                    confirmButtonText: 'Testmodus starten',
+                });
 
-        const files: FileUploadElementItem[] = [];
-        walkAuthoredElementValues(formLayout, values, (element, value) => {
-            if (element.type === ElementType.FileUpload && Array.isArray(value) && value.length > 0 && isFileUploadElementItem(value[0])) {
-                files.push(...value);
+                if (!createTestClaim) {
+                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da der Prozess nicht im Testmodus ist.'));
+                    return;
+                }
+
+                testClaim = await testClaimApi
+                    .create({
+                        ...testClaimApi.initialize(),
+                        processId: node.processId,
+                        processVersion: node.processVersion,
+                    });
+                setTestClaim(testClaim);
+                testClaimRef.current = testClaim;
             }
-        });
 
-        for (const file of files) {
-            const blob = await fetch(file.uri).then((r) => r.blob());
-            formData.append('files', blob, file.name);
-            formData.append('fileUris', file.uri);
-        }
+            errorMessage = 'Beim Berechnen der Kosten ist ein unbekannter Fehler aufgetreten.';
+            const costs = await new FormTriggerApiService()
+                .calculateCosts(process.slug, node.configuration.formSlug, values, {
+                    testClaim: testClaim.accessKey,
+                });
+            const paymentRequired = costs.totalCost > 0;
 
-        dispatch(setLoadingMessage({
-            blocking: true,
-            estimatedTime: 1000,
-            message: 'Formular wird abgesendet',
-        }));
+            if (paymentRequired) {
+                const proceedWithPaymentRequirements = await confirm({
+                    title: 'Zahlung erforderlich',
+                    children: (
+                        <PaymentRequestOverview
+                            request={costs}
+                        />
+                    ),
+                    confirmButtonText: 'Fortfahren',
+                });
 
-        try {
-            const startRes = await new BaseApiService()
-                .postFormData<{
-                    startedProcessAccessKey: string;
-                }>(
-                    `/api/public/form/${process?.slug}/${node.configuration.formSlug}/submit/`,
-                    formData,
-                    {
-                        query: {
-                            'test-claim': testClaimRef.current?.accessKey,
-                        },
-                    },
-                );
+                if (!proceedWithPaymentRequirements) {
+                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen.'));
+                    return;
+                }
+            }
 
-            setStartedProcessAccessKey(startRes.startedProcessAccessKey);
+            errorMessage = 'Die Anhänge konnten nicht für das Absenden vorbereitet werden.';
+            const formData = new FormData();
+            formData.append('inputs', JSON.stringify(values));
+
+            const files: FileUploadElementItem[] = [];
+            walkAuthoredElementValues(formLayout, values, (element, value) => {
+                if (element.type === ElementType.FileUpload && Array.isArray(value) && value.length > 0 && isFileUploadElementItem(value[0])) {
+                    files.push(...value);
+                }
+            });
+
+            for (const file of files) {
+                const response = await fetch(file.uri);
+                if (!response.ok) {
+                    throw new Error(`Failed to load attachment ${file.name}`);
+                }
+                const blob = await response.blob();
+                formData.append('files', blob, file.name);
+                formData.append('fileUris', file.uri);
+            }
+
+            dispatch(setLoadingMessage({
+                blocking: true,
+                estimatedTime: 1000,
+                message: 'Formular wird abgesendet',
+            }));
+            loadingStarted = true;
+            errorMessage = 'Beim Absenden des Formulars ist ein Fehler aufgetreten';
+
+            const startRes = await new FormTriggerApiService()
+                .submitForm(process.slug, node.configuration.formSlug, formData, {
+                    testClaim: testClaim.accessKey,
+                });
+
+            setStartedProcessAccessInfo({
+                processInstanceAccessKey: startRes.startedProcessAccessKey,
+                paymentRequired: paymentRequired,
+            });
         } catch (err) {
-            dispatch(showApiErrorSnackbar(err, 'Beim Absenden des Formulars ist ein Fehler aufgetreten'));
+            dispatch(showApiErrorSnackbar(err, errorMessage));
         } finally {
-            dispatch(clearLoadingMessage());
+            if (loadingStarted) {
+                dispatch(clearLoadingMessage());
+            }
         }
     };
 
@@ -1218,13 +1277,13 @@ export function FormNodeEditorPage() {
                                                     onDeleteFormData={() => {
                                                         dispatch(setCurrentStep(0));
                                                         setAuthoredElementValues({});
-                                                        setStartedProcessAccessKey(null);
+                                                        setStartedProcessAccessInfo(null);
                                                         IdentityProvidersApiService.clearIdentity(node.id);
                                                     }}
                                                 />
 
                                                 {
-                                                    startedProcessAccessKey == null &&
+                                                    startedProcessAccessInfo == null &&
                                                     <ElementTreeInlineEditorContextProvider
                                                         value={{
                                                             cloneElement: handleCloneElement,
@@ -1248,9 +1307,10 @@ export function FormNodeEditorPage() {
                                                     </ElementTreeInlineEditorContextProvider>
                                                 }
                                                 {
-                                                    startedProcessAccessKey != null &&
+                                                    startedProcessAccessInfo != null &&
                                                     <Submitted
-                                                        startedProcessAccessKey={startedProcessAccessKey}
+                                                        startedProcessAccessKey={startedProcessAccessInfo.processInstanceAccessKey}
+                                                        paymentRequired={startedProcessAccessInfo.paymentRequired}
                                                         formElement={formLayout}
                                                         node={node}
                                                         process={process}
@@ -1271,24 +1331,28 @@ export function FormNodeEditorPage() {
                                                     onHide={() => dispatch(showDialog(undefined))}
                                                     open={metaDialog === HelpDialogId}
                                                     form={formLayout}
+                                                    version={processVersion}
                                                 />
 
                                                 <PrivacyDialog
                                                     onHide={() => dispatch(showDialog(undefined))}
                                                     open={metaDialog === PrivacyDialogId}
                                                     form={formLayout}
+                                                    version={processVersion}
                                                 />
 
                                                 <ImprintDialog
                                                     onHide={() => dispatch(showDialog(undefined))}
                                                     open={metaDialog === ImprintDialogId}
                                                     form={formLayout}
+                                                    version={processVersion}
                                                 />
 
                                                 <AccessibilityDialog
                                                     onHide={() => dispatch(showDialog(undefined))}
                                                     open={metaDialog === AccessibilityDialogId}
                                                     form={formLayout}
+                                                    version={processVersion}
                                                 />
                                             </Box>
                                         </ThemeProvider>
@@ -1414,13 +1478,13 @@ export function FormNodeEditorPage() {
                 parentType={formLayout.type}
                 parentElement={formLayout}
                 allParents={[formLayout]}
-                onAddElement={(e) => {
+                onAddElements={(elements) => {
                     if (isAnyElementWithChildren(formLayout)) {
                         handlePatch({
                             ...formLayout,
                             children: [
                                 ...(formLayout.children ?? []) as any[],
-                                e,
+                                ...elements,
                             ],
                         });
                     }

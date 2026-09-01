@@ -68,7 +68,7 @@ public class ProcessNodeExecutionResultHandler {
 
     public void handleResult(@Nonnull ProcessNodeExecutionLogger logger,
                              @Nullable UserEntity triggeringUser,
-                             @Nonnull ProcessNodeDefinition provider,
+                             @Nonnull ProcessNodeDefinition<?> provider,
                              @Nonnull ProcessNodeEntity currentNode,
                              @Nonnull ProcessInstanceEntity processInstance,
                              @Nonnull ProcessInstanceTaskEntity processInstanceTask,
@@ -95,47 +95,26 @@ public class ProcessNodeExecutionResultHandler {
                     .setAlreadyLogged(true);
         }
 
+        var context = new HandlerContext<>(
+                logger,
+                triggeringUser,
+                provider,
+                currentNode,
+                processInstance,
+                processInstanceTask,
+                previousTask,
+                executionResult
+        );
+
         switch (executionResult) {
-            case ProcessNodeExecutionResultTaskUpdated taskUpdated -> handleTaskUpdated(
-                    logger,
-                    triggeringUser,
-                    provider,
-                    currentNode,
-                    processInstance,
-                    processInstanceTask,
-                    previousTask,
-                    taskUpdated
-            );
-            case ProcessNodeExecutionResultTaskCompleted taskCompleted -> handleTaskComplete(
-                    logger,
-                    triggeringUser,
-                    provider,
-                    currentNode,
-                    processInstance,
-                    processInstanceTask,
-                    previousTask,
-                    taskCompleted
-            );
-            case ProcessNodeExecutionResultInstanceCompleted instanceCompleted -> handleInstanceComplete(
-                    logger,
-                    triggeringUser,
-                    provider,
-                    currentNode,
-                    processInstance,
-                    processInstanceTask,
-                    previousTask,
-                    instanceCompleted
-            );
-            case ProcessNodeExecutionResultTaskAssigned assigned -> handleAssigned(
-                    logger,
-                    triggeringUser,
-                    provider,
-                    currentNode,
-                    processInstance,
-                    processInstanceTask,
-                    previousTask,
-                    assigned
-            );
+            case ProcessNodeExecutionResultPaymentRequested paymentRequested -> handlePaymentRequested(context.withResult(paymentRequested));
+            case ProcessNodeExecutionResultTaskUpdated taskUpdated -> handleTaskUpdated(context.withResult(taskUpdated));
+            case ProcessNodeExecutionResultTaskCompleted taskCompleted -> handleTaskComplete(context.withResult(taskCompleted));
+            case ProcessNodeExecutionResultInstanceCompleted instanceCompleted -> handleInstanceComplete(context.withResult(instanceCompleted));
+            case ProcessNodeExecutionResultTaskAssigned assigned -> handleAssigned(context.withResult(assigned));
+            case ProcessNodeExecutionResultNoop ignored -> {
+                // Do nothing here.
+            }
             default -> throw new ProcessNodeExecutionExceptionBrokenImplementation(
                     """
                             Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine unbekanntes Ergebnisklasse erzeugt: „%s“.
@@ -148,20 +127,35 @@ public class ProcessNodeExecutionResultHandler {
         }
     }
 
-    private void handleAssigned(@Nonnull ProcessNodeExecutionLogger logger,
-                                @Nullable UserEntity triggeringUser,
-                                @Nonnull ProcessNodeDefinition provider,
-                                @Nonnull ProcessNodeEntity currentNode,
-                                @Nonnull ProcessInstanceEntity processInstance,
-                                @Nonnull ProcessInstanceTaskEntity processInstanceTask,
-                                @Nullable ProcessInstanceTaskEntity previousTask,
-                                @Nonnull ProcessNodeExecutionResultTaskAssigned assigned) throws ProcessNodeExecutionException {
-        String previousAssignedUserId = processInstanceTask.getAssignedUserId();
+    private void handlePaymentRequested(@Nonnull HandlerContext<ProcessNodeExecutionResultPaymentRequested> context) {
+        context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingPayment);
+        assignAndSaveDataLayersAndStatusOverride(context, false);
+
+        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(context.processInstance);
+        }
+
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                false,
+                true,
+                "Zahlung angefordert",
+                "Es wurde eine Zahlung über den Zahlungsanbieter %s mit der Transaktions-ID %s angefordert.",
+                StringUtils.quote(context.result.getPaymentProviderName()),
+                StringUtils.quote(context.result.getTransactionKey())
+        );
+
+        // TODO: Use communication package to send payment request information to target in a later product iteration.
+    }
+
+    private void handleAssigned(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskAssigned> context) throws ProcessNodeExecutionException {
+        String previousAssignedUserId = context.processInstanceTask.getAssignedUserId();
 
         UserEntity assignedUser;
         try {
             assignedUser = userService
-                    .retrieve(assigned.getAssignedUserId())
+                    .retrieve(context.result.getAssignedUserId())
                     .orElse(null);
         } catch (ResponseException e) {
             throw new ProcessNodeExecutionExceptionInvalidAssignment(
@@ -170,9 +164,9 @@ public class ProcessNodeExecutionResultHandler {
                             Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine ungültige Mitarbeiter:in-ID „%s“ zurückgegeben.
                             Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
                             """,
-                    provider.getName(),
-                    currentNode.resolveName(provider),
-                    assigned.getAssignedUserId()
+                    context.provider.getName(),
+                    context.currentNode.resolveName(context.provider),
+                    context.result.getAssignedUserId()
             );
         }
 
@@ -182,58 +176,31 @@ public class ProcessNodeExecutionResultHandler {
                             Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine unbekannte Mitarbeiter:in-ID „%s“ zurückgegeben.
                             Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
                             """,
-                    provider.getName(),
-                    currentNode.resolveName(provider),
-                    assigned.getAssignedUserId()
+                    context.provider.getName(),
+                    context.currentNode.resolveName(context.provider),
+                    context.result.getAssignedUserId()
             );
         }
 
-        var newRuntimeData = assigned.getRuntimeData();
-        if (newRuntimeData == null) {
-            newRuntimeData = new HashMap<>();
-        }
-        processInstanceTask.setRuntimeData(newRuntimeData);
+        context.processInstanceTask.setAssignedUserId(context.result.getAssignedUserId());
+        assignAndSaveDataLayersAndStatusOverride(context, false);
 
-        var newMetadata = assigned.getNodeData();
-        if (newMetadata == null) {
-            newMetadata = new HashMap<>();
-        }
-        processInstanceTask.setNodeData(newMetadata);
-
-        var newWorkingData = assigned.getProcessData();
-        if (newWorkingData == null) {
-            newWorkingData = previousTask != null ?
-                    previousTask.getProcessData() :
-                    processInstance.getInitialPayload();
-        }
-        processInstanceTask.setProcessData(newWorkingData);
-        processInstanceTask.setAssignedUserId(assigned.getAssignedUserId());
-
-        if (assigned.getTaskStatusOverride() != null) {
-            processInstanceTask.setStatusOverride(assigned.getTaskStatusOverride());
-        }
-        if (Boolean.TRUE.equals(assigned.getClearTaskStatusOverride())) {
-            processInstanceTask.setStatusOverride(null);
-        }
-
-        processInstanceTaskRepository.save(processInstanceTask);
-
-        if (triggeringUser != null) {
-            logger.logf(
+        if (context.triggeringUser != null) {
+            context.logger.logf(
                     ProcessNodeExecutionLogLevel.Info,
                     false,
                     true,
                     "Aufgabe neu zugewiesen",
                     "Die Aufgabe wurde durch %s der Mitarbeiter:in %s zugewiesen.",
-                    StringUtils.quote(triggeringUser.getFullName()),
+                    StringUtils.quote(context.triggeringUser.getFullName()),
                     StringUtils.quote(assignedUser.getFullName())
             );
         } else {
-            logger.logf(
+            context.logger.logf(
                     ProcessNodeExecutionLogLevel.Info,
                     true,
                     true,
-                    "Aufgabe " + StringUtils.quote(currentNode.resolveName(provider)) + " automatisch zugewiesen",
+                    "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " automatisch zugewiesen",
                     "Die Aufgabe wurde automatisch der Mitarbeiter:in %s zugewiesen.",
                     StringUtils.quote(assignedUser.getFullName())
             );
@@ -243,27 +210,27 @@ public class ProcessNodeExecutionResultHandler {
             return;
         }
 
-        if (triggeringUser != null && assignedUser.getId().equals(triggeringUser.getId())) {
+        if (context.triggeringUser != null && assignedUser.getId().equals(context.triggeringUser.getId())) {
             return;
         }
 
-        if (processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            processInstance.setStatus(ProcessInstanceStatus.Running);
-            processInstanceRepository.save(processInstance);
+        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(context.processInstance);
         }
 
         try {
             processTaskMailService.sendAssigned(
-                    triggeringUser,
+                    context.triggeringUser,
                     assignedUser,
-                    processInstance,
-                    processInstanceTask,
-                    currentNode,
-                    provider,
+                    context.processInstance,
+                    context.processInstanceTask,
+                    context.currentNode,
+                    context.provider,
                     previousAssignedUserId != null
             );
         } catch (Exception e) {
-            logger.logException(new ProcessNodeExecutionExceptionUnknown(
+            context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
                     e,
                     "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an '%s' konnte nicht versendet werden.",
                     assignedUser.getFullName()
@@ -271,89 +238,43 @@ public class ProcessNodeExecutionResultHandler {
         }
     }
 
-    private void handleTaskUpdated(@Nonnull ProcessNodeExecutionLogger logger,
-                                   @Nullable UserEntity triggeringUser,
-                                   @Nonnull ProcessNodeDefinition provider,
-                                   @Nonnull ProcessNodeEntity currentNode,
-                                   @Nonnull ProcessInstanceEntity processInstance,
-                                   @Nonnull ProcessInstanceTaskEntity processInstanceTask,
-                                   @Nullable ProcessInstanceTaskEntity previousTask,
-                                   @Nonnull ProcessNodeExecutionResultTaskUpdated updatedTask) throws ProcessNodeExecutionException {
-        var newRuntimeData = updatedTask.getRuntimeData();
-        if (newRuntimeData == null) {
-            newRuntimeData = new HashMap<>();
-        }
-        processInstanceTask.setRuntimeData(newRuntimeData);
+    private void handleTaskUpdated(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskUpdated> context) throws ProcessNodeExecutionException {
+        context.processInstanceTask.setStatus(ProcessTaskStatus.Running);
+        assignAndSaveDataLayersAndStatusOverride(context, true);
 
-        var newNodeData = updatedTask.getNodeData();
-        if (newNodeData == null) {
-            newNodeData = new HashMap<>();
-        }
-        processInstanceTask.setNodeData(newNodeData);
-
-        var newProcessData = updatedTask.getProcessData();
-        if (newProcessData == null) {
-            newProcessData = previousTask != null ?
-                    previousTask.getProcessData() :
-                    processInstance.getInitialPayload();
-        }
-        processInstanceTask.setProcessData(applyOutputMappings(
-                provider,
-                currentNode.getOutputMappings(),
-                newNodeData,
-                newProcessData
-        ));
-
-        processInstanceTask.setStatus(ProcessTaskStatus.Running);
-
-        if (updatedTask.getTaskStatusOverride() != null) {
-            processInstanceTask.setStatusOverride(updatedTask.getTaskStatusOverride());
-        }
-        if (Boolean.TRUE.equals(updatedTask.getClearTaskStatusOverride())) {
-            processInstanceTask.setStatusOverride(null);
+        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(context.processInstance);
         }
 
-        processInstanceTaskRepository.save(processInstanceTask);
-
-        if (processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            processInstance.setStatus(ProcessInstanceStatus.Running);
-            processInstanceRepository.save(processInstance);
-        }
-
-        if (triggeringUser != null) {
-            logger.logf(
+        if (context.triggeringUser != null) {
+            context.logger.logf(
                     ProcessNodeExecutionLogLevel.Debug,
                     true,
                     false,
-                    "Eingaben für " + StringUtils.quote(currentNode.resolveName(provider)) + " gespeichert",
+                    "Eingaben für " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " gespeichert",
                     "Für die Aufgabe %s wurden durch die Mitarbeiter:in %s Eingaben abgespeichert.",
-                    StringUtils.quote(currentNode.resolveName(provider)),
-                    StringUtils.quote(triggeringUser.getFullName())
+                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
+                    StringUtils.quote(context.triggeringUser.getFullName())
             );
         } else {
-            logger.logf(
+            context.logger.logf(
                     ProcessNodeExecutionLogLevel.Debug,
                     true,
                     false,
-                    "Eingaben für " + StringUtils.quote(currentNode.resolveName(provider)) + " gespeichert",
+                    "Eingaben für " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " gespeichert",
                     "Für die Aufgabe %s wurden durch die zugewiesen Mitarbeiter:in Eingaben abgespeichert.",
-                    StringUtils.quote(currentNode.resolveName(provider))
+                    StringUtils.quote(context.currentNode.resolveName(context.provider))
             );
         }
     }
 
-    private <NodeConfig> void handleTaskComplete(@Nonnull ProcessNodeExecutionLogger logger,
-                                                 @Nullable UserEntity triggeringUser,
-                                                 @Nonnull ProcessNodeDefinition<NodeConfig> provider,
-                                                 @Nonnull ProcessNodeEntity currentNode,
-                                                 @Nonnull ProcessInstanceEntity processInstance,
-                                                 @Nonnull ProcessInstanceTaskEntity processInstanceTask,
-                                                 @Nullable ProcessInstanceTaskEntity previousTask,
-                                                 @Nonnull ProcessNodeExecutionResultTaskCompleted taskCompleted) throws ProcessNodeExecutionException {
-        var port = provider
+    private void handleTaskComplete(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskCompleted> context) throws ProcessNodeExecutionException {
+        var port = context
+                .provider
                 .getPorts()
                 .stream()
-                .filter(processNodePort -> processNodePort.key().equals(taskCompleted.getViaPort()))
+                .filter(processNodePort -> processNodePort.key().equals(context.result.getViaPort()))
                 .findFirst();
 
         if (port.isEmpty()) {
@@ -362,16 +283,16 @@ public class ProcessNodeExecutionResultHandler {
                             Für das Prozesselement %s wird durch den Prozesselement-Funktionsanbieter %s kein ausgehender Port mit dem Schlüssel %s bereitgestellt.
                             Der Vorgang kann nicht fortgeführt werden. Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters.
                             """,
-                    StringUtils.quote(currentNode.resolveName(provider)),
-                    StringUtils.quote(provider.getName()),
-                    StringUtils.quote(taskCompleted.getViaPort())
+                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
+                    StringUtils.quote(context.provider.getName()),
+                    StringUtils.quote(context.result.getViaPort())
             );
         }
 
         var outEdge = processDefinitionEdgeRepository
                 .findByFromNodeIdAndViaPort(
-                        currentNode.getId(),
-                        taskCompleted.getViaPort()
+                        context.currentNode.getId(),
+                        context.result.getViaPort()
                 );
 
         if (outEdge.isEmpty()) {
@@ -381,58 +302,25 @@ public class ProcessNodeExecutionResultHandler {
                             Der Vorgang kann nicht fortgeführt werden. Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters.
                             Bitte prüfen Sie den Aufbau Ihres Prozessmodells.
                             """,
-                    StringUtils.quote(currentNode.resolveName(provider)),
+                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
                     StringUtils.quote(port.get().label())
             );
         }
 
-        var newRuntimeData = taskCompleted.getRuntimeData();
-        if (newRuntimeData == null) {
-            newRuntimeData = new HashMap<>();
-        }
-        processInstanceTask.setRuntimeData(newRuntimeData);
+        context.processInstanceTask.setStatus(ProcessTaskStatus.Completed);
+        context.processInstanceTask.setFinished(Instant.now());
+        assignAndSaveDataLayersAndStatusOverride(context, true);
 
-        var newNodeData = taskCompleted.getNodeData();
-        if (newNodeData == null) {
-            newNodeData = new HashMap<>();
-        }
-        processInstanceTask.setNodeData(newNodeData);
-
-        var newProcessData = taskCompleted.getProcessData();
-        if (newProcessData == null) {
-            newProcessData = previousTask != null ?
-                    previousTask.getProcessData() :
-                    processInstance.getInitialPayload();
-        }
-        processInstanceTask.setProcessData(applyOutputMappings(
-                provider,
-                currentNode.getOutputMappings(),
-                newNodeData,
-                newProcessData
-        ));
-
-        processInstanceTask.setStatus(ProcessTaskStatus.Completed);
-        processInstanceTask.setFinished(Instant.now());
-
-        if (taskCompleted.getTaskStatusOverride() != null) {
-            processInstanceTask.setStatusOverride(taskCompleted.getTaskStatusOverride());
-        }
-        if (Boolean.TRUE.equals(taskCompleted.getClearTaskStatusOverride())) {
-            processInstanceTask.setStatusOverride(null);
+        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(context.processInstance);
         }
 
-        processInstanceTaskRepository.save(processInstanceTask);
-
-        if (processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            processInstance.setStatus(ProcessInstanceStatus.Running);
-            processInstanceRepository.save(processInstance);
-        }
-
-        var nextPayload = new ProcessWorker.WorkerPayload(
-                processInstance.getId(),
-                processInstanceTask.getId(),
-                currentNode.getId(),
-                taskCompleted.getViaPort(),
+        var nextPayload = new ProcessWorker.DoWorkWorkerPayload(
+                context.processInstance.getId(),
+                context.processInstanceTask.getId(),
+                context.currentNode.getId(),
+                context.result.getViaPort(),
                 outEdge.get().getToNodeId()
         );
 
@@ -444,34 +332,34 @@ public class ProcessNodeExecutionResultHandler {
                         .orElse("UNKNOWN"))
                 .orElse("UNKNOWN");
 
-        if (triggeringUser != null) {
-            logger.logf(
+        if (context.triggeringUser != null) {
+            context.logger.logf(
                     ProcessNodeExecutionLogLevel.Info,
                     true,
                     true,
-                    "Aufgabe " + StringUtils.quote(currentNode.resolveName(provider)) + " abgeschlossen",
+                    "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " abgeschlossen",
                     """
                             Die Aufgabe für das Prozesselement %s wurde durch die Mitarbeiter:in %s abgeschlossen.
                             Als ausgehende Verbindung wird der Ausgang %s verwendet.
                             Das nächste Prozesselement ist %s.
                             """,
-                    StringUtils.quote(currentNode.resolveName(provider)),
-                    StringUtils.quote(triggeringUser.getFullName()),
+                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
+                    StringUtils.quote(context.triggeringUser.getFullName()),
                     StringUtils.quote(port.get().label()),
                     StringUtils.quote(nextNode)
             );
         } else {
-            logger.logf(
+            context.logger.logf(
                     ProcessNodeExecutionLogLevel.Info,
                     true,
                     true,
-                    "Aufgabe " + StringUtils.quote(currentNode.resolveName(provider)) + " abgeschlossen",
+                    "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " abgeschlossen",
                     """
                             Die Aufgabe für das Prozesselement %s wurde abgeschlossen.
                             Als ausgehende Verbindung wird der Ausgang %s verwendet.
                             Das nächste Prozesselement ist %s.
                             """,
-                    StringUtils.quote(currentNode.resolveName(provider)),
+                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
                     StringUtils.quote(port.get().label()),
                     StringUtils.quote(nextNode)
             );
@@ -480,67 +368,68 @@ public class ProcessNodeExecutionResultHandler {
         rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
     }
 
-    private void handleInstanceComplete(@Nonnull ProcessNodeExecutionLogger logger,
-                                        @Nullable UserEntity triggeringUser,
-                                        @Nonnull ProcessNodeDefinition provider,
-                                        @Nonnull ProcessNodeEntity currentNode,
-                                        @Nonnull ProcessInstanceEntity processInstance,
-                                        @Nonnull ProcessInstanceTaskEntity processInstanceTask,
-                                        @Nullable ProcessInstanceTaskEntity previousTask,
-                                        @Nonnull ProcessNodeExecutionResultInstanceCompleted instanceCompleted) {
+    private void handleInstanceComplete(@Nonnull HandlerContext<ProcessNodeExecutionResultInstanceCompleted> context) {
         var completionTime = Instant.now();
 
-        var newRuntimeData = instanceCompleted.getRuntimeData();
-        if (newRuntimeData == null) {
-            newRuntimeData = new HashMap<>();
-        }
-        processInstanceTask.setRuntimeData(newRuntimeData);
+        context.processInstanceTask.setStatus(ProcessTaskStatus.Completed);
+        context.processInstanceTask.setFinished(completionTime);
+        assignAndSaveDataLayersAndStatusOverride(context, true);
 
-        var newMetadata = instanceCompleted.getNodeData();
-        if (newMetadata == null) {
-            newMetadata = new HashMap<>();
-        }
-        processInstanceTask.setNodeData(newMetadata);
+        context.processInstance.setStatus(ProcessInstanceStatus.Completed);
+        context.processInstance.setFinished(completionTime);
+        context.processInstance.setKeepUntil(context.result.getRetentionDate());
+        processInstanceRepository.save(context.processInstance);
 
-        var newWorkingData = instanceCompleted.getProcessData();
-        if (newWorkingData == null) {
-            newWorkingData = previousTask != null ?
-                    previousTask.getProcessData() :
-                    processInstance.getInitialPayload();
-        }
-        processInstanceTask.setProcessData(applyOutputMappings(
-                provider,
-                currentNode.getOutputMappings(),
-                newMetadata,
-                newWorkingData
-        ));
-
-        processInstanceTask.setStatus(ProcessTaskStatus.Completed);
-        processInstanceTask.setFinished(completionTime);
-
-        if (instanceCompleted.getTaskStatusOverride() != null) {
-            processInstanceTask.setStatusOverride(instanceCompleted.getTaskStatusOverride());
-        }
-        if (Boolean.TRUE.equals(instanceCompleted.getClearTaskStatusOverride())) {
-            processInstanceTask.setStatusOverride(null);
-        }
-
-        processInstanceTaskRepository.save(processInstanceTask);
-
-        processInstance.setStatus(ProcessInstanceStatus.Completed);
-        processInstance.setFinished(completionTime);
-        processInstance.setKeepUntil(instanceCompleted.getRetentionDate());
-        processInstanceRepository.save(processInstance);
-
-
-        logger.logf(
+        context.logger.logf(
                 ProcessNodeExecutionLogLevel.Info,
                 true,
                 true,
                 "Vorgang abgeschlossen",
                 "Der Vorgang wurde erfolgreich abgeschlossen. Das abschließende Prozesselement war %s",
-                StringUtils.quote(currentNode.resolveName(provider))
+                StringUtils.quote(context.currentNode.resolveName(context.provider))
         );
+    }
+
+    private void assignAndSaveDataLayersAndStatusOverride(@Nonnull HandlerContext<?> context,
+                                                          boolean applyOutputMappings) {
+        var newRuntimeData = context.result.getRuntimeData();
+        if (newRuntimeData == null) {
+            newRuntimeData = new HashMap<>();
+        }
+        context.processInstanceTask.setRuntimeData(newRuntimeData);
+
+        var newNodeData = context.result.getNodeData();
+        if (newNodeData == null) {
+            newNodeData = new HashMap<>();
+        }
+        context.processInstanceTask.setNodeData(newNodeData);
+
+        var newProcessData = context.result.getProcessData();
+        if (newProcessData == null) {
+            newProcessData = context.previousTask != null ?
+                    context.previousTask.getProcessData() :
+                    context.processInstance.getInitialPayload();
+        }
+        if (applyOutputMappings) {
+            context.processInstanceTask.setProcessData(applyOutputMappings(
+                    context.provider,
+                    context.currentNode.getOutputMappings(),
+                    newNodeData,
+                    newProcessData
+            ));
+        } else {
+            context.processInstanceTask.setProcessData(newProcessData);
+        }
+
+        // Apply task status overrides
+        if (context.result.getTaskStatusOverride() != null) {
+            context.processInstanceTask.setStatusOverride(context.result.getTaskStatusOverride());
+        }
+        if (Boolean.TRUE.equals(context.result.getClearTaskStatusOverride())) {
+            context.processInstanceTask.setStatusOverride(null);
+        }
+
+        processInstanceTaskRepository.save(context.processInstanceTask);
     }
 
     private static <NodeConfig> Map<String, Object> applyOutputMappings(@Nonnull ProcessNodeDefinition<NodeConfig> provider,
@@ -590,5 +479,29 @@ public class ProcessNodeExecutionResultHandler {
         }
 
         return executionData.getProcessData();
+    }
+
+    private record HandlerContext<T extends ProcessNodeExecutionResult>(
+            @Nonnull ProcessNodeExecutionLogger logger,
+            @Nullable UserEntity triggeringUser,
+            @Nonnull ProcessNodeDefinition<?> provider,
+            @Nonnull ProcessNodeEntity currentNode,
+            @Nonnull ProcessInstanceEntity processInstance,
+            @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+            @Nullable ProcessInstanceTaskEntity previousTask,
+            @Nonnull T result
+    ) {
+        public <S extends ProcessNodeExecutionResult> HandlerContext<S> withResult(@Nonnull S newResult) {
+            return new HandlerContext<>(
+                    logger,
+                    triggeringUser,
+                    provider,
+                    currentNode,
+                    processInstance,
+                    processInstanceTask,
+                    previousTask,
+                    newResult
+            );
+        }
     }
 }

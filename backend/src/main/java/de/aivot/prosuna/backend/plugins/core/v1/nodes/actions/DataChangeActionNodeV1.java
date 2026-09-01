@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -28,6 +28,7 @@ import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
@@ -108,14 +109,30 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Manual};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Datenanpassung";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Erlaubt einer Mitarbeiter:in, Daten in einer Prosuna-UI zu ändern, hinzuzufügen oder zu entfernen.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Erstellt eine zugewiesene Prosuna-Aufgabe, in der eine Mitarbeiter:in Vorgangsdaten prüfen und bearbeiten kann.
+
+                Die angezeigte Oberfläche und der zulässige Personenkreis werden über die Elementkonfiguration bestimmt. Nach der Bestätigung werden die erfassten Änderungen in die Vorgangsdaten übernommen; erfasste Daten, Vermerk und Bearbeitungsinformationen stehen zusätzlich als Ausgänge zur Verfügung.
+                """;
     }
 
     @Nonnull
@@ -181,27 +198,32 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 new ProcessNodeOutput(
                         OUTPUT_DATA,
                         "Bearbeitete Daten",
-                        "Die final übernommenen Daten aus der konfigurierten Prosuna-UI im Payload-Format."
+                        "Die final übernommenen Daten aus der konfigurierten Prosuna-UI im Payload-Format.",
+                        "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_REMARK,
                         "Änderungsvermerk",
-                        "Der optionale interne Vermerk zur vorgenommenen Datenanpassung."
+                        "Der optionale interne Vermerk zur vorgenommenen Datenanpassung.",
+                        "string | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
                         "Bearbeitet durch",
-                        "Die ID der Mitarbeiter:in, die die Datenänderung übernommen hat."
+                        "Die ID der Mitarbeiter:in, die die Datenänderung übernommen hat.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_AT,
                         "Bearbeitet am",
-                        "Der Zeitstempel der finalen Übernahme im ISO-Format."
+                        "Der Zeitstempel der finalen Übernahme im ISO-Format.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_UNMAPPED,
                         "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht."
+                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Record<string, unknown>"
                 )
         );
     }
@@ -330,12 +352,12 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 update,
                 derivedRuntimeData.getElementStates()
         );
-        var originalProcessData = ObjectMapperFactory.Utils.convertToMapPreservingNulls(context.getThisTask().getProcessData());
+        var originalProcessData = JsonMapperFactory.Utils.convertToMapPreservingNulls(context.getThisTask().getProcessData());
         var updatedProcessData = elementDataTransformService.buildPayload(
                 config.dataDefinition,
                 update,
                 derivedRuntimeData.getElementStates(),
-                ObjectMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData)
+                JsonMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData)
         );
         var remark = normalizeRemark(authoredUpdate.get(TASK_VIEW_REMARK_FIELD_ID));
 
@@ -355,7 +377,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
     @Nonnull
     private static GroupLayoutElement cloneDataDefinition(@Nonnull GroupLayoutElement rawElement) {
-        var copy = ObjectMapperFactory
+        var copy = JsonMapperFactory
                 .getInstance()
                 .convertValue(rawElement, BaseElement.class);
 

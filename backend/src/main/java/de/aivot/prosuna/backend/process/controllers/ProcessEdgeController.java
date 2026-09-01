@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.process.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.audit.enums.AuditAction;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
@@ -28,6 +27,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.json.JsonMapper;
 
 @RestController
 @RequestMapping("/api/process-edges/")
@@ -42,14 +42,14 @@ public class ProcessEdgeController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessEdgeService processDefinitionEdgeService;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper objectMapper;
     private final PermissionService permissionService;
 
     @Autowired
     public ProcessEdgeController(AuditService auditService,
                                  UserService userService,
                                  ProcessEdgeService processDefinitionEdgeService,
-                                 ObjectMapper objectMapper,
+                                 JsonMapper objectMapper,
                                  PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessEdgeController.class, "Prozesse");
         this.userService = userService;

@@ -1,18 +1,34 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
+import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.pdf.enums.FormPdfScope;
+import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
+import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
+import de.aivot.prosuna.backend.payment.models.PaymentPayload;
+import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
+import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
+import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
+import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
@@ -24,12 +40,15 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
+import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.process.services.PublicUrlService;
+import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.services.PdfService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +60,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,6 +87,11 @@ class FormTriggerNodeV1Test {
     private PdfService pdfService;
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
     private ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
+    private PaymentTransactionService paymentTransactionService;
+    private PaymentProviderRepository paymentProviderRepository;
+    private PaymentProviderDefinitionsService paymentProviderDefinitionsService;
+    private ProcessService processService;
+    private TemplateRenderService templateRenderService;
     private FormTriggerNodeV1 node;
 
     @BeforeEach
@@ -75,13 +100,12 @@ class FormTriggerNodeV1Test {
         pdfService = mock(PdfService.class);
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
         processInstanceAttachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
-        node = new FormTriggerNodeV1(
-                mock(PublicUrlService.class),
-                processNodeRepository,
-                pdfService,
-                processInstanceAttachmentService,
-                processInstanceAttachmentSetService
-        );
+        paymentTransactionService = mock(PaymentTransactionService.class);
+        paymentProviderRepository = mock(PaymentProviderRepository.class);
+        paymentProviderDefinitionsService = mock(PaymentProviderDefinitionsService.class);
+        processService = mock(ProcessService.class);
+        templateRenderService = new TemplateRenderService(new JavascriptEngineFactoryService(List.of()));
+        node = createNode(mock(PublicUrlService.class));
     }
 
     @Test
@@ -108,6 +132,7 @@ class FormTriggerNodeV1Test {
         assertNotNull(output);
         assertEquals("Eingangszeitstempel", output.label());
         assertEquals("Der Zeitstempel des Dateneingangs an den Auslöser", output.description());
+        assertEquals("string", output.typeDefinition());
     }
 
     @Test
@@ -121,6 +146,32 @@ class FormTriggerNodeV1Test {
 
         assertNotNull(output);
         assertEquals("Formularzusammenfassung", output.label());
+        assertEquals(
+                "Array<{ name: string; originalFileName: string; uri: string; size: number; }>",
+                output.typeDefinition()
+        );
+    }
+
+    @Test
+    void getOutputs_ShouldExposePaymentDetailsType() {
+        var output = node
+                .getOutputs()
+                .stream()
+                .filter(candidate -> FormTriggerNodeV1.DATA_KEY_PAYMENT_DETAILS.equals(candidate.key()))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(output);
+        assertEquals(
+                "{ transactionUrl: string | null; transactionRedirectUrl: string | null; " +
+                        "transactionId: string | null; transactionReference: string | null; " +
+                        "transactionTimestamp: string | null; " +
+                        "paymentMethod: \"GIROPAY\" | \"PAYDIRECT\" | \"CREDITCARD\" | \"PAYPAL\" | \"OTHER\" | null; " +
+                        "paymentMethodDetail: string | null; " +
+                        "status: \"INITIAL\" | \"PAYED\" | \"FAILED\" | \"CANCELED\" | null; " +
+                        "statusDetail: string | null; }",
+                output.typeDefinition()
+        );
     }
 
     @Test
@@ -142,13 +193,7 @@ class FormTriggerNodeV1Test {
     @Test
     void getConfigurationLayout_ShouldExposeCopyableSlugUrlTemplate() throws Exception {
         var publicUrlService = new PublicUrlService(prosunaConfig());
-        var node = new FormTriggerNodeV1(
-                publicUrlService,
-                processNodeRepository,
-                pdfService,
-                processInstanceAttachmentService,
-                processInstanceAttachmentSetService
-        );
+        var node = createNode(publicUrlService);
 
         var layout = node.getConfigurationLayout(configurationLayoutContext());
         var slugField = layout
@@ -160,7 +205,20 @@ class FormTriggerNodeV1Test {
     }
 
     @Test
-    void validateConfiguration_ShouldReportLegacyLayoutFieldsMissingFromFormLayout() throws Exception {
+    void getConfigurationLayout_ShouldExposePaymentConfigBelowIdentityConfig() throws Exception {
+        var publicUrlService = new PublicUrlService(prosunaConfig());
+        var node = createNode(publicUrlService);
+
+        var layout = node.getConfigurationLayout(configurationLayoutContext());
+        var children = layout.getChildren();
+
+        assertEquals(FormTriggerConfigV1.IDENTITIES, children.get(2).getId());
+        assertEquals(FormTriggerConfigV1.PAYMENT, children.get(3).getId());
+        assertTrue(layout.findChild(FormTriggerConfigV1.PAYMENT, PaymentConfigElement.class).isPresent());
+    }
+
+    @Test
+    void validateConfiguration_ShouldReportMissingPublicTitleFromFormLayout() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(false);
 
         var errors = node.validateConfiguration(
@@ -173,12 +231,7 @@ class FormTriggerNodeV1Test {
 
         var layoutError = errors.get(FormTriggerConfigV1.FORM_LAYOUT);
         assertNotNull(layoutError);
-        assertTrue(layoutError.contains("Der öffentliche Titel muss hinterlegt sein."));
-        assertTrue(layoutError.contains("Der fachliche Support muss eingerichtet sein."));
-        assertTrue(layoutError.contains("Der technische Support muss eingerichtet sein."));
-        assertTrue(layoutError.contains("Das Impressum muss eingerichtet sein."));
-        assertTrue(layoutError.contains("Die Datenschutzerklärung muss eingerichtet sein."));
-        assertTrue(layoutError.contains("Die Barrierefreiheitserklärung muss eingerichtet sein."));
+        assertEquals(List.of("Der öffentliche Titel muss hinterlegt sein."), layoutError);
     }
 
     @Test
@@ -336,6 +389,127 @@ class FormTriggerNodeV1Test {
         assertTrue(files.getFirst().getUri().startsWith(FileUploadMultipartInputService.PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX));
     }
 
+    @Test
+    void cleanConfigurationForExport_ShouldRemoveSystemLocalIdentityAndPaymentConfiguration() {
+        var configuration = new AuthoredElementValues();
+        configuration.put(FormTriggerConfigV1.FORM_LAYOUT, validFormLayout());
+        configuration.put(FormTriggerConfigV1.IDENTITIES, List.of(Map.of("id", "identity")));
+        configuration.put(FormTriggerConfigV1.PAYMENT, Map.of("paymentProviderKey", UUID.randomUUID()));
+
+        var cleaned = node.cleanConfigurationForExport(configuration);
+
+        assertFalse(cleaned.containsKey(FormTriggerConfigV1.IDENTITIES));
+        assertFalse(cleaned.containsKey(FormTriggerConfigV1.PAYMENT));
+    }
+
+    @Test
+    void getCustomerTaskView_ShouldRenderConfiguredPaymentSuccessMessage() throws Exception {
+        var paymentProviderKey = UUID.randomUUID();
+        var transactionKey = "tx-1";
+        var paymentConfig = new PaymentConfigElementValue(
+                paymentProviderKey,
+                null,
+                null,
+                false,
+                null,
+                List.of(),
+                "# Zahlung erhalten\nDanke **{{ $.name }}**.",
+                "# Zahlung offen\nHallo **{{ $.name }}**."
+        );
+        var nodeConfiguration = new FormTriggerConfigV1();
+        nodeConfiguration.formSlug = "antrag-online";
+        nodeConfiguration.payment = paymentConfig;
+        var task = task()
+                .setRuntimeData(Map.of(
+                        FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY, transactionKey,
+                        FormTriggerNodeV1.DATA_KEY_PAYMENT_PAYLOAD, new PaymentPayload()
+                ))
+                .setProcessData(Map.of("name", "Ada"));
+
+        when(paymentTransactionService.retrieve(transactionKey))
+                .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, XBezahldienstStatus.PAYED)));
+        var paymentProvider = paymentProvider(paymentProviderKey);
+        when(paymentProviderRepository.findById(paymentProviderKey))
+                .thenReturn(Optional.of(paymentProvider));
+        var paymentProviderDefinition = paymentProviderDefinition();
+        when(paymentProviderDefinitionsService.getProviderDefinition(
+                paymentProvider.getPaymentProviderDefinitionKey(),
+                paymentProvider.getPaymentProviderDefinitionVersion()
+        )).thenReturn(Optional.of(paymentProviderDefinition));
+        when(processService.retrieve(PROCESS_ID))
+                .thenReturn(Optional.of(process()));
+
+        var layout = node.getCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+                mock(ProcessNodeExecutionLogger.class),
+                processNode(),
+                processInstance(Map.of()),
+                task,
+                null,
+                null,
+                nodeConfiguration,
+                null
+        ));
+
+        var richText = layout.findChild("rtx", RichTextContentElement.class).orElseThrow();
+        assertTrue(richText.getContent().contains("# Zahlung erfolgreich\n# Zahlung erhalten\nDanke **Ada**."));
+    }
+
+    @Test
+    void getCustomerTaskView_ShouldRenderPaymentConfirmationDownloadUrl() throws Exception {
+        var paymentProviderKey = UUID.randomUUID();
+        var transactionKey = "tx-1";
+        var paymentConfig = new PaymentConfigElementValue(
+                paymentProviderKey,
+                null,
+                null,
+                false,
+                null,
+                List.of(),
+                null,
+                null
+        );
+        var nodeConfiguration = new FormTriggerConfigV1();
+        nodeConfiguration.formSlug = "antrag-online";
+        nodeConfiguration.payment = paymentConfig;
+        var task = task()
+                .setAccessKey("task-access")
+                .setRuntimeData(Map.of(
+                        FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY, transactionKey,
+                        FormTriggerNodeV1.DATA_KEY_PAYMENT_PAYLOAD, new PaymentPayload()
+                ));
+        var instance = processInstance(Map.of()).setAccessKey("instance-access");
+
+        when(paymentTransactionService.retrieve(transactionKey))
+                .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, XBezahldienstStatus.PAYED)));
+        var paymentProvider = paymentProvider(paymentProviderKey);
+        when(paymentProviderRepository.findById(paymentProviderKey))
+                .thenReturn(Optional.of(paymentProvider));
+        var paymentProviderDefinition = paymentProviderDefinition();
+        when(paymentProviderDefinitionsService.getProviderDefinition(
+                paymentProvider.getPaymentProviderDefinitionKey(),
+                paymentProvider.getPaymentProviderDefinitionVersion()
+        )).thenReturn(Optional.of(paymentProviderDefinition));
+        when(processService.retrieve(PROCESS_ID))
+                .thenReturn(Optional.of(process()));
+
+        var layout = node.getCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+                mock(ProcessNodeExecutionLogger.class),
+                processNode(),
+                instance,
+                task,
+                null,
+                null,
+                nodeConfiguration,
+                null
+        ));
+
+        var downloadButton = layout.findChild("download", LinkButtonContentElement.class).orElseThrow();
+        assertEquals(
+                "https://example.test/api/public/form/antrag-prozess/antrag-online/submit/instance-access/task-access/payment-confirmation/",
+                downloadButton.getHref()
+        );
+    }
+
     private static FormTriggerConfigV1 configuration(String formSlug, FormLayoutElement formLayout) {
         var configuration = new FormTriggerConfigV1();
         configuration.formSlug = formSlug;
@@ -345,12 +519,7 @@ class FormTriggerNodeV1Test {
 
     private static FormLayoutElement validFormLayout() {
         return new FormLayoutElement()
-                .setPublicTitle("Antrag auf Leistung")
-                .setLegalSupportDepartmentId(1)
-                .setTechnicalSupportDepartmentId(2)
-                .setImprintDepartmentId(3)
-                .setPrivacyDepartmentId(4)
-                .setAccessibilityDepartmentId(5);
+                .setPublicTitle("Antrag auf Leistung");
     }
 
     private static ProcessNodeEntity processNode() {
@@ -384,7 +553,7 @@ class FormTriggerNodeV1Test {
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessId(PROCESS_ID)
                 .setInitialProcessVersion(PROCESS_VERSION)
                 .setStatus(ProcessInstanceStatus.Running)
@@ -401,7 +570,7 @@ class FormTriggerNodeV1Test {
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessInstanceId(PROCESS_INSTANCE_ID)
                 .setProcessId(PROCESS_ID)
                 .setProcessVersion(PROCESS_VERSION)
@@ -412,6 +581,30 @@ class FormTriggerNodeV1Test {
                 .setRuntimeData(Map.of())
                 .setNodeData(Map.of())
                 .setProcessData(Map.of());
+    }
+
+    private static PaymentProviderEntity paymentProvider(UUID paymentProviderKey) {
+        return new PaymentProviderEntity()
+                .setKey(paymentProviderKey)
+                .setPaymentProviderDefinitionKey("test-provider")
+                .setPaymentProviderDefinitionVersion(1)
+                .setName("Stadtkasse");
+    }
+
+    private static PaymentProviderDefinition paymentProviderDefinition() {
+        var definition = mock(PaymentProviderDefinition.class);
+        when(definition.getProviderName()).thenReturn("Testprovider");
+        return definition;
+    }
+
+    private static PaymentTransactionEntity paymentTransaction(UUID paymentProviderKey, XBezahldienstStatus status) {
+        var paymentInformation = new XBezahldienstePaymentInformation();
+        paymentInformation.setStatus(status);
+
+        return new PaymentTransactionEntity()
+                .setKey("tx-1")
+                .setPaymentProviderKey(paymentProviderKey)
+                .setPaymentInformation(paymentInformation);
     }
 
     private static ProcessNodeDefinitionConfigurationLayoutContext configurationLayoutContext() {
@@ -440,6 +633,24 @@ class FormTriggerNodeV1Test {
                 .setProcessVersion(PROCESS_VERSION)
                 .setStatus(ProcessVersionStatus.Drafted)
                 .setPublicTitle("Antrag");
+    }
+
+    private FormTriggerNodeV1 createNode(PublicUrlService publicUrlService) {
+        return new FormTriggerNodeV1(
+                publicUrlService,
+                processNodeRepository,
+                mock(PaymentPayloadCreationService.class),
+                templateRenderService,
+                paymentTransactionService,
+                paymentProviderRepository,
+                paymentProviderDefinitionsService,
+                processService,
+                prosunaConfig(),
+                pdfService,
+                processInstanceAttachmentService,
+                processInstanceAttachmentSetService,
+                JsonMapperTestUtils.createMapper()
+        );
     }
 
     private static ProsunaConfig prosunaConfig() {

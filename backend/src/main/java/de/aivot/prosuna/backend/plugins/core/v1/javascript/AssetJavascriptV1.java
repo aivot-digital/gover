@@ -56,8 +56,18 @@ public class AssetJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Dieses Paket enthält Funktionen für Dateien & Medien.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Stellt JavaScript-Funktionen bereit, mit denen Dateien und Medien aus der Prosuna-Assetverwaltung verwendet werden können.
+
+                Assets lassen sich als Binärdaten, Text oder Base64-Inhalt laden. Zusätzlich kann eine Download-URL für ein Asset erzeugt werden, um gespeicherte Dateien in Skripten weiterzuverarbeiten oder bereitzustellen.
+                """;
     }
 
     @Override

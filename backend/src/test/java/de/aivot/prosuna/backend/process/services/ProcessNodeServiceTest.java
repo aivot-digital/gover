@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -71,7 +72,10 @@ class ProcessNodeServiceTest {
         elementDerivationService = mock(ElementDerivationService.class);
         prosunaConfig = new ProsunaConfig();
 
-        var definitionService = new ProcessNodeDefinitionService(List.of(new HintingTestNodeDefinition()));
+        var definitionService = new ProcessNodeDefinitionService(List.of(
+                new HintingTestNodeDefinition(),
+                new HintingTestNodeDefinition("trigger-hint-node", ProcessNodeType.Trigger)
+        ));
 
         service = createService(
                 definitionService,
@@ -118,7 +122,7 @@ class ProcessNodeServiceTest {
                         createEdge(4, nodeC.getId(), targetNode.getId())
                 ));
 
-        var result = service.getProcessDataKeyHintResponses(targetNode);
+        var result = service.getIncomingProcessNodeDefinitionMetadata(targetNode);
 
         assertEquals(
                 List.of(
@@ -145,7 +149,7 @@ class ProcessNodeServiceTest {
                         createEdge(3, nodeB.getId(), targetNode.getId())
                 ));
 
-        var result = service.getProcessDataKeyHintResponses(targetNode);
+        var result = service.getIncomingProcessNodeDefinitionMetadata(targetNode);
 
         assertEquals(
                 List.of(
@@ -169,7 +173,7 @@ class ProcessNodeServiceTest {
                         createEdge(1, nodeA.getId(), targetNode.getId())
                 ));
 
-        var result = service.getProcessDataKeyHintResponses(targetNode);
+        var result = service.getIncomingProcessNodeDefinitionMetadata(targetNode);
 
         assertEquals(
                 List.of(
@@ -196,7 +200,7 @@ class ProcessNodeServiceTest {
                         createEdge(2, nodeB.getId(), targetNode.getId())
                 ));
 
-        var result = service.getProcessDataKeyHintResponses(targetNode);
+        var result = service.getIncomingProcessNodeDefinitionMetadata(targetNode);
 
         assertEquals(
                 List.of(
@@ -204,6 +208,82 @@ class ProcessNodeServiceTest {
                         new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("shared", "Result", "Mapped test result.", nodeA),
                         new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("b", "b", null, nodeB),
                         new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("shared", "Result", "Mapped test result.", nodeB)
+                ),
+                result.forwardedProcessDataKeys()
+        );
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldReturnOwnMetadataForTriggerWithoutPreviousNodes() throws Exception {
+        var triggerNode = createTriggerNode(1, "trigger");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(triggerNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of());
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(triggerNode);
+
+        assertEquals(
+                List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("trigger", "trigger", null, triggerNode)
+                ),
+                result.forwardedProcessDataKeys()
+        );
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldIncludeMappedOutputsForTriggerWithoutPreviousNodes() throws Exception {
+        var triggerNode = createTriggerNode(1, "trigger");
+        triggerNode.getOutputMappings().put("result", "payload.result");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(triggerNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of());
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(triggerNode);
+
+        assertEquals(
+                List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("trigger", "trigger", null, triggerNode),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("payload.result", "Result", "Mapped test result.", triggerNode)
+                ),
+                result.forwardedProcessDataKeys()
+        );
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldReturnEmptyMetadataForActionWithoutPreviousNodes() throws Exception {
+        var actionNode = createNode(1, "action");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(actionNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of());
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(actionNode);
+
+        assertEquals(List.of(), result.forwardedProcessDataKeys());
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldNotReturnOwnMetadataForTriggerWithPreviousNodes() throws Exception {
+        var previousNode = createNode(1, "previous");
+        var triggerNode = createTriggerNode(2, "trigger");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(triggerNode, previousNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(
+                        createEdge(1, previousNode.getId(), triggerNode.getId())
+                ));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(triggerNode);
+
+        assertEquals(
+                List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("previous", "previous", null, previousNode)
                 ),
                 result.forwardedProcessDataKeys()
         );
@@ -317,6 +397,11 @@ class ProcessNodeServiceTest {
                 .setSavedWithErrors(false);
     }
 
+    private ProcessNodeEntity createTriggerNode(int id, String dataKey) {
+        return createNode(id, dataKey)
+                .setProcessNodeDefinitionKey("test.process.trigger-hint-node");
+    }
+
     private ProcessNodeEntity createFormNode() {
         return new ProcessNodeEntity()
                 .setId(1)
@@ -342,6 +427,19 @@ class ProcessNodeServiceTest {
     }
 
     private static final class HintingTestNodeDefinition implements ProcessNodeDefinition<HintingTestNodeDefinition.TestNodeConfig> {
+        private final String componentKey;
+        private final ProcessNodeType type;
+
+        private HintingTestNodeDefinition() {
+            this("hint-node", ProcessNodeType.Action);
+        }
+
+        private HintingTestNodeDefinition(String componentKey,
+                                          ProcessNodeType type) {
+            this.componentKey = componentKey;
+            this.type = type;
+        }
+
         @Nonnull
         @Override
         public String getParentPluginKey() {
@@ -351,7 +449,7 @@ class ProcessNodeServiceTest {
         @Nonnull
         @Override
         public String getComponentKey() {
-            return "hint-node";
+            return componentKey;
         }
 
         @Nonnull
@@ -368,6 +466,12 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
+        public String getAbstract() {
+            return "Test node definition for process data key hints.";
+        }
+
+        @Nonnull
+        @Override
         public String getDescription() {
             return "Test node definition for process data key hints.";
         }
@@ -375,7 +479,13 @@ class ProcessNodeServiceTest {
         @Nonnull
         @Override
         public ProcessNodeType getType() {
-            return ProcessNodeType.Action;
+            return type;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
         }
 
         @Nonnull
@@ -391,7 +501,8 @@ class ProcessNodeServiceTest {
                     new ProcessNodeOutput(
                             "result",
                             "Result",
-                            "Mapped test result."
+                            "Mapped test result.",
+                            "string"
                     )
             );
         }
@@ -454,6 +565,12 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
+        public String getAbstract() {
+            return "Test node definition for field validation errors.";
+        }
+
+        @Nonnull
+        @Override
         public String getDescription() {
             return "Test node definition for field validation errors.";
         }
@@ -462,6 +579,12 @@ class ProcessNodeServiceTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
         }
 
         @Nonnull
@@ -532,6 +655,12 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
+        public String getAbstract() {
+            return "Test form trigger.";
+        }
+
+        @Nonnull
+        @Override
         public String getDescription() {
             return "Test form trigger.";
         }
@@ -540,6 +669,12 @@ class ProcessNodeServiceTest {
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Trigger;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
         }
 
         @Nonnull

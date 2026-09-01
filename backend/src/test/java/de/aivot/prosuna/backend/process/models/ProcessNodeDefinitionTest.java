@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -55,6 +56,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -63,6 +69,12 @@ class ProcessNodeDefinitionTest {
             @Override
             public ProcessNodeType getType() {
                 return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
             }
 
             @Nonnull
@@ -136,6 +148,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -144,6 +161,12 @@ class ProcessNodeDefinitionTest {
             @Override
             public ProcessNodeType getType() {
                 return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
             }
 
             @Nonnull
@@ -213,6 +236,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -221,6 +249,12 @@ class ProcessNodeDefinitionTest {
             @Override
             public ProcessNodeType getType() {
                 return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
             }
 
             @Nonnull
@@ -286,6 +320,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -294,6 +333,12 @@ class ProcessNodeDefinitionTest {
             @Override
             public ProcessNodeType getType() {
                 return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
             }
 
             @Nonnull
@@ -309,7 +354,7 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+            public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
                 var initialData = new AuthoredElementValues();
                 initialData.put("defaultField", "initial");
                 initialData.put("sharedField", "initial");
@@ -366,6 +411,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -374,6 +424,12 @@ class ProcessNodeDefinitionTest {
             @Override
             public ProcessNodeType getType() {
                 return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
             }
 
             @Nonnull
@@ -389,7 +445,7 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+            public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
                 var initialData = new AuthoredElementValues();
                 initialData.put("defaultField", "initial");
                 return initialData;
@@ -443,6 +499,11 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
             public String getDescription() {
                 return "Test node description";
             }
@@ -451,6 +512,12 @@ class ProcessNodeDefinitionTest {
             @Override
             public ProcessNodeType getType() {
                 return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
             }
 
             @Nonnull
@@ -512,20 +579,22 @@ class ProcessNodeDefinitionTest {
         );
     }
 
-    private static ProcessNodeExecutionContextUICustomer customerContext(Map<String, Object> runtimeData,
-                                                                         Map<String, Object> nodeData,
-                                                                         Map<String, Object> processData) {
+    private static ProcessNodeExecutionContextUICustomer<AuthoredElementValues> customerContext(Map<String, Object> runtimeData,
+                                                                                                Map<String, Object> nodeData,
+                                                                                                Map<String, Object> processData) {
         var task = new ProcessInstanceTaskEntity()
                 .setRuntimeData(new HashMap<>(runtimeData))
                 .setNodeData(new HashMap<>(nodeData))
                 .setProcessData(new HashMap<>(processData));
 
-        return new ProcessNodeExecutionContextUICustomer(
+        return new ProcessNodeExecutionContextUICustomer<>(
                 logger(),
                 new ProcessNodeEntity(),
                 new ProcessInstanceEntity(),
                 task,
                 null,
+                null,
+                new AuthoredElementValues(),
                 null
         );
     }
