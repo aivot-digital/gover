@@ -1,7 +1,6 @@
 package de.aivot.prosuna.backend.ozgCloud.services;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
@@ -80,8 +79,7 @@ public class OZGCloudDestinationService {
             @Nonnull Resource representation,
             @Nonnull List<Resource> attachments
     ) throws IOException {
-        var payloadJSON = new ObjectMapper()
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+        var payloadJSON = JsonMapperFactory.getInstance()
                 .writeValueAsString(payload);
 
         var body = new MultipartBodyPublisher()

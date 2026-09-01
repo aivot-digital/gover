@@ -1,9 +1,8 @@
 package de.aivot.prosuna.backend.plugins.core.v1.payment;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.prosuna.backend.asset.repositories.VStorageIndexItemWithAssetRepository;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
@@ -27,6 +26,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -199,14 +199,14 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         var endpointID = getEndpointID(paymentProviderEntity, config);
         var normalizedPaymentTransactionUrl = getNormalizedPaymentTransactionUrl(paymentProviderEntity, config);
 
-        var objectMapper = ObjectMapperFactory
+        var objectMapper = JsonMapperFactory
                 .getInstance();
 
         String body;
         try {
             body = objectMapper
                     .writeValueAsString(paymentRequest);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PaymentException(e, "Failed to serialize payment request for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
@@ -256,7 +256,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         XBezahldienstePaymentTransaction tx;
         try {
             tx = objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             client.close();
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -314,10 +314,10 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         XBezahldienstePaymentTransaction updatedTransaction;
         try {
-            updatedTransaction = ObjectMapperFactory
+            updatedTransaction = JsonMapperFactory
                     .getInstance()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             client.close();
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }

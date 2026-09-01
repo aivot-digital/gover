@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.process.models;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
@@ -100,7 +100,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      */
     default ConfigLayoutElement loadConfigLayoutFromResource(@Nonnull Resource configResource) throws ResponseException {
         try {
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getInstance()
                     .readValue(configResource.getInputStream(), ConfigLayoutElement.class);
         } catch (IOException e) {
@@ -112,7 +112,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
         }
     }
 
-                                                             /**
+    /**
      * Get the testing layout for nodes of this provider type. This layout is used to be displayed in the testing tab of the node during an active test claim. <br/> Use this to
      * display additional information for the user which is usefull for the testing.
      *
@@ -120,7 +120,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @return The testing layout, or null if not provided.
      * @throws ResponseException If an error occurs while generating the layout.
      */
-                                                             @Nullable
+    @Nullable
     default GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionTestingLayoutContext<NodeConfig> context) throws ResponseException {
         return null;
     }
@@ -195,6 +195,17 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<NodeConfig> context) throws ProcessNodeExecutionException;
 
     /**
+     * Resume a task by this node provider during process instance execution.
+     * @param context
+     * @return
+     * @throws ProcessNodeExecutionException
+     */
+    @Nullable
+    default ProcessNodeExecutionResult resume(@Nonnull ProcessNodeExecutionInitContext<NodeConfig> context) throws ProcessNodeExecutionException {
+        return null;
+    }
+
+    /**
      * Get the task status layout for nodes of this provider type. This layout is used to display the status of the task in task lists and overviews. It is optional and can be
      * null.
      *
@@ -263,7 +274,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getNullPreservingInstance()
                 .convertValue(rawSavedData, AuthoredElementValues.class);
     }
@@ -333,7 +344,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the layout.
      */
     @Nonnull
-    default GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+    default GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
         var layout = new GroupLayoutElement();
         layout.setId(getKey() + "-customer-task-view");
         return layout;
@@ -347,13 +358,13 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the events.
      */
     @Nonnull
-    default List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+    default List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
         return List.of();
     }
 
     /**
      * Build the initial customer task view data from stable sources such as process data, configuration or templates. Saved task view data from the task runtime data is merged on
-     * top by {@link #getCustomerTaskViewData(ProcessNodeExecutionContextUICustomer)}. Saved keys with a {@code null} value are treated as explicit deletions and therefore override
+     * top by {@link #getCustomerTaskViewData(ProcessNodeExecutionContextUICustomer<NodeConfig>)}. Saved keys with a {@code null} value are treated as explicit deletions and therefore override
      * regenerated defaults.
      *
      * @param context The context to build the data for.
@@ -361,7 +372,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the data.
      */
     @Nonnull
-    default AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+    default AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
         return new AuthoredElementValues();
     }
 
@@ -372,7 +383,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @return The saved task view data, or null if none exists.
      */
     @Nullable
-    default AuthoredElementValues getAutoSavedCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+    default AuthoredElementValues getAutoSavedCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) {
         var rawSavedData = context
                 .getThisTask()
                 .getRuntimeData()
@@ -381,7 +392,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getNullPreservingInstance()
                 .convertValue(rawSavedData, AuthoredElementValues.class);
     }
@@ -394,7 +405,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the data.
      */
     @Nonnull
-    default AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+    default AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
         var initialData = createDefaultCustomerTaskViewData(context);
         var savedData = getAutoSavedCustomerTaskViewData(context);
         if (savedData == null || savedData.isEmpty()) {
@@ -419,7 +430,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     @Nonnull
-    default Optional<ProcessNodeExecutionResult> onEventFromCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context,
+    default Optional<ProcessNodeExecutionResult> onEventFromCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context,
                                                                              @Nonnull AuthoredElementValues update,
                                                                              @Nonnull DerivedRuntimeElementData derived,
                                                                              @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
@@ -437,7 +448,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     @Nonnull
-    default Optional<ProcessNodeExecutionResult> onAutoSaveFromCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context,
+    default Optional<ProcessNodeExecutionResult> onAutoSaveFromCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context,
                                                                                 @Nonnull AuthoredElementValues update,
                                                                                 @Nonnull DerivedRuntimeElementData derived) throws ResponseException, ProcessNodeExecutionException {
         var rtd = new HashMap<>(context.getThisTask().getRuntimeData());

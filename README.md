@@ -38,71 +38,22 @@ By combining powerful functionality with an intuitive user experience, Prosuna a
 For more information visit <https://prosuna.de>
 
 ## Who uses Prosuna?
+Prosuna is primarily used by public administrations at the local level – cities, municipalities, and counties.
+It supports authorities that aim to fully digitize their application processes end-to-end, making them more efficient and accessible for both citizens and staff.
 
-Prosuna is primarily used by public administrations at the local level – cities, municipalities, and counties. It supports authorities that aim to fully digitize their application processes end-to-end, making them more efficient and accessible for both citizens and staff.
-
-Prosuna is especially valued by administrations that want to reduce reliance on overburdened IT departments by enabling subject-matter experts in individual departments to build and manage digital processes themselves. It’s also chosen by those who care about digital sovereignty and seek to avoid vendor lock-in by using a solution that puts control back in the hands of the public sector.
+Prosuna is especially valued by administrations that want to reduce reliance on overburdened IT departments by enabling subject-matter experts in individual departments to build and manage digital processes themselves.
+It’s also chosen by those who care about digital sovereignty and seek to avoid vendor lock-in by using a solution that puts control back in the hands of the public sector.
 
 Want to learn more? Feel free to contact us anytime at <https://aivot.de/kontakt>.
 
-## Example Server Setup
+## Deployment Examples
+The Docker Compose configurations in the `examples` directory illustrate two possible deployment shapes. They are examples only, not universal installation instructions.
 
-The following setup instructions are primarily designed for server installations.
-This setup requires a server with Docker and Docker Compose installed.
-The server must be reachable via a given domain name from the internet.
+For an on-premises installation, only the system administrators responsible for the target environment know its infrastructure and operational requirements.
+They must review and adapt the networking, TLS, storage, backups, monitoring, availability, secret management, and security hardening before deploying Prosuna.
 
-### Prerequisites
-
-- Ubuntu 24.04 LTS oder neuer
-- Docker 4.74.0 oder neuer
-
-### Setup
-
-#### Docker-Compose File
-
-Create a new file named `compose.yml` with the content of the example [compose file](./compose.yml) in the root directory of the Prosuna repository.
-
-After you have created the Docker Compose file, you can start the stack by running the following command:
-
-```bash
-docker compose up -d
-```
-
-#### Creating your first User
-
-Prosuna staff users are managed in Keycloak and imported into Prosuna when they log in for the first time.
-The Keycloak admin account from the Docker Compose configuration is only used to manage Keycloak; it is not automatically a Prosuna administrator.
-
-Before the first Prosuna login, decide which staff user should receive Prosuna's system role with the highest permission level.
-Add that user's e-mail address to the `prosuna` service environment in your `compose.yml`:
-
-```yaml
-PROSUNA_BOOTSTRAP_ADMIN_MAIL: "admin@example.org"
-```
-
-If the stack is already running, apply the change after editing the compose file:
-
-```bash
-docker compose up -d prosuna
-```
-
-Then open the Keycloak admin console at `https://{{ HOSTNAME }}/idp/admin/` and sign in with the configured `KEYCLOAK_ADMIN_USERNAME` and `KEYCLOAK_ADMIN_PASSWORD`.
-Switch to the `staff` realm, create a new user, and set the e-mail address to the value of `PROSUNA_BOOTSTRAP_ADMIN_MAIL`.
-After saving the user, open the "Credentials" tab and set a password.
-Disable "Temporary" if the user should keep this password after the first login.
-
-When this user logs into Prosuna for the first time, Prosuna imports the Keycloak user.
-If no active Prosuna user holds the configured system role with the highest permission level and the e-mail address matches `PROSUNA_BOOTSTRAP_ADMIN_MAIL`, the user receives that role.
-The role defaults to `Superadministrator:in` and can later be changed under the general application settings.
-
-#### Logging into Prosuna
-
-Open the staff application at `https://{{ HOSTNAME }}/staff`.
-Prosuna redirects staff logins to the Keycloak `staff` realm.
-Sign in with the staff user created above and complete any required Keycloak actions, such as changing a temporary password.
-
-After the Keycloak login succeeds, you are redirected back to the Prosuna staff application.
-If the user can log in but does not have administrator permissions, verify that the user was created in the `staff` realm, that the user's e-mail address matches `PROSUNA_BOOTSTRAP_ADMIN_MAIL`, and that no other active Prosuna user already holds the configured system role with the highest permission level.
+- [Local development and evaluation example](./examples/local/README.md): [Docker Compose configuration](./examples/local/compose.yml)
+- [Single-server example](./examples/server/README.md): [Docker Compose configuration](./examples/server/compose.yml)
 
 ## Development Setup
 Refer to the [development setup instructions](./development/README.md) for setting up Prosuna for development.

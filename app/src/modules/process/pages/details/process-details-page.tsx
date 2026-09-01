@@ -89,6 +89,7 @@ import {useProcessExport} from '../../../../hooks/use-process-export';
 import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {NodeProblemsAlert} from '../../components/node-problems-alert';
 import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
+import {AlertComponent} from '../../../../components/alert/alert-component';
 import {useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
 import {getProcessNodeLimit, isFormModuleEnabled, isProcessNodeTypeUnlimited} from '../../../../utils/module-flags';
 import {
@@ -685,9 +686,10 @@ export function ProcessDetailsPage(): ReactNode {
                 processDefinitionVersion: processVersion,
             })
             .then((problems) => {
-                setProcessNodeProblems(problems);
+                const nodeProblems = problems.nodeProblems;
+                setProcessNodeProblems(nodeProblems);
 
-                const problemNodeIds = new Set(problems.map((problem) => problem.node.id));
+                const problemNodeIds = new Set(nodeProblems.map((problem) => problem.node.id));
                 const savedWithErrorsNodeIds = processFlow.nodes
                     .filter((node) => node.savedWithErrors && problemNodeIds.has(node.id))
                     .map((node) => node.id);
@@ -1638,8 +1640,12 @@ export function ProcessDetailsPage(): ReactNode {
                     processDefinitionId: processId,
                     processDefinitionVersion: processVersion,
                 });
-            setProcessNodeProblems(problems);
-            setShowProcessNodeProblemsForNodes(problems.reduce((acc, prob) => ({
+            const versionProblems = problems.versionProblems;
+            const nodeProblems = problems.nodeProblems;
+            const hasProblems = versionProblems.length > 0 || nodeProblems.length > 0;
+
+            setProcessNodeProblems(nodeProblems);
+            setShowProcessNodeProblemsForNodes(nodeProblems.reduce((acc, prob) => ({
                 ...acc,
                 [prob.node.id]: true,
             }), {}));
@@ -1655,9 +1661,23 @@ export function ProcessDetailsPage(): ReactNode {
                             Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
                         </Typography>
                         {
-                            problems.length > 0 &&
+                            versionProblems.length > 0 &&
+                            <AlertComponent
+                                color="error"
+                                title="Prozessversion ist unvollständig"
+                                sx={{
+                                    marginTop: '1rem',
+                                }}
+                            >
+                                <ul>
+                                    {versionProblems.map((problem) => <li key={problem}>{problem}</li>)}
+                                </ul>
+                            </AlertComponent>
+                        }
+                        {
+                            nodeProblems.length > 0 &&
                             <NodeProblemsAlert
-                                problems={problems}
+                                problems={nodeProblems}
                                 availableNodeProviders={availableNodeProviders}
                                 mode="test"
                                 sx={{
@@ -1667,7 +1687,7 @@ export function ProcessDetailsPage(): ReactNode {
                         }
                     </>
                 ),
-                confirmButtonText: problems.length > 0 ? 'Test trotzdem starten' : 'Test starten',
+                confirmButtonText: hasProblems ? 'Test trotzdem starten' : 'Test starten',
             });
 
             if (!confirmed) {

@@ -1,13 +1,19 @@
-# Server Prosuna Setup
+# Single-Server Prosuna Setup Example
 
-This example starts Prosuna, Keycloak, PostgreSQL, Redis, RabbitMQ, ClamAV, Gotenberg, and Caddy on one production server.
+This example shows one possible way to run Prosuna, Keycloak, PostgreSQL, Redis, RabbitMQ, ClamAV, Gotenberg, and Caddy on a single server.
 Caddy terminates HTTPS and requests Let's Encrypt certificates automatically.
+
+For an on-premises installation, the responsible system administrators must review and adapt this example to the actual infrastructure, security, availability, backup, and operating requirements. The included [Docker Compose configuration](./compose.yml) and [Caddyfile](./Caddyfile) are examples, not universal production installation instructions.
 
 ## 1. Prepare the Server
 
+### Prerequisites
+
+- Ubuntu 26.04 LTS or newer.
+- Docker Engine with the Docker Compose plugin.
+
 Before starting the stack, make sure that:
 
-- Docker Engine with the Docker Compose plugin is installed.
 - The public DNS record for your Prosuna hostname points to this server.
 - Ports `80` and `443` are reachable from the internet.
 - No other service is already listening on ports `80` or `443`.

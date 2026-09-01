@@ -72,6 +72,7 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.RichTextInput]: [],
     [ElementType.UiDefinitionInput]: [],
     [ElementType.IdentityConfigElement]: [],
+    [ElementType.PaymentConfigElement]: [],
     [ElementType.TabLayout]: [],
     [ElementType.ChipInput]: [],
     [ElementType.DateTime]: [],
@@ -91,6 +92,7 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.HtmlTemplateInput]: [],
     [ElementType.StoragePathSelector]: [],
     [ElementType.ProcessAttachmentDisplay]: [],
+    [ElementType.LinkButton]: [],
 };
 
 export const getAutofillOptionsForElementType = (elementType: ElementType) => {

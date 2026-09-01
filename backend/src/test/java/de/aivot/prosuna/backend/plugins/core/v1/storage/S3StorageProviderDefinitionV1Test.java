@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.storage.repositories.StorageProviderRepository;
 import de.aivot.prosuna.backend.storage.services.KnownExtensionsService;
 import io.minio.CopyObjectArgs;
 import io.minio.Directive;
+import io.minio.Http;
 import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -149,7 +150,7 @@ class S3StorageProviderDefinitionV1Test {
         var statObjectResponse = mock(StatObjectResponse.class);
         when(statObjectResponse.contentType()).thenReturn("application/pdf");
         when(statObjectResponse.size()).thenReturn(123L);
-        when(statObjectResponse.userMetadata()).thenReturn(Map.of("color", "blue"));
+        when(statObjectResponse.userMetadata()).thenReturn(new Http.Headers(Map.of("color", "blue")));
         when(client.statObject(any(StatObjectArgs.class))).thenReturn(statObjectResponse);
 
         var provider = new TestS3StorageProviderDefinitionV1(client);
@@ -164,7 +165,8 @@ class S3StorageProviderDefinitionV1Test {
         var copyObjectArgs = copyObjectArgsCaptor.getValue();
 
         assertEquals(Directive.REPLACE, copyObjectArgs.metadataDirective());
-        assertTrue(copyObjectArgs.userMetadata().values().contains("blue"));
+        assertTrue(copyObjectArgs.userMetadata().entries().stream()
+                .anyMatch(entry -> "blue".equals(entry.getValue())));
         assertTrue(copyObjectArgs.headers().get("Content-Type").contains("application/pdf"));
         assertEquals("/document.pdf", updatedDocument.getPathFromRoot());
         assertEquals("blue", updatedDocument.getMetadata().get("x-amz-meta-color"));
@@ -176,7 +178,7 @@ class S3StorageProviderDefinitionV1Test {
         var statObjectResponse = mock(StatObjectResponse.class);
         var lastModified = ZonedDateTime.parse("2026-01-02T03:04:05Z");
         when(statObjectResponse.size()).thenReturn(123L);
-        when(statObjectResponse.userMetadata()).thenReturn(Map.of());
+        when(statObjectResponse.userMetadata()).thenReturn(new Http.Headers());
         when(statObjectResponse.lastModified()).thenReturn(lastModified);
         when(client.statObject(any(StatObjectArgs.class))).thenReturn(statObjectResponse);
 

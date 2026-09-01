@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -467,7 +467,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Nonnull
     private String serializeRequestBody(@Nonnull Map<String, Object> requestBody) throws ProcessNodeExecutionExceptionUnknown {
         try {
-            return ObjectMapperFactory.getInstance().writeValueAsString(requestBody);
+            return JsonMapperFactory.getInstance().writeValueAsString(requestBody);
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
@@ -482,7 +482,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         if (StringUtils.isNullOrEmpty(rawBody)) {
             throw new IllegalArgumentException("Die API-Antwort ist leer.");
         }
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .readValue(rawBody, AiCompletionResponse.class);
     }
@@ -509,7 +509,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                                                @Nonnull AiCompletionResponse response) {
         var nodeData = new LinkedHashMap<String, Object>();
         var usage = response.usage != null
-                ? ObjectMapperFactory.getInstance().convertValue(response.usage, Map.class)
+                ? JsonMapperFactory.getInstance().convertValue(response.usage, Map.class)
                 : null;
 
         nodeData.put(OUTPUT_PROMPT, renderedPrompt);

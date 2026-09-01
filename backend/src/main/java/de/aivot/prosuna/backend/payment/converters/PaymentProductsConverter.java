@@ -1,23 +1,21 @@
 package de.aivot.prosuna.backend.payment.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.models.payment.PaymentProduct;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
- * JPA attribute converter for handling the conversion of a list of
- * {@link PaymentProduct} objects to a JSON string for database storage
- * and vice versa.
+ * JPA attribute converter for handling the conversion of a list of {@link PaymentProduct} objects to a JSON string for database storage and vice versa.
  *
  * <p>This converter is used to seamlessly serialize and deserialize
- * {@link PaymentProduct} objects when persisting or retrieving
- * data from a database column of type JSON.</p>
+ * {@link PaymentProduct} objects when persisting or retrieving data from a database column of type JSON.</p>
  *
  * <p>Key functionalities:</p>
  * <ul>
@@ -38,7 +36,14 @@ import java.util.List;
  * @see PaymentProduct
  */
 @Converter
+@Component
 public class PaymentProductsConverter implements AttributeConverter<List<PaymentProduct>, String> {
+
+    private final JsonMapper jsonMapper;
+
+    public PaymentProductsConverter(JsonMapper jsonMapper) {
+        this.jsonMapper = jsonMapper;
+    }
 
     @Override
     public String convertToDatabaseColumn(List<PaymentProduct> attributes) {
@@ -46,12 +51,10 @@ public class PaymentProductsConverter implements AttributeConverter<List<Payment
             return "[]";
         }
 
-        var objectMapper = new ObjectMapper();
-
         String dbData;
         try {
-            dbData = objectMapper.writeValueAsString(attributes);
-        } catch (JsonProcessingException e) {
+            dbData = jsonMapper.writeValueAsString(attributes);
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 
@@ -64,14 +67,14 @@ public class PaymentProductsConverter implements AttributeConverter<List<Payment
             return new LinkedList<>();
         }
 
-        var objectMapper = new ObjectMapper()
+        var objectMapper = jsonMapper
                 .readerForListOf(PaymentProduct.class);
 
         List<PaymentProduct> mappings;
         try {
             mappings = objectMapper
                     .readValue(dbData);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 

@@ -1,9 +1,8 @@
 package de.aivot.prosuna.backend.plugins.core.v1.payment;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.common.contenttype.ContentType;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
@@ -26,6 +25,8 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.net.URI;
@@ -193,23 +194,10 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         var paymentTransactionUrl = (String) effectiveValues.get(PAYMENT_TRANSACTION_URL_FIELD);
         var normalizedPaymentTransactionUrl = StringUtils.normalizeUrl(paymentTransactionUrl);
 
-        var objectMapper = new ObjectMapper()
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        var objectMapper = JsonMapperFactory
+                .getInstance();
 
-        paymentRequest.setRequestor(null);
-        for (var item : paymentRequest.getItems()) {
-            if (item.getBookingData().isEmpty()) {
-                item.setBookingData(null);
-            }
-        }
-
-        String body;
-        try {
-            body = objectMapper
-                    .writeValueAsString(paymentRequest);
-        } catch (JsonProcessingException e) {
-            throw new PaymentException(e, "Failed to serialize payment request");
-        }
+        var body = serializePaymentRequest(paymentRequest, objectMapper);
 
         var paymentPath = String
                 .format("%spaymenttransaction/%s/%s", normalizedPaymentTransactionUrl, originatorID, endpointID);
@@ -244,10 +232,36 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         try {
             return objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction");
         } finally {
             client.close();
+        }
+    }
+
+    static String serializePaymentRequest(
+            @Nonnull XBezahldienstePaymentRequest paymentRequest,
+            @Nonnull JsonMapper baseMapper
+    ) throws PaymentException {
+        for (var item : paymentRequest.getItems()) {
+            if (item.getBookingData().isEmpty()) {
+                item.setBookingData(null);
+            }
+        }
+
+        var objectMapper = baseMapper
+                .rebuild()
+                .changeDefaultPropertyInclusion(ignored -> JsonInclude.Value.construct(
+                        JsonInclude.Include.NON_NULL,
+                        JsonInclude.Include.NON_NULL
+                ))
+                .build();
+
+        try {
+            return objectMapper
+                    .writeValueAsString(paymentRequest);
+        } catch (JacksonException e) {
+            throw new PaymentException(e, "Failed to serialize payment request");
         }
     }
 
@@ -300,9 +314,9 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         XBezahldienstePaymentTransaction updatedTransaction = null;
         try {
-            updatedTransaction = new ObjectMapper()
+            updatedTransaction = JsonMapperFactory.getInstance()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 

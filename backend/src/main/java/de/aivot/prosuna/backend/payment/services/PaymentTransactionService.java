@@ -13,13 +13,11 @@ import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.payment.filters.PaymentTransactionFilter;
-import de.aivot.prosuna.backend.payment.models.PaymentItem;
-import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
-import de.aivot.prosuna.backend.payment.models.PaymentTransactionChangeListener;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
+import de.aivot.prosuna.backend.payment.models.*;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.repositories.PaymentTransactionRepository;
+import de.aivot.prosuna.backend.utils.RandomUtils;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -29,9 +27,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Nonnull;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @EnableScheduling
@@ -82,10 +80,8 @@ public class PaymentTransactionService implements
     @Nonnull
     public PaymentTransactionEntity create(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull String purpose,
-            @Nonnull String description,
-            @Nonnull String finalRedirectUrl,
-            @Nonnull List<PaymentItem> paymentItems
+            @Nonnull PaymentPayload payload,
+            @Nonnull String finalRedirectUrl
     ) throws PaymentException {
         // Fetch corresponding payment provider definition
         var paymentProviderDefinition = paymentProviderDefinitionsService
@@ -101,7 +97,7 @@ public class PaymentTransactionService implements
 
         // Prepare transaction entity
         var transactionEntity = new PaymentTransactionEntity();
-        transactionEntity.setKey(UUID.randomUUID().toString());
+        transactionEntity.setKey(RandomUtils.generateRandomString(PaymentTransactionEntity.KEY_LENGTH));
         transactionEntity.setPaymentProviderKey(paymentProviderEntity.getKey());
         transactionEntity.setRedirectUrl(finalRedirectUrl);
         transactionEntity.setCreated(Instant.now());
@@ -118,18 +114,16 @@ public class PaymentTransactionService implements
             paymentRequest = paymentProviderDefinition.createPaymentRequest(
                     paymentProviderEntity,
                     derivedConfiguration,
-                    purpose,
-                    description,
-                    paymentItems,
+                    payload,
                     initialRedirectUrl
             );
         } catch (PaymentException e) {
             // Log exception and rethrow
             var metadata = new HashMap<String, Object>(Map.of(
                     "paymentProviderKey", paymentProviderEntity.getKey(),
-                    "purpose", purpose,
-                    "description", description,
-                    "paymentItems", paymentItems
+                    "purpose", payload.getPurpose(),
+                    "description", payload.getDescription(),
+                    "paymentItems", payload.getPaymentItems()
             ));
             metadata.put("exceptionType", e.getClass().getName());
             auditService.create()
@@ -152,9 +146,9 @@ public class PaymentTransactionService implements
             // Log exception and rethrow
             var metadata = new HashMap<String, Object>(Map.of(
                     "paymentProviderKey", paymentProviderEntity.getKey(),
-                    "purpose", purpose,
-                    "description", description,
-                    "paymentItems", paymentItems
+                    "purpose", payload.getPurpose(),
+                    "description", payload.getDescription(),
+                    "paymentItems", payload.getPaymentItems()
             ));
             metadata.put("exceptionType", e.getClass().getName());
             auditService.create()
@@ -185,6 +179,12 @@ public class PaymentTransactionService implements
     ) {
         return paymentTransactionRepository
                 .findById(transactionKey);
+    }
+
+    @Nonnull
+    public Optional<PaymentTransactionEntity> retrieveByRedirectUrl(@Nonnull String redirectUrl) {
+        return paymentTransactionRepository
+                .findFirstByRedirectUrlOrderByCreatedDesc(redirectUrl);
     }
 
     @Nonnull
@@ -303,7 +303,7 @@ public class PaymentTransactionService implements
         }
     }
 
-    @Scheduled(cron = "0 0/15 * * * *", zone = "${prosuna.timezone}")
+    @Scheduled(fixedRate = 15, timeUnit = TimeUnit.MINUTES)
     public void poll() {
         var spec = PaymentTransactionFilter
                 .create()

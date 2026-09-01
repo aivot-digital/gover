@@ -34,6 +34,7 @@ export const ElementToMuiDataGridType: Record<ElementType, GridColDef['type'] | 
     [ElementType.RichTextInput]: 'string',
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityConfigElement]: null,
+    [ElementType.PaymentConfigElement]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: 'string',
     [ElementType.DateTime]: 'string',
@@ -53,4 +54,5 @@ export const ElementToMuiDataGridType: Record<ElementType, GridColDef['type'] | 
     [ElementType.HtmlTemplateInput]: null,
     [ElementType.StoragePathSelector]: 'string',
     [ElementType.ProcessAttachmentDisplay]: null,
+    [ElementType.LinkButton]: null,
 };

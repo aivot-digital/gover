@@ -1,11 +1,10 @@
 package de.aivot.prosuna.backend.identity.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.asset.entities.AssetEntity;
 import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.services.HttpService;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.models.OpenIdConfiguration;
@@ -15,15 +14,14 @@ import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.lib.services.EntityService;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
-import de.aivot.prosuna.backend.utils.specification.SpecificationBuilder;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
+import tools.jackson.core.JacksonException;
 
 import java.net.URI;
 import java.net.http.HttpResponse;
@@ -120,9 +118,10 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
 
         OpenIdConfiguration openIdConfiguration;
         try {
-            openIdConfiguration = new ObjectMapper()
+            openIdConfiguration = JsonMapperFactory
+                    .getInstance()
                     .readValue(body, OpenIdConfiguration.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw ResponseException.internalServerError(
                     e,
                     "Der Endpoint %s hat eine ungültige Antwort zurückgegeben. Bitte überprüfen Sie den Endpoint.",

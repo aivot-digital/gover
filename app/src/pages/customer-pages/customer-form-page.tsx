@@ -67,6 +67,9 @@ import RestorePageIcon from '@aivot/mui-material-symbols-400-n25-outlined/Restor
 import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
+import {PaymentRequestOverview} from '../../modules/payment/components/payment-request-overview';
+import {showApiErrorSnackbar, showWarningSnackbar} from '../../slices/snackbar-slice';
+import {useConfirm} from '../../providers/confirm-provider';
 import {InstantIso} from '../../utils/temporal-types';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
 
@@ -94,11 +97,35 @@ interface RetrieveResponse {
     }[];
 }
 
+const CustomerFormLoadErrorMessage = 'Das Formular konnte nicht geladen werden.';
+
+function createCustomerFormLoadError(error: unknown) {
+    if (!isApiError(error)) {
+        return {
+            status: 500,
+            message: CustomerFormLoadErrorMessage,
+        };
+    }
+
+    if (error.status === 404) {
+        return {
+            status: 404,
+            message: 'Das Formular konnte nicht gefunden werden',
+        };
+    }
+
+    return {
+        status: error.status,
+        message: error.displayableToUser ? error.message : CustomerFormLoadErrorMessage,
+    };
+}
+
 export function CustomerFormPage() {
     const baseTheme = useTheme();
 
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const confirm = useConfirm();
     const testClaimKey = useMemo(() => searchParams.get(TestClaimSearchParam), [searchParams]);
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
 
@@ -123,7 +150,10 @@ export function CustomerFormPage() {
         minimumDerivedDataVersion: number;
     } | null>(null);
 
-    const [startedProcessAccessKey, setStartedProcessAccessKey] = useState<string | null>(null);
+    const [startedProcessAccessInfo, setStartedProcessAccessInfo] = useState<{
+        processInstanceAccessKey: string;
+        paymentRequired: boolean;
+    } | null>(null);
     const [dismissAuthentication, setDismissAuthentication] = useState(false);
     const [customerInputLoaderResolved, setCustomerInputLoaderResolved] = useState(false);
 
@@ -154,30 +184,13 @@ export function CustomerFormPage() {
                 setDerivedData(createDerivedRuntimeElementData());
                 setDerivedDataVersion(0);
                 setPendingStepRestore(null);
-                setStartedProcessAccessKey(null);
+                setStartedProcessAccessInfo(null);
                 setDismissAuthentication(false);
                 setCustomerInputLoaderResolved(false);
                 dispatch(setCurrentStep(0));
             })
             .catch((err) => {
-                if (isApiError(err)) {
-                    if (err.status === 404) {
-                        dispatch(setErrorMessage({
-                            status: 404,
-                            message: 'Das Formular konnte nicht gefunden werden',
-                        }));
-                    } else if (err.displayableToUser) {
-                        dispatch(setErrorMessage({
-                            status: err.status,
-                            message: err.message,
-                        }));
-                    } else {
-                        dispatch(setErrorMessage({
-                            status: err.status,
-                            message: 'Ein unbekannter Fehler ist aufgetreten',
-                        }));
-                    }
-                }
+                dispatch(setErrorMessage(createCustomerFormLoadError(err)));
             });
     }, [processSlug, formSlug, testClaimKey, navigate, dispatch]);
 
@@ -243,46 +256,84 @@ export function CustomerFormPage() {
             return;
         }
 
-        const formData = new FormData();
-        formData.append('inputs', JSON.stringify(values));
-
-        const files: FileUploadElementItem[] = [];
-        walkAuthoredElementValues(layoutElement, values, (element, value) => {
-            if (element.type === ElementType.FileUpload && Array.isArray(value) && value.length > 0 && isFileUploadElementItem(value[0])) {
-                files.push(...value);
-            }
-        });
-
-        for (const file of files) {
-            const blob = await fetch(file.uri).then((r) => r.blob());
-            formData.append('files', blob, file.name);
-            formData.append('fileUris', file.uri);
-        }
-
-        dispatch(setLoadingMessage({
-            blocking: true,
-            estimatedTime: 1000,
-            message: 'Formular wird abgesendet',
-        }));
-
+        let errorMessage = 'Das Absenden des Formulars konnte nicht vorbereitet werden.';
+        let loadingStarted = false;
         try {
-            const startRes = await new BaseApiService()
-                .postFormData<{
-                    startedProcessAccessKey: string;
-                }>(
-                    `/api/public/form/${process.slug}/${resolvedFormSlug}/submit/`,
-                    formData,
-                    {
-                        query: {
-                            'test-claim': testClaimKey,
-                        },
-                    },
-                );
+            errorMessage = 'Beim Berechnen der Kosten ist ein unbekannter Fehler aufgetreten.';
+            const costs = await new FormTriggerApiService()
+                .calculateCosts(process.slug, resolvedFormSlug, values, {
+                    testClaim: testClaimKey ?? undefined,
+                });
+            const paymentRequired = costs.totalCost > 0;
 
-            CustomerInputService.cleanCustomerInput(process.slug, resolvedFormSlug, version.processVersion);
-            setStartedProcessAccessKey(startRes.startedProcessAccessKey);
+            if (paymentRequired) {
+                errorMessage = 'Die Zahlungsanforderung konnte nicht vorbereitet werden.';
+                const proceedWithPaymentRequirements = await confirm({
+                    title: 'Zahlung erforderlich',
+                    children: (
+                        <PaymentRequestOverview
+                            request={costs}
+                        />
+                    ),
+                    confirmButtonText: 'Fortfahren',
+                });
+
+                if (!proceedWithPaymentRequirements) {
+                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen.'));
+                    return;
+                }
+            }
+
+            errorMessage = 'Die Anhänge konnten nicht für das Absenden vorbereitet werden.';
+            const formData = new FormData();
+            formData.append('inputs', JSON.stringify(values));
+
+            const files: FileUploadElementItem[] = [];
+            walkAuthoredElementValues(layoutElement, values, (element, value) => {
+                if (element.type === ElementType.FileUpload && Array.isArray(value) && value.length > 0 && isFileUploadElementItem(value[0])) {
+                    files.push(...value);
+                }
+            });
+
+            for (const file of files) {
+                const response = await fetch(file.uri);
+                if (!response.ok) {
+                    throw new Error(`Failed to load attachment ${file.name}`);
+                }
+                const blob = await response.blob();
+                formData.append('files', blob, file.name);
+                formData.append('fileUris', file.uri);
+            }
+
+            dispatch(setLoadingMessage({
+                blocking: true,
+                estimatedTime: 1000,
+                message: 'Formular wird abgesendet',
+            }));
+            loadingStarted = true;
+            errorMessage = 'Beim Absenden des Formulars ist ein Fehler aufgetreten.';
+
+            const startRes = await new FormTriggerApiService()
+                .submitForm(process.slug, resolvedFormSlug, formData, {
+                    testClaim: testClaimKey ?? undefined,
+                });
+
+            setStartedProcessAccessInfo({
+                processInstanceAccessKey: startRes.startedProcessAccessKey,
+                paymentRequired: paymentRequired,
+            });
+
+            try {
+                CustomerInputService.cleanCustomerInput(process.slug, resolvedFormSlug, version.processVersion);
+            } catch (cleanupError) {
+                console.error('Error cleaning submitted customer input:', cleanupError);
+            }
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, errorMessage));
         } finally {
-            dispatch(clearLoadingMessage());
+            if (loadingStarted) {
+                dispatch(clearLoadingMessage());
+            }
         }
     };
 
@@ -380,7 +431,7 @@ export function CustomerFormPage() {
                             setDerivedData(createDerivedRuntimeElementData());
                             setDerivedDataVersion(0);
                             setPendingStepRestore(null);
-                            setStartedProcessAccessKey(null);
+                            setStartedProcessAccessInfo(null);
                             setDismissAuthentication(false);
                             setCustomerInputLoaderResolved(true);
                             IdentityProvidersApiService.clearIdentity(node.id);
@@ -419,7 +470,7 @@ export function CustomerFormPage() {
 
                     {
                         showFormFlow &&
-                        startedProcessAccessKey == null &&
+                        startedProcessAccessInfo == null &&
                         !customerInputLoaderResolved &&
                         customerInputDraft != null &&
                         <CustomerFormSkeleton />
@@ -427,7 +478,7 @@ export function CustomerFormPage() {
 
                     {
                         showFormFlow &&
-                        startedProcessAccessKey == null &&
+                        startedProcessAccessInfo == null &&
                         !customerInputLoaderResolved &&
                         <CustomerInputLoader
                             processSlug={process.slug}
@@ -444,7 +495,7 @@ export function CustomerFormPage() {
 
                     {
                         showFormFlow &&
-                        startedProcessAccessKey == null &&
+                        startedProcessAccessInfo == null &&
                         customerInputLoaderResolved &&
                         <ElementDerivationContext
                             element={layoutElement}
@@ -461,9 +512,10 @@ export function CustomerFormPage() {
                     }
                     {
                         showFormFlow &&
-                        startedProcessAccessKey != null &&
+                        startedProcessAccessInfo != null &&
                         <Submitted
-                            startedProcessAccessKey={startedProcessAccessKey}
+                            startedProcessAccessKey={startedProcessAccessInfo.processInstanceAccessKey}
+                            paymentRequired={startedProcessAccessInfo.paymentRequired}
                             formElement={layoutElement}
                             node={node}
                             process={process}
@@ -485,24 +537,28 @@ export function CustomerFormPage() {
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === HelpDialogId}
                     form={layoutElement}
+                    version={version}
                 />
 
                 <PrivacyDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === PrivacyDialogId}
                     form={layoutElement}
+                    version={version}
                 />
 
                 <ImprintDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === ImprintDialogId}
                     form={layoutElement}
+                    version={version}
                 />
 
                 <AccessibilityDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === AccessibilityDialogId}
                     form={layoutElement}
+                    version={version}
                 />
             </SnackbarProvider>
         </ThemeProvider>

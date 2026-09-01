@@ -1,15 +1,13 @@
 package de.aivot.prosuna.backend.process.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
 
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ProcessTaskStatusConverterTest {
     private final ProcessTaskStatusConverter converter = new ProcessTaskStatusConverter();
@@ -20,6 +18,7 @@ class ProcessTaskStatusConverterTest {
                 ProcessTaskStatus.Running, 0,
                 ProcessTaskStatus.Paused, 1,
                 ProcessTaskStatus.AwaitingPayment, 6,
+                ProcessTaskStatus.AwaitingCustomer, 7,
                 ProcessTaskStatus.Completed, 2,
                 ProcessTaskStatus.Aborted, 3,
                 ProcessTaskStatus.Failed, 4,
@@ -50,8 +49,8 @@ class ProcessTaskStatusConverterTest {
     }
 
     @Test
-    void keepsEnumNamesForJsonSerialization() throws JsonProcessingException {
-        var objectMapper = ObjectMapperFactory.getInstance();
+    void keepsEnumNamesForJsonSerialization() throws JacksonException {
+        var objectMapper = JsonMapperFactory.getInstance();
 
         assertEquals("\"Completed\"", objectMapper.writeValueAsString(ProcessTaskStatus.Completed));
         assertEquals(

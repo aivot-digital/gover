@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.dataObject.services;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntity;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntityId;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectSchemaEntity;
@@ -200,7 +200,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
     @Nonnull
     private Map<String, Object> deriveDataObjectItemData(@Nonnull DataObjectItemEntity entity,
                                                          @Nonnull DataObjectSchemaEntity schema) throws ResponseException {
-        var entityElementData = ObjectMapperFactory
+        var entityElementData = JsonMapperFactory
                 .getInstance()
                 .convertValue(entity.getData(), AuthoredElementValues.class);
         var edo = new ElementDerivationOptions();

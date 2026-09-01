@@ -7,10 +7,13 @@ export enum ViewDispatcherMode {
     Viewer,
 }
 
+export type TaskViewMode = 'staff' | 'customer';
+
 export interface ViewDispatcherContextType {
     scrollContainerRef?: RefObject<HTMLDivElement | null>;
     mode: ViewDispatcherMode;
     showInvisibleElements?: boolean;
+    taskViewMode?: TaskViewMode | null;
 
     rootElement: AnyElement;
     allElements: AnyElement[];

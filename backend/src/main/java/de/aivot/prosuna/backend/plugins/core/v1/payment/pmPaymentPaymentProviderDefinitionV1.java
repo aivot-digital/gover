@@ -1,10 +1,9 @@
 package de.aivot.prosuna.backend.plugins.core.v1.payment;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
@@ -28,6 +27,7 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
 
 import java.net.URI;
 import java.net.http.HttpResponse;
@@ -197,14 +197,14 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
         var paymentTransactionUrl = (String) effectiveValues.get(PAYMENT_TRANSACTION_URL_FIELD);
         var normalizedPaymentTransactionUrl = StringUtils.normalizeUrl(paymentTransactionUrl);
 
-        var objectMapper = ObjectMapperFactory
+        var objectMapper = JsonMapperFactory
                 .getInstance();
 
         String body;
         try {
             body = objectMapper
                     .writeValueAsString(paymentRequest);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PaymentException(e, "Failed to serialize payment request");
         }
 
@@ -224,22 +224,30 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
                                     .withAuthorizationBearer(accessToken)
                     );
         } catch (HttpConnectionException e) {
-            throw new PaymentException(e, "Failed to poll payment from payment provider %s", getProviderName());
+            throw new PaymentException(
+                    e,
+                    "Failed to create payment from payment provider %s at %s. Sent body was %s",
+                    getProviderName(),
+                    paymentPath,
+                    body
+            );
         }
 
         if (response.statusCode() != 200) {
             throw new PaymentException(
-                    "Failed to poll payment from payment provider %s. Status code was %d with body %s",
+                    "Failed to create payment from payment provider %s at %s. Status code was %d with body %s. Sent body was %s",
                     getProviderName(),
+                    paymentPath,
                     response.statusCode(),
-                    response.body()
+                    response.body(),
+                    body
             );
         }
 
         try {
             return objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
-        } catch (JsonProcessingException e) {
-            throw new PaymentException(e, "Failed to deserialize payment transaction");
+        } catch (JacksonException e) {
+            throw new PaymentException(e, "Failed to deserialize payment transaction. Body was %s", response.body());
         }
     }
 
@@ -286,10 +294,10 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
 
         XBezahldienstePaymentTransaction updatedTransaction = null;
         try {
-            updatedTransaction = ObjectMapperFactory
+            updatedTransaction = JsonMapperFactory
                     .getInstance()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
@@ -350,7 +358,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
             throw new PaymentHttpRequestException(response.statusCode(), paymentProviderEntity, formData.replaceAll("client_secret=.*", "client_secret=***"), response.body());
         }
 
-        var objectMapper = ObjectMapperFactory
+        var objectMapper = JsonMapperFactory
                 .getInstance();
 
         String token;
@@ -359,7 +367,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
                     .readTree(response.body())
                     .get("access_token")
                     .asText();
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PaymentSerializationException(e, "Failed to deserialize response body", response.body(), paymentProviderEntity);
         }
 

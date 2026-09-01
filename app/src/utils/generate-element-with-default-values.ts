@@ -58,6 +58,8 @@ import {getDefaultElementWeight} from './element-widths';
 import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
 import {StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
+import {PaymentConfigElement} from '../models/elements/form/input/payment-config-element';
+import {LinkButtonElement} from '../models/elements/form/content/link-button-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -143,7 +145,9 @@ const elementConstructors: {
     [ElementType.ProcessIdentityIdInput]: (id: string) => ProcessIdentityIdInputElement;
     [ElementType.HtmlTemplateInput]: (id: string) => HtmlTemplateInputElement;
     [ElementType.StoragePathSelector]: (id: string) => StoragePathSelectorInputElement;
+    [ElementType.PaymentConfigElement]: (id: string) => PaymentConfigElement;
     [ElementType.ProcessAttachmentDisplay]: (id: string) => ProcessAttachmentDisplayElement;
+    [ElementType.LinkButton]: (id: string) => LinkButtonElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -159,14 +163,6 @@ const elementConstructors: {
         showOnFormIndexPage: true,
         managingDepartmentId: undefined,
         responsibleDepartmentId: undefined,
-        legalSupportDepartmentId: undefined,
-        technicalSupportDepartmentId: undefined,
-        imprintDepartmentId: undefined,
-        privacyDepartmentId: undefined,
-        accessibilityDepartmentId: undefined,
-        formSpecificPrivacyStatement: undefined,
-        formSpecificAccessibilityStatement: undefined,
-        themeId: undefined,
         pdfTemplateKey: undefined,
     }),
     [ElementType.Step]: (id) => ({
@@ -531,11 +527,25 @@ const elementConstructors: {
         allowedStorageProviderTypes: undefined,
         allowReadOnlyStorageProviders: false,
     }),
+    [ElementType.PaymentConfigElement]: (id) => ({
+        ...makeInputBase(ElementType.PaymentConfigElement, id),
+        label: 'Zahlung',
+    }),
     [ElementType.ProcessAttachmentDisplay]: (id) => ({
         ...makeFormBase(ElementType.ProcessAttachmentDisplay, id),
         attachmentSetKey: undefined,
         label: undefined,
         hint: undefined,
+    }),
+    [ElementType.LinkButton]: (id) => ({
+        ...makeFormBase(ElementType.LinkButton, id),
+        label: 'Link öffnen',
+        href: undefined,
+        openInNewTab: true,
+        staffTaskEvent: undefined,
+        customerTaskEvent: undefined,
+        variant: 'contained',
+        color: 'primary',
     }),
 };
 
