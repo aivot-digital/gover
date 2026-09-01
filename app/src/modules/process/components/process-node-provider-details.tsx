@@ -208,13 +208,16 @@ export function ProcessNodeProviderDetailsHeader(props: ProcessNodeProviderDetai
                         label={`Version ${provider.componentVersion}`}
                         sx={{flexShrink: 0}}
                     />
-                    <Chip
-                        size="small"
-                        label={isDeprecated ? 'Veraltet' : 'Aktiv'}
-                        color={isDeprecated ? 'warning' : 'success'}
-                        variant="outlined"
-                        sx={{flexShrink: 0}}
-                    />
+                    {
+                        isDeprecated &&
+                        <Chip
+                            size="small"
+                            label="Abgekündigt"
+                            color="warning"
+                            variant="outlined"
+                            sx={{flexShrink: 0}}
+                        />
+                    }
                 </Box>
             </Box>
         </Box>
