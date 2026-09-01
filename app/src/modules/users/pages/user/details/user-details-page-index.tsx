@@ -22,7 +22,7 @@ import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/c
 import {useFormManager} from '../../../../../hooks/use-form-manager';
 import * as yup from 'yup';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
-import {SelectFieldComponent} from '../../../../../components/select-field-2/select-field-component';
+import {SelectFieldComponent} from '../../../../../components/select-field/select-field-component';
 import {CreateUserResponseDTO, UsersApiService} from '../../../users-api-service';
 import {useConfirm} from '../../../../../providers/confirm-provider';
 import {SystemRolesApiService} from '../../../../system/services/system-roles-api-service';
@@ -512,7 +512,7 @@ export function UserDetailsPageIndex() {
                             my: 2,
                         }}
                     >
-                        Bei dieser Mitarbeiter:in handelt es sich um einen Beispieldatensatz.
+                        Bei dieser Mitarbeiter:in handelt es sich um einen Beispieldatensatz.<br/>
                         Eine Änderung der Daten, sowie ein Löschen ist nicht möglich.
                     </AlertComponent>
                 }

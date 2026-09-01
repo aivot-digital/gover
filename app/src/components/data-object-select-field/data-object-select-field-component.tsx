@@ -1,4 +1,12 @@
-import {Autocomplete, Box, CircularProgress, TextField, Typography} from '@mui/material';
+import {
+    Autocomplete,
+    Box,
+    CircularProgress,
+    type SxProps,
+    TextField,
+    type Theme,
+    Typography,
+} from '@mui/material';
 import CheckIcon from '@aivot/mui-material-symbols-400-n25-outlined/Check';
 import {SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
@@ -10,8 +18,16 @@ import {
     normalizeDataObjectId,
 } from './data-object-select-options';
 import {normalizeDataModelKey} from '../data-model-select-field/data-model-select-options';
+import {
+    FormField,
+    type FormFieldControlContext,
+    type FormFieldLayoutProps,
+    getNativeInputAriaProps,
+} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
-export interface DataObjectSelectFieldComponentProps {
+export interface DataObjectSelectFieldComponentProps extends FormFieldLayoutProps {
     label: string;
     value: string | null | undefined;
     onChange: (value: string | null) => void;
@@ -21,9 +37,11 @@ export interface DataObjectSelectFieldComponentProps {
     hint?: string;
     error?: string;
     disabled?: boolean;
+    busy?: boolean;
     required?: boolean;
     readOnly?: boolean;
     options?: DataObjectSelectOption[];
+    controlSx?: SxProps<Theme>;
 }
 
 export function DataObjectSelectFieldComponent(props: DataObjectSelectFieldComponentProps) {
@@ -37,6 +55,7 @@ export function DataObjectSelectFieldComponent(props: DataObjectSelectFieldCompo
         hint,
         error,
         disabled,
+        busy,
         required,
         readOnly,
         options: providedOptions,
@@ -179,129 +198,178 @@ export function DataObjectSelectFieldComponent(props: DataObjectSelectFieldCompo
         };
     }, [normalizedDataModelKey, normalizedValue, optionLookup]);
 
-    return (
-        <Autocomplete
-            open={open}
-            onOpen={() => {
-                setOpen(true);
-            }}
-            onClose={() => {
-                setOpen(false);
-            }}
-            options={options}
-            loading={open && isLoading}
-            readOnly={readOnly}
-            disabled={disabled}
-            value={selectedOption}
-            isOptionEqualToValue={(option, selectedOption) => option.key === selectedOption.key}
-            getOptionLabel={(option) => option.label}
-            noOptionsText={
-                optionsLoadKey == null
-                    ? 'Bitte zuerst ein Datenmodell konfigurieren.'
-                    : isLoading
-                        ? 'Lade Optionen…'
-                        : 'Keine Optionen verfügbar'
-            }
-            onChange={(_: SyntheticEvent, nextValue) => {
-                onChange(nextValue?.value ?? null);
-            }}
-            renderOption={({key, ...optionProps}, option, state) => (
-                <Box
-                    key={key}
-                    component="li"
-                    {...optionProps}
-                    sx={{
-                        py: 0.5,
-                        minHeight: 40,
-                    }}
-                >
-                    {
-                        option.icon != null &&
-                        <Box
-                            sx={{
-                                mr: 1,
-                                display: 'flex',
-                                alignItems: 'center',
-                            }}
-                        >
-                            {option.icon}
-                        </Box>
-                    }
+    const effectiveError = error ?? loadError;
 
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 0.125,
-                            flex: 1,
-                        }}
-                    >
-                        <Typography
-                            variant="body2"
+    return (
+        <FormField
+            id={props.id}
+            label={label}
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            hint={hint}
+            error={effectiveError}
+            required={required}
+            disabled={disabled}
+            readOnly={readOnly}
+            busy={busy}
+            margin={props.margin ?? 'normal'}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
+        >
+            {(fieldContext: FormFieldControlContext) => (
+                <Autocomplete
+                    id={fieldContext.controlId}
+                    fullWidth
+                    size="small"
+                    open={open}
+                    onOpen={() => {
+                        if (!busy) {
+                            setOpen(true);
+                        }
+                    }}
+                    onClose={() => {
+                        setOpen(false);
+                    }}
+                    options={options}
+                    loading={open && isLoading}
+                    readOnly={readOnly || busy}
+                    disabled={disabled}
+                    value={selectedOption}
+                    isOptionEqualToValue={(option, selectedOption) => option.key === selectedOption.key}
+                    getOptionLabel={(option) => option.label}
+                    noOptionsText={
+                        optionsLoadKey == null
+                            ? 'Bitte zuerst ein Datenmodell konfigurieren.'
+                            : isLoading
+                                ? 'Lade Optionen…'
+                                : 'Keine Optionen verfügbar'
+                    }
+                    onChange={(_: SyntheticEvent, nextValue) => {
+                        if (!busy) {
+                            onChange(nextValue?.value ?? null);
+                        }
+                    }}
+                    renderOption={({key, ...optionProps}, option, state) => (
+                        <Box
+                            key={key}
+                            component="li"
+                            {...optionProps}
                             sx={{
-                                lineHeight: 1.2,
+                                py: 0.5,
+                                minHeight: 40,
                             }}
                         >
-                            {option.label}
-                        </Typography>
-                        {
-                            option.subLabel != null &&
-                            <Typography
-                                variant="caption"
-                                color="textSecondary"
+                            {
+                                option.icon != null &&
+                                <Box
+                                    sx={{
+                                        mr: 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    {option.icon}
+                                </Box>
+                            }
+
+                            <Box
                                 sx={{
-                                    lineHeight: 1.2,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 0.125,
+                                    flex: 1,
                                 }}
                             >
-                                {option.subLabel}
-                            </Typography>
-                        }
-                    </Box>
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        lineHeight: 1.2,
+                                    }}
+                                >
+                                    {option.label}
+                                </Typography>
+                                {
+                                    option.subLabel != null &&
+                                    <Typography
+                                        variant="caption"
+                                        color="textSecondary"
+                                        sx={{
+                                            lineHeight: 1.2,
+                                        }}
+                                    >
+                                        {option.subLabel}
+                                    </Typography>
+                                }
+                            </Box>
 
-                    <CheckIcon
-                        sx={{
-                            ml: 1,
-                            fontSize: 18,
-                            color: 'primary.main',
-                            opacity: state.selected ? 1 : 0,
-                        }}
-                    />
-                </Box>
-            )}
-            renderInput={(params) => (
-                <TextField
-                    {...params}
-                    label={label}
-                    placeholder={placeholder}
-                    required={required}
-                    error={error != null}
-                    helperText={error ?? loadError ?? hint}
-                    slotProps={{
-                        ...params.slotProps,
+                            <CheckIcon
+                                sx={{
+                                    ml: 1,
+                                    fontSize: 18,
+                                    color: 'primary.main',
+                                    opacity: state.selected ? 1 : 0,
+                                }}
+                            />
+                        </Box>
+                    )}
+                    renderInput={(params) => {
+                        const nativeAriaProps = getNativeInputAriaProps(
+                            fieldContext,
+                            params.slotProps.htmlInput,
+                        );
 
-                        input: {
-                            ...params.slotProps.input,
-                            endAdornment: (
-                                <>
-                                    {
-                                        open && isLoading &&
-                                        <CircularProgress
-                                            color="inherit"
-                                            size={16}
-                                            sx={{mr: 1}}
-                                        />
-                                    }
-                                    {params.slotProps.input.endAdornment}
-                                </>
-                            ),
+                        return (
+                            <TextField
+                                {...params}
+                                id={fieldContext.controlId}
+                                label={undefined}
+                                placeholder={placeholder}
+                                required={required}
+                                error={fieldContext.invalid}
+                                helperText={undefined}
+                                fullWidth
+                                margin="none"
+                                size="small"
+                                slotProps={{
+                                    ...params.slotProps,
+                                    input: {
+                                        ...params.slotProps.input,
+                                        endAdornment: (
+                                            <>
+                                                {
+                                                    open && isLoading &&
+                                                    <CircularProgress
+                                                        color="inherit"
+                                                        size={16}
+                                                        sx={{mr: 1}}
+                                                    />
+                                                }
+                                                {params.slotProps.input.endAdornment}
+                                            </>
+                                        ),
+                                    },
+                                    htmlInput: {
+                                        ...params.slotProps.htmlInput,
+                                        ...nativeAriaProps,
+                                        'aria-busy': isLoading || nativeAriaProps['aria-busy'] || undefined,
+                                    },
+                                }}
+                            />
+                        );
+                    }}
+                    sx={[
+                        {
+                            cursor: busy ? 'not-allowed' : undefined,
+                            '& .MuiInputBase-root': {
+                                minHeight: FormFieldTokens.controlMinHeight,
+                                backgroundColor: busy ? getDisabledFieldBackground : undefined,
+                            },
                         },
-
-                        inputLabel: {
-                            ...params.slotProps.inputLabel,
-                            title: label,
-                        },
-                    }} />
+                        ...(Array.isArray(props.controlSx) ? props.controlSx : [props.controlSx]),
+                    ]}
+                />
             )}
-        />
+        </FormField>
     );
 }

@@ -1,14 +1,17 @@
-import {Box, FormHelperText, FormLabel, SxProps} from '@mui/material';
-import {DataGrid, GridColDef, GridFooter, GridFooterContainer, GridPaginationModel, GridRowId, GridRowSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
+import {Box, type SxProps, type Theme} from '@mui/material';
+import {DataGrid, GridColDef, GridPaginationModel, GridRowId, GridRowSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
 import React, {ReactNode, useMemo, useState} from 'react';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
-import {Actions} from '../actions/actions';
 import AddIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import HelpOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import {Action} from '../actions/actions-props';
 import {InfoDialog} from '../../dialogs/info-dialog/info-dialog';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {getSelectedRowIds, hasSelectedGridRows} from './table-field-selection';
+import {type FormFieldGroupLayoutProps} from '../form-field';
+import {TableFieldLayout} from './table-field-layout';
+import {TableFieldColumnHeader} from './table-field-column-header';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
 interface TableField<T extends GridValidRowModel, K extends keyof T & string> {
     key: K;
@@ -20,7 +23,7 @@ interface TableField<T extends GridValidRowModel, K extends keyof T & string> {
     renderCell?: (value: T[K]) => ReactNode;
 }
 
-interface TableFieldComponentProps<T extends GridValidRowModel> {
+interface TableFieldComponentProps<T extends GridValidRowModel> extends FormFieldGroupLayoutProps {
     label: string;
     hint?: string;
     error?: string;
@@ -30,6 +33,8 @@ interface TableFieldComponentProps<T extends GridValidRowModel> {
     value?: T[] | null;
     onChange: (value: T[] | null) => void;
     disabled?: boolean;
+    busy?: boolean;
+    readOnly?: boolean;
     required?: boolean;
     rowsHaveIds?: boolean;
     maximumRows?: number;
@@ -38,9 +43,10 @@ interface TableFieldComponentProps<T extends GridValidRowModel> {
         content: ReactNode;
     };
     addTooltip?: string;
+    addLabel?: string;
     deleteTooltip?: string;
     actions?: Action[];
-    sx?: SxProps;
+    controlSx?: SxProps<Theme>;
 }
 
 // TODO: Unify with table-field.component.view.tsx
@@ -55,14 +61,17 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
         value: originalValue,
         onChange,
         disabled,
+        busy,
+        readOnly,
         required,
         rowsHaveIds,
         maximumRows,
         helpDialog,
         addTooltip,
+        addLabel,
         deleteTooltip,
         actions,
-        sx,
+        controlSx,
     } = props;
 
     // Store the currently selected rows in this state to be able to delete them later
@@ -79,6 +88,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
 
     // Store the help dialog state in this state to signal the help dialog that the deletion is about to happen
     const [showHelpDialog, setShowHelpDialog] = useState(false);
+    const isInteractionDisabled = Boolean(disabled || busy || readOnly);
 
     // Normalize the value to always be an empty list. This makes working with the value alot easier later on.
     const value = useMemo(() => {
@@ -116,29 +126,39 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
         setConfirmDelete(undefined);
     };
 
-    const handleRowUpdate = (newRow: any, oldRow: any) => {
-        // Extract the index of the currently edited row
-        let rowIndex = newRow.id;
-        if (typeof rowIndex === 'string') {
-            rowIndex = parseInt(rowIndex, 10);
+    const handleRowUpdate = (newRow: GridValidRowModel, oldRow: GridValidRowModel) => {
+        const rowIndex = rows.findIndex((row) => row.id === newRow.id);
+        if (rowIndex < 0) {
+            return oldRow;
         }
+
+        // DataGrid adds an index-based ID when domain rows have no ID. Keep that implementation
+        // detail out of the authored value, while preserving genuine domain IDs when configured.
+        const {id: _generatedId, ...rowWithoutGeneratedId} = newRow;
+        const updatedRow = (rowsHaveIds ? newRow : rowWithoutGeneratedId) as T;
 
         // Create a new updated value array with the updated value
         const updatedValues = [...value];
-        updatedValues[rowIndex] = newRow;
+        updatedValues[rowIndex] = updatedRow;
 
         // Propagate the change
         onChange(updatedValues);
 
-        return { ...newRow, updatedAt: new Date() };
+        return newRow;
     };
 
     // Determine the columns for the data grid based on the fields of the element
     const columns: GridColDef[] = useMemo(() => {
         return fields.map((field) => ({
             field: field.key,
-            headerName: field.label + (field.required ? ' *' : ''),
-            editable: !field.disabled,
+            headerName: field.label,
+            renderHeader: () => (
+                <TableFieldColumnHeader
+                    label={field.label}
+                    optional={!field.required}
+                />
+            ),
+            editable: !field.disabled && !isInteractionDisabled,
             flex: 1,
             type: field.type,
             /*renderCell: (params: GridRenderCellParams<any>) => {
@@ -154,7 +174,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
             },
              */
         }));
-    }, [fields]);
+    }, [fields, isInteractionDisabled]);
 
     const rows: Array<T & { id: any }> = useMemo(() => {
         if (rowsHaveIds) {
@@ -170,131 +190,111 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
         return hasSelectedGridRows(selectionModel, rows.map((row) => row.id));
     }, [rows, selectionModel]);
 
+    const tableActions: Action[] = [
+        {
+            icon: <AddIcon/>,
+            iconPosition: 'start',
+            label: addLabel ?? 'Hinzufügen',
+            tooltip: addTooltip ?? addLabel ?? 'Eintrag hinzufügen',
+            ariaLabel: addTooltip ?? addLabel ?? 'Eintrag hinzufügen',
+            onClick: handleAddRow,
+            disabled: isInteractionDisabled || (maximumRows != null && rows.length >= maximumRows),
+        },
+        {
+            icon: <Delete/>,
+            iconPosition: 'start',
+            label: 'Löschen',
+            tooltip: deleteTooltip ?? 'Ausgewählte Einträge löschen',
+            ariaLabel: deleteTooltip ?? 'Ausgewählte Einträge löschen',
+            onClick: () => setConfirmDelete(() => handleDeleteRows),
+            disabled: isInteractionDisabled || !hasSelectedRows,
+            color: 'error',
+        },
+        {
+            icon: <HelpOutlineOutlinedIcon/>,
+            iconPosition: 'start',
+            label: 'Hilfe',
+            tooltip: 'Hilfe',
+            ariaLabel: `Hilfe zu ${label}`,
+            onClick: () => setShowHelpDialog(true),
+            visible: helpDialog != null,
+            ignoreBusy: true,
+        },
+        ...(actions ?? []),
+    ];
+
     return (
         <>
-            <DataGrid
-                sx={sx}
-                rows={rows}
-                columns={columns}
-                paginationModel={paginationModel}
-                onPaginationModelChange={setPaginationModel}
-                pageSizeOptions={[8, 16, 32]}
-                autoHeight
-                showToolbar
-
-                checkboxSelection={!props.disabled}
-                disableRowSelectionExcludeModel
-                onRowClick={(params, event) => {
-                    event.defaultMuiPrevented = true;
-                }}
-
-                rowSelectionModel={selectionModel}
-                onRowSelectionModelChange={(newModel) => setSelectionModel(newModel)}
-
-                processRowUpdate={handleRowUpdate}
-
-                disableColumnSelector
-                disableColumnFilter
-
-                slots={{
-                    noRowsOverlay: () => (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                height: '100%',
-                                opacity: 0.75,
-                            }}
-                        >
-                            {noRowsPlaceholder ?? 'Keine Einträge vorhanden'}
-                        </Box>
-                    ),
-                    toolbar: () => (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                my: 2,
-                                mx: 2,
-                            }}
-                        >
-                            <FormLabel
-                                error={error != null}
-                            >
-                                {label} {required && ' *'}
-                            </FormLabel>
-
+            <TableFieldLayout
+                id={props.id}
+                label={label}
+                ariaDescribedBy={props.ariaDescribedBy}
+                labelAction={props.labelAction}
+                hint={hint}
+                error={error}
+                required={required}
+                disabled={disabled}
+                busy={busy}
+                readOnly={readOnly}
+                margin={props.margin ?? 'normal'}
+                sx={props.sx}
+                showOptionalIndicator={props.showOptionalIndicator}
+                actions={tableActions}
+            >
+                {(fieldContext) => (
+                    <DataGrid
+                        sx={[
                             {
-                                <Actions
-                                    sx={{
-                                        ml: 'auto',
-                                    }}
-                                    actions={[
-                                        {
-                                            icon: <AddIcon />,
-                                            label: 'Hinzufügen',
-                                            tooltip: addTooltip,
-                                            onClick: handleAddRow,
-                                            disabled: maximumRows != null && rows.length >= maximumRows,
-                                            visible: !disabled,
-                                        },
-                                        {
-                                            icon: <Delete />,
-                                            label: 'Löschen',
-                                            tooltip: deleteTooltip,
-                                            onClick: () => setConfirmDelete(() => handleDeleteRows),
-                                            disabled: !hasSelectedRows,
-                                            visible: !disabled,
-                                        },
-                                        {
-                                            icon: <HelpOutlineOutlinedIcon />,
-                                            tooltip: 'Hilfe',
-                                            onClick: () => {
-                                                setShowHelpDialog(true);
-                                            },
-                                            visible: helpDialog != null,
-                                        },
-                                        ...(actions ?? []),
-                                    ]}
-                                />
-                            }
-                        </Box>
-                    ),
-                    footer: () => (
-                        <GridFooterContainer>
-                            {
-                                (error ?? hint) != null &&
+                                backgroundColor: busy ? getDisabledFieldBackground : undefined,
+                                borderBottom: '1px solid',
+                                borderBottomColor: 'divider',
+                                cursor: busy ? 'not-allowed' : undefined,
+                                pointerEvents: busy ? 'none' : undefined,
+                            },
+                            ...(Array.isArray(controlSx) ? controlSx : [controlSx]),
+                        ]}
+                        rows={rows}
+                        columns={columns}
+                        paginationModel={paginationModel}
+                        onPaginationModelChange={setPaginationModel}
+                        pageSizeOptions={[8, 16, 32]}
+                        autoHeight
+                        checkboxSelection={!disabled && !readOnly}
+                        disableRowSelectionExcludeModel
+                        onRowClick={(params, event) => {
+                            event.defaultMuiPrevented = true;
+                        }}
+
+                        rowSelectionModel={selectionModel}
+                        onRowSelectionModelChange={isInteractionDisabled ? undefined : setSelectionModel}
+
+                        processRowUpdate={isInteractionDisabled ? undefined : handleRowUpdate}
+
+                        disableColumnSelector
+                        disableColumnFilter
+
+                        aria-labelledby={fieldContext.labelId}
+                        aria-describedby={fieldContext.describedBy}
+                        aria-invalid={fieldContext.invalid || undefined}
+                        aria-busy={fieldContext.busy || undefined}
+                        slots={{
+                            noRowsOverlay: () => (
                                 <Box
                                     sx={{
                                         display: 'flex',
-                                        justifyContent: 'space-between',
+                                        justifyContent: 'center',
                                         alignItems: 'center',
-                                        p: 2,
+                                        height: '100%',
+                                        opacity: 0.75,
                                     }}
                                 >
-                                    {
-                                        (error || hint) &&
-                                        <FormHelperText
-                                            sx={{mt: 1}}
-                                            error={error != null}
-                                        >
-                                            {error ?? hint}
-                                        </FormHelperText>
-                                    }
+                                    {noRowsPlaceholder ?? 'Keine Einträge vorhanden'}
                                 </Box>
-                            }
-
-                            <GridFooter
-                                sx={{
-                                    ml: 'auto',
-                                    borderTop: 'none',
-                                }}
-                            />
-                        </GridFooterContainer>
-                    ),
-                }}
-            />
+                            ),
+                        }}
+                    />
+                )}
+            </TableFieldLayout>
 
             <ConfirmDialog
                 title="Möchten Sie die ausgewählten Einträge wirklich löschen?"
@@ -305,8 +305,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
                 Möchten Sie die Daten wirklich löschen?
             </ConfirmDialog>
 
-            {
-                helpDialog != null &&
+            {helpDialog != null && (
                 <InfoDialog
                     open={showHelpDialog}
                     title={helpDialog.title}
@@ -317,7 +316,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
                 >
                     {helpDialog.content}
                 </InfoDialog>
-            }
+            )}
         </>
     );
 }

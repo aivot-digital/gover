@@ -1,4 +1,4 @@
-import React, {useId, useState} from 'react';
+import React, {useState} from 'react';
 import {
     Button,
     IconButton,
@@ -17,6 +17,7 @@ import Contrast from '@aivot/mui-material-symbols-400-n25-outlined/Contrast';
 import KeyboardArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import LightMode from '@aivot/mui-material-symbols-400-n25-outlined/LightMode';
 import {type ColorModePreference, useColorMode} from '../../providers/color-mode-context';
+import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
 
 const colorModeOptions: Array<{
     value: ColorModePreference;
@@ -63,7 +64,7 @@ export function ColorModePicker({
 }: ColorModePickerProps) {
     const {mode, preference, setPreference} = useColorMode();
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-    const componentId = useId().replaceAll(':', '');
+    const componentId = useNormalizedReactId();
     const buttonId = `color-mode-menu-button-${componentId}`;
     const menuId = `color-mode-menu-${componentId}`;
     const selectedOption = colorModeOptions.find((option) => option.value === preference) ?? colorModeOptions[0];

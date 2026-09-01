@@ -3,9 +3,14 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import {TimeRangeFieldComponent} from './time-range-field-component';
 
 vi.mock('../time-field/time-field-component', () => ({
-    TimeFieldComponent: (props: { label: string; onChange: (value: string | null) => void }) => (
+    TimeFieldComponent: (props: {
+        label: string;
+        ariaDescribedBy?: string;
+        onChange: (value: string | null) => void;
+    }) => (
         <button
             type="button"
+            aria-describedby={props.ariaDescribedBy}
             onClick={() => props.onChange(null)}
         >
             {props.label}
@@ -28,8 +33,8 @@ describe('TimeRangeFieldComponent', () => {
             />,
         );
 
-        fireEvent.click(screen.getByText('Zeitraum (Von)'));
-        fireEvent.click(screen.getByText('Zeitraum (Bis)'));
+        fireEvent.click(screen.getByText('Von'));
+        fireEvent.click(screen.getByText('Bis'));
 
         expect(onChange).toHaveBeenNthCalledWith(1, {
             start: null,

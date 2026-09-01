@@ -1,12 +1,13 @@
-import {Box, Dialog, DialogContent, SxProps, Typography} from '@mui/material';
+import {Dialog, DialogContent, IconButton, Stack, type SxProps, type Theme, Tooltip} from '@mui/material';
 import {useState} from 'react';
 import OpenInFull from '@aivot/mui-material-symbols-400-n25-outlined/OpenInFull';
 import {CodeEditor} from '../code-editor/code-editor';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
-import {Actions} from '../actions/actions';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
+import {FormField, type FormFieldLayoutProps} from '../form-field';
+import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
 
-export interface CodeInputFieldComponentProps {
+export interface CodeInputFieldComponentProps extends FormFieldLayoutProps {
     label: string;
     value: string | null | undefined;
     onChange: (value: string | null) => void;
@@ -16,10 +17,11 @@ export interface CodeInputFieldComponentProps {
     required?: boolean | null | undefined;
     disabled?: boolean | null | undefined;
     readOnly?: boolean | null | undefined;
+    busy?: boolean | null | undefined;
     wordWrap?: boolean | null | undefined;
     language?: string | null | undefined;
     height?: string | null | undefined;
-    sx?: SxProps | null | undefined;
+    controlSx?: SxProps<Theme> | null | undefined;
 }
 
 export function CodeInputFieldComponent(props: CodeInputFieldComponentProps) {
@@ -33,15 +35,18 @@ export function CodeInputFieldComponent(props: CodeInputFieldComponentProps) {
         required,
         disabled,
         readOnly,
+        busy,
         wordWrap,
         language,
         height,
-        sx,
+        controlSx,
     } = props;
 
-    const sxArray = Array.isArray(sx) ? sx : [sx];
-    const isReadOnly = Boolean(disabled) || Boolean(readOnly);
-    const displayLabel = `${label}${required ? ' *' : ''}`;
+    const generatedId = useNormalizedReactId();
+    const controlId = props.id ?? `code-input-${generatedId}`;
+    const dialogId = `${controlId}-dialog`;
+    const isReadOnly = Boolean(disabled) || Boolean(readOnly) || Boolean(busy);
+    const hasError = error != null && error.length > 0;
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const handleChange = (nextValue: string) => {
@@ -52,101 +57,113 @@ export function CodeInputFieldComponent(props: CodeInputFieldComponentProps) {
         onBlur(normalizeCodeInputValue(nextValue));
     } : undefined;
 
-    const renderEditor = (editorHeight: string | null | undefined) => (
+    const renderEditor = (
+        editorHeight: string | null | undefined,
+        id: string,
+        ariaLabel: string,
+        ariaLabelledBy?: string,
+        ariaDescribedBy?: string,
+    ) => (
         <CodeEditor
+            id={id}
+            ariaLabel={ariaLabel}
+            ariaLabelledBy={ariaLabelledBy}
+            ariaDescribedBy={ariaDescribedBy}
             value={value}
             onChange={handleChange}
             onBlur={handleBlur}
             disabled={disabled ?? false}
             readOnly={isReadOnly}
+            busy={busy ?? false}
+            required={required ?? false}
             wordWrap={wordWrap ?? undefined}
-            error={error != null}
+            error={hasError}
             language={language ?? undefined}
             height={editorHeight ?? undefined}
             actions={[]}
+            sx={controlSx ?? undefined}
         />
     );
 
     return (
-        <Box
-            sx={[
-                {
-                    opacity: disabled ? 0.65 : 1,
-                },
-                ...sxArray,
-            ]}
+        <FormField
+            id={controlId}
+            label={label}
+            hint={hint}
+            error={error}
+            required={Boolean(required)}
+            disabled={Boolean(disabled)}
+            readOnly={Boolean(readOnly)}
+            busy={Boolean(busy)}
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            margin={props.margin}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
+            labelAction={(field) => {
+                const suppliedLabelAction = typeof props.labelAction === 'function'
+                    ? props.labelAction(field)
+                    : props.labelAction;
+
+                return (
+                    <Stack direction="row" spacing={0.5} sx={{alignItems: 'center'}}>
+                        {suppliedLabelAction}
+                        <Tooltip title="In großem Editor öffnen" arrow>
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    aria-label={`${label}: In großem Editor öffnen`}
+                                    aria-haspopup="dialog"
+                                    aria-controls={isDialogOpen ? dialogId : undefined}
+                                    aria-expanded={isDialogOpen}
+                                    disabled={field.disabled || field.busy}
+                                    onClick={() => setIsDialogOpen(true)}
+                                >
+                                    <OpenInFull fontSize="small"/>
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    </Stack>
+                );
+            }}
         >
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    marginBottom: 1,
-                }}
-            >
-                <Typography
-                    sx={{
-                        fontWeight: 'medium',
-                    }}
-                >
-                    {displayLabel}
-                </Typography>
+            {(field) => (
+                <>
+                    {!isDialogOpen && renderEditor(
+                        height,
+                        field.controlId,
+                        label,
+                        field.labelId,
+                        field.ariaProps['aria-describedby'],
+                    )}
 
-                <Actions
-                    dense
-                    size="small"
-                    sx={{ml: 'auto'}}
-                    actions={[
-                        {
-                            tooltip: 'In großem Editor öffnen',
-                            disabledTooltip: 'Der Editor ist deaktiviert.',
-                            ariaLabel: 'In großem Editor öffnen',
-                            icon: <OpenInFull fontSize="small"/>,
-                            disabled: disabled ?? false,
-                            onClick: () => {
-                                setIsDialogOpen(true);
-                            },
-                        },
-                    ]}
-                />
-            </Box>
+                    {isDialogOpen && (
+                        <Dialog
+                            open
+                            onClose={() => setIsDialogOpen(false)}
+                            fullWidth
+                            maxWidth="xl"
+                            slotProps={{paper: {id: dialogId}}}
+                        >
+                            <DialogTitleWithClose onClose={() => setIsDialogOpen(false)}>
+                                {label}
+                            </DialogTitleWithClose>
 
-            {
-                !isDialogOpen &&
-                renderEditor(height)
-            }
+                            <DialogContent>
+                                {renderEditor(
+                                    'calc(100vh - 220px)',
+                                    `${controlId}-dialog-editor`,
+                                    `${label} im großen Editor`,
+                                    undefined,
+                                    field.ariaProps['aria-describedby'],
+                                )}
+                            </DialogContent>
+                        </Dialog>
+                    )}
+                </>
+            )}
 
-            {
-                isDialogOpen &&
-                <Dialog
-                    open
-                    onClose={() => setIsDialogOpen(false)}
-                    fullWidth
-                    maxWidth="xl"
-                >
-                    <DialogTitleWithClose onClose={() => setIsDialogOpen(false)}>
-                        {displayLabel}
-                    </DialogTitleWithClose>
-
-                    <DialogContent>
-                        {renderEditor('calc(100vh - 220px)')}
-                    </DialogContent>
-                </Dialog>
-            }
-
-            {
-                (error != null || hint != null) &&
-                <Typography
-                    sx={{
-                        marginTop: 1,
-                        color: error != null ? 'error.main' : 'text.secondary',
-                    }}
-                    variant="caption"
-                >
-                    {error ?? hint}
-                </Typography>
-            }
-        </Box>
+        </FormField>
     );
 }
 

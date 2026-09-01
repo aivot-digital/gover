@@ -38,7 +38,7 @@ export function CodeInputView(props: BaseViewProps<CodeInputElement, string>) {
             error={errors != null ? errors.join(' ') : undefined}
             required={element.required}
             disabled={isDisabled}
-            readOnly={isBusy}
+            busy={isBusy}
             value={value}
             onChange={setValue}
             onBlur={onBlur != null ? (nextValue) => onBlur(nextValue, [element.id]) : undefined}

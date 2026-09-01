@@ -33,6 +33,7 @@ import {ExpandableCodeBlock} from '../../../components/expandable-code-block/exp
 import {SearchInput} from '../../../components/search-input/search-input';
 import {humanizeMillisecondsDuration} from '../../../utils/duration-utils';
 import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
+import {FormFieldTokens} from '../../../theming/form-field-tokens';
 import {ProcessNodeExecutionLogLevel} from '../entities/process-instance-event-entity';
 import {
     type ProcessInstanceEventLog,
@@ -403,7 +404,7 @@ function EventLogToolbar(props: {
             direction="row"
             spacing={2}
             sx={{
-                alignItems: "center",
+                alignItems: 'flex-end',
                 px: 3,
                 pb: 2
             }}>
@@ -435,13 +436,16 @@ function EventLogToolbar(props: {
             <CircularProgress
                 size={16}
                 aria-label="Ereignisse werden aktualisiert"
-                sx={{visibility: props.loading ? 'visible' : 'hidden'}}
+                sx={{visibility: props.loading ? 'visible' : 'hidden', mb: 1.5}}
             />
             <Typography
                 variant="body2"
                 sx={{
                     color: "text.secondary",
-                    whiteSpace: 'nowrap'
+                    whiteSpace: 'nowrap',
+                    minHeight: FormFieldTokens.controlMinHeight,
+                    display: 'flex',
+                    alignItems: 'center',
                 }}>
                 {countLabel}
             </Typography>

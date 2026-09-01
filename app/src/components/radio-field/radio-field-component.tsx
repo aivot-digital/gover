@@ -1,18 +1,23 @@
 import {
-    FormControl,
     FormControlLabel,
     FormHelperText,
-    FormLabel,
     Radio,
     RadioGroup,
+    type SxProps,
+    type Theme,
     ToggleButton,
     ToggleButtonGroup,
 } from '@mui/material';
+import {Fragment} from 'react';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
-import {SelectFieldComponentOption} from '../select-field/select-field-component-option';
-import {Fragment, useMemo} from 'react';
+import {type SelectFieldComponentOption} from '../select-field/select-field-component-option';
+import {
+    FormFieldGroup,
+    type FormFieldGroupContext,
+    type FormFieldGroupLayoutProps,
+} from '../form-field';
 
-export interface RadioFieldComponentProps {
+export interface RadioFieldComponentProps extends FormFieldGroupLayoutProps {
     label: string;
     value?: string | undefined | null;
     onChange: (val: string | null) => void;
@@ -20,142 +25,140 @@ export interface RadioFieldComponentProps {
     error?: string | undefined | null;
     hint?: string | undefined | null;
     disabled?: boolean | undefined | null;
+    busy?: boolean | undefined | null;
     required?: boolean | undefined | null;
     displayInline?: boolean | undefined | null;
     toggleButtons?: boolean | undefined | null;
+    controlSx?: SxProps<Theme>;
 }
-
-const generateRandomId = () => {
-    return 'id-' + Math.random().toString(36).substr(2, 9);
-};
 
 export function RadioFieldComponent(props: RadioFieldComponentProps) {
     const {
+        id,
+        ariaDescribedBy,
         label,
+        labelAction,
         value,
         onChange,
         options = [],
         error,
         hint,
         disabled = false,
+        busy = false,
         required = false,
         displayInline = false,
         toggleButtons = false,
+        margin = 'normal',
+        sx,
+        controlSx,
+        showOptionalIndicator,
     } = props;
-
-    const uniqueId = useMemo(() => generateRandomId(), []);
+    const isInteractionDisabled = Boolean(disabled || busy);
+    const controlSxArray = Array.isArray(controlSx) ? controlSx : [controlSx];
 
     return (
-        <FormControl
-            component="fieldset"
-            error={error != null}
-            disabled={disabled ?? false}
+        <FormFieldGroup
+            id={id}
+            label={label}
+            ariaDescribedBy={ariaDescribedBy}
+            labelAction={labelAction}
+            hint={hint}
+            error={error}
+            disabled={Boolean(disabled)}
+            busy={Boolean(busy)}
+            required={Boolean(required)}
+            margin={margin}
+            showOptionalIndicator={showOptionalIndicator}
+            sx={sx}
         >
-            <FormLabel
-                id={'label-' + uniqueId}
-            >
-                {label} {required && ' *'}
-            </FormLabel>
-            {
-                toggleButtons ?
-                    <ToggleButtonGroup
-                        aria-labelledby={'label-' + uniqueId}
-                        exclusive={true}
-                        value={value ?? null}
-                        onChange={(_, newValue: string | null) => {
+            {(fieldContext: FormFieldGroupContext) => toggleButtons ? (
+                <ToggleButtonGroup
+                    role="presentation"
+                    exclusive
+                    value={value ?? null}
+                    onChange={(_, newValue: string | null) => {
+                        if (!isInteractionDisabled) {
                             onChange(isStringNullOrEmpty(newValue) ? null : newValue);
-                        }}
-                        fullWidth={!displayInline}
-                        sx={{
-                            mt: 1,
+                        }
+                    }}
+                    fullWidth={!displayInline}
+                    sx={[
+                        {
                             alignSelf: displayInline ? 'flex-start' : undefined,
                             '& .MuiToggleButton-root': {
                                 textTransform: 'none',
                             },
-                        }}
-                    >
-                        {
-                            (options ?? [])
-                                .map(option => (
-                                    <ToggleButton
-                                        key={option.value}
-                                        value={option.value}
-                                        disabled={disabled ?? false}
-                                        size="small"
-                                    >
-                                        {option.label}
-                                    </ToggleButton>
-                                ))
+                        },
+                        ...controlSxArray,
+                    ]}
+                >
+                    {(options ?? []).map((option) => (
+                        <ToggleButton
+                            key={option.value}
+                            value={option.value}
+                            disabled={isInteractionDisabled}
+                            size="small"
+                        >
+                            {option.label}
+                        </ToggleButton>
+                    ))}
+                </ToggleButtonGroup>
+            ) : (
+                <RadioGroup
+                    role="presentation"
+                    name={`${fieldContext.groupId}-options`}
+                    value={value ?? ''}
+                    onChange={(event) => {
+                        if (isInteractionDisabled) {
+                            return;
                         }
-                    </ToggleButtonGroup>
-                    :
-                    <RadioGroup
-                        aria-labelledby={'label-' + uniqueId}
-                        name={'radio-group-' + uniqueId}
-                        value={value ?? ''}
-                        onChange={event => {
-                            if (isStringNullOrEmpty(event.target.value)) {
-                                onChange(null);
-                            } else {
-                                onChange(event.target.value ?? '');
-                            }
-                        }}
-                        row={displayInline ?? false}
-                    >
-                        {
-                            !required &&
+
+                        if (isStringNullOrEmpty(event.target.value)) {
+                            onChange(null);
+                        } else {
+                            onChange(event.target.value ?? '');
+                        }
+                    }}
+                    row={Boolean(displayInline)}
+                    sx={controlSxArray}
+                >
+                    {!required && (
+                        <FormControlLabel
+                            value=""
+                            control={<Radio/>}
+                            label="Keine Auswahl"
+                            disabled={isInteractionDisabled}
+                            sx={{
+                                fontStyle: 'italic',
+                                mr: displayInline ? 3 : undefined,
+                            }}
+                        />
+                    )}
+
+                    {(options ?? []).map((option) => (
+                        <Fragment key={option.value}>
                             <FormControlLabel
-                                value={''}
+                                value={option.value}
                                 control={<Radio/>}
-                                label="Keine Auswahl"
-                                disabled={disabled ?? false}
+                                label={option.label}
+                                disabled={isInteractionDisabled}
                                 sx={{
-                                    fontStyle: 'italic',
-                                    mr: displayInline ? 3 : undefined,
+                                    ...(displayInline ? {mr: 3} : {}),
+                                    '& .MuiFormControlLabel-label': {
+                                        wordBreak: 'break-word',
+                                        whiteSpace: 'normal',
+                                    },
                                 }}
                             />
-                        }
-                        {
-                            (options ?? []).map(option => (
-                                <Fragment key={option.value}>
-                                    <FormControlLabel
-                                        value={option.value}
-                                        control={<Radio/>}
-                                        label={option.label}
-                                        disabled={disabled ?? false}
-                                        sx={{
-                                            ...(displayInline ? {mr: 3} : {}),
-                                            '& .MuiFormControlLabel-label': {
-                                                wordBreak: 'break-word',
-                                                whiteSpace: 'normal',
-                                            },
-                                        }}
-                                    />
-                                    {
-                                        option.subLabel != null &&
-                                        <FormHelperText>
-                                            {option.subLabel}
-                                        </FormHelperText>
-                                    }
-                                </Fragment>
-                            ))
-                        }
-                    </RadioGroup>
-            }
-            {
-                (hint != null || error != null) &&
-                <FormHelperText sx={{ml: 0}}>
-                    {
-                        hint != null &&
-                        error == null &&
-                        <span>{hint}</span>
-                    }
-                    {
-                        error != null &&
-                        <span>{error}</span>
-                    }
-                </FormHelperText>
-            }
-        </FormControl>
+                            {option.subLabel != null && (
+                                <FormHelperText>
+                                    {option.subLabel}
+                                </FormHelperText>
+                            )}
+                        </Fragment>
+                    ))}
+                </RadioGroup>
+            )}
+        </FormFieldGroup>
     );
 }

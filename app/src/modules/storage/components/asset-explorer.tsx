@@ -48,6 +48,7 @@ import {AssetsApiService} from '../../assets/assets-api-service';
 import {SearchInput} from '../../../components/search-input/search-input';
 import {type AssetStorageProvider} from '../../assets/models/asset-storage-provider';
 import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
+import {FormFieldTokens} from '../../../theming/form-field-tokens';
 
 interface StorageExplorerProps {
     providerId: number;
@@ -1150,7 +1151,7 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                             direction="row"
                             spacing={1.25}
                             sx={{
-                                alignItems: "center",
+                                alignItems: 'flex-end',
                                 mb: 1.5
                             }}>
                             <SearchInput
@@ -1167,7 +1168,10 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                                 sx={{
                                     color: "text.secondary",
                                     whiteSpace: 'nowrap',
-                                    pl: 1
+                                    pl: 1,
+                                    minHeight: FormFieldTokens.controlMinHeight,
+                                    display: 'flex',
+                                    alignItems: 'center',
                                 }}>
                                 {isSearching
                                     ? 'Suche läuft…'

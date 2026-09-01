@@ -3,9 +3,14 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import {DateTimeRangeFieldComponent} from './date-time-range-field-component';
 
 vi.mock('../date-time-field/date-time-field-component', () => ({
-    DateTimeFieldComponent: (props: { label: string; onChange: (value: string | null) => void }) => (
+    DateTimeFieldComponent: (props: {
+        label: string;
+        ariaDescribedBy?: string;
+        onChange: (value: string | null) => void;
+    }) => (
         <button
             type="button"
+            aria-describedby={props.ariaDescribedBy}
             onClick={() => props.onChange(null)}
         >
             {props.label}
@@ -28,8 +33,8 @@ describe('DateTimeRangeFieldComponent', () => {
             />,
         );
 
-        fireEvent.click(screen.getByText('Zeitraum (Von)'));
-        fireEvent.click(screen.getByText('Zeitraum (Bis)'));
+        fireEvent.click(screen.getByText('Von'));
+        fireEvent.click(screen.getByText('Bis'));
 
         expect(onChange).toHaveBeenNthCalledWith(1, {
             start: null,

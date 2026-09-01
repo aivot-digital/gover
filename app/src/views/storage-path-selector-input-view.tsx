@@ -42,7 +42,7 @@ export function StoragePathSelectorInputView(
             error={errors != null ? errors.join(' ') : undefined}
             required={element.required ?? undefined}
             disabled={isDisabled}
-            readOnly={isBusy}
+            busy={isBusy}
         />
     );
 }

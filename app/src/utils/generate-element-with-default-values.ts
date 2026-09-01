@@ -58,6 +58,7 @@ import {getDefaultElementWeight} from './element-widths';
 import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
 import {StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
+import {SelectFieldPresentation} from '../models/elements/form/input/select-field-presentation';
 import {PaymentConfigElement} from '../models/elements/form/input/payment-config-element';
 import {LinkButtonElement} from '../models/elements/form/content/link-button-element';
 
@@ -265,7 +266,7 @@ const elementConstructors: {
     }),
     [ElementType.Select]: (id) => ({
         ...makeInputBase(ElementType.Select, id),
-        label: 'Einzelauswahl (Auswahlmenü)',
+        label: 'Einzelauswahl',
         optionsSource: OptionsSourceType.Manual,
         codeListKey: undefined,
         options: [
@@ -283,6 +284,7 @@ const elementConstructors: {
             },
         ],
         autocomplete: undefined,
+        presentation: SelectFieldPresentation.Dropdown,
         dependsOnSelectFieldId: undefined,
         placeholder: undefined,
     }),

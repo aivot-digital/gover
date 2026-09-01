@@ -99,7 +99,7 @@ export function CustomLinkDialog(props: CustomLinkDialogProps) {
                             ? labelLength === 0 ? 'Bitte geben Sie eine Bezeichnung ein.' : 'Die Bezeichnung darf höchstens 128 Zeichen lang sein.'
                             : undefined}
                         disabled={props.isBusy}
-                        sx={{mt: 0}}
+                        controlSx={{mt: 0}}
                     />
                     <TextFieldComponent
                         label="Beschreibung"

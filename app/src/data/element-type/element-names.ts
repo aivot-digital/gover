@@ -15,7 +15,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.ReplicatingContainer]: 'Strukturierte Listeneingabe',
     [ElementType.RichText]: 'Fließtext',
     [ElementType.Radio]: 'Einzelauswahl (Optionsfelder)',
-    [ElementType.Select]: 'Einzelauswahl (Auswahlmenü)',
+    [ElementType.Select]: 'Einzelauswahl',
     [ElementType.Spacer]: 'Abstand',
     [ElementType.Table]: 'Tabelle',
     [ElementType.Text]: 'Text',

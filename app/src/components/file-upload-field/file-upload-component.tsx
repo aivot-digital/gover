@@ -1,20 +1,20 @@
 import React, {useRef, useState} from 'react';
-import {Box, FormLabel} from '@mui/material';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {humanizeFileSize} from '../../utils/humanization-utils';
 import {FileUploadComponentProps} from './file-upload-component-props';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
-import {FileUploadFileList, FileUploadHelper, FileUploadInputArea} from './file-upload-field-layout';
+import {FileUploadFieldLayout} from './file-upload-field-layout';
 
 export function FileUploadComponent(props: FileUploadComponentProps) {
     const dispatch = useAppDispatch();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [isDraggedOver, setIsDraggedOver] = useState(false);
+    const isInteractionDisabled = props.disabled === true || props.busy === true;
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (props.disabled) {
+        if (isInteractionDisabled) {
             return;
         }
 
@@ -29,7 +29,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
     };
 
     const handleRemove = (file: File) => {
-        if (props.disabled) {
+        if (isInteractionDisabled) {
             return;
         }
 
@@ -46,7 +46,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
     };
 
     const handleDragOver: React.DragEventHandler<HTMLDivElement> = (event) => {
-        if (props.disabled) {
+        if (isInteractionDisabled) {
             return;
         }
 
@@ -56,7 +56,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
     };
 
     const handleDragLeave: React.DragEventHandler<HTMLDivElement> = (event) => {
-        if (props.disabled) {
+        if (isInteractionDisabled) {
             return;
         }
 
@@ -66,7 +66,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
     };
 
     const handleDrop: React.DragEventHandler<HTMLDivElement> = (event) => {
-        if (props.disabled) {
+        if (isInteractionDisabled) {
             return;
         }
 
@@ -77,7 +77,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
     };
 
     const handleAdd = (files: FileList) => {
-        if (props.disabled) {
+        if (isInteractionDisabled) {
             return;
         }
 
@@ -109,69 +109,54 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
         !props.isMultifile &&
         (props.value ?? []).length >= 1
     );
-    const isUploadDisabled = props.disabled || fileMaximumReached;
+    const isUploadDisabled = isInteractionDisabled || fileMaximumReached;
 
     return (
-        <Box>
-            <Box
-                sx={{
-                    mb: 1,
-                }}
-            >
-                <FormLabel
-                    htmlFor={props.id}
-                    error={props.error != null}
-                    disabled={props.disabled}
-                >
-                    {props.label}
-                    {props.required && ' *'}
-                </FormLabel>
-            </Box>
-
-            {
-                props.value != null &&
-                props.value.length > 0 &&
-                <FileUploadFileList
-                    items={props.value.map((file, index) => ({
-                        key: `${file.name}-${file.lastModified}-${index}`,
-                        name: file.name,
-                        size: humanizeFileSize(file.size),
-                        actionLabel: `${file.name} entfernen`,
-                        actionIcon: <Delete fontSize="small" />,
-                        actionDisabled: props.disabled,
-                        onAction: () => handleRemove(file),
-                    }))}
-                />
-            }
-
-            {
-                !fileMaximumReached &&
-                <FileUploadInputArea
-                    id={props.id}
-                    inputRef={inputRef}
-                    multiple={props.isMultifile}
-                    extensions={props.extensions}
-                    disabled={isUploadDisabled}
-                    error={props.error != null}
-                    focused={isFocused}
-                    draggedOver={isDraggedOver}
-                    placeholder={props.placeholder}
-                    onChange={handleChange}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                />
-            }
-
-            <FileUploadHelper
-                error={props.error}
-                hint={props.hint}
-                fileCount={(props.value ?? []).length}
-                minFiles={props.minFiles}
-                maxFiles={props.maxFiles}
-            />
-        </Box>
+        <FileUploadFieldLayout
+            id={props.id}
+            label={props.label}
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            required={props.required}
+            disabled={props.disabled}
+            busy={props.busy}
+            error={props.error}
+            hint={props.hint}
+            fileCount={(props.value ?? []).length}
+            minFiles={props.minFiles}
+            maxFiles={props.maxFiles}
+            items={(props.value ?? []).map((file, index) => ({
+                key: `${file.name}-${file.lastModified}-${index}`,
+                name: file.name,
+                size: humanizeFileSize(file.size),
+                contentType: file.type,
+                actionLabel: `${file.name} entfernen`,
+                actionIcon: <Delete fontSize="small" />,
+                actionDisabled: isInteractionDisabled,
+                onAction: () => handleRemove(file),
+            }))}
+            showInput={!fileMaximumReached}
+            inputAreaProps={{
+                inputRef,
+                multiple: props.isMultifile,
+                extensions: props.extensions,
+                disabled: isUploadDisabled,
+                error: props.error != null && props.error.length > 0,
+                focused: isFocused,
+                draggedOver: isDraggedOver,
+                placeholder: props.placeholder,
+                onChange: handleChange,
+                onFocus: () => setIsFocused(true),
+                onBlur: () => setIsFocused(false),
+                onDragOver: handleDragOver,
+                onDragLeave: handleDragLeave,
+                onDrop: handleDrop,
+            }}
+            margin={props.margin ?? 'normal'}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
+            controlSx={props.controlSx}
+        />
     );
 }
