@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import org.junit.jupiter.api.Test;
@@ -24,11 +24,11 @@ class SelectInputElementTest {
         var element = new SelectInputElement()
                 .setPresentation(SelectInputPresentation.Combobox);
 
-        var serialized = ObjectMapperFactory
+        var serialized = JsonMapperFactory
                 .getInstance()
                 .writeValueAsString(element);
 
-        var deserialized = ObjectMapperFactory
+        var deserialized = JsonMapperFactory
                 .getInstance()
                 .readValue(serialized, BaseElement.class);
 
@@ -38,7 +38,7 @@ class SelectInputElementTest {
 
     @Test
     void shouldNormalizeUnknownPresentationToDropdown() throws Exception {
-        var objectMapper = ObjectMapperFactory.getInstance();
+        var objectMapper = JsonMapperFactory.getInstance();
         var serialized = objectMapper
                 .writeValueAsString(new SelectInputElement())
                 .replace("\"presentation\":\"dropdown\"", "\"presentation\":\"unknown\"");
