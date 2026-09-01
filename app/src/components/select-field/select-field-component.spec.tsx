@@ -24,6 +24,7 @@ describe('SelectFieldComponent', () => {
         expect(select).toHaveAccessibleDescription('Wählen Sie eine Kategorie.');
         expect(select).toHaveAttribute('aria-required', 'true');
         expect(select?.closest('.MuiInputBase-root')).toHaveClass('MuiInputBase-sizeSmall');
+        expect(screen.getByLabelText('Kategorie')).toBe(select);
     });
 
     it('exposes validation errors on the combobox', () => {

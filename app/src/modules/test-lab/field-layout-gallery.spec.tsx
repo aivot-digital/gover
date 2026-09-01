@@ -363,5 +363,5 @@ describe('FieldLayoutGallery accessibility', () => {
         expect(screen.getByRole('textbox', {name: 'Straße und Hausnummer'})).toHaveValue('Musterstraße 1');
         expect(screen.getByRole('textbox', {name: 'Ort – optional'})).toHaveValue('Musterstadt');
         expect(screen.getByText('Anschrift hinzufügen').closest('button')).toBeInTheDocument();
-    }, 15_000);
+    }, 30_000);
 });

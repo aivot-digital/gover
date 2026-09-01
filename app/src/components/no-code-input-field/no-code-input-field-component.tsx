@@ -72,6 +72,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
         disablePopoutModeWhenFormLayoutChild = false,
     } = props;
     const isFormLayout = (rootElement as {type: ElementType}).type === ElementType.FormLayout;
+    const usesPopoutEditor = isFormLayout && !disablePopoutModeWhenFormLayoutChild;
     const contextType: NoCodeOperandEditorContextType = isFormLayout ? 'FORM' : 'PROCESS';
     const generatedId = useNormalizedReactId();
     const dialogId = `${props.id ?? `no-code-input-${generatedId}`}-dialog`;
@@ -84,7 +85,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
     const [isLoadingOperators, setIsLoadingOperators] = useState(false);
 
     useEffect(() => {
-        if (!isFormLayout) {
+        if (!usesPopoutEditor) {
             return;
         }
 
@@ -111,7 +112,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
         return () => {
             active = false;
         };
-    }, [api, dispatch, isFormLayout]);
+    }, [api, dispatch, usesPopoutEditor]);
 
     const allElements = useMemo(() => {
         return flattenElementsWithParents(rootElement, [], true)
@@ -140,7 +141,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
         setIsDialogOpen(true);
     };
 
-    if (!isFormLayout || disablePopoutModeWhenFormLayoutChild) {
+    if (!usesPopoutEditor) {
         return (
             <NoCodeEditorWrapper
                 parents={[rootElement]}

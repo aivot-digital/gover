@@ -54,7 +54,7 @@ describe('ProcessSettingsDialogVersionTab', () => {
             </Provider>,
         );
 
-        await user.click(screen.getByLabelText('Erscheinungsbild'));
+        await user.click(screen.getByRole('combobox', {name: 'Erscheinungsbild – optional'}));
         await user.click(await screen.findByText('Nordlicht'));
 
         await waitFor(() => {

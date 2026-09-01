@@ -158,11 +158,21 @@ function DropdownControl<T extends SelectFieldValue>({props, fieldContext}: Sele
                 },
                 select: (ownerState: TextFieldOwnerState) => {
                     const selectSlotProps = resolveSlotProps(passThroughSlotProps?.select, ownerState);
+                    const ariaProps = getCompositeControlAriaProps(fieldContext, selectSlotProps);
+                    const labelId = mergeAriaIds(
+                        fieldContext.labelId,
+                        selectSlotProps?.labelId,
+                        ariaProps['aria-labelledby'],
+                    );
 
                     return {
                         ...selectSlotProps,
-                        ...getCompositeControlAriaProps(fieldContext, selectSlotProps),
-                        labelId: mergeAriaIds(fieldContext.labelId, selectSlotProps?.labelId),
+                        ...ariaProps,
+                        // MUI otherwise applies aria-labelledby to both the InputBase wrapper and the
+                        // actual combobox. labelId keeps the accessible name on the interactive element.
+                        'aria-label': labelId == null ? ariaProps['aria-label'] : undefined,
+                        'aria-labelledby': undefined,
+                        labelId,
                         readOnly: readOnly || busy || selectSlotProps?.readOnly,
                         renderValue: (selectedValue: unknown) => {
                             return findOption(options, normalizeValue(selectedValue as SelectFieldValue))?.label ?? '';
