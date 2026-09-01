@@ -49,7 +49,6 @@ function slot(overrides?: Partial<FormIdentitySlot>): FormIdentitySlot {
 
 function renderControls(identitySlot: FormIdentitySlot) {
     const onChange = vi.fn();
-    const onPendingChange = vi.fn();
     render(
         <ThemeProvider theme={createTheme()}>
             <FormIdentitySelectionControls
@@ -58,11 +57,10 @@ function renderControls(identitySlot: FormIdentitySlot) {
                 formSlug="example-form"
                 relatedProcessNodeId={42}
                 onChange={onChange}
-                onPendingChange={onPendingChange}
             />
         </ThemeProvider>,
     );
-    return {onChange, onPendingChange};
+    return {onChange};
 }
 
 describe('FormIdentitySelectionControls', () => {
@@ -84,7 +82,7 @@ describe('FormIdentitySelectionControls', () => {
         const user = userEvent.setup();
 
         await user.type(screen.getByRole('textbox', {name: /E-Mail-Adresse/}), 'customer@example.test');
-        await user.click(screen.getByRole('button', {name: 'E-Mail-Adresse übernehmen'}));
+        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
 
         await waitFor(() => expect(setEmail).toHaveBeenCalledWith(
             'example-process',
@@ -115,7 +113,7 @@ describe('FormIdentitySelectionControls', () => {
             .mockResolvedValue(selectedCommunication);
         const select = vi.spyOn(FormTriggerApiService.prototype, 'selectCommunication')
             .mockResolvedValue(selectedCommunication);
-        const {onChange, onPendingChange} = renderControls(slot({
+        const {onChange} = renderControls(slot({
             allowsEmail: false,
             identityType: 'IdentityProvider',
             availableIdentityProviders: [{...provider, isAuthenticatedWithThis: true}],
@@ -135,7 +133,5 @@ describe('FormIdentitySelectionControls', () => {
             isReady: true,
             communication: selectedCommunication,
         }));
-        expect(onPendingChange).toHaveBeenCalledWith(true);
-        expect(onPendingChange).toHaveBeenLastCalledWith(false);
     });
 });

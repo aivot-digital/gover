@@ -1,5 +1,5 @@
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Box,
     Button,
@@ -62,6 +62,8 @@ import {IdentityProvidersApiService} from '../../modules/identity/identity-provi
 import {RichtextComponent} from '../../components/richtext/richtext.component';
 import {
     FormIdentitySelectionControls,
+    type FormIdentitySelectionControlsHandle,
+    type FormIdentitySelectionControlsStatus,
 } from '../../modules/identity/components/form-identity-selection-controls/form-identity-selection-controls';
 import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
@@ -595,17 +597,76 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
         relatedProcessNodeId,
         testClaim,
     } = props;
-    const [pendingSlotIds, setPendingSlotIds] = useState<Set<string>>(new Set());
+    const controlsBySlotId = useRef<Map<string, FormIdentitySelectionControlsHandle>>(new Map());
+    const [controlStatuses, setControlStatuses] = useState<Map<string, FormIdentitySelectionControlsStatus>>(new Map());
+    const [isContinuing, setIsContinuing] = useState(false);
+
+    const handleControlStatusChange = useCallback((
+        slotId: string,
+        status: FormIdentitySelectionControlsStatus | null,
+    ) => {
+        setControlStatuses(current => {
+            const currentStatus = current.get(slotId);
+            if (status == null && currentStatus == null) {
+                return current;
+            }
+            if (
+                status != null &&
+                currentStatus?.hasSelection === status.hasSelection &&
+                currentStatus.canCommit === status.canCommit &&
+                currentStatus.isBusy === status.isBusy
+            ) {
+                return current;
+            }
+
+            const next = new Map(current);
+            if (status == null) {
+                next.delete(slotId);
+            } else {
+                next.set(slotId, status);
+            }
+            return next;
+        });
+    }, []);
 
     const authRequired = identitySlots
         .some(slot => slot.isRequired);
-    const allSelectedIdentitiesReady = identitySlots.every(slot => (
-        slot.identityType == null
-            ? slot.isOptional
-            : slot.isReady && !pendingSlotIds.has(slot.id)
-    ));
-    const someIdentitySelected = identitySlots
-        .some(slot => slot.identityType != null);
+    const isIdentitySelected = (slot: FormIdentitySlot) => (
+        controlStatuses.get(slot.id)?.hasSelection ?? slot.identityType != null
+    );
+    const allSelectedIdentitiesCanCommit = identitySlots.every(slot => {
+        if (!isIdentitySelected(slot)) {
+            return slot.isOptional;
+        }
+        return controlStatuses.get(slot.id)?.canCommit ?? slot.isReady;
+    });
+    const someIdentitySelected = identitySlots.some(isIdentitySelected);
+    const someIdentityControlBusy = Array.from(controlStatuses.values()).some(status => status.isBusy);
+    const continueDisabled = isContinuing || someIdentityControlBusy || !allSelectedIdentitiesCanCommit;
+
+    const handleContinue = async () => {
+        if (continueDisabled) {
+            return;
+        }
+
+        setIsContinuing(true);
+        try {
+            const selectedSlots = identitySlots.filter(isIdentitySelected);
+            const results = await Promise.all(selectedSlots.map(async slot => {
+                const controls = controlsBySlotId.current.get(slot.id);
+                if (controls == null) {
+                    return false;
+                }
+                return controls.commitPendingSelection();
+            }));
+
+            if (results.every(Boolean)) {
+                onDismiss();
+            }
+        } finally {
+            setIsContinuing(false);
+        }
+    };
     const sortedIdentitySlots = useMemo(() => (
         identitySlots
             .map((slot, index) => ({
@@ -763,23 +824,21 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                         }
 
                                         <FormIdentitySelectionControls
+                                            ref={(controls) => {
+                                                if (controls == null) {
+                                                    controlsBySlotId.current.delete(slot.id);
+                                                } else {
+                                                    controlsBySlotId.current.set(slot.id, controls);
+                                                }
+                                            }}
                                             slot={slot}
                                             processSlug={processSlug}
                                             formSlug={formSlug}
                                             relatedProcessNodeId={relatedProcessNodeId}
                                             testClaim={testClaim}
+                                            saveMode="deferred"
                                             onChange={onIdentitySlotChange}
-                                            onPendingChange={(pending) => {
-                                                setPendingSlotIds(current => {
-                                                    const next = new Set(current);
-                                                    if (pending) {
-                                                        next.add(slot.id);
-                                                    } else {
-                                                        next.delete(slot.id);
-                                                    }
-                                                    return next;
-                                                });
-                                            }}
+                                            onStatusChange={handleControlStatusChange}
                                         />
                                     </Box>
                                 </Paper>
@@ -810,7 +869,8 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                             <Button
                                 variant="contained"
                                 endIcon={<ArrowForward/>}
-                                onClick={onDismiss}
+                                onClick={() => void handleContinue()}
+                                disabled={continueDisabled}
                                 sx={{
                                     width: {
                                         xs: '100%',
@@ -826,8 +886,8 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                             <Button
                                 variant="contained"
                                 endIcon={<ArrowForward/>}
-                                onClick={onDismiss}
-                                disabled={!allSelectedIdentitiesReady}
+                                onClick={() => void handleContinue()}
+                                disabled={continueDisabled}
                                 sx={{
                                     width: {
                                         xs: '100%',

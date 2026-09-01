@@ -15,7 +15,7 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
-import {useEffect, useMemo, useState} from 'react';
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState} from 'react';
 import type {AuthoredElementValues, DerivedRuntimeElementData} from '../../../../models/element-data';
 import {createDerivedRuntimeElementData} from '../../../../models/element-data';
 import {
@@ -35,12 +35,26 @@ export interface FormIdentitySelectionControlsProps {
     relatedProcessNodeId: number;
     testClaim?: string;
     onChange: (slot: FormIdentitySlot) => void;
-    onPendingChange?: (pending: boolean) => void;
+    saveMode?: 'explicit' | 'deferred';
+    onStatusChange?: (slotId: string, status: FormIdentitySelectionControlsStatus | null) => void;
+}
+
+export interface FormIdentitySelectionControlsHandle {
+    commitPendingSelection: () => Promise<boolean>;
+}
+
+export interface FormIdentitySelectionControlsStatus {
+    hasSelection: boolean;
+    canCommit: boolean;
+    isBusy: boolean;
 }
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function FormIdentitySelectionControls(props: FormIdentitySelectionControlsProps) {
+export const FormIdentitySelectionControls = forwardRef<
+    FormIdentitySelectionControlsHandle,
+    FormIdentitySelectionControlsProps
+>(function FormIdentitySelectionControls(props, ref) {
     const {
         slot,
         processSlug,
@@ -48,7 +62,8 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
         relatedProcessNodeId,
         testClaim,
         onChange,
-        onPendingChange,
+        saveMode = 'explicit',
+        onStatusChange,
     } = props;
     const dispatch = useAppDispatch();
     const api = useMemo(() => new FormTriggerApiService(), []);
@@ -62,11 +77,8 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
     const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(
         slot.communication?.derivedData ?? createDerivedRuntimeElementData(),
     );
+    const [communicationChanged, setCommunicationChanged] = useState(false);
     const [busy, setBusy] = useState(false);
-
-    const notifyPendingChange = (pending: boolean) => {
-        onPendingChange?.(pending);
-    };
 
     useEffect(() => {
         setEmailAddress(slot.emailAddress ?? '');
@@ -75,18 +87,18 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
         setSelectedBindingId(slot.communication?.selectedBindingId ?? null);
         setCustomerData(slot.communication?.customerData ?? {});
         setDerivedData(slot.communication?.derivedData ?? createDerivedRuntimeElementData());
+        setCommunicationChanged(false);
     }, [slot]);
 
-    const replaceSlot = (nextSlot: FormIdentitySlot) => {
-        notifyPendingChange(!nextSlot.isReady && nextSlot.identityType != null);
+    const replaceSlot = useCallback((nextSlot: FormIdentitySlot) => {
         onChange(nextSlot);
-    };
+    }, [onChange]);
 
-    const handleEmailSave = async () => {
+    const handleEmailSave = useCallback(async (): Promise<boolean> => {
         const normalizedEmail = emailAddress.trim();
         if (!emailPattern.test(normalizedEmail)) {
             setEmailError('Geben Sie eine gültige E-Mail-Adresse ein.');
-            return;
+            return false;
         }
 
         setBusy(true);
@@ -100,13 +112,14 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
                 testClaim,
             );
             replaceSlot(nextSlot);
-            notifyPendingChange(false);
+            return nextSlot.isReady;
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Die E-Mail-Adresse konnte nicht gespeichert werden.'));
+            return false;
         } finally {
             setBusy(false);
         }
-    };
+    }, [api, dispatch, emailAddress, formSlug, processSlug, replaceSlot, slot.id, testClaim]);
 
     const handleClear = async () => {
         setBusy(true);
@@ -123,7 +136,6 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
                     isAuthenticatedWithThis: false,
                 })),
             });
-            notifyPendingChange(false);
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Die Identität konnte nicht entfernt werden.'));
         } finally {
@@ -143,7 +155,7 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
         setSelectedBindingId(bindingId);
         setCustomerData({});
         setDerivedData(createDerivedRuntimeElementData());
-        notifyPendingChange(true);
+        setCommunicationChanged(true);
         setBusy(true);
         try {
             await previewCommunication(bindingId, {});
@@ -162,9 +174,9 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
         return state.derivedData;
     };
 
-    const handleCommunicationSave = async () => {
+    const handleCommunicationSave = useCallback(async (): Promise<boolean> => {
         if (selectedBindingId == null) {
-            return;
+            return false;
         }
 
         setBusy(true);
@@ -177,6 +189,7 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
             );
             setCommunication(state);
             setDerivedData(state.derivedData);
+            setCommunicationChanged(false);
             replaceSlot({
                 ...slot,
                 identityType: 'IdentityProvider',
@@ -184,13 +197,60 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
                 isReady: state.ready,
                 communication: state,
             });
-            notifyPendingChange(!state.ready);
+            return state.ready;
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Die Angaben zum Kommunikationsweg konnten nicht gespeichert werden.'));
+            return false;
         } finally {
             setBusy(false);
         }
-    };
+    }, [api, customerData, dispatch, relatedProcessNodeId, replaceSlot, selectedBindingId, slot]);
+
+    const normalizedEmailAddress = emailAddress.trim();
+    const savedEmailAddress = slot.emailAddress?.trim() ?? '';
+    const hasEmailDraft = normalizedEmailAddress.length > 0;
+    const emailNeedsCommit = slot.identityType === 'Email'
+        ? normalizedEmailAddress !== savedEmailAddress
+        : slot.identityType == null && hasEmailDraft;
+    const communicationNeedsCommit = slot.identityType === 'IdentityProvider'
+        && (communicationChanged || !slot.isReady);
+    const hasSelection = slot.identityType != null || hasEmailDraft;
+    const canCommit = !busy && (
+        emailNeedsCommit
+            ? hasEmailDraft
+            : communicationNeedsCommit
+                ? selectedBindingId != null
+                : slot.isReady
+    );
+
+    const commitPendingSelection = useCallback(async (): Promise<boolean> => {
+        if (busy) {
+            return false;
+        }
+        if (emailNeedsCommit) {
+            return handleEmailSave();
+        }
+        if (communicationNeedsCommit) {
+            return handleCommunicationSave();
+        }
+        return slot.isReady;
+    }, [busy, communicationNeedsCommit, emailNeedsCommit, handleCommunicationSave, handleEmailSave, slot.isReady]);
+
+    useImperativeHandle(ref, () => ({
+        commitPendingSelection,
+    }), [commitPendingSelection]);
+
+    useEffect(() => {
+        onStatusChange?.(slot.id, {
+            hasSelection,
+            canCommit,
+            isBusy: busy,
+        });
+    }, [busy, canCommit, hasSelection, onStatusChange, slot.id]);
+
+    useEffect(() => () => {
+        onStatusChange?.(slot.id, null);
+    }, [onStatusChange, slot.id]);
 
     const hasIdentityProvider = slot.availableIdentityProviders.length > 0;
 
@@ -250,19 +310,19 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
                                 onChange={(event) => {
                                     setEmailAddress(event.target.value);
                                     setEmailError(null);
-                                    if (slot.identityType === 'Email') {
-                                        notifyPendingChange(true);
-                                    }
                                 }}
                             />
-                            <Button
-                                variant="outlined"
-                                onClick={handleEmailSave}
-                                disabled={busy || emailAddress.trim().length === 0}
-                                sx={{minHeight: 56, whiteSpace: 'nowrap'}}
-                            >
-                                Übernehmen
-                            </Button>
+                            {
+                                saveMode === 'explicit' &&
+                                <Button
+                                    variant="outlined"
+                                    onClick={handleEmailSave}
+                                    disabled={busy || emailAddress.trim().length === 0}
+                                    sx={{minHeight: 56, whiteSpace: 'nowrap'}}
+                                >
+                                    Übernehmen
+                                </Button>
+                            }
                         </Stack>
                         {slot.identityType === 'Email' && slot.emailAddress != null &&
                             <Alert severity="success" icon={<CheckCircle/>} sx={{mt: 1.5}}>
@@ -329,22 +389,25 @@ export function FormIdentitySelectionControls(props: FormIdentitySelectionContro
                             derivedData={derivedData}
                             onAuthoredElementValuesChange={(values) => {
                                 setCustomerData(values);
-                                notifyPendingChange(true);
+                                setCommunicationChanged(true);
                             }}
                             onDerivedDataChange={setDerivedData}
                             onDeriveOverride={handleCommunicationDerive}
                         />
                     }
 
-                    <Button
-                        variant="outlined"
-                        onClick={handleCommunicationSave}
-                        disabled={busy || selectedBindingId == null}
-                    >
-                        Angaben zum Kommunikationsweg übernehmen
-                    </Button>
+                    {
+                        saveMode === 'explicit' &&
+                        <Button
+                            variant="outlined"
+                            onClick={handleCommunicationSave}
+                            disabled={busy || selectedBindingId == null}
+                        >
+                            Angaben zum Kommunikationsweg übernehmen
+                        </Button>
+                    }
                 </>
             }
         </Stack>
     );
-}
+});
