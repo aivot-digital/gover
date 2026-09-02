@@ -1,20 +1,19 @@
 package de.aivot.prosuna.backend;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
+import org.springframework.boot.flyway.autoconfigure.FlywayMigrationStrategy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverters;
+import org.springframework.http.converter.xml.JacksonXmlHttpMessageConverter;
 import org.springframework.web.accept.FixedContentNegotiationStrategy;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.dataformat.xml.XmlMapper;
+import tools.jackson.dataformat.xml.XmlReadFeature;
 
 import java.util.List;
 
@@ -50,20 +49,14 @@ public class ServerConfiguration implements WebMvcConfigurer {
     }
 
     @Override
-    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-        // XmlMapper extends ObjectMapper. Exposing it as a bean would replace Boot's default JSON mapper.
-        converters.removeIf(MappingJackson2XmlHttpMessageConverter.class::isInstance);
-        converters.add(new MappingJackson2XmlHttpMessageConverter(createXmlMapper()));
+    public void configureMessageConverters(HttpMessageConverters.ServerBuilder builder) {
+        builder.withXmlConverter(new JacksonXmlHttpMessageConverter(createXmlMapperBuilder()));
     }
 
-    private static XmlMapper createXmlMapper() {
-        JacksonXmlModule module = new JacksonXmlModule();
-        module.setXMLTextElementName("$text");
-
-        XmlMapper mapper = new XmlMapper(module);
-        mapper.configure(FromXmlParser.Feature.EMPTY_ELEMENT_AS_NULL, true);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-        return mapper;
+    private static XmlMapper.Builder createXmlMapperBuilder() {
+        return XmlMapper.builder(JacksonXmlHttpMessageConverter.defensiveXmlFactory())
+                .nameForTextElement("$text")
+                .enable(XmlReadFeature.EMPTY_ELEMENT_AS_NULL)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
 }

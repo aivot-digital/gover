@@ -9,14 +9,14 @@ import de.aivot.prosuna.backend.pdf.models.PrintableFormPdfData;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
+import de.aivot.prosuna.backend.process.services.ProcessVersionService;
 import de.aivot.prosuna.backend.process.services.PublicUrlService;
 import de.aivot.prosuna.backend.services.PdfService;
-import de.aivot.prosuna.backend.system.services.SystemService;
-import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -45,8 +45,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -64,10 +62,10 @@ public class FormTriggerUtilsControllerV1 {
     private final PermissionService permissionService;
     private final ProcessService processService;
     private final ProcessNodeService processNodeService;
+    private final ProcessVersionService processVersionService;
     private final ProcessNodeDefinitionService processNodeDefinitionService;
     private final VDepartmentShadowedService vDepartmentShadowedService;
     private final ThemeService themeService;
-    private final SystemService systemService;
     private final PdfService pdfService;
     private final FormTriggerNodeV1 formTriggerNodeV1;
 
@@ -77,10 +75,10 @@ public class FormTriggerUtilsControllerV1 {
                                         PermissionService permissionService,
                                         ProcessService processService,
                                         ProcessNodeService processNodeService,
+                                        ProcessVersionService processVersionService,
                                         ProcessNodeDefinitionService processNodeDefinitionService,
                                         VDepartmentShadowedService vDepartmentShadowedService,
                                         ThemeService themeService,
-                                        SystemService systemService,
                                         PdfService pdfService,
                                         FormTriggerNodeV1 formTriggerNodeV1) {
         this.publicUrlService = publicUrlService;
@@ -88,10 +86,10 @@ public class FormTriggerUtilsControllerV1 {
         this.permissionService = permissionService;
         this.processService = processService;
         this.processNodeService = processNodeService;
+        this.processVersionService = processVersionService;
         this.processNodeDefinitionService = processNodeDefinitionService;
         this.vDepartmentShadowedService = vDepartmentShadowedService;
         this.themeService = themeService;
-        this.systemService = systemService;
         this.pdfService = pdfService;
         this.formTriggerNodeV1 = formTriggerNodeV1;
     }
@@ -115,6 +113,9 @@ public class FormTriggerUtilsControllerV1 {
         var process = processService
                 .retrieve(node.getProcessId())
                 .orElseThrow(ResponseException::badRequest);
+        var processVersion = processVersionService
+                .retrieve(ProcessVersionEntityId.of(node.getProcessId(), node.getProcessVersion()))
+                .orElseThrow(ResponseException::notFound);
 
         permissionService.requireDepartmentPermission(
                 execUser.getId(),
@@ -124,7 +125,9 @@ public class FormTriggerUtilsControllerV1 {
 
         var config = resolveFormTriggerConfiguration(node, execUser);
         var printableForm = buildPrintableForm(process, node, config);
-        var theme = getFormTheme(config.formLayout);
+        var theme = themeService
+                .getFormThemesInOrderOfImportance(processVersion, config.formLayout)
+                .getFirst();
         var responsibleDepartment = getDepartment(config.formLayout.getResponsibleDepartmentId()).orElse(null);
         var managingDepartment = getDepartment(config.formLayout.getManagingDepartmentId()).orElse(null);
         var department = getPrintableDepartment(process, responsibleDepartment, managingDepartment);
@@ -207,45 +210,6 @@ public class FormTriggerUtilsControllerV1 {
                                         @Nonnull String formSlug) {
         var publicUrl = publicUrlService.createPublicFormUrl(process, formSlug);
         return URI.create(publicUrl).getRawPath();
-    }
-
-    @Nonnull
-    private ThemeEntity getFormTheme(@Nonnull FormLayoutElement formLayout) {
-        return getFormThemesInOrderOfImportance(formLayout).getFirst();
-    }
-
-    @Nonnull
-    private List<ThemeEntity> getFormThemesInOrderOfImportance(@Nonnull FormLayoutElement formLayout) {
-        var themes = new ArrayList<ThemeEntity>();
-
-        if (formLayout.getThemeId() != null) {
-            themeService
-                    .retrieve(formLayout.getThemeId())
-                    .ifPresent(themes::add);
-        }
-
-        addDepartmentTheme(themes, formLayout.getResponsibleDepartmentId());
-        addDepartmentTheme(themes, formLayout.getManagingDepartmentId());
-        themes.add(systemService.retrieveDefaultTheme());
-
-        return themes;
-    }
-
-    private void addDepartmentTheme(@Nonnull List<ThemeEntity> themes,
-                                    @Nullable Integer departmentId) {
-        if (departmentId == null) {
-            return;
-        }
-
-        vDepartmentShadowedService
-                .retrieve(departmentId)
-                .ifPresent(department -> {
-                    if (department.getThemeId() != null) {
-                        themeService
-                                .retrieve(department.getThemeId())
-                                .ifPresent(themes::add);
-                    }
-                });
     }
 
     @Nonnull

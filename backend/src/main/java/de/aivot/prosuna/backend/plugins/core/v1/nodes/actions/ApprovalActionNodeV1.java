@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -28,6 +28,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
@@ -118,14 +119,30 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Manual};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Freigabe einholen";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Holt eine Freigabe durch eine Mitarbeiter:in aus einem definierten Personenkreis ein.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Erstellt eine zugewiesene Aufgabe, über die eine Mitarbeiter:in einen Vorgang freigeben oder ablehnen kann.
+
+                Der zulässige Personenkreis und die angezeigten Inhalte werden in der Elementkonfiguration festgelegt. Nach der Bearbeitung wird der Vorgang über den passenden Ausgang fortgesetzt; Entscheidung, Vermerk und Bearbeitungsinformationen stehen als Elementausgänge bereit.
+                """;
     }
 
     @Nonnull
@@ -206,27 +223,32 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 new ProcessNodeOutput(
                         OUTPUT_DECISION,
                         "Entscheidung",
-                        "Die getroffene Entscheidung, entweder 'approved' oder 'rejected'."
+                        "Die getroffene Entscheidung, entweder 'approved' oder 'rejected'.",
+                        "\"approved\" | \"rejected\""
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_REMARK,
                         "Vermerk",
-                        "Der bei der Freigabe oder Ablehnung erfasste Vermerk."
+                        "Der bei der Freigabe oder Ablehnung erfasste Vermerk.",
+                        "string | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
                         "Bearbeitet durch",
-                        "Die ID der Mitarbeiter:in, die die Entscheidung getroffen hat."
+                        "Die ID der Mitarbeiter:in, die die Entscheidung getroffen hat.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_AT,
                         "Bearbeitet am",
-                        "Der Zeitstempel der Entscheidung im ISO-Format."
+                        "Der Zeitstempel der Entscheidung im ISO-Format.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_UNMAPPED,
                         "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht."
+                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Record<string, unknown>"
                 )
         );
     }
@@ -358,7 +380,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getNullPreservingInstance()
                 .convertValue(runtimeData, AuthoredElementValues.class);
     }

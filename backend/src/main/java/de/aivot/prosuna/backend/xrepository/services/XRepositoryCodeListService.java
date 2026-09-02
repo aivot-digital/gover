@@ -1,8 +1,5 @@
 package de.aivot.prosuna.backend.xrepository.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
@@ -11,6 +8,9 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.xrepository.models.XRepositoryCodeList;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.dataformat.xml.XmlMapper;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -24,7 +24,8 @@ import java.util.Map;
 @Service
 public class XRepositoryCodeListService {
     private static final String XREPOSITORY_API_URL = "https://www.xrepository.de/api/xrepository/";
-    private static final XmlMapper XML_MAPPER = XmlMapper.builder()
+    private static final XmlMapper XML_MAPPER = XmlMapper
+            .builder()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
     private final HttpService httpService;
@@ -52,7 +53,7 @@ public class XRepositoryCodeListService {
             case 200:
                 try {
                     return XML_MAPPER.readValue(response.body(), XRepositoryCodeList.class);
-                } catch (JsonProcessingException e) {
+                } catch (JacksonException e) {
                     throw ResponseException.internalServerError(e, "Fehler beim Parsen der Codeliste mit der URN %s: %s", codeListUrn, e.getMessage());
                 }
             case 404:

@@ -34,7 +34,7 @@ export function DataObjectSelectFieldView(props: BaseViewProps<DataObjectSelectF
             error={errors != null ? errors.join(' ') : undefined}
             required={element.required ?? undefined}
             disabled={isDisabled}
-            readOnly={isBusy}
+            busy={isBusy}
         />
     );
 }

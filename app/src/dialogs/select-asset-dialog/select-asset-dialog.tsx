@@ -4,6 +4,7 @@ import {AssetPickerDialog} from '../asset-picker-dialog/asset-picker-dialog';
 
 export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProps>) {
     const {
+        id,
         title,
         show,
         mimetype,
@@ -15,6 +16,7 @@ export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProp
 
     return (
         <AssetPickerDialog
+            id={id}
             title={title}
             show={show}
             mimeType={mimetype}

@@ -1,19 +1,35 @@
-import React, {type ChangeEventHandler, type DragEventHandler, type FocusEventHandler, type ReactNode, type RefObject} from 'react';
-import {alpha, Box, Button, FormHelperText, IconButton, Tooltip, Typography} from '@mui/material';
+import React, {
+    type AriaAttributes,
+    type ChangeEventHandler,
+    type DragEventHandler,
+    type FocusEventHandler,
+    type ReactNode,
+    type RefObject,
+} from 'react';
+import {alpha, Box, Button, IconButton, type SxProps, type Theme, Tooltip, Typography} from '@mui/material';
 import UploadFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
-import DraftOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Draft';
 import {pluralize} from '../../utils/humanization-utils';
+import {getFileTypeIconForFile} from '../../utils/file-type-icon';
+import {
+    FormField,
+    type FormFieldControlContext,
+    type FormFieldLayoutProps,
+    getNativeInputAriaProps,
+} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
 
 export interface FileUploadInputAreaProps {
     id: string;
     inputRef: RefObject<HTMLInputElement | null>;
     multiple?: boolean;
     extensions?: string[] | null;
+    required?: boolean;
     disabled: boolean;
     error: boolean;
     focused: boolean;
     draggedOver: boolean;
     placeholder?: string;
+    inputAriaProps?: AriaAttributes;
     onChange: ChangeEventHandler<HTMLInputElement>;
     onFocus: FocusEventHandler<HTMLInputElement>;
     onBlur: FocusEventHandler<HTMLInputElement>;
@@ -29,6 +45,7 @@ export function FileUploadInputArea(props: FileUploadInputAreaProps) {
 
     return (
         <Box
+            data-file-upload-input-area
             onDragOver={props.onDragOver}
             onDragLeave={(event) => {
                 // Ignore transitions between descendants so the drag state does not flicker over the field content.
@@ -41,15 +58,15 @@ export function FileUploadInputArea(props: FileUploadInputAreaProps) {
             sx={(theme) => ({
                 display: 'grid',
                 gridTemplateColumns: {
-                    xs: 'auto minmax(0, 1fr)',
-                    sm: 'auto minmax(0, 1fr) auto',
+                    xs: 'minmax(0, 1fr)',
+                    sm: 'minmax(0, 1fr) auto',
                 },
                 alignItems: 'center',
-                columnGap: 1.5,
-                rowGap: 1.25,
-                minHeight: 88,
-                px: 2,
-                py: 1.5,
+                columnGap: 1,
+                rowGap: 1,
+                minHeight: 64,
+                px: 1.5,
+                py: 1,
                 border: '1px solid',
                 borderColor: props.error
                     ? 'error.main'
@@ -79,7 +96,9 @@ export function FileUploadInputArea(props: FileUploadInputAreaProps) {
                 ref={props.inputRef}
                 type="file"
                 multiple={props.multiple}
+                required={props.required}
                 accept={props.extensions != null ? props.extensions.map(ext => `.${ext}`).join(',') : undefined}
+                {...props.inputAriaProps}
                 onChange={props.onChange}
                 onFocus={props.onFocus}
                 onBlur={props.onBlur}
@@ -98,34 +117,20 @@ export function FileUploadInputArea(props: FileUploadInputAreaProps) {
             />
 
             <Box
-                sx={(theme) => ({
+                sx={{
+                    minWidth: 0,
                     display: 'flex',
-                    alignItems: 'center',
+                    flexDirection: 'column',
                     justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    color: props.disabled
-                        ? 'text.disabled'
-                        : props.draggedOver
-                            ? 'primary.main'
-                            : 'text.secondary',
-                    backgroundColor: props.disabled
-                        ? 'action.disabledBackground'
-                        : props.draggedOver
-                            ? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.2 : 0.1)
-                            : 'action.hover',
-                })}
+                    gap: 0.25,
+                }}
             >
-                <UploadFileOutlinedIcon />
-            </Box>
-
-            <Box sx={{minWidth: 0}}>
                 <Typography
-                    variant="body2"
+                    component="div"
                     sx={{
                         color: props.disabled ? 'text.disabled' : 'text.primary',
-                        fontWeight: 500,
+                        fontSize: '1rem',
+                        lineHeight: 1.25,
                     }}
                 >
                     {prompt}
@@ -136,8 +141,12 @@ export function FileUploadInputArea(props: FileUploadInputAreaProps) {
                     <Typography
                         component="div"
                         variant="caption"
-                        color={props.disabled ? 'text.disabled' : 'text.secondary'}
-                        sx={{mt: 0.25, overflowWrap: 'anywhere'}}
+                        sx={{
+                            color: props.disabled ? 'text.disabled' : 'text.secondary',
+                            overflowWrap: 'anywhere',
+                            fontSize: '0.75rem',
+                            lineHeight: 1.2,
+                        }}
                     >
                         Erlaubte Formate: {props.extensions.map(ext => `.${ext}`).join(', ')}
                     </Typography>
@@ -145,7 +154,9 @@ export function FileUploadInputArea(props: FileUploadInputAreaProps) {
             </Box>
 
             <Button
-                variant="outlined"
+                variant="text"
+                size="small"
+                startIcon={<UploadFileOutlinedIcon />}
                 onClick={() => props.inputRef.current?.click()}
                 disabled={props.disabled}
                 sx={{
@@ -163,6 +174,7 @@ export interface FileUploadListItem {
     key: string;
     name: string;
     size: string;
+    contentType?: string | null;
     detail?: string;
     actionLabel: string;
     actionIcon: ReactNode;
@@ -179,7 +191,7 @@ export function FileUploadFileList({items}: {items: FileUploadListItem[]}) {
         <Box
             role="list"
             sx={{
-                mb: 1.5,
+                mb: 1,
                 overflow: 'hidden',
                 border: '1px solid',
                 borderColor: 'divider',
@@ -190,33 +202,24 @@ export function FileUploadFileList({items}: {items: FileUploadListItem[]}) {
                 items.map((item, index) => (
                     <Box
                         role="listitem"
+                        data-file-upload-list-item
                         key={item.key}
                         sx={{
                             display: 'grid',
                             gridTemplateColumns: 'auto minmax(0, 1fr) auto',
                             alignItems: 'center',
-                            gap: 1.25,
+                            gap: 1,
+                            minHeight: FormFieldTokens.groupedControlRowMinHeight,
                             px: 1.5,
-                            py: 1,
+                            py: 0.5,
                             borderTop: index === 0 ? 0 : '1px solid',
                             borderColor: 'divider',
                         }}
                     >
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: 36,
-                                height: 36,
-                                flexShrink: 0,
-                                borderRadius: '50%',
-                                color: 'text.secondary',
-                                backgroundColor: 'action.hover',
-                            }}
-                        >
-                            <DraftOutlinedIcon fontSize="small" />
-                        </Box>
+                        {getFileTypeIconForFile(item.name, item.contentType, {
+                            fontSize: 'small',
+                            sx: {flexShrink: 0, color: 'text.secondary'},
+                        })}
 
                         <Box sx={{minWidth: 0}}>
                             <Typography
@@ -230,6 +233,7 @@ export function FileUploadFileList({items}: {items: FileUploadListItem[]}) {
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap',
                                     fontWeight: 500,
+                                    lineHeight: 1.35,
                                 }}
                             >
                                 {item.name}
@@ -239,7 +243,8 @@ export function FileUploadFileList({items}: {items: FileUploadListItem[]}) {
                                 variant="caption"
                                 sx={{
                                     color: "text.secondary",
-                                    overflowWrap: 'anywhere'
+                                    overflowWrap: 'anywhere',
+                                    lineHeight: 1.2,
                                 }}>
                                 {item.size}{item.detail != null ? ` · ${item.detail}` : ''}
                             </Typography>
@@ -264,6 +269,80 @@ export function FileUploadFileList({items}: {items: FileUploadListItem[]}) {
     );
 }
 
+export interface FileUploadFieldLayoutProps extends FormFieldLayoutProps {
+    label: string;
+    required?: boolean;
+    disabled?: boolean;
+    busy?: boolean;
+    error?: string;
+    hint?: string | null;
+    fileCount: number;
+    minFiles?: number | null;
+    maxFiles?: number | null;
+    items: FileUploadListItem[];
+    showInput: boolean;
+    inputAreaProps: Omit<FileUploadInputAreaProps, 'id' | 'inputAriaProps'>;
+    controlSx?: SxProps<Theme>;
+}
+
+export function FileUploadFieldLayout(props: FileUploadFieldLayoutProps) {
+    const hasError = props.error != null && props.error.length > 0;
+    const countHint = getFileCountHint(props.fileCount, props.minFiles, props.maxFiles);
+    const hasHint = props.hint != null && props.hint.length > 0;
+    const hasHelperContent = hasError || hasHint || countHint != null;
+    const helperContent = hasHelperContent ? (
+        <FileUploadHelper
+            error={hasError ? props.error : undefined}
+            hint={!hasError ? props.hint : undefined}
+            fileCount={props.fileCount}
+            minFiles={props.minFiles}
+            maxFiles={props.maxFiles}
+        />
+    ) : undefined;
+
+    return (
+        <FormField
+            id={props.id}
+            label={props.label}
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            hint={!hasError ? helperContent : undefined}
+            error={hasError ? helperContent : undefined}
+            required={props.required}
+            disabled={props.disabled}
+            busy={props.busy}
+            margin={props.margin ?? 'normal'}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
+        >
+            {(fieldContext: FormFieldControlContext) => (
+                <Box
+                    id={props.showInput ? `${fieldContext.controlId}-group` : fieldContext.controlId}
+                    role={!props.showInput ? 'group' : undefined}
+                    aria-labelledby={!props.showInput ? fieldContext.labelId : undefined}
+                    aria-describedby={!props.showInput ? fieldContext.ariaProps['aria-describedby'] : undefined}
+                    aria-disabled={!props.showInput ? fieldContext.ariaProps['aria-disabled'] : undefined}
+                    aria-busy={!props.showInput ? fieldContext.ariaProps['aria-busy'] : undefined}
+                    aria-invalid={!props.showInput ? fieldContext.ariaProps['aria-invalid'] : undefined}
+                    sx={props.controlSx}
+                >
+                    <FileUploadFileList items={props.items}/>
+
+                    {props.showInput && (
+                        <FileUploadInputArea
+                            {...props.inputAreaProps}
+                            id={fieldContext.controlId}
+                            required={fieldContext.required}
+                            inputAriaProps={getNativeInputAriaProps(fieldContext)}
+                        />
+                    )}
+                </Box>
+            )}
+        </FormField>
+    );
+}
+
 interface FileUploadHelperProps {
     error?: string;
     hint?: string | null;
@@ -281,37 +360,43 @@ export function FileUploadHelper(props: FileUploadHelperProps) {
 
     return (
         <Box
+            component="span"
             sx={{
                 display: 'flex',
                 alignItems: 'baseline',
                 flexWrap: 'wrap',
                 columnGap: 2,
                 rowGap: 0.25,
-                mt: 0.5,
-                mx: 1.75,
+                width: '100%',
             }}
         >
             {
                 (props.error != null || props.hint != null) &&
-                <FormHelperText
-                    error={props.error != null}
-                    sx={{m: 0}}
-                >
+                <Box component="span" sx={{minWidth: 0}}>
                     {props.error ?? props.hint}
-                </FormHelperText>
+                </Box>
             }
+
+            {(props.error != null || props.hint != null) && countHint != null && ' '}
 
             {
                 countHint != null &&
-                <FormHelperText sx={{m: 0, ml: 'auto'}}>
+                <Box
+                    component="span"
+                    sx={{ml: 'auto', color: props.error != null ? 'text.secondary' : 'inherit'}}
+                >
                     {countHint}
-                </FormHelperText>
+                </Box>
             }
         </Box>
     );
 }
 
-function getFileCountHint(fileCount: number, minFiles?: number | null, maxFiles?: number | null): string | null {
+export function getFileCountHint(
+    fileCount: number,
+    minFiles?: number | null,
+    maxFiles?: number | null,
+): string | null {
     if (maxFiles != null && maxFiles > 0) {
         const qualifier = minFiles === maxFiles ? '' : 'max. ';
         return `${fileCount} von ${qualifier}${maxFiles} ${pluralize(maxFiles, 'Datei', 'Dateien')}`;

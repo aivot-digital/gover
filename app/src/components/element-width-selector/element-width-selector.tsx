@@ -1,4 +1,4 @@
-import {Box, ListSubheader, MenuItem, TextField, Typography} from '@mui/material';
+import {Box, ListSubheader, MenuItem, type SxProps, TextField, type Theme, Typography} from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import React, {useMemo} from 'react';
 import {ElementType} from '../../data/element-type/element-type';
@@ -8,14 +8,22 @@ import {
     getElementWidthRestrictionHint,
     normalizeElementWeight,
 } from '../../utils/element-widths';
+import {
+    FormField,
+    type FormFieldLayoutProps,
+    getCompositeControlAriaProps,
+    getNativeInputAriaProps,
+} from '../form-field';
+import {formFieldInputRootSx} from '../../theming/form-field-tokens';
 
-interface ElementWidthSelectorProps {
+interface ElementWidthSelectorProps extends FormFieldLayoutProps {
     label: string;
     elementType: ElementType;
     value: number | null | undefined;
     onChange: (value: number) => void;
     hint?: string;
     disabled?: boolean;
+    controlSx?: SxProps<Theme>;
 }
 
 function ElementWidthBar(props: {
@@ -159,57 +167,66 @@ export function ElementWidthSelector(props: ElementWidthSelectorProps) {
     const hasDisabledChoices = useMemo(() => choices.some(choice => choice.disabled), [choices]);
 
     return (
-        <TextField
-            fullWidth
-            select
+        <FormField
+            id={props.id}
             label={label}
-            value={normalizedValue.toString()}
-            onChange={(event) => {
-                const nextChoice = choices.find(choice => choice.value.toString() === event.target.value);
-
-                if (nextChoice != null && !nextChoice.disabled) {
-                    onChange(nextChoice.value);
-                }
-            }}
+            hint={helperText}
             disabled={disabled}
-            helperText={helperText}
-            sx={{
-                '& .MuiOutlinedInput-root': {
-                    minHeight: 56,
-                },
-                '& .MuiSelect-select': {
-                    alignItems: 'center',
-                    display: 'flex',
-                    minHeight: '24px !important',
-                    py: '16.5px',
-                },
-                '& .MuiSelect-select > .MuiBox-root': {
-                    width: '100%',
-                },
-            }}
-            slotProps={{
-                select: {
-                    renderValue: () => (
-                        <ElementWidthOptionContent
-                            choice={selectedChoice}
-                            variant="field"
-                        />
-                    ),
-                    MenuProps: {
-                        slotProps: {
-                            paper: {
-                                sx: {
-                                    minWidth: 360,
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            margin={props.margin}
+            showOptionalIndicator={props.showOptionalIndicator ?? false}
+            sx={props.sx}
+        >
+            {(field) => (
+                <TextField
+                    id={field.controlId}
+                    fullWidth
+                    select
+                    size="small"
+                    margin="none"
+                    value={normalizedValue.toString()}
+                    onChange={(event) => {
+                        const nextChoice = choices.find(choice => choice.value.toString() === event.target.value);
+
+                        if (nextChoice != null && !nextChoice.disabled) {
+                            onChange(nextChoice.value);
+                        }
+                    }}
+                    disabled={disabled}
+                    sx={[
+                        {
+                            '& .MuiInputBase-root': formFieldInputRootSx,
+                            '& .MuiSelect-select': {
+                                alignItems: 'center',
+                                display: 'flex',
+                            },
+                            '& .MuiSelect-select > .MuiBox-root': {
+                                width: '100%',
+                            },
+                        },
+                        ...(Array.isArray(props.controlSx) ? props.controlSx : [props.controlSx]),
+                    ]}
+                    slotProps={{
+                        htmlInput: getNativeInputAriaProps(field),
+                        select: {
+                            ...getCompositeControlAriaProps(field),
+                            labelId: field.labelId,
+                            renderValue: () => (
+                                <ElementWidthOptionContent
+                                    choice={selectedChoice}
+                                    variant="field"
+                                />
+                            ),
+                            MenuProps: {
+                                slotProps: {
+                                    paper: {sx: {minWidth: 360}},
                                 },
                             },
                         },
-                    },
-                },
-
-                inputLabel: {
-                    title: label,
-                }
-            }}>
+                    }}
+                >
             {
                 hasDisabledChoices && restrictionHint != null &&
                 <ListSubheader
@@ -251,6 +268,8 @@ export function ElementWidthSelector(props: ElementWidthSelectorProps) {
                     </MenuItem>
                 ))
             }
-        </TextField>
+                </TextField>
+            )}
+        </FormField>
     );
 }

@@ -1,19 +1,18 @@
 package de.aivot.prosuna.backend.permissions.models;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.department.permissions.DepartmentPermissionProvider;
 import de.aivot.prosuna.backend.permissions.permissions.PermissionSetPermissionProvider;
 import de.aivot.prosuna.backend.teams.permissions.TeamPermissionProvider;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.stream.StreamSupport;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class PermissionProviderTest {
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final JsonMapper objectMapper = JsonMapperTestUtils.createMapper();
 
     @Test
     void shouldSerializeDomainRoleAssignmentSupportForOptedInProvider() throws Exception {

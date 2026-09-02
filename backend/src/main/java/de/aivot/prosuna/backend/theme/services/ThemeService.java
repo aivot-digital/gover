@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElemen
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.lib.services.EntityService;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.repositories.ThemeRepository;
@@ -54,8 +55,6 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
 
     @Override
     public void performDelete(@Nonnull ThemeEntity entity) throws ResponseException {
-        // TODO: Check whether the theme is referenced by any process node configuration.
-
         var defaultTheme = systemService.retrieveDefaultTheme();
         if (defaultTheme.getId().equals(entity.getId())) {
             throw ResponseException.conflict("Das Standard-Erscheinungsbild der Prosuna-Instanz kann nicht gelöscht werden.");
@@ -150,14 +149,14 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
 
 
     @Nonnull
-    public List<ThemeEntity> getFormThemesInOrderOfImportance(FormLayoutElement form) throws ResponseException {
+    public List<ThemeEntity> getFormThemesInOrderOfImportance(@Nonnull ProcessVersionEntity processVersion,
+                                                              @Nonnull FormLayoutElement form) throws ResponseException {
         // TODO: Need to respect department of owning process
         var themes = new LinkedList<ThemeEntity>();
 
-
-        if (form.getThemeId() != null) {
+        if (processVersion.getThemeId() != null) {
             themeRepository
-                    .findById(form.getThemeId())
+                    .findById(processVersion.getThemeId())
                     .ifPresent(themes::add);
         }
 

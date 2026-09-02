@@ -55,6 +55,17 @@ public class ProcessInstanceAttachmentSetService implements ReadEntityService<Pr
         return repository.findAllByProcessInstanceIdAndDataKey(processInstanceId, dataKey);
     }
 
+    @Nonnull
+    public Optional<ProcessInstanceAttachmentSetEntity> retrieveLatestByProcessInstanceIdAndTaskIdAndDataKey(@Nonnull Long processInstanceId,
+                                                                                                             @Nonnull Long processInstanceTaskId,
+                                                                                                             @Nonnull String dataKey) {
+        return repository.findFirstByProcessInstanceIdAndProcessInstanceTaskIdAndDataKeyOrderByIdDesc(
+                processInstanceId,
+                processInstanceTaskId,
+                dataKey
+        );
+    }
+
     @Override
     public boolean exists(@Nonnull Integer id) {
         return repository.existsById(id);

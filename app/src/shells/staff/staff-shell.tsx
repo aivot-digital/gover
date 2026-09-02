@@ -209,6 +209,8 @@ export function StaffShell(): ReactNode {
                             data-confetti-container="staff-shell-content"
                             sx={{
                                 flex: 1,
+                                // Routed pages may contain intrinsically wide widgets, which must not expand this flex item.
+                                minWidth: 0,
                                 position: 'relative',
                                 overflowY: 'auto',
                                 backgroundColor: 'background.default',

@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.xdf.v2.models;
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import tools.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 @JacksonXmlRootElement(localName = "xdatenfelder.stammdatenschema.0102", namespace = "urn:xoev-de:fim:standard:xdatenfelder_2")
 public class XdfStammdatenschema0102 {

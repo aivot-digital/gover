@@ -9,6 +9,7 @@ import {
     DerivedRuntimeElementData,
     EffectiveElementValues,
     isAuthoredElementValues,
+    isComputedElementSubState,
     isReplicatingContainerElementValue,
     resolveReplicatingContainerElementValues,
     resolveComputedElementSubState,
@@ -22,6 +23,7 @@ import {isAnyInputElement} from '../models/elements/form/input/any-input-element
 import {isReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
 import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
 import {ElementType} from '../data/element-type/element-type';
+import {deepEquals} from './equality-utils';
 
 export function resolveElementState(element: AnyElement, derivedData: DerivedRuntimeElementData): ComputedElementState | undefined {
     return derivedData.elementStates[element.id];
@@ -114,6 +116,297 @@ export function resolveReplicatingContainerItemDerivedData(
         effectiveValues: rowValues != null ? rowValues as EffectiveElementValues : {},
         elementStates: resolveComputedElementSubStateStates(rowSubState),
     });
+}
+
+/**
+ * Preserve validation errors from a previous derived-data snapshot when a new derivation did not
+ * evaluate them. All non-error data and the replicated-row structure of the new snapshot remain
+ * authoritative.
+ */
+export function preserveDerivedErrors(
+    previousDerivedData: DerivedRuntimeElementData,
+    nextDerivedData: DerivedRuntimeElementData,
+): DerivedRuntimeElementData {
+    return {
+        ...nextDerivedData,
+        elementStates: preserveComputedElementStateErrors(
+            previousDerivedData.elementStates,
+            nextDerivedData.elementStates,
+        ),
+    };
+}
+
+function preserveComputedElementStateErrors(
+    previousElementStates: ComputedElementStates,
+    nextElementStates: ComputedElementStates,
+): ComputedElementStates {
+    return Object.fromEntries(
+        Object.entries(nextElementStates).map(([elementId, nextElementState]) => {
+            if (nextElementState == null) {
+                return [elementId, nextElementState];
+            }
+
+            const previousElementState = previousElementStates[elementId];
+            const nextSubStates = nextElementState.subStates == null ?
+                nextElementState.subStates :
+                nextElementState.subStates.map((nextSubState, index) => {
+                    const previousSubState = resolvePreviousSubStateForErrorPreservation(
+                        previousElementState?.subStates,
+                        nextSubState,
+                        index,
+                    );
+
+                    return createComputedElementSubState(
+                        nextSubState.id,
+                        preserveComputedElementStateErrors(
+                            resolveComputedElementSubStateStates(previousSubState),
+                            resolveComputedElementSubStateStates(nextSubState),
+                        ),
+                    );
+                });
+
+            if (nextElementState.error != null || previousElementState?.error == null) {
+                return [
+                    elementId,
+                    {
+                        ...nextElementState,
+                        subStates: nextSubStates,
+                    },
+                ];
+            }
+
+            return [
+                elementId,
+                {
+                    ...nextElementState,
+                    error: previousElementState.error,
+                    errorDetails: previousElementState.errorDetails,
+                    subStates: nextSubStates,
+                },
+            ];
+        }),
+    );
+}
+
+function resolvePreviousSubStateForErrorPreservation(
+    previousSubStates: Array<ComputedElementSubState | ComputedElementStates> | null | undefined,
+    nextSubState: ComputedElementSubState | ComputedElementStates,
+    index: number,
+): ComputedElementSubState | ComputedElementStates | null {
+    if (previousSubStates == null) {
+        return null;
+    }
+
+    if (isComputedElementSubState(nextSubState) && nextSubState.id != null) {
+        return previousSubStates.find((previousSubState) => (
+            isComputedElementSubState(previousSubState) && previousSubState.id === nextSubState.id
+        )) ?? null;
+    }
+
+    return previousSubStates[index] ?? null;
+}
+
+export interface ElementErrorSuppressionRow {
+    replicatingContainerElementId: string;
+    rowId: string | null;
+    rowIndex: number;
+}
+
+export interface ElementErrorSuppressionTarget {
+    elementId: string;
+    parentRows: ElementErrorSuppressionRow[];
+}
+
+export function collectChangedElementErrorSuppressionTargets(
+    rootElement: AnyElement,
+    previousAuthoredElementValues: AuthoredElementValues,
+    nextAuthoredElementValues: AuthoredElementValues,
+): ElementErrorSuppressionTarget[] {
+    return collectChangedElementErrorSuppressionTargetsRecursively(
+        rootElement,
+        previousAuthoredElementValues,
+        nextAuthoredElementValues,
+        [],
+    );
+}
+
+function collectChangedElementErrorSuppressionTargetsRecursively(
+    currentElement: AnyElement,
+    previousAuthoredElementValues: AuthoredElementValues,
+    nextAuthoredElementValues: AuthoredElementValues,
+    parentRows: ElementErrorSuppressionRow[],
+): ElementErrorSuppressionTarget[] {
+    const previousValue = previousAuthoredElementValues[currentElement.id];
+    const nextValue = nextAuthoredElementValues[currentElement.id];
+    const targets: ElementErrorSuppressionTarget[] = [];
+
+    if (!deepEquals(previousValue, nextValue)) {
+        targets.push({
+            elementId: currentElement.id,
+            parentRows,
+        });
+    }
+
+    if (isReplicatingContainerLayout(currentElement)) {
+        const previousRows = Array.isArray(previousValue) ? previousValue : [];
+        const nextRows = Array.isArray(nextValue) ? nextValue : [];
+
+        for (let nextRowIndex = 0; nextRowIndex < nextRows.length; nextRowIndex++) {
+            const nextRow = nextRows[nextRowIndex];
+            const previousRow = resolvePreviousReplicatingContainerRow(previousRows, nextRow, nextRowIndex);
+            if (previousRow === undefined) {
+                continue;
+            }
+
+            const previousRowValues = resolveReplicatingContainerElementValues(previousRow);
+            const nextRowValues = resolveReplicatingContainerElementValues(nextRow);
+            if (previousRowValues == null || nextRowValues == null) {
+                continue;
+            }
+
+            const rowId = isReplicatingContainerElementValue(nextRow) ? nextRow.id ?? null : null;
+            const nextParentRows = [
+                ...parentRows,
+                {
+                    replicatingContainerElementId: currentElement.id,
+                    rowId,
+                    rowIndex: nextRowIndex,
+                },
+            ];
+
+            for (const child of currentElement.children ?? []) {
+                targets.push(...collectChangedElementErrorSuppressionTargetsRecursively(
+                    child,
+                    previousRowValues,
+                    nextRowValues,
+                    nextParentRows,
+                ));
+            }
+        }
+
+        return targets;
+    }
+
+    if (isAnyElementWithChildren(currentElement)) {
+        for (const child of currentElement.children ?? []) {
+            targets.push(...collectChangedElementErrorSuppressionTargetsRecursively(
+                child,
+                previousAuthoredElementValues,
+                nextAuthoredElementValues,
+                parentRows,
+            ));
+        }
+    }
+
+    return targets;
+}
+
+function resolvePreviousReplicatingContainerRow(previousRows: any[], nextRow: any, nextRowIndex: number): any | undefined {
+    if (isReplicatingContainerElementValue(nextRow) && nextRow.id != null) {
+        return previousRows.find((previousRow) => (
+            isReplicatingContainerElementValue(previousRow) && previousRow.id === nextRow.id
+        ));
+    }
+
+    return previousRows[nextRowIndex];
+}
+
+export function mergeElementErrorSuppressionTargets(
+    currentTargets: ElementErrorSuppressionTarget[],
+    additionalTargets: ElementErrorSuppressionTarget[],
+): ElementErrorSuppressionTarget[] {
+    const targetsByKey = new Map<string, ElementErrorSuppressionTarget>();
+
+    for (const target of [...currentTargets, ...additionalTargets]) {
+        targetsByKey.set(createElementErrorSuppressionTargetKey(target), target);
+    }
+
+    return Array.from(targetsByKey.values());
+}
+
+function createElementErrorSuppressionTargetKey(target: ElementErrorSuppressionTarget): string {
+    return JSON.stringify([
+        target.parentRows.map((row) => [
+            row.replicatingContainerElementId,
+            row.rowId == null ? ['index', row.rowIndex] : ['id', row.rowId],
+        ]),
+        target.elementId,
+    ]);
+}
+
+export function applyElementErrorSuppressions(
+    derivedData: DerivedRuntimeElementData,
+    targets: ElementErrorSuppressionTarget[],
+): DerivedRuntimeElementData {
+    let elementStates = derivedData.elementStates;
+
+    for (const target of targets) {
+        elementStates = clearComputedElementStateErrorAtTarget(elementStates, target, 0);
+    }
+
+    return elementStates === derivedData.elementStates ?
+        derivedData :
+        {
+            ...derivedData,
+            elementStates,
+        };
+}
+
+function clearComputedElementStateErrorAtTarget(
+    elementStates: ComputedElementStates,
+    target: ElementErrorSuppressionTarget,
+    parentRowIndex: number,
+): ComputedElementStates {
+    if (parentRowIndex >= target.parentRows.length) {
+        const elementState = elementStates[target.elementId];
+        if (elementState == null || (elementState.error == null && elementState.errorDetails == null)) {
+            return elementStates;
+        }
+
+        return {
+            ...elementStates,
+            [target.elementId]: {
+                ...elementState,
+                error: null,
+                errorDetails: null,
+            },
+        };
+    }
+
+    const parentRow = target.parentRows[parentRowIndex];
+    const containerState = elementStates[parentRow.replicatingContainerElementId];
+    if (containerState?.subStates == null) {
+        return elementStates;
+    }
+
+    const matchingSubStateIndex = parentRow.rowId == null ?
+        parentRow.rowIndex :
+        containerState.subStates.findIndex((subState) => subState.id === parentRow.rowId);
+    if (matchingSubStateIndex < 0 || matchingSubStateIndex >= containerState.subStates.length) {
+        return elementStates;
+    }
+
+    const currentSubState = containerState.subStates[matchingSubStateIndex];
+    const currentSubStateStates = resolveComputedElementSubStateStates(currentSubState);
+    const nextSubStateStates = clearComputedElementStateErrorAtTarget(
+        currentSubStateStates,
+        target,
+        parentRowIndex + 1,
+    );
+    if (nextSubStateStates === currentSubStateStates) {
+        return elementStates;
+    }
+
+    const nextSubStates = [...containerState.subStates];
+    nextSubStates[matchingSubStateIndex] = createComputedElementSubState(currentSubState.id, nextSubStateStates);
+
+    return {
+        ...elementStates,
+        [parentRow.replicatingContainerElementId]: {
+            ...containerState,
+            subStates: nextSubStates,
+        },
+    };
 }
 
 export function walkAuthoredElementValues(
@@ -274,7 +567,11 @@ export function cleanAuthoredElementValues(rootElement: AnyElement, authoredElem
     delete cleanedElementValues[IdentityCustomerInputKey];
 
     return mapAuthoredElementValues(rootElement, cleanedElementValues, (element, value) => {
-        if (element.type === ElementType.FileUpload || element.type === ElementType.IdentityConfigElement) {
+        if (
+            element.type === ElementType.FileUpload ||
+            element.type === ElementType.IdentityConfigElement ||
+            element.type === ElementType.PaymentConfigElement
+        ) {
             return undefined;
         }
 

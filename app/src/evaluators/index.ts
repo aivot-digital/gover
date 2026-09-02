@@ -56,6 +56,7 @@ export const evaluators: {
     [ElementType.RichTextInput]: TextEvaluator,
     [ElementType.UiDefinitionInput]: UiDefinitionInputEvaluator,
     [ElementType.IdentityConfigElement]: null,
+    [ElementType.PaymentConfigElement]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: ChipInputEvaluator,
     [ElementType.DateTime]: DateTimeEvaluator,
@@ -75,4 +76,5 @@ export const evaluators: {
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputEvaluator,
     [ElementType.StoragePathSelector]: StoragePathSelectorInputEvaluator,
     [ElementType.ProcessAttachmentDisplay]: null,
+    [ElementType.LinkButton]: null,
 };

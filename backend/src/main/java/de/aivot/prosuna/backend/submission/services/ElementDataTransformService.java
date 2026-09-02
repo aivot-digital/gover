@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.submission.services;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.ComputedElementSubState;
@@ -535,7 +535,7 @@ public class ElementDataTransformService {
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .convertValue(value, Object.class);
     }

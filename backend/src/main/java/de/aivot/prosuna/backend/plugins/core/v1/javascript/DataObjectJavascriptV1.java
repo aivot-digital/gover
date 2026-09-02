@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.javascript;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntity;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntityId;
 import de.aivot.prosuna.backend.dataObject.filters.DataObjectItemFilter;
@@ -20,11 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This class provides JavaScript functions for retrieving data objects.
@@ -68,8 +64,18 @@ public class DataObjectJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Dieses Paket enthält Funktionen für Datenobjekte.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Bindet Prosuna-Datenobjekte in JavaScript-Ausdrücke ein.
+
+                Das Paket stellt Funktionen zum Abrufen von Schemas sowie zum Auflisten, Erstellen, Laden und Aktualisieren von Datenobjekt-Einträgen bereit. Feldfilter können verwendet werden, um Abfragen auf passende Einträge einzugrenzen.
+                """;
     }
 
     @Override
@@ -97,7 +103,7 @@ public class DataObjectJavascriptV1 implements JavascriptFunctionProvider {
             return null;
         }
 
-        var schemaMap = new ObjectMapper()
+        var schemaMap = JsonMapperFactory.getInstance()
                 .convertValue(dataObjectSchema.getSchema(), Map.class);
 
         return JavascriptEngine

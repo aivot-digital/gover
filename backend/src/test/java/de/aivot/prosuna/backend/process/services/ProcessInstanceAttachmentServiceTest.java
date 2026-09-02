@@ -48,7 +48,7 @@ class ProcessInstanceAttachmentServiceTest {
         when(processInstanceRepository.findById(42L))
                 .thenReturn(Optional.of(new ProcessInstanceEntity()
                         .setProcessId(7)
-                        .setAccessKey(processAccessKey)));
+                        .setAccessKey(processAccessKey.toString())));
         when(storageService.createFolder(eq(5), anyString()))
                 .thenReturn(new StorageFolder("/proc-7/%s/attachments/".formatted(processAccessKey), "attachments", List.of(), List.of(), false));
         when(storageService.storeDocument(eq(5), anyString(), any(byte[].class), any(StorageItemMetadata.class)))

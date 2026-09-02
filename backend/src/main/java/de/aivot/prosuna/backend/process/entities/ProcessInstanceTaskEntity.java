@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.core.converters.JsonObjectConverter;
 import de.aivot.prosuna.backend.process.converters.ProcessTaskStatusConverter;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
@@ -13,11 +14,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @Table(name = "process_instance_tasks")
 public class ProcessInstanceTaskEntity {
+    @JsonIgnore
+    public static final int ACCESS_KEY_LENGTH = 128;
     private static final String ID_SEQUENCE_NAME = "process_instance_tasks_id_seq";
 
     @Id
@@ -27,8 +29,9 @@ public class ProcessInstanceTaskEntity {
     private Long id;
 
     @Nonnull
+    @Column(length = ACCESS_KEY_LENGTH)
     @NotNull(message = "Der Zugriffsschlüssel darf nicht null sein.")
-    private UUID accessKey;
+    private String accessKey;
 
     @Nonnull
     @NotNull(message = "Die Prozessinstanz-ID darf nicht null sein.")
@@ -136,7 +139,7 @@ public class ProcessInstanceTaskEntity {
     }
 
     public ProcessInstanceTaskEntity(@Nonnull Long id,
-                                     @Nonnull UUID accessKey,
+                                     @Nonnull String accessKey,
                                      @Nonnull Long processInstanceId,
                                      @Nonnull Integer processId,
                                      @Nonnull Integer processVersion,
@@ -236,11 +239,11 @@ public class ProcessInstanceTaskEntity {
     }
 
     @Nonnull
-    public UUID getAccessKey() {
+    public String getAccessKey() {
         return accessKey;
     }
 
-    public ProcessInstanceTaskEntity setAccessKey(@Nonnull UUID accessKey) {
+    public ProcessInstanceTaskEntity setAccessKey(@Nonnull String accessKey) {
         this.accessKey = accessKey;
         return this;
     }

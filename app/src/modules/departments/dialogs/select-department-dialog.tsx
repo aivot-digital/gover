@@ -12,6 +12,7 @@ import {Permission} from '../../../data/permissions/permission';
 import {hasDepartmentPermission, formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
 
 interface SelectDepartmentDialogProps {
+    id?: string;
     open: boolean;
     onClose: () => void;
     onSelect: (department: VDepartmentShadowedEntityWithChildren) => void;
@@ -91,6 +92,11 @@ export function SelectDepartmentDialog(props: SelectDepartmentDialogProps): Reac
             onClose={onClose}
             fullWidth
             maxWidth="lg"
+            slotProps={{
+                paper: {
+                    id: props.id,
+                },
+            }}
         >
             <DialogTitleWithClose onClose={onClose}>
                 {title}

@@ -20,6 +20,10 @@ import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
+import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
+import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
+import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.plugins.form.v1.services.FormPaymentService;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -30,8 +34,10 @@ import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessTestClaimFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessVersionFilter;
 import de.aivot.prosuna.backend.process.services.*;
+import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderService;
+import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
@@ -50,7 +56,7 @@ class FormTriggerControllerV1SubmitTest {
     @Test
     void submitShouldClearIdentityCookieAfterSuccessfulSubmission() throws Exception {
         var identities = new IdentityDataMap();
-        var startedProcessAccessKey = UUID.randomUUID();
+        var startedProcessAccessKey = UUID.randomUUID().toString();
         var derivedRuntimeElementData = new DerivedRuntimeElementData();
         var fixture = createFixture(derivedRuntimeElementData, identities, startedProcessAccessKey);
         var response = new MockHttpServletResponse();
@@ -100,7 +106,7 @@ class FormTriggerControllerV1SubmitTest {
         var fixture = createFixture(
                 new DerivedRuntimeElementData().putError("field", "error"),
                 identities,
-                UUID.randomUUID()
+                UUID.randomUUID().toString()
         );
         var response = new MockHttpServletResponse();
 
@@ -125,7 +131,7 @@ class FormTriggerControllerV1SubmitTest {
     private SubmitFixture createFixture(
             DerivedRuntimeElementData derivedRuntimeElementData,
             IdentityDataMap identities,
-            UUID startedProcessAccessKey
+            String startedProcessAccessKey
     ) throws ResponseException {
         var processAccessKey = UUID.randomUUID();
         var processSlug = "example-process";
@@ -231,10 +237,7 @@ class FormTriggerControllerV1SubmitTest {
 
         var controller = new FormTriggerControllerV1(
                 mock(ProsunaConfig.class),
-                mock(FormPaymentService.class),
-                mock(PaymentProviderService.class),
                 mock(IdentityProviderService.class),
-                mock(IdentityCacheRepository.class),
                 elementDerivationService,
                 mock(AssetService.class),
                 mock(ThemeService.class),
@@ -248,15 +251,22 @@ class FormTriggerControllerV1SubmitTest {
                 processNodeDefinitionService,
                 mock(SystemConfigService.class),
                 mock(StorageProviderService.class),
-                mock(AVService.class),
                 mock(CaptchaReplayGuard.class),
                 processInstanceService,
+                mock(ProcessInstanceTaskService.class),
+                mock(ProcessInstanceAttachmentSetService.class),
                 mock(ProcessInstanceAttachmentService.class),
+                mock(StorageService.class),
                 fileUploadMultipartInputService,
                 elementDataTransformService,
                 mock(ProcessNodeExecutionLoggerFactory.class),
                 provider,
-                identityService
+                identityService,
+                mock(PaymentPayloadCreationService.class),
+                mock(PaymentTransactionService.class),
+                mock(PaymentProviderRepository.class),
+                mock(PdfService.class),
+                mock(PaymentProviderDefinitionsService.class)
         );
 
         return new SubmitFixture(

@@ -51,4 +51,6 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.HtmlTemplateInput]: true,
     [ElementType.StoragePathSelector]: true,
     [ElementType.ProcessAttachmentDisplay]: false,
+    [ElementType.PaymentConfigElement]: true,
+    [ElementType.LinkButton]: false,
 };

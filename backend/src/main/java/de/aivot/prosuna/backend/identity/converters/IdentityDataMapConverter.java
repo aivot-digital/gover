@@ -1,17 +1,23 @@
 package de.aivot.prosuna.backend.identity.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
-
-import java.io.IOException;
+import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 @Converter
+@Component
 public class IdentityDataMapConverter implements AttributeConverter<IdentityDataMap, String> {
+
+    private final JsonMapper jsonMapper;
+
+    public IdentityDataMapConverter(JsonMapper jsonMapper) {
+        this.jsonMapper = jsonMapper;
+    }
 
     @Nonnull
     @Override
@@ -20,13 +26,10 @@ public class IdentityDataMapConverter implements AttributeConverter<IdentityData
             return "{}";
         }
 
-        var objectMapper = ObjectMapperFactory
-                .getInstance();
-
         String dbData;
         try {
-            dbData = objectMapper.writeValueAsString(attributes);
-        } catch (JsonProcessingException e) {
+            dbData = jsonMapper.writeValueAsString(attributes);
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 
@@ -41,11 +44,10 @@ public class IdentityDataMapConverter implements AttributeConverter<IdentityData
         }
 
         try {
-            return ObjectMapperFactory
-                    .getInstance()
+            return jsonMapper
                     .readValue(dbData, IdentityDataMap.class);
 
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

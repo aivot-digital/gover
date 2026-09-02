@@ -45,6 +45,7 @@ import {
 } from './process-instance-attachment-set-select-field-editor';
 import {StoragePathSelectorInputFieldEditor} from './storage-path-selector-input-field-editor';
 import {ProcessDataKeyInputFieldEditor} from './process-data-key-input-field-editor';
+import {LinkButtonEditor} from './link-button-editor';
 
 export interface EditorTab {
     label: string;
@@ -136,6 +137,7 @@ export const editors: ElementTypesMap<EditorSet | null> = {
         default: UiDefinitionInputFieldEditor,
     },
     [ElementType.IdentityConfigElement]: null,
+    [ElementType.PaymentConfigElement]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: {
         default: ChipInputFieldEditor,
@@ -186,5 +188,8 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     },
     [ElementType.ProcessAttachmentDisplay]: {
         default: ProcessAttachmentDisplayEditor,
+    },
+    [ElementType.LinkButton]: {
+        default: LinkButtonEditor,
     },
 };

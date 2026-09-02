@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
@@ -233,7 +233,7 @@ public class FormTriggerListControllerV1 {
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .convertValue(rawLayout, FormLayoutElement.class);
     }

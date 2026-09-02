@@ -11,9 +11,8 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 
 /**
- * Accepts absolute ISO-8601 timestamps. Both {@code Z} and numeric offsets identify an
- * instant; offset-free local date-times are rejected instead of being interpreted in an
- * implicit JVM or application timezone.
+ * Accepts ISO-8601 timestamps. Both {@code Z} and numeric offsets identify an
+ * instant; offset-free local date-times are resolved in the application timezone.
  * <p>
  * Empty strings are coerced to {@code null} for compatibility with existing form payloads.
  * Required values must therefore be enforced through DTO validation.
@@ -36,7 +35,7 @@ public final class StrictInstantDeserializer extends JsonDeserializer<Instant> {
             return (Instant) context.handleWeirdStringValue(
                     Instant.class,
                     value,
-                    "Expected an ISO-8601 instant with Z or an explicit numeric offset"
+                    "Expected an ISO-8601 timestamp with seconds"
             );
         }
     }

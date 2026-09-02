@@ -31,8 +31,9 @@ class CoreDateJavascriptTest {
     }
 
     @Test
-    void testGetDescription() {
-        assertEquals("Dieses Modul stellt Funktionen zur Verarbeitung von Datumswerten bereit.", provider.getDescription());
+    void testGetDescriptions() {
+        assertEquals("Dieses Modul stellt Funktionen zur Verarbeitung von Datumswerten bereit.", provider.getAbstract());
+        assertTrue(provider.getDescription().contains("Datums-, Zeit- und Zeitzonenwerte"));
     }
 
     @Test
@@ -89,7 +90,7 @@ class CoreDateJavascriptTest {
     void testCreateDateStringInvalid() {
         assertNull(provider.createDate("not-a-date"));
         assertNull(provider.createDate("01.01.2021"));
-        assertNull(provider.createDate("2021-01-01T00:00:00"));
+        assertNull(provider.createDate("2021-01-01T00:00")); // Missing seconds
     }
 
     @Test

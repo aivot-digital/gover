@@ -22,6 +22,7 @@ public enum MailTemplate implements Identifiable<String> {
     StaffAccountCredentials("staff-account-credentials", null),
 
     ProcessTaskAssigned("process-task-assigned", ProcessNotificationTaskAssignedUserConfigDefinition.KEY),
+    ProcessPaymentRequested("process-payment-requested", null),
 
     SubmissionArchived("submission-archived", SubmissionNotificationArchivedUserConfigDefinition.KEY),
     SubmissionAssigned("submission-assigned", SubmissionNotificationAssignedUserConfigDefinition.KEY),

@@ -1,12 +1,12 @@
 package de.aivot.prosuna.backend.audit.models;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import de.aivot.prosuna.backend.audit.enums.AuditAction;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import tools.jackson.core.type.TypeReference;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -252,13 +252,13 @@ public class AuditLogPayload {
         }
 
         if (value.getClass().isArray()) {
-            var array = ObjectMapperFactory
+            var array = JsonMapperFactory
                     .getInstance()
                     .convertValue(value, List.class);
             return normalizeNestedValue(array);
         }
 
-        var converted = ObjectMapperFactory
+        var converted = JsonMapperFactory
                 .getInstance().convertValue(value, Object.class);
         if (converted == value) {
             return value;
@@ -283,7 +283,7 @@ public class AuditLogPayload {
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .convertValue(value, new TypeReference<>() {
                 });

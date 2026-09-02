@@ -26,6 +26,7 @@ import de.aivot.prosuna.backend.plugins.core.v1.operators.object.NoCodeObjectGet
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -74,6 +75,9 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     private static final String OUTPUT_NAME_STORAGE_PATHS_FROM_ROOT = "storagePathsFromRoot";
     private static final String OUTPUT_NAME_FILE_NAMES = "fileNames";
     private static final String OUTPUT_NAME_COUNT = "count";
+    private static final String OUTPUT_RESULTS_TYPE_DEFINITION =
+            "Array<{ storageProviderId: number; attachmentSetDataKey: string; targetFolderPath: string; " +
+                    "storagePathsFromRoot: Array<string>; fileNames: Array<string>; count: number; }>";
 
     private static final String METADATA_ATTRIBUTES_PREFIX = "meta__attributes";
 
@@ -124,14 +128,30 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Dokument bei Speicheranbieter schreiben";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Speichert die Anhänge eines Anlagensatzes in einem ausgewählten Speicheranbieter.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Überträgt Dateien aus Vorgangsanlagensätzen in konfigurierte externe Speicheranbieter.
+
+                Für jeden Anlagensatz werden Zielanbieter, Zielpfad und optional angepasste Dateinamen festgelegt. Das Element kann mehrere Anlagensätze in einem Schritt verarbeiten und stellt Ablageergebnisse, gespeicherte Pfade, Dateinamen und Anzahl der geschriebenen Dateien als Ausgänge bereit.
+                """;
     }
 
     @Nonnull
@@ -243,10 +263,10 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_NAME_RESULTS, "Ablageergebnisse", "Die Ergebnisse je konfiguriertem Anlagensatz."),
-                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATHS_FROM_ROOT, "Speicherpfade", "Die Pfade der gespeicherten Dateien im Ziel-Speicheranbieter."),
-                new ProcessNodeOutput(OUTPUT_NAME_FILE_NAMES, "Dateinamen", "Die Dateinamen der gespeicherten Dateien."),
-                new ProcessNodeOutput(OUTPUT_NAME_COUNT, "Anzahl", "Die Anzahl der gespeicherten Dateien.")
+                new ProcessNodeOutput(OUTPUT_NAME_RESULTS, "Ablageergebnisse", "Die Ergebnisse je konfiguriertem Anlagensatz.", OUTPUT_RESULTS_TYPE_DEFINITION),
+                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATHS_FROM_ROOT, "Speicherpfade", "Die Pfade der gespeicherten Dateien im Ziel-Speicheranbieter.", "Array<string>"),
+                new ProcessNodeOutput(OUTPUT_NAME_FILE_NAMES, "Dateinamen", "Die Dateinamen der gespeicherten Dateien.", "Array<string>"),
+                new ProcessNodeOutput(OUTPUT_NAME_COUNT, "Anzahl", "Die Anzahl der gespeicherten Dateien.", "number")
         );
     }
 

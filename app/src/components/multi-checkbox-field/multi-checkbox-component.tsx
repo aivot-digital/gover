@@ -1,12 +1,18 @@
-import React from 'react';
-import {Checkbox, FormControl, FormControlLabel, FormGroup, FormHelperText, FormLabel} from '@mui/material';
+import {
+    Checkbox,
+    FormControlLabel,
+    FormGroup,
+    type SxProps,
+    type Theme,
+} from '@mui/material';
+import {FormFieldGroup, type FormFieldGroupLayoutProps} from '../form-field';
 
 export interface MultiCheckboxOptions {
     value: string;
     label: string;
 }
 
-export interface MultiCheckboxComponentProps {
+export interface MultiCheckboxComponentProps extends FormFieldGroupLayoutProps {
     label: string;
     value?: string[] | null;
     onChange: (val: string[] | null) => void;
@@ -17,82 +23,77 @@ export interface MultiCheckboxComponentProps {
     busy?: boolean;
     required?: boolean;
     displayInline?: boolean;
+    controlSx?: SxProps<Theme>;
 }
 
 export function MultiCheckboxComponent(props: MultiCheckboxComponentProps) {
     const value = props.value;
-    const onChange = props.onChange;
-    const error = props.error;
-    const label = props.label;
-    const required = props.required;
-    const disabled = props.disabled;
-    const busy = props.busy;
-    const hint = props.hint;
-    const displayInline = props.displayInline ?? false;
-
     const options = props.options;
+    const displayInline = props.displayInline ?? false;
+    const isInteractionDisabled = Boolean(props.disabled || props.busy);
 
     const handleOptionToggle = (toggledOption: string): void => {
         if (value == null || value.length === 0) {
-            onChange([toggledOption]);
+            props.onChange([toggledOption]);
             return;
         }
 
         if (value.includes(toggledOption)) {
-            const splicedList = value.filter((v) => v !== toggledOption);
-            onChange(splicedList.length > 0 ? splicedList : null);
+            const splicedList = value.filter((currentValue) => currentValue !== toggledOption);
+            props.onChange(splicedList.length > 0 ? splicedList : null);
             return;
         }
 
         const filteredOptions = options
-            .filter((opt) => {
-                return value.includes(opt.value) || opt.value === toggledOption;
-            })
-            .map((opt) => {
-                return opt.value;
-            });
-        onChange(filteredOptions);
+            .filter((option) => value.includes(option.value) || option.value === toggledOption)
+            .map((option) => option.value);
+        props.onChange(filteredOptions);
     };
 
     return (
-        <FormControl
-            error={error != null}
-            component="fieldset"
+        <FormFieldGroup
+            id={props.id}
+            label={props.label}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            hint={props.hint}
+            error={props.error}
+            disabled={props.disabled}
+            busy={props.busy}
+            required={props.required}
+            margin={props.margin ?? 'normal'}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
         >
-            {
-                label != null &&
-                <FormLabel
-                    component="legend"
-                    disabled={disabled}
+            {() => (
+                <FormGroup
+                    role="presentation"
+                    row={displayInline}
+                    sx={props.controlSx}
                 >
-                    {label} {required === true && '*'}
-                </FormLabel>
-            }
-            <FormGroup row={displayInline}>
-                {
-                    (options ?? []).map((option) => (
+                    {(options ?? []).map((option) => (
                         <FormControlLabel
                             key={option.value}
-                            control={
+                            control={(
                                 <Checkbox
                                     checked={(value ?? []).includes(option.value)}
                                     onChange={() => {
-                                        if (!busy) {
+                                        if (!isInteractionDisabled) {
                                             handleOptionToggle(option.value);
                                         }
                                     }}
-                                    disabled={disabled}
+                                    disabled={isInteractionDisabled}
                                     sx={{
-                                        color: busy
+                                        color: props.busy
                                             ? (theme) => `${theme.palette.action.disabled}!important`
                                             : undefined,
                                     }}
                                 />
-                            }
+                            )}
                             label={option.label}
                             sx={{
                                 ...(displayInline ? {mr: 3} : {}),
-                                ...(busy ? {
+                                ...(props.busy ? {
                                     color: (theme) => `${theme.palette.text.disabled}!important`,
                                     cursor: 'not-allowed',
                                 } : {}),
@@ -102,22 +103,9 @@ export function MultiCheckboxComponent(props: MultiCheckboxComponentProps) {
                                 },
                             }}
                         />
-                    ))
-                }
-            </FormGroup>
-            {
-                (hint != null || error != null) &&
-                <FormHelperText sx={{ml: 0}}>
-                    {
-                        error == null &&
-                        <span>{hint}</span>
-                    }
-                    {
-                        error != null &&
-                        <span>{error}</span>
-                    }
-                </FormHelperText>
-            }
-        </FormControl>
+                    ))}
+                </FormGroup>
+            )}
+        </FormFieldGroup>
     );
 }

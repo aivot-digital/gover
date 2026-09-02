@@ -4,6 +4,8 @@ import {formatNumStringToGermanNum, formatNumToGermanNum} from '../../utils/form
 import {type NumberFieldComponentProps} from './number-field-component-props';
 import {parseGermanNumber} from '../../utils/parse-german-numbers';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
+import {FormField, type FormFieldControlContext, getNativeInputAriaProps} from '../form-field';
+import {formFieldInputRootSx} from '../../theming/form-field-tokens';
 
 const AbsoluteMaxValue = Math.pow(2, 31);
 const AbsoluteMinValue = -AbsoluteMaxValue;
@@ -29,7 +31,6 @@ function validateValue(inputValue: string | undefined, value: number | null | un
 }
 
 export function NumberFieldComponent({
-                                         id,
                                          label,
                                          placeholder,
                                          decimalPlaces = 0,
@@ -39,6 +40,7 @@ export function NumberFieldComponent({
                                          required,
                                          disabled,
                                          readOnly,
+                                         busy,
                                          value, // This is the original value which is passed to the component from the parent.
                                          onChange,
                                          onBlur,
@@ -46,13 +48,15 @@ export function NumberFieldComponent({
                                          maxValue,
                                          bufferInputUntilBlur,
                                          debounce,
-                                         margin,
-                                         size,
-                                         ariaLabelledBy,
-                                         ariaDescribedBy,
-                                         ariaInvalid,
-                                         ariaRequired,
+                                         controlSx,
                                          sx,
+                                         margin = 'normal',
+                                         size = 'small',
+                                         id,
+                                         ariaLabel,
+                                         ariaDescribedBy,
+                                         labelAction,
+                                         showOptionalIndicator,
                                      }: NumberFieldComponentProps) {
     // The currently inputted value in the text field. If this is not set, the original value is used.
     const [inputValue, setInputValue] = useState<string>();
@@ -139,37 +143,58 @@ export function NumberFieldComponent({
 
     // TODO: refactor into utility function
     const internalError = validateValue(inputValue, value, minValue, maxValue, decimalPlaces);
+    const helperError = error ?? internalError;
 
     return (
-        <TextField
+        <FormField
             id={id}
-            label={label.length > 0 ? label + (required ? ' *' : '') : undefined}
-            placeholder={placeholder}
-            variant="outlined"
+            label={label}
+            ariaLabel={ariaLabel}
+            ariaDescribedBy={ariaDescribedBy}
+            labelAction={labelAction}
+            hint={hint}
+            error={helperError}
+            required={required}
+            disabled={disabled}
+            readOnly={readOnly}
+            busy={busy}
             margin={margin}
-            size={size}
-            fullWidth
-            error={!!error || !!internalError || ariaInvalid}
-            helperText={error ?? internalError ?? hint}
-            value={inputValue ?? formattedOriginalValue}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            disabled={disabled ?? false}
-            slotProps={{
-                input: {
-                    endAdornment: suffix ? <InputAdornment position="end">{suffix}</InputAdornment> : undefined,
-                    inputProps: {style: {textAlign: 'right'}},
-                    sx: sx,
-                    readOnly: readOnly,
-                    'aria-disabled': readOnly || disabled,
-                },
-                htmlInput: {
-                    'aria-labelledby': ariaLabelledBy,
-                    'aria-describedby': ariaDescribedBy,
-                    'aria-invalid': ariaInvalid || undefined,
-                    'aria-required': ariaRequired || undefined,
-                },
-            }}
-        />
+            showOptionalIndicator={showOptionalIndicator}
+            sx={sx}
+        >
+            {(fieldContext: FormFieldControlContext) => (
+                <TextField
+                    id={fieldContext.controlId}
+                    label={undefined}
+                    placeholder={placeholder}
+                    variant="outlined"
+                    margin="none"
+                    fullWidth
+                    required={required}
+                    error={fieldContext.invalid}
+                    helperText={undefined}
+                    value={inputValue ?? formattedOriginalValue}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    disabled={disabled ?? false}
+                    size={size}
+                    slotProps={{
+                        input: {
+                            endAdornment: suffix ? <InputAdornment position="end">{suffix}</InputAdornment> : undefined,
+                            sx: [
+                                formFieldInputRootSx,
+                                ...(Array.isArray(controlSx) ? controlSx : [controlSx]),
+                            ],
+                            readOnly: readOnly || busy,
+                        },
+                        htmlInput: {
+                            ...getNativeInputAriaProps(fieldContext),
+                            style: {textAlign: 'right'},
+                            inputMode: 'decimal',
+                        },
+                    }}
+                />
+            )}
+        </FormField>
     );
 }

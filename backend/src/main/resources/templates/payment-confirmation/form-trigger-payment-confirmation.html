@@ -1,0 +1,182 @@
+<!--/*@thymesVar id="transaction" type="de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity"*/-->
+<!--/*@thymesVar id="caseNumber" type="java.lang.String"*/-->
+<!--/*@thymesVar id="logoUrl" type="java.lang.String"*/-->
+<!--/*@thymesVar id="department" type="de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity"*/-->
+<!--/*@thymesVar id="generatedAt" type="java.lang.String"*/-->
+<!--/*@thymesVar id="#numberformat" type="de.aivot.prosuna.backend.services.pdf.NumberFormatDialect"*/-->
+
+<html lang="de">
+    <head>
+        <title>Zahlungsbestätigung</title>
+        <meta charset="utf-8">
+
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            html, body {
+                padding: 0;
+                margin: 0;
+                font-family: sans-serif;
+            }
+
+            #logo {
+                display: flex;
+                justify-content: flex-end;
+                margin-bottom: 1cm;
+            }
+
+            #header {
+                display: flex;
+            }
+
+            #anschrift {
+                flex: 2;
+            }
+
+            #absender {
+                font-size: 8pt;
+                margin-bottom: 0.25cm;
+            }
+
+            #absender span:not(:last-child)::after {
+                content: " • ";
+            }
+
+            #daten {
+                flex: 1;
+                margin-left: auto;
+                font-size: 8pt;
+            }
+
+            #date {
+                display: flex;
+                justify-content: flex-end;
+                margin-top: 2cm;
+            }
+
+            #daten div {
+                margin-bottom: 0.125cm;
+            }
+
+            #content {
+                margin-top: 0.5cm;
+            }
+
+            #content h1 {
+                font-size: 16pt;
+            }
+
+            #content p {
+                font-size: 12pt;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="logo">
+            <img
+                    th:if="${logoUrl != null}"
+                    th:src="${logoUrl}"
+                    th:alt="${department.getName()}"
+                    style="height: 100px; width: auto; max-width: 200px; object-fit: contain;"
+            />
+        </div>
+
+        <!-- Header -->
+        <div id="header">
+            <div id="anschrift">
+                <!-- Absender -->
+                <div id="absender">
+                    <span th:each="line: ${department.getPostalAddress().split('\n')}" th:text="${line}">
+                        Musterstraße 1 12345 Musterort
+                    </span>
+                </div>
+
+                <!-- Daten des Zahlenden -->
+                <div th:if="${transaction.getPaymentRequest().getRequestor() != null}">
+                    <div
+                            th:if="${transaction.getPaymentRequest().getRequestor().getIsOrganization()}"
+                            th:text="${transaction.getPaymentRequest().getRequestor().getOrganizationName()}"
+                    >
+                        Name der Organisation
+                    </div>
+
+                    <div th:unless="${transaction.getPaymentRequest().getRequestor().getIsOrganization()}">
+                        <span th:text="${transaction.getPaymentRequest().getRequestor().getFirstName()}">
+                            Vorname
+                        </span>
+                        <span th:text="${transaction.getPaymentRequest().getRequestor().getName()}">
+                            Nachname
+                        </span>
+                    </div>
+
+                    <div th:if="${transaction.getPaymentRequest().getRequestor().getAddress() != null}">
+                        <div>
+                            <span th:text="${transaction.getPaymentRequest().getRequestor().getAddress().getStreet()}">
+                                Straße
+                            </span>
+                            <span th:text="${transaction.getPaymentRequest().getRequestor().getAddress().getHouseNumber()}">
+                                Hausnummer
+                            </span>
+                        </div>
+
+                        <div>
+                            <span th:text="${transaction.getPaymentRequest().getRequestor().getAddress().getPostalCode()}">
+                                PLZ
+                            </span>
+                            <span th:text="${transaction.getPaymentRequest().getRequestor().getAddress().getCity()}">
+                                Ort
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rechnungsdaten -->
+            <div id="daten">
+                <div>
+                    <strong>Transaktionsnummer</strong><br/>
+                    <span th:text="${transaction.getPaymentInformation().getTransactionId()}">123</span>
+                </div>
+
+                <div>
+                    <strong>Vorgangsschlüssel</strong><br/>
+                    <span th:text="${caseNumber}">ABC</span>
+                </div>
+
+                <div>
+                    <strong>Rechnungsdatum</strong><br/>
+                    <span th:text="${#numberformat.formatISOTimestamp(transaction.getPaymentInformation().getTransactionTimestamp(), 'dd.MM.yyyy')}">
+                        01.01.2000
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div id="date">
+            <span th:text="${#numberformat.formatISOTimestamp(generatedAt, 'dd.MM.yyyy')}">01.01.2000</span>
+        </div>
+
+        <!-- Content -->
+        <div id="content">
+            <h1>
+                Zahlungsbestätigung
+            </h1>
+
+            <p>
+                Guten Tag,
+                <br/>
+                <br/>
+                hiermit bestätigen wir den Erhalt Ihrer Zahlung in Höhe von
+                <span th:text="${#numberformat.format(transaction.getPaymentRequest().getGrosAmount(), 2)}">1234,22</span>
+                Euro vom
+                <span th:text="${#numberformat.formatISOTimestamp(transaction.getPaymentInformation().getTransactionTimestamp(), 'dd.MM.yyyy')}"></span>.
+                <br/>
+                <br/>
+                Mit freundlichen Grüßen <br/>
+                <span th:text="${department.getName()}"></span>
+            </p>
+        </div>
+    </body>
+</html>

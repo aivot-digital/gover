@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.elements.utils;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -179,7 +179,7 @@ public class ElementPOJOMapper {
                     return new LinkedList<>();
                 }
 
-                var sourceList = ObjectMapperFactory
+                var sourceList = JsonMapperFactory
                         .getInstance()
                         .convertValue(valueObj, List.class);
 
@@ -190,7 +190,7 @@ public class ElementPOJOMapper {
                 var resList = new LinkedList<>();
 
                 for (var source : sourceList) {
-                    var res = ObjectMapperFactory
+                    var res = JsonMapperFactory
                             .getInstance()
                             .convertValue(source, genericTypeClass);
 
@@ -201,7 +201,7 @@ public class ElementPOJOMapper {
             }
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .convertValue(valueObj, field.getType());
     }

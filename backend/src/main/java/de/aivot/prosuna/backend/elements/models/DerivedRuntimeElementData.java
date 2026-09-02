@@ -23,6 +23,12 @@ public class DerivedRuntimeElementData implements Serializable {
         this.elementStates = elementStates;
     }
 
+    public static DerivedRuntimeElementData empty() {
+        return new DerivedRuntimeElementData()
+                .setEffectiveValues(new EffectiveElementValues())
+                .setElementStates(new ComputedElementStates());
+    }
+
     // endregion
 
     // region Utilities

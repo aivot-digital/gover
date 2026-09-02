@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {SelectFieldComponent} from '../../../components/select-field-2/select-field-component';
+import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {CodeListsApiService} from '../code-lists-api-service';
 import {CodeList} from '../models/code-list';
 

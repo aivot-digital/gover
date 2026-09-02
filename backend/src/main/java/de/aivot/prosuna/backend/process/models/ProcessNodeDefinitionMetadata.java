@@ -9,6 +9,8 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadIn
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.StepperLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.TabLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -65,6 +67,19 @@ public record ProcessNodeDefinitionMetadata(
                                                                  @Nonnull
                                                                  ProcessNodeEntity origin) {
         return addReusableUiDefinition(new ReusableUiDefinition(label, subLabel, uiDefinition, origin));
+    }
+
+    public ProcessNodeDefinitionMetadata addReusableUiDefinition(@Nonnull
+                                                                 String label,
+                                                                 @Nullable
+                                                                 String subLabel,
+                                                                 @Nonnull
+                                                                 BaseElement uiDefinition,
+                                                                 @Nonnull
+                                                                 ProcessNodeEntity origin,
+                                                                 @Nonnull
+                                                                 ReusableUiDefinitionKind kind) {
+        return addReusableUiDefinition(new ReusableUiDefinition(label, subLabel, uiDefinition, origin, kind));
     }
 
     public ProcessNodeDefinitionMetadata addReusableUiDefinition(ReusableUiDefinition reusableUiDefinition) {
@@ -129,8 +144,10 @@ public record ProcessNodeDefinitionMetadata(
 
         if (layout instanceof FormLayoutElement formLayout) {
             addCompleteFormReusableUiDefinition(formLayout, origin);
-        } else if (layout instanceof GroupLayoutElement groupLayout) {
-            addRootGroupReusableUiDefinition(groupLayout, origin);
+        } else if (layout instanceof GroupLayoutElement ||
+                   layout instanceof StepperLayoutElement ||
+                   layout instanceof TabLayoutElement) {
+            addCompleteUiDefinitionReusableUiDefinition((BaseElement) layout, origin);
         }
 
         ElementStreamUtils.applyActionWithParents((BaseElement) layout, (parents, e) -> {
@@ -171,12 +188,16 @@ public record ProcessNodeDefinitionMetadata(
             }
 
             if (e instanceof GenericStepElement s) {
-                this.addReusableUiDefinition(
-                        resolveStepTitle(s),
-                        null,
-                        createReusableGroupForStep(s),
-                        origin
-                );
+                var kind = resolveReusableUiDefinitionKind(parents);
+                if (kind != null) {
+                    this.addReusableUiDefinition(
+                            resolveStepTitle(s),
+                            null,
+                            createReusableGroupForStep(s),
+                            origin,
+                            kind
+                    );
+                }
             }
         });
 
@@ -207,22 +228,38 @@ public record ProcessNodeDefinitionMetadata(
                 COMPLETE_FORM_LABEL,
                 null,
                 group,
-                origin
+                origin,
+                ReusableUiDefinitionKind.CompleteForm
         );
     }
 
-    private void addRootGroupReusableUiDefinition(@Nonnull GroupLayoutElement groupLayout,
-                                                  @Nonnull ProcessNodeEntity origin) {
-        if (groupLayout.getChildren().isEmpty()) {
+    private void addCompleteUiDefinitionReusableUiDefinition(@Nonnull BaseElement uiDefinition,
+                                                             @Nonnull ProcessNodeEntity origin) {
+        if (!(uiDefinition instanceof LayoutElement<?> layout) || layout.getChildren().isEmpty()) {
             return;
         }
 
         this.addReusableUiDefinition(
-                StringUtils.isNotNullOrEmpty(groupLayout.getName()) ? groupLayout.getName() : FALLBACK_UI_DEFINITION_LABEL,
+                StringUtils.isNotNullOrEmpty(uiDefinition.getName()) ? uiDefinition.getName() : FALLBACK_UI_DEFINITION_LABEL,
                 null,
-                groupLayout,
-                origin
+                uiDefinition,
+                origin,
+                ReusableUiDefinitionKind.UiDefinition
         );
+    }
+
+    @Nullable
+    private static ReusableUiDefinitionKind resolveReusableUiDefinitionKind(@Nonnull List<BaseElement> parents) {
+        if (parents.isEmpty()) {
+            return null;
+        }
+
+        return switch (parents.getLast()) {
+            case FormLayoutElement ignored -> ReusableUiDefinitionKind.FormSection;
+            case StepperLayoutElement ignored -> ReusableUiDefinitionKind.StepperSection;
+            case TabLayoutElement ignored -> ReusableUiDefinitionKind.Tab;
+            default -> null;
+        };
     }
 
     @Nonnull
@@ -287,8 +324,24 @@ public record ProcessNodeDefinitionMetadata(
             @Nonnull
             BaseElement uiDefinition,
             @Nonnull
-            ProcessNodeEntity origin
+            ProcessNodeEntity origin,
+            @Nonnull
+            ReusableUiDefinitionKind kind
     ) {
+        public ReusableUiDefinition(@Nonnull String label,
+                                    @Nullable String subLabel,
+                                    @Nonnull BaseElement uiDefinition,
+                                    @Nonnull ProcessNodeEntity origin) {
+            this(label, subLabel, uiDefinition, origin, ReusableUiDefinitionKind.UiDefinition);
+        }
+    }
+
+    public enum ReusableUiDefinitionKind {
+        CompleteForm,
+        FormSection,
+        UiDefinition,
+        StepperSection,
+        Tab
     }
 
     public record ForwardedAttachmentSet(

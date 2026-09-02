@@ -3,7 +3,7 @@ package de.aivot.prosuna.backend.elements.services;
 import de.aivot.prosuna.backend.codeLists.entities.CodeListEntity;
 import de.aivot.prosuna.backend.codeLists.repositories.CodeListRepository;
 import de.aivot.prosuna.backend.codeLists.repositories.VCodeListItemRepository;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
@@ -166,7 +166,7 @@ public class CodeListElementOptionsService {
 
     @Nonnull
     private <T extends BaseElement> T copy(@Nonnull T element, @Nonnull Class<T> elementType) {
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .convertValue(element, elementType);
     }

@@ -386,7 +386,7 @@ export function ThemeDetailsPageIndex() {
                 >
                     <ImageSelector
                         label="Logo für dunkle Hintergründe"
-                        hint="Optional. Ohne Auswahl wird auch im dunklen Farbschema das Logo für helle Hintergründe verwendet."
+                        hint="Ohne Auswahl wird auch im dunklen Farbschema das Logo für helle Hintergründe verwendet."
                         selectLabel="Logo für dunkle Hintergründe auswählen"
                         value={theme.logoKeyDark ?? null}
                         onChange={(key) => {
@@ -467,23 +467,29 @@ export function ThemeDetailsPageIndex() {
                 <Grid container columnSpacing={3} rowSpacing={3} sx={{
                     alignItems: "stretch"
                 }}>
-                    <ThemeColorPicker
-                        label="Primärfarbe"
-                        value={theme.primaryColor}
-                        contrastTextColor={lightPreviewTheme?.palette.primary.contrastText}
-                        contrastBackgroundColor={lightPreviewTheme?.palette.background.paper}
-                        onChange={handleInputChange('primaryColor')}
-                        disabled={!isEditable}
-                    />
+                    <Grid size={{xs: 12, md: 6}} sx={{minWidth: 0}}>
+                        <ThemeColorPicker
+                            label="Primärfarbe"
+                            value={theme.primaryColor}
+                            contrastTextColor={lightPreviewTheme?.palette.primary.contrastText}
+                            contrastBackgroundColor={lightPreviewTheme?.palette.background.paper}
+                            onChange={handleInputChange('primaryColor')}
+                            disabled={!isEditable}
+                            margin="none"
+                        />
+                    </Grid>
 
-                    <ThemeColorPicker
-                        label="Sekundärfarbe"
-                        value={theme.secondaryColor}
-                        contrastTextColor={lightPreviewTheme?.palette.secondary.contrastText}
-                        contrastBackgroundColor={lightPreviewTheme?.palette.background.paper}
-                        onChange={handleInputChange('secondaryColor')}
-                        disabled={!isEditable}
-                    />
+                    <Grid size={{xs: 12, md: 6}} sx={{minWidth: 0}}>
+                        <ThemeColorPicker
+                            label="Sekundärfarbe"
+                            value={theme.secondaryColor}
+                            contrastTextColor={lightPreviewTheme?.palette.secondary.contrastText}
+                            contrastBackgroundColor={lightPreviewTheme?.palette.background.paper}
+                            onChange={handleInputChange('secondaryColor')}
+                            disabled={!isEditable}
+                            margin="none"
+                        />
+                    </Grid>
 
                     <Grid size={12} sx={{minWidth: 0, mt: 1}}>
                         {lightPreviewTheme != null && (
@@ -532,23 +538,29 @@ export function ThemeDetailsPageIndex() {
                 <Grid container columnSpacing={3} rowSpacing={3} sx={{
                     alignItems: "stretch"
                 }}>
-                    <ThemeColorPicker
-                        label="Primärfarbe"
-                        value={theme.primaryColorDark ?? theme.primaryColor}
-                        contrastTextColor={darkPreviewTheme?.palette.primary.contrastText}
-                        contrastBackgroundColor={darkPreviewTheme?.palette.background.paper}
-                        onChange={handleInputChange('primaryColorDark')}
-                        disabled={!isEditable || !usesDarkModeColors}
-                    />
+                    <Grid size={{xs: 12, md: 6}} sx={{minWidth: 0}}>
+                        <ThemeColorPicker
+                            label="Primärfarbe"
+                            value={theme.primaryColorDark ?? theme.primaryColor}
+                            contrastTextColor={darkPreviewTheme?.palette.primary.contrastText}
+                            contrastBackgroundColor={darkPreviewTheme?.palette.background.paper}
+                            onChange={handleInputChange('primaryColorDark')}
+                            disabled={!isEditable || !usesDarkModeColors}
+                            margin="none"
+                        />
+                    </Grid>
 
-                    <ThemeColorPicker
-                        label="Sekundärfarbe"
-                        value={theme.secondaryColorDark ?? theme.secondaryColor}
-                        contrastTextColor={darkPreviewTheme?.palette.secondary.contrastText}
-                        contrastBackgroundColor={darkPreviewTheme?.palette.background.paper}
-                        onChange={handleInputChange('secondaryColorDark')}
-                        disabled={!isEditable || !usesDarkModeColors}
-                    />
+                    <Grid size={{xs: 12, md: 6}} sx={{minWidth: 0}}>
+                        <ThemeColorPicker
+                            label="Sekundärfarbe"
+                            value={theme.secondaryColorDark ?? theme.secondaryColor}
+                            contrastTextColor={darkPreviewTheme?.palette.secondary.contrastText}
+                            contrastBackgroundColor={darkPreviewTheme?.palette.background.paper}
+                            onChange={handleInputChange('secondaryColorDark')}
+                            disabled={!isEditable || !usesDarkModeColors}
+                            margin="none"
+                        />
+                    </Grid>
 
                     <Grid size={12} sx={{minWidth: 0, mt: 1}}>
                         {darkPreviewTheme != null && (

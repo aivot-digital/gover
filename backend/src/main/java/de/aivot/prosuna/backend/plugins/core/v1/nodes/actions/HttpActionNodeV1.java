@@ -1,11 +1,10 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
@@ -16,6 +15,7 @@ import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.models.*;
@@ -23,11 +23,7 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
-import de.aivot.prosuna.backend.process.services.ProcessDataService;
-import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
-import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
-import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
+import de.aivot.prosuna.backend.process.services.*;
 import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
@@ -43,6 +39,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.core.JacksonException;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -69,6 +66,9 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     private static final String OUTPUT_NAME_STORAGE_PROVIDER_ID = "storageProviderId";
     private static final String OUTPUT_NAME_STORAGE_PATH_FROM_ROOT = "storagePathFromRoot";
     private static final String OUTPUT_NAME_FILES = "files";
+    private static final String OUTPUT_HEADERS_TYPE_DEFINITION = "Record<string, Array<string>>";
+    private static final String OUTPUT_FILES_TYPE_DEFINITION =
+            "Array<{ name: string; originalFileName: string; uri: string; size: number; }>";
 
     private static final Set<String> SUPPORTED_METHODS = Set.of(
             HttpActionNodeV1Config.HTTP_METHOD_OPT_GET,
@@ -155,14 +155,30 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Externer HTTP Aufruf";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Führt HTTP-Requests zu externen Systemen durch.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Führt einen konfigurierten HTTP-Aufruf zu einem externen System aus und bereitet die Antwort für den weiteren Prozess auf.
+
+                Unterstützt werden unterschiedliche HTTP-Methoden, Authentifizierungsarten sowie JSON-, Formular- und Dateiinhalte. Antwortstatus, Header und verarbeiteter Inhalt werden als Ausgänge bereitgestellt; Dateiantworten können zusätzlich als Vorgangsanlagen gespeichert werden.
+                """;
     }
 
     @Nonnull
@@ -203,17 +219,17 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_NAME_STATUS_CODE, "HTTP-Statuscode", "Der Statuscode der HTTP-Antwort."),
-                new ProcessNodeOutput(OUTPUT_NAME_HEADERS, "HTTP-Header", "Die Header der HTTP-Antwort."),
-                new ProcessNodeOutput(OUTPUT_NAME_RAW_BODY, "Antwort-Rohtext", "Der Antwort-Body als Text für JSON- und Text-Antworten."),
-                new ProcessNodeOutput(OUTPUT_NAME_PROCESSED_RESPONSE, "Verarbeitete Antwort", "Die verarbeitete Antwort für JSON- und Text-Antworten."),
-                new ProcessNodeOutput(OUTPUT_NAME_FILE_NAME, "Dateiname", "Der Dateiname der gespeicherten Antwortdatei."),
-                new ProcessNodeOutput(OUTPUT_NAME_MIME_TYPE, "MIME-Typ", "Der MIME-Typ der gespeicherten Antwortdatei."),
-                new ProcessNodeOutput(OUTPUT_NAME_SIZE_BYTES, "Dateigröße", "Die Größe der gespeicherten Antwortdatei in Bytes."),
-                new ProcessNodeOutput(OUTPUT_NAME_ATTACHMENT_KEY, "Anhang-Schlüssel", "Der Schlüssel des gespeicherten Prozess-Anhangs."),
-                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PROVIDER_ID, "Speicheranbieter", "Die ID des Speicheranbieters des gespeicherten Prozess-Anhangs."),
-                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, "Speicherpfad", "Der Speicherpfad des gespeicherten Prozess-Anhangs."),
-                new ProcessNodeOutput(OUTPUT_NAME_FILES, "Dateien", "Die gespeicherten Antwortdateien im Format des Datei-Anlagen-Feldes.")
+                new ProcessNodeOutput(OUTPUT_NAME_STATUS_CODE, "HTTP-Statuscode", "Der Statuscode der HTTP-Antwort.", "number"),
+                new ProcessNodeOutput(OUTPUT_NAME_HEADERS, "HTTP-Header", "Die Header der HTTP-Antwort.", OUTPUT_HEADERS_TYPE_DEFINITION),
+                new ProcessNodeOutput(OUTPUT_NAME_RAW_BODY, "Antwort-Rohtext", "Der Antwort-Body als Text für JSON- und Text-Antworten.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_PROCESSED_RESPONSE, "Verarbeitete Antwort", "Die verarbeitete Antwort für JSON- und Text-Antworten.", "unknown"),
+                new ProcessNodeOutput(OUTPUT_NAME_FILE_NAME, "Dateiname", "Der Dateiname der gespeicherten Antwortdatei.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_MIME_TYPE, "MIME-Typ", "Der MIME-Typ der gespeicherten Antwortdatei.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_SIZE_BYTES, "Dateigröße", "Die Größe der gespeicherten Antwortdatei in Bytes.", "number | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_ATTACHMENT_KEY, "Anhang-Schlüssel", "Der Schlüssel des gespeicherten Prozess-Anhangs.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PROVIDER_ID, "Speicheranbieter", "Die ID des Speicheranbieters des gespeicherten Prozess-Anhangs.", "number | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, "Speicherpfad", "Der Speicherpfad des gespeicherten Prozess-Anhangs.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_FILES, "Dateien", "Die gespeicherten Antwortdateien im Format des Datei-Anlagen-Feldes.", OUTPUT_FILES_TYPE_DEFINITION)
         );
     }
 
@@ -397,7 +413,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         Object processedResponse;
         try {
             processedResponse = parseResponseBody(responseType, rawBody);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     e,
                     "Die HTTP-Antwort konnte nicht als %s verarbeitet werden werden: %s",
@@ -563,7 +579,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
         var jsonSource = StringUtils.toNullableTrimmedString(jsonConfig.requestJsonSource);
         if (Objects.equals(jsonSource, HttpActionNodeV1Config.RequestData.RequestContentTypeJsonConfig.REQUEST_JSON_SOURCE_OPT_LOWCODE)) {
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getInstance()
                     .writeValueAsString(normalizeJsonCompatible(evaluateRequestCode(context, jsonConfig.requestJsonLowCode)));
         }
@@ -576,7 +592,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         }
 
         var payload = resolveConfiguredProcessDataValue(context, jsonConfig.requestJsonProcessDataKey);
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .writeValueAsString(payload);
     }
@@ -736,7 +752,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
     @Nullable
     private Object parseResponseBody(@Nonnull String responseType,
-                                     @Nullable String rawBody) throws JsonProcessingException {
+                                     @Nullable String rawBody) throws JacksonException {
         if (HttpActionNodeV1Config.ResponseConfig.RESPONSE_BODY_TYPE_OPT_TEXT.equals(responseType)) {
             return rawBody;
         }
@@ -745,7 +761,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .readValue(rawBody, Object.class);
     }
@@ -955,11 +971,11 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             return null;
         }
 
-        byte[] serialized = ObjectMapperFactory
+        byte[] serialized = JsonMapperFactory
                 .getInstance()
                 .writeValueAsBytes(value);
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .readValue(serialized, Object.class);
     }

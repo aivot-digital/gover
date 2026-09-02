@@ -6,12 +6,16 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import React, {useMemo} from 'react';
 import {ElementType} from '../../data/element-type/element-type';
+import {FormField, type FormFieldLayoutProps, getNativeInputAriaProps} from '../form-field';
+import {formFieldInputRootSx} from '../../theming/form-field-tokens';
 
-interface AutocompleteSelectProps {
+interface AutocompleteSelectProps extends FormFieldLayoutProps {
     type: ElementType;
     value: string | null | undefined;
     onChange: (value: string | undefined) => void;
     editable: boolean;
+    label?: string;
+    hint?: string;
 }
 
 export function AutocompleteSelect(props: AutocompleteSelectProps) {
@@ -29,55 +33,73 @@ export function AutocompleteSelect(props: AutocompleteSelectProps) {
     const selectedAttribute = useMemo(() => {
         return HtmlAutofillAttributeOptions.find(item => item.value === value) ?? null;
     }, [value]);
+    const label = props.label ?? 'Automatisches Ausfüllen durch den Browser (Autocomplete)';
+    const hint = props.hint ?? 'Legen Sie fest, welches Datenfeld der Browser zur Autovervollständigung vorschlagen soll (z. B. Name, E-Mail). Vorschläge sind browserabhängig.';
 
     return (
-        <Autocomplete
-            id="autocomplete-select"
-            value={selectedAttribute}
-            onChange={(_, val) => {
-                onChange(val?.value ?? undefined);
-            }}
-            options={autofillOptions}
-            autoHighlight
-            getOptionLabel={(option) => option.label + ' (' + option.value + ')'}
-            renderOption={({key, ...props}, option) => (
-                <Box
-                    key={key}
-                    component="li"
-                    sx={{display: 'block!important'}} {...props}>
-                    <Typography
-                        component={'div'}
-                        variant="body1"
-                    >
-                        <b>{option.label}</b>{' '}
-                        ({option.value})
-                    </Typography>
-                    <Typography
-                        component={'div'}
-                        variant="caption"
-                        color="textSecondary"
-                        sx={{maxWidth: 740, my: 0}}
-                    >
-                        {option.description}
-                    </Typography>
-                </Box>
-            )}
-            renderInput={(params) => (
-                <TextField
-                    {...params}
-                    label="Automatisches Ausfüllen durch den Browser (Autocomplete)"
-                    helperText={'Legen Sie fest, welches Datenfeld der Browser zur Autovervollständigung vorschlagen soll (z. B. Name, E-Mail). Vorschläge sind browserabhängig.'}
-                    slotProps={{
-                        ...params.slotProps,
-
-                        htmlInput: {
-                            ...params.slotProps.htmlInput,
-                            autoComplete: 'new-password', // disable autocomplete and autofill
-                        }
+        <FormField
+            id={props.id}
+            label={label}
+            hint={hint}
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            disabled={!editable}
+            margin={props.margin}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
+        >
+            {(field) => (
+                <Autocomplete
+                    id={field.controlId}
+                    value={selectedAttribute}
+                    onChange={(_, val) => {
+                        onChange(val?.value ?? undefined);
                     }}
+                    options={autofillOptions}
+                    autoHighlight
+                    sx={{
+                        '& .MuiInputBase-root': formFieldInputRootSx,
+                    }}
+                    getOptionLabel={(option) => option.label + ' (' + option.value + ')'}
+                    renderOption={({key, ...optionProps}, option) => (
+                        <Box
+                            key={key}
+                            component="li"
+                            sx={{display: 'block!important'}}
+                            {...optionProps}
+                        >
+                            <Typography component="div" variant="body1">
+                                <b>{option.label}</b>{' '}({option.value})
+                            </Typography>
+                            <Typography
+                                component="div"
+                                variant="caption"
+                                color="textSecondary"
+                                sx={{maxWidth: 740, my: 0}}
+                            >
+                                {option.description}
+                            </Typography>
+                        </Box>
+                    )}
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            size="small"
+                            margin="none"
+                            slotProps={{
+                                ...params.slotProps,
+                                htmlInput: {
+                                    ...params.slotProps.htmlInput,
+                                    ...getNativeInputAriaProps(field, params.slotProps.htmlInput),
+                                    autoComplete: 'new-password',
+                                },
+                            }}
+                        />
+                    )}
+                    disabled={!editable}
                 />
             )}
-            disabled={!editable}
-        />
+        </FormField>
     );
 }

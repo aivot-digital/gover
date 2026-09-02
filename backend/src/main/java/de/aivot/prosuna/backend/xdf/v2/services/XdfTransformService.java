@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.xdf.v2.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
@@ -28,6 +27,7 @@ import de.aivot.prosuna.backend.xrepository.services.XRepositoryCodeListService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -38,9 +38,11 @@ import java.util.regex.Pattern;
 @Service
 public class XdfTransformService {
     private final XRepositoryCodeListService xRepositoryCodeListService;
+    private final JsonMapper jsonMapper;
 
-    public XdfTransformService(XRepositoryCodeListService xRepositoryCodeListService) {
+    public XdfTransformService(XRepositoryCodeListService xRepositoryCodeListService, JsonMapper jsonMapper) {
         this.xRepositoryCodeListService = xRepositoryCodeListService;
+        this.jsonMapper = jsonMapper;
     }
 
     @Nullable
@@ -486,8 +488,7 @@ public class XdfTransformService {
             return null;
         }
 
-        var om = new ObjectMapper();
-        return om.readValue(raw, XdfPraezisierung.class);
+        return jsonMapper.readValue(raw, XdfPraezisierung.class);
     }
 
     private ElementValidationFunctions getValidateFunc(@Nonnull String fieldId,

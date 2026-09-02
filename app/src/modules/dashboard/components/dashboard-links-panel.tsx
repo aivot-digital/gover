@@ -6,13 +6,13 @@ import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForw
 import MenuBook from '@aivot/mui-material-symbols-400-n25-outlined/MenuBook';
 import SupportAgent from '@aivot/mui-material-symbols-400-n25-outlined/SupportAgent';
 import ReadinessScore from '@aivot/mui-material-symbols-400-n25-outlined/ReadinessScore';
-import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {useApi} from '../../../hooks/use-api';
 import {CustomLinksApiService} from '../../custom-links/custom-links-api-service';
 import {type CustomLink, CustomLinkType} from '../../custom-links/models/custom-link';
 import {getCustomLinkIcon} from '../../custom-links/data/custom-link-icons';
 import {type SvgIconComponent} from '../../../types/svg-icon-component';
 import {DashboardPanel} from './dashboard-panel';
+import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import {Permission} from '../../../data/permissions/permission';
 import {useHasSystemPermission} from '../../permissions/hooks/use-permissions';
 import Balancer from 'react-wrap-balancer';
@@ -147,7 +147,12 @@ function OrganizationLinksPanel({links, canCreate}: {links: CustomLink[]; canCre
                                 Hinterlegen Sie interne Leitfäden, das Intranet, eine Statusseite oder andere häufig genutzte Dienste.
                             </Balancer>
                         </Typography>
-                        <Button component={RouterLink} to="/settings/dashboard" startIcon={<Add/>} sx={{mt: 2}}>
+                        <Button
+                            component={RouterLink}
+                            to="/settings/dashboard"
+                            startIcon={ModuleIcons.dashboardSettings}
+                            sx={{mt: 2}}
+                        >
                             Links konfigurieren
                         </Button>
                     </Box>

@@ -70,7 +70,7 @@ describe('ProcessDataVariableField', () => {
 
         await user.click(screen.getByLabelText('Vorgangsdatenvariable auswählen'));
         await user.type(
-            screen.getByLabelText('Vorgangsdatenpfad durchsuchen oder neu anlegen'),
+            screen.getByRole('textbox', {name: /^Vorgangsdatenpfad durchsuchen oder neu anlegen/}),
             'protokoll.neuerZaehler',
         );
         expect(screen.getByText('Übernehmen').closest('button')).toBeDisabled();

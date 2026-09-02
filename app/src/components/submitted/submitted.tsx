@@ -1,4 +1,4 @@
-import {Box, Button, Container, Divider, Grid, Link, Typography, useTheme} from '@mui/material';
+import {Box, Button, CircularProgress, Container, Divider, Grid, Link, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {Preamble} from '../preamble/preamble';
 import {showDialog} from '../../slices/app-slice';
@@ -13,27 +13,32 @@ import EmailOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Mail
 import PictureAsPdfOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/PictureAsPdf';
 import PaymentOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CreditCard';
 import CheckCircleTwoToneIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import {Rating} from '../rating/rating';
 import {AlertComponent} from '../alert/alert-component';
 import qrcode from 'qrcode';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submission-status-response-dto';
-import {createApiPath} from '../../utils/url-path-utils';
 import {ElementType} from '../../data/element-type/element-type';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {
-    CanvasConfettiOverlay,
-    prosunaConfettiColors,
-} from '../confetti/canvas-confetti-overlay';
+import {CanvasConfettiOverlay, prosunaConfettiColors} from '../confetti/canvas-confetti-overlay';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
 import {ProcessEntity} from '../../modules/process/entities/process-entity';
 import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
 import {FormDepartmentAddresses} from '../form-department-addresses/form-department-addresses';
+import {
+    CustomerTaskViewApiService,
+} from '../../pages/customer-pages/customer-instance-view/customer-task-view-api-service';
+import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-api-service';
+import {downloadBlobFile} from '../../utils/download-utils';
+import {ProcessTaskStatus} from '../../modules/process/enums/process-task-status';
+import {ProcessInstanceStatus} from '../../modules/process/enums/process-instance-status';
 
 interface SubmittedProps {
     startedProcessAccessKey: string;
+    paymentRequired: boolean;
     formElement: FormLayoutElement;
     node: ProcessNodeEntity;
     process: ProcessEntity;
@@ -63,7 +68,11 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
 export function Submitted(props: SubmittedProps) {
     const {
         formElement,
+        node,
+        paymentRequired,
+        process,
         startedProcessAccessKey,
+        version,
     } = props;
 
     const theme = useTheme();
@@ -75,6 +84,10 @@ export function Submitted(props: SubmittedProps) {
 
     const [qrCode, setQrCode] = useState<string>();
     const [confettiPlayKey, setConfettiPlayKey] = useState<number | null>(null);
+    const [formTaskAccessKey, setFormTaskAccessKey] = useState<string>();
+    const [processFailed, setProcessFailed] = useState(false);
+    const [isPrintDownloadPending, setIsPrintDownloadPending] = useState(false);
+    const SubmittedStatusIcon = processFailed ? ErrorOutlineOutlinedIcon : CheckCircleTwoToneIcon;
 
     useEffect(() => {
         const trimmedAccessKey = startedProcessAccessKey.trim();
@@ -109,6 +122,70 @@ export function Submitted(props: SubmittedProps) {
 
     const dispatch = useAppDispatch();
 
+    useEffect(() => {
+        const trimmedAccessKey = startedProcessAccessKey.trim();
+        setFormTaskAccessKey(undefined);
+        setProcessFailed(false);
+
+        if (trimmedAccessKey.length === 0) {
+            return;
+        }
+
+        let isCancelled = false;
+        let intervalId: ReturnType<typeof setInterval> | undefined;
+
+        const fetchFirstTask = () => {
+            new CustomerTaskViewApiService()
+                .getInstanceStatus(trimmedAccessKey)
+                .then((res) => {
+                    if (isCancelled) {
+                        return;
+                    }
+
+                    if (res.status === ProcessInstanceStatus.Failed) {
+                        setProcessFailed(true);
+                        setFormTaskAccessKey(undefined);
+                        if (intervalId != null) {
+                            clearInterval(intervalId);
+                        }
+                        return;
+                    }
+
+                    const firstTask = res.tasks?.[0];
+                    const isPrintReady = firstTask?.status === ProcessTaskStatus.AwaitingPayment ||
+                        firstTask?.status === ProcessTaskStatus.Completed;
+                    if (isPrintReady) {
+                        setFormTaskAccessKey(firstTask.accessKey);
+                        if (intervalId != null) {
+                            clearInterval(intervalId);
+                        }
+                    }
+                })
+                .catch((err) => {
+                    console.error(err);
+
+                    if (isCancelled) {
+                        return;
+                    }
+
+                    if (intervalId != null) {
+                        clearInterval(intervalId);
+                    }
+                    dispatch(showErrorSnackbar('Die Druckversion konnte nicht vorbereitet werden. Bitte versuchen Sie es später erneut.'));
+                });
+        };
+
+        fetchFirstTask();
+        intervalId = setInterval(fetchFirstTask, 1000);
+
+        return () => {
+            isCancelled = true;
+            if (intervalId != null) {
+                clearInterval(intervalId);
+            }
+        };
+    }, [dispatch, startedProcessAccessKey]);
+
     const [email, setEmail] = useState('');
     const [privacy, setPrivacy] = useState(false);
     const [privacyError, setPrivacyError] = useState<string>();
@@ -117,6 +194,35 @@ export function Submitted(props: SubmittedProps) {
     const setMailErrorWithSnackbar = useSetMailErrorWithSnackbar(setMailError);
     const [mailSent, setMailSent] = useState(false);
     const [showMailSentDialog, setShowMailSentDialog] = useState(false);
+    const paymentTaskPath = processFailed || formTaskAccessKey == null ?
+        undefined :
+        `/process/${encodeURIComponent(startedProcessAccessKey.trim())}/tasks/${encodeURIComponent(formTaskAccessKey)}`;
+
+    const downloadSubmittedPrint = (): void => {
+        const formSlug = node.configuration.formSlug;
+        if (processFailed || typeof formSlug !== 'string' || formSlug.trim().length === 0 || formTaskAccessKey == null) {
+            return;
+        }
+
+        setIsPrintDownloadPending(true);
+        new FormTriggerApiService()
+            .downloadSubmittedSummaryPdf(
+                process.slug,
+                formSlug.trim(),
+                startedProcessAccessKey,
+                formTaskAccessKey,
+                version.processVersion,
+            )
+            .then((blob) => {
+                downloadBlobFile('Antrag.pdf', blob);
+            })
+            .catch(() => {
+                dispatch(showErrorSnackbar('Der Antrag konnte nicht als PDF heruntergeladen werden. Bitte versuchen Sie es später erneut.'));
+            })
+            .finally(() => {
+                setIsPrintDownloadPending(false);
+            });
+    };
 
     const sendApplicationCopyMail = (): void => {
         if (status != null) {
@@ -187,11 +293,11 @@ export function Submitted(props: SubmittedProps) {
                         m: 0,
                     }}
                 >
-                    Angaben erfolgreich übermittelt
+                    {processFailed ? 'Verarbeitung fehlgeschlagen' : 'Angaben erfolgreich übermittelt'}
                 </Typography>
-                <CheckCircleTwoToneIcon
+                <SubmittedStatusIcon
                     sx={{
-                        color: theme.palette.primary.main,
+                        color: processFailed ? theme.palette.error.main : theme.palette.primary.main,
                         flexShrink: 0,
                         mt: -0.75,
                         ml: 0.75,
@@ -199,6 +305,18 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 />
             </Box>
+
+            {
+                processFailed &&
+                <AlertComponent
+                    color="error"
+                    title="Ihr Antrag konnte nicht verarbeitet werden"
+                    sx={{my: 0, mb: 4}}
+                >
+                    Bei der Verarbeitung Ihres Antrags ist ein Fehler aufgetreten. Bitte wenden Sie sich an die
+                    zuständige Stelle. Die Kontaktdaten finden Sie unten.
+                </AlertComponent>
+            }
 
             {
                 status != null &&
@@ -255,7 +373,8 @@ export function Submitted(props: SubmittedProps) {
                                 }}
                             >
                                 <a
-                                    href={status.paymentProviderUrl}
+                                    href={processFailed ? undefined : status.paymentProviderUrl}
+                                    aria-disabled={processFailed}
                                     target={'_blank'}
                                 >
                                     <img
@@ -270,7 +389,8 @@ export function Submitted(props: SubmittedProps) {
                             <Button
                                 component="a"
                                 variant="contained"
-                                href={status.paymentProviderUrl}
+                                href={processFailed ? undefined : status.paymentProviderUrl}
+                                disabled={processFailed}
                                 size={'large'}
                                 startIcon={<PaymentOutlinedIcon
                                     sx={{marginTop: '-2px'}}
@@ -338,8 +458,56 @@ export function Submitted(props: SubmittedProps) {
                 variant="grid"
             />
             {
-                status != null &&
-                !status.accessExpired &&
+                paymentRequired &&
+                <Box
+                    sx={{
+                        mt: 4,
+                        maxWidth: 800,
+                    }}
+                >
+                    <AlertComponent
+                        color="warning"
+                        title="Zahlung erforderlich"
+                        sx={{my: 0}}
+                    >
+                        <p>
+                            Für Ihren Antrag ist eine Zahlung erforderlich. Öffnen Sie die Zahlungsaufgabe, um
+                            fortzufahren.
+                        </p>
+
+                        {
+                            paymentTaskPath == null ?
+                                <Button
+                                    variant="contained"
+                                    disabled
+                                    startIcon={
+                                        processFailed ?
+                                            <PaymentOutlinedIcon sx={{marginTop: '-2px'}}/> :
+                                            <CircularProgress
+                                                color="inherit"
+                                                size={18}
+                                            />
+                                    }
+                                >
+                                    {processFailed ? 'Zahlung nicht verfügbar' : 'Zahlung wird vorbereitet'}
+                                </Button> :
+                                <Button
+                                    component="a"
+                                    variant="contained"
+                                    href={paymentTaskPath}
+                                    disabled={processFailed}
+                                    startIcon={<PaymentOutlinedIcon
+                                        sx={{marginTop: '-2px'}}
+                                    />}
+                                >
+                                    Zur Zahlung
+                                </Button>
+                        }
+                    </AlertComponent>
+                </Box>
+            }
+            {
+                (status == null || !status.accessExpired) &&
                 <Grid
                     container
                     columnSpacing={6}
@@ -351,7 +519,7 @@ export function Submitted(props: SubmittedProps) {
                     <Grid
                         size={{
                             xs: 12,
-                            md: 6,
+                            md: status == null ? 12 : 6,
                         }}
                     >
                         <Typography
@@ -374,75 +542,90 @@ export function Submitted(props: SubmittedProps) {
 
                         <Button
                             variant="contained"
-                            startIcon={<PictureAsPdfOutlinedIcon
-                                sx={{marginTop: '-2px'}}
-                            />}
-                            component="a"
-                            target="_blank"
-                            href={createApiPath(`/api/public/prints/${status.submissionId}`)}
+                            startIcon={
+                                isPrintDownloadPending ?
+                                    <CircularProgress
+                                        color="inherit"
+                                        size={18}
+                                    /> :
+                                    <PictureAsPdfOutlinedIcon
+                                        sx={{marginTop: '-2px'}}
+                                    />
+                            }
+                            onClick={downloadSubmittedPrint}
                             size="large"
+                            disabled={processFailed || formTaskAccessKey == null || isPrintDownloadPending}
                         >
-                            Antrag als PDF herunterladen
+                            {
+                                processFailed ?
+                                    'PDF nicht verfügbar' :
+                                    formTaskAccessKey == null ?
+                                    'PDF wird vorbereitet' :
+                                    'Antrag als PDF herunterladen'
+                            }
                         </Button>
                     </Grid>
-                    <Grid
-                        size={{
-                            xs: 12,
-                            md: 6,
-                        }}
-                    >
-                        <Typography
-                            component="h3"
-                            variant="h5"
-                        >
-                            Antrag per E-Mail erhalten
-                        </Typography>
-
-                        <Typography
-                            sx={{
-                                mt: 1,
-                                mb: 2.4,
+                    {
+                        status != null &&
+                        <Grid
+                            size={{
+                                xs: 12,
+                                md: 6,
                             }}
-                            variant={'body2'}
                         >
-                            Lassen Sie sich Ihren eingereichten Antrag durch das Ausfüllen des folgenden Formulars an
-                            die
-                            von Ihnen angegebene E-Mail-Adresse zusenden.
-                        </Typography>
+                            <Typography
+                                component="h3"
+                                variant="h5"
+                            >
+                                Antrag per E-Mail erhalten
+                            </Typography>
 
-                        <TextFieldComponent
-                            label="E-Mail-Adresse"
-                            placeholder="name@beispiel.de"
-                            value={email}
-                            disabled={status.copySent || mailSent}
-                            onChange={(val) => {
-                                setEmail(val ?? '');
-                            }}
-                            required
-                            error={mailError}
-                        />
+                            <Typography
+                                sx={{
+                                    mt: 1,
+                                    mb: 2.4,
+                                }}
+                                variant={'body2'}
+                            >
+                                Lassen Sie sich Ihren eingereichten Antrag durch das Ausfüllen des folgenden Formulars an
+                                die
+                                von Ihnen angegebene E-Mail-Adresse zusenden.
+                            </Typography>
 
-                        <CheckboxFieldComponent
-                            label="Ich erteile mein Einverständnis, dass der Antrag per unverschlüsselter E-Mail versandt wird."
-                            value={privacy}
-                            onChange={setPrivacy}
-                            error={privacyError}
-                            disabled={status.copySent || mailSent}
-                        />
+                            <TextFieldComponent
+                                label="E-Mail-Adresse"
+                                placeholder="name@beispiel.de"
+                                value={email}
+                                disabled={status.copySent || mailSent}
+                                onChange={(val) => {
+                                    setEmail(val ?? '');
+                                }}
+                                required
+                                error={mailError}
+                            />
 
-                        <Button
-                            sx={{mt: 4}}
-                            variant="contained"
-                            startIcon={<EmailOutlinedIcon
-                                sx={{marginTop: '-2px'}}
-                            />}
-                            onClick={sendApplicationCopyMail}
-                            size={'large'}
-                            disabled={status.copySent || mailSent}
-                        >
-                            Antrag per E-Mail erhalten
-                        </Button>
-                    </Grid>
+                            <CheckboxFieldComponent
+                                label="Ich erteile mein Einverständnis, dass der Antrag per unverschlüsselter E-Mail versandt wird."
+                                value={privacy}
+                                onChange={setPrivacy}
+                                error={privacyError}
+                                disabled={status.copySent || mailSent}
+                            />
+
+                            <Button
+                                sx={{mt: 4}}
+                                variant="contained"
+                                startIcon={<EmailOutlinedIcon
+                                    sx={{marginTop: '-2px'}}
+                                />}
+                                onClick={sendApplicationCopyMail}
+                                size={'large'}
+                                disabled={status.copySent || mailSent}
+                            >
+                                Antrag per E-Mail erhalten
+                            </Button>
+                        </Grid>
+                    }
                 </Grid>
             }
             {
@@ -508,7 +691,7 @@ export function Submitted(props: SubmittedProps) {
                 />
             </Box>
             <CanvasConfettiOverlay
-                playKey={confettiPlayKey}
+                playKey={processFailed ? null : confettiPlayKey}
                 colors={prosunaConfettiColors}
             />
 

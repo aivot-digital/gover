@@ -8,6 +8,7 @@ import {
     Box,
     Chip,
     Divider,
+    Stack,
     Typography,
 } from '@mui/material';
 import ExpandMore from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
@@ -24,6 +25,7 @@ import {
     getProcessNodeProviderIcon,
     ProcessNodeProviderDetailsContent,
 } from '../components/process-node-provider-details';
+import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
 
 const PROCESS_NODE_TYPE_ORDER = [
     ProcessNodeType.Trigger,
@@ -76,7 +78,7 @@ function getFilteredNodeProviders(
     return filter == null ? nodeProviders : nodeProviders.filter(filter);
 }
 
-function getSearchedNodeProviders(
+export function getSearchedNodeProviders(
     nodeProviders: ProcessNodeProvider[],
     search: string,
 ): ProcessNodeProvider[] {
@@ -89,11 +91,12 @@ function getSearchedNodeProviders(
         threshold: 0.32,
         ignoreLocation: true,
         keys: [
-            {name: 'name', weight: 0.45},
-            {name: 'description', weight: 0.25},
-            {name: 'key', weight: 0.1},
-            {name: 'componentKey', weight: 0.1},
-            {name: 'parentPluginKey', weight: 0.1},
+            {name: 'name', weight: 0.4},
+            {name: 'abstractDescription', weight: 0.25},
+            {name: 'description', weight: 0.15},
+            {name: 'key', weight: 0.075},
+            {name: 'componentKey', weight: 0.075},
+            {name: 'parentPluginKey', weight: 0.05},
         ],
     });
 
@@ -402,11 +405,11 @@ function SelectNodeProviderDialogRow(props: SelectNodeProviderDialogRowProps): R
             titleAdornment={(
                 <Chip
                     size="small"
-                    label={`Version ${provider.majorVersion}`}
+                    label={`Version ${provider.componentVersion}`}
                     sx={{flexShrink: 0}}
                 />
             )}
-            description={provider.description}
+            description={provider.abstractDescription}
             selected={isSelected}
             primaryActionLabel={primaryActionLabel}
             primaryActionIcon={primaryActionIcon}
@@ -449,19 +452,28 @@ function SelectNodeProviderDetails(props: SelectNodeProviderDetailsProps): React
             label={typeLabel}
             title={provider.name}
             titleAdornment={(
-                <Chip
-                    size="small"
-                    label={`Version ${provider.majorVersion}`}
-                    sx={{flexShrink: 0}}
-                />
+                <Stack direction="row" spacing={1} useFlexGap sx={{flexWrap: 'wrap'}}>
+                    <Chip
+                        size="small"
+                        label={`Version ${provider.componentVersion}`}
+                        sx={{flexShrink: 0}}
+                    />
+                    <Chip
+                        size="small"
+                        label={isStringNotNullOrEmpty(provider.deprecationNotice) ? 'Veraltet' : 'Aktiv'}
+                        color={isStringNotNullOrEmpty(provider.deprecationNotice) ? 'warning' : 'success'}
+                        variant="outlined"
+                        sx={{flexShrink: 0}}
+                    />
+                </Stack>
             )}
-            description={provider.description}
+            description={provider.abstractDescription}
             primaryActionLabel={primaryActionLabel}
             primaryActionIcon={primaryActionIcon}
             onPrimaryAction={onAdd}
             onClose={onClose}
         >
-            <ProcessNodeProviderDetailsContent provider={provider}/>
+            <ProcessNodeProviderDetailsContent provider={provider} showDescription/>
         </SelectionDetailsPanel>
     );
 }

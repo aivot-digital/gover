@@ -1,10 +1,9 @@
 package de.aivot.prosuna.backend.core.jackson;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.prosuna.backend.JacksonConfiguration;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.JsonMapperConfiguration;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalTime;
 
@@ -13,17 +12,26 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class LocalTimeJsonContractTest {
     @Test
     void objectMapperFactoryShouldSerializeLocalTimeWithSeconds() throws Exception {
-        assertSerializesWithSeconds(ObjectMapperFactory.getInstance());
+        assertSerializesWithSeconds(JsonMapperFactory.getInstance());
     }
 
     @Test
     void springMapperShouldSerializeLocalTimeWithSeconds() throws Exception {
-        assertSerializesWithSeconds(springMapper());
+        var mapper = JsonMapperFactory.getInstance();
+
+        assertEquals(
+                "{\"time\":\"09:30:00\"}",
+                mapper.writeValueAsString(new TimePayload(LocalTime.of(9, 30)))
+        );
+        assertEquals(
+                "{\"time\":\"09:30:15\"}",
+                mapper.writeValueAsString(new TimePayload(LocalTime.of(9, 30, 15, 123_000_000)))
+        );
     }
 
     @Test
     void shouldAcceptMinuteAndSecondInput() throws Exception {
-        var mapper = ObjectMapperFactory.getInstance();
+        var mapper = springMapper();
 
         assertEquals(
                 LocalTime.of(9, 30),
@@ -35,7 +43,7 @@ class LocalTimeJsonContractTest {
         );
     }
 
-    private void assertSerializesWithSeconds(ObjectMapper mapper) throws Exception {
+    private void assertSerializesWithSeconds(JsonMapper mapper) throws Exception {
         assertEquals(
                 "{\"time\":\"09:30:00\"}",
                 mapper.writeValueAsString(new TimePayload(LocalTime.of(9, 30)))
@@ -46,9 +54,9 @@ class LocalTimeJsonContractTest {
         );
     }
 
-    private ObjectMapper springMapper() {
-        var builder = Jackson2ObjectMapperBuilder.json();
-        new JacksonConfiguration()
+    private JsonMapper springMapper() {
+        var builder = JsonMapper.builder();
+        new JsonMapperConfiguration()
                 .customJacksonSerializers()
                 .customize(builder);
         return builder.build();

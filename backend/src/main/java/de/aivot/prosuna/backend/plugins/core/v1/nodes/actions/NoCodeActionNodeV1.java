@@ -23,6 +23,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -64,6 +65,9 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
     private static final String OUTPUT_NAME_VARIABLES = "variables";
     private static final String OUTPUT_NAME_VARIABLE_COUNT = "variableCount";
+    private static final String OUTPUT_VARIABLES_TYPE_DEFINITION =
+            "Array<{ rowIndex: number; configuredPath: string; resolvedPath: string; wildcardIndices: Array<number>; " +
+                    "targetType: \"any\" | \"string\" | \"number\" | \"boolean\" | \"date\" | \"time\" | \"datetime\"; value: unknown; }>";
 
     private static final String TARGET_TYPE_ANY = "any";
     private static final String TARGET_TYPE_STRING = "string";
@@ -107,14 +111,30 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "No-Code ausführen";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Führt benutzerdefinierte No-Code-Ausdrücke aus.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Wertet eine Liste konfigurierter No-Code-Ausdrücke aus und schreibt deren Ergebnisse in die Vorgangsdaten.
+
+                Für jedes Ergebnis werden Zielpfad, erwarteter Datentyp und Ausdruck festgelegt. Dadurch können Vorgangsdaten ohne eigenen JavaScript-Code berechnet, umgewandelt oder ergänzt werden; die ausgeführten Zuweisungen stehen zusätzlich als Elementausgänge bereit.
+                """;
     }
 
     @Nonnull
@@ -177,12 +197,14 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VARIABLES,
                         "Variablen",
-                        "Die berechneten Variablen als Liste aufgelöster Zielpfade."
+                        "Die berechneten Variablen als Liste aufgelöster Zielpfade.",
+                        OUTPUT_VARIABLES_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VARIABLE_COUNT,
                         "Anzahl Variablen",
-                        "Die Anzahl der tatsächlich geschriebenen Zielwerte."
+                        "Die Anzahl der tatsächlich geschriebenen Zielwerte.",
+                        "number"
                 )
         );
     }

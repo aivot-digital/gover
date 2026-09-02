@@ -20,6 +20,7 @@ import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOpe
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -61,6 +62,8 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
     private static final String OUTPUT_NAME_STORAGE_PROVIDER_ID = "storageProviderId";
     private static final String OUTPUT_NAME_STORAGE_PATH_FROM_ROOT = "storagePathFromRoot";
     private static final String OUTPUT_NAME_FILES = "files";
+    private static final String OUTPUT_FILES_TYPE_DEFINITION =
+            "Array<{ name: string; originalFileName: string; uri: string; size: number; }>";
     private static final String HEADER_HTML_SECTION_SEPARATOR = "<!-- KOPFZEILE -->";
     private static final String FOOTER_HTML_SECTION_SEPARATOR = "<!-- FUSSZEILE -->";
     private static final Pattern HTML_DOCUMENT_BLOCK_PATTERN = Pattern.compile(
@@ -112,14 +115,30 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Dokument erstellen (PDF)";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Generiert ein PDF-Dokument basierend auf einem vordefinierten Template.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Erzeugt während der Prozessausführung ein PDF-Dokument aus einer HTML-Vorlage.
+
+                Der HTML-Inhalt kann direkt in der Konfiguration oder über ein hinterlegtes Template-Asset bereitgestellt werden und wird mit den aktuellen Laufzeitdaten gerendert. Das fertige PDF wird als Vorgangsanlage gespeichert; Dateiname, Größe, Speicherort und Dateiwerte stehen als Ausgänge zur Verfügung.
+                """;
     }
 
     @Nonnull
@@ -199,37 +218,44 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                 new ProcessNodeOutput(
                         OUTPUT_NAME_FILE_NAME,
                         "Dateiname",
-                        "Der Dateiname des erzeugten PDF-Dokuments."
+                        "Der Dateiname des erzeugten PDF-Dokuments.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_MIME_TYPE,
                         "MIME-Typ",
-                        "Der MIME-Typ des erzeugten Dokuments."
+                        "Der MIME-Typ des erzeugten Dokuments.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_ATTACHMENT_KEY,
                         "Anhangs-Schlüssel",
-                        "Der Schlüssel des erzeugten Prozess-Anhangs."
+                        "Der Schlüssel des erzeugten Prozess-Anhangs.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_STORAGE_PROVIDER_ID,
                         "Speicheranbieter-ID",
-                        "Die ID des Speicheranbieters des erzeugten Prozess-Anhangs."
+                        "Die ID des Speicheranbieters des erzeugten Prozess-Anhangs.",
+                        "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_STORAGE_PATH_FROM_ROOT,
                         "Speicherpfad",
-                        "Der Pfad zum erzeugten Prozess-Anhang im Speicheranbieter."
+                        "Der Pfad zum erzeugten Prozess-Anhang im Speicheranbieter.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_SIZE_BYTES,
                         "Dateigröße in Bytes",
-                        "Die Größe des erzeugten PDF-Dokuments in Bytes."
+                        "Die Größe des erzeugten PDF-Dokuments in Bytes.",
+                        "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_FILES,
                         "Dateien",
-                        "Die erzeugten Dateien im Format des Datei-Anlagen-Feldes."
+                        "Die erzeugten Dateien im Format des Datei-Anlagen-Feldes.",
+                        OUTPUT_FILES_TYPE_DEFINITION
                 )
         );
     }

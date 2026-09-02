@@ -13,5 +13,5 @@ export function getNodeDescription(node: ProcessNodeEntity, provider: ProcessNod
     if (isStringNotNullOrEmpty(node.description)) {
         return node.description!;
     }
-    return provider.description;
+    return provider.abstractDescription;
 }

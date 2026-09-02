@@ -12,8 +12,6 @@ import {MarkdownContent} from '../../components/markdown-content/markdown-conten
 export const ImprintDialogId = 'imprint';
 
 export function ImprintDialog(props: ImprintDialogProps) {
-    const application = props.form;
-
     const [department, setDepartment] = useState<PublicDepartmentResponseDTO>();
     const imprintDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.imprintDepartmentId));
     const parsedImprintDepartmentId = imprintDepartmentId != null && imprintDepartmentId !== '' && !Number.isNaN(parseInt(imprintDepartmentId)) ?
@@ -21,7 +19,7 @@ export function ImprintDialog(props: ImprintDialogProps) {
         null;
     const selectedImprintDepartmentId = props.isListingPage ?
         parsedImprintDepartmentId :
-        application.imprintDepartmentId ?? null;
+        props.version?.imprintDepartmentId ?? null;
 
     useEffect(() => {
         if (selectedImprintDepartmentId == null) {
@@ -67,7 +65,7 @@ export function ImprintDialog(props: ImprintDialogProps) {
                     :
                     <DialogContent tabIndex={0}>
                         <Alert severity="info">
-                            Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ eine
+                            Bitte wählen Sie in den versionsspezifischen Einstellungen im Bereich „Rechtliches“ eine
                             Organisationseinheit als Quelle für den Rechtstext des Impressums aus.
                         </Alert>
                     </DialogContent>

@@ -1,4 +1,4 @@
-FROM docker.io/library/node:24.2.0-alpine3.21 AS build_mails
+FROM docker.io/library/node:26.7.0-alpine3.23 AS build_mails
 
 # Set working directory
 WORKDIR /mails
@@ -12,7 +12,7 @@ RUN npm install
 # Build mails
 RUN npm run build:prod
 
-FROM docker.io/library/node:24.2.0-alpine3.21 AS build_app
+FROM docker.io/library/node:26.7.0-alpine3.23 AS build_app
 
 # Set build version and date
 ARG BUILD_VERSION=0.0.0
@@ -42,7 +42,7 @@ RUN npm run build:staff
 # Build customer app
 RUN npm run build:customer
 
-FROM  docker.io/library/maven:3.9.9-eclipse-temurin-21-alpine AS build_server
+FROM  docker.io/library/maven:3.9.16-eclipse-temurin-25-alpine AS build_server
 
 # Set build version and date
 ARG BUILD_VERSION=0.0.0
@@ -70,7 +70,7 @@ COPY --from=build_mails /mails/dist src/main/resources/templates/mail
 RUN mvn install -DskipTests
 
 # App
-FROM docker.io/library/eclipse-temurin:21.0.10_7-jre-alpine-3.21
+FROM docker.io/library/eclipse-temurin:25.0.3_9-jre-alpine-3.23
 
 # Set build version and date
 ARG BUILD_VERSION=0.0.0

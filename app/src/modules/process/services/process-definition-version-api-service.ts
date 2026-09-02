@@ -1,7 +1,7 @@
 import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {ProcessVersionEntity} from '../entities/process-version-entity';
 import {ProcessStatus} from '../enums/process-status';
-import {ProcessNodeProblems} from '../entities/process-node-problems';
+import {ProcessVersionProblems} from '../entities/process-version-problems';
 
 interface ProcessDefinitionVersionFilter {
     processId: number;
@@ -41,6 +41,14 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
             publicTitle: '',
             caseNumberTemplate: null,
             notes: null,
+            themeId: null,
+            legalSupportDepartmentId: null,
+            technicalSupportDepartmentId: null,
+            imprintDepartmentId: null,
+            privacyDepartmentId: null,
+            accessibilityDepartmentId: null,
+            processSpecificPrivacyStatement: null,
+            processSpecificAccessibilityStatement: null,
             status: ProcessStatus.Drafted,
             crated: new Date().toISOString(),
             updated: new Date().toISOString(),
@@ -49,8 +57,8 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
         };
     }
 
-    public validate(id: ProcessDefinitionVersionEntityId): Promise<ProcessNodeProblems[]> {
-        return this.get<ProcessNodeProblems[]>(this.buildPath(id) + 'problems/');
+    public validate(id: ProcessDefinitionVersionEntityId): Promise<ProcessVersionProblems> {
+        return this.get<ProcessVersionProblems>(this.buildPath(id) + 'problems/');
     }
 
     public publish(id: ProcessDefinitionVersionEntityId): Promise<ProcessVersionEntity> {

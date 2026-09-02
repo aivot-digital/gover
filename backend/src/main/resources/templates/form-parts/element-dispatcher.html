@@ -113,6 +113,23 @@
         </th:block>
 
         <!--/* ***********************************************************************
+        LinkButton
+        *********************************************************************** */-->
+        <th:block
+                th:case="LinkButton"
+                th:if="${ base.isNotStaffPrint && !#strings.isEmpty(child.element.href) }"
+        >
+            <a
+                    th:href="${ child.element.href }"
+                    th:target="${ child.element.resolvedOpenInNewTab } ? '_blank' : null"
+                    th:rel="${ child.element.resolvedOpenInNewTab } ? 'noopener noreferrer' : null"
+                    th:text="${ child.element.resolvedLabel }"
+            >
+                Link öffnen
+            </a>
+        </th:block>
+
+        <!--/* ***********************************************************************
         Alert
         *********************************************************************** */-->
         <th:block

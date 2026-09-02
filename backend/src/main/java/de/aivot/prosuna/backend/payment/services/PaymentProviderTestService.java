@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.payment.models.PaymentItem;
+import de.aivot.prosuna.backend.payment.models.PaymentPayload;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderTestResult;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
@@ -80,15 +81,19 @@ public class PaymentProviderTestService {
         paymentItem.setBookingData(List.of());
         paymentItem.setTaxInformation("19% MwSt.");
 
+        var payload = new PaymentPayload()
+                .setPurpose(purpose)
+                .setDescription(description)
+                .setPaymentItems(List.of(paymentItem))
+                .setTotal(paymentItem.getTotalPrice());
+
         XBezahldienstePaymentRequest paymentRequest;
         try {
             paymentRequest = paymentProviderDefinition
                     .createPaymentRequest(
                             paymentProviderEntity,
                             derivedConfiguration,
-                            purpose,
-                            description,
-                            List.of(paymentItem),
+                            payload,
                             prosunaConfig.createUrl("/api/public/payment-transaction-callback/", TestRedirectID) + "/redirect/"
                     );
         } catch (PaymentException e) {

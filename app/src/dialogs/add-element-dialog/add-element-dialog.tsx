@@ -16,70 +16,12 @@ import {useRetainedDialogValue} from '../../hooks/use-retained-dialog-value';
 import {
     useOptionalProcessNodeEditorContext,
 } from '../../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
-import {SelectionListRow} from '../../components/selection-dialog/selection-list-row';
-import {getElementIconForType} from '../../data/element-type/element-icons';
-import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
-import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {showSuccessSnackbar} from '../../slices/snackbar-slice';
-import {cloneElement} from '../../utils/clone-element';
-import {ElementChildOptions} from '../../data/element-type/element-child-options';
-import {stringOrDefault} from '../../utils/string-utils';
-import {
-    type ProcessNodeDefinitionMetadataReusableUiDefinition,
-} from '../../modules/process/entities/process-node-definition-metadata';
 import {getSingleUseSectionAddDisabledReason} from '../../data/element-type/single-use-section-types';
-
-
-function resolveAllowedChildTypes(props: AddElementDialogProps): Set<ElementType> {
-    let childOptionSet: Set<ElementType> | null = null;
-
-    if (props.allParents.length > 1) {
-        if (props.allParents[0].type === ElementType.ConfigLayout) {
-            childOptionSet = new Set<ElementType>(ElementChildOptions[props.displayContext][ElementType.ConfigLayout] ?? []);
-        } else {
-            for (const par of props.allParents.slice(1)) {
-                const allowedChildOptionOfThisParent = ElementChildOptions[props.displayContext][par.type] ?? [];
-                const allowedChildOptionOfThisParentSet = new Set<ElementType>(allowedChildOptionOfThisParent);
-
-                if (childOptionSet == null) {
-                    childOptionSet = allowedChildOptionOfThisParentSet;
-                } else {
-                    const nextChildOptionSet = new Set<ElementType>();
-                    childOptionSet.forEach((type: ElementType) => {
-                        if (allowedChildOptionOfThisParentSet.has(type)) {
-                            nextChildOptionSet.add(type);
-                        }
-                    });
-                    childOptionSet = nextChildOptionSet;
-                }
-            }
-        }
-    } else {
-        childOptionSet = new Set<ElementType>(ElementChildOptions[props.displayContext][props.parentType] ?? []);
-    }
-
-    return childOptionSet ?? new Set<ElementType>();
-}
-
-function filterReusableUiDefinitions(
-    props: AddElementDialogProps,
-    definitions: ProcessNodeDefinitionMetadataReusableUiDefinition[],
-): ProcessNodeDefinitionMetadataReusableUiDefinition[] {
-    const allowedChildTypes = resolveAllowedChildTypes(props);
-
-    return definitions.filter((def) => {
-        if (!allowedChildTypes.has(def.uiDefinition.type)) {
-            return false;
-        }
-
-        return props.limitElementTypes == null || props.limitElementTypes.includes(def.uiDefinition.type);
-    });
-}
+import {createReusableUiDefinitionOptions} from './reusable-ui-definition-utils';
+import {ReusableUiDefinitionsTab} from './tabs/reusable-ui-definitions-tab';
 
 
 export function AddElementDialog(props: AddElementDialogProps) {
-    const dispatch = useAppDispatch();
-
     const [currentTab, setCurrentTab] = useState(0);
     const [showElementInfo, setShowElementInfo] = useState<ElementType>();
     const [showPresetInfo, setShowPresetInfo] = useState<Preset>();
@@ -94,13 +36,13 @@ export function AddElementDialog(props: AddElementDialogProps) {
     const showDetailsPanel = showElementDetailsPanel || showPresetDetailsPanel || showMarketplaceDetailsPanel;
 
     const opec = useOptionalProcessNodeEditorContext();
-    const reusableUiDefinitions = useMemo(() => {
+    const reusableUiDefinitionOptions = useMemo(() => {
         if (opec == null || opec.incomingMetadata == null || opec.incomingMetadata.reusableUiDefinitions.length === 0) {
             return null;
         }
-        const reusableDefinitions = filterReusableUiDefinitions(
-            props,
+        const reusableDefinitions = createReusableUiDefinitionOptions(
             opec.incomingMetadata.reusableUiDefinitions,
+            props,
         );
 
         return reusableDefinitions.length > 0 ? reusableDefinitions : null;
@@ -115,7 +57,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
             return;
         }
 
-        props.onAddElement(element);
+        props.onAddElements([element]);
     };
 
     return (
@@ -130,7 +72,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
                 {
                     label: 'UI-Definitionen',
                     value: 3,
-                    hidden: reusableUiDefinitions == null,
+                    hidden: reusableUiDefinitionOptions == null,
                     disabled: false,
                 },
             ]}
@@ -231,36 +173,12 @@ export function AddElementDialog(props: AddElementDialogProps) {
                     />
                 }
                 {
-                    reusableUiDefinitions != null &&
+                    reusableUiDefinitionOptions != null &&
                     currentTab === 3 &&
-                    <>
-                        {
-                            reusableUiDefinitions.map((def) => {
-                                const Icon = getElementIconForType(def.uiDefinition.type);
-                                const originName = stringOrDefault(def.origin.name, 'Unbenanntes Prozesselement');
-                                const disabledReason = getSingleUseSectionAddDisabledReason(props.parentElement, def.uiDefinition.type);
-
-                                return (
-                                    <SelectionListRow
-                                        key={`${def.origin.id}-${def.uiDefinition.id}`}
-                                        icon={<Icon/>}
-                                        title={def.label}
-                                        description={
-                                            <span>Eine UI-Definition aus Prozesselement <strong>{originName}</strong></span>
-                                        }
-                                        primaryActionLabel="Kopieren und einfügen"
-                                        primaryActionIcon={<ContentCopy/>}
-                                        primaryActionDisabled={disabledReason != null}
-                                        primaryActionDisabledTooltip={disabledReason}
-                                        onPrimaryAction={() => {
-                                            handleAddElement(cloneElement(def.uiDefinition, true));
-                                            dispatch(showSuccessSnackbar('UI-Definition wurde erfolgreich eingefügt'));
-                                        }}
-                                    />
-                                );
-                            })
-                        }
-                    </>
+                    <ReusableUiDefinitionsTab
+                        options={reusableUiDefinitionOptions}
+                        onAddElements={props.onAddElements}
+                    />
                 }
             </Box>
         </SelectionDialogShell>

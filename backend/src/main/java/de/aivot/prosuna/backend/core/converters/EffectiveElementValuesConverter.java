@@ -1,33 +1,35 @@
 package de.aivot.prosuna.backend.core.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 @Converter
+@Component
 public class EffectiveElementValuesConverter implements AttributeConverter<EffectiveElementValues, String> {
+    private final JsonMapper jsonMapper;
+
+    public EffectiveElementValuesConverter(JsonMapper jsonMapper) {
+        this.jsonMapper = jsonMapper;
+    }
+
     @Override
     public String convertToDatabaseColumn(EffectiveElementValues baseElement) {
-        var mapper = ObjectMapperFactory
-                .getInstance();
-
         try {
-            return mapper.writeValueAsString(baseElement);
-        } catch (JsonProcessingException e) {
+            return jsonMapper.writeValueAsString(baseElement);
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
     public EffectiveElementValues convertToEntityAttribute(String s) {
-        var mapper = ObjectMapperFactory
-                .getInstance();
-
         try {
-            return mapper.readValue(s, EffectiveElementValues.class);
-        } catch (JsonProcessingException e) {
+            return jsonMapper.readValue(s, EffectiveElementValues.class);
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

@@ -23,7 +23,7 @@ import java.util.Map;
  * <li><strong>_</strong>: The map of all process node results. E.g. "_.&lt;nodeDataKey&gt;" gives access to the result of the node with the given "nodeDataKey".</li>
  * </ul>
  */
-public class ProcessExecutionData extends HashMap<String, Object> {
+public class ProcessExecutionData extends HashMap<String, Object> implements Cloneable {
     public static final String PROCESS_DATA_KEY = "$";
     public static final String PROCESS_METADATA_KEY = "$$";
     public static final String NODE_RESULTS_KEY = "_";
@@ -38,6 +38,13 @@ public class ProcessExecutionData extends HashMap<String, Object> {
         put(PROCESS_DATA_KEY, new HashMap<String, Object>());
         put(PROCESS_METADATA_KEY, new HashMap<String, Object>());
         put(NODE_RESULTS_KEY, new HashMap<String, Object>());
+    }
+
+    @Override
+    public ProcessExecutionData clone() {
+        ProcessExecutionData clone = (ProcessExecutionData) super.clone();
+        clone.putAll(MapUtils.deepCopy(this));
+        return clone;
     }
 
     public Map<String, Object> getProcessData() {

@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.ElementDisplayContext;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
@@ -34,7 +34,7 @@ public class UiDefinitionInputElement extends BaseInputElement<BaseElement> impl
             return null;
         }
 
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .convertValue(value, BaseElement.class);
     }

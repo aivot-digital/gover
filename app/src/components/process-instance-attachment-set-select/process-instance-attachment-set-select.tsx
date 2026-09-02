@@ -1,8 +1,9 @@
 import {useMemo, type HTMLAttributes, type Key} from 'react';
-import {Autocomplete, type AutocompleteRenderInputParams, Box, ListItemText, TextField} from '@mui/material';
+import {Autocomplete, type AutocompleteRenderInputParams, Box, ListItemText, type SxProps, TextField, type Theme} from '@mui/material';
 import type {
     ProcessNodeDefinitionMetadataForwardedAttachmentSet,
 } from '../../modules/process/entities/process-node-definition-metadata';
+import {FormField, type FormFieldLayoutProps, getNativeInputAriaProps} from '../form-field';
 
 interface AttachmentSetOption {
     dataKey: string;
@@ -10,7 +11,7 @@ interface AttachmentSetOption {
     subLabel: string;
 }
 
-interface ProcessInstanceAttachmentSetSelectProps {
+export interface ProcessInstanceAttachmentSetSelectProps extends FormFieldLayoutProps {
     attachmentSets: ProcessNodeDefinitionMetadataForwardedAttachmentSet[] | null | undefined;
     value: string[] | null | undefined;
     onChange: (value: string[] | null) => void;
@@ -21,7 +22,9 @@ interface ProcessInstanceAttachmentSetSelectProps {
     required?: boolean | null;
     disabled?: boolean | null;
     readOnly?: boolean | null;
+    busy?: boolean | null;
     maxItems?: number | null;
+    controlSx?: SxProps<Theme>;
 }
 
 export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachmentSetSelectProps) {
@@ -36,6 +39,7 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
         required,
         disabled,
         readOnly,
+        busy,
         maxItems,
     } = props;
 
@@ -111,8 +115,7 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
         onChange(updatedDataKeys.length > 0 ? updatedDataKeys : null);
     };
 
-    const renderHelperText = () => {
-        const text = errors != null ? errors.join(' ') : hint;
+    const renderHelperText = (text: string | null | undefined, isError = false) => {
         if ((text == null || text.length === 0) && effectiveMaxItems == null) {
             return undefined;
         }
@@ -130,7 +133,7 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
                 <Box
                     component="span"
                     sx={{
-                        color: errors != null ? 'error.main' : 'text.secondary',
+                        color: isError ? 'error.main' : 'text.secondary',
                     }}
                 >
                     {text}
@@ -165,67 +168,81 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
         </Box>
     );
 
-    const renderInput = (params: AutocompleteRenderInputParams) => (
+    const renderInput = (params: AutocompleteRenderInputParams, field: Parameters<typeof getNativeInputAriaProps>[0]) => (
         <TextField
             {...params}
-            label={label}
+            size="small"
             placeholder={selectedOptions.length > 0 ? undefined : placeholder ?? undefined}
-            error={errors != null}
-            required={required ?? undefined}
-            helperText={renderHelperText()}
+            error={field.invalid}
             slotProps={{
                 ...params.slotProps,
                 htmlInput: {
                     ...params.slotProps.htmlInput,
-                    readOnly: readOnly ?? undefined,
-                }
+                    ...getNativeInputAriaProps(field, params.slotProps.htmlInput),
+                    readOnly: field.readOnly || field.busy || undefined,
+                },
             }}
         />
     );
 
-    if (isSingleSelect) {
-        return (
-            <Autocomplete<AttachmentSetOption, false, false, false>
-                fullWidth
-                options={options}
-                value={selectedOptions[0] ?? null}
-                getOptionLabel={(option) => option.label}
-                isOptionEqualToValue={(option, selectedOption) => option.dataKey === selectedOption.dataKey}
-                disabled={disabled ?? undefined}
-                readOnly={readOnly ?? undefined}
-                noOptionsText="Keine Anlagensätze verfügbar"
-                onChange={(_, updatedOption) => {
-                    updateSelectedOptions(updatedOption == null ? [] : [updatedOption]);
-                }}
-                renderOption={renderOption}
-                renderInput={renderInput}
-            />
-        );
-    }
-
     return (
-        <Autocomplete<AttachmentSetOption, true, false, false>
-            multiple
-            fullWidth
-            filterSelectedOptions
-            options={options}
-            value={selectedOptions}
-            getOptionLabel={(option) => option.label}
-            isOptionEqualToValue={(option, selectedOption) => option.dataKey === selectedOption.dataKey}
-            disabled={disabled ?? undefined}
-            readOnly={readOnly ?? undefined}
-            noOptionsText="Keine Anlagensätze verfügbar"
-            getOptionDisabled={(option) => (
-                effectiveMaxItems != null &&
-                selectedOptions.length >= effectiveMaxItems &&
-                !selectedDataKeys.includes(option.dataKey)
+        <FormField
+            id={props.id}
+            label={label}
+            hint={renderHelperText(hint)}
+            error={errors != null ? renderHelperText(errors.join(' '), true) : undefined}
+            required={Boolean(required)}
+            disabled={Boolean(disabled)}
+            readOnly={Boolean(readOnly)}
+            busy={Boolean(busy)}
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            margin={props.margin}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
+        >
+            {(field) => isSingleSelect ? (
+                <Autocomplete<AttachmentSetOption, false, false, false>
+                    id={field.controlId}
+                    fullWidth
+                    options={options}
+                    value={selectedOptions[0] ?? null}
+                    getOptionLabel={(option) => option.label}
+                    isOptionEqualToValue={(option, selectedOption) => option.dataKey === selectedOption.dataKey}
+                    disabled={field.disabled || field.busy}
+                    readOnly={field.readOnly || field.busy}
+                    noOptionsText="Keine Anlagensätze verfügbar"
+                    onChange={(_, updatedOption) => updateSelectedOptions(updatedOption == null ? [] : [updatedOption])}
+                    renderOption={renderOption}
+                    renderInput={(params) => renderInput(params, field)}
+                    sx={props.controlSx}
+                />
+            ) : (
+                <Autocomplete<AttachmentSetOption, true, false, false>
+                    id={field.controlId}
+                    multiple
+                    fullWidth
+                    filterSelectedOptions
+                    options={options}
+                    value={selectedOptions}
+                    getOptionLabel={(option) => option.label}
+                    isOptionEqualToValue={(option, selectedOption) => option.dataKey === selectedOption.dataKey}
+                    disabled={field.disabled || field.busy}
+                    readOnly={field.readOnly || field.busy}
+                    noOptionsText="Keine Anlagensätze verfügbar"
+                    getOptionDisabled={(option) => (
+                        effectiveMaxItems != null &&
+                        selectedOptions.length >= effectiveMaxItems &&
+                        !selectedDataKeys.includes(option.dataKey)
+                    )}
+                    onChange={(_, updatedOptions) => updateSelectedOptions(updatedOptions)}
+                    renderOption={renderOption}
+                    renderInput={(params) => renderInput(params, field)}
+                    sx={props.controlSx}
+                />
             )}
-            onChange={(_, updatedOptions) => {
-                updateSelectedOptions(updatedOptions);
-            }}
-            renderOption={renderOption}
-            renderInput={renderInput}
-        />
+        </FormField>
     );
 }
 

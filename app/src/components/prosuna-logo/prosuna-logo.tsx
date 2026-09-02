@@ -1,3 +1,4 @@
+/* eslint-disable max-len -- SVG path data is intentionally kept intact. */
 import React from 'react';
 
 export type ProsunaLogoVariant = 'full' | 'symbol';
@@ -12,13 +13,13 @@ export interface ProsunaLogoProps extends React.SVGProps<SVGSVGElement> {
 const BRAND_SYMBOL_COLOR = '#FF613A';
 const BRAND_WORDMARK_COLOR = '#733635';
 
-export function ProsunaLogo({
+export const ProsunaLogo = React.forwardRef<SVGSVGElement, ProsunaLogoProps>(function ProsunaLogo({
     variant = 'full',
     colorVariant = 'brand',
     title,
     role,
     ...svgProps
-}: ProsunaLogoProps): React.ReactElement {
+}, ref): React.ReactElement {
     const symbolOnly = variant === 'symbol';
     const symbolColor = colorVariant === 'monochrome' ? 'currentColor' : BRAND_SYMBOL_COLOR;
     const wordmarkColor = colorVariant === 'monochrome' ? 'currentColor' : BRAND_WORDMARK_COLOR;
@@ -28,6 +29,7 @@ export function ProsunaLogo({
 
     return (
         <svg
+            ref={ref}
             xmlns="http://www.w3.org/2000/svg"
             width={symbolOnly ? 202 : 1000}
             height={165}
@@ -79,4 +81,4 @@ export function ProsunaLogo({
             )}
         </svg>
     );
-}
+});

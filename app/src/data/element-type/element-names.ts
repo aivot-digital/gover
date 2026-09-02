@@ -15,7 +15,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.ReplicatingContainer]: 'Strukturierte Listeneingabe',
     [ElementType.RichText]: 'Fließtext',
     [ElementType.Radio]: 'Einzelauswahl (Optionsfelder)',
-    [ElementType.Select]: 'Einzelauswahl (Auswahlmenü)',
+    [ElementType.Select]: 'Einzelauswahl',
     [ElementType.Spacer]: 'Abstand',
     [ElementType.Table]: 'Tabelle',
     [ElementType.Text]: 'Text',
@@ -52,6 +52,8 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.HtmlTemplateInput]: 'HTML-Vorlage',
     [ElementType.StoragePathSelector]: 'Speicherpfad-Auswahl',
     [ElementType.ProcessAttachmentDisplay]: 'Anhang zum Vorgang',
+    [ElementType.PaymentConfigElement]: 'Zahlungskonfiguration',
+    [ElementType.LinkButton]: 'Link-Button',
 };
 
 export function getElementName(element: AnyElement): string {

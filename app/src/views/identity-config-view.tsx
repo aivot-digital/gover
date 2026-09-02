@@ -1,4 +1,4 @@
-import {Box, Button, FormHelperText, Grid, Stack, Tooltip, Typography} from '@mui/material';
+import {Box, Button, Grid, Stack, Tooltip, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {alpha} from '@mui/material/styles';
 import {BaseViewProps} from './base-view';
@@ -15,12 +15,14 @@ import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-fiel
 import {RichTextInputComponent} from '../components/rich-text-input-component/rich-text-input-component';
 import {IdentityProviderType} from '../modules/identity/enums/identity-provider-type';
 import {DialogList, DialogListPropsDialogContentComponent} from '../components/dialog-list/dialog-list';
-import {SelectFieldComponent} from '../components/select-field-2/select-field-component';
+import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {BundIdAccessLevelOptions} from '../modules/identity/enums/bund-id-access-level';
 import {BayernIdAccessLevelOptions} from '../modules/identity/enums/bayern-id-access-level';
 import {ShIdAccessLevelOptions} from '../modules/identity/enums/sh-id-access-level';
 import {isStringNullOrEmpty} from '../utils/string-utils';
 import {ElementEditorSectionHeader} from '../components/element-editor-section-header/element-editor-section-header';
+import {FormFieldGroup} from '../components/form-field';
+import {FormFieldTokens} from '../theming/form-field-tokens';
 
 export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, IdentityConfigElementSlot[]>) {
     const {
@@ -56,7 +58,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
             });
     }, []);
 
-    const isDisabled = useMemo(() => {
+    const isReadOnly = useMemo(() => {
         return Boolean(element.disabled) || isGloballyDisabled;
     }, [element.disabled, isGloballyDisabled]);
 
@@ -119,37 +121,33 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
     };
 
     return (
-        <Box>
-            <Stack
-                direction="row"
-                spacing={2}
-                sx={{
-                    alignItems: "center",
-                    justifyContent: "space-between"
-                }}>
-                <Typography variant="subtitle2">
-                    {element.label}{element.required ? ' *' : ''}
-                </Typography>
-
+        <FormFieldGroup
+            id={element.id}
+            label={element.label ?? ''}
+            hint={element.hint}
+            error={errorText || undefined}
+            required={element.required ?? false}
+            readOnly={isReadOnly}
+            busy={isFieldBusy}
+            labelAction={(
                 <Button
-                    variant="outlined"
                     size="small"
                     startIcon={<Add/>}
-                    disabled={element.disabled || isDisabled || isFieldBusy}
+                    disabled={isReadOnly || isFieldBusy}
                     onClick={handleAddSlot}
                 >
                     Hinzufügen
                 </Button>
-            </Stack>
+            )}
+        >
 
             {
                 shouldShowEmptyState &&
                 <Box
                     sx={(theme) => ({
                         px: 1.5,
-                        py: 1.25,
-                        mt: 0.75,
-                        minHeight: 56,
+                        py: 0.75,
+                        minHeight: FormFieldTokens.controlMinHeight,
                         display: 'flex',
                         alignItems: 'center',
                         borderRadius: 1,
@@ -197,9 +195,6 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                 <Stack
                     direction="column"
                     spacing={2}
-                    sx={{
-                        mt: 0.75,
-                    }}
                 >
                     <DialogList
                         dialogTitle="Identität bearbeiten"
@@ -207,28 +202,17 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                         getId={(i) => i.id ?? ''}
                         items={value ?? []}
                         title={getIdentityDisplayName}
-                        subTitle={(i) => getIdentityConfigSubtitle(i, isDisabled || isFieldBusy)}
+                        subTitle={(i) => getIdentityConfigSubtitle(i, isReadOnly || isFieldBusy)}
                         dialogContentComponent={Component}
                         onDialogSave={handleSlotChanged}
                         onDelete={handleDelete}
-                        disabled={element.disabled || isDisabled || isFieldBusy}
+                        readOnly={isReadOnly}
+                        busy={isFieldBusy}
                     />
                 </Stack>
             }
 
-            {
-                errorText.length > 0 &&
-                <FormHelperText
-                    error
-                    sx={{
-                        mx: 1.75,
-                        mt: shouldShowEmptyState ? 0.75 : -1,
-                    }}
-                >
-                    {errorText}
-                </FormHelperText>
-            }
-        </Box>
+        </FormFieldGroup>
     );
 }
 
@@ -236,13 +220,14 @@ function wrapIdentityConfigSlot(providers: IdentityProviderListDTO[]): DialogLis
     return (props: {
         item: IdentityConfigElementSlot,
         onChange: (item: IdentityConfigElementSlot) => void,
-        disabled?: boolean
+        readOnly?: boolean,
+        busy?: boolean
     }) => (
         <IdentityConfigSlot
             item={props.item}
             onChange={props.onChange}
             providers={providers}
-            disabled={props.disabled}
+            disabled={props.readOnly || props.busy}
         />
     );
 }
@@ -413,7 +398,10 @@ function IdentityConfigSlot(props: {
                             md: 6,
                         }}
                     >
-                        <Tooltip title="Eine alternative Nutzung von E-Mail als Kommunikationskanal wird in einer zukünftigen Version ermöglicht.">
+                        <Tooltip
+                            title="Eine alternative Nutzung von E-Mail als Kommunikationskanal wird in einer zukünftigen Version ermöglicht."
+                            arrow
+                        >
                             <span>
                                 <CheckboxFieldComponent
                                     label="E-Mail"

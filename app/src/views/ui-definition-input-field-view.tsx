@@ -50,7 +50,8 @@ export function UiDefinitionInputFieldView(
             hint={element.hint}
             error={errors != null ? errors.join(' ') : undefined}
             required={element.required}
-            disabled={Boolean(isDisabled) || isBusy}
+            disabled={Boolean(isDisabled)}
+            busy={isBusy}
             value={value}
             expectedRootType={element.elementType}
             onChange={setValue}

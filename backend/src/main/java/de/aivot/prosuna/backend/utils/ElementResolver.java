@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.utils;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +11,7 @@ public class ElementResolver {
     private static final Logger logger = LoggerFactory.getLogger(ElementResolver.class);
 
     public static BaseElement resolve(Map<String, Object> elementData) {
-        var objectMapper = ObjectMapperFactory
+        var objectMapper = JsonMapperFactory
                 .getInstance();
         try {
             return objectMapper.convertValue(elementData, BaseElement.class);

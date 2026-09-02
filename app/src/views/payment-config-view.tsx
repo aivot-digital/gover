@@ -1,0 +1,1435 @@
+import {Box, Button, Grid, Stack, Typography} from '@mui/material';
+import {alpha} from '@mui/material/styles';
+import React, {FunctionComponent, useEffect, useMemo, useState} from 'react';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Receipt from '@aivot/mui-material-symbols-400-n25-outlined/Receipt';
+import {BaseViewProps} from './base-view';
+import {
+    PaymentConfigElement,
+    PaymentConfigElementValue,
+    PaymentConfigElementValueItem,
+    PaymentConfigElementValueItemCostType,
+    PaymentConfigElementValueItemIdType,
+    PaymentConfigElementValueItemQuantityType,
+    PaymentConfigElementValueItemVariableValueCalculationType,
+    PaymentConfigElementValueRequestorMapping,
+} from '../models/elements/form/input/payment-config-element';
+import {PaymentProvidersApiService} from '../modules/payment/payment-providers-api-service';
+import {PaymentProviderResponseDTO} from '../modules/payment/dtos/payment-provider-response-dto';
+import {PaymentProviderDefinitionResponseDTO} from '../modules/payment/dtos/payment-provider-definition-response-dto';
+import {isApiError} from '../models/api-error';
+import {hasDerivableAspects} from '../utils/has-derivable-aspects';
+import {SelectFieldComponent} from '../components/select-field/select-field-component';
+import {type SelectFieldComponentOption} from '../components/select-field/select-field-component-option';
+import {TextFieldComponent} from '../components/text-field/text-field-component';
+import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
+import {NumberFieldComponent} from '../components/number-field/number-field-component';
+import {ElementEditorSectionHeader} from '../components/element-editor-section-header/element-editor-section-header';
+import {DialogList, DialogListPropsDialogContentComponent} from '../components/dialog-list/dialog-list';
+import {isStringNullOrEmpty} from '../utils/string-utils';
+import {ProcessDataKeyInputComponent} from './process-data-key-input-field-view';
+import {NoCodeInputFieldComponent} from '../components/no-code-input-field/no-code-input-field-component';
+import {NoCodeDataType} from '../data/no-code-data-type';
+import {CodeInputFieldComponent} from '../components/code-input-field/code-input-field-component';
+import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
+import {AnyElement} from '../models/elements/any-element';
+import {NoCodeOperand} from '../models/functions/no-code-expression';
+import {JavascriptCode} from '../models/functions/javascript-code';
+import PaymentArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/PaymentArrowDown';
+import {DisabledTooltip} from '../components/disabled-tooltip/disabled-tooltip';
+import {pluralize} from '../utils/humanization-utils';
+import {RadioFieldComponent} from '../components/radio-field/radio-field-component';
+import {RichTextInputComponent} from '../components/rich-text-input-component/rich-text-input-component';
+import {FormFieldGroup} from '../components/form-field';
+import {FormFieldTokens} from '../theming/form-field-tokens';
+
+const EmptyPaymentConfigValue: PaymentConfigElementValue = {
+    paymentProviderKey: null,
+    purpose: null,
+    description: null,
+    mapRequestor: false,
+    requestorMapping: null,
+    items: [],
+    successMessage: null,
+    failureMessage: null,
+};
+
+const EmptyRequestorMapping: PaymentConfigElementValueRequestorMapping = {
+    requestorSourceType: null,
+    lastNameDestinationKey: null,
+    firstNameDestinationKey: null,
+    genderDestinationKey: null,
+    isOrganizationDestinationKey: null,
+    organizationNameDestinationKey: null,
+    streetDestinationKey: null,
+    houseNumberDestinationKey: null,
+    addressLineDestinationKey: null,
+    postalCodeDestinationKey: null,
+    cityDestinationKey: null,
+    countryDestinationKey: null,
+};
+
+const CostTypeOptions: SelectFieldComponentOption<PaymentConfigElementValueItemCostType>[] = [
+    {label: 'Fester Betrag', value: PaymentConfigElementValueItemCostType.FixedCosts},
+    {label: 'Berechneter Betrag', value: PaymentConfigElementValueItemCostType.VariableCosts},
+];
+
+const QuantityTypeOptions: SelectFieldComponentOption<PaymentConfigElementValueItemQuantityType>[] = [
+    {label: 'Feste Menge', value: PaymentConfigElementValueItemQuantityType.FixedQuantity},
+    {label: 'Berechnete Menge', value: PaymentConfigElementValueItemQuantityType.VariableQuantity},
+];
+
+const CalculationTypeOptions: SelectFieldComponentOption<PaymentConfigElementValueItemVariableValueCalculationType>[] = [
+    {label: 'No-Code', value: PaymentConfigElementValueItemVariableValueCalculationType.NoCode},
+    {label: 'Low-Code', value: PaymentConfigElementValueItemVariableValueCalculationType.LowCode},
+];
+
+const IdTypeOptions: SelectFieldComponentOption<PaymentConfigElementValueItemIdType>[] = [
+    {label: 'Automatisch erzeugen', value: PaymentConfigElementValueItemIdType.AutoGeneratedUUID},
+    {label: 'Fest vorgeben', value: PaymentConfigElementValueItemIdType.Predefined},
+];
+
+type PaymentItemRow = {
+    index: number;
+    item: PaymentConfigElementValueItem;
+};
+
+type PaymentConfigErrorDetails = Record<string, unknown>;
+
+export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, PaymentConfigElementValue>) {
+    const {
+        element,
+        value,
+        setValue,
+        errors,
+        errorDetails,
+        isBusy: isGloballyDisabled,
+        isDeriving,
+    } = props;
+
+    const {
+        rootElement,
+    } = useViewDispatcherContext();
+
+    const [providers, setProviders] = useState<PaymentProviderResponseDTO[]>([]);
+    const [providerDefinitions, setProviderDefinitions] = useState<PaymentProviderDefinitionResponseDTO[]>([]);
+    const [providersError, setProvidersError] = useState<string>();
+    const [isLoadingProviders, setIsLoadingProviders] = useState(false);
+
+    useEffect(() => {
+        setIsLoadingProviders(true);
+
+        const apiService = new PaymentProvidersApiService();
+
+        Promise
+            .all([
+                apiService.listAll({isEnabled: true}),
+                apiService.listDefinitions(),
+            ])
+            .then(([providers, definitions]) => {
+                setProviders(providers.content);
+                setProviderDefinitions(definitions);
+            })
+            .catch((err) => {
+                if (isApiError(err) && err.displayableToUser) {
+                    setProvidersError(err.message);
+                } else {
+                    setProvidersError('Beim Abruf der Zahlungsdienstleister ist ein unbekannter Fehler aufgetreten.');
+                }
+            })
+            .finally(() => {
+                setIsLoadingProviders(false);
+            });
+    }, []);
+
+    const shouldShowEmptyState = value == null;
+
+    const isDisabled = useMemo(() => {
+        return Boolean(element.disabled) || isGloballyDisabled;
+    }, [element.disabled, isGloballyDisabled]);
+
+    const isFieldBusy = useMemo(() => {
+        return (isDeriving && hasDerivableAspects(element)) || isLoadingProviders;
+    }, [element, isDeriving, isLoadingProviders]);
+
+    const paymentProviderOptions = useMemo(() => {
+        return [...providers]
+            .filter((provider) => provider.isEnabled)
+            .sort((left, right) => left.name.localeCompare(right.name, 'de'))
+            .map((provider) => ({
+                label: `${provider.name} (${getPaymentProviderDefinitionName(provider, providerDefinitions)}) – ${provider.isTestProvider ? 'Test-System' : 'Live-System'}`,
+                value: provider.key,
+            }));
+    }, [providerDefinitions, providers]);
+
+    const DialogContentComponent = useMemo(() => {
+        return wrapPaymentConfigDialogContent(paymentProviderOptions, rootElement, asErrorDetails(errorDetails));
+    }, [paymentProviderOptions, rootElement, errorDetails]);
+
+    const handleAdd = () => {
+        setValue(EmptyPaymentConfigValue);
+    };
+
+    const errorText = [
+        errors?.join(' '),
+        providersError,
+    ]
+        .filter((part) => part != null && part.length > 0)
+        .join(' ');
+
+    return (
+        <FormFieldGroup
+            id={element.id}
+            label={element.label ?? ''}
+            hint={element.hint}
+            error={errorText || undefined}
+            required={element.required ?? false}
+            readOnly={isDisabled}
+            busy={isFieldBusy}
+            labelAction={(
+                <DisabledTooltip
+                    title="Es kann nur eine Zahlungskonfiguration existieren."
+                    disabled={value != null}
+                >
+                    <Button
+                        size="small"
+                        startIcon={<Add/>}
+                        disabled={isDisabled || isFieldBusy || value != null}
+                        onClick={handleAdd}
+                    >
+                        Hinzufügen
+                    </Button>
+                </DisabledTooltip>
+            )}
+        >
+            {shouldShowEmptyState && (
+                <Box
+                    sx={(theme) => ({
+                        px: 1.5,
+                        py: 0.75,
+                        minHeight: FormFieldTokens.controlMinHeight,
+                        display: 'flex',
+                        alignItems: 'center',
+                        borderRadius: 1,
+                        border: errorText.length > 0
+                            ? '1px solid'
+                            : '1px dashed',
+                        borderColor: errorText.length > 0
+                            ? theme.palette.error.main
+                            : alpha(theme.palette.text.primary, 0.18),
+                        textAlign: 'left',
+                    })}
+                >
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{
+                            alignItems: 'center',
+                        }}
+                    >
+                        <PaymentArrowDown
+                            sx={{
+                                flexShrink: 0,
+                                fontSize: 20,
+                                color: 'text.secondary',
+                            }}
+                        />
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                                minWidth: 0,
+                            }}
+                        >
+                            Keine Zahlungskonfiguration vorhanden.{' '}
+                            {
+                                element.required &&
+                                <>Eine Zahlungskonfiguration ist erforderlich.</>
+                            }
+                        </Typography>
+                    </Stack>
+                </Box>
+            )}
+
+            {!shouldShowEmptyState && (
+                <DialogList
+                    dialogTitle="Zahlungskonfiguration bearbeiten"
+                    dialogViewTitle="Zahlungskonfiguration ansehen"
+                    getId={(i) => i != null ? '1' : '0'}
+                    items={[value]}
+                    title={(i) => getPaymentConfigTitle(i, paymentProviderOptions)}
+                    subTitle={getPaymentConfigSubtitle}
+                    dialogContentComponent={DialogContentComponent}
+                    onDialogSave={(value) => {
+                        setValue({
+                            ...value,
+                            paymentProviderKey: paymentProviderOptions.some((option) => option.value === value.paymentProviderKey)
+                                ? value.paymentProviderKey
+                                : null,
+                        });
+                    }}
+                    onDelete={() => {
+                        setValue(null);
+                    }}
+                    readOnly={isDisabled}
+                    busy={isFieldBusy}
+                />
+            )}
+        </FormFieldGroup>
+    );
+}
+
+function getPaymentConfigTitle(item: PaymentConfigElementValue, paymentProviderOptions: SelectFieldComponentOption<string>[]): string {
+    if (item.paymentProviderKey != null) {
+        return paymentProviderOptions
+                .find((option) => option.value === item.paymentProviderKey)
+                ?.label
+            ?? `Zahlungskonfiguration (${item.paymentProviderKey})`;
+    }
+
+    return 'Neue Zahlungskonfiguration';
+}
+
+function getPaymentProviderDefinitionName(provider: PaymentProviderResponseDTO, definitions: PaymentProviderDefinitionResponseDTO[]): string {
+    return definitions.find((definition) => (
+        definition.key === provider.providerKey &&
+        definition.version === provider.providerVersion
+    ))?.name ?? provider.providerKey;
+}
+
+function getPaymentConfigSubtitle(item: PaymentConfigElementValue): string {
+    const parts = [];
+
+    if (item.purpose != null) {
+        parts.push(item.purpose);
+    }
+
+    if (item.items != null && item.items.length > 0) {
+        parts.push(`${item.items.length} ${pluralize(item.items.length, 'Zahlungsposition', 'Zahlungspositionen')}`);
+    }
+
+    return parts.join(' · ');
+}
+
+function wrapPaymentConfigDialogContent(paymentProviders: SelectFieldComponentOption<string>[], rootElement: AnyElement, errorDetails: PaymentConfigErrorDetails | undefined):
+    FunctionComponent<Omit<PaymentConfigDialogContentProps, 'paymentProviders' | 'rootElement' | 'errorDetails'>> {
+    return (props: {
+        item: PaymentConfigElementValue,
+        onChange: (item: PaymentConfigElementValue) => void,
+        readOnly?: boolean,
+        busy?: boolean
+    }) => (
+        <PaymentConfigDialogContent
+            item={props.item}
+            onChange={props.onChange}
+            paymentProviders={paymentProviders}
+            readOnly={props.readOnly}
+            busy={props.busy}
+            rootElement={rootElement}
+            errorDetails={errorDetails}
+        />
+    );
+}
+
+interface PaymentConfigDialogContentProps {
+    item: PaymentConfigElementValue;
+    onChange: (item: PaymentConfigElementValue) => void;
+    readOnly?: boolean;
+    busy?: boolean;
+    paymentProviders: SelectFieldComponentOption<string>[],
+    rootElement: AnyElement;
+    errorDetails?: PaymentConfigErrorDetails;
+}
+
+function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
+    const {
+        item: currentValue,
+        onChange,
+        readOnly: isReadOnly = false,
+        busy: isFieldBusy = false,
+        paymentProviders: paymentProviderOptions,
+        rootElement,
+        errorDetails,
+    } = props;
+
+    const isInteractionDisabled = isReadOnly || isFieldBusy;
+
+    const updateValue = (patch: Partial<PaymentConfigElementValue>) => {
+        onChange({
+            ...currentValue,
+            ...patch,
+        });
+    };
+
+    const updateRequestorMapping = (
+        field: keyof PaymentConfigElementValueRequestorMapping,
+        fieldValue: string | null,
+    ) => {
+        updateValue({
+            mapRequestor: true,
+            requestorMapping: {
+                ...EmptyRequestorMapping,
+                ...currentValue.requestorMapping,
+                [field]: fieldValue,
+            },
+        });
+    };
+
+    const handleAddItem = () => {
+        updateValue({
+            items: [
+                ...(currentValue.items ?? []),
+                createPaymentItem(),
+            ],
+        });
+    };
+
+    const handleItemChanged = (edited: PaymentItemRow, original: PaymentItemRow) => {
+        const items = [...(currentValue.items ?? [])];
+        if (original.index < 0 || original.index >= items.length) {
+            return;
+        }
+
+        items[original.index] = normalizePaymentItem(edited.item);
+        updateValue({items});
+    };
+
+    const handleDeleteItem = (row: PaymentItemRow) => {
+        const items = [...(currentValue.items ?? [])];
+        if (row.index < 0 || row.index >= items.length) {
+            return;
+        }
+
+        items.splice(row.index, 1);
+        updateValue({items});
+    };
+
+    const itemRows = useMemo<PaymentItemRow[]>(() => {
+        return (currentValue.items ?? [])
+            .map((item, index) => ({index, item}));
+    }, [currentValue.items]);
+
+    const ItemDialogContent = useMemo(() => {
+        return wrapPaymentConfigItem(rootElement, errorDetails);
+    }, [rootElement, errorDetails]);
+
+    const itemsError = getFieldError(errorDetails, 'items');
+
+    return (
+        <Box>
+            <Grid
+                container
+                spacing={2}
+                sx={{mt: 0.75}}
+            >
+                <Grid size={{xs: 12, md: 6}}>
+                    <SelectFieldComponent
+                        label="Zahlungsdienstleister"
+                        value={currentValue.paymentProviderKey}
+                        onChange={(providerKey) => updateValue({paymentProviderKey: providerKey})}
+                        options={paymentProviderOptions}
+                        required={true}
+                        disabled={isInteractionDisabled}
+                        emptyStatePlaceholder="Keine Zahlungsdienstleister vorhanden"
+                        error={getFieldError(errorDetails, 'paymentProviderKey')}
+                    />
+                </Grid>
+
+                <Grid size={{xs: 12, md: 6}}>
+                    <TextFieldComponent
+                        label="Buchungstext"
+                        value={currentValue.purpose}
+                        onChange={(purpose) => updateValue({purpose})}
+                        required={true}
+                        disabled={isInteractionDisabled}
+                        hint="Der Buchungstext erscheint auf der Abrechnung der antragstellenden Person (z. B. Bank oder Kreditkarte)."
+                        error={getFieldError(errorDetails, 'purpose')}
+                    />
+                </Grid>
+
+                <Grid size={{xs: 12}}>
+                    <TextFieldComponent
+                        label="Beschreibung"
+                        value={currentValue.description}
+                        onChange={(description) => updateValue({description})}
+                        required={true}
+                        disabled={isInteractionDisabled}
+                        multiline
+                        rows={2}
+                        hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die anfallenden Gebühren."
+                        error={getFieldError(errorDetails, 'description')}
+                    />
+                </Grid>
+            </Grid>
+
+            <CheckboxFieldComponent
+                label="Personen- oder Organisationsangaben zuordnen"
+                value={currentValue.mapRequestor ?? false}
+                onChange={(mapRequestor) => updateValue({
+                    mapRequestor,
+                    requestorMapping: currentValue.requestorMapping ?? EmptyRequestorMapping,
+                })}
+                variant="switch"
+                disabled={isInteractionDisabled}
+                sx={{mt: 1.5, mb: 0}}
+                hint="Sie können hier Angaben zu der Person oder Organisation, welche die Zahlung ausführt, dem Zahlungsvorgang zuordnen. Diese Daten werden an den Zahlungsanbieter übertragen."
+                error={getFieldError(errorDetails, 'requestorMapping')}
+            />
+
+            {
+                currentValue.mapRequestor === true &&
+                <RequestorMappingEditor
+                    value={currentValue.requestorMapping ?? EmptyRequestorMapping}
+                    onChange={updateRequestorMapping}
+                    disabled={isInteractionDisabled}
+                    errorDetails={getNestedErrorDetails(errorDetails, 'requestorMapping')}
+                />
+            }
+
+            <FormFieldGroup
+                label="Zahlungspositionen"
+                required
+                readOnly={isReadOnly}
+                busy={isFieldBusy}
+                error={itemsError}
+                margin="none"
+                sx={{mt: 3.5}}
+                labelAction={(
+                    <Button
+                        size="small"
+                        startIcon={<Add/>}
+                        disabled={isInteractionDisabled}
+                        onClick={handleAddItem}
+                    >
+                        Hinzufügen
+                    </Button>
+                )}
+            >
+
+                {itemRows.length === 0 && (
+                    <EmptyItemsState hasError={itemsError != null}/>
+                )}
+
+                {itemRows.length > 0 && (
+                    <DialogList
+                        dialogTitle="Zahlungspositionen bearbeiten"
+                        dialogViewTitle="Zahlungspositionen ansehen"
+                        getId={(row) => row.index.toString()}
+                        items={itemRows}
+                        title={(row) => getPaymentItemTitle(row.item)}
+                        subTitle={(row) => getPaymentItemSubtitle(row.item, isInteractionDisabled)}
+                        dialogContentComponent={ItemDialogContent}
+                        onDialogSave={handleItemChanged}
+                        onDelete={handleDeleteItem}
+                        readOnly={isReadOnly}
+                        busy={isFieldBusy}
+                        hasError={(row) => hasErrorDetails(getItemErrorDetails(errorDetails, row.index))}
+                    />
+                )}
+            </FormFieldGroup>
+
+            <Box
+                sx={{
+                    mt: 3,
+                }}
+            >
+                <RichTextInputComponent
+                    label="Erfolgsmeldung nach Zahlung"
+                    value={currentValue.successMessage}
+                    onChange={(successMessage) => updateValue({
+                        successMessage: isStringNullOrEmpty(successMessage) ? null : successMessage,
+                    })}
+                    disabled={isInteractionDisabled}
+                    hint="Diese Meldung wird in der Vorgangsansicht angezeigt, nachdem die Zahlung erfolgreich abgeschlossen wurde."
+                    error={getFieldError(errorDetails, 'successMessage')}
+                />
+            </Box>
+
+            <Box
+                sx={{
+                    mt: 2,
+                }}
+            >
+                <RichTextInputComponent
+                    label="Fehlermeldung bei Zahlungsfehler"
+                    value={currentValue.failureMessage}
+                    onChange={(failureMessage) => updateValue({
+                        failureMessage: isStringNullOrEmpty(failureMessage) ? null : failureMessage,
+                    })}
+                    disabled={isInteractionDisabled}
+                    hint="Diese Meldung wird in der Vorgangsansicht angezeigt, wenn die Zahlung fehlgeschlagen ist oder abgebrochen wurde."
+                    error={getFieldError(errorDetails, 'failureMessage')}
+                />
+            </Box>
+        </Box>
+    );
+}
+
+function RequestorMappingEditor(props: {
+    value: PaymentConfigElementValueRequestorMapping;
+    onChange: (field: keyof PaymentConfigElementValueRequestorMapping, value: string | null) => void;
+    disabled: boolean;
+    errorDetails?: PaymentConfigErrorDetails;
+}) {
+    const {
+        value,
+        onChange,
+        disabled,
+        errorDetails,
+    } = props;
+
+    return (
+        <Grid
+            container
+            spacing={2}
+            sx={{mt: 0.5}}
+        >
+            <Grid size={12}>
+                <RadioFieldComponent
+                    label="Art der Zuordnung"
+                    required={true}
+                    value={value.requestorSourceType}
+                    onChange={(val) => {
+                        onChange('requestorSourceType', val);
+                    }}
+                    error={getFieldError(errorDetails, 'requestorSourceType')}
+                    options={[
+                        {
+                            label: 'Es handelt sich um eine natürliche Person',
+                            value: 'fixPerson',
+                        },
+                        {
+                            label: 'Es handelt sich um eine Organisation',
+                            value: 'fixOrg',
+                        },
+                        {
+                            label: 'Die Art der Antragsteller:in wird aus den Prozessdaten abgeleitet',
+                            value: 'processDataKey',
+                        },
+                    ]}
+                />
+            </Grid>
+
+            {
+                value.requestorSourceType === 'processDataKey' &&
+                <>
+                    <RequestorMappingField
+                        label="Datenfeld zur Kennzeichnung als Organisation"
+                        hint="Dieses Prozessdatenfeld muss einen Wahrheitswert enthalten, der angibt, ob es sich um eine Organisation handelt."
+                        value={value.isOrganizationDestinationKey}
+                        onChange={(next) => onChange('isOrganizationDestinationKey', next)}
+                        disabled={disabled}
+                        required={true}
+                        error={getFieldError(errorDetails, 'isOrganizationDestinationKey')}
+                    />
+
+                    <Grid size={{xs: 12, md: 6}}/>
+                </>
+            }
+
+            {
+                (
+                    value.requestorSourceType === 'fixPerson' ||
+                    value.requestorSourceType === 'processDataKey'
+                ) &&
+                <>
+                    <Grid size={12}>
+                        <Typography variant="subtitle2">
+                            Personendaten
+                        </Typography>
+                    </Grid>
+
+                    <RequestorMappingField
+                        label="Nachname"
+                        value={value.lastNameDestinationKey}
+                        onChange={(next) => onChange('lastNameDestinationKey', next)}
+                        disabled={disabled}
+                        error={getFieldError(errorDetails, 'lastNameDestinationKey')}
+                    />
+
+                    <RequestorMappingField
+                        label="Vorname"
+                        value={value.firstNameDestinationKey}
+                        onChange={(next) => onChange('firstNameDestinationKey', next)}
+                        disabled={disabled}
+                        error={getFieldError(errorDetails, 'firstNameDestinationKey')}
+                    />
+
+                    <RequestorMappingField
+                        label="Geschlecht"
+                        value={value.genderDestinationKey}
+                        onChange={(next) => onChange('genderDestinationKey', next)}
+                        disabled={disabled}
+                        hint="Dieses Prozessdatenfeld muss einen der folgenden enthalten: M, W, D"
+                        error={getFieldError(errorDetails, 'genderDestinationKey')}
+                    />
+                </>
+            }
+
+            {
+                (
+                    value.requestorSourceType === 'fixOrg' ||
+                    value.requestorSourceType === 'processDataKey'
+                ) &&
+                <>
+                    <Grid size={12}>
+                        <Typography variant="subtitle2">
+                            Organisationsdaten
+                        </Typography>
+                    </Grid>
+
+                    <RequestorMappingField
+                        label="Organisationsname"
+                        value={value.organizationNameDestinationKey}
+                        onChange={(next) => onChange('organizationNameDestinationKey', next)}
+                        disabled={disabled}
+                        error={getFieldError(errorDetails, 'organizationNameDestinationKey')}
+                    />
+                </>
+            }
+
+            <Grid size={12}>
+                <Typography variant="subtitle2">
+                    Adressdaten
+                </Typography>
+            </Grid>
+
+            <RequestorMappingField
+                label="Straße"
+                value={value.streetDestinationKey}
+                onChange={(next) => onChange('streetDestinationKey', next)}
+                disabled={disabled}
+                error={getFieldError(errorDetails, 'streetDestinationKey')}
+            />
+
+            <RequestorMappingField
+                label="Hausnummer"
+                value={value.houseNumberDestinationKey}
+                onChange={(next) => onChange('houseNumberDestinationKey', next)}
+                disabled={disabled}
+                error={getFieldError(errorDetails, 'houseNumberDestinationKey')}
+            />
+
+            <RequestorMappingField
+                label="Adresszusatz"
+                value={value.addressLineDestinationKey}
+                onChange={(next) => onChange('addressLineDestinationKey', next)}
+                disabled={disabled}
+                error={getFieldError(errorDetails, 'addressLineDestinationKey')}
+            />
+
+            <RequestorMappingField
+                label="Postleitzahl"
+                value={value.postalCodeDestinationKey}
+                onChange={(next) => onChange('postalCodeDestinationKey', next)}
+                disabled={disabled}
+                error={getFieldError(errorDetails, 'postalCodeDestinationKey')}
+            />
+
+            <RequestorMappingField
+                label="Ort"
+                value={value.cityDestinationKey}
+                onChange={(next) => onChange('cityDestinationKey', next)}
+                disabled={disabled}
+                error={getFieldError(errorDetails, 'cityDestinationKey')}
+            />
+
+            <RequestorMappingField
+                label="Land"
+                value={value.countryDestinationKey}
+                onChange={(next) => onChange('countryDestinationKey', next)}
+                disabled={disabled}
+                error={getFieldError(errorDetails, 'countryDestinationKey')}
+            />
+        </Grid>
+    );
+}
+
+function RequestorMappingField(props: {
+    label: string;
+    hint?: string;
+    value: string | null;
+    onChange: (value: string | null) => void;
+    disabled: boolean;
+    required?: boolean;
+    error?: string;
+}) {
+    return (
+        <Grid size={{xs: 12, md: 6}}>
+            <ProcessDataKeyInputComponent
+                label={props.label}
+                hint={props.hint}
+                value={props.value}
+                onChange={props.onChange}
+                disabled={props.disabled}
+                required={props.required}
+                error={props.error}
+            />
+        </Grid>
+    );
+}
+
+function wrapPaymentConfigItem(rootElement: AnyElement, errorDetails: PaymentConfigErrorDetails | undefined): DialogListPropsDialogContentComponent<PaymentItemRow> {
+    return (props: {
+        item: PaymentItemRow,
+        onChange: (item: PaymentItemRow) => void,
+        readOnly?: boolean,
+        busy?: boolean
+    }) => (
+        <PaymentConfigItemEditor
+            item={props.item.item}
+            onChange={(item) => props.onChange({
+                ...props.item,
+                item,
+            })}
+            rootElement={rootElement}
+            disabled={props.readOnly === true || props.busy === true}
+            errorDetails={getItemErrorDetails(errorDetails, props.item.index)}
+        />
+    );
+}
+
+function PaymentConfigItemEditor(props: {
+    item: PaymentConfigElementValueItem;
+    onChange: (item: PaymentConfigElementValueItem) => void;
+    rootElement: AnyElement;
+    disabled: boolean;
+    errorDetails?: PaymentConfigErrorDetails;
+}) {
+    const {
+        item,
+        onChange,
+        rootElement,
+        disabled,
+        errorDetails,
+    } = props;
+
+    return (
+        <Stack
+            spacing={3.5}
+            sx={{pt: 1}}
+        >
+            <Grid
+                container
+                spacing={2}
+            >
+                <Grid size={{xs: 12, md: 6}}>
+                    <TextFieldComponent
+                        label="Beschreibung"
+                        hint="Name und/oder Beschreibung der Zahlungsposition. Wird der das Formular einreichenden Person angezeigt."
+                        value={item.description}
+                        onChange={(description) => onChange({...item, description})}
+                        required={true}
+                        disabled={disabled}
+                        muiPassTroughProps={{margin: 'none'}}
+                        error={getFieldError(errorDetails, 'description')}
+                    />
+                </Grid>
+
+                <Grid size={{xs: 12, md: 6}}>
+                    <TextFieldComponent
+                        label="Referenz"
+                        hint="Eine fachliche Referenz für die Zahlungsposition. Kann nur von Ihnen intern eingesehen werden."
+                        value={item.reference}
+                        onChange={(reference) => onChange({...item, reference})}
+                        required={true}
+                        disabled={disabled}
+                        muiPassTroughProps={{margin: 'none'}}
+                        error={getFieldError(errorDetails, 'reference')}
+                    />
+                </Grid>
+
+                <Grid size={{xs: 12, md: 6}}>
+                    <SelectFieldComponent
+                        label="Kennung"
+                        value={item.idType ?? PaymentConfigElementValueItemIdType.AutoGeneratedUUID}
+                        onChange={(idType) => onChange({
+                            ...item,
+                            idType,
+                            predefinedId: idType === PaymentConfigElementValueItemIdType.Predefined ? item.predefinedId : null,
+                        })}
+                        options={IdTypeOptions}
+                        disabled={disabled}
+                        required={true}
+                        error={getFieldError(errorDetails, 'idType')}
+                    />
+                </Grid>
+
+                {
+                    item.idType === PaymentConfigElementValueItemIdType.Predefined &&
+                    <Grid size={{xs: 12, md: 6}}>
+                        <TextFieldComponent
+                            label="Feste Kennung"
+                            value={item.predefinedId}
+                            onChange={(predefinedId) => onChange({...item, predefinedId})}
+                            required={true}
+                            disabled={disabled}
+                            error={getFieldError(errorDetails, 'predefinedId')}
+                        />
+                    </Grid>
+                }
+            </Grid>
+
+            <Box>
+                <ElementEditorSectionHeader
+                    title="Betrag"
+                    variant="h5"
+                    disableMarginTop
+                />
+
+                <Grid
+                    container
+                    spacing={2}
+                    sx={{mt: 0.5}}
+                >
+                    <Grid size={{xs: 12, md: 6}}>
+                        <SelectFieldComponent
+                            label="Betrag"
+                            value={item.costType ?? PaymentConfigElementValueItemCostType.FixedCosts}
+                            onChange={(costType) => onChange({
+                                ...item,
+                                costType,
+                                fixedCosts: costType === PaymentConfigElementValueItemCostType.FixedCosts ? item.fixedCosts : null,
+                            })}
+                            options={CostTypeOptions}
+                            disabled={disabled}
+                            required={true}
+                            error={getFieldError(errorDetails, 'costType')}
+                        />
+                    </Grid>
+
+                    {
+                        (item.costType ?? PaymentConfigElementValueItemCostType.FixedCosts) === PaymentConfigElementValueItemCostType.FixedCosts &&
+                        <Grid size={{xs: 12, md: 6}}>
+                            <NumberFieldComponent
+                                label="Einzelpreis (netto)"
+                                value={item.fixedCosts}
+                                onChange={(fixedCosts) => onChange({...item, fixedCosts})}
+                                decimalPlaces={2}
+                                minValue={0}
+                                suffix="Euro"
+                                required={true}
+                                disabled={disabled}
+                                error={getFieldError(errorDetails, 'fixedCosts')}
+                            />
+                        </Grid>
+                    }
+
+                    {
+                        item.costType === PaymentConfigElementValueItemCostType.VariableCosts &&
+                        <Grid size={{xs: 12, md: 6}}>
+                            <SelectFieldComponent
+                                label="Berechnung"
+                                value={item.variableCostsCalculationType}
+                                onChange={(variableCostsCalculationType) => onChange({
+                                    ...item,
+                                    variableCostsCalculationType,
+                                })}
+                                options={CalculationTypeOptions}
+                                disabled={disabled}
+                                required={true}
+                                error={getFieldError(errorDetails, 'variableCostsCalculationType')}
+                            />
+                        </Grid>
+                    }
+                </Grid>
+
+                {
+                    item.costType === PaymentConfigElementValueItemCostType.VariableCosts &&
+                    <Box
+                        sx={{
+                            mt: 2,
+                        }}
+                    >
+                        <PaymentValueCalculationEditor
+                            label="Betrag berechnen"
+                            rootElement={rootElement}
+                            calculationType={item.variableCostsCalculationType}
+                            noCodeCalculation={item.variableCostsNoCodeCalculation}
+                            lowCodeCalculation={item.variableCostsLowCodeCalculation}
+                            onNoCodeChange={(variableCostsNoCodeCalculation) => onChange({
+                                ...item,
+                                variableCostsNoCodeCalculation,
+                            })}
+                            onLowCodeChange={(variableCostsLowCodeCalculation) => onChange({
+                                ...item,
+                                variableCostsLowCodeCalculation,
+                            })}
+                            disabled={disabled}
+                            error={getPaymentValueCalculationError(
+                                errorDetails,
+                                item.variableCostsCalculationType,
+                                'variableCostsNoCodeCalculation',
+                                'variableCostsLowCodeCalculation',
+                            )}
+                        />
+                    </Box>
+                }
+            </Box>
+
+            <Box>
+                <ElementEditorSectionHeader
+                    title="Menge"
+                    variant="h5"
+                    disableMarginTop
+                />
+
+                <Grid
+                    container
+                    spacing={2}
+                    sx={{mt: 0.5}}
+                >
+                    <Grid size={{xs: 12, md: 6}}>
+                        <SelectFieldComponent
+                            label="Menge"
+                            value={item.quantityType ?? PaymentConfigElementValueItemQuantityType.FixedQuantity}
+                            onChange={(quantityType) => onChange({
+                                ...item,
+                                quantityType,
+                                fixedQuantity: quantityType === PaymentConfigElementValueItemQuantityType.FixedQuantity ? item.fixedQuantity : null,
+                            })}
+                            options={QuantityTypeOptions}
+                            disabled={disabled}
+                            required={true}
+                            error={getFieldError(errorDetails, 'quantityType')}
+                        />
+                    </Grid>
+
+                    {
+                        (item.quantityType ?? PaymentConfigElementValueItemQuantityType.FixedQuantity) === PaymentConfigElementValueItemQuantityType.FixedQuantity &&
+                        <Grid size={{xs: 12, md: 6}}>
+                            <NumberFieldComponent
+                                label="Menge"
+                                value={item.fixedQuantity}
+                                onChange={(fixedQuantity) => onChange({
+                                    ...item,
+                                    fixedQuantity: fixedQuantity == null ? null : Math.round(fixedQuantity),
+                                })}
+                                minValue={0}
+                                decimalPlaces={0}
+                                required={true}
+                                disabled={disabled}
+                                error={getFieldError(errorDetails, 'fixedQuantity')}
+                            />
+                        </Grid>
+                    }
+
+                    {
+                        item.quantityType === PaymentConfigElementValueItemQuantityType.VariableQuantity &&
+                        <Grid size={{xs: 12, md: 6}}>
+                            <SelectFieldComponent
+                                label="Berechnung"
+                                value={item.variableQuantityCalculationType}
+                                onChange={(variableQuantityCalculationType) => onChange({
+                                    ...item,
+                                    variableQuantityCalculationType,
+                                })}
+                                options={CalculationTypeOptions}
+                                disabled={disabled}
+                                required={true}
+                                error={getFieldError(errorDetails, 'variableQuantityCalculationType')}
+                            />
+                        </Grid>
+                    }
+                </Grid>
+
+                {
+                    item.quantityType === PaymentConfigElementValueItemQuantityType.VariableQuantity &&
+                    <Box
+                        sx={{
+                            mt: 2,
+                        }}
+                    >
+                        <PaymentValueCalculationEditor
+                            label="Menge berechnen"
+                            rootElement={rootElement}
+                            calculationType={item.variableQuantityCalculationType}
+                            noCodeCalculation={item.variableQuantityNoCodeCalculation}
+                            lowCodeCalculation={item.variableQuantityLowCodeCalculation}
+                            onNoCodeChange={(variableQuantityNoCodeCalculation) => onChange({
+                                ...item,
+                                variableQuantityNoCodeCalculation,
+                            })}
+                            onLowCodeChange={(variableQuantityLowCodeCalculation) => onChange({
+                                ...item,
+                                variableQuantityLowCodeCalculation,
+                            })}
+                            disabled={disabled}
+                            error={getPaymentValueCalculationError(
+                                errorDetails,
+                                item.variableQuantityCalculationType,
+                                'variableQuantityNoCodeCalculation',
+                                'variableQuantityLowCodeCalculation',
+                            )}
+                        />
+                    </Box>
+                }
+            </Box>
+
+            <Box>
+                <ElementEditorSectionHeader
+                    title="Weitere Daten"
+                    variant="h5"
+                    disableMarginTop
+                />
+
+                <Grid
+                    container
+                    spacing={2}
+                    sx={{mt: 0.5}}
+                >
+                    <Grid size={{xs: 12, md: 6}}>
+                        <NumberFieldComponent
+                            label="Steuersatz"
+                            value={item.fixedTaxRate}
+                            onChange={(taxRate) => onChange({...item, fixedTaxRate: taxRate})}
+                            decimalPlaces={2}
+                            minValue={0}
+                            maxValue={100}
+                            suffix="%"
+                            disabled={disabled}
+                            error={getFieldError(errorDetails, 'fixedTaxRate')}
+                        />
+                    </Grid>
+                </Grid>
+
+                <AdditionalBookingDataEditor
+                    value={item.additionalBookingData}
+                    onChange={(additionalBookingData) => onChange({...item, additionalBookingData})}
+                    disabled={disabled}
+                    error={getFieldError(errorDetails, 'additionalBookingData')}
+                />
+            </Box>
+        </Stack>
+    );
+}
+
+function PaymentValueCalculationEditor(props: {
+    label: string;
+    rootElement: AnyElement;
+    calculationType: PaymentConfigElementValueItemVariableValueCalculationType | null;
+    noCodeCalculation: NoCodeOperand | null;
+    lowCodeCalculation: JavascriptCode | null;
+    onNoCodeChange: (value: NoCodeOperand | null) => void;
+    onLowCodeChange: (value: JavascriptCode | null) => void;
+    disabled: boolean;
+    error?: string;
+}) {
+    const calculationType = props.calculationType ?? PaymentConfigElementValueItemVariableValueCalculationType.NoCode;
+
+    return (
+        <>
+            {
+                calculationType === PaymentConfigElementValueItemVariableValueCalculationType.NoCode &&
+                <NoCodeInputFieldComponent
+                    rootElement={props.rootElement}
+                    label={props.label}
+                    value={props.noCodeCalculation == null ? null : {noCode: props.noCodeCalculation}}
+                    desiredReturnType={NoCodeDataType.Number}
+                    onChange={(value) => props.onNoCodeChange(value?.noCode ?? null)}
+                    disabled={props.disabled}
+                    disablePopoutModeWhenFormLayoutChild={true}
+                    error={props.error}
+                />
+            }
+
+            {
+                calculationType === PaymentConfigElementValueItemVariableValueCalculationType.LowCode &&
+                <CodeInputFieldComponent
+                    label={props.label}
+                    value={props.lowCodeCalculation?.code}
+                    onChange={(code) => props.onLowCodeChange(code == null ? null : {code})}
+                    language="javascript"
+                    height="220px"
+                    disabled={props.disabled}
+                    error={props.error}
+                />
+            }
+        </>
+    );
+}
+
+function AdditionalBookingDataEditor(props: {
+    value: Record<string, string> | null;
+    onChange: (value: Record<string, string> | null) => void;
+    disabled: boolean;
+    error?: string;
+}) {
+    const rows = Object.entries(props.value ?? {});
+
+    const updateRows = (nextRows: Array<[string, string]>) => {
+        const nextValue = Object.fromEntries(nextRows.filter(([key]) => !isStringNullOrEmpty(key)));
+        props.onChange(Object.keys(nextValue).length === 0 ? null : nextValue);
+    };
+
+    return (
+        <FormFieldGroup
+            label="Buchungsdaten"
+            hint="In den Buchungsdaten können technisch relevante Informationen für die weitergehende Verbuchung in Folgesystemen mitgegeben werden."
+            error={props.error}
+            disabled={props.disabled}
+            margin="none"
+            sx={{mt: 2}}
+            labelAction={(
+                <Button
+                    size="small"
+                    startIcon={<Add/>}
+                    disabled={props.disabled}
+                    onClick={() => updateRows([...rows, [`schluessel${rows.length + 1}`, '']])}
+                >
+                    Hinzufügen
+                </Button>
+            )}
+        >
+
+            {rows.length === 0 && (
+                <EmptyBookingDataState
+                    hasError={props.error != null}
+                />
+            )}
+
+            <Stack spacing={1.5}>
+                {
+                    rows.map(([key, value], index) => (
+                        <Grid
+                            key={index}
+                            container
+                            spacing={1.5}
+                            sx={{
+                                alignItems: 'flex-start',
+                            }}
+                        >
+                            <Grid size={{xs: 12, md: 5}}>
+                                <TextFieldComponent
+                                    label="Schlüssel"
+                                    value={key}
+                                    onChange={(nextKey) => {
+                                        const nextRows = [...rows];
+                                        nextRows[index] = [nextKey ?? '', value];
+                                        updateRows(nextRows);
+                                    }}
+                                    disabled={props.disabled}
+                                    muiPassTroughProps={{margin: 'none'}}
+                                    required
+                                    error={isStringNullOrEmpty(key) ? props.error : undefined}
+                                />
+                            </Grid>
+
+                            <Grid size={{xs: 12, md: 5}}>
+                                <TextFieldComponent
+                                    label="Wert"
+                                    value={value}
+                                    onChange={(nextValue) => {
+                                        const nextRows = [...rows];
+                                        nextRows[index] = [key, nextValue ?? ''];
+                                        updateRows(nextRows);
+                                    }}
+                                    disabled={props.disabled}
+                                    muiPassTroughProps={{margin: 'none'}}
+                                />
+                            </Grid>
+
+                            <Grid size={{xs: 12, md: 2}}>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<Delete/>}
+                                    disabled={props.disabled}
+                                    onClick={() => updateRows(rows.filter((_, rowIndex) => rowIndex !== index))}
+                                    sx={{mt: {xs: 0, md: 1}}}
+                                >
+                                    Entfernen
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    ))
+                }
+            </Stack>
+        </FormFieldGroup>
+    );
+}
+
+function EmptyItemsState(props: { hasError: boolean }) {
+    return (
+        <Box
+            sx={(theme) => ({
+                px: 1.5,
+                py: 0.75,
+                minHeight: FormFieldTokens.controlMinHeight,
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: 1,
+                border: props.hasError ? '1px solid' : '1px dashed',
+                borderColor: props.hasError ? theme.palette.error.main : alpha(theme.palette.text.primary, 0.18),
+            })}
+        >
+            <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                    alignItems: 'center',
+                }}
+            >
+                <Receipt
+                    sx={{
+                        flexShrink: 0,
+                        fontSize: 20,
+                        color: 'text.secondary',
+                    }}
+                />
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{minWidth: 0}}
+                >
+                    Keine Zahlungspositionen vorhanden.
+                </Typography>
+            </Stack>
+        </Box>
+    );
+}
+
+function EmptyBookingDataState(props: { hasError: boolean }) {
+    return (
+        <Box
+            sx={(theme) => ({
+                px: 1.5,
+                py: 0.75,
+                minHeight: FormFieldTokens.controlMinHeight,
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: 1,
+                border: props.hasError ? '1px solid' : '1px dashed',
+                borderColor: props.hasError ? theme.palette.error.main : alpha(theme.palette.text.primary, 0.18),
+            })}
+        >
+            <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                    alignItems: 'center',
+                }}
+            >
+                <Receipt
+                    sx={{
+                        flexShrink: 0,
+                        fontSize: 20,
+                        color: 'text.secondary',
+                    }}
+                />
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{minWidth: 0}}
+                >
+                    Keine Buchungsdaten vorhanden.
+                </Typography>
+            </Stack>
+        </Box>
+    );
+}
+
+function asErrorDetails(value: unknown): PaymentConfigErrorDetails | undefined {
+    if (value != null && typeof value === 'object' && !Array.isArray(value)) {
+        return value as PaymentConfigErrorDetails;
+    }
+
+    return undefined;
+}
+
+function getFieldError(errorDetails: PaymentConfigErrorDetails | null | undefined, fieldKey: string): string | undefined {
+    const error = errorDetails?.[fieldKey];
+    return typeof error === 'string' ? error : undefined;
+}
+
+function getNestedErrorDetails(errorDetails: PaymentConfigErrorDetails | null | undefined, fieldKey: string): PaymentConfigErrorDetails | undefined {
+    return asErrorDetails(errorDetails?.[fieldKey]);
+}
+
+function getItemErrorDetails(errorDetails: PaymentConfigErrorDetails | null | undefined, itemIndex: number): PaymentConfigErrorDetails | undefined {
+    const itemErrors = errorDetails?.items;
+    if (!Array.isArray(itemErrors)) {
+        return undefined;
+    }
+
+    return asErrorDetails(itemErrors[itemIndex]);
+}
+
+function hasErrorDetails(errorDetails: PaymentConfigErrorDetails | null | undefined): boolean {
+    return errorDetails != null && Object.keys(errorDetails).length > 0;
+}
+
+function getPaymentValueCalculationError(
+    errorDetails: PaymentConfigErrorDetails | null | undefined,
+    calculationType: PaymentConfigElementValueItemVariableValueCalculationType | null,
+    noCodeFieldKey: string,
+    lowCodeFieldKey: string,
+): string | undefined {
+    return calculationType === PaymentConfigElementValueItemVariableValueCalculationType.LowCode
+        ? getFieldError(errorDetails, lowCodeFieldKey)
+        : getFieldError(errorDetails, noCodeFieldKey);
+}
+
+function createPaymentItem(): PaymentConfigElementValueItem {
+    return {
+        idType: PaymentConfigElementValueItemIdType.AutoGeneratedUUID,
+        predefinedId: null,
+        description: null,
+        reference: null,
+        costType: PaymentConfigElementValueItemCostType.FixedCosts,
+        fixedCosts: 0,
+        variableCostsCalculationType: PaymentConfigElementValueItemVariableValueCalculationType.NoCode,
+        variableCostsNoCodeCalculation: null,
+        variableCostsLowCodeCalculation: null,
+        quantityType: PaymentConfigElementValueItemQuantityType.FixedQuantity,
+        fixedQuantity: 1,
+        variableQuantityCalculationType: PaymentConfigElementValueItemVariableValueCalculationType.NoCode,
+        variableQuantityNoCodeCalculation: null,
+        variableQuantityLowCodeCalculation: null,
+        fixedTaxRate: 0,
+        additionalBookingData: null,
+    };
+}
+
+function normalizePaymentItem(item: PaymentConfigElementValueItem): PaymentConfigElementValueItem {
+    return {
+        ...createPaymentItem(),
+        ...item,
+        idType: item.idType ?? PaymentConfigElementValueItemIdType.AutoGeneratedUUID,
+        costType: item.costType ?? PaymentConfigElementValueItemCostType.FixedCosts,
+        quantityType: item.quantityType ?? PaymentConfigElementValueItemQuantityType.FixedQuantity,
+        variableCostsCalculationType: item.variableCostsCalculationType ?? PaymentConfigElementValueItemVariableValueCalculationType.NoCode,
+        variableQuantityCalculationType: item.variableQuantityCalculationType ?? PaymentConfigElementValueItemVariableValueCalculationType.NoCode,
+    };
+}
+
+function getPaymentItemTitle(item: PaymentConfigElementValueItem): string {
+    if (!isStringNullOrEmpty(item.description)) {
+        return item.description!;
+    }
+
+    if (!isStringNullOrEmpty(item.reference)) {
+        return item.reference!;
+    }
+
+    return 'Unbenannte Zahlungsposition';
+}
+
+function getPaymentItemSubtitle(item: PaymentConfigElementValueItem, isReadonly: boolean): string {
+    const cost = item.costType === PaymentConfigElementValueItemCostType.VariableCosts ?
+        'Berechneter Betrag' :
+        `${item.fixedCosts ?? 0} Euro`;
+    const quantity = item.quantityType === PaymentConfigElementValueItemQuantityType.VariableQuantity ?
+        'Berechnete Menge' :
+        `${item.fixedQuantity ?? 0}x`;
+
+    return [
+        cost,
+        quantity,
+        item.fixedTaxRate != null ? `${item.fixedTaxRate}% Steuer` : undefined,
+        isReadonly ? 'Zum Anzeigen öffnen' : undefined,
+    ]
+        .filter((part) => part != null)
+        .join(' · ');
+}

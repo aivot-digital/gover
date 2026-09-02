@@ -32,7 +32,7 @@ class ProcessDataServiceTest {
         var instance = new ProcessInstanceEntity(
                 42L,
                 "CASE-42",
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 7,
                 1,
                 ProcessInstanceStatus.Running,

@@ -182,8 +182,8 @@ export function HelpDialog(props: HelpDialogProps) {
     const application = props.form;
     const [technicalDepartment, setTechnicalDepartment] = useState<PublicDepartmentResponseDTO>();
     const [specialDepartment, setSpecialDepartment] = useState<PublicDepartmentResponseDTO>();
-    const technicalSupportDepartmentId = application?.technicalSupportDepartmentId ?? null;
-    const legalSupportDepartmentId = application?.legalSupportDepartmentId ?? null;
+    const technicalSupportDepartmentId = props.version?.technicalSupportDepartmentId ?? null;
+    const legalSupportDepartmentId = props.version?.legalSupportDepartmentId ?? null;
 
     useEffect(() => {
         if (technicalSupportDepartmentId == null) {
@@ -231,7 +231,7 @@ export function HelpDialog(props: HelpDialogProps) {
         };
     }, [legalSupportDepartmentId]);
 
-    const mailSubjectTitle = application.publicTitle ?? 'Online-Formular';
+    const mailSubjectTitle = props.version?.publicTitle ?? application.publicTitle ?? 'Online-Formular';
     const hasSpecialContact = specialDepartment != null;
     const hasTechnicalContact = technicalDepartment != null;
 

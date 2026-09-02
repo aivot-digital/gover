@@ -172,7 +172,7 @@ export function SecretsDetailsPageIndex() {
                     onChange={handleInputChange('key')}
                     onBlur={handleInputBlur('key')}
                     disabled={true}
-                    sx={{
+                    controlSx={{
                         marginTop: 0,
                     }}
                     endAction={

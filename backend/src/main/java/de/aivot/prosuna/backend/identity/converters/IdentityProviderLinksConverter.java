@@ -1,12 +1,11 @@
 package de.aivot.prosuna.backend.identity.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.identity.models.IdentityProviderLink;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import tools.jackson.core.JacksonException;
 
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -46,12 +45,12 @@ public class IdentityProviderLinksConverter implements AttributeConverter<List<I
             return "[]";
         }
 
-        var objectMapper = new ObjectMapper();
+        var objectMapper = JsonMapperFactory.getInstance();
 
         String dbData;
         try {
             dbData = objectMapper.writeValueAsString(attributes);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 
@@ -64,14 +63,14 @@ public class IdentityProviderLinksConverter implements AttributeConverter<List<I
             return new LinkedList<>();
         }
 
-        var objectMapper = new ObjectMapper()
+        var objectMapper = JsonMapperFactory.getInstance()
                 .readerForListOf(IdentityProviderLink.class);
 
         List<IdentityProviderLink> mappings;
         try {
             mappings = objectMapper
                     .readValue(dbData);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 

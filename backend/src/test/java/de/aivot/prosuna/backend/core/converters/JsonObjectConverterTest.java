@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.core.converters;
 
-import de.aivot.prosuna.backend.core.converters.JsonObjectConverter;
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
@@ -21,7 +21,7 @@ class JsonObjectConverterTest {
         payload.put("clearedField", null);
         payload.put("nested", nested);
 
-        var converter = new JsonObjectConverter();
+        var converter = new JsonObjectConverter(JsonMapperTestUtils.createMapper());
 
         var serialized = converter.convertToDatabaseColumn(payload);
         var roundTripped = converter.convertToEntityAttribute(serialized);

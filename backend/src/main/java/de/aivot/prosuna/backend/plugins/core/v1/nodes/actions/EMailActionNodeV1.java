@@ -24,6 +24,7 @@ import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.models.*;
@@ -117,14 +118,33 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{
+                ProcessNodeExecutionType.Automatic,
+                ProcessNodeExecutionType.SemiAutomatic,
+        };
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "E-Mail versenden";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Sendet automatisiert oder manuell E-Mails an ausgewählte Empfänger:innen.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Versendet E-Mails innerhalb eines Prozesses entweder automatisch oder nach manueller Bearbeitung durch eine Mitarbeiter:in.
+
+                Empfänger:innen, Betreff und Inhalt werden abhängig vom gewählten Ausführungsmodus vorkonfiguriert oder in einer Aufgabe ergänzt. Nach dem Versand stellt das Element die verwendeten Nachrichten- und Bearbeitungsinformationen als Ausgänge bereit.
+                """;
     }
 
     @Nonnull
@@ -218,27 +238,32 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 new ProcessNodeOutput(
                         OUTPUT_NAME_TO,
                         "Empfänger:innen",
-                        "Die Empfänger:innen der versendeten E-Mail."
+                        "Die Empfänger:innen der versendeten E-Mail.",
+                        "Array<string>"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_BCC,
                         "BCC-Empfänger:innen",
-                        "Die BCC-Empfänger:innen der versendeten E-Mail."
+                        "Die BCC-Empfänger:innen der versendeten E-Mail.",
+                        "Array<string> | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_SUBJECT,
                         "Betreff",
-                        "Der Betreff der versendeten E-Mail."
+                        "Der Betreff der versendeten E-Mail.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONTENT,
                         "Inhalt",
-                        "Der HTML-Inhalt der versendeten E-Mail."
+                        "Der HTML-Inhalt der versendeten E-Mail.",
+                        "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_ATTACHMENT_SET_DATA_KEYS,
                         "Anlagensätze",
-                        "Die Datenschlüssel der als E-Mail-Anhang versendeten Anlagensätze."
+                        "Die Datenschlüssel der als E-Mail-Anhang versendeten Anlagensätze.",
+                        "Array<string>"
                 )
         );
     }

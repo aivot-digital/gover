@@ -17,6 +17,8 @@ interface LeafletPointPickerMapProps {
     disabled: boolean;
     marker?: LeafletPoint | null;
     onPick: (point: LeafletPoint) => void;
+    ariaLabel: string;
+    ariaDescribedBy?: string;
     style?: CSSProperties;
 }
 
@@ -141,7 +143,8 @@ export const LeafletPointPickerMap = forwardRef<LeafletPointPickerMapHandle, Lea
 
     useEffect(() => {
         const map = mapRef.current;
-        if (map == null) {
+        const container = mapContainerRef.current;
+        if (map == null || container == null) {
             return;
         }
 
@@ -161,6 +164,8 @@ export const LeafletPointPickerMap = forwardRef<LeafletPointPickerMapHandle, Lea
                 handler.enable();
             }
         });
+
+        container.tabIndex = props.disabled ? -1 : 0;
 
         if (props.disabled) {
             zoomControlRef.current?.remove();
@@ -256,6 +261,10 @@ export const LeafletPointPickerMap = forwardRef<LeafletPointPickerMapHandle, Lea
     return (
         <div
             ref={mapContainerRef}
+            role="region"
+            aria-label={props.ariaLabel}
+            aria-describedby={props.ariaDescribedBy}
+            aria-disabled={props.disabled || undefined}
             style={props.style}
         />
     );

@@ -8,7 +8,7 @@ import de.aivot.prosuna.backend.utils.MultipartUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
-import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
+import org.springframework.boot.http.client.HttpClientSettings;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +37,7 @@ public class HttpService {
     }
 
     static ClientHttpRequestFactory clientHttpRequestFactory(HttpServiceProperties httpConfig) {
-        ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings
+        HttpClientSettings settings = HttpClientSettings
                 .defaults()
                 .withConnectTimeout(Duration.ofSeconds(httpConfig.getConnectionTimeoutSeconds()))
                 .withReadTimeout(Duration.ofSeconds(httpConfig.getReadTimeoutSeconds()));

@@ -66,7 +66,7 @@ where payment_request is not null
 -- Add new column to submissions table for transaction key
 
 alter table submissions
-    add column payment_transaction_key varchar(36) null references payment_transactions (key) on delete restrict;
+    add column payment_transaction_key varchar(128) null references payment_transactions (key) on delete restrict;
 
 -- Update all submissions with new references to the payment transactions
 

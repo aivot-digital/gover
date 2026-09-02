@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -68,14 +69,30 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Vorgang beenden";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Beendet die Ausführung eines Vorgangs und berechnet/startet die Aufbewahrungsfrist.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Schließt einen laufenden Vorgang regulär ab und beendet damit seine weitere Prozessausführung.
+
+                Beim Abschluss wird die für den Vorgang geltende Aufbewahrungsfrist berechnet und gestartet. Das Element besitzt keinen weiteren Ausgang, da mit seiner Ausführung der gesamte Vorgang beendet wird.
+                """;
     }
 
     @Nonnull

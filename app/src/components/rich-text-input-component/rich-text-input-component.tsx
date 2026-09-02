@@ -1,5 +1,4 @@
-import Typography from '@mui/material/Typography';
-import {Box, FormHelperText, IconButton, SxProps, Tooltip} from '@mui/material';
+import {Box, IconButton, type SxProps, type Theme, Tooltip} from '@mui/material';
 import {alpha, useTheme} from '@mui/material/styles';
 import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState} from 'react';
 import {
@@ -29,17 +28,18 @@ import {
 import type {EditorState, LexicalEditor} from 'lexical';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
+import {FormField, type FormFieldLayoutProps, mergeAriaIds} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
+import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
 import type {EndAction} from '../text-field/text-field-component-props';
 import {
     DynamicTextTokenNode,
     getDynamicTextTokenStyles,
     useDynamicTextSyntaxHighlights,
 } from '../dynamic-text/dynamic-text-lexical';
-import {
-    type DynamicTextVariableMetadata,
-    useDynamicTextTokenTitles,
-} from '../dynamic-text/dynamic-text-metadata';
+import {type DynamicTextVariableMetadata, useDynamicTextTokenTitles} from '../dynamic-text/dynamic-text-metadata';
 import {dynamicTextPlugin} from './rich-text-input-component-dynamic-text-plugin';
+import {placeholderPlugin} from './rich-text-input-component-placeholder-plugin';
 import '@mdxeditor/editor/style.css';
 
 const MDX_EDITOR_DE_TRANSLATIONS: Record<string, string> = {
@@ -95,14 +95,10 @@ const mdxEditorGermanTranslation: Translation = (key, defaultValue, interpolatio
 
 const AUTO_REDUCED_MODE_MAX_WIDTH = 630;
 
-export interface RichTextInputComponentProps {
-    id?: string;
-    ariaLabelledBy?: string;
-    ariaDescribedBy?: string;
+export interface RichTextInputComponentProps extends FormFieldLayoutProps {
     label?: string | null | undefined;
     hint?: string | null | undefined;
     error?: string | null | undefined;
-    invalid?: boolean | null | undefined;
     required?: boolean | null | undefined;
     disabled?: boolean | null | undefined;
     readOnly?: boolean | null | undefined;
@@ -113,65 +109,7 @@ export interface RichTextInputComponentProps {
     value: string | null | undefined;
     onChange: (value: string | null) => void;
     endAction?: EndAction;
-    sx?: SxProps | null | undefined;
-}
-
-type EditorAccessibilityProps = Pick<
-RichTextInputComponentProps,
-'id' | 'ariaLabelledBy' | 'ariaDescribedBy' | 'required' | 'disabled' | 'readOnly' | 'busy'
-> & {
-    invalid: boolean;
-};
-
-function useEditorAccessibility(container: HTMLElement | null, props: EditorAccessibilityProps) {
-    useEffect(() => {
-        if (container == null) {
-            return;
-        }
-
-        const setOptionalAttribute = (element: HTMLElement, name: string, value: string | null) => {
-            if (value == null) {
-                element.removeAttribute(name);
-            } else {
-                element.setAttribute(name, value);
-            }
-        };
-        const updateAttributes = () => {
-            const editors = Array.from(container.querySelectorAll<HTMLElement>(
-                '[role="textbox"][contenteditable], .cm-content[contenteditable]',
-            ));
-            editors.forEach((editor, index) => {
-                setOptionalAttribute(editor, 'id', props.id == null ? null : `${props.id}${index === 0 ? '' : `-${index}`}`);
-                setOptionalAttribute(editor, 'aria-labelledby', props.ariaLabelledBy ?? null);
-                setOptionalAttribute(editor, 'aria-describedby', props.ariaDescribedBy ?? null);
-                setOptionalAttribute(editor, 'aria-invalid', props.invalid ? 'true' : null);
-                setOptionalAttribute(editor, 'aria-required', props.required ? 'true' : null);
-                setOptionalAttribute(editor, 'aria-disabled', props.disabled || props.busy ? 'true' : null);
-                setOptionalAttribute(editor, 'aria-busy', props.busy ? 'true' : null);
-                setOptionalAttribute(
-                    editor,
-                    'aria-readonly',
-                    props.readOnly || props.disabled || props.busy ? 'true' : null,
-                );
-                editor.setAttribute('aria-multiline', 'true');
-            });
-        };
-
-        updateAttributes();
-        const observer = new MutationObserver(updateAttributes);
-        observer.observe(container, {childList: true, subtree: true});
-        return () => observer.disconnect();
-    }, [
-        container,
-        props.ariaDescribedBy,
-        props.ariaLabelledBy,
-        props.busy,
-        props.disabled,
-        props.id,
-        props.invalid,
-        props.readOnly,
-        props.required,
-    ]);
+    controlSx?: SxProps<Theme> | null | undefined;
 }
 
 export interface RichTextInputComponentMethods {
@@ -192,15 +130,16 @@ interface RichTextToolbarActionProps {
 
 function RichTextToolbarAction(props: RichTextToolbarActionProps) {
     const [activeEditor, currentSelection] = useCellValues(activeEditor$, currentSelection$);
-    const label = props.action.tooltip ?? 'Aktion ausführen';
+    const label = props.action.ariaLabel ?? props.action.tooltip ?? 'Aktion ausführen';
 
     return (
-        <Tooltip title={label} arrow>
+        <Tooltip title={props.action.tooltip ?? label} arrow>
             <IconButton
                 aria-label={label}
                 disabled={props.disabled}
                 size="small"
                 onMouseDown={(event) => {
+                    // Opening a picker moves focus away from Lexical, so retain its selection before the click.
                     event.preventDefault();
                     if (activeEditor != null && currentSelection != null) {
                         props.onCaptureSelection({
@@ -223,11 +162,11 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
     const [isAutoReducedMode, setIsAutoReducedMode] = useState(false);
     const editorRef = useRef<MDXEditorMethods | null>(null);
     const savedSelectionRef = useRef<SavedEditorSelection | null>(null);
+    const generatedId = useNormalizedReactId();
     const {
         label,
         hint,
         error,
-        invalid,
         required,
         disabled,
         readOnly,
@@ -238,8 +177,19 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
         value,
         onChange,
         endAction,
-        sx,
+        controlSx,
     } = props;
+    const controlId = props.id ?? `rich-text-field-${generatedId}`;
+    const labelId = `${controlId}-label`;
+    const helperTextId = `${controlId}-helper-text`;
+    const hasLabel = label != null && label.length > 0;
+    const hasError = error != null && error.length > 0;
+    const helperText = hasError ? error : hint;
+    const hasHelperText = helperText != null && helperText.length > 0;
+    const describedBy = mergeAriaIds(
+        hasHelperText ? helperTextId : undefined,
+        props.ariaDescribedBy,
+    );
 
     const updateAutoReducedMode = useCallback((width: number) => {
         const nextIsAutoReducedMode = width < AUTO_REDUCED_MODE_MAX_WIDTH;
@@ -248,10 +198,9 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
 
     const isReadOnly = Boolean(disabled) || Boolean(readOnly) || Boolean(busy);
     const isReducedMode = reducedMode === true || isAutoReducedMode;
-    const sxArray = Array.isArray(sx) ? sx : [sx];
-    const hasError = error != null || invalid === true;
-    // Dynamic-text tokens are otherwise reported as misspellings. This also disables prose spellchecking and
-    // should be revisited when MDXEditor supports reliable token-level spellcheck suppression.
+    const controlSxArray = Array.isArray(controlSx) ? controlSx : [controlSx];
+    // Browsers otherwise mark expression tokens as misspellings. Revisit this once token-level spellchecking is
+    // reliable across the browsers supported by the authoring UI.
     const enableSpellCheck = !dynamicText;
     const focusColor = hasError ? theme.palette.error.main : theme.palette.primary.main;
     const outlinedBorderColor = theme.palette.mode === 'light'
@@ -285,21 +234,8 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
     }, [updateAutoReducedMode]);
     const normalizedValue = value ?? '';
 
-    useDynamicTextTokenTitles(
-        dynamicText ? overlayContainer : null,
-        dynamicTextVariableMetadata,
-    );
+    useDynamicTextTokenTitles(dynamicText ? overlayContainer : null, dynamicTextVariableMetadata);
     useDynamicTextSyntaxHighlights(dynamicText ? overlayContainer : null);
-    useEditorAccessibility(overlayContainer, {
-        id: props.id,
-        ariaLabelledBy: props.ariaLabelledBy,
-        ariaDescribedBy: props.ariaDescribedBy,
-        required: props.required,
-        disabled: props.disabled,
-        readOnly: props.readOnly,
-        busy: props.busy,
-        invalid: hasError,
-    });
 
     useImperativeHandle(ref, () => ({
         insertMarkdown: (markdown) => {
@@ -312,9 +248,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
             }
 
             savedSelection.editor.setEditorState(savedSelection.editorState);
-            savedSelection.editor.focus(
-                () => editorRef.current?.insertMarkdown(markdown),
-            );
+            savedSelection.editor.focus(() => editorRef.current?.insertMarkdown(markdown));
         },
         focus: () => editorRef.current?.focus(undefined, {preventScroll: true}),
     }), []);
@@ -346,27 +280,69 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
         };
     }, [overlayContainer, updateAutoReducedMode]);
 
-    return (
-        <Box
-            sx={sxArray}
-        >
-            {
-                label != null &&
-                label !== '' &&
-                <Typography
-                    sx={{
-                        marginBottom: 1,
-                        fontWeight: 'medium',
-                    }}
-                >
-                    {label}{required ? ' *' : ''}
-                </Typography>
-            }
+    useEffect(() => {
+        if (overlayContainer == null) {
+            return;
+        }
 
+        const applyEditorAccessibility = () => {
+            const editors = overlayContainer.querySelectorAll<HTMLElement>('[contenteditable]');
+            editors.forEach((editor, index) => {
+                editor.id = index === 0 ? controlId : `${controlId}-${index + 1}`;
+                editor.setAttribute('role', 'textbox');
+                editor.setAttribute('aria-multiline', 'true');
+                if (hasLabel) {
+                    editor.setAttribute('aria-labelledby', labelId);
+                    editor.removeAttribute('aria-label');
+                } else {
+                    editor.removeAttribute('aria-labelledby');
+                    editor.setAttribute('aria-label', props.ariaLabel ?? 'Formatierter Text');
+                }
+                if (describedBy != null) {
+                    editor.setAttribute('aria-describedby', describedBy);
+                } else {
+                    editor.removeAttribute('aria-describedby');
+                }
+                editor.toggleAttribute('aria-required', Boolean(required));
+                editor.toggleAttribute('aria-invalid', hasError);
+                editor.toggleAttribute('aria-readonly', isReadOnly);
+                editor.toggleAttribute('aria-disabled', Boolean(disabled) || Boolean(busy));
+                editor.toggleAttribute('aria-busy', Boolean(busy));
+            });
+        };
+
+        applyEditorAccessibility();
+        const observer = new MutationObserver(applyEditorAccessibility);
+        observer.observe(overlayContainer, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['contenteditable'],
+        });
+        return () => observer.disconnect();
+    }, [busy, controlId, describedBy, disabled, hasError, hasLabel, isReadOnly, labelId, overlayContainer, props.ariaLabel, required]);
+
+    return (
+        <FormField
+            id={controlId}
+            label={label ?? ''}
+            hint={hint}
+            error={error}
+            required={Boolean(required)}
+            disabled={Boolean(disabled)}
+            readOnly={Boolean(readOnly)}
+            busy={Boolean(busy)}
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            margin={props.margin}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
+        >
             <Box
                 ref={handleOverlayContainerRef}
                 data-dynamic-text-multiline={dynamicText || undefined}
-                sx={{
+                sx={[{
                     position: 'relative',
                     containerType: 'inline-size',
                     border: '1px solid',
@@ -439,11 +415,11 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                         borderColor: hasError ? alpha(theme.palette.error.main, 0.3) : 'divider',
                         borderRadius: '4px 4px 0 0',
                         backgroundColor: 'transparent',
-                        paddingInline: 1,
-                        paddingBlock: 0.75,
-                        minHeight: 47,
-                        height: 47,
-                        gap: 0.5,
+                        paddingInline: 0.75,
+                        paddingBlock: 0.375,
+                        minHeight: FormFieldTokens.controlMinHeight,
+                        height: FormFieldTokens.controlMinHeight,
+                        gap: 0.25,
                         transition: theme.transitions.create('background-color', {
                             duration: theme.transitions.duration.shorter,
                         }),
@@ -453,7 +429,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                         height: 18,
                         alignSelf: 'center',
                         backgroundColor: alpha(theme.palette.text.primary, 0.18),
-                        marginInline: 0.5,
+                        marginInline: 0.25,
                     },
                     '& .prosuna-mdx-editor [class*="_toolbarToggleItem_"], & .prosuna-mdx-editor [class*="_toolbarButton_"]': {
                         borderRadius: 1,
@@ -740,7 +716,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                             },
                         }
                         : {}),
-                }}
+                }, ...controlSxArray]}
             >
                 <MDXEditor
                     ref={editorRef}
@@ -759,7 +735,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                         onChange(val ?? null);
                     }}
                     plugins={[
-                        dynamicTextPlugin({highlight: Boolean(dynamicText)}),
+                        dynamicText ? dynamicTextPlugin({highlight: true}) : placeholderPlugin(),
                         headingsPlugin(),
                         quotePlugin(),
                         listsPlugin(),
@@ -825,20 +801,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                 />
             </Box>
 
-            {
-                (error != null || hint != null) &&
-                <FormHelperText
-                    component="div"
-                    error={error != null}
-                    sx={{
-                        mt: 1,
-                        mx: 1,
-                    }}
-                >
-                    {error ?? hint}
-                </FormHelperText>
-            }
-        </Box>
+        </FormField>
     );
 });
 

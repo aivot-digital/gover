@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
@@ -88,14 +89,30 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Zähler";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Erhöht einen Zählerstand bei jeder Ausführung um einen konfigurierbaren Wert.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Aktualisiert bei jeder Ausführung einen Zähler und eignet sich damit insbesondere für Schleifen und wiederholte Prozessschritte.
+
+                Der aktuelle Wert kann an einem konfigurierten Vorgangsdatenpfad gespeichert werden. Ohne Zielpfad verwendet das Element seinen zuletzt gespeicherten Elementwert. Das Inkrement ist frei konfigurierbar und beträgt standardmäßig `1`; neuer Wert, vorheriger Wert und verwendetes Inkrement werden als Ausgänge bereitgestellt.
+                """;
     }
 
     @Nonnull
@@ -135,17 +152,20 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                 new ProcessNodeOutput(
                         OUTPUT_VALUE,
                         "Zählerstand",
-                        "Der neue Zählerstand nach der Erhöhung."
+                        "Der neue Zählerstand nach der Erhöhung.",
+                        "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PREVIOUS_VALUE,
                         "Vorheriger Zählerstand",
-                        "Der Zählerstand vor der Erhöhung."
+                        "Der Zählerstand vor der Erhöhung.",
+                        "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_INCREMENT,
                         "Inkrement",
-                        "Der Wert, um den der Zähler erhöht wurde."
+                        "Der Wert, um den der Zähler erhöht wurde.",
+                        "number"
                 )
         );
     }

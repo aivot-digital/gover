@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -24,6 +24,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.ai.AiPlugin;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -70,6 +71,8 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     private static final String OUTPUT_FINISH_REASON = "finishReason";
     private static final String OUTPUT_RESPONSE_MODEL = "responseModel";
     private static final String OUTPUT_USAGE = "usage";
+    private static final String OUTPUT_USAGE_TYPE_DEFINITION =
+            "{ prompt_tokens: number | null; completion_tokens: number | null; total_tokens: number | null; } | null";
 
     private static final double DEFAULT_TEMPERATURE = 0.01d;
     private static final double DEFAULT_TOP_P = 0.9d;
@@ -123,14 +126,30 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "KI-Anfrage";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Sendet ein Prompt an die Completions-API einer KI und stellt die Antwort als Knotenausgänge bereit.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Sendet einen konfigurierten Prompt an eine kompatible KI-Completions-API und stellt die erzeugte Antwort für nachfolgende Prozesselemente bereit.
+
+                Endpoint, API-Schlüssel, Modell und Prompt werden in der Elementkonfiguration festgelegt. Neben dem ersten Antworttext liefert das Element den Abschlussgrund, das tatsächlich verwendete Modell und die von der API gemeldeten Nutzungsinformationen als Ausgänge.
+                """;
     }
 
     @Nonnull
@@ -227,11 +246,11 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der Anfragetext für das KI-Modell."),
-                new ProcessNodeOutput(OUTPUT_COMPLETION, "Completion", "Die erste erzeugte Completion als Text."),
-                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice."),
-                new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat."),
-                new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort.")
+                new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der Anfragetext für das KI-Modell.", "string"),
+                new ProcessNodeOutput(OUTPUT_COMPLETION, "Completion", "Die erste erzeugte Completion als Text.", "string"),
+                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort.", OUTPUT_USAGE_TYPE_DEFINITION)
         );
     }
 
@@ -467,7 +486,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Nonnull
     private String serializeRequestBody(@Nonnull Map<String, Object> requestBody) throws ProcessNodeExecutionExceptionUnknown {
         try {
-            return ObjectMapperFactory.getInstance().writeValueAsString(requestBody);
+            return JsonMapperFactory.getInstance().writeValueAsString(requestBody);
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
@@ -482,7 +501,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         if (StringUtils.isNullOrEmpty(rawBody)) {
             throw new IllegalArgumentException("Die API-Antwort ist leer.");
         }
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .readValue(rawBody, AiCompletionResponse.class);
     }
@@ -509,7 +528,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                                                @Nonnull AiCompletionResponse response) {
         var nodeData = new LinkedHashMap<String, Object>();
         var usage = response.usage != null
-                ? ObjectMapperFactory.getInstance().convertValue(response.usage, Map.class)
+                ? JsonMapperFactory.getInstance().convertValue(response.usage, Map.class)
                 : null;
 
         nodeData.put(OUTPUT_PROMPT, renderedPrompt);

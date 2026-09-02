@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.process.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
@@ -26,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
 import java.util.List;
@@ -71,7 +71,7 @@ class ProcessControllerTest {
                 processDefinitionEdgeService,
                 processInstanceAccessControlPresetService,
                 processNodeProviderService,
-                new ObjectMapper()
+                new JsonMapper()
         );
 
         var user = new UserEntity()
@@ -105,7 +105,7 @@ class ProcessControllerTest {
                 Instant.now(),
                 Instant.now(),
                 null
-        );
+        ).setThemeId(77);
 
         var departmentPreset = new ProcessInstanceAccessControlPresetEntity()
                 .setId(1)
@@ -144,6 +144,7 @@ class ProcessControllerTest {
         var result = controller.newVersionFromExisting(null, 42, 2);
 
         assertEquals(3, result.getProcessVersion());
+        assertEquals(77, result.getThemeId());
         verify(permissionService)
                 .requireProcessPermission("user-1", 42, ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE);
 

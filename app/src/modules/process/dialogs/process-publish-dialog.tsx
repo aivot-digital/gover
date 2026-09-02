@@ -50,9 +50,10 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
         setValidationError(undefined);
     }, [rest.open]);
 
+    const [versionProblems, setVersionProblems] = useState<string[]>([]);
     const [allNodeProblems, setAllNodeProblems] = useState<ProcessNodeProblems[]>([]);
     const [isValidating, setIsValidating] = useState<boolean>(false);
-    const isReadyToPublish = canPublish && !isValidating && validationError == null && allNodeProblems.length === 0;
+    const isReadyToPublish = canPublish && !isValidating && validationError == null && versionProblems.length === 0 && allNodeProblems.length === 0;
 
     useEffect(() => {
         if (!rest.open) {
@@ -62,6 +63,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
         let isActive = true;
 
         setValidationError(undefined);
+        setVersionProblems([]);
         setAllNodeProblems([]);
         setIsValidating(true);
         new ProcessDefinitionVersionApiService()
@@ -71,7 +73,8 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
             })
             .then((problems) => {
                 if (isActive) {
-                    setAllNodeProblems(problems);
+                    setVersionProblems(problems.versionProblems);
+                    setAllNodeProblems(problems.nodeProblems);
                 }
             })
             .catch((err) => {
@@ -179,6 +182,19 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
 
                     {
                         !isValidating &&
+                        versionProblems.length > 0 &&
+                        <AlertComponent
+                            color="error"
+                            title="Prozessversion ist unvollständig"
+                        >
+                            <ul>
+                                {versionProblems.map((problem) => <li key={problem}>{problem}</li>)}
+                            </ul>
+                        </AlertComponent>
+                    }
+
+                    {
+                        !isValidating &&
                         allNodeProblems.length > 0 &&
                         <NodeProblemsAlert
                             problems={allNodeProblems}
@@ -203,7 +219,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
             <DialogActions>
                 <Button
                     variant="contained"
-                    disabled={!canPublish || isValidating || validationError != null || allNodeProblems.length > 0}
+                    disabled={!canPublish || isValidating || validationError != null || versionProblems.length > 0 || allNodeProblems.length > 0}
                     onClick={handlePublish}
                 >
                     Prozessversion veröffentlichen

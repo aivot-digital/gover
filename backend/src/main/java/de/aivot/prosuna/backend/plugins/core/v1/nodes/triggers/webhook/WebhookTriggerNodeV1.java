@@ -24,6 +24,7 @@ import de.aivot.prosuna.backend.plugins.core.v1.operators.bool.NoCodeOrOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
@@ -62,6 +63,13 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
     public static final String INITIAL_DATA_KEY_FILES = "files";
     public static final String INITIAL_DATA_KEY_REQUEST = "request";
     public static final String INITIAL_DATA_KEY_STARTED = "started";
+    private static final String OUTPUT_ATTACHMENTS_TYPE_DEFINITION =
+            "Array<{ key: string; filename: string; originalFilename: string; group: string | null; " +
+                    "storageProviderId: number; storagePathFromRoot: string; }>";
+    private static final String OUTPUT_FILES_TYPE_DEFINITION =
+            "Array<{ name: string; originalFileName: string; uri: string; size: number; }>";
+    private static final String OUTPUT_REQUEST_TYPE_DEFINITION =
+            "{ method: string; headers: Record<string, Array<string>>; queryParameters: Record<string, Array<string>>; }";
 
     private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processDefinitionNodeRepository;
@@ -99,14 +107,30 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Webhook";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Löst den Prozess aus, wenn Daten über einen Webhook empfangen werden.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Startet einen neuen Prozessvorgang durch eine eingehende HTTP-Anfrage an den bereitgestellten Webhook.
+
+                Übermittelte Nutzdaten und Anlagen werden in die initialen Vorgangsdaten übernommen. Zusätzlich stellt der Auslöser die empfangenen Dateien, Anfragedetails wie Methode, Header und Query-Parameter sowie den Eingangszeitpunkt als Ausgänge bereit.
+                """;
     }
 
     @Nonnull
@@ -128,27 +152,32 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_PAYLOAD,
                         "Eingangsdaten",
-                        "Die Daten, die an den Auslöser übermittelt wurden"
+                        "Die Daten, die an den Auslöser übermittelt wurden",
+                        "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_ATTACHMENTS,
                         "List der Anlagen",
-                        "Die Liste aller Anlagen, welche an den Auslöser übermittelt wurden"
+                        "Die Liste aller Anlagen, welche an den Auslöser übermittelt wurden",
+                        OUTPUT_ATTACHMENTS_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_FILES,
                         "Dateien",
-                        "Die übermittelten Anlagen im Format des Datei-Anlagen-Feldes"
+                        "Die übermittelten Anlagen im Format des Datei-Anlagen-Feldes",
+                        OUTPUT_FILES_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_REQUEST,
                         "Anfragedetails",
-                        "Informationen über die HTTP-Anfrage an den Auslöser (HTTP-Methode, Headers, Query-Parameter)"
+                        "Informationen über die HTTP-Anfrage an den Auslöser (HTTP-Methode, Headers, Query-Parameter)",
+                        OUTPUT_REQUEST_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_STARTED,
                         "Eingangszeitstempel",
-                        "Der Zeitstempel des Dateneingangs an den Auslöser"
+                        "Der Zeitstempel des Dateneingangs an den Auslöser",
+                        "string"
                 )
         );
     }

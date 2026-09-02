@@ -34,16 +34,19 @@ import {
     type DynamicTextVariableMetadata,
     useDynamicTextTokenTitles,
 } from './dynamic-text-metadata';
+import {FormField, type FormFieldLayoutProps} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
 
 export interface DynamicTextFieldMethods {
     focus: () => void;
     insertVariableReference: (reference: string) => void;
 }
 
-interface DynamicTextFieldProps {
+export interface DynamicTextFieldProps {
     id: string;
+    ariaLabel?: string;
     ariaDescribedBy?: string;
-    ariaLabelledBy: string;
+    ariaLabelledBy?: string;
     disabled?: boolean;
     readOnly?: boolean;
     busy?: boolean;
@@ -203,7 +206,9 @@ DynamicTextFieldProps
             {props.placeholder}
         </Typography>
     );
-    const minHeight = props.multiline ? Math.max(props.rows ?? 3, 2) * 24 + 24 : 48;
+    const minHeight = props.multiline
+        ? Math.max(props.rows ?? 3, 2) * 24 + 24
+        : FormFieldTokens.controlMinHeight;
     const outlinedBorderColor = theme.palette.mode === 'light'
         ? 'rgba(0, 0, 0, 0.23)'
         : 'rgba(255, 255, 255, 0.23)';
@@ -249,10 +254,11 @@ DynamicTextFieldProps
                         contentEditable={(
                             <ContentEditable
                                 id={props.id}
+                                aria-label={props.ariaLabel}
                                 aria-labelledby={props.ariaLabelledBy}
                                 aria-describedby={props.ariaDescribedBy}
                                 aria-disabled={props.disabled || props.busy || undefined}
-                                aria-readonly={props.readOnly || undefined}
+                                aria-readonly={isReadOnly || undefined}
                                 aria-busy={props.busy || undefined}
                                 aria-required={props.required || undefined}
                                 aria-invalid={props.invalid || undefined}
@@ -301,9 +307,12 @@ DynamicTextFieldProps
                         pt: props.multiline ? 0.5 : 0,
                     }}
                 >
-                    <Tooltip title={props.endAction.tooltip ?? 'Aktion ausführen'} arrow>
+                    <Tooltip
+                        title={props.endAction.tooltip ?? props.endAction.ariaLabel ?? 'Aktion ausführen'}
+                        arrow
+                    >
                         <IconButton
-                            aria-label={props.endAction.tooltip ?? 'Aktion ausführen'}
+                            aria-label={props.endAction.ariaLabel ?? props.endAction.tooltip ?? 'Aktion ausführen'}
                             disabled={isReadOnly}
                             size="small"
                             onMouseDown={(event) => {
@@ -323,3 +332,63 @@ DynamicTextFieldProps
 });
 
 DynamicTextField.displayName = 'DynamicTextField';
+
+export interface DynamicTextInputFieldProps extends FormFieldLayoutProps {
+    label: string;
+    hint?: string;
+    error?: string;
+    required?: boolean;
+    disabled?: boolean;
+    readOnly?: boolean;
+    busy?: boolean;
+    endAction?: EndAction;
+    multiline?: boolean;
+    onChange: (value: string | null) => void;
+    placeholder?: string;
+    rows?: number;
+    variableMetadata?: readonly DynamicTextVariableMetadata[];
+    value: string | null;
+}
+
+export const DynamicTextInputField = forwardRef<DynamicTextFieldMethods, DynamicTextInputFieldProps>((props, ref) => (
+    <FormField
+        id={props.id}
+        label={props.label}
+        hint={props.hint}
+        error={props.error}
+        required={props.required}
+        disabled={props.disabled}
+        readOnly={props.readOnly}
+        busy={props.busy}
+        ariaLabel={props.ariaLabel}
+        ariaDescribedBy={props.ariaDescribedBy}
+        labelAction={props.labelAction}
+        margin={props.margin}
+        showOptionalIndicator={props.showOptionalIndicator}
+        sx={props.sx}
+    >
+        {(control) => (
+            <DynamicTextField
+                ref={ref}
+                id={control.controlId}
+                ariaLabel={control.ariaProps['aria-label']}
+                ariaLabelledBy={control.labelId}
+                ariaDescribedBy={control.ariaProps['aria-describedby']}
+                disabled={control.disabled}
+                readOnly={control.readOnly}
+                busy={control.busy}
+                required={control.required}
+                invalid={control.invalid}
+                endAction={props.endAction}
+                multiline={props.multiline}
+                onChange={props.onChange}
+                placeholder={props.placeholder}
+                rows={props.rows}
+                variableMetadata={props.variableMetadata}
+                value={props.value}
+            />
+        )}
+    </FormField>
+));
+
+DynamicTextInputField.displayName = 'DynamicTextInputField';

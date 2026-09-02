@@ -1,18 +1,31 @@
-import {Box, IconButton, InputAdornment, SxProps, TextField} from '@mui/material';
+import {
+    IconButton,
+    InputAdornment,
+    type SxProps,
+    TextField,
+    type Theme,
+    Tooltip,
+} from '@mui/material';
 import React from 'react';
 import Search from '@aivot/mui-material-symbols-400-n25-outlined/Search';
 import Close from '@aivot/mui-material-symbols-400-n25-outlined/Close';
+import {
+    FormField,
+    type FormFieldControlContext,
+    type FormFieldLayoutProps,
+    getNativeInputAriaProps,
+} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
 
-export interface SearchInputProps {
+export interface SearchInputProps extends FormFieldLayoutProps {
     value: string;
     onChange: (val: string) => void;
     label: string;
     placeholder?: string;
     autoFocus?: boolean;
-    sx?: SxProps;
+    controlSx?: SxProps<Theme>;
     disabled?: boolean;
     clearable?: boolean;
-    ariaLabel?: string;
     size?: 'small' | 'medium';
     fullWidth?: boolean;
     hideLabel?: boolean;
@@ -28,6 +41,10 @@ export function SearchInput(props: SearchInputProps) {
     const [localValue, setLocalValue] = React.useState(props.value);
 
     React.useEffect(() => {
+        if (debounceTimeoutRef.current != null) {
+            window.clearTimeout(debounceTimeoutRef.current);
+            debounceTimeoutRef.current = null;
+        }
         setLocalValue(props.value);
     }, [props.value]);
 
@@ -50,6 +67,7 @@ export function SearchInput(props: SearchInputProps) {
         }
 
         debounceTimeoutRef.current = window.setTimeout(() => {
+            debounceTimeoutRef.current = null;
             props.onChange(nextValue);
         }, debounce);
     };
@@ -90,54 +108,81 @@ export function SearchInput(props: SearchInputProps) {
     };
 
     return (
-        <Box sx={props.sx}>
-            <TextField
-                value={localValue}
-                onChange={event => {
-                    handleInputChange(event.target.value ?? '');
-                }}
-                onBlur={handleBlur}
-                label={props.label}
-                placeholder={props.placeholder}
-                variant="outlined"
-                fullWidth={props.fullWidth ?? true}
-                autoFocus={props.autoFocus}
-                disabled={props.disabled}
-                size={props.size ?? 'small'}
-                sx={{
-                    margin: 0,
-                }}
-                slotProps={{
-                    input: {
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <Search fontSize="small" />
-                            </InputAdornment>
-                        ),
-                        endAdornment: clearable && localValue.trim().length > 0 ? (
-                            <InputAdornment position="end">
-                                <IconButton
-                                    size={props.size ?? 'small'}
-                                    onClick={handleClear}
-                                    disabled={props.disabled}
-                                    aria-label="Suche löschen"
-                                >
-                                    <Close fontSize="small" />
-                                </IconButton>
-                            </InputAdornment>
-                        ) : undefined,
-                    },
-
-                    htmlInput: {
-                        'aria-label': props.ariaLabel ?? props.label,
-                    },
-
-                    inputLabel: {
-                        sx: {
-                            display: hideLabel ? 'none' : undefined,
+        <FormField
+            id={props.id}
+            label={hideLabel ? '' : props.label}
+            ariaLabel={props.ariaLabel ?? props.label}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            disabled={props.disabled}
+            margin={props.margin ?? 'none'}
+            showOptionalIndicator={props.showOptionalIndicator ?? false}
+            sx={[
+                {width: props.fullWidth === false ? 'auto' : '100%'},
+                ...(Array.isArray(props.sx) ? props.sx : [props.sx]),
+            ]}
+        >
+            {(fieldContext: FormFieldControlContext) => (
+                <TextField
+                    id={fieldContext.controlId}
+                    type="search"
+                    value={localValue}
+                    onChange={event => {
+                        handleInputChange(event.target.value ?? '');
+                    }}
+                    onBlur={handleBlur}
+                    label={undefined}
+                    placeholder={props.placeholder}
+                    variant="outlined"
+                    margin="none"
+                    fullWidth={props.fullWidth ?? true}
+                    autoFocus={props.autoFocus}
+                    disabled={props.disabled}
+                    size={props.size ?? 'small'}
+                    sx={[
+                        {
+                            margin: 0,
+                            '& .MuiInputBase-root': {
+                                minHeight: FormFieldTokens.controlMinHeight,
+                            },
+                            '& input[type="search"]::-webkit-search-cancel-button': {
+                                appearance: 'none',
+                            },
                         },
-                    }
-                }} />
-        </Box>
+                        ...(Array.isArray(props.controlSx) ? props.controlSx : [props.controlSx]),
+                    ]}
+                    slotProps={{
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <Search fontSize="small" aria-hidden="true" />
+                                </InputAdornment>
+                            ),
+                            endAdornment: clearable && localValue.trim().length > 0 ? (
+                                <InputAdornment position="end">
+                                    <Tooltip title="Suche löschen" arrow>
+                                        <span>
+                                            <IconButton
+                                                size={props.size ?? 'small'}
+                                                onMouseDown={(event) => event.preventDefault()}
+                                                onClick={handleClear}
+                                                disabled={props.disabled}
+                                                aria-label="Suche löschen"
+                                            >
+                                                <Close fontSize="small" />
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+                                </InputAdornment>
+                            ) : undefined,
+                        },
+                        htmlInput: {
+                            ...getNativeInputAriaProps(fieldContext),
+                            spellCheck: false,
+                        },
+                    }}
+                />
+            )}
+        </FormField>
     );
 }

@@ -55,8 +55,18 @@ public class UserJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Dieses Paket enthält Funktionen für Mitarbeiter:innen.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Stellt Informationen zu Prosuna-Mitarbeiter:innen in JavaScript-Ausdrücken bereit.
+
+                Mitarbeiter:innen können anhand ihrer ID geladen und als strukturiertes Objekt weiterverarbeitet werden. Das Ergebnis enthält Identitäts-, Status- und Rollendaten, die sich in Skripten und Prozesslogik verwenden lassen.
+                """;
     }
 
     @Override

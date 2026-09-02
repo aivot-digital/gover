@@ -2,7 +2,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
@@ -163,7 +163,7 @@ class AiHubCompletionActionNodeV1Test {
         assertEquals(URI.create("https://aihub.example/api/completions/chat/completions"), uriCaptor.getValue());
         assertEquals("Hello {{ $.person.name }}", templateRenderService.lastTemplate);
 
-        var requestBody = ObjectMapperFactory.getInstance().readValue(bodyCaptor.getValue(), Map.class);
+        var requestBody = JsonMapperFactory.getInstance().readValue(bodyCaptor.getValue(), Map.class);
         assertEquals("meta-llama/Llama-3.3-70B-Instruct", requestBody.get("model"));
         @SuppressWarnings("unchecked")
         var messages = (List<Map<String, Object>>) requestBody.get("messages");
@@ -307,7 +307,7 @@ class AiHubCompletionActionNodeV1Test {
         var bodyCaptor = ArgumentCaptor.forClass(String.class);
         verify(httpService).request(eq(HttpMethod.POST), any(), bodyCaptor.capture(), any());
 
-        var requestBody = ObjectMapperFactory.getInstance().readValue(bodyCaptor.getValue(), Map.class);
+        var requestBody = JsonMapperFactory.getInstance().readValue(bodyCaptor.getValue(), Map.class);
         assertEquals(2222, ((Number) requestBody.get("max_tokens")).intValue());
     }
 
@@ -393,7 +393,7 @@ class AiHubCompletionActionNodeV1Test {
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessId(PROCESS_ID)
                 .setInitialProcessVersion(PROCESS_VERSION)
                 .setStatus(ProcessInstanceStatus.Running)
@@ -410,7 +410,7 @@ class AiHubCompletionActionNodeV1Test {
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessInstanceId(PROCESS_INSTANCE_ID)
                 .setProcessId(PROCESS_ID)
                 .setProcessVersion(PROCESS_VERSION)

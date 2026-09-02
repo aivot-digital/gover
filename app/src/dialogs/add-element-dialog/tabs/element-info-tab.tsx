@@ -1,7 +1,8 @@
 import React, {type ReactNode} from 'react';
-import {Box, Divider, Typography} from '@mui/material';
+import {Box, Button, Divider, Typography} from '@mui/material';
 import {DateTime} from 'luxon';
 import PersonOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Person';
+import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type ElementTypesMap} from '../../../data/element-type/element-types-map';
 import {ElementType} from '../../../data/element-type/element-type';
@@ -63,6 +64,7 @@ import {
     getApplicationTimeZone,
     getCurrentApplicationDate,
 } from '../../../utils/temporal-utils';
+import {SelectFieldPresentation} from '../../../models/elements/form/input/select-field-presentation';
 
 function DateExamples() {
     const currentDate = getCurrentApplicationDate();
@@ -247,6 +249,26 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     Beispielgrafik mit optionaler Bildunterschrift
                 </Typography>
             </Box>
+        </Box>
+    ),
+    [ElementType.LinkButton]: (
+        <Box>
+            <Typography>
+                Das Link-Button-Element stellt einen Button dar, der entweder einen Link öffnet oder in
+                Aufgabenansichten ein definiertes Ereignis auslöst.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiel
+            </Divider>
+
+            <Button
+                variant="contained"
+                color="primary"
+                endIcon={<OpenInNewIcon/>}
+            >
+                Link öffnen
+            </Button>
         </Box>
     ),
     [ElementType.GroupLayout]: (
@@ -557,8 +579,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
             <Typography sx={{mt: 2}}>
                 Eine optische Alternative zum Einzelauswahl (Optionsfelder)-Element stellt das
-                Einzelauswahl (Auswahlmenü)-Element dar, welches die Optionen in einem platzsparenden Auswahlmenü
-                darstellt.
+                Einzelauswahl-Element dar. Es zeigt die Optionen platzsparend als Auswahlmenü oder als durchsuchbare
+                Auswahl an.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -611,12 +633,13 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Select]: (
         <Box>
             <Typography>
-                Das Einzelauswahl (Auswahlmenü)-Element dient zur Abfrage exakt einer Möglichkeit aus
-                mehreren Möglichkeiten, welche in einem per Klick erreichbaren Auswahlmenü dargestellt werden.
+                Das Einzelauswahl-Element dient zur Abfrage exakt einer Möglichkeit aus vorgegebenen Optionen.
+                Kurze Listen können als kompaktes Auswahlmenü dargestellt werden. Bei längeren Listen erleichtert
+                die durchsuchbare Auswahl das Auffinden einer Option, ohne freie Eingaben zuzulassen.
             </Typography>
 
             <Typography sx={{mt: 2}}>
-                Eine optische Alternative zum Einzelauswahl (Auswahlmenü)-Element stellt das
+                Eine optische Alternative zum Einzelauswahl-Element stellt das
                 Einzelauswahl (Optionsfelder)-Element dar, welches die Optionen mit einzelnen Optionsfeldern darstellt.
             </Typography>
 
@@ -645,6 +668,31 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     onChange={() => {
                     }}
                     hint="Hinweis zur Einzelauswahl"
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <SelectFieldComponent
+                    label="Durchsuchbare Einzelauswahl"
+                    value={undefined}
+                    options={[
+                        {
+                            label: 'Baugenehmigung',
+                            value: 'building_permit',
+                        },
+                        {
+                            label: 'Gewerbeanmeldung',
+                            value: 'business_registration',
+                        },
+                        {
+                            label: 'Meldebescheinigung',
+                            value: 'registration_certificate',
+                        },
+                    ]}
+                    onChange={() => {
+                    }}
+                    presentation={SelectFieldPresentation.Combobox}
+                    hint="Tippen Sie, um die vorgegebenen Optionen zu filtern."
                 />
             </Box>
 
@@ -1342,6 +1390,14 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             <Typography sx={{mt: 2}}>
                 Attribute aus der Identifizierung können anschließend in andere Formularfelder
                 außerhalb von Wiederholungscontainern übernommen werden.
+            </Typography>
+        </Box>
+    ),
+    [ElementType.PaymentConfigElement]: (
+        <Box>
+            <Typography>
+                Das Element „Zahlungskonfiguration“ legt den Zahlungsdienstleister, den
+                Buchungstext und die Zahlungsposten eines Formulars fest.
             </Typography>
         </Box>
     ),

@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
@@ -79,11 +79,11 @@ class StoragePathSelectorInputElementTest {
                 .setAllowedStorageProviderTypes(List.of(StorageProviderType.External, StorageProviderType.Assets))
                 .setAllowReadOnlyStorageProviders(true);
 
-        var serialized = ObjectMapperFactory
+        var serialized = JsonMapperFactory
                 .getInstance()
                 .writeValueAsString(element);
 
-        var deserialized = ObjectMapperFactory
+        var deserialized = JsonMapperFactory
                 .getInstance()
                 .readValue(serialized, BaseElement.class);
 

@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.security;
 
+import de.aivot.prosuna.backend.utils.RandomUtils;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,10 +12,8 @@ import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.DefaultCsrfToken;
 import org.springframework.stereotype.Component;
 
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Base64;
 
 @Component
 public class RedisCsrfTokenRepository implements CsrfTokenRepository {
@@ -24,7 +23,6 @@ public class RedisCsrfTokenRepository implements CsrfTokenRepository {
 
     private static final String COOKIE_PATH = "/api/";
     private static final String REDIS_PREFIX = "csrf:token:";
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final StringRedisTemplate redis;
     private final Duration ttl;
@@ -119,8 +117,6 @@ public class RedisCsrfTokenRepository implements CsrfTokenRepository {
     }
 
     private static String generateOpaqueValue() {
-        var bytes = new byte[32];
-        SECURE_RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return RandomUtils.generateRandomString(32);
     }
 }

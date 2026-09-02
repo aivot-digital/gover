@@ -1,12 +1,13 @@
 import {FunctionComponent, useState} from 'react';
 import {
+    Box,
     Button,
     Dialog,
     DialogActions,
     DialogContent,
     List,
-    ListItemButton,
-    ListItemText,
+    ButtonBase,
+    Tooltip,
     Typography,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
@@ -17,11 +18,14 @@ import {Actions} from '../actions/actions';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
+import ErrorIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 
 export type DialogListPropsDialogContentComponent<T> = FunctionComponent<{
     item: T;
     onChange: (item: T) => void;
-    disabled?: boolean;
+    readOnly?: boolean;
+    busy?: boolean;
 }>
 
 interface DialogListProps<T> {
@@ -34,7 +38,10 @@ interface DialogListProps<T> {
     dialogContentComponent: DialogListPropsDialogContentComponent<T>;
     onDialogSave: (edited: T, original: T) => void;
     onDelete: (item: T) => void;
-    disabled?: boolean;
+    // Read-only lists keep their detail dialog available; busy only suspends mutations temporarily.
+    readOnly?: boolean;
+    busy?: boolean;
+    hasError?: (item: T) => boolean;
 }
 
 export function DialogList<T>(props: DialogListProps<T>) {
@@ -48,10 +55,13 @@ export function DialogList<T>(props: DialogListProps<T>) {
         dialogContentComponent: DialogContentComponent,
         onDialogSave,
         onDelete,
-        disabled,
+        readOnly,
+        busy,
+        hasError,
     } = props;
 
-    const isReadonly = disabled === true;
+    const isReadOnly = readOnly === true;
+    const isBusy = busy === true;
     const confirm = useConfirm();
 
     const [showDialog, setShowDialog] = useState(false);
@@ -70,7 +80,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
     };
 
     const handleDialogSave = () => {
-        if (openForItem == null) {
+        if (openForItem == null || isReadOnly || isBusy) {
             return;
         }
 
@@ -84,7 +94,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
             return;
         }
 
-        if (!isReadonly && !deepEquals(openForItem.original, openForItem.edited)) {
+        if (!isReadOnly && !deepEquals(openForItem.original, openForItem.edited)) {
             const conf = await confirm({
                 title: 'Änderungen verwerfen',
                 children: (
@@ -112,6 +122,10 @@ export function DialogList<T>(props: DialogListProps<T>) {
     };
 
     const handleDelete = async (item: T) => {
+        if (isReadOnly || isBusy) {
+            return;
+        }
+
         const conf = await confirm({
             title: 'Eintrag löschen',
             children: (
@@ -130,68 +144,165 @@ export function DialogList<T>(props: DialogListProps<T>) {
 
     return (
         <>
-            <List disablePadding>
+            <List
+                disablePadding
+                data-dialog-list
+                sx={{
+                    minHeight: FormFieldTokens.controlWithSecondaryTextMinHeight,
+                    overflow: 'hidden',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    backgroundColor: 'background.paper',
+                }}
+            >
                 {
-                    items.map((item) => (
-                        <ListItemButton
-                            key={getId(item)}
-                            sx={(theme) => ({
-                                mb: 1,
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                borderRadius: 1,
-                                '&:hover': {
-                                    borderColor: theme.palette.primary.main,
-                                    backgroundColor: alpha(theme.palette.primary.main, 0.04),
-                                },
-                            })}
-                            onClick={() => {
-                                handleDialogOpen(item);
-                            }}
-                        >
-                            <ListItemText
-                                primary={title(item)}
-                                secondary={subTitle?.(item)}
-                            />
+                    items.map((item, index) => {
+                        const itemHasError = hasError?.(item) === true;
 
-                            <Actions
-                                actions={
-                                    isReadonly
-                                        ? [
-                                            {
-                                                icon: <Visibility/>,
-                                                tooltip: 'Ansehen',
-                                                onClick: (evt) => {
-                                                    evt.preventDefault();
-                                                    evt.stopPropagation();
-                                                    handleDialogOpen(item);
+                        return (
+                            <Box
+                                component="li"
+                                key={getId(item)}
+                                data-dialog-list-item
+                                sx={(theme) => ({
+                                    display: 'grid',
+                                    gridTemplateColumns: 'minmax(0, 1fr) auto',
+                                    alignItems: 'stretch',
+                                    minHeight: FormFieldTokens.groupedControlRowMinHeight,
+                                    borderTop: index === 0 ? 0 : '1px solid',
+                                    borderColor: 'divider',
+                                    boxShadow: itemHasError
+                                        ? `inset 3px 0 ${theme.palette.error.main}`
+                                        : undefined,
+                                    '&:hover': {
+                                        backgroundColor: alpha(itemHasError ? theme.palette.error.main : theme.palette.primary.main, 0.04),
+                                    },
+                                })}
+                            >
+                                <ButtonBase
+                                    aria-haspopup="dialog"
+                                    aria-invalid={itemHasError || undefined}
+                                    onClick={() => {
+                                        handleDialogOpen(item);
+                                    }}
+                                    sx={{
+                                        minWidth: 0,
+                                        display: 'flex',
+                                        alignItems: 'stretch',
+                                        justifyContent: 'flex-start',
+                                        px: 1.5,
+                                        py: 0.5,
+                                        textAlign: 'left',
+                                        '&.Mui-focusVisible': {
+                                            outline: '2px solid',
+                                            outlineColor: 'primary.main',
+                                            outlineOffset: '-2px',
+                                        },
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            minWidth: 0,
+                                            flex: 1,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            justifyContent: 'center',
+                                            gap: 0.25,
+                                        }}
+                                    >
+                                        <Typography
+                                            title={title(item)}
+                                            sx={{
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                                fontSize: '1rem',
+                                                lineHeight: 1.25,
+                                            }}
+                                        >
+                                            {title(item)}
+                                        </Typography>
+
+                                        {subTitle != null && (
+                                            <Typography
+                                                variant="caption"
+                                                title={subTitle(item)}
+                                                sx={{
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    color: isReadOnly || isBusy ? 'text.disabled' : 'text.secondary',
+                                                    fontSize: '0.75rem',
+                                                    lineHeight: 1.2,
+                                                }}
+                                            >
+                                                {subTitle(item)}
+                                            </Typography>
+                                        )}
+                                    </Box>
+
+                                    {itemHasError && (
+                                        <Tooltip title="Fehler in diesem Eintrag" arrow>
+                                            <Box
+                                                component="span"
+                                                role="img"
+                                                aria-label="Fehler in diesem Eintrag"
+                                                sx={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    ml: 1,
+                                                    color: 'error.main',
+                                                }}
+                                            >
+                                                <ErrorIcon fontSize="small"/>
+                                            </Box>
+                                        </Tooltip>
+                                    )}
+                                </ButtonBase>
+
+                                <Actions
+                                    dense
+                                    isBusy={isBusy}
+                                    sx={{pr: 0.75}}
+                                    actions={
+                                        isReadOnly
+                                            ? [
+                                                {
+                                                    icon: <Visibility/>,
+                                                    tooltip: 'Ansehen',
+                                                    onClick: (evt) => {
+                                                        evt.preventDefault();
+                                                        evt.stopPropagation();
+                                                        handleDialogOpen(item);
+                                                    },
                                                 },
-                                            },
-                                        ]
-                                        : [
-                                            {
-                                                icon: <Edit/>,
-                                                tooltip: 'Bearbeiten',
-                                                onClick: (evt) => {
-                                                    evt.preventDefault();
-                                                    evt.stopPropagation();
-                                                    handleDialogOpen(item);
+                                            ]
+                                            : [
+                                                {
+                                                    icon: <Edit/>,
+                                                    tooltip: 'Bearbeiten',
+                                                    onClick: (evt) => {
+                                                        evt.preventDefault();
+                                                        evt.stopPropagation();
+                                                        handleDialogOpen(item);
+                                                    },
                                                 },
-                                            },
-                                            {
-                                                icon: <Delete/>,
-                                                tooltip: 'Eintrag löschen',
-                                                onClick: (evt) => {
-                                                    evt.preventDefault();
-                                                    evt.stopPropagation();
-                                                    handleDelete(item);
+                                                {
+                                                    icon: <Delete/>,
+                                                    tooltip: 'Eintrag löschen',
+                                                    onClick: (evt) => {
+                                                        evt.preventDefault();
+                                                        evt.stopPropagation();
+                                                        handleDelete(item);
+                                                    },
                                                 },
-                                            },
-                                        ]
-                                }
-                            />
-                        </ListItemButton>
-                    ))
+                                            ]
+                                    }
+                                />
+                            </Box>
+                        );
+                    })
                 }
             </List>
 
@@ -204,7 +315,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
                 <DialogTitleWithClose
                     onClose={handleCancel}
                 >
-                    {isReadonly ? dialogViewTitle ?? dialogTitle : dialogTitle}
+                    {isReadOnly ? dialogViewTitle ?? dialogTitle : dialogTitle}
                 </DialogTitleWithClose>
 
                 <DialogContent>
@@ -218,7 +329,8 @@ export function DialogList<T>(props: DialogListProps<T>) {
                                     edited: changed,
                                 });
                             }}
-                            disabled={disabled}
+                            readOnly={isReadOnly}
+                            busy={isBusy}
                         />
                     }
                 </DialogContent>
@@ -230,10 +342,11 @@ export function DialogList<T>(props: DialogListProps<T>) {
                     }}
                 >
                     {
-                        !isReadonly &&
+                        !isReadOnly &&
                         <Button
                             variant="contained"
                             onClick={handleDialogSave}
+                            disabled={isBusy}
                         >
                             Übernehmen
                         </Button>
@@ -241,11 +354,11 @@ export function DialogList<T>(props: DialogListProps<T>) {
 
                     <Button
                         sx={{
-                            ml: isReadonly ? 0 : 'auto',
+                            ml: isReadOnly ? 0 : 'auto',
                         }}
                         onClick={handleCancel}
                     >
-                        {isReadonly ? 'Schließen' : 'Abbrechen'}
+                        {isReadOnly ? 'Schließen' : 'Abbrechen'}
                     </Button>
                 </DialogActions>
             </Dialog>

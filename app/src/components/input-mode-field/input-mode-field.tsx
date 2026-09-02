@@ -7,38 +7,32 @@ import {
     DialogActions,
     DialogContent,
     Divider,
-    InputAdornment,
     List,
     ListItem,
     ListItemIcon,
     ListItemText,
     ListSubheader,
-    Menu,
-    MenuItem,
     Radio,
     RadioGroup,
     Stack,
     Tab,
     Tabs,
-    TextField,
-    Tooltip,
     Typography,
 } from '@mui/material';
-import Check from '@aivot/mui-material-symbols-400-n25-outlined/Check';
-import Code from '@aivot/mui-material-symbols-400-n25-outlined/Code';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
-import Function from '@aivot/mui-material-symbols-400-n25-outlined/Function';
 import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
-import KeyboardArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import Search from '@aivot/mui-material-symbols-400-n25-outlined/Search';
-import TextFields from '@aivot/mui-material-symbols-400-n25-outlined/TextFields';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {SelectFieldComponent} from '../select-field/select-field-component';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import type {EndAction} from '../text-field/text-field-component-props';
-import {FieldLayout, type FieldLayoutControlContext} from '../field-layout/field-layout';
+import {FormField, type FormFieldControlContext, type FormFieldLayoutProps} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
+import {DynamicTextIndicator, InputModeSelector} from '../input-mode-selector';
+import type {InputMode} from '../input-mode-selector/input-mode-selector';
+import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
 
-export type InputMode = 'literal' | 'variable' | 'noCode' | 'lowCode';
+export type {InputMode} from '../input-mode-selector/input-mode-selector';
 export type InputModeVariableCategory = 'processData' | 'elementData' | 'elementMetadata' | 'protectedProcessData';
 
 export interface InputModeVariable {
@@ -66,14 +60,25 @@ export interface InputModeValue<T> {
     lowCode: string;
 }
 
-interface LiteralRenderContext<T> {
+export interface InputModeLiteralFieldProps extends Omit<FormFieldLayoutProps, 'labelAction'> {
+    label: string;
+    hint?: string;
+    error?: string;
+    required?: boolean;
+    disabled?: boolean;
+    readOnly?: boolean;
+    busy?: boolean;
+    labelAction: React.ReactNode;
+}
+
+export interface InputModeLiteralRenderContext<T> {
     value: T | null;
     onChange: (value: T | null) => void;
     variableInsertAction?: EndAction;
-    control: FieldLayoutControlContext;
+    fieldProps: InputModeLiteralFieldProps;
 }
 
-interface InputModeFieldProps<T> {
+export interface InputModeFieldProps<T> extends Omit<FormFieldLayoutProps, 'labelAction'> {
     label: string;
     hint?: string;
     error?: string;
@@ -86,32 +91,8 @@ interface InputModeFieldProps<T> {
     value: InputModeValue<T>;
     onChange: (value: InputModeValue<T>) => void;
     onInsertVariable?: (variable: InputModeVariable) => void;
-    renderLiteral: (context: LiteralRenderContext<T>) => React.ReactNode;
+    renderLiteral: (context: InputModeLiteralRenderContext<T>) => React.ReactNode;
 }
-
-interface ModeDefinition {
-    label: string;
-    description: string;
-}
-
-const MODE_DEFINITIONS: Record<InputMode, ModeDefinition> = {
-    literal: {
-        label: 'Wert',
-        description: 'Direkten Wert eingeben',
-    },
-    variable: {
-        label: 'Variable',
-        description: 'Eine im Prozess mögliche Variable referenzieren',
-    },
-    noCode: {
-        label: 'Ausdruck (No-Code)',
-        description: 'Wert visuell ableiten',
-    },
-    lowCode: {
-        label: 'Skript (Low-Code)',
-        description: 'Wert mit JavaScript bestimmen',
-    },
-};
 
 const VARIABLE_CATEGORY_DEFINITIONS: Record<InputModeVariableCategory, {label: string; prefix: string}> = {
     processData: {
@@ -134,8 +115,6 @@ const VARIABLE_CATEGORY_DEFINITIONS: Record<InputModeVariableCategory, {label: s
 
 const VARIABLE_CATEGORIES = Object.keys(VARIABLE_CATEGORY_DEFINITIONS) as InputModeVariableCategory[];
 
-const ALL_MODES: InputMode[] = ['literal', 'variable', 'noCode', 'lowCode'];
-
 export function getInputModeVariableReference(variable: InputModeVariable): string {
     return `${VARIABLE_CATEGORY_DEFINITIONS[variable.category].prefix}${variable.path}`;
 }
@@ -151,25 +130,6 @@ const NO_CODE_OPERATORS = [
     {value: 'divide', label: 'geteilt durch', symbol: '/'},
     {value: 'fallback', label: 'oder ersatzweise', symbol: '??'},
 ];
-
-function renderModeIcon(mode: InputMode) {
-    const iconProps = {
-        fontSize: 'small' as const,
-        sx: {color: 'text.secondary'},
-    };
-
-    switch (mode) {
-        case 'variable':
-            return <DataObject {...iconProps}/>;
-        case 'noCode':
-            return <Functions {...iconProps}/>;
-        case 'lowCode':
-            return <Code {...iconProps}/>;
-        case 'literal':
-        default:
-            return <TextFields {...iconProps}/>;
-    }
-}
 
 export function InputModeField<T>(props: InputModeFieldProps<T>) {
     const {
@@ -187,9 +147,7 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
         renderLiteral,
     } = props;
 
-    const allowedModes = props.allowedModes ?? ALL_MODES;
     const interactionDisabled = Boolean(disabled || readOnly || busy);
-    const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
     const [variablePickerPurpose, setVariablePickerPurpose] = useState<'mapping' | 'placeholder' | null>(null);
     const [noCodeEditorOpen, setNoCodeEditorOpen] = useState(false);
     const [lowCodeEditorOpen, setLowCodeEditorOpen] = useState(false);
@@ -204,24 +162,13 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
         onClick: () => setVariablePickerPurpose('placeholder'),
     };
 
-    const handleModeChange = (mode: InputMode) => {
-        setMenuAnchor(null);
-        if (mode === value.mode) {
-            return;
-        }
-        onChange({
-            ...value,
-            mode,
-        });
-    };
-
-    const renderModeContent = (control: FieldLayoutControlContext) => {
+    const renderModeContent = (control: FormFieldControlContext) => {
         switch (value.mode) {
             case 'variable': {
                 const variablePrimary = selectedVariable?.label ?? 'Variable referenzieren';
                 return (
                     <SourceSummaryField
-                        id={control.inputId}
+                        id={control.controlId}
                         ariaDescribedBy={control.helperTextId}
                         ariaLabel={`${variablePrimary}. ${label}: Variable referenzieren`}
                         primary={variablePrimary}
@@ -240,7 +187,7 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
                 const noCodePrimary = getNoCodeSummary(value.noCode, variables);
                 return (
                     <SourceSummaryField
-                        id={control.inputId}
+                        id={control.controlId}
                         ariaDescribedBy={control.helperTextId}
                         ariaLabel={`${noCodePrimary}. ${label}: Ausdruck bearbeiten`}
                         primary={noCodePrimary}
@@ -259,7 +206,7 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
                     : 'Benutzerdefiniertes Skript';
                 return (
                     <SourceSummaryField
-                        id={control.inputId}
+                        id={control.controlId}
                         ariaDescribedBy={control.helperTextId}
                         ariaLabel={`${lowCodePrimary}. ${label}: Skript bearbeiten`}
                         primary={lowCodePrimary}
@@ -272,113 +219,59 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
                     />
                 );
             }
-            case 'literal':
             default:
-                return renderLiteral({
-                    value: value.literal,
-                    onChange: (literal) => onChange({...value, literal}),
-                    variableInsertAction,
-                    control,
-                });
+                return null;
         }
     };
 
-    const modeSelector = (
-        <Button
-            size="small"
-            variant="text"
-            disabled={interactionDisabled || allowedModes.length < 2}
-            aria-label={`${MODE_DEFINITIONS[value.mode].label}: Eingabemodus für ${label} ändern`}
-            aria-haspopup="menu"
-            aria-expanded={menuAnchor != null}
-            startIcon={renderModeIcon(value.mode)}
-            endIcon={<KeyboardArrowDown fontSize="small"/>}
-            onClick={(event) => setMenuAnchor(event.currentTarget)}
-            sx={{
-                minWidth: 0,
-                minHeight: 28,
-                px: 0.75,
-                py: 0.25,
-                color: 'text.secondary',
-                fontSize: '0.8125rem',
-                lineHeight: 1.25,
-                '&:hover': {
-                    bgcolor: 'action.hover',
-                    color: 'text.primary',
-                },
-            }}
-        >
-            {MODE_DEFINITIONS[value.mode].label}
-        </Button>
-    );
     const labelAction = (
         <Stack direction="row" spacing={0.5} sx={{alignItems: 'center'}}>
             {onInsertVariable != null && value.mode === 'literal' && (
-                <Tooltip title="Dieser dynamische Text unterstützt Variablen und Bedingungen." arrow>
-                    <Box
-                        component="span"
-                        role="img"
-                        aria-label="Dieser dynamische Text unterstützt Variablen und Bedingungen."
-                        sx={{
-                            display: 'inline-flex',
-                            width: 20,
-                            height: 20,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'text.disabled',
-                        }}
-                    >
-                        <Function sx={{fontSize: 16}}/>
-                    </Box>
-                </Tooltip>
+                <DynamicTextIndicator/>
             )}
-            {modeSelector}
+            <InputModeSelector
+                fieldLabel={label}
+                controlledFieldId={props.id}
+                value={value.mode}
+                allowedModes={props.allowedModes}
+                disabled={interactionDisabled}
+                onChange={(mode) => {
+                    if (mode !== value.mode) {
+                        onChange({...value, mode});
+                    }
+                }}
+            />
         </Stack>
     );
+    const fieldProps: InputModeLiteralFieldProps = {
+        id: props.id,
+        label,
+        hint,
+        error,
+        required,
+        disabled,
+        readOnly,
+        busy,
+        ariaLabel: props.ariaLabel,
+        ariaDescribedBy: props.ariaDescribedBy,
+        labelAction,
+        margin: props.margin,
+        showOptionalIndicator: props.showOptionalIndicator,
+        sx: props.sx,
+    };
 
     return (
         <Box data-input-mode={value.mode}>
-            <FieldLayout
-                label={label}
-                hint={hint}
-                error={error}
-                required={required}
-                disabled={disabled}
-                readOnly={readOnly}
-                busy={busy}
-                labelAction={labelAction}
-            >
-                {(control) => renderModeContent(control)}
-            </FieldLayout>
-
-            <Menu
-                anchorEl={menuAnchor}
-                open={menuAnchor != null}
-                onClose={() => setMenuAnchor(null)}
-                slotProps={{
-                    paper: {
-                        sx: {minWidth: 260},
-                    },
-                }}
-            >
-                {allowedModes.map((mode) => (
-                    <MenuItem
-                        key={mode}
-                        data-testid={`input-mode-option-${mode}`}
-                        selected={mode === value.mode}
-                        onClick={() => handleModeChange(mode)}
-                    >
-                        <ListItemIcon>
-                            {renderModeIcon(mode)}
-                        </ListItemIcon>
-                        <ListItemText
-                            primary={MODE_DEFINITIONS[mode].label}
-                            secondary={MODE_DEFINITIONS[mode].description}
-                        />
-                        {mode === value.mode && <Check fontSize="small"/>}
-                    </MenuItem>
-                ))}
-            </Menu>
+            {value.mode === 'literal' ? renderLiteral({
+                value: value.literal,
+                onChange: (literal) => onChange({...value, literal}),
+                variableInsertAction,
+                fieldProps,
+            }) : (
+                <FormField {...fieldProps}>
+                    {(control) => renderModeContent(control)}
+                </FormField>
+            )}
 
             <VariablePickerDialog
                 open={variablePickerPurpose != null}
@@ -441,7 +334,8 @@ interface SourceSummaryFieldProps {
 }
 
 function SourceSummaryField(props: SourceSummaryFieldProps) {
-    const secondaryId = React.useId();
+    const generatedId = useNormalizedReactId();
+    const secondaryId = `input-mode-summary-${generatedId}`;
     const describedBy = [secondaryId, props.ariaDescribedBy].filter(Boolean).join(' ');
 
     return (
@@ -455,7 +349,7 @@ function SourceSummaryField(props: SourceSummaryFieldProps) {
             onClick={props.onClick}
             sx={{
                 width: '100%',
-                minHeight: 48,
+                minHeight: FormFieldTokens.controlWithSecondaryTextMinHeight,
                 px: 1.5,
                 py: 0.625,
                 border: '1px solid',
@@ -595,32 +489,18 @@ function VariablePickerDialog(props: VariablePickerDialogProps) {
                         Die Vorschläge zeigen Variablen, die im Prozess erzeugt werden können. Ob zur Laufzeit ein Wert
                         vorliegt, hängt vom ausgeführten Prozesspfad ab.
                     </Typography>
-                    <FieldLayout label="Variablenvorschläge durchsuchen">
-                        {({inputId}) => (
-                            <TextField
-                                id={inputId}
-                                autoFocus
-                                fullWidth
-                                placeholder="Name, Pfad oder Prozesselement"
-                                margin="none"
-                                size="small"
-                                value={search}
-                                onChange={(event) => {
-                                    setSearch(event.target.value);
-                                    setDraftSelectedId(null);
-                                }}
-                                slotProps={{
-                                    input: {
-                                        startAdornment: (
-                                            <InputAdornment position="start">
-                                                <Search/>
-                                            </InputAdornment>
-                                        ),
-                                    },
-                                }}
-                            />
-                        )}
-                    </FieldLayout>
+                    <TextFieldComponent
+                        label="Variablenvorschläge durchsuchen"
+                        placeholder="Name, Pfad oder Prozesselement"
+                        value={search}
+                        onChange={(nextSearch) => {
+                            setSearch(nextSearch ?? '');
+                            setDraftSelectedId(null);
+                        }}
+                        startIcon={<Search/>}
+                        margin="none"
+                        muiPassTroughProps={{autoFocus: true}}
+                    />
                 </Box>
 
                 <Tabs
@@ -814,61 +694,39 @@ function NoCodeEditorDialog(props: NoCodeEditorDialogProps) {
                         sx={{alignItems: {md: 'flex-start'}}}
                     >
                         <Box sx={{flex: 1, minWidth: 0}}>
-                            <FieldLayout label="Variablenreferenz">
-                                {({inputId, labelId}) => (
-                                    <SelectFieldComponent
-                                        label=""
-                                        ariaLabelledBy={labelId}
-                                        value={draft.sourceVariableId}
-                                        onChange={(sourceVariableId) => setDraft({...draft, sourceVariableId})}
-                                        options={props.variables.map((variable) => ({
-                                            value: variable.id,
-                                            label: variable.label,
-                                            subLabel: `${VARIABLE_CATEGORY_DEFINITIONS[variable.category].label} - ${getInputModeVariableReference(variable)}`,
-                                        }))}
-                                        placeholder="Variable referenzieren"
-                                        size="small"
-                                        sx={{minHeight: 48}}
-                                        muiPassTroughProps={{id: inputId, margin: 'none'}}
-                                    />
-                                )}
-                            </FieldLayout>
+                            <SelectFieldComponent
+                                label="Variablenreferenz"
+                                value={draft.sourceVariableId}
+                                onChange={(sourceVariableId) => setDraft({...draft, sourceVariableId})}
+                                options={props.variables.map((variable) => ({
+                                    value: variable.id,
+                                    label: variable.label,
+                                    subLabel: `${VARIABLE_CATEGORY_DEFINITIONS[variable.category].label} - ${getInputModeVariableReference(variable)}`,
+                                }))}
+                                placeholder="Variable referenzieren"
+                                margin="none"
+                            />
                         </Box>
                         <Box sx={{flex: 0.85, minWidth: 0}}>
-                            <FieldLayout label="Operator">
-                                {({inputId, labelId}) => (
-                                    <SelectFieldComponent
-                                        label=""
-                                        ariaLabelledBy={labelId}
-                                        value={draft.operator}
-                                        onChange={(operator) => setDraft({...draft, operator: operator ?? 'add'})}
-                                        options={NO_CODE_OPERATORS.map((operator) => ({
-                                            value: operator.value,
-                                            label: operator.label,
-                                        }))}
-                                        includeEmptyOption={false}
-                                        size="small"
-                                        sx={{minHeight: 48}}
-                                        muiPassTroughProps={{id: inputId, margin: 'none'}}
-                                    />
-                                )}
-                            </FieldLayout>
+                            <SelectFieldComponent
+                                label="Operator"
+                                value={draft.operator}
+                                onChange={(operator) => setDraft({...draft, operator: operator ?? 'add'})}
+                                options={NO_CODE_OPERATORS.map((operator) => ({
+                                    value: operator.value,
+                                    label: operator.label,
+                                }))}
+                                includeEmptyOption={false}
+                                margin="none"
+                            />
                         </Box>
                         <Box sx={{flex: 0.7, minWidth: 0}}>
-                            <FieldLayout label="Wert">
-                                {({inputId, labelId}) => (
-                                    <TextFieldComponent
-                                        id={inputId}
-                                        label=""
-                                        ariaLabelledBy={labelId}
-                                        value={draft.operand}
-                                        onChange={(operand) => setDraft({...draft, operand: operand ?? ''})}
-                                        size="small"
-                                        sx={{m: 0, '& .MuiInputBase-root': {minHeight: 48}}}
-                                        muiPassTroughProps={{margin: 'none'}}
-                                    />
-                                )}
-                            </FieldLayout>
+                            <TextFieldComponent
+                                label="Wert"
+                                value={draft.operand}
+                                onChange={(operand) => setDraft({...draft, operand: operand ?? ''})}
+                                margin="none"
+                            />
                         </Box>
                     </Stack>
                 </Stack>
@@ -911,33 +769,25 @@ function LowCodeEditorDialog(props: LowCodeEditorDialogProps) {
                 Skript für „{props.label}“
             </DialogTitleWithClose>
             <DialogContent sx={{pt: 2}}>
-                <FieldLayout label="JavaScript">
-                    {({inputId}) => (
-                        <TextField
-                            id={inputId}
-                            autoFocus
-                            fullWidth
-                            multiline
-                            minRows={12}
-                            margin="none"
-                            value={draft}
-                            onChange={(event) => setDraft(event.target.value)}
-                            slotProps={{
-                                htmlInput: {
-                                    'aria-label': `JavaScript für ${props.label}`,
-                                    spellCheck: false,
-                                },
-                            }}
-                            sx={{
-                                '& textarea': {
-                                    fontFamily: 'monospace',
-                                    fontSize: '0.875rem',
-                                    lineHeight: 1.6,
-                                },
-                            }}
-                        />
-                    )}
-                </FieldLayout>
+                <TextFieldComponent
+                    label="JavaScript"
+                    multiline
+                    rows={12}
+                    value={draft}
+                    onChange={(nextValue) => setDraft(nextValue ?? '')}
+                    margin="none"
+                    controlSx={{
+                        '& textarea': {
+                            fontFamily: 'monospace',
+                            fontSize: '0.875rem',
+                            lineHeight: 1.6,
+                        },
+                    }}
+                    muiPassTroughProps={{
+                        autoFocus: true,
+                        slotProps: {htmlInput: {spellCheck: false}},
+                    }}
+                />
             </DialogContent>
             <DialogActions>
                 <Button variant="contained" onClick={() => props.onApply(draft)}>

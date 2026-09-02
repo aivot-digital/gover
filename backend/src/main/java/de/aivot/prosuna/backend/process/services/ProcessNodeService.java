@@ -279,7 +279,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     @Nonnull
-    public ProcessNodeDefinitionMetadata getProcessDataKeyHintResponses(@Nonnull ProcessNodeEntity node) throws ResponseException {
+    public ProcessNodeDefinitionMetadata getIncomingProcessNodeDefinitionMetadata(@Nonnull ProcessNodeEntity node) throws ResponseException {
         var processNodesById = new LinkedHashMap<Integer, ProcessNodeEntity>();
 
         processNodeRepository
@@ -306,6 +306,15 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
         var previousMetadata = ProcessNodeDefinitionMetadata
                 .empty();
+
+        if (incomingEdgesByNodeId.getOrDefault(node.getId(), List.of()).isEmpty()) {
+            var provider = processNodeProviderService
+                    .getProcessNodeDefinition(node)
+                    .orElseThrow(ResponseException::badRequest);
+            if (provider.getType() == ProcessNodeType.Trigger) {
+                return calculateProcessDataKeyHintsForNode(node, provider, previousMetadata);
+            }
+        }
 
         for (var previousNode : previousNodes) {
             previousMetadata = calculateProcessDataKeyHintsForNode(previousNode, previousMetadata);

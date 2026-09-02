@@ -13,7 +13,9 @@ public record PluginComponentDTO(
         @Nonnull Integer majorVersion,
         @Nonnull PluginComponentType componentType,
         @Nonnull String name,
+        @Nonnull String abstractDescription,
         @Nonnull String description,
+        @Nullable String documentationUrl,
         @Nullable String deprecationNotice
 ) {
     public static PluginComponentDTO from(@Nonnull PluginComponent component) {
@@ -25,7 +27,9 @@ public record PluginComponentDTO(
                 component.getMajorVersion(),
                 component.getComponentType(),
                 component.getName(),
+                component.getAbstract(),
                 component.getDescription(),
+                component.getDocumentationUrl(),
                 component.getDeprecationNotice()
         );
     }

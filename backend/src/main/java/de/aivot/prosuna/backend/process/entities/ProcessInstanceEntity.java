@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.core.converters.JsonObjectConverter;
 import de.aivot.prosuna.backend.identity.converters.IdentityDataMapConverter;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -15,11 +16,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @Table(name = "process_instances")
 public class ProcessInstanceEntity {
+    @JsonIgnore
+    public static final int ACCESS_KEY_LENGTH = 128;
     private static final String ID_SEQUENCE_NAME = "process_instances_id_seq";
 
     @Id
@@ -33,8 +35,9 @@ public class ProcessInstanceEntity {
     private String caseNumber;
 
     @Nonnull
+    @Column(length = ACCESS_KEY_LENGTH)
     @NotNull(message = "Der Zugriffsschlüssel darf nicht null sein.")
-    private UUID accessKey;
+    private String accessKey;
 
     @Nonnull
     @NotNull(message = "Die Prozessdefinitions-ID darf nicht null sein.")
@@ -112,7 +115,7 @@ public class ProcessInstanceEntity {
 
     public ProcessInstanceEntity(@Nonnull Long id,
                                  @Nonnull String caseNumber,
-                                 @Nonnull UUID accessKey,
+                                 @Nonnull String accessKey,
                                  @Nonnull Integer processId,
                                  @Nonnull Integer initialProcessVersion,
                                  @Nonnull ProcessInstanceStatus status,
@@ -196,11 +199,11 @@ public class ProcessInstanceEntity {
     }
 
     @Nonnull
-    public UUID getAccessKey() {
+    public String getAccessKey() {
         return accessKey;
     }
 
-    public ProcessInstanceEntity setAccessKey(@Nonnull UUID accessKey) {
+    public ProcessInstanceEntity setAccessKey(@Nonnull String accessKey) {
         this.accessKey = accessKey;
         return this;
     }

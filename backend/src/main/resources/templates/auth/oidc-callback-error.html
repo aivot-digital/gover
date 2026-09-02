@@ -79,20 +79,20 @@
         <main>
             <h1>Anmeldung fehlgeschlagen</h1>
             <p th:text="${message}">
-                Die Anmeldung konnte nicht abgeschlossen werden.
+                Ihr Anmeldevorgang konnte nicht abgeschlossen werden.
             </p>
             <p
                     class="description"
                     th:text="${description}"
             >
-                Bitte starten Sie die Anmeldung erneut oder versuchen Sie es später noch einmal.
+                Bitte melden Sie sich erneut an oder versuchen Sie es später noch einmal.
             </p>
             <p th:if="${restartLoginUrl != null}">
                 <a
                         class="restart-button"
                         th:href="${restartLoginUrl}"
                 >
-                    Anmeldung erneut starten
+                    Erneut anmelden
                 </a>
             </p>
         </main>

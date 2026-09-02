@@ -2,13 +2,14 @@ import type {Page} from '../../../models/dtos/page';
 import type {AuthoredElementValues} from '../../../models/element-data';
 import type {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import type {SortOrder} from '../../../components/generic-list/generic-list-props';
-import {BaseApiService} from '../../../services/base-api-service';
 import type {QueryParams} from '../../../services/base-api-service';
+import {BaseApiService} from '../../../services/base-api-service';
 import type {ProcessEntity} from '../../process/entities/process-entity';
 import type {ProcessNodeEntity} from '../../process/entities/process-node-entity';
 import type {ProcessVersionEntity} from '../../process/entities/process-version-entity';
 import type {Theme} from '../../themes/models/theme';
 import type {FormTriggerIdentityDetailsDTO} from '../dtos/form-trigger-identity-details-dto';
+import type {PaymentConfigElementValue} from '../../../models/elements/form/input/payment-config-element';
 
 export interface FormTriggerFilter {
     id: number;
@@ -27,6 +28,7 @@ export interface FormTriggerConfiguration extends AuthoredElementValues {
     formSlug?: string;
     formLayout?: FormLayoutElement;
     identityProviders?: Array<Record<string, unknown>>;
+    payment?: PaymentConfigElementValue;
 }
 
 export interface FormTriggerNodeEntity extends Omit<ProcessNodeEntity, 'configuration'> {
@@ -37,6 +39,30 @@ export interface FormTriggerListItem {
     process: ProcessEntity;
     version: ProcessVersionEntity;
     node: FormTriggerNodeEntity;
+}
+
+export interface FormTriggerSubmissionStatusResponseV1 {
+    startedProcessAccessKey: string;
+}
+
+export interface FormTriggerCostCalculationResponseV1 {
+    totalCost: number;
+    hasTaxes: boolean;
+    paymentItems: {
+        id: string;
+        reference: string;
+        description: string;
+        quantity: number;
+        taxRate: number;
+        netPrice: number;
+        totalPrice: number;
+        bookingData: {
+            key: string;
+            value: string;
+        }[];
+        taxInformation: string;
+    }[];
+    paymentProviderName: string;
 }
 
 export type FormOverviewMode = 'Published' | 'Drafted';
@@ -56,6 +82,35 @@ export interface FormOverviewItem {
 }
 
 export class FormTriggerApiService extends BaseApiService {
+    public async submitForm(processSlug: string, triggerSlug: string, formData: FormData, options?: {
+        testClaim?: string;
+    }): Promise<FormTriggerSubmissionStatusResponseV1> {
+        return await this.postFormData<FormTriggerSubmissionStatusResponseV1>(
+            `/api/public/form/${processSlug}/${triggerSlug}/submit/`,
+            formData,
+            {
+                query: {
+                    'test-claim': options?.testClaim,
+                },
+            },
+        );
+    }
+
+    public async calculateCosts(processSlug: string, triggerSlug: string, authoredElementValues: AuthoredElementValues, options?: {
+        testClaim?: string;
+    }): Promise<FormTriggerCostCalculationResponseV1> {
+        return await this.post<AuthoredElementValues, FormTriggerCostCalculationResponseV1>(
+            `/api/public/form/${processSlug}/${triggerSlug}/costs/`,
+            authoredElementValues,
+            {
+                query: {
+                    'test-claim': options?.testClaim,
+                },
+            },
+        );
+    }
+
+
     public async listOverview(
         page: number,
         limit: number,
@@ -113,6 +168,42 @@ export class FormTriggerApiService extends BaseApiService {
 
     public async downloadPrintablePdf(nodeId: number): Promise<Blob> {
         return await this.getBlob(`/api/forms/v1/${nodeId}/print-pdf/`);
+    }
+
+    public async downloadSubmittedSummaryPdf(
+        processSlug: string,
+        triggerSlug: string,
+        instanceAccessKey: string,
+        taskAccessKey: string,
+        version?: number,
+    ): Promise<Blob> {
+        return await this.getBlob(
+            `/api/public/form/${processSlug}/${triggerSlug}/submit/${encodeURIComponent(instanceAccessKey)}/${encodeURIComponent(taskAccessKey)}/print/`,
+            {
+                query: {
+                    version,
+                },
+                skipAuthCheck: true,
+            },
+        );
+    }
+
+    public async downloadPaymentConfirmationPdf(
+        processSlug: string,
+        triggerSlug: string,
+        instanceAccessKey: string,
+        taskAccessKey: string,
+        version?: number,
+    ): Promise<Blob> {
+        return await this.getBlob(
+            `/api/public/form/${processSlug}/${triggerSlug}/submit/${encodeURIComponent(instanceAccessKey)}/${encodeURIComponent(taskAccessKey)}/payment-confirmation/`,
+            {
+                query: {
+                    version,
+                },
+                skipAuthCheck: true,
+            },
+        );
     }
 
     private buildListQuery(

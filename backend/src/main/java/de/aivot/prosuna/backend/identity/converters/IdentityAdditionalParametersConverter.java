@@ -1,12 +1,11 @@
 package de.aivot.prosuna.backend.identity.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.identity.models.IdentityAdditionalParameter;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import tools.jackson.core.JacksonException;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -45,12 +44,12 @@ public class IdentityAdditionalParametersConverter implements AttributeConverter
             return null;
         }
 
-        var objectMapper = new ObjectMapper();
+        var objectMapper = JsonMapperFactory.getInstance();
 
         String dbData;
         try {
             dbData = objectMapper.writeValueAsString(attributes);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 
@@ -63,14 +62,14 @@ public class IdentityAdditionalParametersConverter implements AttributeConverter
             return null;
         }
 
-        var objectMapper = new ObjectMapper()
+        var objectMapper = JsonMapperFactory.getInstance()
                 .readerForListOf(IdentityAdditionalParameter.class);
 
         List<IdentityAdditionalParameter> mappings;
         try {
             mappings = objectMapper
                     .readValue(dbData);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 

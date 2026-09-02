@@ -66,7 +66,9 @@ public enum ElementType implements Identifiable<Integer> {
     ProcessInstanceAttachmentSetSelect(46),
     ProcessIdentityIdInput(47),
     HtmlTemplateInput(48),
-    StoragePathSelector(49)
+    StoragePathSelector(49),
+    PaymentConfig(50),
+    LinkButton(51),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -119,6 +121,8 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_ProcessIdentityIdInput = "47";
     public static final String ID_HtmlTemplateInput = "48";
     public static final String ID_StoragePathSelector = "49";
+    public static final String ID_PaymentConfig = "50";
+    public static final String ID_LinkButton = "51";
 
     private final Integer key;
 
@@ -168,8 +172,7 @@ public enum ElementType implements Identifiable<Integer> {
             case SubmitStep -> new SubmitStepElement();
             case SummaryStep -> new SummaryStepElement();
             case Image -> new ImageContentElement();
-            case SubmittedStep ->
-                    throw new ElementDataConversionException("Element type SubmittedStep is no longer supported.");
+            case SubmittedStep -> throw new ElementDataConversionException("Element type SubmittedStep is no longer supported.");
             case FileUpload -> new FileUploadInputElement();
             case DialogLayout -> new DialogLayoutElement();
             case StepperLayout -> new StepperLayoutElement();
@@ -198,6 +201,8 @@ public enum ElementType implements Identifiable<Integer> {
             case ProcessIdentityIdInput -> new ProcessIdentityIdInputElement();
             case HtmlTemplateInput -> new HtmlTemplateInputElement();
             case StoragePathSelector -> new StoragePathSelectorInputElement();
+            case PaymentConfig -> new PaymentConfigElement();
+            case LinkButton -> new LinkButtonContentElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

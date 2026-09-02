@@ -19,6 +19,9 @@ import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useRetainedDialogValue} from '../../../../hooks/use-retained-dialog-value';
 import {ProcessSettingsDialogVersionTab, type ProcessSettingsDialogVersionTabHandle} from './process-settings-dialog-version-tab';
 import {useConfirm} from '../../../../providers/confirm-provider';
+import {ThemesApiService} from '../../../themes/themes-api-service';
+import {type ThemeResponseDTO} from '../../../themes/models/theme';
+import {useApi} from '../../../../hooks/use-api';
 
 interface ProcessSettingsDialogProps {
     open: boolean;
@@ -33,6 +36,7 @@ interface ProcessSettingsDialogProps {
 export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
+    const api = useApi();
 
     const {
         open,
@@ -215,6 +219,19 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
             });
     }, []);
 
+    const [themes, setThemes] = useState<ThemeResponseDTO[] | null>(null);
+    useEffect(() => {
+        new ThemesApiService(api)
+            .listAll()
+            .then(({content}) => {
+                setThemes(content);
+            })
+            .catch((error) => {
+                setThemes([]);
+                dispatch(showApiErrorSnackbar(error, 'Fehler beim Laden der Erscheinungsbilder'));
+            });
+    }, [api, dispatch]);
+
     return (
         <Dialog
             open={open}
@@ -224,16 +241,6 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
             sx={{
                 '& .MuiDialog-container': {
                     alignItems: 'flex-start',
-                },
-                '& .MuiDialog-paper': {
-                    mt: {
-                        xs: 2,
-                        sm: 6,
-                    },
-                    mb: {
-                        xs: 2,
-                        sm: 4,
-                    },
                 },
             }}
         >
@@ -245,12 +252,18 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                 sx={{
                     mt: -1,
                     p: 0,
+                    minWidth: 0,
                 }}
             >
                 <Tabs
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    allowScrollButtonsMobile
                     sx={{
                         borderBottom: '1px solid',
                         borderBottomColor: 'divider',
+                        minWidth: 0,
+                        maxWidth: '100%',
                     }}
                     value={currentTab}
                     onChange={(_, newValue) => {
@@ -283,6 +296,8 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                 <Box
                     sx={{
                         p: 2,
+                        minWidth: 0,
+                        maxWidth: '100%',
                     }}
                 >
                     {
@@ -305,6 +320,8 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                             ref={versionTabRef}
                             open={open}
                             version={renderVersion}
+                            departments={departments}
+                            themes={themes}
                             onVersionChange={renderOnVersionChange}
                             onUnsavedChangesChange={setHasUnsavedVersionChanges}
                             onSavingChange={setIsSavingVersionSettings}

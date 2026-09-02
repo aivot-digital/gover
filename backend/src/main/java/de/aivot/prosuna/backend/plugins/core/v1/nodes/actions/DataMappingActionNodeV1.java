@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.bool.NoCodeNotOperator;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -71,14 +72,30 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Datenfelder kopieren";
     }
 
     @Nonnull
     @Override
+    public String getAbstract() {
+        return "Kopiert Werte von Quellfeldern in Zielfelder und kann die Quellfelder anschließend löschen.";
+    }
+
+    @Nonnull
+    @Override
     public String getDescription() {
-        return "Kopiert Werte von Quellfeldern in Zielfelder. Kann Optional verwendet werden, um Quellfelder zu löschen.";
+        return """
+                Überträgt Werte anhand konfigurierter Regeln zwischen Pfaden innerhalb der Vorgangsdaten.
+
+                Jede Regel kann einen Quellwert in ein Zielfeld kopieren, das Quellfeld nach der Übertragung bereinigen oder ausschließlich eine Löschung ausführen. Optional werden dabei leer gewordene übergeordnete Container aus den Vorgangsdaten entfernt.
+                """;
     }
 
     @Nonnull

@@ -137,7 +137,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
                 to={isHashLink ? undefined : to}
                 target={target}
                 rel={rel}
-                aria-label={action.ariaLabel}
+                aria-label={action.ariaLabel ?? action.tooltip}
                 disabled={shouldDisable}
                 edge={isFirst ? 'start' : isLast ? 'end' : false}
             >

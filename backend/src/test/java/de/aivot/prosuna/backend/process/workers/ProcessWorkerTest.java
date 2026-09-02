@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
@@ -34,11 +35,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ProcessWorkerTest {
     @Test
-    void listen_MarksProcessInstanceFailed_WhenInitThrowsRuntimeException() {
+    void doWork_MarksProcessInstanceFailed_WhenInitThrowsRuntimeException() {
         var processInstance = new ProcessInstanceEntity(
                 42L,
                 null,
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 7,
                 1,
                 ProcessInstanceStatus.Running,
@@ -128,7 +129,7 @@ class ProcessWorkerTest {
                 new TestProcessNodeService()
         );
 
-        worker.listen(new ProcessWorker.WorkerPayload(42L, null, null, null, 11));
+        worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11));
 
         assertEquals(ProcessInstanceStatus.Failed, processInstance.getStatus());
         assertEquals(1, savedProcessInstances.size());
@@ -136,6 +137,140 @@ class ProcessWorkerTest {
 
         assertEquals(2, savedTasks.size());
         var failedTask = savedTasks.getLast();
+        assertEquals(ProcessTaskStatus.Failed, failedTask.getStatus());
+        assertNotNull(failedTask.getFinished());
+        assertFalse(resultHandler.wasHandleResultCalled());
+    }
+
+    @Test
+    void resumeWork_MarksProcessInstanceFailed_WhenResumeThrowsRuntimeException() {
+        var processInstance = new ProcessInstanceEntity(
+                42L,
+                null,
+                UUID.randomUUID().toString(),
+                7,
+                1,
+                ProcessInstanceStatus.Running,
+                null,
+                null,
+                List.of(),
+                new IdentityDataMap(),
+                Instant.now(),
+                Instant.now(),
+                null,
+                null,
+                Map.of(),
+                11,
+                null,
+                null
+        );
+
+        var processNodeDefinition = new ThrowingProcessNodeDefinition();
+        var processNode = new ProcessNodeEntity()
+                .setId(11)
+                .setProcessId(7)
+                .setProcessVersion(1)
+                .setName("Resume node")
+                .setDataKey("resumeNode")
+                .setProcessNodeDefinitionKey(processNodeDefinition.getKey())
+                .setProcessNodeDefinitionVersion(processNodeDefinition.getMajorVersion())
+                .setConfiguration(new AuthoredElementValues())
+                .setOutputMappings(Map.of());
+
+        var currentTask = new ProcessInstanceTaskEntity(
+                100L,
+                UUID.randomUUID().toString(),
+                processInstance.getId(),
+                processInstance.getProcessId(),
+                1,
+                processNode.getId(),
+                null,
+                null,
+                null,
+                ProcessTaskStatus.Running,
+                null,
+                Instant.now(),
+                Instant.now(),
+                null,
+                null,
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        var savedProcessInstances = new ArrayList<ProcessInstanceEntity>();
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+
+        var processInstanceRepository = createProxy(ProcessInstanceRepository.class, (methodName, args) -> switch (methodName) {
+            case "findById" -> Optional.of(processInstance);
+            case "save" -> {
+                var entity = (ProcessInstanceEntity) args[0];
+                savedProcessInstances.add(entity);
+                yield entity;
+            }
+            default -> defaultValue(args);
+        });
+
+        var processNodeRepository = createProxy(ProcessNodeRepository.class, (methodName, args) -> switch (methodName) {
+            case "findById" -> Optional.of(processNode);
+            case "findAllByProcessId" -> List.of(processNode);
+            default -> defaultValue(args);
+        });
+
+        var processInstanceTaskRepository = createProxy(ProcessInstanceTaskRepository.class, (methodName, args) -> switch (methodName) {
+            case "findById" -> Optional.of(currentTask);
+            case "save" -> {
+                var task = (ProcessInstanceTaskEntity) args[0];
+                savedTasks.add(task);
+                yield task;
+            }
+            case "getLatestTasksByProcessInstanceId" -> List.of(currentTask);
+            case "findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc" -> Optional.empty();
+            default -> defaultValue(args);
+        });
+
+        var processInstanceAttachmentRepository = createProxy(ProcessInstanceAttachmentRepository.class, (methodName, args) -> switch (methodName) {
+            case "findAllByProcessInstanceId" -> List.of();
+            default -> defaultValue(args);
+        });
+        var processInstanceAttachmentSetRepository = createProxy(ProcessInstanceAttachmentSetRepository.class, (methodName, args) -> switch (methodName) {
+            case "findAllByProcessInstanceId" -> List.of();
+            default -> defaultValue(args);
+        });
+
+        var resultHandler = new TestProcessNodeExecutionResultHandler();
+
+        var worker = new ProcessWorker(
+                processInstanceRepository,
+                processNodeRepository,
+                new ProcessNodeDefinitionService(List.of(processNodeDefinition)),
+                processInstanceTaskRepository,
+                resultHandler,
+                new ProcessDataService(
+                        processInstanceTaskRepository,
+                        processNodeRepository,
+                        processInstanceAttachmentRepository,
+                        processInstanceAttachmentSetRepository
+                ),
+                new TestProcessNodeExecutionLoggerFactory(),
+                new TestProcessNodeService()
+        );
+
+        worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
+
+        assertEquals(ProcessInstanceStatus.Failed, processInstance.getStatus());
+        assertEquals(1, savedProcessInstances.size());
+        assertEquals(processInstance, savedProcessInstances.getFirst());
+
+        assertEquals(1, savedTasks.size());
+        var failedTask = savedTasks.getFirst();
+        assertEquals(currentTask, failedTask);
         assertEquals(ProcessTaskStatus.Failed, failedTask.getStatus());
         assertNotNull(failedTask.getFinished());
         assertFalse(resultHandler.wasHandleResultCalled());
@@ -190,6 +325,11 @@ class ProcessWorkerTest {
         }
 
         @Override
+        public String getAbstract() {
+            return "Test node";
+        }
+
+        @Override
         public String getDescription() {
             return "Test node";
         }
@@ -202,6 +342,12 @@ class ProcessWorkerTest {
 
         @Nonnull
         @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+        }
+
+        @Nonnull
+        @Override
         public List<ProcessNodePort> getPorts() {
             return List.of();
         }
@@ -209,6 +355,11 @@ class ProcessWorkerTest {
         @Override
         public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
             throw new RuntimeException("init failure");
+        }
+
+        @Override
+        public ProcessNodeExecutionResult resume(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+            throw new RuntimeException("resume failure");
         }
 
         @Nonnull

@@ -71,8 +71,18 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Dieses Paket enthält Funktionen für Anlagensätze von Vorgängen.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Ermöglicht das Erstellen von Anlagensätzen und das Hinzufügen neuer Dateien aus JavaScript-Ausdrücken.
+
+                Dateiinhalte können als Base64-Daten oder als Zeichenkette übergeben werden. Für jede Anlage wird ein Dateiname angegeben; die Funktion liefert anschließend Informationen zur gespeicherten Anlage zurück.
+                """;
     }
 
     @Override

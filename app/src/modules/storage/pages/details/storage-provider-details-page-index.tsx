@@ -15,6 +15,7 @@ import * as yup from 'yup';
 import {prosunaSchemaToYup, mapFormManagerErrorsToComputedErrors} from '../../../../utils/prosuna-schema-to-yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {type StorageProviderDefinition} from '../../entities/storage-provider-definition';
+import {createStorageProviderDefinitionOption} from '../../utils/storage-provider-definition-utils';
 import {type StorageProviderEntity, StorageProviderMetadataAttribute} from '../../entities/storage-provider-entity';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {StorageProviderType, StorageProviderTypeLabels, StorageProviderTypes} from '../../enums/storage-provider-type';
@@ -46,6 +47,7 @@ import {formatMissingPermissionTooltip} from '../../../permissions/utils/permiss
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
+import {DocumentationLink} from '../../../../components/documentation-link/documentation-link';
 
 const DefaultStorageProcessAttachmentsSystemConfigDefinitionKey = 'storage.attachments.default_storage_provider';
 const DefaultStorageAssetsSystemConfigDefinitionKey = 'storage.assets.default_storage_provider';
@@ -478,12 +480,18 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 </AlertComponent>
             }
 
-            <Typography
-                variant="h5"
-                sx={{mt: 1.5, mb: 1}}
+            <Stack
+                direction="row"
+                spacing={1.5}
+                useFlexGap
+                sx={{mt: 1.5, mb: 1, alignItems: 'center', flexWrap: 'wrap'}}
             >
-                Speicheranbieter konfigurieren
-            </Typography>
+                <Typography variant="h5">
+                    Speicheranbieter konfigurieren
+                </Typography>
+
+                <DocumentationLink url={definition?.documentationUrl}/>
+            </Stack>
             <Typography sx={{mb: 3, maxWidth: 900}}>
                 Konfigurieren Sie den Speicheranbieter, um ihn für die Ablage von Dateien zum angegebenen
                 Verwendungszweck (Typ) nutzen zu können. Sie können die meisten Einstellungen jederzeit anpassen – bitte
@@ -514,11 +522,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         required={true}
                         value={editedStorageProvider.storageProviderDefinitionKey}
                         onChange={handleInputChange('storageProviderDefinitionKey')}
-                        options={definitions.map((def) => ({
-                            value: def.key,
-                            label: def.name,
-                            subLabel: def.description,
-                        }))}
+                        options={definitions.map(createStorageProviderDefinitionOption)}
                         disabled={isExistingItem}
                         error={errors.storageProviderDefinitionKey}
                         hint="Diese Einstellung kann nach der Erstellung nicht mehr geändert werden."
@@ -836,7 +840,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     </Button>
                 </DisabledTooltip>
 
-                <Tooltip title={refreshDefinitionsTooltip}>
+                <Tooltip title={refreshDefinitionsTooltip} arrow>
                     <Box component="span">
                         <Button
                             onClick={handleRefreshDefinitions}

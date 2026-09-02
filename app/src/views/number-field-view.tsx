@@ -40,7 +40,7 @@ export function NumberFieldView(props: BaseViewProps<NumberFieldElement, number>
             required={element.required ?? undefined}
             disabled={isDisabled}
             debounce={1000}
-            sx={{
+            controlSx={{
                 backgroundColor: isBusy ? getDisabledFieldBackground : undefined,
                 cursor: isBusy ? 'not-allowed' : undefined,
             }}

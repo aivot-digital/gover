@@ -37,7 +37,7 @@ describe('ProcessInstanceAttachmentSetSelectFieldView', () => {
             />,
         );
 
-        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Anlagensaetze'}));
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Anlagensaetze – optional'}));
         fireEvent.click(await screen.findByText('Fallunterlagen'));
 
         expect(setValue).toHaveBeenCalledWith(['case_documents']);
@@ -73,7 +73,7 @@ describe('ProcessInstanceAttachmentSetSelectFieldView', () => {
             },
         );
 
-        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Anlagensaetze'}));
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Anlagensaetze – optional'}));
 
         expect(await screen.findByText(/Mehrere Dateien/)).toBeInTheDocument();
         expect(await screen.findByText(/Eine Datei/)).toBeInTheDocument();

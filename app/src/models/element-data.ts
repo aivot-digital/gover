@@ -111,6 +111,14 @@ export function resolveComputedElementSubState(
         if (matchingSubState != null) {
             return matchingSubState;
         }
+
+        // Positional matching is only safe for legacy sub states that do not carry a row id.
+        const indexedSubState = index >= 0 && index < subStates.length ? subStates[index] : null;
+        if (indexedSubState == null || (isComputedElementSubState(indexedSubState) && indexedSubState.id != null)) {
+            return null;
+        }
+
+        return indexedSubState;
     }
 
     return index >= 0 && index < subStates.length ? subStates[index] : null;
@@ -215,17 +223,27 @@ export function applyComputedErrors(computedErrors: ComputedElementErrors, compu
 
         if (Object.prototype.hasOwnProperty.call(computedError, 'subStates')) {
             const computedSubStates = computedError.subStates;
+            const previousSubStates = previousState?.subStates;
+            // Error snapshots can lag behind authored row changes, so the current derived row structure wins.
+            const sourceSubStates = previousSubStates ?? computedSubStates;
 
-            nextState.subStates = computedSubStates == null ?
-                computedSubStates ?? null :
-                computedSubStates.map((computedSubState, index) => {
-                    const previousSubState = resolveComputedElementSubState(previousState?.subStates, computedSubState?.id, index);
+            nextState.subStates = sourceSubStates == null ?
+                sourceSubStates ?? null :
+                sourceSubStates.map((sourceSubState, index) => {
+                    const previousSubState = previousSubStates?.[index] ?? null;
+                    const previousSubStateId = isComputedElementSubState(previousSubState) ? previousSubState.id : null;
+                    const computedSubState = previousSubStates == null ?
+                        sourceSubState :
+                        resolveComputedElementSubState(computedSubStates, previousSubStateId, index);
+
                     return createComputedElementSubState(
-                        computedSubState?.id ?? (isComputedElementSubState(previousSubState) ? previousSubState.id : null),
-                        applyComputedErrors(
-                            resolveComputedElementSubStateStates(computedSubState),
-                            resolveComputedElementSubStateStates(previousSubState),
-                        ),
+                        previousSubStateId ?? (isComputedElementSubState(computedSubState) ? computedSubState.id : null),
+                        computedSubState == null ?
+                            resolveComputedElementSubStateStates(previousSubState) :
+                            applyComputedErrors(
+                                resolveComputedElementSubStateStates(computedSubState),
+                                resolveComputedElementSubStateStates(previousSubState),
+                            ),
                     );
                 });
         }

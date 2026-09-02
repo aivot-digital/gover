@@ -1,5 +1,4 @@
 import React, {useMemo, useRef, useState} from 'react';
-import {Box, FormLabel} from '@mui/material';
 import {FileUploadElement, FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar} from '../../slices/snackbar-slice';
@@ -9,7 +8,7 @@ import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {BaseApiService} from '../../services/base-api-service';
-import {FileUploadFileList, FileUploadHelper, FileUploadInputArea} from './file-upload-field-layout';
+import {FileUploadFieldLayout} from './file-upload-field-layout';
 
 const PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX = 'process-instance-attachment:';
 
@@ -156,93 +155,70 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
     );
 
     return (
-        <Box>
-            <Box
-                sx={{
-                    mb: 1,
-                }}
-            >
-                <FormLabel
-                    htmlFor={element.id + '-input'}
-                    error={errors != null && errors.length > 0}
-                    disabled={isDisabled || isBusy}
-                >
-                    {element.label}
-                    {element.required && ' *'}
-                </FormLabel>
-            </Box>
+        <FileUploadFieldLayout
+            id={`${element.id}-input`}
+            label={element.label ?? ''}
+            required={element.required ?? undefined}
+            disabled={isDisabled}
+            busy={isBusy}
+            error={errors != null && errors.length > 0 ? errors.join(', ') : undefined}
+            hint={element.hint}
+            fileCount={(value ?? []).length}
+            minFiles={element.minFiles}
+            maxFiles={element.maxFiles}
+            items={(value ?? []).map(file => {
+                const isPersistedAttachment = isProcessInstanceAttachment(file);
+                const actionLabel = isPersistedAttachment
+                    ? `${file.name} herunterladen`
+                    : `${file.name} entfernen`;
 
-            {
-                value != null &&
-                value.length > 0 &&
-                <FileUploadFileList
-                    items={value.map(file => {
-                        const isPersistedAttachment = isProcessInstanceAttachment(file);
-                        const actionLabel = isPersistedAttachment
-                            ? `${file.name} herunterladen`
-                            : `${file.name} entfernen`;
-
-                        return {
-                            key: file.uri,
-                            name: file.name,
-                            size: humanizeFileSize(file.size),
-                            detail: isPersistedAttachment && file.originalFileName != null
-                                ? `Hochgeladen als ${file.originalFileName}`
-                                : undefined,
-                            actionLabel,
-                            actionIcon: isPersistedAttachment
-                                ? <Download fontSize="small" />
-                                : <Delete fontSize="small" />,
-                            actionDisabled: !isPersistedAttachment && (isDisabled || isBusy),
-                            onAction: () => isPersistedAttachment
-                                ? void handleDownload(file)
-                                : handleRemove(file),
-                        };
-                    })}
-                />
-            }
-
-            {
-                !fileMaximumReached &&
-                <FileUploadInputArea
-                    id={`${element.id}-input`}
-                    inputRef={inputRef}
-                    multiple={element.isMultifile ?? undefined}
-                    extensions={element.extensions}
-                    disabled={isDisabled || isBusy}
-                    error={errors != null && errors.length > 0}
-                    focused={isFocused}
-                    draggedOver={isDraggedOver}
-                    onChange={handleChange}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    onDragOver={(event) => {
-                        event.preventDefault();
-                        if (!isBusy && !isDisabled) {
-                            setIsDraggedOver(true);
-                        }
-                    }}
-                    onDragLeave={(event) => {
-                        event.preventDefault();
-                        setIsDraggedOver(false);
-                    }}
-                    onDrop={(event) => {
-                        event.preventDefault();
-                        if (!isBusy && !isDisabled) {
-                            handleDrop(event);
-                        }
-                    }}
-                />
-            }
-
-            <FileUploadHelper
-                error={errors != null && errors.length > 0 ? errors.join(', ') : undefined}
-                hint={element.hint}
-                fileCount={(value ?? []).length}
-                minFiles={element.minFiles}
-                maxFiles={element.maxFiles}
-            />
-        </Box>
+                return {
+                    key: file.uri,
+                    name: file.name,
+                    size: humanizeFileSize(file.size),
+                    detail: isPersistedAttachment && file.originalFileName != null
+                        ? `Hochgeladen als ${file.originalFileName}`
+                        : undefined,
+                    actionLabel,
+                    actionIcon: isPersistedAttachment
+                        ? <Download fontSize="small" />
+                        : <Delete fontSize="small" />,
+                    actionDisabled: !isPersistedAttachment && (isDisabled || isBusy),
+                    onAction: () => isPersistedAttachment
+                        ? void handleDownload(file)
+                        : handleRemove(file),
+                };
+            })}
+            showInput={!fileMaximumReached}
+            inputAreaProps={{
+                inputRef,
+                multiple: element.isMultifile ?? undefined,
+                extensions: element.extensions,
+                disabled: isDisabled || isBusy,
+                error: errors != null && errors.length > 0,
+                focused: isFocused,
+                draggedOver: isDraggedOver,
+                onChange: handleChange,
+                onFocus: () => setIsFocused(true),
+                onBlur: () => setIsFocused(false),
+                onDragOver: (event) => {
+                    event.preventDefault();
+                    if (!isBusy && !isDisabled) {
+                        setIsDraggedOver(true);
+                    }
+                },
+                onDragLeave: (event) => {
+                    event.preventDefault();
+                    setIsDraggedOver(false);
+                },
+                onDrop: (event) => {
+                    event.preventDefault();
+                    if (!isBusy && !isDisabled) {
+                        handleDrop(event);
+                    }
+                },
+            }}
+        />
     );
 }
 

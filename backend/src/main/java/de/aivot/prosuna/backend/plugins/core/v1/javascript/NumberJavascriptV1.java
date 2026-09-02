@@ -34,8 +34,18 @@ public class NumberJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Dieses Modul stellt Funktionen zur Verarbeitung von Zahlenwerten bereit.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Stellt JavaScript-Hilfsfunktionen für Zahlenwerte im deutschen Zahlenformat bereit.
+
+                Zahlen können mit einer vorgegebenen Anzahl von Nachkommastellen formatiert werden. Umgekehrt lassen sich deutsch formatierte Zeichenketten wieder in numerische Werte umwandeln.
+                """;
     }
 
     @Override

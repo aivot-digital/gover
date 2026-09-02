@@ -1,7 +1,6 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
 import de.aivot.prosuna.backend.enums.ElementType;
@@ -9,6 +8,7 @@ import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import tools.jackson.core.JacksonException;
 
 import java.util.Collection;
 import java.util.List;
@@ -124,7 +124,7 @@ public class FileUploadInputElement extends BaseInputElement<List<FileUploadInpu
 
     @Nullable
     public static List<FileUploadInputElementItem> _formatValue(@Nullable Object value) {
-        var om = new ObjectMapper();
+        var om = JsonMapperFactory.getInstance();
 
         List<FileUploadInputElementItem> res = switch (value) {
             case null -> null;
@@ -136,7 +136,7 @@ public class FileUploadInputElement extends BaseInputElement<List<FileUploadInpu
                         case String sItem -> {
                             try {
                                 yield om.readValue(sItem, FileUploadInputElementItem.class);
-                            } catch (JsonProcessingException e) {
+                            } catch (JacksonException e) {
                                 yield null;
                             }
                         }
@@ -149,7 +149,7 @@ public class FileUploadInputElement extends BaseInputElement<List<FileUploadInpu
                     yield om
                             .readerForListOf(FileUploadInputElementItem.class)
                             .readValue(sValue);
-                } catch (JsonProcessingException e) {
+                } catch (JacksonException e) {
                     yield null;
                 }
             }

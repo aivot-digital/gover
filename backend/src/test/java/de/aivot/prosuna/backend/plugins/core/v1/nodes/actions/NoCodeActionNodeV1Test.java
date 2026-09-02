@@ -59,6 +59,29 @@ class NoCodeActionNodeV1Test {
         node = new NoCodeActionNodeV1(new NoCodeEvaluationService(List.of()));
     }
 
+    @Test
+    void getOutputs_ShouldExposeStructuredVariableTypes() {
+        var variablesOutput = node
+                .getOutputs()
+                .stream()
+                .filter(output -> "variables".equals(output.key()))
+                .findFirst()
+                .orElseThrow();
+        var variableCountOutput = node
+                .getOutputs()
+                .stream()
+                .filter(output -> "variableCount".equals(output.key()))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(
+                "Array<{ rowIndex: number; configuredPath: string; resolvedPath: string; wildcardIndices: Array<number>; " +
+                        "targetType: \"any\" | \"string\" | \"number\" | \"boolean\" | \"date\" | \"time\" | \"datetime\"; value: unknown; }>",
+                variablesOutput.typeDefinition()
+        );
+        assertEquals("number", variableCountOutput.typeDefinition());
+    }
+
     @AfterEach
     void tearDown() {
         ApplicationTimeZone.configure(originalZone);
@@ -328,7 +351,7 @@ class NoCodeActionNodeV1Test {
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessId(PROCESS_ID)
                 .setInitialProcessVersion(PROCESS_VERSION)
                 .setStatus(ProcessInstanceStatus.Running)
@@ -345,7 +368,7 @@ class NoCodeActionNodeV1Test {
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)
-                .setAccessKey(UUID.randomUUID())
+                .setAccessKey(UUID.randomUUID().toString())
                 .setProcessInstanceId(PROCESS_INSTANCE_ID)
                 .setProcessId(PROCESS_ID)
                 .setProcessVersion(PROCESS_VERSION)

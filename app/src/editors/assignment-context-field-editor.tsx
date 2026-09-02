@@ -10,7 +10,7 @@ import {
 } from '../models/elements/form/input/domain-user-select-field-element';
 import {MultiCheckboxComponent} from '../components/multi-checkbox-field/multi-checkbox-component';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
-import {StringListInput2} from '../components/string-list-input/string-list-input-2';
+import {StringListInput} from '../components/string-list-input/string-list-input';
 
 export function AssignmentContextFieldEditor(props: BaseEditorProps<AssignmentContextFieldElement>) {
     const {
@@ -230,7 +230,7 @@ export function AssignmentContextFieldEditor(props: BaseEditorProps<AssignmentCo
                     </Grid>
 
                     <Grid size={{xs: 12}}>
-                        <StringListInput2
+                        <StringListInput
                             label="Notwendige Berechtigungen"
                             value={processAccessConstraint.requiredPermissions ?? undefined}
                             onChange={(value) => {

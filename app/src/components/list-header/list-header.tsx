@@ -48,6 +48,7 @@ export function ListHeader(props: ListHeaderProps) {
             <Box
                 sx={{
                     display: 'flex',
+                    alignItems: 'flex-end',
                     ml: 'auto',
                 }}
             >
@@ -104,11 +105,13 @@ export function ListHeader(props: ListHeaderProps) {
                                 <Tooltip
                                     key={act.tooltip}
                                     title={act.tooltip}
+                                    arrow
                                 >{
                                     act.badge != null ? (
                                         <Badge {...act.badge}>
                                             <IconButton
                                                 sx={{ml: 2}}
+                                                aria-label={act.tooltip}
                                                 component={'link' in act ? Link : 'button'}
                                                 to={'link' in act ? act.link : undefined}
                                                 onClick={'onClick' in act ? act.onClick : undefined}
@@ -119,6 +122,7 @@ export function ListHeader(props: ListHeaderProps) {
                                     ) : (
                                         <IconButton
                                             sx={{ml: 2}}
+                                            aria-label={act.tooltip}
                                             component={'link' in act ? Link : 'button'}
                                             to={'link' in act ? act.link : undefined}
                                             onClick={'onClick' in act ? act.onClick : undefined}

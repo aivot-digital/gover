@@ -7,6 +7,7 @@ import {
     type InputModeValue,
     type InputModeVariable,
 } from './input-mode-field';
+import {TextFieldComponent} from '../text-field/text-field-component';
 
 const variables: InputModeVariable[] = [
     {
@@ -66,15 +67,13 @@ function Harness(props: {
             required={props.required}
             disabled={props.disabled}
             readOnly={props.readOnly}
-            renderLiteral={({value: literal, onChange, variableInsertAction, control}) => (
+            renderLiteral={({value: literal, onChange, variableInsertAction, fieldProps}) => (
                 <>
-                    <input
-                        id={control.inputId}
-                        {...control.ariaProps}
-                        disabled={control.disabled || control.busy}
-                        readOnly={control.readOnly}
-                        value={literal ?? ''}
-                        onChange={(event) => onChange(event.target.value)}
+                    <TextFieldComponent
+                        {...fieldProps}
+                        readonly={fieldProps.readOnly}
+                        value={literal}
+                        onChange={onChange}
                     />
                     {variableInsertAction != null && (
                         <button onClick={variableInsertAction.onClick}>
@@ -102,7 +101,7 @@ describe('InputModeField', () => {
     it('associates the external label with the literal control', () => {
         render(<Harness/>);
 
-        const input = screen.getByRole('textbox', {name: 'Inkrement'});
+        const input = screen.getByRole('textbox', {name: /^Inkrement/});
         const label = screen.getByText('Inkrement', {selector: 'label'});
         const modeSelector = screen.getByRole('button', {name: 'Wert: Eingabemodus für Inkrement ändern'});
 
@@ -153,15 +152,15 @@ describe('InputModeField', () => {
         const user = userEvent.setup();
         render(<Harness/>);
 
-        const input = screen.getByRole('textbox', {name: 'Inkrement'});
+        const input = screen.getByRole('textbox', {name: /^Inkrement/});
         await user.clear(input);
         await user.type(input, '7');
 
         await selectMode(user, 'Ausdruck (No-Code)');
-        expect(screen.queryByRole('textbox', {name: 'Inkrement'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('textbox', {name: /^Inkrement/})).not.toBeInTheDocument();
 
         await selectMode(user, 'Wert');
-        expect(screen.getByRole('textbox', {name: 'Inkrement'})).toHaveValue('7');
+        expect(screen.getByRole('textbox', {name: /^Inkrement/})).toHaveValue('7');
     });
 
     it('offers the complete variable picker for dynamic text', async () => {
@@ -194,7 +193,7 @@ describe('InputModeField', () => {
     it('propagates required, invalid and read-only state to the literal control', () => {
         render(<Harness required error="Ungültiger Wert" readOnly/>);
 
-        const input = screen.getByRole('textbox', {name: 'Inkrement'});
+        const input = screen.getByRole('textbox', {name: /^Inkrement/});
         expect(input).toHaveAttribute('aria-required', 'true');
         expect(input).toHaveAttribute('aria-invalid', 'true');
         expect(input).toHaveAttribute('aria-readonly', 'true');

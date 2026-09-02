@@ -530,7 +530,8 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     <Box
                         sx={{
                             flex: 1,
-                            py: 2
+                            pt: 0.5,
+                            pb: 2.25,
                         }}
                     >
                         <SearchInput
@@ -539,7 +540,6 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                             onChange={handleSearchChange}
                             placeholder={props.searchPlaceholder}
                             debounce={1000}
-                            size={'small'}
                         />
                     </Box>
                 }

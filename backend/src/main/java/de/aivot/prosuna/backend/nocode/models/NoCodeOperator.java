@@ -1,8 +1,6 @@
 package de.aivot.prosuna.backend.nocode.models;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeWrongArgumentCountException;
@@ -10,18 +8,11 @@ import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import tools.jackson.core.JacksonException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.DateTimeException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.Year;
-import java.time.YearMonth;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
@@ -250,11 +241,7 @@ public abstract class NoCodeOperator {
                     yield false;
                 } else if (sValue.equalsIgnoreCase("false")) {
                     yield false;
-                } else if (sValue.equalsIgnoreCase("falsch")) {
-                    yield false;
-                } else {
-                    yield true;
-                }
+                } else yield !sValue.equalsIgnoreCase("falsch");
             }
             case List<?> lValue -> !lValue.isEmpty();
             case Map<?, ?> mValue -> !mValue.isEmpty();
@@ -351,15 +338,15 @@ public abstract class NoCodeOperator {
             case Boolean bValue -> bValue.toString();
             case List<?> lValue -> {
                 try {
-                    yield ObjectMapperFactory.getInstance().writeValueAsString(lValue);
-                } catch (JsonProcessingException e) {
+                    yield JsonMapperFactory.getInstance().writeValueAsString(lValue);
+                } catch (JacksonException e) {
                     yield "";
                 }
             }
             case Map<?, ?> mValue -> {
                 try {
-                    yield ObjectMapperFactory.getInstance().writeValueAsString(mValue);
-                } catch (JsonProcessingException e) {
+                    yield JsonMapperFactory.getInstance().writeValueAsString(mValue);
+                } catch (JacksonException e) {
                     yield "";
                 }
             }
@@ -622,14 +609,14 @@ public abstract class NoCodeOperator {
             case Map<?, ?> mValue -> (Map<String, Object>) mValue;
             case String sValue -> {
                 try {
-                    yield ObjectMapperFactory.getInstance().readValue(sValue, Map.class);
-                } catch (JsonProcessingException e) {
+                    yield JsonMapperFactory.getInstance().readValue(sValue, Map.class);
+                } catch (JacksonException e) {
                     yield Map.of();
                 }
             }
             default -> {
                 try {
-                    var res = (Map<String, Object>) ObjectMapperFactory
+                    var res = (Map<String, Object>) JsonMapperFactory
                             .getInstance()
                             .convertValue(value, Map.class);
                     yield Objects.requireNonNullElse(res, Map.of());
@@ -650,8 +637,8 @@ public abstract class NoCodeOperator {
             case List<?> lValue -> (List<Object>) lValue;
             case String sValue -> {
                 try {
-                    yield ObjectMapperFactory.getInstance().readValue(sValue, List.class);
-                } catch (JsonProcessingException e) {
+                    yield JsonMapperFactory.getInstance().readValue(sValue, List.class);
+                } catch (JacksonException e) {
                     yield List.of();
                 }
             }

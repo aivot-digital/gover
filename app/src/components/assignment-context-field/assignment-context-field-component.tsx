@@ -23,6 +23,7 @@ import {
 } from '../../utils/assignment-context-preference-options';
 import {pluralize} from '../../utils/humanization-utils';
 import WarningAmberOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Warning';
+import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
 
 export interface AssignmentContextFieldComponentProps {
     value?: AssignmentContextValue | null;
@@ -37,6 +38,7 @@ export interface AssignmentContextFieldComponentProps {
     domainAndUserSelectionError?: string;
 
     disabled?: boolean;
+    busy?: boolean;
     readOnly?: boolean;
     required?: boolean;
 
@@ -113,6 +115,10 @@ function formatEmptyEligibleUserDomainLabels(options: DomainAndUserSelectOption[
 
 export function AssignmentContextFieldComponent(props: AssignmentContextFieldComponentProps) {
     const [domainAndUserOptions, setDomainAndUserOptions] = useState<DomainAndUserSelectOption[]>(props.options ?? []);
+    const generatedId = useNormalizedReactId();
+    const titleId = `assignment-context-title-${generatedId}`;
+    const descriptionId = `assignment-context-description-${generatedId}`;
+    const warningId = `assignment-context-warning-${generatedId}`;
     const currentValue: AssignmentContextValue = {
         domainAndUserSelection: props.value?.domainAndUserSelection,
         generalAssigneePreference: props.value == null
@@ -155,9 +161,14 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
     };
 
     return (
-        <Stack spacing={1.5}>
-            <Typography variant="h6">
-                {headlineText}{props.required ? ' *' : ''}
+        <Stack
+            spacing={1.5}
+            role="group"
+            aria-labelledby={titleId}
+            aria-describedby={descriptionId}
+        >
+            <Typography id={titleId} component="div" variant="h6">
+                {headlineText}
             </Typography>
 
             <Box
@@ -165,9 +176,11 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: 0.5,
+                    mt: '6px!important',
                 }}
             >
                 <Typography
+                    id={descriptionId}
                     variant="body1"
                     sx={{
                         color: "text.secondary",
@@ -238,8 +251,11 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
                     hint={props.domainAndUserSelectionHint}
                     error={props.domainAndUserSelectionError}
                     disabled={props.disabled}
+                    busy={props.busy}
                     readOnly={props.readOnly}
                     required={props.required}
+                    ariaDescribedBy={emptyEligibleUserDomainOptions.length > 0 ? warningId : undefined}
+                    margin="none"
                     options={props.options}
                     onOptionsChange={handleOptionsChange}
                     allowedTypes={props.allowedTypes}
@@ -249,6 +265,8 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
                 {
                     emptyEligibleUserDomainOptions.length > 0 &&
                     <Box
+                        id={warningId}
+                        role="status"
                         sx={{
                             px: 1.25,
                             py: 1,
@@ -291,8 +309,10 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
                     options={assignmentContextGeneralAssigneePreferenceOptions}
                     includeEmptyOption={false}
                     disabled={props.disabled}
+                    busy={props.busy}
                     readOnly={props.readOnly}
                     size="small"
+                    margin="none"
                 />
 
                 <SelectFieldComponent
@@ -306,8 +326,10 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
                     options={assignmentContextRepeatExecutionAssigneePreferenceOptions}
                     includeEmptyOption={false}
                     disabled={props.disabled}
+                    busy={props.busy}
                     readOnly={props.readOnly}
                     size="small"
+                    margin="none"
                 />
             </Stack>
         </Stack>

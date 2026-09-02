@@ -40,7 +40,7 @@ export function ProcessInstanceAttachmentSetSelectFieldView(props: BaseViewProps
             errors={errors}
             required={element.required}
             disabled={isDisabled}
-            readOnly={isBusy}
+            busy={isBusy}
             maxItems={element.maxItems}
         />
     );

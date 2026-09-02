@@ -1,13 +1,13 @@
 package de.aivot.prosuna.backend.plugins.ai.v1.nodes;
 
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.ObjectMapperFactory;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -25,6 +25,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.ai.AiPlugin;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -46,6 +47,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.databind.JsonNode;
 
 import java.net.URI;
 import java.nio.charset.Charset;
@@ -67,6 +69,8 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private static final String OUTPUT_RESPONSE_MODEL = "responseModel";
     private static final String OUTPUT_USAGE = "usage";
     private static final String OUTPUT_TOP_LEVEL_KEYS = "topLevelKeys";
+    private static final String OUTPUT_USAGE_TYPE_DEFINITION =
+            "{ prompt_tokens: number | null; completion_tokens: number | null; total_tokens: number | null; } | null";
 
     private static final double DEFAULT_TEMPERATURE = 0.01d;
     private static final double DEFAULT_TOP_P = 0.9d;
@@ -135,14 +139,30 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
     @Nonnull
     @Override
+    public ProcessNodeExecutionType[] getExecutionTypes() {
+        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "Vorgangsdaten mit KI transformieren";
     }
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Sendet die vollständigen Laufzeitdaten eines Vorgangs an eine KI und ersetzt die Vorgangsdaten durch das zurückgegebene JSON-Objekt.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Verwendet eine kompatible KI-Completions-API, um die vollständigen Laufzeitdaten eines Vorgangs in ein neues JSON-Objekt zu transformieren.
+
+                Endpoint, API-Schlüssel, Modell und Prompt werden konfiguriert; der Prompt kann die aktuellen Vorgangsdaten einbeziehen. Das von der KI zurückgegebene JSON-Objekt ersetzt anschließend die bisherigen Vorgangsdaten vollständig. Informationen zu Modell, Abschlussgrund, Nutzung und erzeugten Top-Level-Schlüsseln stehen als Ausgänge zur Verfügung.
+                """;
     }
 
     @Nonnull
@@ -238,11 +258,11 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der gerenderte Anfragetext für das KI-Modell."),
-                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice."),
-                new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat."),
-                new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort."),
-                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Top-Level-Schlüssel", "Die obersten Schlüssel des neu erzeugten Prozessdatenobjekts.")
+                new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der gerenderte Anfragetext für das KI-Modell.", "string"),
+                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort.", OUTPUT_USAGE_TYPE_DEFINITION),
+                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Top-Level-Schlüssel", "Die obersten Schlüssel des neu erzeugten Prozessdatenobjekts.", "Array<string>")
         );
     }
 
@@ -477,7 +497,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Nonnull
     private String serializeExecutionData(@Nonnull ProcessExecutionData processExecutionData) throws ProcessNodeExecutionExceptionUnknown {
         try {
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getNullPreservingInstance()
                     .writeValueAsString(processExecutionData);
         } catch (Exception e) {
@@ -528,7 +548,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Nonnull
     private String serializeRequestBody(@Nonnull Map<String, Object> requestBody) throws ProcessNodeExecutionExceptionUnknown {
         try {
-            return ObjectMapperFactory.getInstance().writeValueAsString(requestBody);
+            return JsonMapperFactory.getInstance().writeValueAsString(requestBody);
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
@@ -543,7 +563,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         if (StringUtils.isNullOrEmpty(rawBody)) {
             throw new IllegalArgumentException("Die API-Antwort ist leer.");
         }
-        return ObjectMapperFactory
+        return JsonMapperFactory
                 .getInstance()
                 .readValue(rawBody, ChatCompletionResponse.class);
     }
@@ -558,7 +578,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
         var jsonPayload = unwrapJsonCodeFence(normalizedCompletion);
         try {
-            JsonNode parsedNode = ObjectMapperFactory
+            JsonNode parsedNode = JsonMapperFactory
                     .getNullPreservingInstance()
                     .readTree(jsonPayload);
 
@@ -566,7 +586,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                 throw new IllegalArgumentException("Die KI-Antwort muss ein JSON-Objekt sein.");
             }
 
-            return ObjectMapperFactory
+            return JsonMapperFactory
                     .getNullPreservingInstance()
                     .convertValue(parsedNode, Map.class);
         } catch (IllegalArgumentException e) {
@@ -615,7 +635,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                                                @Nonnull ChatCompletionResponse response) {
         var nodeData = new LinkedHashMap<String, Object>();
         var usage = response.usage != null
-                ? ObjectMapperFactory.getInstance().convertValue(response.usage, Map.class)
+                ? JsonMapperFactory.getInstance().convertValue(response.usage, Map.class)
                 : null;
 
         nodeData.put(OUTPUT_PROMPT, renderedPrompt);

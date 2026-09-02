@@ -90,24 +90,31 @@ public class PaymentItem {
     }
 
     public BigDecimal getTotalPrice() {
-        var quant = BigDecimal
-                .valueOf(quantity)
+        var quantity = BigDecimal
+                .valueOf(this.quantity)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        var taxRateInDecimal = taxRate
+        var normalizedTaxRate = this.taxRate
                 .setScale(2, RoundingMode.HALF_UP)
-                .divide(BigDecimal.valueOf(100).setScale(2, RoundingMode.HALF_UP), RoundingMode.HALF_UP);
+                .divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP);
 
-        var taxModifier = BigDecimal
-                .ONE
-                .setScale(2, RoundingMode.HALF_UP)
-                .add(taxRateInDecimal);
+        var netPricePerItem = this.netPrice
+                .setScale(2, RoundingMode.HALF_UP);
 
-        return netPrice
-                .setScale(2, RoundingMode.HALF_UP)
-                .multiply(quant)
-                .setScale(2, RoundingMode.HALF_UP)
-                .multiply(taxModifier)
+        var taxPerItem = netPricePerItem
+                .multiply(normalizedTaxRate)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        var totalNetPrice = netPricePerItem
+                .multiply(quantity)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        var totalTax = taxPerItem
+                .multiply(quantity)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        return totalNetPrice
+                .add(totalTax)
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
@@ -131,7 +138,7 @@ public class PaymentItem {
         if (this.getQuantity() > 0) {
             var tax = this
                     .getTaxRate()
-                    .setScale(2, RoundingMode.HALF_UP);
+                    .setScale(4, RoundingMode.HALF_UP);
 
             var taxRate = tax
                     .divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP);

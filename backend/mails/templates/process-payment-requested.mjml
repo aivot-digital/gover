@@ -1,0 +1,60 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml"/>
+
+        <mj-preview>
+            Zahlungsaufforderung
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        für den Vorgang <b th:text="${process.internalTitle}">Beispielprozess</b> wurde eine Zahlung angefordert.
+                    </p>
+
+                    <p>
+                        Aufgabe:
+                        <b th:text="${taskName}">Beispielaufgabe</b>
+                        <br/>
+                        Aktenzeichen:
+                        <b th:text="${processInstance.caseNumber}">AZ-123</b>
+                        <br/>
+                        Zahlungsanbieter:
+                        <b th:text="${paymentProvider.name}">Stadtkasse</b>
+                        <br/>
+                        Buchungszweck:
+                        <b th:text="${paymentPayload.purpose}">Buchungszweck</b>
+                        <br/>
+                        Beschreibung:
+                        <b th:text="${paymentPayload.description}">Beschreibung</b>
+                        <br/>
+                        Gesamtbetrag:
+                        <b th:text="${paymentTotalLabel}">12,34 Euro</b>
+                    </p>
+
+                    <p>
+                        Positionen:
+                    </p>
+                    <ul>
+                        <li th:each="itemLine : ${paymentItemLines}"
+                            th:text="${itemLine}">Beispielposition: 12,34 Euro
+                        </li>
+                    </ul>
+
+                    <p>
+                        Sie können die Zahlung über den nachfolgenden Link durchführen:
+                        <a th:href="${paymentUrl}" th:text="${paymentUrl}">Beispiel-Link</a>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

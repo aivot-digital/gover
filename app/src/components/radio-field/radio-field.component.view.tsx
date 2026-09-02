@@ -40,6 +40,7 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
             error={errors != null ? errors.join(' ') : undefined}
             hint={element.hint}
             disabled={isDisabled}
+            busy={isBusy}
             displayInline={element.displayInline}
             toggleButtons={element.toggleButtons}
         />

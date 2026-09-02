@@ -181,7 +181,7 @@ public class ProcessInstanceTaskController {
         taskEntity = processInstanceTaskService
                 .update(taskEntity.getId(), taskEntity);
 
-        var payload = new ProcessWorker.WorkerPayload(
+        var payload = new ProcessWorker.DoWorkWorkerPayload(
                 taskEntity.getProcessInstanceId(),
                 taskEntity.getPreviousProcessInstanceTaskId(),
                 taskEntity.getPreviousProcessNodeId(),

@@ -11,7 +11,7 @@ create table process_instances
 
     -- The key of this process instance.
     -- Public access to this process instance is done via this key.
-    access_key              uuid          not null,
+    access_key              varchar(128)  not null,
 
     -- The process definition version this instance is based on
     process_id              int           not null,
@@ -70,19 +70,19 @@ create table process_instances
 
 create table process_instance_tasks
 (
-    id                                bigserial   not null,
-    access_key                        uuid        not null,
-    process_instance_id               bigint      not null,
+    id                                bigserial    not null,
+    access_key                        varchar(128) not null,
+    process_instance_id               bigint       not null,
 
-    process_id                        int         not null,
-    process_version                   int         not null,
-    process_node_id                   int         not null,
+    process_id                        int          not null,
+    process_version                   int          not null,
+    process_node_id                   int          not null,
     -- The id of the previous task or null if this is the first task of the process instance
-    previous_process_instance_task_id bigint      null,
+    previous_process_instance_task_id bigint       null,
     -- The id of the previous node in the process definition or null if this is the first task of the process instance
-    previous_process_node_id          int         null,
+    previous_process_node_id          int          null,
     -- The key of the port, used to initialize this task, if any
-    previous_process_node_port_key    varchar(96) null,
+    previous_process_node_port_key    varchar(96)  null,
 
     -- The status of this process task
     -- Values are stable and mapped by ProcessTaskStatusConverter:
@@ -93,41 +93,41 @@ create table process_instance_tasks
     --   4 - Failed
     --   5 - Restarted
     --   6 - Awaiting payment
-    status                            smallint    not null default 0,
+    status                            smallint     not null default 0,
     -- The status override triggered by nodes
-    status_override                   varchar(96) null,
+    status_override                   varchar(96)  null,
 
     -- The timestamp when this task was started
-    started                           timestamptz not null default now(),
+    started                           timestamptz  not null default now(),
     -- The timestamp when this task was last updated
-    updated                           timestamptz not null default now(),
+    updated                           timestamptz  not null default now(),
     -- The timestamp when this task was finished either by completion, failure or abortion
-    finished                          timestamptz null,
+    finished                          timestamptz  null,
     -- The total runtime of this task
-    runtime                           interval    null generated always as (finished - started) stored,
+    runtime                           interval     null generated always as (finished - started) stored,
 
     -- The data this node needs during its runtime
-    runtime_data                      jsonb       not null default '{}',
+    runtime_data                      jsonb        not null default '{}',
 
     -- The data this node has produced
-    node_data                         jsonb       not null default '{}',
+    node_data                         jsonb        not null default '{}',
 
     -- The global data of the overall process instance at the time this task was last updated
-    process_data                      jsonb       not null default '{}',
+    process_data                      jsonb        not null default '{}',
 
     -- The user assigned to this task, if any
-    assigned_user_id                  varchar(36) null,
+    assigned_user_id                  varchar(36)  null,
 
     -- The deadline for this task, if any, determined by the time limit of the node
-    deadline                          timestamptz null,
+    deadline                          timestamptz  null,
 
     -- The postponed until timestamp for this task, if any
-    postponed_until                   timestamptz null,
+    postponed_until                   timestamptz  null,
 
     -- The number of retries already attempted for this task
-    retry_count                       int         null     default 0,
+    retry_count                       int          null     default 0,
     -- The next retry timestamp for this task, if any
-    next_retry_at                     timestamptz null,
+    next_retry_at                     timestamptz  null,
 
     primary key (id),
     unique (process_instance_id, access_key),

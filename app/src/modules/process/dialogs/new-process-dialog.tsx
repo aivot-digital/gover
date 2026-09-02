@@ -731,7 +731,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                     minCharacters={3}
                                     maxCharacters={96}
                                     hint="Wird öffentlich im Kontext der Prozessversion verwendet (z. B. im Self-Service-Portal)."
-                                    sx={{
+                                    controlSx={{
                                         mt: 2,
                                     }}
                                 />
@@ -788,7 +788,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                             },
                                         },
                                     }}
-                                    sx={{
+                                    controlSx={{
                                         mt: 2,
                                     }}
                                 />
@@ -1209,6 +1209,14 @@ const EmptyProcess: ProcessExport = {
         publicTitle: 'Neuer Prozess',
         caseNumberTemplate: null,
         notes: null,
+        themeId: null,
+        legalSupportDepartmentId: null,
+        technicalSupportDepartmentId: null,
+        imprintDepartmentId: null,
+        privacyDepartmentId: null,
+        accessibilityDepartmentId: null,
+        processSpecificPrivacyStatement: null,
+        processSpecificAccessibilityStatement: null,
         crated: '',
         updated: '',
         published: null,

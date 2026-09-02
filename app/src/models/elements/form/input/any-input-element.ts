@@ -32,6 +32,7 @@ import {ProcessIdentityIdInputElement} from './process-identity-id-input-element
 import {ElementIsInput} from '../../../../data/element-type/element-is-input';
 import {HtmlTemplateInputElement} from './html-template-input-element';
 import {StoragePathSelectorInputElement} from './storage-path-selector-input-element';
+import {PaymentConfigElement} from './payment-config-element';
 
 export type AnyInputElement = (
     CheckboxFieldElement |
@@ -65,6 +66,7 @@ export type AnyInputElement = (
     StoragePathSelectorInputElement |
     UiDefinitionInputFieldElement |
     IdentityConfigElement |
+    PaymentConfigElement |
     NoCodeInputFieldElement |
 
     ReplicatingContainerLayout

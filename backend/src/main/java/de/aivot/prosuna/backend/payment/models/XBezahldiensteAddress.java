@@ -33,6 +33,9 @@ public class XBezahldiensteAddress implements Serializable {
     private String country = null;
 
     public String getStreet() {
+        if (street == null) {
+            return "";
+        }
         return street;
     }
 
@@ -50,6 +53,9 @@ public class XBezahldiensteAddress implements Serializable {
     }
 
     public String getHouseNumber() {
+        if (houseNumber == null) {
+            return "";
+        }
         return houseNumber;
     }
 
@@ -66,10 +72,17 @@ public class XBezahldiensteAddress implements Serializable {
     }
 
     public List<String> getAddressLine() {
+        if (addressLine == null) {
+            return List.of();
+        }
         return addressLine;
     }
 
-    public void setAddressLine(String addressLine) {
+    public void setAddressLine(List<String> addressLine) {
+        this.addressLine = addressLine;
+    }
+
+    public void setAddressLineFromString(String addressLine) {
         if (addressLine != null) {
             this.addressLine = Arrays
                     .stream(addressLine.split("[^\r\n]+"))
@@ -89,6 +102,9 @@ public class XBezahldiensteAddress implements Serializable {
     }
 
     public String getPostalCode() {
+        if (postalCode == null) {
+            return "";
+        }
         return postalCode;
     }
 
@@ -105,6 +121,9 @@ public class XBezahldiensteAddress implements Serializable {
     }
 
     public String getCity() {
+        if (city == null) {
+            return "";
+        }
         return city;
     }
 
@@ -121,7 +140,12 @@ public class XBezahldiensteAddress implements Serializable {
     }
 
     public String getCountry() {
-        return country;
+        if (StringUtils.isNullOrEmpty(country)) {
+            return "DE";
+        }
+        return country
+                .substring(0, 2)
+                .toUpperCase();
     }
 
     public void setCountry(String country) {

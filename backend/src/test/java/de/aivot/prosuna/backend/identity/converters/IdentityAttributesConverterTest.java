@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.identity.converters;
 
-import de.aivot.prosuna.backend.identity.converters.IdentityAttributesConverter;
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.identity.models.IdentityAttributeMapping;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +12,7 @@ class IdentityAttributesConverterTest {
 
     @Test
     void convertToDatabaseColumn() {
-        var converter = new IdentityAttributesConverter();
+        var converter = new IdentityAttributesConverter(JsonMapperTestUtils.createMapper());
         var attributes = List.of(
                 new IdentityAttributeMapping()
                         .setLabel("Email")
@@ -39,7 +39,7 @@ class IdentityAttributesConverterTest {
 
     @Test
     void convertToEntityAttribute() {
-        var converter = new IdentityAttributesConverter();
+        var converter = new IdentityAttributesConverter(JsonMapperTestUtils.createMapper());
         String json = """
                 [
                     {

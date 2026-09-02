@@ -24,7 +24,7 @@ import {CodeListSourceType, CodeListSourceTypeLabels, isCodeListSyncable} from '
 import {CodeListStatus} from '../../enums/code-list-status';
 import {AssetSelector} from '../../../assets/components/asset-selector';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
-import {StringListInput2} from '../../../../components/string-list-input/string-list-input-2';
+import {StringListInput} from '../../../../components/string-list-input/string-list-input';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 import {withAsyncWrapper} from '../../../../utils/with-async-wrapper';
@@ -669,7 +669,7 @@ export function CodeListDetailsPageIndex() {
                 }
 
                 <Grid size={{xs: 12}}>
-                    <StringListInput2
+                    <StringListInput
                         label="Spalten"
                         hint="Die Spalten dieser Codeliste"
                         addLabel="Spalte hinzufügen"

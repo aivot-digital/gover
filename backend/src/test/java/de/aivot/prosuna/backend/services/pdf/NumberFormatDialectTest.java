@@ -33,10 +33,12 @@ class NumberFormatDialectTest {
     }
 
     @Test
-    void formatInstant_DoesNotInterpretOffsetlessStrings() {
+    void formatInstant_InterpretsOffsetlessStringsInApplicationTimeZone() {
         ApplicationTimeZone.configure(ZoneId.of("Europe/Berlin"));
-        var value = "2026-07-29T09:00:00";
 
-        assertEquals(value, new NumberFormatDialect().formatInstant(value, "dd.MM.yyyy HH:mm"));
+        assertEquals(
+                "29.07.2026 09:00",
+                new NumberFormatDialect().formatInstant("2026-07-29T09:00:00", "dd.MM.yyyy HH:mm")
+        );
     }
 }

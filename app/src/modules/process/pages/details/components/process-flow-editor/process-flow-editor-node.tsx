@@ -155,6 +155,9 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         switch (associatedTask.status) {
             case ProcessTaskStatus.Running:
                 return theme.palette.info.main;
+            case ProcessTaskStatus.AwaitingPayment:
+            case ProcessTaskStatus.AwaitingCustomer:
+                return theme.palette.info.main;
             case ProcessTaskStatus.Paused:
                 return theme.palette.primary.main;
             case ProcessTaskStatus.Completed:
@@ -307,6 +310,18 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                     label: 'Aufgabe aufrufen',
                     icon: ModuleIcons.tasks,
                     to: `/tasks/${associatedTask.processInstanceId}/${associatedTask.id}`,
+                    newTab: true,
+                    disabled: false,
+                    visible: true,
+                    isDangerous: false,
+                });
+            }
+
+            if (associatedTask.status == ProcessTaskStatus.AwaitingPayment || associatedTask.status == ProcessTaskStatus.AwaitingCustomer) {
+                items.push({
+                    label: 'Bürger:innen Aufgabe aufrufen',
+                    icon: ModuleIcons.tasks,
+                    href: `/process/${runtimeData?.instance.accessKey}/tasks/${associatedTask.accessKey}`,
                     newTab: true,
                     disabled: false,
                     visible: true,

@@ -1,6 +1,7 @@
 import {type BaseInputElement} from '../base-input-element';
 import {type ElementType} from '../../../../data/element-type/element-type';
 import {OptionsSourceType} from './options-source-type';
+import {SelectFieldPresentation} from './select-field-presentation';
 
 export interface SelectFieldElementOption {
     value: string;
@@ -11,6 +12,7 @@ export interface SelectFieldElementOption {
 export interface SelectFieldElement extends BaseInputElement<ElementType.Select> {
     autocomplete: string | null | undefined;
     placeholder: string | null | undefined;
+    presentation: SelectFieldPresentation | null | undefined;
     dependsOnSelectFieldId: string | null | undefined;
     options: Array<SelectFieldElementOption | string> | null | undefined;
     optionsSource: OptionsSourceType | null | undefined;

@@ -10,10 +10,11 @@ import {SelectFieldComponent} from '../components/select-field/select-field-comp
 import {ElementType} from '../data/element-type/element-type';
 import {generateComponentPath, generateComponentTitle} from '../utils/generate-component-title';
 import {useElementTreeContext} from '../components/element-tree-2/element-tree-context';
-import {SelectFieldComponentOption} from '../components/select-field-2/select-field-component';
+import {type SelectFieldComponentOption} from '../components/select-field/select-field-component-option';
 import Grid from '@mui/material/Grid';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 import {CodeListSelectField} from '../modules/code-lists/components/code-list-select-field';
+import {SelectFieldPresentation} from '../models/elements/form/input/select-field-presentation';
 
 const optionsSourceOptions = [
     {
@@ -23,6 +24,19 @@ const optionsSourceOptions = [
     {
         label: 'System-Codeliste',
         value: OptionsSourceType.CodeList,
+    },
+];
+
+const presentationOptions: SelectFieldComponentOption<SelectFieldPresentation>[] = [
+    {
+        label: 'Auswahlmenü',
+        subLabel: 'Kompakte Darstellung für kurze, überschaubare Optionslisten.',
+        value: SelectFieldPresentation.Dropdown,
+    },
+    {
+        label: 'Durchsuchbare Auswahl',
+        subLabel: 'Die Optionsliste kann durch Texteingabe gefiltert werden.',
+        value: SelectFieldPresentation.Combobox,
     },
 ];
 
@@ -40,6 +54,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
     } = useElementTreeContext();
 
     const optionsSource = element.optionsSource ?? OptionsSourceType.Manual;
+    const presentation = element.presentation ?? SelectFieldPresentation.Dropdown;
     const usesManualOptions = optionsSource === OptionsSourceType.Manual;
 
     const options = useMemo(() => {
@@ -86,10 +101,30 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                 }}
             >
                 <SelectFieldComponent
+                    label="Darstellung der Auswahl"
+                    value={presentation}
+                    onChange={(value) => {
+                        onPatch({
+                            presentation: value ?? SelectFieldPresentation.Dropdown,
+                        });
+                    }}
+                    options={presentationOptions}
+                    disabled={!editable}
+                    required
+                />
+            </Grid>
+
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}
+            >
+                <SelectFieldComponent
                     label="Optionen definieren über"
                     value={optionsSource}
                     onChange={(value) => {
-                        const nextSource = (value as OptionsSourceType | null) ?? OptionsSourceType.Manual;
+                        const nextSource = value ?? OptionsSourceType.Manual;
 
                         onPatch({
                             optionsSource: nextSource,

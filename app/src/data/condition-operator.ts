@@ -190,6 +190,7 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
     [ElementType.RichTextInput]: null,
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityConfigElement]: null,
+    [ElementType.PaymentConfigElement]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: null,
     [ElementType.DomainAndUserSelect]: null,
@@ -204,6 +205,7 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
     [ElementType.HtmlTemplateInput]: null,
     [ElementType.StoragePathSelector]: 'Für Gleichheitsprüfungen kann der ausgewählte Pfad angegeben werden.',
     [ElementType.ProcessAttachmentDisplay]: null,
+    [ElementType.LinkButton]: null,
 };
 
 export function getConditionOperatorHint(elementType?: ElementType, operator?: ConditionOperator): string | null {

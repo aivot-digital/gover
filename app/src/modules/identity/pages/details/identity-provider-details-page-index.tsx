@@ -30,7 +30,7 @@ import {IdentityProviderType} from '../../enums/identity-provider-type';
 import {IdentityAdditionalParameter} from '../../models/identity-additional-parameter';
 import {IdentityAttributeMapping} from '../../models/identity-attribute-mapping';
 import {TableFieldComponent2} from '../../../../components/table-field/table-field-component-2';
-import {StringListInput2} from '../../../../components/string-list-input/string-list-input-2';
+import {StringListInput} from '../../../../components/string-list-input/string-list-input';
 import {IdentityProviderIcon} from '../../components/identity-provider-icon/identity-provider-icon';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {ImageSelector} from '../../../assets/components/image-selector';
@@ -852,7 +852,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
             </Grid>
-            <StringListInput2
+            <StringListInput
                 label="Scopes"
                 hint=""
                 addLabel="Scope hinzufügen"
@@ -1017,7 +1017,7 @@ export function IdentityProviderDetailsPageIndex() {
                         disabled={isBusy || !canReadSecrets}
                     >
                         <span>
-                            <Tooltip title={canReadSecrets ? 'Aktualisieren Sie die Liste der Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.' : ''}>
+                            <Tooltip title={canReadSecrets ? 'Aktualisieren Sie die Liste der Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.' : ''} arrow>
                                 <Button
                                     onClick={handleRefreshSecrets}
                                     disabled={isBusy || !canReadSecrets}
@@ -1062,7 +1062,7 @@ export function IdentityProviderDetailsPageIndex() {
 
                         {
                             originalIdentityProvider.isEnabled &&
-                            <Tooltip title="Zum Löschen muss der Nutzerkontenanbieter zuerst deaktiviert und gespeichert werden.">
+                            <Tooltip title="Zum Löschen muss der Nutzerkontenanbieter zuerst deaktiviert und gespeichert werden." arrow>
                                 <span>
                                     <Button
                                         variant="outlined"

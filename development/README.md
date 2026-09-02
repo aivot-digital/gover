@@ -2,7 +2,7 @@
 
 ## 1 Prerequisites
 
-* Java JDK 21
+* Java JDK 25
 * Docker v27.3.1+ and Docker Compose v2.29.7+
 * Apache Maven v3.9.9+
 * Node.js v22.0.0+
@@ -117,7 +117,7 @@ npm run build:dev --prefix ./mails
 ### 2.4 Start the backend application
 
 The backend application is a Spring Boot application that serves as the API for the Prosuna service.
-To start the backend application, you need to have Java JDK 21 and Apache Maven installed on your machine.
+To start the backend application, you need to have Java JDK 25 and Apache Maven installed on your machine.
 The following commands work in Linux, macOS terminal shells, and Windows WSL:
 
 ```bash

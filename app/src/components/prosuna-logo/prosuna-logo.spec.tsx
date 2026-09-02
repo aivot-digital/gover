@@ -1,3 +1,4 @@
+import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
 import {ProsunaLogo} from './prosuna-logo';
@@ -47,5 +48,13 @@ describe('ProsunaLogo', () => {
         const {container} = render(<ProsunaLogo/>);
 
         expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('forwards its ref to the SVG element', () => {
+        const ref = React.createRef<SVGSVGElement>();
+
+        render(<ProsunaLogo ref={ref}/>);
+
+        expect(ref.current?.tagName).toBe('svg');
     });
 });

@@ -12,8 +12,6 @@ import {MarkdownContent} from '../../components/markdown-content/markdown-conten
 export const AccessibilityDialogId = 'accessibility';
 
 export function AccessibilityDialog(props: AccessibilityDialogProps) {
-    const application = props.form;
-
     const [department, setDepartment] = useState<PublicDepartmentResponseDTO>();
     const accessibilityDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId));
     const parsedAccessibilityDepartmentId = accessibilityDepartmentId != null && accessibilityDepartmentId !== '' && !Number.isNaN(parseInt(accessibilityDepartmentId)) ?
@@ -21,7 +19,7 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
         null;
     const selectedAccessibilityDepartmentId = props.isListingPage ?
         parsedAccessibilityDepartmentId :
-        application.accessibilityDepartmentId ?? null;
+        props.version?.accessibilityDepartmentId ?? null;
 
     useEffect(() => {
         if (selectedAccessibilityDepartmentId == null) {
@@ -47,8 +45,8 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
     }, [selectedAccessibilityDepartmentId]);
 
     const commonAccessibility = department?.commonAccessibility;
-    const formSpecificAccessibilityStatement = props.isListingPage ? undefined : application.formSpecificAccessibilityStatement;
-    const hasAccessibilityText = [commonAccessibility, formSpecificAccessibilityStatement]
+    const processSpecificAccessibilityStatement = props.isListingPage ? undefined : props.version?.processSpecificAccessibilityStatement;
+    const hasAccessibilityText = [commonAccessibility, processSpecificAccessibilityStatement]
         .some((text) => text != null && text.trim().length > 0);
 
     return (
@@ -74,10 +72,10 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
                             <MarkdownContent markdown={commonAccessibility}/>
                         }
                         {
-                            formSpecificAccessibilityStatement != null &&
-                            formSpecificAccessibilityStatement.trim().length > 0 &&
+                            processSpecificAccessibilityStatement != null &&
+                            processSpecificAccessibilityStatement.trim().length > 0 &&
                             <Box sx={{mt: commonAccessibility != null && commonAccessibility.trim().length > 0 ? 3 : 0}}>
-                                <MarkdownContent markdown={formSpecificAccessibilityStatement}/>
+                                <MarkdownContent markdown={processSpecificAccessibilityStatement}/>
                             </Box>
                         }
                     </DialogContent>
@@ -86,7 +84,7 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
                         <Alert severity="info">
                             Für die Barrierefreiheitserklärung wurden keine Inhalte gefunden. Wählen Sie eine
                             Organisationseinheit mit allgemeiner Barrierefreiheitserklärung aus und pflegen Sie bei
-                            Bedarf den formularspezifischen Teil in den rechtlichen Angaben des Formulars.
+                            Bedarf den prozessspezifischen Teil in den versionsspezifischen Einstellungen.
                         </Alert>
                     </DialogContent>
             }

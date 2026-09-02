@@ -1,14 +1,9 @@
-import {ReactNode} from 'react';
-import {SxProps, TextFieldProps} from '@mui/material';
+import {type ReactNode} from 'react';
+import {type SxProps, type TextFieldProps, type Theme} from '@mui/material';
+import {type FormFieldLayoutProps} from '../form-field';
 
-export interface TextFieldComponentProps {
-    id?: string;
+export interface TextFieldComponentProps extends FormFieldLayoutProps {
     label: string;
-    ariaLabel?: string;
-    ariaLabelledBy?: string;
-    ariaDescribedBy?: string;
-    ariaInvalid?: boolean;
-    ariaRequired?: boolean;
     autocomplete?: string;
     placeholder?: string;
     required?: boolean;
@@ -36,7 +31,7 @@ export interface TextFieldComponentProps {
         regex: string;
         message: string;
     };
-    sx?: SxProps;
+    controlSx?: SxProps<Theme>;
     bufferInputUntilBlur?: boolean;
     debounce?: number;
     size?: 'small' | 'medium';
@@ -46,5 +41,6 @@ export interface TextFieldComponentProps {
 export type EndAction = {
     icon: ReactNode;
     tooltip?: string;
+    ariaLabel?: string;
     onClick: () => void;
 };

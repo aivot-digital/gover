@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.process.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
@@ -17,6 +16,7 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.jwt.Jwt;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Map;
 import java.util.Optional;
@@ -51,7 +51,7 @@ class ProcessNodeControllerTest {
 
         var processNodeRepository = mock(ProcessNodeRepository.class);
         var permissionService = mock(PermissionService.class);
-        var objectMapper = mock(ObjectMapper.class);
+        var objectMapper = mock(JsonMapper.class);
         when(objectMapper.convertValue(any(), eq(Map.class))).thenReturn(Map.of());
         var controller = new ProcessNodeController(
                 mock(AuditService.class, RETURNS_DEEP_STUBS),

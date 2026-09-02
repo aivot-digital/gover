@@ -55,8 +55,18 @@ public class OrgJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Dieses Paket enthält Funktionen für Organisationseinheiten.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Macht Informationen zu Prosuna-Organisationseinheiten in JavaScript-Ausdrücken verfügbar.
+
+                Neben Name und Postanschrift können technische und fachliche Kontaktdaten sowie die hinterlegte Standard-E-Mail-Signatur einer Organisationseinheit abgefragt werden. Die Werte lassen sich gemeinsam als Objekt oder über einzelne Zugriffsfunktionen laden.
+                """;
     }
 
     @Override

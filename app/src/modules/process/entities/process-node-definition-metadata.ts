@@ -13,6 +13,15 @@ export interface ProcessNodeDefinitionMetadataReusableUiDefinition {
     subLabel: string | null;
     uiDefinition: UiDefinitionInputFieldElementItem;
     origin: ProcessNodeEntity;
+    kind: ProcessNodeDefinitionMetadataReusableUiDefinitionKind;
+}
+
+export enum ProcessNodeDefinitionMetadataReusableUiDefinitionKind {
+    CompleteForm = 'CompleteForm',
+    FormSection = 'FormSection',
+    UiDefinition = 'UiDefinition',
+    StepperSection = 'StepperSection',
+    Tab = 'Tab',
 }
 
 export interface ProcessNodeDefinitionMetadataForwardedAttachmentSet {

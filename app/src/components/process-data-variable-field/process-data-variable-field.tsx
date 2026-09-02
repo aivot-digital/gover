@@ -5,7 +5,6 @@ import {
     Dialog,
     DialogActions,
     DialogContent,
-    InputAdornment,
     List,
     ListItem,
     ListItemIcon,
@@ -13,15 +12,14 @@ import {
     ListSubheader,
     Radio,
     RadioGroup,
-    TextField,
     Typography,
 } from '@mui/material';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import Close from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
-import {FieldLayout} from '../field-layout/field-layout';
 import {TextFieldComponent} from '../text-field/text-field-component';
+import type {FormFieldLayoutProps} from '../form-field';
 
 export interface ProcessDataVariableOption {
     label: string;
@@ -29,7 +27,7 @@ export interface ProcessDataVariableOption {
     path: string;
 }
 
-interface ProcessDataVariableFieldProps {
+interface ProcessDataVariableFieldProps extends FormFieldLayoutProps {
     disabled?: boolean;
     readOnly?: boolean;
     busy?: boolean;
@@ -54,48 +52,38 @@ export function ProcessDataVariableField(props: ProcessDataVariableFieldProps) {
 
     return (
         <>
-            <FieldLayout
+            <TextFieldComponent
+                id={props.id}
                 label={props.label}
                 hint={props.hint}
                 error={props.error}
                 required={props.required}
                 disabled={props.disabled}
-                readOnly={props.readOnly}
+                readonly={props.readOnly}
                 busy={props.busy}
-            >
-                {({inputId, labelId, helperTextId, invalid, required}) => (
-                    <TextFieldComponent
-                        id={inputId}
-                        label=""
-                        ariaLabelledBy={labelId}
-                        ariaDescribedBy={helperTextId}
-                        ariaInvalid={invalid}
-                        ariaRequired={required}
-                        value={props.value}
-                        onChange={(value) => props.onChange(value == null ? null : normalizePath(value))}
-                        disabled={props.disabled}
-                        readonly={props.readOnly}
-                        busy={props.busy}
-                        required={props.required}
-                        bufferInputUntilBlur
-                        startIcon="$."
-                        endAction={interactionDisabled ? undefined : [
-                            ...(props.value == null || props.value.length === 0 ? [] : [{
-                                icon: <Close/>,
-                                tooltip: 'Vorgangsdatenvariable leeren',
-                                onClick: () => props.onChange(null),
-                            }]),
-                            {
-                                icon: <DataObject/>,
-                                tooltip: 'Vorgangsdatenvariable auswählen',
-                                onClick: () => setDialogOpen(true),
-                            },
-                        ]}
-                        size="small"
-                        sx={{m: 0, '& .MuiInputBase-root': {minHeight: 48}}}
-                    />
-                )}
-            </FieldLayout>
+                value={props.value}
+                onChange={(value) => props.onChange(value == null ? null : normalizePath(value))}
+                bufferInputUntilBlur
+                startIcon="$."
+                endAction={interactionDisabled ? undefined : [
+                    ...(props.value == null || props.value.length === 0 ? [] : [{
+                        icon: <Close/>,
+                        tooltip: 'Vorgangsdatenvariable leeren',
+                        onClick: () => props.onChange(null),
+                    }]),
+                    {
+                        icon: <DataObject/>,
+                        tooltip: 'Vorgangsdatenvariable auswählen',
+                        onClick: () => setDialogOpen(true),
+                    },
+                ]}
+                ariaLabel={props.ariaLabel}
+                ariaDescribedBy={props.ariaDescribedBy}
+                labelAction={props.labelAction}
+                margin={props.margin}
+                showOptionalIndicator={props.showOptionalIndicator}
+                sx={props.sx}
+            />
 
             <ProcessDataVariableDialog
                 open={dialogOpen && !interactionDisabled}
@@ -181,28 +169,18 @@ function ProcessDataVariableDialog(props: ProcessDataVariableDialogProps) {
                         Als Ziel sind nur beschreibbare Vorgangsdaten zulässig. Wähle eine vorhandene Variable oder
                         gib einen neuen Pfad ein.
                     </Typography>
-                    <FieldLayout label="Vorgangsdatenpfad durchsuchen oder neu anlegen">
-                        {({inputId}) => (
-                            <TextField
-                                id={inputId}
-                                autoFocus
-                                fullWidth
-                                placeholder="Zum Beispiel zaehler.aktuellerStand"
-                                margin="none"
-                                size="small"
-                                value={search}
-                                onChange={(event) => {
-                                    setSearch(event.target.value);
-                                    setDraftPath(null);
-                                }}
-                                slotProps={{
-                                    input: {
-                                        startAdornment: <InputAdornment position="start">$.</InputAdornment>,
-                                    },
-                                }}
-                            />
-                        )}
-                    </FieldLayout>
+                    <TextFieldComponent
+                        label="Vorgangsdatenpfad durchsuchen oder neu anlegen"
+                        placeholder="Zum Beispiel zaehler.aktuellerStand"
+                        value={search}
+                        onChange={(nextSearch) => {
+                            setSearch(nextSearch ?? '');
+                            setDraftPath(null);
+                        }}
+                        startIcon="$."
+                        margin="none"
+                        muiPassTroughProps={{autoFocus: true}}
+                    />
                 </Box>
 
                 <RadioGroup

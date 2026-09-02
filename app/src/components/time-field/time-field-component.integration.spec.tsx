@@ -1,4 +1,4 @@
-import {render} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {TimeFieldComponent} from './time-field-component';
 
@@ -17,5 +17,6 @@ describe('TimeFieldComponent with MUI', () => {
             .map((section) => section.textContent);
 
         expect(sections).toEqual(['09', '30']);
+        expect(screen.getByRole('group', {name: 'Uhrzeit – optional'})).toBeInTheDocument();
     });
 });

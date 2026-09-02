@@ -3,8 +3,10 @@ import {
     IconButton,
     InputAdornment,
     Paper,
+    type SxProps,
     Stack,
     TextField,
+    type Theme,
     ToggleButton,
     ToggleButtonGroup,
     Tooltip,
@@ -14,15 +16,34 @@ import MyLocationOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined
 import NearMeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/NearMe';
 import SearchOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Search';
 import ClearOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import LocationOnOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/LocationOn';
+import {
+    type KeyboardEventHandler,
+    type ReactNode,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import {MapPointValue} from '../../models/elements/form/input/map-point-field-element';
 import {
     LeafletPointPickerMap,
     type LeafletPoint,
     type LeafletPointPickerMapHandle
 } from './leaflet-point-picker-map';
+import {
+    FormField,
+    type FormFieldControlContext,
+    FormFieldGroup,
+    type FormFieldGroupContext,
+    type FormFieldGroupLayoutProps,
+    getNativeInputAriaProps,
+} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
-interface MapPointFieldComponentProps {
+export interface MapPointFieldComponentProps extends FormFieldGroupLayoutProps {
     label: string;
     value?: MapPointValue | null;
     onChange: (value: MapPointValue | null) => void;
@@ -30,10 +51,12 @@ interface MapPointFieldComponentProps {
     required?: boolean;
     disabled?: boolean;
     busy?: boolean;
+    readOnly?: boolean;
     error?: string;
     zoom?: number;
     centerLatitude?: number;
     centerLongitude?: number;
+    controlSx?: SxProps<Theme>;
 }
 
 const DEFAULT_CENTER = {
@@ -66,6 +89,75 @@ interface NominatimSearchEntry {
 interface NominatimReverseResult {
     display_name?: string;
     address?: NominatimAddress;
+}
+
+interface MapPointTextInputProps {
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    groupContext: FormFieldGroupContext;
+    groupError?: string;
+    placeholder?: string;
+    endAdornment?: ReactNode;
+    inputMode?: 'decimal' | 'search';
+    disabled?: boolean;
+    busy?: boolean;
+    loading?: boolean;
+    readOnly?: boolean;
+    onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
+}
+
+function MapPointTextInput(props: MapPointTextInputProps) {
+    return (
+        <FormField
+            label={props.label}
+            ariaDescribedBy={props.groupContext.describedBy}
+            error={props.groupContext.invalid ? props.groupError : undefined}
+            hideHelperText
+            disabled={props.disabled}
+            busy={props.busy}
+            readOnly={props.readOnly}
+            margin="none"
+            showOptionalIndicator={false}
+        >
+            {(fieldContext: FormFieldControlContext) => (
+                <TextField
+                    id={fieldContext.controlId}
+                    value={props.value}
+                    onChange={(event) => {
+                        if (!props.busy && !props.readOnly) {
+                            props.onChange(event.target.value);
+                        }
+                    }}
+                    onKeyDown={props.onKeyDown}
+                    label={undefined}
+                    placeholder={props.placeholder}
+                    disabled={props.disabled}
+                    error={fieldContext.invalid}
+                    helperText={undefined}
+                    fullWidth
+                    margin="none"
+                    size="small"
+                    slotProps={{
+                        input: {
+                            readOnly: props.readOnly || props.busy,
+                            endAdornment: props.endAdornment,
+                            sx: {
+                                minHeight: FormFieldTokens.controlMinHeight,
+                                backgroundColor: props.busy ? getDisabledFieldBackground : undefined,
+                                cursor: props.busy ? 'not-allowed' : undefined,
+                            },
+                        },
+                        htmlInput: {
+                            ...getNativeInputAriaProps(fieldContext),
+                            'aria-busy': props.loading || fieldContext.ariaProps['aria-busy'] || undefined,
+                            inputMode: props.inputMode,
+                        },
+                    }}
+                />
+            )}
+        </FormField>
+    );
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -167,7 +259,7 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
     const hasCoordinates = props.value?.latitude != null && props.value?.longitude != null;
     const markerLat = props.value?.latitude ?? undefined;
     const markerLon = props.value?.longitude ?? undefined;
-    const isMapDisabled = props.disabled === true || props.busy === true;
+    const isMapDisabled = props.disabled === true || props.busy === true || props.readOnly === true;
     const hasPointValue = props.value != null && normalizePoint(props.value) != null;
     const canClearSearchInput = searchQuery.trim().length > 0 || (hasPointValue && props.required !== true);
     const clearSearchInputLabel = hasPointValue && props.required !== true ? 'Kartenpunkt-Auswahl löschen' : 'Suche löschen';
@@ -310,6 +402,8 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
             updatePoint(latitude, longitude, {
                 address: formatNominatimAddress(first.address, first.display_name ?? query) ?? query,
             });
+        } catch {
+            setAddressResolveError('Suche nach Ort oder Adresse ist aktuell nicht verfügbar.');
         } finally {
             setIsSearching(false);
         }
@@ -361,7 +455,7 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
     const mapAddressLine = useMemo(() => {
         if (props.value?.address != null && props.value.address.trim().length > 0) {
             return {
-                text: `Ermittelte Adresse: ${props.value.address.trim()}`,
+                text: props.value.address.trim(),
                 isError: false,
             };
         }
@@ -372,20 +466,20 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
 
         if (isResolvingAddress) {
             return {
-                text: 'Ermittelte Adresse wird geladen ...',
+                text: 'Adresse wird ermittelt ...',
                 isError: false,
             };
         }
 
         if (addressResolveError != null) {
             return {
-                text: `Ermittelte Adresse: ${addressResolveError}`,
+                text: addressResolveError,
                 isError: true,
             };
         }
 
         return {
-            text: 'Ermittelte Adresse: Keine Adresse verfügbar',
+            text: 'Keine Adresse verfügbar',
             isError: false,
         };
     }, [addressResolveError, hasCoordinates, isResolvingAddress, props.value?.address]);
@@ -432,307 +526,357 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
         }
     }, [handleClear, hasPointValue, latitudeInput]);
 
-    return (
-        <Stack spacing={1.5}>
-            <Stack
-                direction="row"
-                spacing={1}
-                sx={{
-                    justifyContent: "space-between",
-                    alignItems: "center"
-                }}>
-                <Typography
-                    sx={{
-                        fontWeight: 'medium',
-                    }}
-                >
-                    {props.label}{props.required ? ' *' : ''}
-                </Typography>
-                <ToggleButtonGroup
-                    size="small"
-                    value={inputMode}
-                    exclusive
-                    sx={{
-                        '& .MuiToggleButton-root': {
-                            minHeight: 28,
-                            px: 1,
-                            py: 0.25,
-                            fontSize: '0.75rem',
-                            lineHeight: 1.2,
-                            textTransform: 'none',
-                        },
-                    }}
-                    onChange={(_, value: InputMode | null) => {
-                        if (value != null) {
-                            setInputMode(value);
-                        }
-                    }}
-                >
-                    <ToggleButton value="search">
-                        Adresse/Ort
-                    </ToggleButton>
-                    <ToggleButton value="coordinates">
-                        Koordinaten
-                    </ToggleButton>
-                </ToggleButtonGroup>
-            </Stack>
+    const effectiveError = props.error ?? (
+        inputMode === 'coordinates' ? coordinateValidationError : undefined
+    ) ?? addressResolveError;
 
-            {
-                inputMode === 'search' &&
-                <TextField
-                    label="Adresse oder Ort"
-                    value={searchQuery}
-                    onChange={(event) => {
-                        setSearchQuery(event.target.value);
-                    }}
-                    onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                            event.preventDefault();
-                            void handleSearch();
-                        }
-                    }}
-                    placeholder="Adresse oder Ort suchen"
-                    helperText={props.error ?? addressResolveError ?? props.hint}
-                    error={props.error != null || addressResolveError != null}
-                    disabled={props.disabled || props.busy}
-                    slotProps={{
-                        input: {
-                            endAdornment: (
+    return (
+        <FormFieldGroup
+            id={props.id}
+            label={props.label}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={(groupContext) => {
+                const suppliedLabelAction = typeof props.labelAction === 'function'
+                    ? props.labelAction(groupContext)
+                    : props.labelAction;
+
+                return (
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{alignItems: 'center'}}
+                    >
+                        {suppliedLabelAction}
+
+                        <ToggleButtonGroup
+                            size="small"
+                            value={inputMode}
+                            exclusive
+                            aria-label={`Eingabeweg für ${props.label}`}
+                            sx={{
+                                '& .MuiToggleButton-root': {
+                                    minHeight: 28,
+                                    px: 1,
+                                    py: 0.25,
+                                    fontSize: '0.75rem',
+                                    lineHeight: 1.2,
+                                    textTransform: 'none',
+                                },
+                            }}
+                            onChange={(_, value: InputMode | null) => {
+                                if (value != null && !props.disabled && !props.busy) {
+                                    setInputMode(value);
+                                }
+                            }}
+                        >
+                            <ToggleButton
+                                value="search"
+                                disabled={props.disabled || props.busy}
+                            >
+                                Adresse/Ort
+                            </ToggleButton>
+                            <ToggleButton
+                                value="coordinates"
+                                disabled={props.disabled || props.busy}
+                            >
+                                Koordinaten
+                            </ToggleButton>
+                        </ToggleButtonGroup>
+                    </Stack>
+                );
+            }}
+            hint={props.hint}
+            error={effectiveError}
+            required={props.required}
+            disabled={props.disabled}
+            readOnly={props.readOnly}
+            busy={props.busy}
+            margin={props.margin ?? 'normal'}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
+        >
+            {(groupContext: FormFieldGroupContext) => (
+                <Stack
+                    spacing={1.5}
+                    sx={props.controlSx}
+                >
+                    {inputMode === 'search' && (
+                        <MapPointTextInput
+                            label="Adresse oder Ort"
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            groupContext={groupContext}
+                            groupError={effectiveError}
+                            placeholder="Adresse oder Ort suchen"
+                            inputMode="search"
+                            disabled={props.disabled}
+                            busy={props.busy}
+                            loading={isSearching}
+                            readOnly={props.readOnly}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' && !isMapDisabled) {
+                                    event.preventDefault();
+                                    void handleSearch();
+                                }
+                            }}
+                            endAdornment={(
                                 <InputAdornment position="end">
                                     <Stack
                                         direction="row"
                                         spacing={0.25}
-                                        sx={{
-                                            alignItems: "center"
-                                        }}
+                                        sx={{alignItems: 'center'}}
                                     >
-                                        {
-                                            canClearSearchInput &&
+                                        {canClearSearchInput && (
                                             <IconButton
                                                 size="small"
                                                 onClick={handleClearSearchInput}
-                                                disabled={props.disabled || props.busy}
+                                                disabled={isMapDisabled}
                                                 aria-label={clearSearchInputLabel}
                                             >
                                                 <ClearOutlinedIcon fontSize="small" />
                                             </IconButton>
-                                        }
+                                        )}
 
                                         <IconButton
                                             size="small"
                                             onClick={() => {
                                                 void handleSearch();
                                             }}
-                                            disabled={props.disabled || props.busy || isSearching || searchQuery.trim().length < 3}
+                                            disabled={isMapDisabled || isSearching || searchQuery.trim().length < 3}
                                             aria-label="Ort suchen"
+                                            aria-busy={isSearching || undefined}
                                         >
-                                            {isSearching ? <CircularProgress size={18} /> : <SearchOutlinedIcon />}
+                                            {isSearching
+                                                ? <CircularProgress size={18} aria-hidden="true" />
+                                                : <SearchOutlinedIcon />}
                                         </IconButton>
                                     </Stack>
                                 </InputAdornment>
-                            ),
-                        },
-                    }}
-                />
-            }
+                            )}
+                        />
+                    )}
 
-            {
-                inputMode === 'coordinates' &&
-                <Stack spacing={1}>
-                    <Stack
-                        direction={{
-                            xs: 'column',
-                            md: 'row',
-                        }}
-                        spacing={1}
-                    >
-                        <TextField
-                            label="Breitengrad"
-                            value={latitudeInput}
-                            onChange={(event) => {
-                                handleLatitudeInputChange(event.target.value);
-                            }}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter') {
-                                    event.preventDefault();
-                                    applyCoordinates();
-                                }
-                            }}
-                            error={coordinateValidationError != null || props.error != null}
-                            disabled={isMapDisabled}
-                            fullWidth
-                        />
-                        <TextField
-                            label="Längengrad"
-                            value={longitudeInput}
-                            onChange={(event) => {
-                                handleLongitudeInputChange(event.target.value);
-                            }}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter') {
-                                    event.preventDefault();
-                                    applyCoordinates();
-                                }
-                            }}
-                            error={coordinateValidationError != null || props.error != null}
-                            disabled={isMapDisabled}
-                            fullWidth
-                        />
-                    </Stack>
-                    {
-                        (coordinateValidationError != null || props.error != null || addressResolveError != null || props.hint != null) &&
-                        <Typography
-                            variant="caption"
-                            color={(coordinateValidationError != null || props.error != null || addressResolveError != null) ? 'error.main' : 'text.secondary'}
+                    {inputMode === 'coordinates' && (
+                        <Stack
+                            direction={{xs: 'column', md: 'row'}}
+                            spacing={1}
                         >
-                            {coordinateValidationError ?? props.error ?? addressResolveError ?? props.hint}
-                        </Typography>
-                    }
-                </Stack>
-            }
+                            <MapPointTextInput
+                                label="Breitengrad"
+                                value={latitudeInput}
+                                onChange={handleLatitudeInputChange}
+                                groupContext={groupContext}
+                                groupError={effectiveError}
+                                inputMode="decimal"
+                                disabled={props.disabled}
+                                busy={props.busy}
+                                readOnly={props.readOnly}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' && !isMapDisabled) {
+                                        event.preventDefault();
+                                        applyCoordinates();
+                                    }
+                                }}
+                            />
+                            <MapPointTextInput
+                                label="Längengrad"
+                                value={longitudeInput}
+                                onChange={handleLongitudeInputChange}
+                                groupContext={groupContext}
+                                groupError={effectiveError}
+                                inputMode="decimal"
+                                disabled={props.disabled}
+                                busy={props.busy}
+                                readOnly={props.readOnly}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' && !isMapDisabled) {
+                                        event.preventDefault();
+                                        applyCoordinates();
+                                    }
+                                }}
+                            />
+                        </Stack>
+                    )}
 
-            <Paper
-                variant="outlined"
-                sx={{
-                    height: 240,
-                    overflow: 'hidden',
-                    position: 'relative',
-                    userSelect: 'none',
-                }}
-            >
-                <Stack
-                    spacing={0.75}
-                    sx={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        zIndex: 1000,
-                    }}
-                >
-                    <Tooltip
-                        title="Ansicht zurücksetzen"
-                        arrow
+                    <Paper
+                        data-map-point-surface
+                        variant="outlined"
+                        sx={{
+                            overflow: 'hidden',
+                            position: 'relative',
+                        }}
                     >
-                        <span>
-                            <IconButton
-                                size="small"
-                                onClick={handleResetMapView}
+                        <Stack
+                            component="div"
+                            spacing={0.75}
+                            sx={{
+                                position: 'absolute',
+                                top: 8,
+                                right: 8,
+                                zIndex: 1000,
+                            }}
+                        >
+                            <Tooltip
+                                title="Ansicht zurücksetzen"
+                                arrow
+                            >
+                                <span>
+                                    <IconButton
+                                        size="small"
+                                        onClick={handleResetMapView}
+                                        disabled={isMapDisabled}
+                                        aria-label="Kartenansicht zurücksetzen"
+                                        sx={{
+                                            bgcolor: 'background.paper',
+                                            border: '1px solid',
+                                            borderColor: 'divider',
+                                            boxShadow: '0 1px 5px rgba(0, 0, 0, 0.65)',
+                                            '&:hover': {
+                                                bgcolor: 'background.paper',
+                                            },
+                                        }}
+                                    >
+                                        <MyLocationOutlinedIcon fontSize="small" />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                            {
+                                hasPointValue &&
+                                <Tooltip
+                                    title="Kartenpunkt leeren"
+                                    arrow
+                                >
+                                    <span>
+                                        <IconButton
+                                            size="small"
+                                            onClick={handleClear}
+                                            disabled={isMapDisabled}
+                                            aria-label="Kartenpunkt leeren"
+                                            sx={{
+                                                bgcolor: 'background.paper',
+                                                border: '1px solid',
+                                                borderColor: 'divider',
+                                                boxShadow: '0 1px 5px rgba(0, 0, 0, 0.65)',
+                                                '&:hover': {
+                                                    bgcolor: 'background.paper',
+                                                },
+                                            }}
+                                        >
+                                            <ClearOutlinedIcon fontSize="small" />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            }
+                            {
+                                inputMode === 'coordinates' &&
+                                <Tooltip
+                                    title="Koordinaten auf Karte anzeigen"
+                                    arrow
+                                >
+                                    <span>
+                                        <IconButton
+                                            size="small"
+                                            onClick={applyCoordinates}
+                                            disabled={!canApplyCoordinates}
+                                            aria-label="Koordinaten auf Karte anzeigen"
+                                            sx={{
+                                                bgcolor: 'background.paper',
+                                                border: '1px solid',
+                                                borderColor: 'divider',
+                                                boxShadow: '0 1px 5px rgba(0, 0, 0, 0.65)',
+                                                '&:hover': {
+                                                    bgcolor: 'background.paper',
+                                                },
+                                            }}
+                                        >
+                                            <NearMeOutlinedIcon fontSize="small" />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            }
+                        </Stack>
+                        <Stack
+                            sx={{
+                                height: 240,
+                                position: 'relative',
+                                userSelect: 'none',
+                            }}
+                        >
+                            <LeafletPointPickerMap
+                                ref={mapRef}
+                                center={mapCenter}
+                                zoom={zoom}
                                 disabled={isMapDisabled}
+                                marker={mapMarker}
+                                onPick={handleMapPick}
+                                ariaLabel={`Karte zur Auswahl von ${props.label}`}
+                                ariaDescribedBy={groupContext.describedBy}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                }}
+                            />
+                        </Stack>
+
+                        {mapAddressLine != null && (
+                            <Stack
+                                direction="row"
+                                spacing={1.25}
+                                role={!mapAddressLine.isError ? 'status' : undefined}
+                                aria-live={!mapAddressLine.isError ? 'polite' : undefined}
+                                aria-atomic={!mapAddressLine.isError ? 'true' : undefined}
                                 sx={{
-                                    bgcolor: 'background.paper',
-                                    border: '1px solid',
+                                    alignItems: 'center',
+                                    minWidth: 0,
+                                    px: 1.5,
+                                    py: 1,
+                                    borderTop: '1px solid',
                                     borderColor: 'divider',
-                                    boxShadow: '0 1px 5px rgba(0, 0, 0, 0.65)',
-                                    '&:hover': {
-                                        bgcolor: 'background.paper',
-                                    },
+                                    backgroundColor: 'action.hover',
                                 }}
                             >
-                                <MyLocationOutlinedIcon fontSize="small" />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
-                    {
-                        hasPointValue &&
-                        <Tooltip
-                            title="Kartenpunkt leeren"
-                            arrow
-                        >
-                            <span>
-                                <IconButton
-                                    size="small"
-                                    onClick={handleClear}
-                                    disabled={isMapDisabled}
-                                    aria-label="Kartenpunkt leeren"
+                                <Stack
+                                    aria-hidden="true"
                                     sx={{
-                                        bgcolor: 'background.paper',
-                                        border: '1px solid',
-                                        borderColor: 'divider',
-                                        boxShadow: '0 1px 5px rgba(0, 0, 0, 0.65)',
-                                        '&:hover': {
-                                            bgcolor: 'background.paper',
-                                        },
+                                        width: 20,
+                                        height: 20,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0,
+                                        color: mapAddressLine.isError ? 'error.main' : 'text.secondary',
                                     }}
                                 >
-                                    <ClearOutlinedIcon fontSize="small" />
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-                    }
-                    {
-                        inputMode === 'coordinates' &&
-                        <Tooltip
-                            title="Koordinaten auf Karte anzeigen"
-                            arrow
-                        >
-                            <span>
-                                <IconButton
-                                    size="small"
-                                    onClick={applyCoordinates}
-                                    disabled={!canApplyCoordinates}
-                                    sx={{
-                                        bgcolor: 'background.paper',
-                                        border: '1px solid',
-                                        borderColor: 'divider',
-                                        boxShadow: '0 1px 5px rgba(0, 0, 0, 0.65)',
-                                        '&:hover': {
-                                            bgcolor: 'background.paper',
-                                        },
-                                    }}
-                                >
-                                    <NearMeOutlinedIcon fontSize="small" />
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-                    }
-                </Stack>
-                <LeafletPointPickerMap
-                    ref={mapRef}
-                    center={mapCenter}
-                    zoom={zoom}
-                    disabled={isMapDisabled}
-                    marker={mapMarker}
-                    onPick={handleMapPick}
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                    }}
-                />
-            </Paper>
+                                    {isResolvingAddress
+                                        ? <CircularProgress size={16} color="inherit" />
+                                        : <LocationOnOutlinedIcon sx={{fontSize: 20}} />}
+                                </Stack>
 
-            {
-                mapAddressLine != null &&
-                <Stack
-                    direction="row"
-                    spacing={1}
-                    sx={{
-                        alignItems: "center"
-                    }}
-                >
-                    <Stack
-                        sx={{
-                            width: 14,
-                            height: 14,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                        }}
-                    >
-                        {isResolvingAddress && <CircularProgress size={14} />}
-                    </Stack>
-                    <Typography
-                        variant="body2"
-                        color={mapAddressLine.isError ? 'error.main' : 'text.secondary'}
-                        sx={{
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                        }}
-                    >
-                        {mapAddressLine.text}
-                    </Typography>
+                                <Stack spacing={0.125} sx={{minWidth: 0}}>
+                                    <Typography
+                                        variant="caption"
+                                        color={mapAddressLine.isError ? 'error.main' : 'text.secondary'}
+                                        sx={{lineHeight: 1.2}}
+                                    >
+                                        Ermittelte Adresse
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        color={mapAddressLine.isError ? 'error.main' : 'text.primary'}
+                                        title={mapAddressLine.text}
+                                        sx={{
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                        }}
+                                    >
+                                        {mapAddressLine.text}
+                                    </Typography>
+                                </Stack>
+                            </Stack>
+                        )}
+                    </Paper>
                 </Stack>
-            }
-        </Stack>
+            )}
+        </FormFieldGroup>
     );
 }

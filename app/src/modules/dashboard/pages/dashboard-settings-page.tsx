@@ -12,7 +12,6 @@ import {
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
-import DashboardCustomize from '@aivot/mui-material-symbols-400-n25-outlined/DashboardCustomize';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
@@ -41,6 +40,7 @@ import {SelectFieldComponent} from '../../../components/select-field/select-fiel
 import {setSystemConfigs} from '../../../slices/system-config-slice';
 import {type SystemConfigResponseDto} from '../../configs/dtos/system-config-response-dto';
 import {DashboardActivityPeriodConfig} from '../models/dashboard-overview';
+import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 
 interface DashboardActivitySettings {
     enabled: boolean;
@@ -192,7 +192,7 @@ export function DashboardSettingsPage() {
     return (
         <PageWrapper title="Übersicht konfigurieren" background>
             <GenericPageHeader
-                icon={<DashboardCustomize/>}
+                icon={ModuleIcons.dashboardSettings}
                 title="Übersicht konfigurieren"
                 actions={[
                     {

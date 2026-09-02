@@ -57,8 +57,18 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Speichert Dokumente auf dem lokalen Dateisystem des Servers.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Bindet ein Verzeichnis im lokalen Dateisystem des Prosuna-Servers als Speicheranbieter ein.
+
+                Dokumente und Ordner werden direkt unterhalb des konfigurierten Speicherpfads gelesen, geschrieben und verwaltet. Der Anbieter eignet sich für Installationen, bei denen der Anwendung ein dauerhaftes lokales oder eingebundenes Dateisystem zur Verfügung steht.
+                """;
     }
 
     @Nonnull

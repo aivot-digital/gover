@@ -62,8 +62,18 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nonnull
     @Override
-    public String getDescription() {
+    public String getAbstract() {
         return "Dieses Modul stellt Funktionen zur Verarbeitung von Datumswerten bereit.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Stellt JavaScript-Hilfsfunktionen für Datums-, Zeit- und Zeitzonenwerte bereit.
+
+                Datumswerte können erzeugt, normalisiert, formatiert und in die lokale Anwendungszeitzone überführt werden. Darüber hinaus unterstützt das Modul Berechnungen wie das Addieren oder Subtrahieren von Tagen, Wochen, Monaten und Jahren sowie die Ermittlung von Zeitabständen.
+                """;
     }
 
     @Override

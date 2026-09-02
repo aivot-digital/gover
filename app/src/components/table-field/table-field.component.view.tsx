@@ -1,4 +1,3 @@
-import {Box, Button, FormHelperText, FormLabel} from '@mui/material';
 import {TableFieldElement} from '../../models/elements/form/input/table-field-element';
 import {DataGrid, GridColDef, GridPaginationModel, GridRenderCellParams, GridRowId, GridRowSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
 import React, {useMemo, useState} from 'react';
@@ -10,6 +9,11 @@ import {parseGermanNumber} from '../../utils/parse-german-numbers';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {getSelectedRowIds, hasSelectedGridRows} from './table-field-selection';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
+import AddIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import {type Action} from '../actions/actions-props';
+import {TableFieldLayout} from './table-field-layout';
+import {TableFieldColumnHeader} from './table-field-column-header';
 
 // TODO: Unify with table-field-component.tsx
 export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, { [key: string]: string | number | null }[]>) {
@@ -125,7 +129,13 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         return fields
             .map((field) => ({
                 field: field.key ?? '',
-                headerName: field.label + (field.optional ? '' : ' *'),
+                headerName: field.label ?? '',
+                renderHeader: () => (
+                    <TableFieldColumnHeader
+                        label={field.label ?? ''}
+                        optional={field.optional === true}
+                    />
+                ),
                 editable: !field.disabled && !isDisabled && !isBusy && !isDeriving,
                 flex: 1,
                 type: field.datatype ?? 'string',
@@ -159,93 +169,77 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
     }, [value]);
 
     const hasSelectedRows = useMemo(() => hasSelectedGridRows(selectionModel, rows.map((row) => row._id)), [rows, selectionModel]);
+    const fieldError = errors != null && errors.length > 0 ? errors.join(' ') : undefined;
+    const tableActions: Action[] = [
+        {
+            icon: <AddIcon/>,
+            iconPosition: 'start',
+            label: 'Hinzufügen',
+            tooltip: 'Tabellenzeile hinzufügen',
+            ariaLabel: 'Tabellenzeile hinzufügen',
+            onClick: handleAddRow,
+            disabled: isDisabled || isBusy || (element.maximumRows != null && rows.length >= element.maximumRows),
+        },
+        {
+            icon: <Delete/>,
+            iconPosition: 'start',
+            label: 'Löschen',
+            tooltip: 'Ausgewählte Tabellenzeilen löschen',
+            ariaLabel: 'Ausgewählte Tabellenzeilen löschen',
+            onClick: () => setConfirmDelete(() => handleDelete),
+            disabled: isDisabled || isBusy || !hasSelectedRows,
+            color: 'error',
+        },
+    ];
 
     return (
         <>
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 1,
-                }}
+            <TableFieldLayout
+                label={element.label ?? ''}
+                hint={element.hint ?? undefined}
+                error={fieldError}
+                required={element.required ?? undefined}
+                disabled={isDisabled}
+                busy={isBusy}
+                actions={tableActions}
             >
-                <FormLabel
-                    error={errors != null}
-                >
-                    {element.label} {element.required && ' *'}
-                </FormLabel>
+                {(fieldContext) => (
+                    <DataGrid
+                        rows={rows}
+                        getRowId={row => row._id}
+                        columns={columns}
+                        paginationModel={paginationModel}
+                        pageSizeOptions={[8, 16, 32]}
+                        onPaginationModelChange={(newPaginationModel) => setPaginationModel(newPaginationModel)}
+                        autoHeight
 
-                <Box
-                    sx={{cursor: (isDisabled || isBusy) ? 'not-allowed' : undefined,}}
-                >
-                    <Button
-                        onClick={handleAddRow}
-                        disabled={isDisabled || isBusy || (element.maximumRows != null && rows.length >= element.maximumRows)}
-                    >
-                        Hinzufügen
-                    </Button>
-                    <Button
-                        color="error"
-                        onClick={() => setConfirmDelete(() => handleDelete)}
-                        disabled={isDisabled || isBusy || !hasSelectedRows}
-                        sx={{ml: 1,}}
-                    >
-                        Löschen
-                    </Button>
-                </Box>
+                        // Keep the selection column mounted while deriving to avoid a layout shift.
+                        checkboxSelection={!element.disabled}
+                        disableRowSelectionExcludeModel
 
-            </Box>
+                        disableRowSelectionOnClick
+                        onRowSelectionModelChange={isDisabled || isBusy ? undefined : setSelectionModel}
+                        rowSelectionModel={selectionModel}
 
-            <div
-                style={{
-                    width: '100%',
-                }}
-            >
-                <DataGrid
-                    rows={rows}
-                    getRowId={row => row._id}
-                    columns={columns}
-                    paginationModel={paginationModel}
-                    pageSizeOptions={[8, 16, 32]}
-                    onPaginationModelChange={(newPaginationModel) => setPaginationModel(newPaginationModel)}
-                    autoHeight
+                        processRowUpdate={isDisabled || isBusy ? undefined : handleCellEdit}
 
-                    // can stay active on isBusy because pointerEvents are blocked via CSS and to prevent layout shift
-                    checkboxSelection={!element.disabled}
-                    disableRowSelectionExcludeModel
+                        disableColumnSelector
+                        disableColumnFilter
 
-                    disableRowSelectionOnClick={true}
-                    onRowSelectionModelChange={!isBusy ? setSelectionModel : undefined}
-                    rowSelectionModel={selectionModel}
-
-                    processRowUpdate={!isBusy ? handleCellEdit : undefined}
-
-                    disableColumnSelector
-                    disableColumnFilter
-
-
-                    sx={{
-                        backgroundColor: isBusy ? getDisabledFieldBackground : undefined,
-                        cursor: (isBusy || element.disabled) ? 'not-allowed' : undefined,
-                        pointerEvents: isBusy ? 'none' : 'auto',
-                    }}
-                />
-            </div>
-
-            {
-                (errors != null || element.hint) &&
-                <FormHelperText
-                    sx={{mt: 1}}
-                    error={errors != null}
-                >
-                    {
-                        errors == null ?
-                            element.hint :
-                            errors.join(' ')
-                    }
-                </FormHelperText>
-            }
+                        aria-labelledby={fieldContext.labelId}
+                        aria-describedby={fieldContext.describedBy}
+                        aria-invalid={fieldContext.invalid || undefined}
+                        aria-busy={fieldContext.busy || undefined}
+                        sx={{
+                            backgroundColor: isBusy ? getDisabledFieldBackground : undefined,
+                            borderBottom: '1px solid',
+                            borderBottomColor: 'divider',
+                            cursor: (isBusy || isDisabled) ? 'not-allowed' : undefined,
+                            pointerEvents: isBusy ? 'none' : 'auto',
+                        }}
+                    />
+                )}
+            </TableFieldLayout>
 
             <ConfirmDialog
                 title="Möchten Sie die ausgewählten Einträge wirklich löschen?"

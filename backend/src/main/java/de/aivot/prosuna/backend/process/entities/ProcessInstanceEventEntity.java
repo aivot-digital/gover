@@ -56,7 +56,7 @@ public class ProcessInstanceEventEntity {
     @Nonnull
     @NotNull(message = "Die Nachricht des Ereignisses muss angegeben werden.")
     @NotBlank(message = "Die Nachricht des Ereignisses darf nicht leer sein.")
-    @Size(min = 3, max = 2048, message = "Die Nachricht des Ereignisses muss zwischen 3 und 2048 Zeichen lang sein.")
+    @Size(min = 3, max = 4096, message = "Die Nachricht des Ereignisses muss zwischen 3 und 4096 Zeichen lang sein.")
     private String message;
 
     @Nonnull

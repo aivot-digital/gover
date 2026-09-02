@@ -8,17 +8,17 @@ import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
+import de.aivot.prosuna.backend.utils.RandomUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class ProcessInstanceService implements EntityService<ProcessInstanceEntity, Long> {
@@ -50,7 +50,7 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
     @Override
     public ProcessInstanceEntity create(@Nonnull ProcessInstanceEntity entity) throws ResponseException {
         entity.setId(null);
-        entity.setAccessKey(UUID.randomUUID());
+        entity.setAccessKey(RandomUtils.generateRandomString(ProcessInstanceEntity.ACCESS_KEY_LENGTH));
 
         var processVersion = processVersionService
                 .retrieve(ProcessVersionEntityId.of(entity.getProcessId(), entity.getInitialProcessVersion()))
@@ -77,6 +77,11 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
     @Override
     public Optional<ProcessInstanceEntity> retrieve(@Nonnull Specification<ProcessInstanceEntity> specification) throws ResponseException {
         return processInstanceRepository.findOne(specification);
+    }
+
+    @Nonnull
+    public Optional<ProcessInstanceEntity> retrieveByAccessKey(@Nonnull String accessKey) {
+        return processInstanceRepository.findByAccessKey(accessKey);
     }
 
     @Override
@@ -126,9 +131,8 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
     }
 
     /**
-     * The generator reads the current maximum increment before persisting, but the database unique constraint is still
-     * the last line of defense under concurrent instance creation. Retrying here keeps the sequencing logic simple in
-     * the generator while still handling the race at the boundary where it actually happens.
+     * The generator reads the current maximum increment before persisting, but the database unique constraint is still the last line of defense under concurrent instance creation.
+     * Retrying here keeps the sequencing logic simple in the generator while still handling the race at the boundary where it actually happens.
      */
     @Nonnull
     private ProcessInstanceEntity createWithUniqueCaseNumber(@Nonnull ProcessInstanceEntity entity,

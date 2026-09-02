@@ -18,7 +18,7 @@ import {presetsRoutes} from '../../modules/presets/presets-routes';
 import {themesRoutes} from '../../modules/themes/themes-routes';
 import {Dashboard} from '../../modules/dashboard/dashboard';
 import {configsRoutes} from '../../modules/configs/configs-routes';
-import {Testinghall} from '../../modules/testinghall/testinghall';
+import {TestLab} from '../../modules/test-lab/test-lab';
 import {userRolesRoutes} from '../../modules/user-roles/user-roles-routes';
 import {teamsRoutes} from '../../modules/teams/teams-routes';
 import {OrganizationChart} from "../../modules/system/pages/organization-chart";
@@ -30,7 +30,6 @@ import {elementsRoutes} from '../../modules/elements/elements-routes';
 import {NodeConfigMaker} from '../../pages/staff-pages/node-config-maker/node-config-maker';
 import {codeListsRoutes} from '../../modules/code-lists/code-lists-routes';
 import {isFormModuleEnabled} from '../../utils/module-flags';
-import {InputModePrototype} from '../../modules/testinghall/input-mode-prototype';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -69,12 +68,8 @@ const router = sentryCreateBrowserRouter(
                 ...(isFormModuleEnabled() ? elementsRoutes : []),
 
                 {
-                    path: '/testinghall',
-                    element: <Testinghall />,
-                },
-                {
-                    path: '/input-mode-prototype',
-                    element: <InputModePrototype />,
+                    path: '/test-lab',
+                    element: <TestLab />,
                 },
                 {
                     path: '/node-config-maker',
