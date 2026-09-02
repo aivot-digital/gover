@@ -242,16 +242,6 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                 '& .MuiDialog-container': {
                     alignItems: 'flex-start',
                 },
-                '& .MuiDialog-paper': {
-                    mt: {
-                        xs: 2,
-                        sm: 6,
-                    },
-                    mb: {
-                        xs: 2,
-                        sm: 4,
-                    },
-                },
             }}
         >
             <DialogTitleWithClose onClose={handleClose}>
@@ -262,12 +252,18 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                 sx={{
                     mt: -1,
                     p: 0,
+                    minWidth: 0,
                 }}
             >
                 <Tabs
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    allowScrollButtonsMobile
                     sx={{
                         borderBottom: '1px solid',
                         borderBottomColor: 'divider',
+                        minWidth: 0,
+                        maxWidth: '100%',
                     }}
                     value={currentTab}
                     onChange={(_, newValue) => {
@@ -300,6 +296,8 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                 <Box
                     sx={{
                         p: 2,
+                        minWidth: 0,
+                        maxWidth: '100%',
                     }}
                 >
                     {

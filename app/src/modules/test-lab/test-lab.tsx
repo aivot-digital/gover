@@ -128,14 +128,14 @@ export function TestLab() {
         <PageWrapper
             title="Testlabor"
         >
-            <Box>
+            <Box sx={{minWidth: 0, maxWidth: '100%'}}>
                 <GenericPageHeader
                     icon={ModuleIcons.testLab}
                     title="Testlabor"
                 />
 
                 <Paper
-                    sx={{mt: 2.75, mb: 6}}
+                    sx={{mt: 2.75, mb: 6, minWidth: 0, maxWidth: '100%'}}
                 >
                     <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
                         <Tabs
@@ -163,7 +163,7 @@ export function TestLab() {
                         role="tabpanel"
                         aria-labelledby="test-lab-tab-components"
                         hidden={activeArea !== 'components'}
-                        sx={{p: {xs: 2, sm: 3, md: 4}}}
+                        sx={{p: {xs: 2, sm: 3, md: 4}, minWidth: 0, maxWidth: '100%'}}
                     >
                         <FieldLayoutGallery/>
                     </Box>
@@ -173,7 +173,7 @@ export function TestLab() {
                         role="tabpanel"
                         aria-labelledby="test-lab-tab-system-states"
                         hidden={activeArea !== 'system-states'}
-                        sx={{p: {xs: 2, sm: 3, md: 4}}}
+                        sx={{p: {xs: 2, sm: 3, md: 4}, minWidth: 0, maxWidth: '100%'}}
                     >
                         <Box
                             component="section"
