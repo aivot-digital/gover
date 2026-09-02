@@ -1,11 +1,11 @@
 import {ElementType} from './element-type';
-import { HtmlAutofillAttributeOptions } from '../html-autofill-attribute-options';
+import {HtmlAutofillAttributeOptions} from '../html-autofill-attribute-options';
 
 export const ElementAutofillMapping: Record<ElementType, string[]> = {
-    [ElementType.Root]: [],
+    [ElementType.FormLayout]: [],
     [ElementType.Step]: [],
     [ElementType.Alert]: [],
-    [ElementType.Container]: [],
+    [ElementType.GroupLayout]: [],
     [ElementType.Checkbox]: [],
     [ElementType.Date]: [
         'bday',
@@ -15,7 +15,7 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.MultiCheckbox]: [],
     [ElementType.Number]: [],
     [ElementType.ReplicatingContainer]: [],
-    [ElementType.Richtext]: [],
+    [ElementType.RichText]: [],
     [ElementType.Radio]: [],
     [ElementType.Select]: [
         'honorific-prefix',
@@ -64,6 +64,35 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.Image]: [],
     [ElementType.SubmittedStep]: [],
     [ElementType.FileUpload]: [],
+    [ElementType.DialogLayout]: [],
+    [ElementType.StepperLayout]: [],
+    [ElementType.ConfigLayout]: [],
+    [ElementType.FunctionInput]: [],
+    [ElementType.CodeInput]: [],
+    [ElementType.RichTextInput]: [],
+    [ElementType.UiDefinitionInput]: [],
+    [ElementType.IdentityConfigElement]: [],
+    [ElementType.PaymentConfigElement]: [],
+    [ElementType.TabLayout]: [],
+    [ElementType.ChipInput]: [],
+    [ElementType.DateTime]: [],
+    [ElementType.DateRange]: [],
+    [ElementType.TimeRange]: [],
+    [ElementType.DateTimeRange]: [],
+    [ElementType.MapPoint]: [],
+    [ElementType.DomainAndUserSelect]: [],
+    [ElementType.AssignmentContext]: [],
+    [ElementType.DataModelSelect]: [],
+    [ElementType.DataObjectSelect]: [],
+    [ElementType.NoCodeInput]: [],
+    [ElementType.SummaryLayout]: [],
+    [ElementType.ProcessDataKeyInput]: [],
+    [ElementType.ProcessInstanceAttachmentSetSelect]: [],
+    [ElementType.ProcessIdentityIdInput]: [],
+    [ElementType.HtmlTemplateInput]: [],
+    [ElementType.StoragePathSelector]: [],
+    [ElementType.ProcessAttachmentDisplay]: [],
+    [ElementType.LinkButton]: [],
 };
 
 export const getAutofillOptionsForElementType = (elementType: ElementType) => {

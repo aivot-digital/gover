@@ -1,25 +1,31 @@
-import {AnyElement} from "../models/elements/any-element";
-import React, {FunctionComponent} from "react";
+import type {AnyElement} from '../models/elements/any-element';
+import type {FunctionComponent} from 'react';
+import type {AuthoredElementValues, DerivedRuntimeElementData} from '../models/element-data';
 
 export interface BaseViewProps<M extends AnyElement, V> {
     element: M;
-    setValue: (value: V | null | undefined) => void;
-    error?: string;
-    value?: V | null | undefined;
-    idPrefix?: string;
-    allElements: AnyElement[];
-    scrollContainerRef?: React.RefObject<HTMLDivElement>;
+
     isBusy: boolean;
     isDeriving: boolean;
-    valueOverride?: {
-        values: Record<string, any>;
-        onChange: (key: string, value: any) => void;
-        onBlur?: (key: string, value: any) => void;
-    };
-    errorsOverride?: Record<string, string>;
-    visibilitiesOverride?: Record<string, boolean>;
-    overridesOverride?: Record<string, AnyElement>;
-    mode: 'editor' | 'viewer';
+
+    value?: V | null | undefined;
+    setValue: (value: V | null, triggeringElementIds?: string[]) => void;
+    onBlur: (value: V | null, triggeringElementIds?: string[]) => void;
+
+    errors?: string[] | null | undefined;
+    errorDetails?: Record<string, any> | null | undefined;
+
+    authoredElementValues: AuthoredElementValues;
+    onAuthoredElementValuesChange: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
+    onElementBlur?: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
+
+    derivedData: DerivedRuntimeElementData;
+    onDerive: (data: AuthoredElementValues, triggeringElementIds: string[], skipErrorsForElements?: string[]) => Promise<DerivedRuntimeElementData>;
+    onEvent: (data: AuthoredElementValues, event: string) => Promise<boolean | void>;
+    onResetErrors: () => void;
+    suppressErrors: boolean;
+
+    derivationTriggerIdQueue: string[];
 }
 
 export type BaseView<M extends AnyElement, V> = FunctionComponent<BaseViewProps<M, V>>;

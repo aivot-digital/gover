@@ -1,13 +1,13 @@
-import {type RootElement} from '../models/elements/root-element';
 import {type AnyElement} from '../models/elements/any-element';
 import {ElementType} from '../data/element-type/element-type';
 import ShortUniqueId from 'short-unique-id';
+import {v7 as uuidv7} from 'uuid';
 
 const uid = new ShortUniqueId();
 
 const idRegex = /^[a-z][a-zA-Z0-9_]*$/;
 
-export function checkId(root: RootElement, id?: string): string | null {
+export function checkId(root: AnyElement, id?: string): string | null {
     if (id == null || id.length === 0) {
         return 'Bitte geben Sie eine ID ein.';
     }
@@ -39,17 +39,17 @@ function countIdOccurrences(comp: AnyElement, id: string): number {
 }
 
 const prefixMap: Record<ElementType, string> = {
-    [ElementType.Root]: 'rt',
+    [ElementType.FormLayout]: 'rt',
     [ElementType.Step]: 'st',
     [ElementType.Alert]: 'al',
-    [ElementType.Container]: 'gp',
+    [ElementType.GroupLayout]: 'gp',
     [ElementType.Checkbox]: 'cx',
     [ElementType.Date]: 'dt',
     [ElementType.Headline]: 'hd',
     [ElementType.MultiCheckbox]: 'mx',
     [ElementType.Number]: 'nm',
     [ElementType.ReplicatingContainer]: 'rp',
-    [ElementType.Richtext]: 'rx',
+    [ElementType.RichText]: 'rx',
     [ElementType.Radio]: 'rd',
     [ElementType.Select]: 'sl',
     [ElementType.Spacer]: 'sp',
@@ -62,31 +62,50 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.Image]: 'im',
     [ElementType.SubmittedStep]: 'sx',
     [ElementType.FileUpload]: 'fu',
+    [ElementType.DialogLayout]: 'da',
+    [ElementType.StepperLayout]: 'sr',
+    [ElementType.ConfigLayout]: 'cl',
+    [ElementType.FunctionInput]: 'fi',
+    [ElementType.CodeInput]: 'ci',
+    [ElementType.RichTextInput]: 'ri',
+    [ElementType.UiDefinitionInput]: 'ui',
+    [ElementType.IdentityConfigElement]: 'ii',
+    [ElementType.TabLayout]: 'tl',
+    [ElementType.ChipInput]: 'ch',
+    [ElementType.DateTime]: 'zt',
+    [ElementType.DateRange]: 'zr',
+    [ElementType.TimeRange]: 'tr',
+    [ElementType.DateTimeRange]: 'dz',
+    [ElementType.MapPoint]: 'mp',
+    [ElementType.DomainAndUserSelect]: 'du',
+    [ElementType.AssignmentContext]: 'ac',
+    [ElementType.DataModelSelect]: 'dm',
+    [ElementType.DataObjectSelect]: 'do',
+    [ElementType.NoCodeInput]: 'nc',
+    [ElementType.SummaryLayout]: 'sy',
+    [ElementType.ProcessDataKeyInput]: 'pk',
+    [ElementType.ProcessInstanceAttachmentSetSelect]: 'as',
+    [ElementType.ProcessIdentityIdInput]: 'pi',
+    [ElementType.HtmlTemplateInput]: 'ht',
+    [ElementType.StoragePathSelector]: 'ps',
+    [ElementType.ProcessAttachmentDisplay]: 'pa',
+    [ElementType.PaymentConfigElement]: 'pc',
+    [ElementType.LinkButton]: 'lb',
 };
 
 export function generateElementIdForType(type: ElementType): string {
     return generateElementId(prefixMap[type]);
 }
 
-export function generateElementIdForReplicatingContainerChild(): string {
-    return generateElementId(prefixMap[ElementType.ReplicatingContainer] + '_c');
-}
-
 function generateElementId(prefix: string): string {
-    //@ts-expect-error Something is wrong with the types of the ShortUniqueId library
     const _uid = uid.rnd(10);
     return prefix + '_' + _uid;
 }
 
-/**
- * @deprecated Use resolveId instead
- * @param element
- * @param idPrefix
- */
-export function makeId(element: AnyElement, idPrefix?: string | null): string {
-    return idPrefix != null ? (idPrefix + element.id) : element.id;
+export function generateId(length: number = 10) {
+    return uid.rnd(length);
 }
 
-export function resolveId(id: string, idPrefix?: string | null): string {
-    return idPrefix != null ? (idPrefix + id) : id;
+export function generateUUIDv7() {
+    return uuidv7();
 }

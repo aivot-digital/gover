@@ -1,11 +1,10 @@
 import React from 'react';
 import {type EditorDispatcherProps} from './editor-dispatcher-props';
 import {type AnyElement} from '../models/elements/any-element';
-import Editors from '../editors';
+import {editors as Editors} from '../editors';
 import {type BaseEditorProps} from '../editors/base-editor';
-import {ElementTreeEntity} from './element-tree/element-tree-entity';
 
-export function EditorDispatcher<T extends AnyElement, E extends ElementTreeEntity>(props: EditorDispatcherProps<T, E>): null | JSX.Element {
+export function EditorDispatcher<T extends AnyElement>(props: EditorDispatcherProps<T>): null | React.ReactNode {
     const editorSet = Editors[props.props.type];
     if (editorSet == null) {
         return null;
@@ -18,12 +17,13 @@ export function EditorDispatcher<T extends AnyElement, E extends ElementTreeEnti
         Component = editorSet.default;
     }
 
-    const editorProps: BaseEditorProps<T, E> = {
+    const editorProps: BaseEditorProps<T> = {
         element: props.props,
         onPatch: props.onPatch,
-        entity: props.entity,
-        onPatchEntity: props.onPatchEntity,
         editable: props.editable,
+        hasSummaryLayoutParent: props.hasSummaryLayoutParent,
+        hasReplicatingContainerParent: props.hasReplicatingContainerParent,
+        scope: props.scope,
     };
 
     return React.createElement(Component, editorProps);

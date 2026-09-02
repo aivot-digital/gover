@@ -1,17 +1,17 @@
 import {Box, Dialog, DialogContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
 import React, {PropsWithChildren, useState} from 'react';
-import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {FunctionSelector} from './components/function-selector/function-selector';
 import {BaseCodeTabProps} from './base-code-tab-props';
 import {Actions} from '../actions/actions';
-import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
-import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
+import MoreVertOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
+import SwapHorizOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
-export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Element {
+export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
     const [anchorEl, setAnchorEl] = useState<Element>();
     const [showFunctionSelector, setShowFunctionSelector] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
@@ -21,11 +21,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
 
     return (
         <>
-            <Box
-                sx={{
-                    m: 4,
-                }}
-            >
+            <Box>
                 <ElementEditorSectionHeader
                     title={props.label}
                     disableMarginTop
@@ -45,14 +41,14 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     columnSpacing={4}
                 >
                     <Grid
-                        item
-                        xs={12}
-                        lg={6}
-                    >
-                        <RichTextEditorComponentView
+                        size={{
+                            xs: 12,
+                            lg: 6
+                        }}>
+                        <RichTextInputComponent
                             value={props.requirements ?? ''}
                             onChange={(req) => {
-                                props.onRequirementsChange(req);
+                                props.onRequirementsChange(req ?? undefined);
                             }}
                             disabled={notEditable}
                         />
@@ -132,7 +128,6 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     </Box>
                 }
             </Box>
-
             <Menu
                 open={anchorEl != null}
                 anchorEl={anchorEl}
@@ -150,7 +145,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     }}
                 >
                     <ListItemIcon>
-                        <DeleteForeverOutlinedIcon />
+                        <Delete />
                     </ListItemIcon>
                     <ListItemText>
                         Funktion löschen
@@ -171,7 +166,6 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     </ListItemText>
                 </MenuItem>
             </Menu>
-
             <Dialog
                 open={showFunctionSelector}
                 onClose={() => {
@@ -222,7 +216,6 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     />
                 </DialogContent>
             </Dialog>
-
             <ConfirmDialog
                 title="Funktion löschen"
                 onConfirm={confirmDelete}
@@ -235,7 +228,6 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     Bitte beachten Sie, dass diese Aktion nicht rückgängig gemacht werden kann.
                 </Typography>
             </ConfirmDialog>
-
             <ConfirmDialog
                 title="Funktionstyp ändern"
                 onConfirm={confirmChangeFunction}

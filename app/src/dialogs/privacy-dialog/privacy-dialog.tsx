@@ -1,45 +1,53 @@
-import {Alert, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type Department} from '../../modules/departments/models/department';
-import {useSelector} from 'react-redux';
-import {selectLoadedForm} from '../../slices/app-slice';
 import {type PrivacyDialogProps} from './privacy-dialog-props';
-import {useApi} from "../../hooks/use-api";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../data/system-config-keys";
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../data/system-config-keys';
+import {PublicDepartmentResponseDTO} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {MarkdownContent} from '../../components/markdown-content/markdown-content';
 
 export const PrivacyDialogId = 'privacy';
 
-export function PrivacyDialog(props: PrivacyDialogProps): JSX.Element {
-    const api = useApi();
-    const application = useSelector(selectLoadedForm);
-
-    const [department, setDepartment] = useState<Department>();
+export function PrivacyDialog(props: PrivacyDialogProps) {
+    const [department, setDepartment] = useState<PublicDepartmentResponseDTO>();
     const privacyDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.privacyDepartmentId));
+    const parsedPrivacyDepartmentId = privacyDepartmentId != null && privacyDepartmentId !== '' && !Number.isNaN(parseInt(privacyDepartmentId)) ?
+        parseInt(privacyDepartmentId) :
+        null;
+    const selectedPrivacyDepartmentId = props.isListingPage ?
+        parsedPrivacyDepartmentId :
+        props.version?.privacyDepartmentId ?? null;
 
     useEffect(() => {
-        if (
-            !props.isListingPage &&
-            application?.privacyDepartmentId != null &&
-            (department == null || department.id !== application.privacyDepartmentId)
-        ) {
-            new DepartmentsApiService(api)
-                .retrievePublic(application.privacyDepartmentId)
-                .then(setDepartment);
-        } else if (
-            props.isListingPage &&
-            privacyDepartmentId != null &&
-            privacyDepartmentId != '' &&
-            (department == null || department.id !== parseInt(privacyDepartmentId))
-        ){
-            new DepartmentsApiService(api)
-                .retrievePublic(parseInt(privacyDepartmentId))
-                .then(setDepartment);
+        if (selectedPrivacyDepartmentId == null) {
+            setDepartment(undefined);
+            return;
         }
-    }, [privacyDepartmentId, application, department]);
+
+        let isCancelled = false;
+
+        // Clear stale department data immediately when the configured source is removed or changed.
+        setDepartment(undefined);
+        new DepartmentApiService()
+            .retrievePublic(selectedPrivacyDepartmentId)
+            .then((department) => {
+                if (!isCancelled) {
+                    setDepartment(department);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [selectedPrivacyDepartmentId]);
+
+    const commonPrivacy = department?.commonPrivacy;
+    const processSpecificPrivacyStatement = props.isListingPage ? undefined : props.version?.processSpecificPrivacyStatement;
+    const hasPrivacyText = [commonPrivacy, processSpecificPrivacyStatement]
+        .some((text) => text != null && text.trim().length > 0);
 
     return (
         <Dialog
@@ -55,21 +63,34 @@ export function PrivacyDialog(props: PrivacyDialogProps): JSX.Element {
                 Datenschutzerklärung
             </DialogTitleWithClose>
             {
-                department?.privacy ?
-                <DialogContent
-                    dangerouslySetInnerHTML={{__html: department?.privacy}}
-                />
-                :
-                <DialogContent tabIndex={0}>
-                    <Alert severity="info">
-                        Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ einen Fachbereich als Quelle für den Rechtstext der Datenschutzerklärung aus.
-                    </Alert>
-                </DialogContent>
+                hasPrivacyText ?
+                    <DialogContent>
+                        {
+                            commonPrivacy != null &&
+                            commonPrivacy.trim().length > 0 &&
+                            <MarkdownContent markdown={commonPrivacy}/>
+                        }
+                        {
+                            processSpecificPrivacyStatement != null &&
+                            processSpecificPrivacyStatement.trim().length > 0 &&
+                            <Box sx={{mt: commonPrivacy != null && commonPrivacy.trim().length > 0 ? 3 : 0}}>
+                                <MarkdownContent markdown={processSpecificPrivacyStatement}/>
+                            </Box>
+                        }
+                    </DialogContent>
+                    :
+                    <DialogContent tabIndex={0}>
+                        <Alert severity="info">
+                            Für die Datenschutzerklärung wurden keine Inhalte gefunden. Wählen Sie eine Organisationseinheit
+                            mit allgemeinem Datenschutztext aus und pflegen Sie bei Bedarf den prozessspezifischen Teil
+                            in den versionsspezifischen Einstellungen.
+                        </Alert>
+                    </DialogContent>
             }
             <DialogActions>
+                <Box/>
                 <Button
                     onClick={props.onHide}
-                    variant="contained"
                 >
                     Datenschutzerklärung schließen
                 </Button>

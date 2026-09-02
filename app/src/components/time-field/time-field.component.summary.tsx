@@ -1,41 +1,42 @@
 import {Grid, Typography} from '@mui/material';
 import {TimeFieldElement} from '../../models/elements/form/input/time-field-element';
-import {format} from 'date-fns';
 import {BaseSummaryProps} from '../../summaries/base-summary';
+import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
+import {localTimeIsoToDateTime} from '../../utils/temporal-utils';
 
 export function TimeFieldComponentSummary({
                                               model,
                                               value,
                                           }: BaseSummaryProps<TimeFieldElement, string>) {
-    const date = value != null && value.length > 0 && new Date(value);
+    const time = value != null && value.length > 0
+        ? localTimeIsoToDateTime(value)
+        : null;
 
     return (
         <Grid
             container
             sx={{
-                borderBottom: "1px solid #D4D4D4",
+                borderBottom: '1px solid',
+                borderBottomColor: 'divider',
                 py: 1,
             }}
         >
             <Grid
-                item
-                xs={4}
                 sx={{
                     textAlign: "right",
                     pr: 5,
                 }}
-            >
+                size={4}>
                 <Typography variant={"body2"}>
                     {model.label}
                 </Typography>
             </Grid>
-            <Grid
-                item
-                xs={8}
-            >
+            <Grid size={8}>
                 <Typography variant={"body2"}>
                     {
-                        date ? format(date, 'HH:mm') + ' Uhr' : 'Keine Angabe'
+                        time != null
+                            ? `${time.toFormat((model.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm')} Uhr`
+                            : 'Keine Angabe'
                     }
                 </Typography>
             </Grid>

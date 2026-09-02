@@ -1,0 +1,52 @@
+<mjml lang="de">
+    <mj-head>
+        <mj-include path="../partials/head.mjml" />
+
+        <mj-html-attributes>
+            <mj-selector path=".primary-action a">
+                <mj-html-attribute name="th:href">${base.config.createUrl('/staff/forms/' + form.id + '/' + form.version)}</mj-html-attribute>
+            </mj-selector>
+        </mj-html-attributes>
+
+        <mj-preview>
+            Benachrichtigung über die Erstellung eines neuen Formulars
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml" />
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        es wurde ein neues Formular in Prosuna erstellt.
+                        <br/>
+                        <br/>
+                        Formular: <b th:text="${form.internalTitle}">Beispielformular</b>
+                        <br/>
+                        Version: <b th:text="${form.version}">1.2.3</b>
+                        <br/>
+                        <span>
+                            Entwickelnde Organisationseinheit:
+                            <b th:text="${developingDepartment.name}">—</b>
+                        </span>
+                        <br/>
+                        Angelegt durch: <b th:text="${triggeringUser.getFullName}">Max Mustermann</b>
+                    </p>
+                </mj-text>
+
+                <mj-button align="left"
+                           css-class="primary-action"
+                           href="#"
+                           padding="24px 0 0">
+                    Formular öffnen
+                </mj-button>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/default-mail-signature.mjml"/>
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

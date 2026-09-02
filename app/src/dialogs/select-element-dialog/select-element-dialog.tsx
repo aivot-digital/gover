@@ -1,17 +1,34 @@
-import {SelectElementDialogProps} from './select-element-dialog-props';
 import {useMemo} from 'react';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectLoadedForm} from '../../slices/app-slice';
-import {flattenElementsWithParents} from '../../utils/flatten-elements';
-import {generateComponentTitle} from '../../utils/generate-component-title';
+import {ElementWithParents} from '../../utils/flatten-elements';
+import {generateComponentPath, generateComponentTitle} from '../../utils/generate-component-title';
 import {AnyElement} from '../../models/elements/any-element';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {SearchBaseDialog} from '../search-base-dialog/search-base-dialog';
-import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
 import {getElementIcon} from '../../data/element-type/element-icons';
+import {NoCodeDataType, NoCodeDataTypeLabels} from '../../data/no-code-data-type';
+import {elementMatchesDesiredNoCodeDataType} from '../../modules/nocode/data/no-code-data-type-map';
+import {ViewDispatcherComponent} from '../../components/view-dispatcher/view-dispatcher.component';
+import {
+    ViewDispatcherContextProvider,
+    ViewDispatcherMode,
+} from '../../components/view-dispatcher/view-dispatcher.context';
+
+interface SelectElementDialogProps {
+    allElements: ElementWithParents[];
+    desiredType?: NoCodeDataType;
+    open: boolean;
+    onSelect: (element: AnyElement) => void;
+    onClose: () => void;
+}
 
 export function SelectElementDialog(props: SelectElementDialogProps) {
-    const form = useAppSelector(selectLoadedForm);
+    const {
+        allElements,
+        desiredType,
+        open,
+        onSelect,
+        onClose,
+    } = props;
 
     const allElementsWithParent: {
         $: AnyElement;
@@ -20,47 +37,80 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
         pathTitles: string;
         pathIds: string[];
     }[] = useMemo(() => {
-        if (form == null) {
-            return [];
-        }
-        return flattenElementsWithParents(form.root, [])
-            .filter(({element}) => isAnyInputElement(element))
+        return allElements
+            .filter(({element}) => (
+                isAnyInputElement(element) &&
+                elementMatchesDesiredNoCodeDataType(element.type, desiredType)
+            ))
             .map(({element, parents}) => ({
                 $: element,
                 title: generateComponentTitle(element),
                 id: element.id,
-                pathTitles: parents.map(e => generateComponentTitle(e)).join(' > '),
+                pathTitles: generateComponentPath(parents),
                 pathIds: parents.map(e => e.id),
             }));
-    }, [form]);
+    }, [allElements, desiredType]);
 
     return (
         <SearchBaseDialog
-            open={props.open}
-            onClose={props.onClose}
+            open={open}
+            onClose={onClose}
             title="Element auswählen"
             tabs={[{
                 title: 'Alle',
                 options: allElementsWithParent,
-                onSelect: ({$}) => props.onSelect($),
+                onSelect: ({$}) => onSelect($),
                 searchPlaceholder: 'Element suchen',
                 searchKeys: ['title', 'id', 'pathTitles', 'pathIds'],
                 primaryTextKey: 'title',
                 secondaryTextKey: 'pathTitles',
                 getId: o => `${o.pathIds} > ${o.id}`,
+                noOptionsMessage: desiredType == null ?
+                    undefined :
+                    `Keine Elemente für den Datentyp "${NoCodeDataTypeLabels[desiredType]}" verfügbar.`,
                 getIcon: (option) => {
                     const Icon = getElementIcon(option.$);
-                    return <Icon />;
+                    return <Icon/>;
                 },
                 detailsBuilder: (option) => {
                     return (
-                        <ViewDispatcherComponent
-                            allElements={[]}
-                            element={option.$}
-                            isBusy={false}
-                            isDeriving={false}
-                            mode="editor"
-                        />
+                        <ViewDispatcherContextProvider
+                            value={{
+                                rootElement: option.$,
+                                allElements: [],
+                                mode: ViewDispatcherMode.Editor,
+                                showInvisibleElements: true,
+                                rootAuthoredElementValues: {},
+                                rootDerivedData: {
+                                    effectiveValues: {},
+                                    elementStates: {},
+                                },
+                            }}
+                        >
+                            <ViewDispatcherComponent
+                                element={option.$}
+                                isBusy={false}
+                                isDeriving={false}
+                                authoredElementValues={{}}
+                                derivedData={{
+                                    effectiveValues: {},
+                                    elementStates: {},
+                                }}
+                                onAuthoredElementValuesChange={() => {
+                                }}
+                                onElementBlur={undefined}
+                                derivationTriggerIdQueue={[]}
+                                onDerive={() => Promise.resolve({
+                                    effectiveValues: {},
+                                    elementStates: {},
+                                })}
+                                onEvent={() => Promise.resolve()}
+                                onResetErrors={() => {
+
+                                }}
+                                suppressErrors={true}
+                            />
+                        </ViewDispatcherContextProvider>
                     );
                 },
             }]}

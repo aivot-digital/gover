@@ -1,14 +1,10 @@
 import {Box, Button, Dialog, DialogActions, DialogContent, Divider, Grid, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectLoadedForm} from '../../slices/app-slice';
-import React, {useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {ElementType} from '../../data/element-type/element-type';
-import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
 import {flattenElements} from '../../utils/flatten-elements';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {CustomerInput} from '../../models/customer-input';
-import {downloadQrCode} from '../../utils/download-qrcode';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {StepElement} from '../../models/elements/steps/step-element';
@@ -16,26 +12,36 @@ import {AnyElement} from '../../models/elements/any-element';
 import {Hint} from '../../components/hint/hint';
 import {prefillQueryParamKey} from '../../data/prefill-query-param-key';
 import MuiCollapse from '@mui/material/Collapse';
-import {downloadObjectFile, uploadObjectFile} from '../../utils/download-utils';
+import {uploadObjectFile} from '../../utils/download-utils';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {getElementNameForType} from '../../data/element-type/element-names';
-import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
-import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
-import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
-import {ExpandMoreOutlined} from '@mui/icons-material';
+import QrCode2OutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/QrCode2';
+import ImportExportOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SwapVert';
+import CloudUploadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CloudUpload';
+import ContentPasteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ContentPaste';
+import ExpandMoreOutlined from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
 import {getStepIcon} from '../../data/step-icons';
 import {AlertComponent} from '../../components/alert/alert-component';
 import Chip from '@mui/material/Chip';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import {
+    AuthoredElementValues,
+    createDerivedRuntimeElementData,
+    DerivedRuntimeElementData,
+} from '../../models/element-data';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
+import {createCustomerPath} from '../../utils/url-path-utils';
+import {FormLayoutElement} from '../../models/elements/form-layout-element';
+import {ViewDispatcherComponent} from '../../components/view-dispatcher/view-dispatcher.component';
 
 interface PrefillFormDialogProps {
+    form: FormLayoutElement;
     open: boolean;
     onClose: () => void;
 }
 
-const relevantElementTypes = [
+const prefillableElementTypes = [
     ElementType.Text,
     ElementType.Number,
     ElementType.Date,
@@ -44,6 +50,12 @@ const relevantElementTypes = [
     ElementType.Radio,
     ElementType.Checkbox,
     ElementType.MultiCheckbox,
+    ElementType.ChipInput,
+    ElementType.DateTime,
+    ElementType.DateRange,
+    ElementType.TimeRange,
+    ElementType.DateTimeRange,
+    ElementType.MapPoint,
 ];
 
 const MAX_LINK_LENGTH = 2000; // Most sources suggest 2048 maximum for URLs, but some browsers may have lower limits, so playing safe here.
@@ -51,30 +63,61 @@ const MAX_LINK_LENGTH = 2000; // Most sources suggest 2048 maximum for URLs, but
 export function canPrefillElement(e: AnyElement): boolean {
     return (
         isAnyInputElement(e) &&
-        relevantElementTypes.includes(e.type) &&
+        prefillableElementTypes.includes(e.type) &&
         e.technical != true &&
         e.disabled != true
     );
 }
 
+function buildPrefillValues(elementData: AuthoredElementValues): AuthoredElementValues {
+    const inputs: AuthoredElementValues = {};
+
+    for (const key of Object.keys(elementData)) {
+        const dataObject = elementData[key];
+        if (dataObject != null) {
+            inputs[key] = dataObject;
+        }
+    }
+
+    return inputs;
+}
+
+function buildPrefillLink(slug: string, version: number, elementData: AuthoredElementValues): string {
+    const versionedLink = createCustomerPath(`${slug}/${version}`);
+    const queryParams = new URLSearchParams({
+        [prefillQueryParamKey]: JSON.stringify(buildPrefillValues(elementData)),
+    }).toString();
+
+    return `${versionedLink}?${queryParams}`;
+}
+
 export function PrefillFormDialog(props: PrefillFormDialogProps) {
     const dispatch = useAppDispatch();
-    const [inputs, setInputs] = useState<CustomerInput>({});
-    const form = useAppSelector(selectLoadedForm);
+    const [elementData, setElementDataState] = useState<AuthoredElementValues>({});
+    const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
+    const [hasPrefillableElements, setHasPrefillableElements] = useState<Boolean>(false);
+    const elementDataRef = useRef<AuthoredElementValues>({});
+    const form = props.form;
+    const setElementData = useCallback((nextData: AuthoredElementValues) => {
+        elementDataRef.current = nextData;
+        setElementDataState(nextData);
+    }, []);
+
+    const allElements = useMemo(() => {
+        if (form == null) {
+            return [];
+        }
+
+        return flattenElements(form, true);
+    }, [form]);
 
     const link = useMemo(() => {
         if (form == null) {
             return '';
         }
 
-        const versionedLink = `${window.location.protocol}//${window.location.host}/${form.slug}/${form.version}`;
-
-        const queryParams = new URLSearchParams({
-            [prefillQueryParamKey]: JSON.stringify(inputs),
-        }).toString();
-
-        return `${versionedLink}?${queryParams}`;
-    }, [inputs, form]);
+        return ''; // TODO buildPrefillLink(form.form.slug, form.version.version, elementData);
+    }, [elementData, form]);
 
     const linkTooLong = useMemo(() => {
         return link.length > MAX_LINK_LENGTH;
@@ -92,49 +135,83 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
             return [];
         }
 
-        return form.root.children
+        return (form.children ?? [])
             .map((s) => {
                 const stepElements = flattenElements(s, true)
                     .filter(canPrefillElement);
                 return {
-                    step: s,
+                    step: s as StepElement,
                     elements: stepElements,
                 };
-            })
+            });
     }, [form]);
 
-    const handleCopyLink = async () => {
+    useEffect(() => {
+        setHasPrefillableElements(allElementsPerStep.some((x) => x.elements.length > 0));
+    }, [allElementsPerStep]);
+
+    const flushPendingElementData = useCallback(async (): Promise<AuthoredElementValues> => {
+        const activeElement = document.activeElement;
+        if (activeElement instanceof HTMLElement) {
+            activeElement.blur();
+            await new Promise<void>((resolve) => {
+                window.setTimeout(resolve, 0);
+            });
+        }
+
+        return elementDataRef.current;
+    }, []);
+
+    const handleCopyLink = useCallback(async () => {
         if (form == null) {
             return;
         }
 
         try {
-            await navigator.clipboard.writeText(link);
+            const latestElementData = await flushPendingElementData();
+            const latestLink = ''; // TODO: buildPrefillLink(form.form.slug, form.version.version, latestElementData);
+            if (latestLink.length > MAX_LINK_LENGTH) {
+                dispatch(showErrorSnackbar('Der erzeugte Link ist zu lang und kann nicht kopiert werden.'));
+                return;
+            }
+
+            const success = await copyToClipboardText(latestLink);
+            if (!success) {
+                throw new Error('copy failed');
+            }
             dispatch(showSuccessSnackbar('Link wurde in die Zwischenablage kopiert!'));
         } catch {
             dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
         }
-    };
+    }, [dispatch, flushPendingElementData, form]);
 
-    const handleDownloadQrCode = async () => {
+    const handleDownloadQrCode = useCallback(async () => {
         if (form == null) {
             return;
         }
 
         try {
-            await downloadQrCode(link, `${form.slug}-${form.version}-prefill.png`);
+            const latestElementData = await flushPendingElementData();
+            const latestLink = ''; // TODO: buildPrefillLink(form.form.slug, form.version.version, latestElementData);
+            if (latestLink.length > MAX_LINK_LENGTH) {
+                dispatch(showErrorSnackbar('Der erzeugte Link ist zu lang und kann nicht als QR-Code bereitgestellt werden.'));
+                return;
+            }
+
+            // TODO: await downloadQrCode(latestLink, `${form.form.slug}-${form.version.version}-prefill.png`);
             dispatch(showSuccessSnackbar('QR-Code wurde als PNG heruntergeladen!'));
         } catch {
             dispatch(showErrorSnackbar('Fehler beim Herunterladen des QR-Codes!'));
         }
-    };
+    }, [dispatch, flushPendingElementData, form]);
 
-    const handleExport = () => {
+    const handleExport = async () => {
         if (form == null) {
             return;
         }
 
-        downloadObjectFile(`prefill-${form.slug}-${form.version}.json`, inputs);
+        const latestElementData = await flushPendingElementData();
+        // TODO: downloadObjectFile(`prefill-${form.form.slug}-${form.version.version}.json`, buildPrefillValues(latestElementData));
     };
 
     const handleImport = () => {
@@ -161,7 +238,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                 if (Object.keys(validValues).length === 0) {
                     dispatch(showErrorSnackbar('Keine gültigen Eingaben zum Importieren gefunden.'));
                 } else {
-                    setInputs(validValues);
+                    setElementData(validValues);
                     dispatch(showSuccessSnackbar('Daten erfolgreich importiert!'));
                 }
             })
@@ -172,7 +249,8 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
     };
 
     const handleClose = () => {
-        setInputs({});
+        setElementData({});
+        setDerivedData(createDerivedRuntimeElementData());
         props.onClose();
     };
 
@@ -186,23 +264,24 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
             <DialogTitleWithClose onClose={handleClose}>
                 Formular vorbefüllen
             </DialogTitleWithClose>
-
             <DialogContent>
                 <Box sx={{maxWidth: 920}}>
                     <Typography variant="body2">
-                        Mit diesem Werkzeug können Sie einen Link erzeugen, über den ein Formular mit vorab definierten Werten vorbefüllt wird.
-                        Das ist besonders nützlich, wenn Sie ein Formular z. B. an einen Personenkreis mit teilweise bereits bekannten Angaben weitergeben möchten.
+                        Mit diesem Werkzeug können Sie einen Link erzeugen, über den ein Formular mit vorab definierten
+                        Werten vorbefüllt wird.
+                        Das ist besonders nützlich, wenn Sie ein Formular z. B. an einen Personenkreis mit teilweise
+                        bereits bekannten Angaben weitergeben möchten.
                     </Typography>
                 </Box>
 
                 <AccordionGroup sx={{mt: 3}}>
                     <Accordion defaultExpanded>
                         <AccordionSummary
-                            expandIcon={<ExpandMoreOutlined />}
+                            expandIcon={<ExpandMoreOutlined/>}
                             aria-controls={`panel-moreinfo-content`}
                             id={`panel-moreinfo-header`}
                         >
-                            <InfoOutlinedIcon sx={{mr: 1}} />
+                            <InfoOutlinedIcon sx={{mr: 1}}/>
                             <Typography>
                                 Wichtige Hinweise zur Verwendung
                             </Typography>
@@ -223,22 +302,31 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                 }}
                             >
                                 <li>Es können ausschließlich die folgenden Felder vorbefüllt werden: {
-                                    relevantElementTypes
+                                    prefillableElementTypes
                                         .map(getElementNameForType)
                                         .join(', ')
                                 }. Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.
                                 </li>
-                                <li>Für die Anzeige der vorbefüllbaren Felder (s.u.) ist die Berechnung der Sichtbarkeiten deaktiviert. Bitte bedenken Sie, dass demnach auch Felder vorbefüllt werden können, die ggf. später im durch Nutzer:innen aufgerufenen Formular nicht sichtbar sein könnten.</li>
-                                <li>Der erzeugte Link enthält alle vorbefüllten Werte und kann dadurch sehr lang werden. Aus technischen Gründen ist die maximale Länge auf {MAX_LINK_LENGTH} Zeichen begrenzt – längere Links können in manchen
+                                <li>Für die Anzeige der vorbefüllbaren Felder (s.u.) ist die Berechnung der
+                                    Sichtbarkeiten deaktiviert. Bitte bedenken Sie, dass demnach auch Felder vorbefüllt
+                                    werden können, die ggf. später im durch Nutzer:innen aufgerufenen Formular nicht
+                                    sichtbar sein könnten.
+                                </li>
+                                <li>Der erzeugte Link enthält alle vorbefüllten Werte und kann dadurch sehr lang werden.
+                                    Aus technischen Gründen ist die maximale Länge auf {MAX_LINK_LENGTH} Zeichen
+                                    begrenzt – längere Links können in manchen
                                     Browsern zu Problemen führen.
                                 </li>
-                                <li>Die eingegebenen Werte werden nicht gespeichert, sondern nur im Link kodiert. Wenn Sie den Link später bearbeiten möchten, können Sie die vorbefüllten Werte exportieren und ggf. wieder importieren.</li>
+                                <li>Die eingegebenen Werte werden nicht gespeichert, sondern nur im Link kodiert. Wenn
+                                    Sie den Link später bearbeiten möchten, können Sie die vorbefüllten Werte
+                                    exportieren und ggf. wieder importieren.
+                                </li>
                             </Box>
                         </AccordionDetails>
                     </Accordion>
                 </AccordionGroup>
 
-                <Divider sx={{my: 4}} />
+                <Divider sx={{my: 4}}/>
 
                 {
                     allElementsPerStep.length === 0 ? (
@@ -246,9 +334,10 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                             color="info"
                             title={'Dieses Formular enthält keine vorbefüllbaren Felder'}
                         >
-                            Um dieses Werkzeug nutzen zu können, muss das Formular Eingabefelder enthalten, die vorbefüllt werden können.
+                            Um dieses Werkzeug nutzen zu können, muss das Formular Eingabefelder enthalten, die
+                            vorbefüllt werden können.
                             Es können ausschließlich die folgenden Felder vorbefüllt werden: {
-                            relevantElementTypes
+                            prefillableElementTypes
                                 .map(getElementNameForType)
                                 .join(', ')
                         }.
@@ -269,16 +358,20 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                             }}
                                         >
                                             <AccordionSummary
-                                                expandIcon={<ExpandMoreOutlined />}
+                                                expandIcon={<ExpandMoreOutlined/>}
                                                 aria-controls={`panel-${step.id}-content`}
                                                 id={`panel-${step.id}-header`}
                                             >
                                                 {(() => {
                                                     const StepIcon = getStepIcon(step);
-                                                    return <StepIcon sx={{mr: 1}} />;
+                                                    return <StepIcon sx={{mr: 1}}/>;
                                                 })()}
                                                 <Typography>
-                                                    {generateComponentTitle(step)} {elements.length === 0 && <Chip sx={{ml: 1}} label={"Keine vorbefüllbaren Felder vorhanden"} size='small' variant={"outlined"}/>}
+                                                    {generateComponentTitle(step)} {elements.length === 0 &&
+                                                    <Chip sx={{ml: 1}}
+                                                          label={'Keine vorbefüllbaren Felder vorhanden'}
+                                                          size="small"
+                                                          variant={'outlined'}/>}
                                                 </Typography>
                                             </AccordionSummary>
 
@@ -288,44 +381,46 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                     spacing={2}
                                                 >
                                                     {elements.length === 0 &&
-                                                        <Grid
-                                                            item
-                                                        >
-                                                            <AlertComponent color={'info'} title={"Dieser Abschnitt enthält keine vorbefüllbaren Felder"} sx={{mt: 1, mb: 0}}>
-                                                                Es können ausschließlich die folgenden Felder vorbefüllt werden: {
-                                                                    relevantElementTypes
-                                                                        .map(getElementNameForType)
-                                                                        .join(', ')
-                                                                }.
-                                                                Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.
+                                                        <Grid>
+                                                            <AlertComponent color={'info'}
+                                                                            title={'Dieser Abschnitt enthält keine vorbefüllbaren Felder'}
+                                                                            sx={{mt: 1, mb: 0}}>
+                                                                Es können ausschließlich die folgenden Felder vorbefüllt
+                                                                werden: {
+                                                                prefillableElementTypes
+                                                                    .map(getElementNameForType)
+                                                                    .join(', ')
+                                                            }.
+                                                                Technische Felder und deaktivierte Felder können nicht
+                                                                vorbefüllt werden.
                                                             </AlertComponent>
                                                         </Grid>
                                                     }
 
-                                                    {elements.map((element) => (
-                                                        <ViewDispatcherComponent
-                                                            key={element.id}
-                                                            allElements={[]}
-                                                            element={{
-                                                                ...element,
-                                                                width: 12,
-                                                            }}
-                                                            isBusy={false}
-                                                            isDeriving={false}
-                                                            mode="viewer"
-                                                            valueOverride={{
-                                                                values: inputs,
-                                                                onChange: (key, value) => {
-                                                                    setInputs({
-                                                                        ...inputs,
-                                                                        [key]: value,
-                                                                    });
-                                                                },
-                                                            }}
-                                                            visibilitiesOverride={{}}
-                                                            overridesOverride={{}}
-                                                        />
-                                                    ))}
+                                                    { /* TODO
+                                                        elements.map((element) => (
+                                                            <ViewDispatcherComponent
+                                                                rootElement={form}
+                                                                key={element.id}
+                                                                allElements={allElements}
+                                                                element={element}
+                                                                isBusy={false}
+                                                                isDeriving={false}
+                                                                mode="viewer"
+                                                                authoredElementValues={elementData}
+                                                                derivedData={derivedData}
+                                                                onAuthoredElementValuesChange={setElementData}
+                                                                onDerivedDataChange={setDerivedData}
+                                                                onElementBlur={undefined}
+                                                                disableVisibility={true}
+                                                                scrollContainerRef={undefined}
+                                                                derivationTriggerIdQueue={[]}
+                                                                onDerive={() => {
+
+                                                                }}
+                                                            />
+                                                        ))
+                                                    */}
                                                 </Grid>
                                             </AccordionDetails>
                                         </Accordion>
@@ -335,7 +430,6 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                     )
                 }
             </DialogContent>
-
             <DialogActions>
                 <Box
                     sx={{
@@ -347,8 +441,8 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                     <Button
                         variant={'contained'}
                         onClick={handleCopyLink}
-                        disabled={linkTooLong}
-                        startIcon={<ContentPasteOutlinedIcon />}
+                        disabled={linkTooLong || !hasPrefillableElements}
+                        startIcon={<ContentPasteOutlinedIcon/>}
                     >
                         Link in Zwischenablage kopieren
                     </Button>
@@ -368,8 +462,8 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                     <Button
                         onClick={handleDownloadQrCode}
-                        disabled={linkTooLong}
-                        startIcon={<QrCode2OutlinedIcon />}
+                        disabled={linkTooLong || !hasPrefillableElements}
+                        startIcon={<QrCode2OutlinedIcon/>}
                         sx={{
                             ml: 2,
                         }}
@@ -393,7 +487,8 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                     <Button
                         onClick={handleExport}
-                        startIcon={<ImportExportOutlinedIcon />}
+                        disabled={!hasPrefillableElements}
+                        startIcon={<ImportExportOutlinedIcon/>}
                         sx={{
                             ml: 'auto',
                         }}
@@ -403,7 +498,8 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                     <Button
                         onClick={handleImport}
-                        startIcon={<CloudUploadOutlinedIcon />}
+                        disabled={!hasPrefillableElements}
+                        startIcon={<CloudUploadOutlinedIcon/>}
                         sx={{
                             ml: 2,
                         }}

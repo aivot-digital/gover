@@ -1,11 +1,16 @@
-export interface Theme {
-    id: number;
+export interface ThemeRequestDTO {
     name: string;
-    main: string;
-    mainDark: string;
-    accent: string;
-    error: string;
-    warning: string;
-    info: string;
-    success: string;
+    primaryColor: string;
+    secondaryColor: string;
+    primaryColorDark: string | null;
+    secondaryColorDark: string | null;
+    faviconKey: string | null;
+    logoKey: string | null;
+    logoKeyDark: string | null;
 }
+
+export interface ThemeResponseDTO extends ThemeRequestDTO {
+    id: number;
+}
+
+export type Theme = ThemeResponseDTO;

@@ -1,0 +1,294 @@
+# Production-oriented single-server deployment for Prosuna. This stack expects a public
+# DNS name, reachable ports 80 and 443, and an SMTP server. Caddy terminates HTTPS and
+# obtains certificates from Let's Encrypt automatically.
+#
+# Create a .env file next to this file using every required value documented in README.md.
+# Use strong, unique secrets and run `docker compose config --quiet` before starting the
+# stack. ${NAME} values are required for a valid deployment; ${NAME:-default} values
+# are optional and use the documented default when omitted.
+name: prosuna
+
+services:
+  # Prosuna backend API. Infrastructure services remain on private Docker networks;
+  # only Caddy can route public requests to this container.
+  prosuna_api:
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
+    restart: unless-stopped
+    command: serve
+    depends_on:
+      - prosuna_database
+      - keycloak
+      - clamav
+      - redis
+      - rabbitmq
+    environment:
+      # Internal database connection. PROSUNA_DB_PASSWORD must be strong and unique.
+      PROSUNA_SERVER_PORT: 9595
+      PROSUNA_DB_HOST: prosuna_database
+      PROSUNA_DB_PORT: 5432
+      PROSUNA_DB_USERNAME: prosuna
+      PROSUNA_DB_PASSWORD: ${PROSUNA_DB_PASSWORD}
+      PROSUNA_DB_DATABASE: prosuna
+
+      # Redis stores short-lived application data such as sessions and replay guards.
+      PROSUNA_REDIS_HOST: redis
+      PROSUNA_REDIS_PORT: 6379
+      PROSUNA_REDIS_DATABASE: 0
+
+      # Required outbound mail settings. Authentication and STARTTLS default to enabled;
+      # username and password may only be empty when the SMTP server permits it.
+      PROSUNA_SMTP_HOST: ${PROSUNA_SMTP_HOST}
+      PROSUNA_SMTP_PORT: ${PROSUNA_SMTP_PORT}
+      PROSUNA_SMTP_AUTH: ${PROSUNA_SMTP_AUTH:-true}
+      PROSUNA_SMTP_TLS: ${PROSUNA_SMTP_TLS:-true}
+      PROSUNA_SMTP_USERNAME: ${PROSUNA_SMTP_USERNAME}
+      PROSUNA_SMTP_PASSWORD: ${PROSUNA_SMTP_PASSWORD}
+
+      # RabbitMQ runs background jobs. Use a strong, unique RABBITMQ_PASSWORD.
+      PROSUNA_RABBITMQ_HOST: rabbitmq
+      PROSUNA_RABBITMQ_PORT: 5672
+      PROSUNA_RABBITMQ_USERNAME: prosuna
+      PROSUNA_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+
+      # Internal upload scanning and document rendering endpoints.
+      PROSUNA_CLAM_HOST: clamav
+      PROSUNA_CLAM_PORT: 3310
+      PROSUNA_GOTENBERG_HOST: gotenberg
+      PROSUNA_GOTENBERG_PORT: 3000
+
+      # The public HTTPS URL is used in browser-visible OIDC metadata. The internal URL
+      # avoids routing backend-to-Keycloak traffic through the public reverse proxy.
+      PROSUNA_KEYCLOAK_OIDC_HOSTNAME: ${PROSUNA_HOSTNAME}/idp
+      PROSUNA_KEYCLOAK_OIDC_INTERNAL_HOSTNAME: http://keycloak:8080/idp
+      PROSUNA_KEYCLOAK_OIDC_REALM: staff
+      PROSUNA_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
+      PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_ID: backend
+      # Required: use a random value of at least 32 characters and keep it synchronized
+      # with BACKEND_CLIENT_SECRET in keycloak_setup.
+      PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: ${PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}
+
+      # Required encryption and CAPTCHA signing keys. Each must be random and at least
+      # 32 characters long. Changing PROSUNA_SECRETS_KEY later invalidates encrypted data.
+      PROSUNA_SECRETS_KEY: ${PROSUNA_SECRETS_KEY}
+      PROSUNA_CAPTCHA_KEY: ${PROSUNA_CAPTCHA_KEY}
+
+      # PROSUNA_HOSTNAME must be the full public HTTPS URL without a trailing slash.
+      # The support URL is optional. Mail values must be valid sender/report addresses.
+      PROSUNA_HOSTNAME: ${PROSUNA_HOSTNAME}
+      PROSUNA_SUPPORT_URL: ${PROSUNA_SUPPORT_URL:-}
+      PROSUNA_TIMEZONE: Europe/Berlin
+      PROSUNA_FROM_MAIL: ${PROSUNA_FROM_MAIL}
+      PROSUNA_REPORT_MAIL: ${PROSUNA_REPORT_MAIL}
+      # The first matching staff user receives the highest system role when no active
+      # user has that role yet. This is not a Keycloak administrator address.
+      PROSUNA_BOOTSTRAP_ADMIN_MAIL: ${PROSUNA_BOOTSTRAP_ADMIN_MAIL}
+    volumes:
+      - prosuna_data:/app/data
+    networks:
+      - prosuna
+      - prosuna_keycloak
+      - proxy
+
+  # Prosuna web application. Caddy serves it at / and /staff after the API is healthy.
+  prosuna_app:
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
+    restart: unless-stopped
+    command: web
+    depends_on:
+      prosuna_api:
+        condition: service_healthy
+        restart: true
+      gotenberg:
+        condition: service_started
+        restart: true
+    environment:
+      PROSUNA_HOSTNAME: ${PROSUNA_HOSTNAME}
+    networks:
+      - proxy
+
+  # Persistent PostgreSQL database for Prosuna application data.
+  prosuna_database:
+    image: docker.io/library/postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${PROSUNA_DB_PASSWORD}
+      POSTGRES_USER: prosuna
+      POSTGRES_DB: prosuna
+      PGDATA: /var/lib/postgresql/data/pgdata
+      PGTZ: Europe/Berlin
+    volumes:
+      - prosuna_database_data:/var/lib/postgresql/data
+    networks:
+      - prosuna
+
+  # Production Keycloak identity provider. Caddy terminates HTTPS, so Keycloak listens
+  # internally over HTTP and trusts the forwarded proxy headers.
+  keycloak:
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3
+    restart: unless-stopped
+    depends_on:
+      - keycloak_database
+    command: start
+    environment:
+      KC_HOSTNAME: ${PROSUNA_HOSTNAME}/idp
+      KC_HTTP_RELATIVE_PATH: /idp
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: "8080"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      # Required temporary bootstrap account. Use strong, unique credentials; the setup
+      # service uses this account to create the managed Keycloak administrator.
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak_database:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_FEATURES: transient-users,update-email,hostname:v2
+    networks:
+      - keycloak
+      - prosuna_keycloak
+      - proxy
+
+  # Waits for Keycloak, then creates the required realms, clients, and managed admin.
+  # It exits after successful configuration and restarts only when setup fails.
+  keycloak_setup:
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.24
+    restart: on-failure
+    depends_on:
+      - keycloak
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080/idp
+      HOSTNAME: ${PROSUNA_HOSTNAME}
+      KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME}
+      KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD}
+      KEYCLOAK_DEPLOYMENT_CLIENT_NAME: deployment
+      # Required: random secret of at least 32 characters for the deployment client.
+      KEYCLOAK_DEPLOYMENT_CLIENT_SECRET: ${KEYCLOAK_DEPLOYMENT_CLIENT_SECRET}
+      # Permanent Keycloak administrator. The password must satisfy the policy in README.md;
+      # this account is separate from both the bootstrap account and Prosuna staff users.
+      KEYCLOAK_ADMIN_EMAIL: ${KEYCLOAK_ADMIN_EMAIL}
+      KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_AVAILABILITYCHECK_ENABLED: "true"
+      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 120s
+      LOGGING_LEVEL_HTTP: ERROR
+      # Reuse the required Prosuna SMTP connection for Keycloak account e-mails.
+      SMTP_HOST: ${PROSUNA_SMTP_HOST}
+      SMTP_PORT: ${PROSUNA_SMTP_PORT}
+      SMTP_USERNAME: ${PROSUNA_SMTP_USERNAME}
+      SMTP_PASSWORD: ${PROSUNA_SMTP_PASSWORD}
+      SMTP_FROM: ${PROSUNA_FROM_MAIL}
+      SMTP_FROM_DISPLAY: Prosuna IdP
+      BACKEND_CLIENT_SECRET: ${PROSUNA_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}
+    networks:
+      - keycloak
+
+  # Persistent PostgreSQL database used only by Keycloak.
+  keycloak_database:
+    image: docker.io/library/postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      POSTGRES_USER: keycloak
+      POSTGRES_DB: keycloak
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - keycloak_database_data:/var/lib/postgresql/data
+    networks:
+      - keycloak
+
+  # Antivirus service for uploaded files. It is accessible only on the Prosuna network.
+  clamav:
+    image: docker.io/clamav/clamav:1.5.4-debian
+    restart: unless-stopped
+    networks:
+      - prosuna
+
+  # In-memory cache and short-lived application state.
+  redis:
+    image: docker.io/library/redis:8-alpine
+    restart: unless-stopped
+    networks:
+      - prosuna
+
+  # Document renderer with Chromium network access denied by default. The allow-list only
+  # permits the public Prosuna URL and temporary local files required for rendering.
+  gotenberg:
+    image: docker.io/gotenberg/gotenberg:8
+    restart: unless-stopped
+    depends_on:
+      prosuna_api:
+        condition: service_started
+        restart: true
+    environment:
+      CHROMIUM_DENY_PRIVATE_IPS: "true"
+      CHROMIUM_DENY_PUBLIC_IPS: "true"
+      # Required: PROSUNA_HOSTNAME_REGEX is the hostname without scheme, with dots escaped
+      # for a regular expression, for example prosuna\\.example\\.org.
+      CHROMIUM_ALLOW_LIST: "^(https://${PROSUNA_HOSTNAME_REGEX}/|file:///tmp/)"
+    networks:
+      - prosuna
+
+  # Durable message broker for background jobs. Its data must be included in backups.
+  rabbitmq:
+    image: docker.io/library/rabbitmq:4-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: prosuna
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - prosuna
+
+  # Public reverse proxy for the customer app, staff app, API, and Keycloak. Caddy uses
+  # PROSUNA_HOSTNAME as its site address and manages HTTPS certificates automatically.
+  caddy:
+    image: docker.io/library/caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      prosuna_api:
+        condition: service_healthy
+        restart: true
+      prosuna_app:
+        condition: service_healthy
+        restart: true
+    environment:
+      PROSUNA_HOSTNAME: ${PROSUNA_HOSTNAME}
+    volumes:
+      # caddy_data contains ACME account data and certificates; caddy_config stores
+      # Caddy's runtime configuration. Persist and back up both volumes.
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./Caddyfile:/etc/caddy/Caddyfile:Z
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - proxy
+
+
+# Back up all named volumes regularly. The database and prosuna_data volumes contain
+# critical application data; RabbitMQ and both Caddy volumes preserve operational state.
+volumes:
+  prosuna_data:
+  prosuna_database_data:
+  keycloak_database_data:
+  rabbitmq_data:
+  caddy_data:
+  caddy_config:
+
+
+# Trust boundaries for the stack: application infrastructure, Keycloak persistence,
+# direct API-to-Keycloak communication, and public reverse-proxy traffic.
+networks:
+  # Prosuna API, database, Redis, RabbitMQ, ClamAV, and Gotenberg.
+  prosuna:
+  # Keycloak and its database/setup service.
+  keycloak:
+  # Direct private communication between Prosuna API and Keycloak.
+  prosuna_keycloak:
+  # Caddy-facing application, API, and Keycloak endpoints.
+  proxy:

@@ -1,0 +1,153 @@
+package de.aivot.prosuna.backend.plugins.core.v1.javascript;
+
+import de.aivot.prosuna.backend.codeLists.entities.CodeListEntity;
+import de.aivot.prosuna.backend.codeLists.entities.VCodeListItemEntity;
+import de.aivot.prosuna.backend.codeLists.services.CodeListService;
+import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
+import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.plugins.core.CorePlugin;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.graalvm.polyglot.HostAccess;
+import org.graalvm.polyglot.proxy.ProxyArray;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * This class provides JavaScript functions for retrieving code lists.
+ * The functions are exposed to the JavaScript environment through the GraalVM Polyglot API.
+ */
+@Component
+public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
+    private final CodeListService codeListService;
+
+    @Autowired
+    public CodeListJavascriptV1(@Lazy CodeListService codeListService) {
+        this.codeListService = codeListService;
+    }
+
+    @Nonnull
+    @Override
+    public String getComponentKey() {
+        return "code_lists";
+    }
+
+    @Nonnull
+    @Override
+    public String getComponentVersion() {
+        return "1.0.0";
+    }
+
+    @Nonnull
+    @Override
+    public String getParentPluginKey() {
+        return CorePlugin.PLUGIN_KEY;
+    }
+
+    @Nonnull
+    @Override
+    public String getName() {
+        return "Codelisten";
+    }
+
+    @Nonnull
+    @Override
+    public String getAbstract() {
+        return "Dieses Paket enthält Funktionen für Codelisten.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return """
+                Ermöglicht den Zugriff auf in Prosuna hinterlegte Codelisten aus JavaScript-Ausdrücken.
+
+                Eine Codeliste kann entweder als vollständige Liste ihrer Einträge oder als Auswahloptionen mit Schlüssel und Bezeichnung geladen werden. Dadurch lassen sich dieselben gepflegten Werte in Skripten, Ausdrücken und Oberflächen wiederverwenden.
+                """;
+    }
+
+    @Override
+    public String[] getMethodTypeDefinitions() {
+        return new String[]{
+                "getItems(codeListKey: string | null): Array<Record<string, any>>;",
+                "getOptions(codeListKey: string | null): Array<{value: string; label: string}>;"
+        };
+    }
+
+    @HostAccess.Export
+    public ProxyArray getItems(@Nullable String codeListKey) {
+        if (codeListKey == null || codeListKey.isBlank()) {
+            return ProxyArray.fromArray();
+        }
+
+        var codeList = codeListService
+                .retrieve(codeListKey)
+                .orElse(null);
+        if (codeList == null) {
+            return ProxyArray.fromArray();
+        }
+
+        List<VCodeListItemEntity> items;
+        try {
+            items = codeListService.listAllItems(codeListKey);
+        } catch (ResponseException e) {
+            return ProxyArray.fromArray();
+        }
+
+        var rows = items
+                .stream()
+                .map(item -> getItemData(codeList, item))
+                .toList();
+
+        return JavascriptEngine.collectionToProxyArray(rows);
+    }
+
+    @HostAccess.Export
+    public ProxyArray getOptions(@Nullable String codeListKey) {
+        if (codeListKey == null || codeListKey.isBlank()) {
+            return ProxyArray.fromArray();
+        }
+
+        List<VCodeListItemEntity> items;
+        try {
+            items = codeListService.listAllItems(codeListKey);
+        } catch (ResponseException e) {
+            return ProxyArray.fromArray();
+        }
+
+        var options = items
+                .stream()
+                .map(item -> Map.of(
+                        "value", item.getValue(),
+                        "label", item.getLabel()
+                ))
+                .toList();
+
+        return JavascriptEngine.collectionToProxyArray(options);
+    }
+
+    @Nonnull
+    private static Map<String, Object> getItemData(@Nonnull CodeListEntity codeList, @Nonnull VCodeListItemEntity item) {
+        var data = new LinkedHashMap<String, Object>();
+        var columns = codeList.getColumns();
+        var values = item.getColumns();
+
+        for (var i = 0; i < columns.size(); i++) {
+            data.put(columns.get(i), i < values.size() ? values.get(i) : null);
+        }
+
+        data.put("$id", item.getId());
+        data.put("$value", item.getValue());
+        data.put("$label", item.getLabel());
+        data.put("$created", item.getCreated());
+        data.put("$updated", item.getUpdated());
+
+        return data;
+    }
+}

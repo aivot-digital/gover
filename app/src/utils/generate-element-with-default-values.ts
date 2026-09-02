@@ -2,235 +2,563 @@ import {ElementType} from '../data/element-type/element-type';
 import {type IntroductionStepElement} from '../models/elements/steps/introduction-step-element';
 import {type SummaryStepElement} from '../models/elements/steps/summary-step-element';
 import {type SubmitStepElement} from '../models/elements/steps/submit-step-element';
-import {type AnyElement} from '../models/elements/any-element';
+import {type AnyElement, AnyElementType} from '../models/elements/any-element';
 import {generateElementIdForType} from './id-utils';
-import ProjectPackage from '../../package.json';
-import {DateFieldComponentModelMode} from '../models/elements/form/input/date-field-element';
+import {DateFieldComponentModelMode, DateFieldElement} from '../models/elements/form/input/date-field-element';
+import {FormLayoutElement} from '../models/elements/form-layout-element';
+import {BaseElement} from '../models/elements/base-element';
+import {StepElement} from '../models/elements/steps/step-element';
+import {AlertElement} from '../models/elements/form/content/alert-element';
+import {BaseFormElement} from '../models/elements/form/base-form-element';
+import {GroupLayout} from '../models/elements/form/layout/group-layout';
+import {CheckboxFieldElement} from '../models/elements/form/input/checkbox-field-element';
+import {BaseInputElement} from '../models/elements/form/base-input-element';
+import {HeadlineElement} from '../models/elements/form/content/headline-element';
+import {MultiCheckboxFieldElement} from '../models/elements/form/input/multi-checkbox-field-element';
+import {NumberFieldElement} from '../models/elements/form/input/number-field-element';
+import {ReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
+import {RichtextElement} from '../models/elements/form/content/richtext-element';
+import {RadioFieldElement} from '../models/elements/form/input/radio-field-element';
+import {SelectFieldElement} from '../models/elements/form/input/select-field-element';
+import {SpacerElement} from '../models/elements/form/content/spacer-element';
+import {TableFieldElement} from '../models/elements/form/input/table-field-element';
+import {TextFieldElement} from '../models/elements/form/input/text-field-element';
+import {TimeFieldComponentModelMode, TimeFieldElement} from '../models/elements/form/input/time-field-element';
+import {ImageElement} from '../models/elements/form/content/image-element';
+import {SubmittedStepElement} from '../models/elements/steps/submitted-step-element';
+import {FileUploadElement} from '../models/elements/form/input/file-upload-element';
+import {AppInfo} from '../app-info';
+import {ChipInputFieldElement} from '../models/elements/form/input/chip-input-field-element';
+import {DateTimeFieldElement} from '../models/elements/form/input/date-time-field-element';
+import {DateRangeFieldElement} from '../models/elements/form/input/date-range-field-element';
+import {TimeRangeFieldElement} from '../models/elements/form/input/time-range-field-element';
+import {DateTimeRangeFieldElement} from '../models/elements/form/input/date-time-range-field-element';
+import {MapPointFieldElement} from '../models/elements/form/input/map-point-field-element';
+import {
+    DomainAndUserSelectItemTypes,
+    DomainUserSelectFieldElement,
+} from '../models/elements/form/input/domain-user-select-field-element';
+import {AssignmentContextFieldElement} from '../models/elements/form/input/assignment-context-field-element';
+import {DataModelSelectFieldElement} from '../models/elements/form/input/data-model-select-field-element';
+import {DataObjectSelectFieldElement} from '../models/elements/form/input/data-object-select-field-element';
+import {RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
+import {CodeInputElement, CodeInputFieldLanguage} from '../models/elements/form/input/code-input-element';
+import {
+    NoCodeInputFieldElement,
+    NoCodeInputFieldReturnType,
+} from '../models/elements/form/input/no-code-input-field-element';
+import {UiDefinitionInputFieldElement} from '../models/elements/form/input/ui-definition-input-field-element';
+import {SummaryLayoutElement} from '../models/elements/form/layout/summary-layout-element';
+import {ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
+import {IdentityConfigElement} from '../models/elements/form/input/identity-config-element';
+import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
+import {ProcessInstanceAttachmentSetSelectElement} from '../models/elements/form/input/process-instance-attachment-set-select-element';
+import {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
+import {getDefaultElementWeight} from './element-widths';
+import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
+import {StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
+import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
+import {SelectFieldPresentation} from '../models/elements/form/input/select-field-presentation';
+import {PaymentConfigElement} from '../models/elements/form/input/payment-config-element';
+import {LinkButtonElement} from '../models/elements/form/content/link-button-element';
 
-export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElement | undefined {
+function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
+    return {
+        id: id,
+        type: t,
+        name: undefined,
+        metadata: undefined,
+        override: undefined,
+        visibility: undefined,
+        testProtocolSet: undefined,
+    };
+}
+
+let currentDefaultParentElement: AnyElement | undefined;
+
+function makeFormBase<T extends ElementType>(t: T, id: string): BaseFormElement<T> {
+    return {
+        ...makeBase(t, id),
+        weight: getDefaultElementWeight(t, currentDefaultParentElement),
+    };
+}
+
+function makeInputBase<T extends ElementType>(t: T, id: string): Omit<BaseInputElement<T>, 'label'> {
+    return {
+        ...makeFormBase(t, id),
+        destinationKey: undefined,
+        disabled: undefined,
+        hint: undefined,
+        required: undefined,
+        technical: undefined,
+        validation: undefined,
+        value: undefined,
+    };
+}
+
+const elementConstructors: {
+    [ElementType.FormLayout]: (id: string) => FormLayoutElement;
+    [ElementType.Step]: (id: string) => StepElement;
+    [ElementType.Alert]: (id: string) => AlertElement;
+    [ElementType.GroupLayout]: (id: string) => GroupLayout;
+    [ElementType.Checkbox]: (id: string) => CheckboxFieldElement;
+    [ElementType.Date]: (id: string) => DateFieldElement;
+    [ElementType.Headline]: (id: string) => HeadlineElement;
+    [ElementType.MultiCheckbox]: (id: string) => MultiCheckboxFieldElement;
+    [ElementType.Number]: (id: string) => NumberFieldElement;
+    [ElementType.ReplicatingContainer]: (id: string) => ReplicatingContainerLayout;
+    [ElementType.RichText]: (id: string) => RichtextElement;
+    [ElementType.Radio]: (id: string) => RadioFieldElement;
+    [ElementType.Select]: (id: string) => SelectFieldElement;
+    [ElementType.Spacer]: (id: string) => SpacerElement;
+    [ElementType.Table]: (id: string) => TableFieldElement;
+    [ElementType.Text]: (id: string) => TextFieldElement;
+    [ElementType.Time]: (id: string) => TimeFieldElement;
+    [ElementType.IntroductionStep]: (id: string) => IntroductionStepElement;
+    [ElementType.SubmitStep]: (id: string) => SubmitStepElement;
+    [ElementType.SummaryStep]: (id: string) => SummaryStepElement;
+    [ElementType.Image]: (id: string) => ImageElement;
+    [ElementType.SubmittedStep]: (id: string) => SubmittedStepElement;
+    [ElementType.FileUpload]: (id: string) => FileUploadElement;
+    [ElementType.DialogLayout]: (id: string) => void;
+    [ElementType.StepperLayout]: (id: string) => void;
+    [ElementType.ConfigLayout]: (id: string) => void;
+    [ElementType.FunctionInput]: (id: string) => void;
+    [ElementType.CodeInput]: (id: string) => CodeInputElement;
+    [ElementType.RichTextInput]: (id: string) => RichTextInputElement;
+    [ElementType.UiDefinitionInput]: (id: string) => UiDefinitionInputFieldElement;
+    [ElementType.IdentityConfigElement]: (id: string) => IdentityConfigElement;
+    [ElementType.TabLayout]: (id: string) => void;
+    [ElementType.ChipInput]: (id: string) => ChipInputFieldElement;
+    [ElementType.DateTime]: (id: string) => DateTimeFieldElement;
+    [ElementType.DateRange]: (id: string) => DateRangeFieldElement;
+    [ElementType.TimeRange]: (id: string) => TimeRangeFieldElement;
+    [ElementType.DateTimeRange]: (id: string) => DateTimeRangeFieldElement;
+    [ElementType.MapPoint]: (id: string) => MapPointFieldElement;
+    [ElementType.DomainAndUserSelect]: (id: string) => DomainUserSelectFieldElement;
+    [ElementType.AssignmentContext]: (id: string) => AssignmentContextFieldElement;
+    [ElementType.DataModelSelect]: (id: string) => DataModelSelectFieldElement;
+    [ElementType.DataObjectSelect]: (id: string) => DataObjectSelectFieldElement;
+    [ElementType.NoCodeInput]: (id: string) => NoCodeInputFieldElement;
+    [ElementType.SummaryLayout]: (id: string) => SummaryLayoutElement;
+    [ElementType.ProcessDataKeyInput]: (id: string) => ProcessDataKeyInputFieldElement;
+    [ElementType.ProcessInstanceAttachmentSetSelect]: (id: string) => ProcessInstanceAttachmentSetSelectElement;
+    [ElementType.ProcessIdentityIdInput]: (id: string) => ProcessIdentityIdInputElement;
+    [ElementType.HtmlTemplateInput]: (id: string) => HtmlTemplateInputElement;
+    [ElementType.StoragePathSelector]: (id: string) => StoragePathSelectorInputElement;
+    [ElementType.PaymentConfigElement]: (id: string) => PaymentConfigElement;
+    [ElementType.ProcessAttachmentDisplay]: (id: string) => ProcessAttachmentDisplayElement;
+    [ElementType.LinkButton]: (id: string) => LinkButtonElement;
+} = {
+    [ElementType.FormLayout]: (id) => ({
+        ...makeBase(ElementType.FormLayout, id),
+        headline: 'Ihr Neues\nOnline-Formular',
+        tabTitle: undefined,
+        children: [],
+        offlineSubmissionText: undefined,
+        offlineSignatureNeeded: undefined,
+        introductionStep: generateElementWithDefaultValues(ElementType.IntroductionStep) as IntroductionStepElement,
+        summaryStep: generateElementWithDefaultValues(ElementType.SummaryStep) as SummaryStepElement,
+        submitStep: generateElementWithDefaultValues(ElementType.SubmitStep) as SubmitStepElement,
+        publicTitle: undefined,
+        showOnFormIndexPage: true,
+        managingDepartmentId: undefined,
+        responsibleDepartmentId: undefined,
+        pdfTemplateKey: undefined,
+    }),
+    [ElementType.Step]: (id) => ({
+        ...makeBase(ElementType.Step, id),
+        children: [],
+        icon: undefined,
+        title: undefined,
+    }),
+    [ElementType.Alert]: (id) => ({
+        ...makeFormBase(ElementType.Alert, id),
+        title: 'Hinweis',
+        text: 'Nutzen Sie diesen Hinweis, um Antragsstellenden zusätzliche Informationen hervorgehoben bereitzustellen.',
+        alertType: 'info',
+    }),
+    [ElementType.GroupLayout]: (id) => ({
+        ...makeFormBase(ElementType.GroupLayout, id),
+        children: [],
+        marketplaceLink: null,
+    }),
+    [ElementType.Checkbox]: (id) => ({
+        ...makeInputBase(ElementType.Checkbox, id),
+        label: 'Bestätigung (Ja/Nein)',
+    }),
+    [ElementType.Date]: (id) => ({
+        ...makeInputBase(ElementType.Date, id),
+        label: 'Datum',
+        mode: DateFieldComponentModelMode.Day,
+        autocomplete: undefined,
+        placeholder: undefined,
+    }),
+    [ElementType.Headline]: (id) => ({
+        ...makeFormBase(ElementType.Headline, id),
+        content: 'Überschrift',
+        small: false,
+        uppercase: false,
+    }),
+    [ElementType.MultiCheckbox]: (id) => ({
+        ...makeInputBase(ElementType.MultiCheckbox, id),
+        label: 'Mehrfachauswahl',
+        optionsSource: OptionsSourceType.Manual,
+        codeListKey: undefined,
+        options: [
+            {
+                value: 'option_1',
+                label: 'Option 1',
+            },
+            {
+                value: 'option_2',
+                label: 'Option 2',
+            },
+            {
+                value: 'option_3',
+                label: 'Option 3',
+            },
+        ],
+        displayInline: false,
+        minimumRequiredOptions: undefined,
+    }),
+    [ElementType.Number]: (id) => ({
+        ...makeInputBase(ElementType.Number, id),
+        label: 'Zahl',
+        placeholder: undefined,
+        decimalPlaces: undefined,
+        suffix: undefined,
+    }),
+    [ElementType.ReplicatingContainer]: (id) => ({
+        ...makeInputBase(ElementType.ReplicatingContainer, id),
+        label: 'Strukturierte Listeneingabe',
+        headlineTemplate: 'Datensatz Nr. #',
+        children: [],
+        minimumRequiredSets: undefined,
+        maximumSets: undefined,
+        addLabel: undefined,
+        removeLabel: undefined,
+    }),
+    [ElementType.RichText]: (id) => ({
+        ...makeFormBase(ElementType.RichText, id),
+        content: 'Fließtext',
+    }),
+    [ElementType.Radio]: (id) => ({
+        ...makeInputBase(ElementType.Radio, id),
+        label: 'Einzelauswahl (Optionsfelder)',
+        optionsSource: OptionsSourceType.Manual,
+        codeListKey: undefined,
+        options: [
+            {
+                value: 'option_1',
+                label: 'Option 1',
+            },
+            {
+                value: 'option_2',
+                label: 'Option 2',
+            },
+            {
+                value: 'option_3',
+                label: 'Option 3',
+            },
+        ],
+        displayInline: false,
+    }),
+    [ElementType.Select]: (id) => ({
+        ...makeInputBase(ElementType.Select, id),
+        label: 'Einzelauswahl',
+        optionsSource: OptionsSourceType.Manual,
+        codeListKey: undefined,
+        options: [
+            {
+                value: 'option_1',
+                label: 'Option 1',
+            },
+            {
+                value: 'option_2',
+                label: 'Option 2',
+            },
+            {
+                value: 'option_3',
+                label: 'Option 3',
+            },
+        ],
+        autocomplete: undefined,
+        presentation: SelectFieldPresentation.Dropdown,
+        dependsOnSelectFieldId: undefined,
+        placeholder: undefined,
+    }),
+    [ElementType.Spacer]: (id) => ({
+        ...makeFormBase(ElementType.Spacer, id),
+        height: '30',
+    }),
+    [ElementType.Table]: (id) => ({
+        ...makeInputBase(ElementType.Table, id),
+        label: 'Tabelle',
+        fields: [
+            {
+                key: 'sp_1',
+                label: 'Spalte 1',
+                datatype: 'string',
+                placeholder: 'Inhalt für Spalte 1',
+                decimalPlaces: undefined,
+                disabled: false,
+                optional: false,
+            },
+            {
+                key: 'sp_2',
+                label: 'Spalte 2',
+                datatype: 'string',
+                placeholder: 'Inhalt für Spalte 2',
+                decimalPlaces: undefined,
+                disabled: false,
+                optional: false,
+            },
+        ],
+        maximumRows: undefined,
+        minimumRequiredRows: undefined,
+    }),
+    [ElementType.Text]: (id) => ({
+        ...makeInputBase(ElementType.Text, id),
+        label: 'Text',
+        autocomplete: undefined,
+        placeholder: undefined,
+        isMultiline: false,
+        maxCharacters: undefined,
+        minCharacters: undefined,
+        pattern: undefined,
+        suggestions: undefined,
+        prefix: undefined,
+        copyable: false,
+        copyValueTemplate: undefined,
+    }),
+    [ElementType.Time]: (id) => ({
+        ...makeInputBase(ElementType.Time, id),
+        label: 'Uhrzeit',
+        mode: TimeFieldComponentModelMode.Minute,
+    }),
+    [ElementType.IntroductionStep]: (id) => ({
+        ...makeFormBase(ElementType.IntroductionStep, id),
+        initiativeName: undefined,
+        initiativeLogoLink: undefined,
+        initiativeLink: undefined,
+        teaserText: undefined,
+        organization: undefined,
+        eligiblePersons: undefined,
+        supportingDocuments: undefined,
+        documentsToAttach: undefined,
+        expiring: undefined,
+        expectedCosts: undefined,
+        privacyText: 'Bitte beachten Sie die {privacy}Hinweise zum Datenschutz{/privacy}.',
+        children: [],
+    }),
+    [ElementType.SubmitStep]: (id) => ({
+        ...makeFormBase(ElementType.SubmitStep, id),
+        textPreSubmit: 'Sie können Ihre Angaben nun verbindlich an die zuständige/bewirtschaftende Stelle übermitteln. Bitte stellen Sie sicher, dass Sie Ihre getätigten Angaben sorgfältig geprüft haben.',
+        textPostSubmit: 'Ihre Angaben wurden erfolgreich übermittelt. Die zuständige/bewirtschaftende Stelle kann diese nun bearbeiten. Sofern weitere Schritte erforderlich sind, erhalten Sie dazu gesonderte Hinweise.',
+        textProcessingTime: undefined,
+        documentsToReceive: undefined,
+    disableConfetti: false,
+            }),
+    [ElementType.SummaryStep]: (id) => ({
+        ...makeFormBase(ElementType.SummaryStep, id),
+    }),
+    [ElementType.Image]: (id) => ({
+        ...makeFormBase(ElementType.Image, id),
+        alt: 'Beispiel-Grafik mit weißem Prosuna Logo auf blauem Hintergrund (bitte ersetzen)',
+        src: `${AppInfo.mode == 'staff' ? '/staff' : ''}/assets/images/prosuna-beispiel-grafik.jpg`,
+        height: undefined,
+        width: undefined,
+        caption: undefined,
+    }),
+    [ElementType.SubmittedStep]: (id) => ({
+        ...makeFormBase(ElementType.SubmittedStep, id),
+    }),
+    [ElementType.FileUpload]: (id) => ({
+        ...makeInputBase(ElementType.FileUpload, id),
+        label: 'Anlage(n)',
+        extensions: ['pdf'],
+        isMultifile: undefined,
+        maxFiles: undefined,
+        minFiles: undefined,
+        submittedFileName: 'Anlage',
+    }),
+    [ElementType.DialogLayout]: (id) => ({}),
+    [ElementType.StepperLayout]: (id) => ({}),
+    [ElementType.ConfigLayout]: (id) => ({}),
+    [ElementType.FunctionInput]: (id) => ({}),
+    [ElementType.CodeInput]: (id) => ({
+        ...makeInputBase(ElementType.CodeInput, id),
+        label: 'Codeeingabe',
+        language: CodeInputFieldLanguage.Javascript,
+        editorHeight: 320,
+        wordWrap: false,
+    }),
+    [ElementType.RichTextInput]: (id) => ({
+        ...makeInputBase(ElementType.RichTextInput, id),
+        label: 'Markdown-Eingabe',
+        reducedMode: false,
+    }),
+    [ElementType.UiDefinitionInput]: (id) => ({
+        ...makeInputBase(ElementType.UiDefinitionInput, id),
+        label: 'UI-Definition',
+        elementType: undefined,
+        displayContext: undefined,
+        openExternalEditor: undefined,
+    }),
+    [ElementType.IdentityConfigElement]: (id) => ({
+        ...makeInputBase(ElementType.IdentityConfigElement, id),
+        label: 'Identitätsnachweis',
+        options: [],
+        allowsMail: false,
+    }),
+    [ElementType.TabLayout]: (id) => ({}),
+    [ElementType.ChipInput]: (id) => ({
+        ...makeInputBase(ElementType.ChipInput, id),
+        label: 'Tag-Liste (Schlagwörter)',
+        placeholder: 'Eintrag hinzufügen',
+        suggestions: undefined,
+        optionsSource: OptionsSourceType.Manual,
+        codeListKey: undefined,
+        minItems: undefined,
+        maxItems: undefined,
+        allowDuplicates: false,
+    }),
+    [ElementType.DateTime]: (id) => ({
+        ...makeInputBase(ElementType.DateTime, id),
+        label: 'Datum und Uhrzeit',
+        placeholder: undefined,
+        mode: TimeFieldComponentModelMode.Minute,
+    }),
+    [ElementType.DateRange]: (id) => ({
+        ...makeInputBase(ElementType.DateRange, id),
+        label: 'Datumsspanne',
+        mode: DateFieldComponentModelMode.Day,
+        placeholder: undefined,
+    }),
+    [ElementType.TimeRange]: (id) => ({
+        ...makeInputBase(ElementType.TimeRange, id),
+        label: 'Zeitspanne',
+        mode: TimeFieldComponentModelMode.Minute,
+    }),
+    [ElementType.DateTimeRange]: (id) => ({
+        ...makeInputBase(ElementType.DateTimeRange, id),
+        label: 'Datum- und Zeitspanne',
+        placeholder: undefined,
+        mode: TimeFieldComponentModelMode.Minute,
+    }),
+    [ElementType.MapPoint]: (id) => ({
+        ...makeInputBase(ElementType.MapPoint, id),
+        label: 'Kartenpunkt',
+        zoom: 14,
+        centerLatitude: 52.52,
+        centerLongitude: 13.405,
+    }),
+    [ElementType.DomainAndUserSelect]: (id) => ({
+        ...makeInputBase(ElementType.DomainAndUserSelect, id),
+        label: 'Personenkreis',
+        placeholder: 'Organisationseinheit, Team oder Mitarbeiter:in suchen',
+        minItems: undefined,
+        maxItems: undefined,
+        allowedTypes: DomainAndUserSelectItemTypes,
+        processAccessConstraint: undefined,
+    }),
+    [ElementType.AssignmentContext]: (id) => ({
+        ...makeInputBase(ElementType.AssignmentContext, id),
+        label: 'Verantwortlicher Personenkreis',
+        headline: 'Verantwortlicher Personenkreis',
+        text: 'Definieren Sie den Personenkreis, der für diese Aufgabe herangezogen werden kann.',
+        placeholder: 'Organisationseinheit, Team oder Mitarbeiter:in suchen',
+        minItems: undefined,
+        maxItems: undefined,
+        allowedTypes: DomainAndUserSelectItemTypes,
+        processAccessConstraint: undefined,
+    }),
+    [ElementType.DataModelSelect]: (id) => ({
+        ...makeInputBase(ElementType.DataModelSelect, id),
+        label: 'Datenmodell',
+        placeholder: 'Datenmodell auswählen',
+    }),
+    [ElementType.DataObjectSelect]: (id) => ({
+        ...makeInputBase(ElementType.DataObjectSelect, id),
+        label: 'Datenobjekt',
+        placeholder: 'Datenobjekt auswählen',
+        dataModelKey: undefined,
+        dataLabelAttributeKey: undefined,
+    }),
+    [ElementType.NoCodeInput]: (id) => ({
+        ...makeInputBase(ElementType.NoCodeInput, id),
+        label: 'No-Code-Eingabe',
+        returnType: NoCodeInputFieldReturnType.BOOLEAN,
+    }),
+    [ElementType.SummaryLayout]: (id) => ({
+        ...makeFormBase(ElementType.SummaryLayout, id),
+        children: [],
+    }),
+    [ElementType.ProcessDataKeyInput]: (id) => ({
+        ...makeInputBase(ElementType.ProcessDataKeyInput, id),
+        label: 'Prozessdaten-Schlüssel',
+        disableWildCards: false,
+        scopeProcessDataKeyInputElementId: undefined,
+    }),
+    [ElementType.ProcessInstanceAttachmentSetSelect]: (id) => ({
+        ...makeInputBase(ElementType.ProcessInstanceAttachmentSetSelect, id),
+        label: 'Anlagensätze',
+        placeholder: 'Anlagensatz auswählen',
+        minItems: undefined,
+        maxItems: undefined,
+    }),
+    [ElementType.ProcessIdentityIdInput]: (id) => ({
+        ...makeInputBase(ElementType.ProcessIdentityIdInput, id),
+        label: 'Prozessidentitäten',
+        placeholder: 'Identität hinzufügen',
+        suggestions: undefined,
+        minItems: undefined,
+        maxItems: undefined,
+        allowDuplicates: false,
+    }),
+    [ElementType.HtmlTemplateInput]: (id) => ({
+        ...makeInputBase(ElementType.HtmlTemplateInput, id),
+        label: 'HTML-Vorlage',
+    }),
+    [ElementType.StoragePathSelector]: (id) => ({
+        ...makeInputBase(ElementType.StoragePathSelector, id),
+        label: 'Speicherpfad',
+        placeholder: 'Ordner auswählen',
+        storageProviderSelectHint: undefined,
+        allowedStorageProviderTypes: undefined,
+        allowReadOnlyStorageProviders: false,
+    }),
+    [ElementType.PaymentConfigElement]: (id) => ({
+        ...makeInputBase(ElementType.PaymentConfigElement, id),
+        label: 'Zahlung',
+    }),
+    [ElementType.ProcessAttachmentDisplay]: (id) => ({
+        ...makeFormBase(ElementType.ProcessAttachmentDisplay, id),
+        attachmentSetKey: undefined,
+        label: undefined,
+        hint: undefined,
+    }),
+    [ElementType.LinkButton]: (id) => ({
+        ...makeFormBase(ElementType.LinkButton, id),
+        label: 'Link öffnen',
+        href: undefined,
+        openInNewTab: true,
+        staffTaskEvent: undefined,
+        customerTaskEvent: undefined,
+        variant: 'contained',
+        color: 'primary',
+    }),
+};
+
+export function generateElementWithDefaultValues<T extends ElementType>(type: T, parentElement?: AnyElement): AnyElementType<T> {
     const id = generateElementIdForType(type);
-    const appVersion = ProjectPackage.version;
+    const previousParentElement = currentDefaultParentElement;
+    currentDefaultParentElement = parentElement;
 
-    switch (type) {
-        case ElementType.Root:
-            return {
-                id,
-                type,
-                appVersion,
-                headline: 'Ihr Neues\nOnline-Formular',
-                children: [],
-                introductionStep: generateElementWithDefaultValues(ElementType.IntroductionStep) as IntroductionStepElement,
-                summaryStep: generateElementWithDefaultValues(ElementType.SummaryStep) as SummaryStepElement,
-                submitStep: generateElementWithDefaultValues(ElementType.SubmitStep) as SubmitStepElement,
-                privacyText: 'Bitte beachten Sie die {privacy}Hinweise zum Datenschutz{/privacy}.',
-            };
-        case ElementType.Step:
-            return {
-                id,
-                type,
-                appVersion,
-                children: [],
-            };
-        case ElementType.Alert:
-            return {
-                id,
-                type,
-                appVersion,
-                title: 'Hinweis',
-                text: '<p class="MuiTypography-root MuiTypography-body2">Nutzen Sie diesen Hinweis, um Antragsstellenden zusätzliche Informationen hervorgehoben bereitzustellen.</p>',
-            };
-        case ElementType.Container:
-            return {
-                id,
-                type,
-                appVersion,
-                children: [],
-                storeLink: null,
-            };
-        case ElementType.Checkbox:
-            return {
-                id,
-                type,
-                appVersion,
-                label: 'Bestätigung (Ja/Nein)',
-            };
-        case ElementType.Date:
-            return {
-                id,
-                type,
-                appVersion,
-                label: 'Datum',
-                mode: DateFieldComponentModelMode.Day,
-            };
-        case ElementType.Headline:
-            return {
-                id,
-                type,
-                appVersion,
-                content: 'Überschrift',
-            };
-        case ElementType.MultiCheckbox:
-            return {
-                id,
-                type,
-                appVersion,
-                label: 'Mehrfachauswahl',
-                options: [
-                    {
-                        value: 'option_1',
-                        label: 'Option 1',
-                    },
-                    {
-                        value: 'option_2',
-                        label: 'Option 2',
-                    },
-                    {
-                        value: 'option_3',
-                        label: 'Option 3',
-                    },
-                ],
-            };
-        case ElementType.Number:
-            return {
-                id,
-                type,
-                appVersion,
-                label: 'Zahl',
-            };
-        case ElementType.ReplicatingContainer:
-            return {
-                id,
-                type,
-                appVersion,
-                label: 'Strukturierte Listeneingabe',
-                headlineTemplate: 'Datensatz Nr. #',
-                children: [],
-            };
-        case ElementType.Richtext:
-            return {
-                id,
-                type,
-                appVersion,
-                content: '<p class="MuiTypography-root MuiTypography-body2">Fließtext</p>',
-            };
-        case ElementType.Radio:
-            return {
-                id,
-                type,
-                appVersion,
-                label: 'Einzelauswahl (Optionsfelder)',
-                options: [
-                    {
-                        value: 'option_1',
-                        label: 'Option 1',
-                    },
-                    {
-                        value: 'option_2',
-                        label: 'Option 2',
-                    },
-                    {
-                        value: 'option_3',
-                        label: 'Option 3',
-                    },
-                ],
-            };
-        case ElementType.Select:
-            return {
-                id,
-                type,
-                appVersion,
-                label: 'Einzelauswahl (Auswahlmenü)',
-                options: [
-                    {
-                        value: 'option_1',
-                        label: 'Option 1',
-                    },
-                    {
-                        value: 'option_2',
-                        label: 'Option 2',
-                    },
-                    {
-                        value: 'option_3',
-                        label: 'Option 3',
-                    },
-                ],
-            };
-        case ElementType.Spacer:
-            return {
-                id,
-                type,
-                appVersion,
-                height: '30',
-            };
-        case ElementType.Table:
-            return {
-                id,
-                type,
-                appVersion,
-                label: 'Tabelle',
-                fields: [
-                    {
-                        'label': 'Spalte 1',
-                        'datatype': 'string',
-                        'placeholder': 'Inhalt für Spalte 1',
-                    },
-                    {
-                        'label': 'Spalte 2',
-                        'datatype': 'string',
-                        'placeholder': 'Inhalt für Spalte 2',
-                    },
-                ],
-            };
-        case ElementType.Text:
-            return {
-                id,
-                type,
-                appVersion,
-                label: 'Text',
-            };
-        case ElementType.Time:
-            return {
-                id,
-                type,
-                appVersion,
-                label: 'Uhrzeit',
-            };
-        case ElementType.IntroductionStep:
-            return {
-                id,
-                type,
-                appVersion, // TODO: Mit Default-Daten befüllen
-            };
-        case ElementType.SubmitStep:
-            return {
-                id,
-                type,
-                appVersion,
-                textPreSubmit: 'Sie können Ihren Antrag nun verbindlich bei der zuständigen/bewirtschaftenden Stelle einreichen. Nach der Einreichung können Sie sich den Antrag für Ihre Unterlagen herunterladen oder zusenden lassen.',
-                textPostSubmit: 'Sie können Ihren Antrag herunterladen oder sich per E-Mail zuschicken lassen. Wir empfehlen Ihnen, den Antrag anschließend zu Ihren Unterlagen zu nehmen.',
-                disableConfetti: false,
-            };
-        case ElementType.SummaryStep:
-            return {
-                id,
-                type,
-                appVersion, // TODO: Mit Default-Daten befüllen
-            };
-        case ElementType.Image:
-            return {
-                id,
-                type,
-                appVersion,
-                alt: 'Beispiel-Grafik mit weißem Gover Logo auf blauem Hintergrund (bitte ersetzen)',
-                src: `${window.location.protocol}//${window.location.host}${process.env.PUBLIC_URL}/assets/images/gover-beispiel-grafik.svg`,
-            };
-        case ElementType.FileUpload:
-            return {
-                id,
-                type,
-                appVersion,
-                label: 'Anlage(n)',
-                extensions: ['pdf'],
-            };
+    try {
+        return elementConstructors[type](id) as AnyElementType<T>;
+    } finally {
+        currentDefaultParentElement = previousParentElement;
     }
 }

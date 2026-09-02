@@ -1,0 +1,19 @@
+Hallo,
+
+es wurde ein Formular in Prosuna zurückgezogen.
+Formular: [(${form.internalTitle})]
+Version: [(${form.version})]
+Entwickelnde Organisationseinheit: [(${developingDepartment != null ? developingDepartment.name : '—'})]
+[(${responsibleDepartment != null ? 'Zuständige Organisationseinheit: ' + responsibleDepartment.name : ''})]
+[(${managingDepartment != null ? 'Bewirtschaftende Organisationseinheit: ' + managingDepartment.name : ''})]
+Zurückgezogen durch: [(${triggeringUser.getFullName})]
+
+Formular öffnen:
+[(${base.config.createUrl('/staff/forms/' + form.id + '/' + form.version)})]
+
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

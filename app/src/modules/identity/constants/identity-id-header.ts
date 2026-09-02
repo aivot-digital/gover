@@ -1,1 +1,1 @@
-export const IdentityIdHeader = 'Gover-Identity-Id';
+export const IdentityIdHeader = 'Prosuna-Identity-Id';

@@ -3,10 +3,10 @@ import {Badge, Box, Button, IconButton, Tooltip, Typography} from '@mui/material
 import {SearchInput} from '../search-input/search-input';
 import {type ListHeaderProps} from './list-header-props';
 import {Link} from 'react-router-dom';
-import HelpIconOutlined from '@mui/icons-material/HelpOutline';
+import HelpIconOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import {HintTooltip} from '../hint-tooltip/hint-tooltip';
 
-export function ListHeader(props: ListHeaderProps): JSX.Element {
+export function ListHeader(props: ListHeaderProps) {
     return (
         <Box
             sx={{
@@ -48,6 +48,7 @@ export function ListHeader(props: ListHeaderProps): JSX.Element {
             <Box
                 sx={{
                     display: 'flex',
+                    alignItems: 'flex-end',
                     ml: 'auto',
                 }}
             >
@@ -56,7 +57,14 @@ export function ListHeader(props: ListHeaderProps): JSX.Element {
                     <SearchInput
                         value={props.search}
                         onChange={props.onSearchChange}
-                        placeholder={props.searchPlaceholder}
+                        label={props.searchLabel}
+                        placeholder={props.searchPlaceholder ?? 'Suchen…'}
+                        fullWidth={false}
+                        sx={{
+                            ml: {
+                                sm: 1,
+                            },
+                        }}
                     />
                 }
 
@@ -97,11 +105,13 @@ export function ListHeader(props: ListHeaderProps): JSX.Element {
                                 <Tooltip
                                     key={act.tooltip}
                                     title={act.tooltip}
+                                    arrow
                                 >{
                                     act.badge != null ? (
                                         <Badge {...act.badge}>
                                             <IconButton
                                                 sx={{ml: 2}}
+                                                aria-label={act.tooltip}
                                                 component={'link' in act ? Link : 'button'}
                                                 to={'link' in act ? act.link : undefined}
                                                 onClick={'onClick' in act ? act.onClick : undefined}
@@ -112,6 +122,7 @@ export function ListHeader(props: ListHeaderProps): JSX.Element {
                                     ) : (
                                         <IconButton
                                             sx={{ml: 2}}
+                                            aria-label={act.tooltip}
                                             component={'link' in act ? Link : 'button'}
                                             to={'link' in act ? act.link : undefined}
                                             onClick={'onClick' in act ? act.onClick : undefined}
@@ -128,4 +139,3 @@ export function ListHeader(props: ListHeaderProps): JSX.Element {
         </Box>
     );
 }
-

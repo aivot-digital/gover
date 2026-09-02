@@ -1,44 +1,92 @@
 import {ElementType} from '../data/element-type/element-type';
 import {ElementTypesMap} from '../data/element-type/element-types-map';
-import {BaseSummary} from "./base-summary";
-import {TextFieldSummary} from "./text-field-summary";
-import {CheckboxFieldSummary} from "./checkbox-field-summary";
-import {DateFieldSummary} from "./date-field-summary";
-import {MultiCheckboxFieldComponentSummary} from "../components/multi-checkbox-field/multi-checkbox-field.component.summary";
-import {NumberSummary} from "./number-summary";
-import {SelectFieldSummary} from "./select-field-summary";
-import {ReplicationContainerSummary} from "../components/replicating-container/replication-container.summary";
-import {RadioFieldComponentSummary} from "../components/radio-field/radio-field.component.summary";
-import {TableFieldComponentSummary} from "../components/table-field/table-field.component.summary";
-import {TimeFieldComponentSummary} from "../components/time-field/time-field.component.summary";
-import {FileUploadSummary} from "../components/file-upload-field/file-upload.summary";
-import {StepComponentSummary} from "../components/step/step.component.summary";
+import {BaseSummary} from './base-summary';
+import {TextFieldSummary} from './text-field-summary';
+import {CheckboxFieldSummary} from './checkbox-field-summary';
+import {DateFieldSummary} from './date-field-summary';
+import {
+    MultiCheckboxFieldComponentSummary,
+} from '../components/multi-checkbox-field/multi-checkbox-field.component.summary';
+import {NumberSummary} from './number-summary';
+import {SelectFieldSummary} from './select-field-summary';
+import {ReplicationContainerSummary} from '../components/replicating-container/replication-container.summary';
+import {RadioFieldComponentSummary} from '../components/radio-field/radio-field.component.summary';
+import {TableFieldComponentSummary} from '../components/table-field/table-field.component.summary';
+import {TimeFieldComponentSummary} from '../components/time-field/time-field.component.summary';
+import {FileUploadSummary} from '../components/file-upload-field/file-upload.summary';
+import {StepComponentSummary} from '../components/step/step.component.summary';
 import {GroupSummary} from './group-summary';
+import {RootSummary} from './root-summary';
+import {ChipInputFieldSummary} from '../components/chip-input-field/chip-input-field.component.summary';
+import {DateTimeFieldSummary} from './date-time-field-summary';
+import {DateRangeFieldSummary} from './date-range-field-summary';
+import {TimeRangeFieldSummary} from './time-range-field-summary';
+import {DateTimeRangeFieldSummary} from './date-time-range-field-summary';
+import {MapPointFieldSummary} from './map-point-field-summary';
+import {DomainUserSelectFieldSummary} from './domain-user-select-field-summary';
+import {AssignmentContextFieldSummary} from './assignment-context-field-summary';
+import {DataModelSelectFieldSummary} from './data-model-select-field-summary';
+import {DataObjectSelectFieldSummary} from './data-object-select-field-summary';
+import {RichTextInputSummary} from './rich-text-input-summary';
+import {CodeInputSummary} from './code-input-summary';
+import {NoCodeInputSummary} from './no-code-input-summary';
+import {UiDefinitionInputSummary} from './ui-definition-input-summary';
+import {SummaryLayoutSummary} from './summary-layout-summary';
+import {HtmlTemplateInputSummary} from './html-template-input-summary';
+import {GeneralInformationComponentSummary} from '../components/general-information/general-information.component.summary';
+import {StoragePathSelectorInputSummary} from './storage-path-selector-input-summary';
 
-const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
-    [ElementType.Root]: null,
+export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
+    [ElementType.FormLayout]: RootSummary,
     [ElementType.Step]: StepComponentSummary,
     [ElementType.Alert]: null,
     [ElementType.Image]: null,
-    [ElementType.Container]: GroupSummary,
+    [ElementType.GroupLayout]: GroupSummary,
     [ElementType.Checkbox]: CheckboxFieldSummary,
     [ElementType.Date]: DateFieldSummary,
     [ElementType.Headline]: null,
     [ElementType.MultiCheckbox]: MultiCheckboxFieldComponentSummary,
     [ElementType.Number]: NumberSummary,
     [ElementType.ReplicatingContainer]: ReplicationContainerSummary,
-    [ElementType.Richtext]: null,
+    [ElementType.RichText]: null,
     [ElementType.Radio]: RadioFieldComponentSummary,
     [ElementType.Select]: SelectFieldSummary,
     [ElementType.Spacer]: null,
     [ElementType.Table]: TableFieldComponentSummary,
     [ElementType.Text]: TextFieldSummary,
     [ElementType.Time]: TimeFieldComponentSummary,
-    [ElementType.IntroductionStep]: null,
+    [ElementType.IntroductionStep]: GeneralInformationComponentSummary,
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
     [ElementType.FileUpload]: FileUploadSummary,
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: null,
+    [ElementType.FunctionInput]: null,
+    [ElementType.CodeInput]: CodeInputSummary,
+    [ElementType.RichTextInput]: RichTextInputSummary,
+    [ElementType.UiDefinitionInput]: UiDefinitionInputSummary,
+    [ElementType.IdentityConfigElement]: null,
+    [ElementType.PaymentConfigElement]: null,
+    [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: ChipInputFieldSummary,
+    [ElementType.DateTime]: DateTimeFieldSummary,
+    [ElementType.DateRange]: DateRangeFieldSummary,
+    [ElementType.TimeRange]: TimeRangeFieldSummary,
+    [ElementType.DateTimeRange]: DateTimeRangeFieldSummary,
+    [ElementType.MapPoint]: MapPointFieldSummary,
+    [ElementType.DomainAndUserSelect]: DomainUserSelectFieldSummary,
+    [ElementType.AssignmentContext]: AssignmentContextFieldSummary,
+    [ElementType.DataModelSelect]: DataModelSelectFieldSummary,
+    [ElementType.DataObjectSelect]: DataObjectSelectFieldSummary,
+    [ElementType.NoCodeInput]: NoCodeInputSummary,
+    [ElementType.SummaryLayout]: SummaryLayoutSummary,
+    [ElementType.ProcessDataKeyInput]: TextFieldSummary,
+    [ElementType.ProcessInstanceAttachmentSetSelect]: ChipInputFieldSummary,
+    [ElementType.ProcessIdentityIdInput]: ChipInputFieldSummary,
+    [ElementType.HtmlTemplateInput]: HtmlTemplateInputSummary,
+    [ElementType.StoragePathSelector]: StoragePathSelectorInputSummary,
+    [ElementType.ProcessAttachmentDisplay]: null,
+    [ElementType.LinkButton]: null,
 };
-
-export default summaries;

@@ -1,0 +1,627 @@
+import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
+import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
+import {ProcessNodeApiService} from '../../../../services/process-node-api-service';
+import {Box, Button, IconButton, Tab, Tabs, useTheme} from '@mui/material';
+import {alpha, keyframes} from '@mui/material/styles';
+import {Link, Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
+import {useProcessDetailsPageContext} from '../../process-details-page-context';
+import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
+import {
+    type ProcessNodeProvider,
+    ProcessNodeProviderApiService,
+} from '../../../../services/process-node-provider-api-service';
+import {ProcessNodeEditorProvider} from './process-node-editor-context';
+import {useLocation} from 'react-router';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
+import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
+import {useChangeBlocker} from '../../../../../../hooks/use-change-blocker-2';
+import {ProcessNodeEditorMenu} from './components/process-node-editor-menu';
+import {useConfirm} from '../../../../../../providers/confirm-provider';
+import {getNodeName} from '../process-flow-editor/utils/node-utils';
+import {isApiError} from '../../../../../../models/api-error';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../../slices/snackbar-slice';
+import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
+import {ProcessNodeEditorSkeleton} from './process-node-editor-skeleton';
+import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
+import {useDelayedVisibility} from '../../../../../../hooks/use-delayed-visibility';
+import {downloadObjectFile} from '../../../../../../utils/download-utils';
+import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
+import {isDerivedRuntimeElementData} from '../../../../../../models/element-data';
+import {shouldSkipProcessNodeEditorChangeBlocker} from './process-node-editor-change-blocker';
+import {flattenElements} from '../../../../../../utils/flatten-elements';
+import {
+    isUiDefinitionInputFieldElement,
+} from '../../../../../../models/elements/form/input/ui-definition-input-field-element';
+import {type ProcessNodeDefinitionMetadata} from '../../../../entities/process-node-definition-metadata';
+import {
+    getProcessNodeProviderIcon,
+    ProcessNodeProviderDetailsDialog,
+} from '../../../../components/process-node-provider-details';
+
+const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
+const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
+const processNodeEditorLoadedSidebarFlashLight = keyframes`
+    0% {
+        background-color: ${'#f6f6f6'};
+    }
+    100% {
+        background-color: transparent;
+    }
+`;
+const processNodeEditorLoadedSidebarFlashDark = keyframes`
+    0% {
+        background-color: ${'rgba(0, 0, 0, 0.34)'};
+    }
+    100% {
+        background-color: transparent;
+    }
+`;
+
+export function ProcessNodeEditor(): ReactNode {
+    const params = useParams();
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const confirm = useConfirm();
+    const dispatch = useAppDispatch();
+    const theme = useTheme();
+
+    const [originalNode, setOriginalNode] = useState<ProcessNodeEntity | null>(null);
+    const [incomingMetadata, setIncomingMetadata] = useState<ProcessNodeDefinitionMetadata | null>(null);
+
+    const {
+        editable,
+        structureEditable,
+        onSave,
+        onDelete,
+        onStartReplaceNode,
+        nodeRefreshSignal,
+        testClaim,
+    } = useProcessDetailsPageContext();
+
+    const [provider, setProvider] = useState<ProcessNodeProvider | null>(null);
+    const [editedNode, setEditedNode] = useState<ProcessNodeEntity | null>(null);
+    const [layout, setLayout] = useState<GroupLayout | null>(null);
+    const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
+    const [isProviderDetailsDialogOpen, setIsProviderDetailsDialogOpen] = useState(false);
+    const [isNodeLoading, setIsNodeLoading] = useState(false);
+    const [showNodeLoadedFeedback, setShowNodeLoadedFeedback] = useState(false);
+    const [problems, setProblems] = useState<ProcessNodeProblems | null>(null);
+
+    const hasEditorContent = originalNode != null && layout != null && provider != null;
+    const showNodeLoadingOverlay = useDelayedVisibility(isNodeLoading, PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY);
+    const showInitialNodeEditorSkeleton = useDelayedVisibility(!hasEditorContent, PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY);
+    const hasShownShellLoadingRef = useRef(false);
+    const nodeEditorLoadedSidebarFlash = theme.palette.mode === 'dark'
+        ? processNodeEditorLoadedSidebarFlashDark
+        : processNodeEditorLoadedSidebarFlashLight;
+
+    const nodeId = (() => {
+        const rawNodeId = params.nodeId;
+        if (rawNodeId == null) {
+            throw new Error('nodeId is required');
+        }
+        return parseInt(rawNodeId, 10);
+    })();
+    const nodeRefreshVersion = nodeRefreshSignal.nodeId === nodeId ? nodeRefreshSignal.version : 0;
+
+    const {
+        hasChanged,
+        dialog: changeBlockerDialog,
+    } = useChangeBlocker({
+        //customTitle: 'Ungespeicherte Konfiguration',
+        //customMessage: 'Die geöffnete Prozesselementkonfiguration (links) hat ungespeicherte Änderungen',
+        original: originalNode,
+        edited: editedNode,
+        onConfirmNavigation: () => {
+            setEditedNode(originalNode);
+        },
+        shouldAllowNavigation: ({nextLocation}) => shouldSkipProcessNodeEditorChangeBlocker(nextLocation.state),
+    });
+
+    useEffect(() => {
+        let isCancelled = false;
+        const hasEditorContent = originalNode != null && layout != null && provider != null;
+
+        if (!hasEditorContent) {
+            setOriginalNode(null);
+            setEditedNode(null);
+            setLayout(null);
+            setProvider(null);
+        }
+
+        setIsNodeLoading(true);
+        setShowNodeLoadedFeedback(false);
+
+        (async () => {
+            const [node, configurationLayout, problems, incomingMetadata] = await Promise.all([
+                new ProcessNodeApiService().retrieve(nodeId),
+                new ProcessNodeApiService().getConfigurationLayout(nodeId),
+                new ProcessNodeApiService().validate(nodeId),
+                new ProcessNodeApiService().getIncomingMetadata(nodeId),
+            ]);
+            const nodeProvider = await new ProcessNodeProviderApiService()
+                .getNodeProvider(node.processNodeDefinitionKey, node.processNodeDefinitionVersion);
+
+            return {
+                node,
+                configurationLayout,
+                nodeProvider,
+                problems,
+                incomingMetadata,
+            };
+        })()
+            .then(({node, configurationLayout, nodeProvider, problems, incomingMetadata}) => {
+                if (isCancelled) {
+                    return;
+                }
+                setOriginalNode(node);
+                setEditedNode(node);
+                setLayout(configurationLayout);
+                setProvider(nodeProvider);
+                setProblems(problems);
+                setIncomingMetadata(incomingMetadata);
+                if (hasEditorContent) {
+                    setShowNodeLoadedFeedback(true);
+                }
+            })
+            .catch((error) => {
+                if (isCancelled) {
+                    return;
+                }
+                dispatch(showApiErrorSnackbar(error, 'Die Details für das Prozesselement konnten nicht geladen werden.'));
+            })
+            .finally(() => {
+                if (isCancelled) {
+                    return;
+                }
+
+                setIsNodeLoading(false);
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [nodeId, nodeRefreshVersion]);
+
+    useEffect(() => {
+        if (!showNodeLoadingOverlay) {
+            if (hasShownShellLoadingRef.current) {
+                dispatch(clearLoadingMessage());
+                hasShownShellLoadingRef.current = false;
+            }
+            return;
+        }
+
+        hasShownShellLoadingRef.current = true;
+        dispatch(setLoadingMessage({
+            message: 'Prozesselement wird geladen',
+            blocking: false,
+            estimatedTime: 500,
+        }));
+
+        return () => {
+            if (hasShownShellLoadingRef.current) {
+                dispatch(clearLoadingMessage());
+                hasShownShellLoadingRef.current = false;
+            }
+        };
+    }, [dispatch, showNodeLoadingOverlay]);
+
+    useEffect(() => {
+        if (!showNodeLoadedFeedback) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            setShowNodeLoadedFeedback(false);
+        }, PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [showNodeLoadedFeedback]);
+
+    const {
+        Icon: TypeIcon,
+        label: typeLabel,
+        bgColor: typeBgColor,
+        textColor: typeTextColor,
+    } = useMemo(() => {
+        return provider == null ?
+            {
+                Icon: () => null,
+                label: '',
+                bgColor: theme.palette.background.paper,
+                textColor: theme.palette.text.primary,
+            } :
+            ProviderTypeStyles[provider.type];
+    }, [provider, theme.palette.background.paper, theme.palette.text.primary]);
+
+    const ProviderIcon = useMemo(() => {
+        if (provider == null) {
+            return TypeIcon;
+        }
+
+        return getProcessNodeProviderIcon(provider);
+    }, [provider, TypeIcon]);
+
+    const currentTab = useMemo(() => {
+        if (location.pathname.endsWith('/tabs/outputs')) {
+            return 'outputs';
+        } else if (location.pathname.endsWith('/tabs/more')) {
+            return 'more';
+        } else if (location.pathname.endsWith('/tabs/testing')) {
+            return 'testing';
+        }
+        return 'configuration';
+    }, [location]);
+
+    const editorTabContentContainerRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        if (editorTabContentContainerRef.current == null) {
+            return;
+        }
+        editorTabContentContainerRef.current.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+        });
+    }, [location]);
+
+    const handleSaveSelected = (): void => {
+        if (!editable || !hasChanged || editedNode == null) {
+            return;
+        }
+
+        const fieldsToOmit = flattenElements(layout!, false)
+            .filter((e) => isUiDefinitionInputFieldElement(e) && e.openExternalEditor)
+            .map((e) => e.id);
+
+        onSave(editedNode, {
+            query: {
+                omitConfigSave: fieldsToOmit,
+            }
+        })
+            .then((savedNode) => {
+                setOriginalNode(savedNode);
+                setEditedNode(savedNode);
+
+                dispatch(showSuccessSnackbar('Das Element wurde erfolgreich gespeichert.'));
+
+                return new ProcessNodeApiService()
+                    .validate(editedNode.id);
+            })
+            .then((problems) => {
+                setProblems(problems);
+            })
+            .catch((err: any) => {
+                if (isApiError(err) && err.status === 400) {
+                    if (isDerivedRuntimeElementData(err.details)) {
+                        setProblems({
+                            node: editedNode,
+                            derivedRuntimeElementData: err.details,
+                            commonErrors: {},
+                            problems: [],
+                        });
+                    } else {
+                        dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
+                    }
+                } else {
+                    dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden.'));
+                }
+            });
+    };
+
+    const handleDeleteSelected = (): void => {
+        if (!structureEditable || originalNode == null || provider == null) {
+            return;
+        }
+
+        confirm({
+            title: 'Prozesselement löschen',
+            children: (
+                <>
+                    <Typography>
+                        Möchten Sie das Prozesselement <strong>{getNodeName(originalNode, provider)}</strong> wirklich
+                        löschen?
+                    </Typography>
+                </>
+            ),
+        })
+            .then((confirm) => {
+                if (confirm) {
+                    setEditedNode(originalNode);
+                    onDelete(originalNode);
+                }
+            })
+            .catch((err) => {
+                dispatch(showErrorSnackbar('Das Prozesselement konnte nicht gelöscht werden.'));
+                console.error(err);
+            });
+    };
+
+    const handleExportSelected = (): void => {
+        if (originalNode == null || provider == null) {
+            return;
+        }
+
+        new ProcessNodeApiService()
+            .export(originalNode.id)
+            .then((exp) => {
+                downloadObjectFile(`${getNodeName(originalNode, provider)}.node.prosuna.json`, exp);
+            })
+            .catch((error) => {
+                dispatch(showApiErrorSnackbar(error, 'Das Prozesselement konnte nicht exportiert werden.'));
+            });
+    };
+
+    if (!hasEditorContent) {
+        return showInitialNodeEditorSkeleton ?
+            <ProcessNodeEditorSkeleton/> :
+            <Box sx={{height: '100vh'}}/>;
+    }
+
+    return (
+        <>
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100vh',
+                    position: 'relative',
+                    animation: showNodeLoadedFeedback ? `${nodeEditorLoadedSidebarFlash} ${PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION}ms ease-out` : 'none',
+                }}
+            >
+                {
+                    showNodeLoadingOverlay &&
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            zIndex: 2,
+                            bgcolor: theme.palette.mode === 'dark'
+                                ? alpha(theme.palette.common.black, 0.42)
+                                : alpha(theme.palette.common.white, 0.42),
+                            backdropFilter: 'blur(1.5px)',
+                        }}
+                    />
+                }
+                <Box
+                    sx={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                        pointerEvents: isNodeLoading ? 'none' : 'auto',
+                        opacity: showNodeLoadingOverlay ? 0.78 : 1,
+                        transition: 'opacity 140ms ease',
+                    }}
+                >
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            px: 2,
+                            pt: 1.5,
+                            pb: 0.5,
+                            minWidth: 0,
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: 38,
+                                height: 38,
+                                minWidth: 38,
+                                minHeight: 38,
+                                aspectRatio: '1 / 1',
+                                flexShrink: 0,
+                                borderRadius: '50%',
+                                backgroundColor: typeBgColor,
+                                color: typeTextColor,
+                            }}
+                        >
+                            <ProviderIcon/>
+                        </Box>
+
+                        <Box
+                            sx={{
+                                flex: 1,
+                                minWidth: 0,
+                            }}
+                        >
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    display: 'block',
+                                    lineHeight: 1.2,
+                                    mt: 0.5,
+                                }}
+                            >
+                                {typeLabel}
+                            </Typography>
+
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    minWidth: 0,
+                                }}
+                            >
+                                <Typography
+                                    component="div"
+                                    title={provider.name}
+                                    sx={{
+                                        fontWeight: "bold",
+                                        flex: 1,
+                                        minWidth: 0,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                    {provider.name}
+                                </Typography>
+                                <Chip
+                                    label={`Version ${provider.majorVersion}`}
+                                    size="small"
+                                    sx={{
+                                        fontWeight: 'normal',
+                                        flexShrink: 0,
+                                    }}
+                                />
+                            </Box>
+                        </Box>
+
+                        <IconButton
+                            sx={{
+                                marginLeft: 'auto',
+                                flexShrink: 0,
+                            }}
+                            onClick={(event) => {
+                                setMenuAnchorEl(event.currentTarget);
+                            }}
+                        >
+                            <MoreVert/>
+                        </IconButton>
+                    </Box>
+
+                    <Tabs
+                        value={currentTab}
+                        onChange={(_, value) => {
+                            navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${originalNode.id}/tabs/${value}?${searchParams.toString()}`);
+                        }}
+                        sx={{
+                            mt: 0.25,
+                            borderBottom: '1px solid',
+                            borderBottomColor: 'divider',
+                        }}
+                    >
+                        <Tab
+                            label="Eigenschaften"
+                            value="configuration"
+                        />
+
+                        {
+                            provider.outputs.length > 0 &&
+                            <Tab
+                                label="Ausgangsdaten"
+                                value="outputs"
+                            />
+                        }
+
+                        <Tab
+                            label="Weiteres"
+                            value="more"
+                        />
+
+                        {
+                            testClaim != null &&
+                            <Tab
+                                label="Testen"
+                                value="testing"
+                            />
+                        }
+                    </Tabs>
+
+                    <Box
+                        ref={editorTabContentContainerRef}
+                        sx={{
+                            px: 2,
+                            py: 1,
+                            flex: 1,
+                            overflowY: 'auto',
+                        }}
+                    >
+                        <ProcessNodeEditorProvider
+                            key={nodeId}
+                            value={{
+                                provider,
+                                layout,
+                                testClaim,
+                                node: editedNode ?? originalNode,
+                                setNode: (node, updateOriginal) => {
+                                    if (updateOriginal) {
+                                        setOriginalNode(node);
+                                    }
+                                    setEditedNode(node);
+                                },
+                                isEditable: editable,
+                                problems: problems,
+                                incomingMetadata,
+                            }}
+                        >
+                            <Outlet/>
+                        </ProcessNodeEditorProvider>
+                    </Box>
+                </Box>
+
+                <Box
+                    sx={{
+                        borderTop: '1px solid',
+                        borderTopColor: 'divider',
+                        mt: 'auto',
+                        px: 2,
+                        pt: 2,
+                        pb: 2.5,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                    }}
+                >
+                    <Button
+                        onClick={handleSaveSelected}
+                        variant="contained"
+                        startIcon={<Save/>}
+                        disabled={!editable || !hasChanged || isNodeLoading}
+                    >
+                        Konfiguration speichern
+                    </Button>
+
+                    <Button
+                        component={Link}
+                        to={`/processes/${params.processId}/versions/${params.processVersion}?${searchParams.toString()}`}
+                        color={hasChanged ? 'error' : 'primary'}
+                    >
+                        {hasChanged ? 'Abbrechen' : 'Schließen'}
+                    </Button>
+                </Box>
+            </Box>
+
+            {changeBlockerDialog}
+
+            <ProcessNodeEditorMenu
+                anchorEl={menuAnchorEl}
+                onClose={() => {
+                    setMenuAnchorEl(null);
+                }}
+                editable={structureEditable}
+                onShowNodeProviderDetails={() => {
+                    setIsProviderDetailsDialogOpen(true);
+                }}
+                onExportNode={handleExportSelected}
+                onReplaceNode={() => {
+                    if (!structureEditable || originalNode == null) {
+                        return;
+                    }
+
+                    onStartReplaceNode(originalNode);
+                }}
+                onDeleteNode={handleDeleteSelected}
+            />
+
+            <ProcessNodeProviderDetailsDialog
+                open={isProviderDetailsDialogOpen}
+                provider={provider}
+                onClose={() => {
+                    setIsProviderDetailsDialogOpen(false);
+                }}
+            />
+        </>
+    );
+}

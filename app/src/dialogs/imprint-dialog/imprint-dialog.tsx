@@ -1,45 +1,48 @@
 import React, {useEffect, useState} from 'react';
-import {Alert, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type Department} from '../../modules/departments/models/department';
-import {useSelector} from 'react-redux';
-import {selectLoadedForm} from '../../slices/app-slice';
 import {type ImprintDialogProps} from './imprint-dialog-props';
-import {useApi} from "../../hooks/use-api";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../data/system-config-keys";
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../data/system-config-keys';
+import {PublicDepartmentResponseDTO} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {MarkdownContent} from '../../components/markdown-content/markdown-content';
 
 export const ImprintDialogId = 'imprint';
 
-export function ImprintDialog(props: ImprintDialogProps): JSX.Element {
-    const api = useApi();
-    const application = useSelector(selectLoadedForm);
-
-    const [department, setDepartment] = useState<Department>();
+export function ImprintDialog(props: ImprintDialogProps) {
+    const [department, setDepartment] = useState<PublicDepartmentResponseDTO>();
     const imprintDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.imprintDepartmentId));
+    const parsedImprintDepartmentId = imprintDepartmentId != null && imprintDepartmentId !== '' && !Number.isNaN(parseInt(imprintDepartmentId)) ?
+        parseInt(imprintDepartmentId) :
+        null;
+    const selectedImprintDepartmentId = props.isListingPage ?
+        parsedImprintDepartmentId :
+        props.version?.imprintDepartmentId ?? null;
 
     useEffect(() => {
-        if (
-            !props.isListingPage &&
-            application?.imprintDepartmentId != null &&
-            (department == null || department.id !== application.imprintDepartmentId)
-        ) {
-            new DepartmentsApiService(api)
-                .retrievePublic(application.imprintDepartmentId)
-                .then(setDepartment);
-        } else if (
-            props.isListingPage &&
-            imprintDepartmentId != null &&
-            imprintDepartmentId != '' &&
-            (department == null || department.id !== parseInt(imprintDepartmentId))
-        ){
-            new DepartmentsApiService(api)
-                .retrievePublic(parseInt(imprintDepartmentId))
-                .then(setDepartment);
+        if (selectedImprintDepartmentId == null) {
+            setDepartment(undefined);
+            return;
         }
-    }, [imprintDepartmentId, application, department]);
+
+        let isCancelled = false;
+
+        // Clear stale department data immediately when the configured source is removed or changed.
+        setDepartment(undefined);
+        new DepartmentApiService()
+            .retrievePublic(selectedImprintDepartmentId)
+            .then((department) => {
+                if (!isCancelled) {
+                    setDepartment(department);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [selectedImprintDepartmentId]);
 
     return (
         <Dialog
@@ -56,20 +59,21 @@ export function ImprintDialog(props: ImprintDialogProps): JSX.Element {
             </DialogTitleWithClose>
             {
                 department?.imprint ?
-                    <DialogContent
-                        dangerouslySetInnerHTML={{__html: department?.imprint}}
-                    />
+                    <DialogContent>
+                        <MarkdownContent markdown={department.imprint}/>
+                    </DialogContent>
                     :
                     <DialogContent tabIndex={0}>
                         <Alert severity="info">
-                            Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ einen Fachbereich als Quelle für den Rechtstext des Impressums aus.
+                            Bitte wählen Sie in den versionsspezifischen Einstellungen im Bereich „Rechtliches“ eine
+                            Organisationseinheit als Quelle für den Rechtstext des Impressums aus.
                         </Alert>
                     </DialogContent>
             }
             <DialogActions>
+                <Box/>
                 <Button
                     onClick={props.onHide}
-                    variant="contained"
                 >
                     Impressum schließen
                 </Button>

@@ -1,0 +1,17 @@
+Hallo,
+
+bei der Abwicklung einer Zahlung ist ein Fehler aufgetreten.
+Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
+Hinterlegter Zahlungsdienstleister: [(${paymentProvider.name})]
+Fehlermeldung: [# th:if="${#strings.isEmpty(paymentTransaction.paymentError)}"]Unbekannter Fehler[/][# th:unless="${#strings.isEmpty(paymentTransaction.paymentError)}"][(${paymentTransaction.paymentError})][/]
+Zeitpunkt des Fehlers: [(${#numberformat.formatInstant(paymentTransaction.updated, 'dd.MM.yyyy HH:mm')})]
+
+Antrag öffnen:
+[(${base.config.createUrl('/staff/submissions/' + submission.id)})]
+
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

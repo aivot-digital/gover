@@ -1,81 +1,47 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
-import {ViewDispatcherComponent} from '../view-dispatcher.component';
-import {Box, Button, FormHelperText, FormLabel, Grid, Skeleton, Typography} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Grid from '@mui/material/Grid';
+import Skeleton from '@mui/material/Skeleton';
+import Typography from '@mui/material/Typography';
 import {stringOrDefault} from '../../utils/string-utils';
-import {generateElementIdForReplicatingContainerChild} from '../../utils/id-utils';
 import {type BaseViewProps} from '../../views/base-view';
-import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import AddCircleOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AddCircle';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {flattenElements} from '../../utils/flatten-elements';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {enqueueDerivationTriggerId, selectFunctionReferences} from '../../slices/app-slice';
-import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {FunctionType} from '../../utils/function-status-utils';
+import {
+    type ReplicatingContainerElementValue,
+    type ReplicatingContainerElementValues,
+    resolveReplicatingContainerElementValues,
+    updateReplicatingContainerElementValues,
+} from '../../models/element-data';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import {resolveReplicatingContainerItemDerivedData} from '../../utils/element-data-utils';
+import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
+import {generateUUIDv7} from '../../utils/id-utils';
+import {FormFieldGroup, type FormFieldGroupContext} from '../form-field';
 
-export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, string[]>) {
-    const dispatch = useAppDispatch();
+export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, ReplicatingContainerElementValues>) {
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
-    const references = useAppSelector(selectFunctionReferences);
-    const derivationTriggerIdQueue = useAppSelector((state) => state.app.derivationTriggerIdQueue);
 
     const {
         element,
         value,
         setValue,
-        allElements,
+        onBlur,
         isDeriving,
         isBusy,
+        derivedData,
+        errors,
+        derivationTriggerIdQueue,
     } = props;
 
     const {
         children,
     } = element;
-
-    const someChildWithAReferenceExists = useMemo(() => {
-        if (references == null) {
-            return false;
-        }
-
-        const flattenedChildren = [];
-        for (const child of children ?? []) {
-            const flattened = flattenElements(child, false);
-            flattenedChildren.push(...flattened);
-        }
-
-        for (const child of flattenedChildren) {
-            const childReferences = references
-                .filter(ref => (
-                    ref.source.id === child.id &&
-                    ref.isSameStep &&
-                    ref.functionType !== FunctionType.VALIDATION
-                ));
-
-            if (childReferences.length > 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }, [children, references]);
-
-    const someChildWithDerivableAspectsExists = useMemo(() => {
-        const flattenedChildren = [];
-        for (const child of children ?? []) {
-            const flattened = flattenElements(child, false);
-            flattenedChildren.push(...flattened);
-        }
-
-        for (const child of flattenedChildren) {
-            if (hasDerivableAspects(child)) {
-                return true;
-            }
-        }
-
-        return false;
-    }, [children]);
 
     const isDisabled = useMemo(() => {
         if (element.disabled) {
@@ -89,227 +55,311 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         if (isDeriving && hasDerivableAspects(element)) {
             return true;
         }
+
+        return false;
     }, [element, isBusy, isDeriving]);
 
     const minRequiredSets = element.required === true ? (element.minimumRequiredSets ?? 1) : 0;
-
-    useEffect(() => {
-        if (minRequiredSets > 0 && (value == null || value.length < minRequiredSets)) {
-            const forcedChildren = Array.from({length: minRequiredSets}, () => generateElementIdForReplicatingContainerChild());
-
-            setValue(forcedChildren);
-
-            if (someChildWithAReferenceExists || someChildWithDerivableAspectsExists) {
-                dispatch(enqueueDerivationTriggerId(forcedChildren[0]));
-            }
-        }
-    }, [setValue, value, element]);
+    const hasEntries = (value?.length ?? 0) > 0;
+    const isAddDisabled = isDisabled || (element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets);
+    const shouldShowEmptyState = !hasEntries;
+    const isContainerBusy = isDeriving && hasDerivableAspects(element);
+    const fieldError = errors != null && errors.length > 0 ? errors.join(' ') : undefined;
 
     const handleAdd = useCallback(() => {
-        const newChildId = generateElementIdForReplicatingContainerChild();
-        // Keep this order of operations to guarantee that listeners consuming the derivation queue have the updated customer input in place
-        setValue([
+        const updatedValue: ReplicatingContainerElementValues = [
             ...(value ?? []),
-            newChildId,
-        ]);
-        // Check if any child has references to trigger the derivation queue
-        if (someChildWithAReferenceExists || someChildWithDerivableAspectsExists) {
-            dispatch(enqueueDerivationTriggerId(newChildId));
-        }
-    }, [element, setValue, value, someChildWithAReferenceExists]);
+            {
+                id: generateUUIDv7(),
+                values: {},
+            },
+        ];
 
-    const handleDelete = useCallback((id: string) => {
+        const allChildIds = flattenElements(element, false)
+            .map(child => child.id);
+
+        setValue(updatedValue, allChildIds);
+    }, [element, setValue, value]);
+
+    const handleDelete = useCallback((_: ReplicatingContainerElementValue, index: number) => {
         const newValue = (value ?? [])
-            .filter((val: string) => val !== id);
-        setValue(newValue.length === 0 ? undefined : newValue);
+            .filter((_: ReplicatingContainerElementValue, i: number) => i !== index);
+
+        const allChildIds = flattenElements(element, false)
+            .map(child => child.id);
+
+        setValue(newValue.length === 0 ? null : newValue, allChildIds);
         setConfirmDelete(undefined);
-    }, [setValue, value]);
+    }, [element, setValue, value]);
 
     return (
-        <Box sx={{mt: 2}}>
-            {
-                (element.label != null) &&
-                <FormLabel>
-                    {element.label}
-                </FormLabel>
-            }
-
-            {
-                (element.hint != null) &&
-                <FormHelperText>
-                    {element.hint}
-                </FormHelperText>
-            }
-
-            {
-                value?.map((val: string, valueIndex: number) => derivationTriggerIdQueue.includes(val) ? (
-                    // Skeleton
+        <>
+            <FormFieldGroup
+                label={element.label ?? ''}
+                hint={element.hint ?? undefined}
+                error={fieldError}
+                required={element.required ?? undefined}
+                disabled={Boolean(element.disabled || isBusy)}
+                busy={isContainerBusy}
+                showOptionalIndicator={element.label != null && element.label.trim().length > 0}
+            >
+                {(fieldContext: FormFieldGroupContext) => (
                     <Box
-                        key={val}
+                        data-replicating-container-list
                         sx={{
-                            my: 2,
-                            px: 3,
-                            pt: 2.4,
-                            pb: 3.4,
-                            border: '1px solid #D4D4D4',
+                            overflow: 'hidden',
+                            border: '1px solid',
+                            borderColor: fieldContext.invalid ? 'error.main' : 'divider',
+                            borderRadius: 1,
+                            backgroundColor: 'background.paper',
                         }}
                     >
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                flexWrap: 'wrap',
-                                rowGap: '10px',
-                            }}
-                        >
-                            <Skeleton
-                                variant="text"
-                                width="30%"
-                                height={32}
-                            />
-                            <Skeleton
-                                variant="rectangular"
-                                width={170}
-                                height={36}
-                                sx={{ml: 'auto'}}
-                            />
-                        </Box>
-                        <Grid
-                            container
-                            spacing={2}
-                            sx={{mt: 0}}
-                        >
-                            {
-                                Array.from({length: (element.children?.length ?? 2)}).map((_, i) => (
-                                    <Grid
-                                        item
-                                        xs={12}
-                                        key={i}
-                                    >
-                                        <Skeleton
-                                            variant="rectangular"
-                                            height={56}
-                                            sx={{borderRadius: '4px'}}
-                                        />
-                                    </Grid>
-                                ))
-                            }
-                        </Grid>
-                    </Box>
-                ) : (
-                    <Box
-                        key={val}
-                        sx={{
-                            my: 2,
-                            px: 3,
-                            py: 2.4,
-                            border: '1px solid #D4D4D4',
-                        }}
-                    >
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                flexWrap: 'wrap',
-                                rowGap: '10px',
-                            }}
-                        >
-                            <Typography
-                                component={'p'}
-                                variant="h6"
-                                sx={{fontSize: '1.125rem'}}
-                            >
-                                {
-                                    (element.headlineTemplate ?? '').replace('#', (valueIndex + 1).toFixed())
-                                }
-                            </Typography>
+                        {(value ?? []).map((val: ReplicatingContainerElementValue, valueIndex: number) => {
+                            const rowValues = resolveReplicatingContainerElementValues(val) ?? {};
+                            const rowKey = val.id ?? valueIndex;
+                            const itemLabelId = `${fieldContext.groupId}-item-${valueIndex}-label`;
+                            const itemLabel = stringOrDefault(element.headlineTemplate, 'Datensatz #')
+                                .replace('#', (valueIndex + 1).toFixed());
 
-                            {
-                                (element.disabled !== true) &&
-                                (minRequiredSets === 0 || valueIndex >= minRequiredSets) &&
+                            return derivationTriggerIdQueue.includes(`${element.id}.${valueIndex}`) ? (
                                 <Box
+                                    key={rowKey}
+                                    role="status"
+                                    aria-label={`${itemLabel} wird geladen`}
+                                    aria-busy="true"
                                     sx={{
-                                        ml: 'auto',
+                                        borderTop: valueIndex > 0 ? '1px solid' : undefined,
+                                        borderColor: 'divider',
                                     }}
                                 >
-                                    <Button
-                                        color="error"
-                                        size="small"
-                                        endIcon={
-                                            <DeleteForeverOutlinedIcon
+                                    <DatasetSkeleton size={children?.length}/>
+                                </Box>
+                            ) : (
+                                <Box
+                                    key={rowKey}
+                                    role="group"
+                                    aria-labelledby={itemLabelId}
+                                    sx={{
+                                        px: {xs: 2, sm: 2.5},
+                                        pt: 2,
+                                        pb: 2.5,
+                                        borderTop: valueIndex > 0 ? '1px solid' : undefined,
+                                        borderColor: 'divider',
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            flexWrap: 'wrap',
+                                            rowGap: 1.25,
+                                        }}
+                                    >
+                                        <Chip
+                                            id={itemLabelId}
+                                            label={itemLabel}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{
+                                                height: 24,
+                                                borderColor: 'divider',
+                                                backgroundColor: 'action.hover',
+                                                '& .MuiChip-label': {
+                                                    px: 1,
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 500,
+                                                },
+                                            }}
+                                        />
+
+                                        {(minRequiredSets === 0 || valueIndex >= minRequiredSets) && (
+                                            <Box
                                                 sx={{
-                                                    marginTop: '-4px',
+                                                    ml: 'auto',
+                                                    cursor: isDisabled ? 'not-allowed' : undefined,
+                                                }}
+                                            >
+                                                <Button
+                                                    color="inherit"
+                                                    variant="text"
+                                                    size="small"
+                                                    startIcon={<Delete sx={{fontSize: 16}}/>}
+                                                    onClick={() => {
+                                                        setConfirmDelete(() => () => handleDelete(val, valueIndex));
+                                                    }}
+                                                    disabled={isDisabled || (minRequiredSets > 0 && (value ?? []).length <= minRequiredSets)}
+                                                    sx={{
+                                                        minHeight: 24,
+                                                        px: 0.75,
+                                                        py: 0.25,
+                                                        color: 'text.secondary',
+                                                        fontSize: '0.75rem',
+                                                        lineHeight: 1.2,
+                                                        '& .MuiButton-startIcon': {
+                                                            mr: 0.5,
+                                                        },
+                                                        '&:hover': {
+                                                            color: 'error.main',
+                                                            backgroundColor: 'action.hover',
+                                                        },
+                                                    }}
+                                                >
+                                                    {stringOrDefault(element.removeLabel, 'Datensatz löschen')}
+                                                </Button>
+                                            </Box>
+                                        )}
+                                    </Box>
+                                    <Grid
+                                        container
+                                        spacing={2}
+                                        sx={{mt: 0}}
+                                    >
+                                        {(children ?? []).map((child) => (
+                                            <ViewDispatcherComponent
+                                                {...props}
+                                                key={child.id}
+                                                element={child}
+                                                isBusy={isDisabled}
+                                                authoredElementValues={rowValues}
+                                                derivedData={resolveReplicatingContainerItemDerivedData(element, derivedData, valueIndex)}
+                                                onAuthoredElementValuesChange={(data, triggeringElementIds) => {
+                                                    const newValue = (value ?? [])
+                                                        .map((v, i) => i === valueIndex ? updateReplicatingContainerElementValues(v, data) : v);
+                                                    setValue(newValue, triggeringElementIds);
+                                                }}
+                                                onElementBlur={(data, triggeringElementIds) => {
+                                                    const newValue = (value ?? [])
+                                                        .map((v, i) => i === valueIndex ? updateReplicatingContainerElementValues(v, data) : v);
+                                                    onBlur(newValue, triggeringElementIds);
                                                 }}
                                             />
-                                        }
-                                        onClick={() => {
-                                            setConfirmDelete(() => () => handleDelete(val));
-                                        }}
-                                        disabled={isDisabled || (minRequiredSets > 0 && (value ?? []).length <= minRequiredSets)}
-                                    >
-                                        {
-                                            stringOrDefault(element.removeLabel, 'Datensatz löschen')
-                                        }
-                                    </Button>
+                                        ))}
+                                    </Grid>
                                 </Box>
-                            }
-                        </Box>
-                        <Grid
-                            container
-                            spacing={2}
-                            sx={{mt: 0}}
+                            );
+                        })}
+
+                        {shouldShowEmptyState && (
+                            <Box
+                                sx={{
+                                    px: {xs: 2, sm: 2.5},
+                                    py: 2.5,
+                                    textAlign: 'left',
+                                }}
+                            >
+                                <Typography variant="body2" color="text.secondary">
+                                    Keine Datensätze vorhanden.{' '}
+                                    {minRequiredSets > 0 && (
+                                        <>
+                                            Mindestens {minRequiredSets} {minRequiredSets === 1 ? 'Datensatz ist' : 'Datensätze sind'} erforderlich.
+                                        </>
+                                    )}
+                                </Typography>
+                            </Box>
+                        )}
+
+                        <Box
+                            sx={{
+                                px: 1.5,
+                                py: 0.75,
+                                borderTop: '1px solid',
+                                borderColor: 'divider',
+                                backgroundColor: 'action.hover',
+                                cursor: isAddDisabled ? 'not-allowed' : undefined,
+                            }}
                         >
-                            {
-                                (element.children ?? []).map((child, childIndex) => (
-                                    <ViewDispatcherComponent
-                                        allElements={allElements}
-                                        key={childIndex}
-                                        element={child}
-                                        idPrefix={`${element.id}_${val}_`}
-                                        isBusy={isBusy}
-                                        isDeriving={props.isDeriving}
-                                        valueOverride={props.valueOverride}
-                                        errorsOverride={props.errorsOverride}
-                                        visibilitiesOverride={props.visibilitiesOverride}
-                                        overridesOverride={props.overridesOverride}
-                                        mode={props.mode}
-                                    />
-                                ))
-                            }
-                        </Grid>
+                            <Button
+                                startIcon={<AddCircleOutlineOutlinedIcon/>}
+                                onClick={handleAdd}
+                                size="small"
+                                disabled={isAddDisabled}
+                            >
+                                {stringOrDefault(element.addLabel, 'Datensatz hinzufügen')}
+                            </Button>
+                        </Box>
                     </Box>
-                ))
-            }
-            {
-                (element.disabled !== true) &&
-                <div>
-                    <Button
-                        startIcon={<AddCircleOutlineOutlinedIcon
-                            sx={{marginTop: '-2px'}}
-                        />}
-                        sx={{
-                            mt: 2,
-                            mb: 3,
-                        }}
-                        onClick={handleAdd}
-                        variant={'outlined'}
-                        disabled={isDisabled || (element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets)}
-                    >
-                        {
-                            stringOrDefault(element.addLabel, 'Datensatz hinzufügen')
-                        }
-                    </Button>
-                </div>
-            }
+                )}
+            </FormFieldGroup>
 
             <ConfirmDialog
                 title="Möchten Sie diesen Datensatz wirklich löschen?"
                 onConfirm={confirmDelete}
                 onCancel={() => setConfirmDelete(undefined)}
             >
-                Dieser Vorgang kann nicht rückgängig gemacht werden. Wenn Sie die Daten löschen, müssen Sie diese bei Bedarf erneut eingeben. Möchten Sie den Datensatz wirklich löschen?
+                Dieser Vorgang kann nicht rückgängig gemacht werden. Wenn Sie die Daten löschen, müssen Sie diese bei
+                Bedarf erneut eingeben. Möchten Sie den Datensatz wirklich löschen?
             </ConfirmDialog>
-        </Box>
+        </>
     );
 }
 
+interface DatasetSkeletonProps {
+    size: number | null | undefined;
+}
+
+function DatasetSkeleton(props: DatasetSkeletonProps) {
+    const {
+        size,
+    } = props;
+
+    const fields = useMemo(() => {
+        const res = [];
+
+        for (let i = 0; i < (size ?? 2); i++) {
+            res.push(
+                <Grid
+                    key={i}
+                    size={12}
+                >
+                    <Skeleton
+                        variant="rectangular"
+                        height={56}
+                        sx={{
+                            borderRadius: '4px',
+                        }}
+                    />
+                </Grid>,
+            );
+        }
+
+        return res;
+    }, [size]);
+
+    return (
+        <Box
+            sx={{
+                px: {xs: 2, sm: 2.5},
+                pt: 2,
+                pb: 2.5,
+            }}
+        >
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    rowGap: '10px',
+                }}
+            >
+                <Skeleton
+                    variant="text"
+                    width={88}
+                    height={24}
+                />
+                <Skeleton
+                    variant="rectangular"
+                    width={132}
+                    height={24}
+                    sx={{ml: 'auto'}}
+                />
+            </Box>
+            <Grid
+                container
+                spacing={2}
+                sx={{mt: 0}}
+            >
+                {fields}
+            </Grid>
+        </Box>
+    );
+}

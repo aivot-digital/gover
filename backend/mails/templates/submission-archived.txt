@@ -1,0 +1,20 @@
+Hallo,
+
+ein Antrag wurde in Prosuna abgeschlossen.
+Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
+Aktenzeichen: [(${fileNumber})]
+[# th:if="${assignee != null}"]Zuständige Mitarbeiter:in: [(${assignee.getFullName})][/]
+Abgeschlossen durch: [(${triggeringUser.getFullName})]
+
+Antrag öffnen:
+[(${base.config.createUrl('/staff/submissions/' + submission.id)})]
+
+Hinweis zur Löschfrist:
+Die hinterlegte Löschfrist beginnt ab sofort zu laufen. Die Daten werden nach Ablauf der Löschfrist automatisch gelöscht.
+
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

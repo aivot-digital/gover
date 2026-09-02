@@ -3,10 +3,9 @@ import {type ReplicatingContainerLayout} from '../../models/elements/form/layout
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {NumberFieldComponent} from '../number-field/number-field-component';
-import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
-export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout, ElementTreeEntity>): JSX.Element {
+export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout>) {
     const minRequiredError = (
         props.element.minimumRequiredSets != null &&
         props.element.maximumSets != null &&
@@ -20,10 +19,10 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
             columnSpacing={4}
         >
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}>
                 <TextFieldComponent
                     value={props.element.headlineTemplate ?? ''}
                     label="Überschrift des einzelnen Datensatzes"
@@ -37,15 +36,15 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                 />
             </Grid>
             <Grid
-                item
-                xs={12}
-                lg={6}
-            />
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}/>
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}>
                 <TextFieldComponent
                     value={props.element.addLabel ?? ''}
                     label='Label-Text für Aktion "Hinzufügen"'
@@ -58,10 +57,10 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                 />
             </Grid>
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}>
                 <TextFieldComponent
                     value={props.element.removeLabel ?? ''}
                     label='Label-Text für Aktion "Löschen"'
@@ -73,14 +72,13 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     disabled={!props.editable}
                 />
             </Grid>
-
             {
                 (props.element.required === true) &&
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}>
                     <NumberFieldComponent
                         value={props.element.minimumRequiredSets ?? 1}
                         label="Mindestanzahl der hinzuzufügenden Datensätze"
@@ -96,14 +94,13 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     />
                 </Grid>
             }
-
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}>
                 <NumberFieldComponent
-                    value={props.element.maximumSets}
+                    value={props.element.maximumSets ?? undefined}
                     label="Maximalanzahl der hinzuzufügenden Datensätze"
                     hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
                     error={minRequiredError ? 'Sie fordern mehr Datensätze als Sie maximal zulassen.' : undefined}

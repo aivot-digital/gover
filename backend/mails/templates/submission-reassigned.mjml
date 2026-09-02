@@ -1,0 +1,56 @@
+<mjml lang="de">
+    <mj-head>
+        <mj-include path="../partials/head.mjml"/>
+
+        <mj-html-attributes>
+            <mj-selector path=".primary-action a">
+                <mj-html-attribute name="th:href">${base.config.createUrl('/staff/submissions/' + submission.id)}</mj-html-attribute>
+            </mj-selector>
+        </mj-html-attributes>
+
+        <mj-preview>
+            Mitteilung zur Neuzuweisung eines Antrages
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        ein Antrag wurde in Prosuna neu zugewiesen.
+                        <br/>
+                        <br/>
+                        Antrag auf: <b th:text="${form.internalTitle}">Beispielformular</b> - Version
+                        <b th:text="${form.version}">1.0.0</b>
+                        <br/>
+                        Aktenzeichen:
+                        <b th:text="${fileNumber}">Aktenzeichen</b>
+                        <br/>
+                        Neue zuständige Mitarbeiter:in:
+                        <b th:text="${newAssignee.getFullName}">Max Mustermann</b>
+                        <br/>
+                        Bisher zuständige Mitarbeiter:in:
+                        <b th:text="${previousAssignee.getFullName}">Max Mustermann</b>
+                        <br/>
+                        Zugewiesen durch:
+                        <b th:text="${triggeringUser.getFullName}">Erika Musterfrau</b>
+                    </p>
+                </mj-text>
+
+                <mj-button align="left"
+                           css-class="primary-action"
+                           href="#"
+                           padding="24px 0 0">
+                    Antrag öffnen
+                </mj-button>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/default-mail-signature.mjml"/>
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

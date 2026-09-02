@@ -1,0 +1,14 @@
+Hallo,
+
+Ihre Rolle in einer Organisationseinheit in Prosuna wurde geändert.
+Organisationseinheit: [(${department.name})]
+Neue Rolle: [(${newRole.getLabel})]
+Bisherige Rolle: [(${oldRole.getLabel})]
+Änderung durch: [(${admin.getFullName()})]
+
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

@@ -1,5 +1,5 @@
 export function isStringNullOrEmpty(val?: string | null): boolean {
-    return val == null || typeof val != 'string'  || val.trim().length === 0;
+    return val == null || typeof val !== 'string' || val.trim().length === 0;
 }
 
 export function isStringNotNullOrEmpty(val?: string | null): boolean {
@@ -10,12 +10,16 @@ export function stringOrDefault(val: string | null | undefined, def: string): st
     if (isStringNullOrEmpty(val)) {
         return def;
     }
-    return val!;
+    return val as string;
 }
 
 export function stringOrUndefined(val: string | null | undefined): string | undefined {
     if (isStringNullOrEmpty(val)) {
         return undefined;
     }
-    return val!;
+    return val as string;
+}
+
+export function quoteString(val: string): string {
+    return '„' + val + '“';
 }

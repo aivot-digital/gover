@@ -1,0 +1,876 @@
+{
+  "type": 25,
+  "id": "config",
+  "name": "httpConfig",
+  "visibility": null,
+  "override": null,
+  "metadata": null,
+  "children": [
+    {
+      "type": 12,
+      "id": "httpMethod",
+      "name": "httpMethod",
+      "visibility": null,
+      "override": null,
+      "metadata": null,
+      "weight": 6,
+      "label": "HTTP-Methode",
+      "hint": null,
+      "required": true,
+      "disabled": false,
+      "technical": false,
+      "destinationKey": null,
+      "value": null,
+      "validation": null,
+      "placeholder": null,
+      "autocomplete": null,
+      "options": [
+        {
+          "value": "GET",
+          "label": "GET",
+          "group": null
+        },
+        {
+          "value": "POST",
+          "label": "POST",
+          "group": null
+        },
+        {
+          "value": "PUT",
+          "label": "PUT",
+          "group": null
+        },
+        {
+          "value": "PATCH",
+          "label": "PATCH",
+          "group": null
+        },
+        {
+          "value": "DELETE",
+          "label": "DELETE",
+          "group": null
+        }
+      ],
+      "dependsOnSelectFieldId": null
+    },
+    {
+      "type": 15,
+      "id": "url",
+      "name": "url",
+      "visibility": null,
+      "override": null,
+      "metadata": null,
+      "weight": 12,
+      "label": "URL",
+      "hint": null,
+      "required": true,
+      "disabled": false,
+      "technical": false,
+      "destinationKey": null,
+      "value": null,
+      "validation": null,
+      "placeholder": null,
+      "autocomplete": null,
+      "isMultiline": false,
+      "maxCharacters": null,
+      "minCharacters": null,
+      "prefix": null,
+      "copyable": false,
+      "pattern": null,
+      "suggestions": null
+    },
+    {
+      "type": 6,
+      "id": "hd_fxM2wldxtU",
+      "name": null,
+      "visibility": null,
+      "override": null,
+      "metadata": null,
+      "weight": 12,
+      "content": "Authentifizierung",
+      "small": false,
+      "uppercase": false,
+      "resolvedContent": "Authentifizierung"
+    },
+    {
+      "type": 12,
+      "id": "authMethod",
+      "name": "authMethod",
+      "visibility": null,
+      "override": null,
+      "metadata": null,
+      "weight": 12,
+      "label": "Authentifizierung",
+      "hint": null,
+      "required": null,
+      "disabled": null,
+      "technical": null,
+      "destinationKey": null,
+      "value": null,
+      "validation": null,
+      "placeholder": null,
+      "autocomplete": null,
+      "options": [
+        {
+          "value": "basic",
+          "label": "Basic (Nutzername und Passwort)",
+          "group": null
+        },
+        {
+          "value": "bearer",
+          "label": "Bearer (Header-Token)",
+          "group": null
+        }
+      ],
+      "dependsOnSelectFieldId": null
+    },
+    {
+      "type": 3,
+      "id": "gp_nuIGFl68sm",
+      "name": "basicAuthConfig",
+      "visibility": {
+        "type": "NoCode",
+        "requirements": null,
+        "conditionSet": null,
+        "noCode": {
+          "type": "NoCodeExpression",
+          "operatorIdentifier": "equals",
+          "operands": [
+            {
+              "type": "NoCodeReference",
+              "elementId": "authMethod"
+            },
+            {
+              "type": "NoCodeStaticValue",
+              "value": "basic"
+            }
+          ],
+          "empty": false,
+          "notEmpty": true
+        },
+        "javascriptCode": null,
+        "referencedIds": [
+          "authMethod"
+        ]
+      },
+      "override": null,
+      "metadata": null,
+      "weight": 12,
+      "children": [
+        {
+          "type": 6,
+          "id": "hd_HgitSm0fP8",
+          "name": null,
+          "visibility": null,
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "content": "Basic (Nutzername und Passwort)",
+          "small": true,
+          "uppercase": false,
+          "resolvedContent": "Basic (Nutzername und Passwort)"
+        },
+        {
+          "type": 15,
+          "id": "username",
+          "name": "username",
+          "visibility": null,
+          "override": null,
+          "metadata": null,
+          "weight": 9,
+          "label": "Nutzername",
+          "hint": null,
+          "required": true,
+          "disabled": false,
+          "technical": false,
+          "destinationKey": null,
+          "value": null,
+          "validation": null,
+          "placeholder": null,
+          "autocomplete": null,
+          "isMultiline": false,
+          "maxCharacters": null,
+          "minCharacters": null,
+          "prefix": null,
+          "copyable": false,
+          "pattern": null,
+          "suggestions": null
+        },
+        {
+          "type": 12,
+          "id": "passwordSecretKey",
+          "name": "passwordSecretKey",
+          "visibility": null,
+          "override": null,
+          "metadata": null,
+          "weight": 9,
+          "label": "Passwort",
+          "hint": null,
+          "required": true,
+          "disabled": false,
+          "technical": false,
+          "destinationKey": null,
+          "value": null,
+          "validation": null,
+          "placeholder": null,
+          "autocomplete": null,
+          "options": [],
+          "dependsOnSelectFieldId": null
+        }
+      ],
+      "marketplaceLink": null
+    },
+    {
+      "type": 3,
+      "id": "gp_335S8aTN0c",
+      "name": "bearerAuthConfig",
+      "visibility": {
+        "type": "NoCode",
+        "requirements": null,
+        "conditionSet": null,
+        "noCode": {
+          "type": "NoCodeExpression",
+          "operatorIdentifier": "equals",
+          "operands": [
+            {
+              "type": "NoCodeReference",
+              "elementId": "authMethod"
+            },
+            {
+              "type": "NoCodeStaticValue",
+              "value": "bearer"
+            }
+          ],
+          "empty": false,
+          "notEmpty": true
+        },
+        "javascriptCode": null,
+        "referencedIds": [
+          "authMethod"
+        ]
+      },
+      "override": null,
+      "metadata": null,
+      "weight": 12,
+      "children": [
+        {
+          "type": 6,
+          "id": "hd_1juLuVrHuF",
+          "name": null,
+          "visibility": null,
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "content": "Bearer (Header-Token)",
+          "small": true,
+          "uppercase": false,
+          "resolvedContent": "Bearer (Header-Token)"
+        },
+        {
+          "type": 15,
+          "id": "bearerToken",
+          "name": "bearerToken",
+          "visibility": null,
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "label": "Bearer-Token",
+          "hint": null,
+          "required": true,
+          "disabled": false,
+          "technical": false,
+          "destinationKey": null,
+          "value": null,
+          "validation": null,
+          "placeholder": null,
+          "autocomplete": null,
+          "isMultiline": true,
+          "maxCharacters": null,
+          "minCharacters": null,
+          "prefix": null,
+          "copyable": false,
+          "pattern": null,
+          "suggestions": null
+        }
+      ],
+      "marketplaceLink": null
+    },
+    {
+      "type": 3,
+      "id": "gp_1QrsEeDLfv",
+      "name": "requestData",
+      "visibility": {
+        "type": "NoCode",
+        "requirements": null,
+        "conditionSet": null,
+        "noCode": {
+          "type": "NoCodeExpression",
+          "operatorIdentifier": "list-contains",
+          "operands": [
+            {
+              "type": "NoCodeStaticValue",
+              "value": "[\"POST\", \"PUT\", \"PATCH\"]"
+            },
+            {
+              "type": "NoCodeReference",
+              "elementId": "httpMethod"
+            }
+          ],
+          "empty": false,
+          "notEmpty": true
+        },
+        "javascriptCode": null,
+        "referencedIds": [
+          "httpMethod"
+        ]
+      },
+      "override": null,
+      "metadata": null,
+      "weight": 12,
+      "children": [
+        {
+          "type": 6,
+          "id": "hd_yAzYnLT1On",
+          "name": "",
+          "visibility": null,
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "content": "Anfragedaten",
+          "small": false,
+          "uppercase": false,
+          "resolvedContent": "Anfragedaten"
+        },
+        {
+          "type": 12,
+          "id": "requestContentType",
+          "name": "requestContentType",
+          "visibility": null,
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "label": "Typ der Anfragedaten",
+          "hint": null,
+          "required": true,
+          "disabled": false,
+          "technical": false,
+          "destinationKey": null,
+          "value": null,
+          "validation": null,
+          "placeholder": null,
+          "autocomplete": null,
+          "options": [
+            {
+              "value": "application/json",
+              "label": "JSON",
+              "group": null
+            },
+            {
+              "value": "multipart/form-data",
+              "label": "Multipart/Form-Data",
+              "group": null
+            },
+            {
+              "value": "application/x-www-form-urlencoded",
+              "label": "Form-Urlencoded",
+              "group": null
+            },
+            {
+              "value": "custom",
+              "label": "Manuell",
+              "group": null
+            }
+          ],
+          "dependsOnSelectFieldId": null
+        },
+        {
+          "type": 3,
+          "id": "gp_wIXoMcKYPn",
+          "name": "requestContentTypeJsonConfig",
+          "visibility": {
+            "type": "NoCode",
+            "requirements": null,
+            "conditionSet": null,
+            "noCode": {
+              "type": "NoCodeExpression",
+              "operatorIdentifier": "equals",
+              "operands": [
+                {
+                  "type": "NoCodeReference",
+                  "elementId": "requestContentType"
+                },
+                {
+                  "type": "NoCodeStaticValue",
+                  "value": "application/json"
+                }
+              ],
+              "empty": false,
+              "notEmpty": true
+            },
+            "javascriptCode": null,
+            "referencedIds": [
+              "requestContentType"
+            ]
+          },
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "children": [
+            {
+              "type": 11,
+              "id": "requestJsonSource",
+              "name": "requestJsonSource",
+              "visibility": null,
+              "override": null,
+              "metadata": null,
+              "weight": 12,
+              "label": "Quelle für die Anfragedaten",
+              "hint": null,
+              "required": true,
+              "disabled": false,
+              "technical": false,
+              "destinationKey": null,
+              "value": null,
+              "validation": null,
+              "options": [
+                {
+                  "value": "processData",
+                  "label": "Vorgangsdaten"
+                },
+                {
+                  "value": "lowCode",
+                  "label": "Low-Code"
+                }
+              ],
+              "displayInline": true,
+              "toggleButtons": null
+            },
+            {
+              "type": 44,
+              "id": "requestJsonProcessDataKey",
+              "name": "requestJsonProcessDataKey",
+              "visibility": {
+                "type": "NoCode",
+                "requirements": null,
+                "conditionSet": null,
+                "noCode": {
+                  "type": "NoCodeExpression",
+                  "operatorIdentifier": "equals",
+                  "operands": [
+                    {
+                      "type": "NoCodeReference",
+                      "elementId": "requestJsonSource"
+                    },
+                    {
+                      "type": "NoCodeStaticValue",
+                      "value": "processData"
+                    }
+                  ],
+                  "empty": false,
+                  "notEmpty": true
+                },
+                "javascriptCode": null,
+                "referencedIds": [
+                  "requestJsonSource"
+                ]
+              },
+              "override": null,
+              "metadata": null,
+              "weight": 12,
+              "label": "Prozessdaten-Schlüssel",
+              "hint": null,
+              "required": true,
+              "disabled": false,
+              "technical": false,
+              "destinationKey": null,
+              "value": null,
+              "validation": null,
+              "disableWildCards": false
+            },
+            {
+              "type": 27,
+              "id": "requestJsonLowCode",
+              "name": "requestJsonLowCode",
+              "visibility": {
+                "type": "NoCode",
+                "requirements": null,
+                "conditionSet": null,
+                "noCode": {
+                  "type": "NoCodeExpression",
+                  "operatorIdentifier": "equals",
+                  "operands": [
+                    {
+                      "type": "NoCodeReference",
+                      "elementId": "requestJsonSource"
+                    },
+                    {
+                      "type": "NoCodeStaticValue",
+                      "value": "lowCode"
+                    }
+                  ],
+                  "empty": false,
+                  "notEmpty": true
+                },
+                "javascriptCode": null,
+                "referencedIds": [
+                  "requestJsonSource"
+                ]
+              },
+              "override": null,
+              "metadata": null,
+              "weight": 12,
+              "label": "Codeeingabe",
+              "hint": "Dieser Low-Code muss das Datenobjekt zurückgeben, welches als Anfragekörper verwendet wird.",
+              "required": true,
+              "disabled": false,
+              "technical": false,
+              "destinationKey": null,
+              "value": null,
+              "validation": null,
+              "code": null,
+              "language": "javascript",
+              "editorHeight": 320,
+              "wordWrap": false
+            }
+          ],
+          "marketplaceLink": null
+        },
+        {
+          "type": 14,
+          "id": "requestFormFields",
+          "name": "requestFormFields",
+          "visibility": {
+            "type": "NoCode",
+            "requirements": null,
+            "conditionSet": null,
+            "noCode": {
+              "type": "NoCodeExpression",
+              "operatorIdentifier": "or",
+              "operands": [
+                {
+                  "type": "NoCodeExpression",
+                  "operatorIdentifier": "equals",
+                  "operands": [
+                    {
+                      "type": "NoCodeReference",
+                      "elementId": "requestContentType"
+                    },
+                    {
+                      "type": "NoCodeStaticValue",
+                      "value": "application/x-www-form-urlencoded"
+                    }
+                  ],
+                  "empty": false,
+                  "notEmpty": true
+                },
+                {
+                  "type": "NoCodeExpression",
+                  "operatorIdentifier": "equals",
+                  "operands": [
+                    {
+                      "type": "NoCodeReference",
+                      "elementId": "requestContentType"
+                    },
+                    {
+                      "type": "NoCodeStaticValue",
+                      "value": "multipart/form-data"
+                    }
+                  ],
+                  "empty": false,
+                  "notEmpty": true
+                }
+              ],
+              "empty": false,
+              "notEmpty": true
+            },
+            "javascriptCode": null,
+            "referencedIds": [
+              "requestContentType"
+            ]
+          },
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "label": "Datenfelder",
+          "hint": "Sie können in den Werten der Feldern Smarte Platzhalter verwenden.",
+          "required": true,
+          "disabled": false,
+          "technical": false,
+          "destinationKey": null,
+          "value": null,
+          "validation": null,
+          "fields": [
+            {
+              "key": "name",
+              "label": "Name",
+              "datatype": "string",
+              "placeholder": "",
+              "decimalPlaces": null,
+              "optional": false,
+              "disabled": false
+            },
+            {
+              "key": "value",
+              "label": "Wert",
+              "datatype": "string",
+              "placeholder": "",
+              "decimalPlaces": null,
+              "optional": false,
+              "disabled": false
+            }
+          ],
+          "maximumRows": null,
+          "minimumRequiredRows": null
+        },
+        {
+          "type": 46,
+          "id": "requestFormAttachments",
+          "name": "requestFormAttachments",
+          "visibility": {
+            "type": "NoCode",
+            "requirements": null,
+            "conditionSet": null,
+            "noCode": {
+              "type": "NoCodeExpression",
+              "operatorIdentifier": "equals",
+              "operands": [
+                {
+                  "type": "NoCodeReference",
+                  "elementId": "requestContentType"
+                },
+                {
+                  "type": "NoCodeStaticValue",
+                  "value": "multipart/form-data"
+                }
+              ],
+              "empty": false,
+              "notEmpty": true
+            },
+            "javascriptCode": null,
+            "referencedIds": [
+              "requestContentType"
+            ]
+          },
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "label": "Dateien",
+          "hint": null,
+          "required": null,
+          "disabled": null,
+          "technical": null,
+          "destinationKey": null,
+          "value": null,
+          "validation": null,
+          "placeholder": "Anlage hinzufügen",
+          "minItems": null,
+          "maxItems": null
+        }
+      ],
+      "marketplaceLink": null
+    },
+    {
+      "type": 3,
+      "id": "gp_uco56RTmgy",
+      "name": "responseConfig",
+      "visibility": null,
+      "override": null,
+      "metadata": null,
+      "weight": 12,
+      "children": [
+        {
+          "type": 6,
+          "id": "hd_RKbKdRaQJj",
+          "name": null,
+          "visibility": null,
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "content": "Rückgabedaten",
+          "small": false,
+          "uppercase": false,
+          "resolvedContent": "Rückgabedaten"
+        },
+        {
+          "type": 32,
+          "id": "responseStatusCode",
+          "name": "responseStatusCode",
+          "visibility": null,
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "label": "Erlaubte Status-Codes",
+          "hint": "Eine Liste der erlaubten Antwort-Status-Codes. Nicht erlaubte Status-Codes führen zu einem Fehler.",
+          "required": true,
+          "disabled": false,
+          "technical": false,
+          "destinationKey": null,
+          "value": null,
+          "validation": null,
+          "placeholder": "Status-Code hinzufügen",
+          "suggestions": [
+            "200",
+            "201",
+            "204"
+          ],
+          "minItems": null,
+          "maxItems": null,
+          "allowDuplicates": false
+        },
+        {
+          "type": 12,
+          "id": "responseBodyType",
+          "name": "responseBodyType",
+          "visibility": null,
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "label": "Datentyp der Rückgabe",
+          "hint": "Der erwartete Datentype der Antwort der HTTP-Anfrage.",
+          "required": false,
+          "disabled": false,
+          "technical": false,
+          "destinationKey": null,
+          "value": null,
+          "validation": null,
+          "placeholder": null,
+          "autocomplete": null,
+          "options": [
+            {
+              "value": "json",
+              "label": "JSON",
+              "group": null
+            },
+            {
+              "value": "text",
+              "label": "Text",
+              "group": null
+            },
+            {
+              "value": "file",
+              "label": "Datei",
+              "group": null
+            }
+          ],
+          "dependsOnSelectFieldId": null
+        },
+        {
+          "type": 15,
+          "id": "responseFileName",
+          "name": "responseFileName",
+          "visibility": {
+            "type": "NoCode",
+            "requirements": null,
+            "conditionSet": null,
+            "noCode": {
+              "type": "NoCodeExpression",
+              "operatorIdentifier": "equals",
+              "operands": [
+                {
+                  "type": "NoCodeReference",
+                  "elementId": "responseBodyType"
+                },
+                {
+                  "type": "NoCodeStaticValue",
+                  "value": "file"
+                }
+              ],
+              "empty": false,
+              "notEmpty": true
+            },
+            "javascriptCode": null,
+            "referencedIds": [
+              "responseBodyType"
+            ]
+          },
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "label": "Dateiname",
+          "hint": "Der Dateiname, unter welchem die Datei als Anlage zum Vorgang abgelegt werden soll.",
+          "required": true,
+          "disabled": false,
+          "technical": false,
+          "destinationKey": null,
+          "value": null,
+          "validation": null,
+          "placeholder": null,
+          "autocomplete": null,
+          "isMultiline": false,
+          "maxCharacters": null,
+          "minCharacters": null,
+          "prefix": null,
+          "copyable": false,
+          "copyValueTemplate": null,
+          "pattern": null,
+          "suggestions": null
+        }
+      ],
+      "marketplaceLink": null
+    },
+    {
+      "type": 3,
+      "id": "gp_rHh87nZvvM",
+      "name": "additionalSettings",
+      "visibility": null,
+      "override": null,
+      "metadata": null,
+      "weight": 12,
+      "children": [
+        {
+          "type": 6,
+          "id": "hd_BERLQXotUE",
+          "name": null,
+          "visibility": null,
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "content": "Weitere Einstellungen",
+          "small": false,
+          "uppercase": false,
+          "resolvedContent": "Weitere Einstellungen"
+        },
+        {
+          "type": 14,
+          "id": "additionalHeaders",
+          "name": "additionalHeaders",
+          "visibility": null,
+          "override": null,
+          "metadata": null,
+          "weight": 12,
+          "label": "Zusätzliche Header",
+          "hint": "Sie können in den Werten der Header Smarte Platzhalter verwenden.",
+          "required": null,
+          "disabled": null,
+          "technical": null,
+          "destinationKey": null,
+          "value": null,
+          "validation": null,
+          "fields": [
+            {
+              "key": "field",
+              "label": "Header",
+              "datatype": "string",
+              "placeholder": "X-Custom-Header",
+              "decimalPlaces": null,
+              "optional": false,
+              "disabled": false
+            },
+            {
+              "key": "value",
+              "label": "Wert",
+              "datatype": "string",
+              "placeholder": "custom-header-value",
+              "decimalPlaces": null,
+              "optional": false,
+              "disabled": false
+            }
+          ],
+          "maximumRows": null,
+          "minimumRequiredRows": null
+        }
+      ],
+      "marketplaceLink": null
+    }
+  ]
+}

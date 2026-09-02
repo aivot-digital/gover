@@ -1,6 +1,6 @@
-import { Button, Dialog, DialogActions, DialogContent, Link, Typography } from "@mui/material";
-import { DialogTitleWithClose } from "../../components/dialog-title-with-close/dialog-title-with-close";
-import { Link as RouterLink } from "react-router-dom";
+import {Button, Dialog, DialogActions, DialogContent, Link, Typography} from '@mui/material';
+import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
+import {Link as RouterLink} from 'react-router-dom';
 
 interface ConstraintDialogProps {
     open: boolean;

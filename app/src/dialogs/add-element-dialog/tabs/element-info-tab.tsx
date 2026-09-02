@@ -1,6 +1,8 @@
-import React from 'react';
-import {Box, DialogContent, Divider, IconButton, Tooltip, Typography} from '@mui/material';
-import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import React, {type ReactNode} from 'react';
+import {Box, Button, Divider, Typography} from '@mui/material';
+import {DateTime} from 'luxon';
+import PersonOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Person';
+import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type ElementTypesMap} from '../../../data/element-type/element-types-map';
 import {ElementType} from '../../../data/element-type/element-type';
@@ -14,6 +16,152 @@ import {NumberFieldComponent} from '../../../components/number-field/number-fiel
 import {RadioFieldComponent} from '../../../components/radio-field/radio-field-component';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {ChipInputFieldComponent} from '../../../components/chip-input-field/chip-input-field-component';
+import {DateTimeFieldComponent} from '../../../components/date-time-field/date-time-field-component';
+import {DateRangeFieldComponent} from '../../../components/date-range-field/date-range-field-component';
+import {TimeRangeFieldComponent} from '../../../components/time-range-field/time-range-field-component';
+import {DateTimeRangeFieldComponent} from '../../../components/date-time-range-field/date-time-range-field-component';
+import {TimeFieldComponent} from '../../../components/time-field/time-field-component';
+import {MapPointFieldComponent} from '../../../components/map-point-field/map-point-field-component';
+import {RichTextInputComponent} from '../../../components/rich-text-input-component/rich-text-input-component';
+import {RichtextComponent} from '../../../components/richtext/richtext.component';
+import {CodeInputFieldComponent} from '../../../components/code-input-field/code-input-field-component';
+import {
+    DomainUserSelectFieldComponent,
+} from '../../../components/domain-user-select-field/domain-user-select-field-component';
+import {
+    AssignmentContextFieldComponent,
+} from '../../../components/assignment-context-field/assignment-context-field-component';
+import {
+    DataModelSelectFieldComponent,
+} from '../../../components/data-model-select-field/data-model-select-field-component';
+import {
+    DataObjectSelectFieldComponent,
+} from '../../../components/data-object-select-field/data-object-select-field-component';
+import {
+    createDomainAndUserSelectValueKey,
+    createOrgUnitOptionValue,
+    createTeamOptionValue,
+    createUserOptionValue,
+} from '../../../components/domain-user-select-field/domain-user-select-options';
+import {getDepartmentTypeIcons} from '../../../modules/departments/utils/department-utils';
+import {ModuleIcons} from '../../../shells/staff/data/module-icons';
+import {getElementIconForType} from '../../../data/element-type/element-icons';
+import {type AnyElement} from '../../../models/elements/any-element';
+import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
+import {getElementDescriptionForType, getElementGroupLabelForType} from '../element-dialog-metadata';
+import {AppInfo} from '../../../app-info';
+import {FileUploadComponent} from '../../../components/file-upload-field/file-upload-component';
+import {SelectionDetailsPanel} from '../../../components/selection-dialog/selection-details-panel';
+import {TextFieldSummary} from '../../../summaries/text-field-summary';
+import {NumberSummary} from '../../../summaries/number-summary';
+import {
+    ProcessAttachmentDisplayComponent,
+} from '../../../components/process-attachment-display/process-attachment-display-component';
+import {
+    dateTimeToDateValueIso,
+    dateValueToDateTime,
+    getApplicationTimeZone,
+    getCurrentApplicationDate,
+} from '../../../utils/temporal-utils';
+import {SelectFieldPresentation} from '../../../models/elements/form/input/select-field-presentation';
+
+function DateExamples() {
+    const currentDate = getCurrentApplicationDate();
+
+    return (
+        <>
+            <Box sx={{mt: 2}}>
+                <DateFieldComponent
+                    label="Datumsfeld"
+                    mode={DateFieldComponentModelMode.Day}
+                    value={currentDate}
+                    onChange={() => {
+                    }}
+                    hint="Der Hinweis für das Datumsfeld"
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <DateFieldComponent
+                    label="Datumsfeld"
+                    mode={DateFieldComponentModelMode.Month}
+                    value={currentDate.slice(0, 7)}
+                    onChange={() => {
+                    }}
+                    error="Der Fehler für das Datumsfeld"
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <DateFieldComponent
+                    label="Datumsfeld"
+                    mode={DateFieldComponentModelMode.Year}
+                    value={currentDate.slice(0, 4)}
+                    onChange={() => {
+                    }}
+                />
+            </Box>
+        </>
+    );
+}
+
+function DateRangeExample() {
+    const currentDate = getCurrentApplicationDate();
+    const currentDateTime = dateValueToDateTime(currentDate, 'day');
+    const endDate = currentDateTime != null
+        ? dateTimeToDateValueIso(currentDateTime.plus({days: 2}), 'day') ?? currentDate
+        : currentDate;
+
+    return (
+        <DateRangeFieldComponent
+            label="Datumsspanne"
+            value={{
+                start: currentDate,
+                end: endDate,
+            }}
+            onChange={() => {
+            }}
+            hint="Bitte geben Sie den Zeitraum an."
+        />
+    );
+}
+
+function getCurrentExampleInstant(hoursFromNow = 0): string {
+    return DateTime
+        .now()
+        .plus({hours: hoursFromNow})
+        .setZone(getApplicationTimeZone())
+        .startOf('minute')
+        .toFormat("yyyy-MM-dd'T'HH:mm:ssZZ");
+}
+
+function DateTimeExample() {
+    return (
+        <DateTimeFieldComponent
+            label="Datum und Uhrzeit"
+            value={getCurrentExampleInstant()}
+            onChange={() => {
+            }}
+            hint="Bitte wählen Sie Datum und Uhrzeit."
+        />
+    );
+}
+
+function DateTimeRangeExample() {
+    const start = getCurrentExampleInstant();
+    const end = getCurrentExampleInstant(2);
+
+    return (
+        <DateTimeRangeFieldComponent
+            label="Datum- und Zeitspanne"
+            value={{start, end}}
+            onChange={() => {
+            }}
+            hint="Bitte geben Sie den Zeitraum an."
+        />
+    );
+}
 
 const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Alert]: (
@@ -65,9 +213,65 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Bitte beachten Sie, dass Sie Bilder nur via URL einbinden können.
                 Das Bild muss also auf einem Server hochgeladen und über das Internet erreichbar sein.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box
+                component="figure"
+                sx={{
+                    m: 0,
+                    mt: 2,
+                    maxWidth: 380,
+                }}
+            >
+                <Box
+                    component="img"
+                    src={`${AppInfo.mode == 'staff' ? '/staff' : ''}/assets/images/prosuna-beispiel-grafik.jpg`}
+                    alt="Beispielgrafik"
+                    sx={{
+                        display: 'block',
+                        width: '100%',
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                    }}
+                />
+                <Typography
+                    component="figcaption"
+                    variant="caption"
+                    sx={{
+                        color: "text.secondary",
+                        mt: 0.75,
+                        display: 'block'
+                    }}>
+                    Beispielgrafik mit optionaler Bildunterschrift
+                </Typography>
+            </Box>
         </Box>
     ),
-    [ElementType.Container]: (
+    [ElementType.LinkButton]: (
+        <Box>
+            <Typography>
+                Das Link-Button-Element stellt einen Button dar, der entweder einen Link öffnet oder in
+                Aufgabenansichten ein definiertes Ereignis auslöst.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiel
+            </Divider>
+
+            <Button
+                variant="contained"
+                color="primary"
+                endIcon={<OpenInNewIcon/>}
+            >
+                Link öffnen
+            </Button>
+        </Box>
+    ),
+    [ElementType.GroupLayout]: (
         <Box>
             <Typography>
                 Das Gruppierungs-Element erlaubt es Ihnen, mehrere Elemente semantisch zusammenzufassen.
@@ -77,10 +281,44 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             <Typography sx={{mt: 2}}>
                 Gruppierungen können zudem als Vorlagen abgespeichert werden.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box
+                sx={{
+                    mt: 2,
+                    p: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                }}
+            >
+                <HeadlineComponent
+                    content="Kontaktdaten"
+                    small={true}
+                />
+                <TextFieldComponent
+                    label="Vorname"
+                    value="Max"
+                    onChange={() => {
+                    }}
+                />
+                <TextFieldComponent
+                    label="Nachname"
+                    value="Mustermann"
+                    onChange={() => {
+                    }}
+                />
+            </Box>
         </Box>
     ),
     [ElementType.Step]: null,
-    [ElementType.Root]: null,
+    [ElementType.FormLayout]: null,
     [ElementType.Checkbox]: (
         <Box>
             <Typography>
@@ -124,37 +362,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Beispiele
             </Divider>
 
-            <Box sx={{mt: 2}}>
-                <DateFieldComponent
-                    label="Datumsfeld"
-                    mode={DateFieldComponentModelMode.Day}
-                    value={new Date().toISOString()}
-                    onChange={() => {
-                    }}
-                    hint="Der Hinweis für das Datumsfeld"
-                />
-            </Box>
-
-            <Box sx={{mt: 2}}>
-                <DateFieldComponent
-                    label="Datumsfeld"
-                    mode={DateFieldComponentModelMode.Month}
-                    value={new Date().toISOString()}
-                    onChange={() => {
-                    }}
-                    error="Der Fehler für das Datumsfeld"
-                />
-            </Box>
-
-            <Box sx={{mt: 2}}>
-                <DateFieldComponent
-                    label="Datumsfeld"
-                    mode={DateFieldComponentModelMode.Year}
-                    value={new Date().toISOString()}
-                    onChange={() => {
-                    }}
-                />
-            </Box>
+            <DateExamples/>
         </Box>
     ),
     [ElementType.Headline]: (
@@ -202,7 +410,20 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <MultiCheckboxComponent
                     label="Mehrfachauswahl"
                     value={['Option 2', 'Option 3']}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[
+                        {
+                            label: 'Option 1',
+                            value: 'Option 1',
+                        },
+                        {
+                            label: 'Option 2',
+                            value: 'Option 2',
+                        },
+                        {
+                            label: 'Option 3',
+                            value: 'Option 3',
+                        },
+                    ]}
                     onChange={() => {
                     }}
                     hint="Hinweis zur Mehrfachauswahl"
@@ -213,7 +434,20 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <MultiCheckboxComponent
                     label="Mehrfachauswahl"
                     value={undefined}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[
+                        {
+                            label: 'Option 1',
+                            value: 'Option 1',
+                        },
+                        {
+                            label: 'Option 2',
+                            value: 'Option 2',
+                        },
+                        {
+                            label: 'Option 3',
+                            value: 'Option 3',
+                        },
+                    ]}
                     onChange={() => {
                     }}
                     error="Fehlermeldung zur Mehrfachauswahl"
@@ -224,12 +458,16 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Number]: (
         <Box>
             <Typography>
-                Das Zahl-Element eignet sich für numerische Eingaben, die rechnerisch weiterverarbeitet werden sollen – etwa Mengen, Beträge oder Längenangaben.
+                Das Zahl-Element eignet sich für numerische Eingaben, die rechnerisch weiterverarbeitet werden sollen –
+                etwa Mengen, Beträge oder Längenangaben.
                 Es unterstützt zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
 
-            <AlertComponent color={"info"}>
-                Für Zahlenfolgen ohne rechnerische Bedeutung – wie Postleitzahlen, Steuernummern oder Kundennummern – verwenden Sie bitte das Text-Element. In diesem bleiben z. B. führende Nullen erhalten und es findet keine automatische Formatierung statt.
+            <AlertComponent color={'info'}>
+                Für Zahlenfolgen ohne rechnerische Bedeutung – wie Postleitzahlen, Steuernummern oder Kundennummern –
+                verwenden Sie bitte das Text-Element. In diesem bleiben z. B. führende Nullen erhalten und es findet
+                keine automatische
+                Formatierung statt.
             </AlertComponent>
 
             <Divider sx={{my: 4}}>
@@ -273,14 +511,63 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             <Typography sx={{mt: 2}}>
                 Die Anzahl an abzufragenden Datensätzen kann durch Sie festgelegt werden.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2, display: 'flex', flexDirection: 'column', gap: 1.5}}>
+                {[1, 2].map((index) => (
+                    <Box
+                        key={index}
+                        sx={{
+                            p: 2,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 2,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1.5,
+                        }}
+                    >
+                        <Typography variant="subtitle2">
+                            Person {index}
+                        </Typography>
+                        <TextFieldComponent
+                            label="Vorname"
+                            value={index === 1 ? 'Max' : 'Erika'}
+                            onChange={() => {
+                            }}
+                        />
+                        <TextFieldComponent
+                            label="Nachname"
+                            value={index === 1 ? 'Mustermann' : 'Beispiel'}
+                            onChange={() => {
+                            }}
+                        />
+                    </Box>
+                ))}
+            </Box>
         </Box>
     ),
-    [ElementType.Richtext]: (
+    [ElementType.RichText]: (
         <Box>
             <Typography>
                 Das Fließtext-Element ermöglicht Ihnen die Einbindung von formatiertem Text.
                 Auf diese Weise können Sie Nutzer:innen zusätzliche Informationen gezielt darstellen.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <RichtextComponent
+                content={'### Wichtiger Hinweis\n\nBitte halten Sie **Nachweise** bereit und prüfen Sie Ihre Angaben vor dem Absenden.'}
+                sx={{
+                    mt: 2,
+                    typography: 'body2',
+                }}
+            />
         </Box>
     ),
     [ElementType.Radio]: (
@@ -292,7 +579,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
             <Typography sx={{mt: 2}}>
                 Eine optische Alternative zum Einzelauswahl (Optionsfelder)-Element stellt das
-                Einzelauswahl (Auswahlmenü)-Element dar, welches die Optionen in einem platzsparenden Auswahlmenü darstellt.
+                Einzelauswahl-Element dar. Es zeigt die Optionen platzsparend als Auswahlmenü oder als durchsuchbare
+                Auswahl an.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -303,7 +591,10 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <RadioFieldComponent
                     label="Einzelauswahl mit Optionsfeldern"
                     value={'Option 2'}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[{label: 'Option 1', value: 'option_1'}, {
+                        label: 'Option 2',
+                        value: 'option_2',
+                    }, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
                     hint="Hinweis zur Einzelauswahl"
@@ -314,7 +605,10 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <RadioFieldComponent
                     label="Verpflichtende Einzelauswahl mit Optionsfeldern"
                     value={'Option 3'}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[{label: 'Option 1', value: 'option_1'}, {
+                        label: 'Option 2',
+                        value: 'option_2',
+                    }, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
                     required
@@ -325,7 +619,10 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <RadioFieldComponent
                     label="Einzelauswahl mit Optionsfeldern"
                     value={undefined}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[{label: 'Option 1', value: 'option_1'}, {
+                        label: 'Option 2',
+                        value: 'option_2',
+                    }, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
                     error="Fehlermeldung zur Einzelauswahl"
@@ -336,12 +633,13 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Select]: (
         <Box>
             <Typography>
-                Das Einzelauswahl (Auswahlmenü)-Element dient zur Abfrage exakt einer Möglichkeit aus
-                mehreren Möglichkeiten, welche in einem per Klick erreichbaren Auswahlmenü dargestellt werden.
+                Das Einzelauswahl-Element dient zur Abfrage exakt einer Möglichkeit aus vorgegebenen Optionen.
+                Kurze Listen können als kompaktes Auswahlmenü dargestellt werden. Bei längeren Listen erleichtert
+                die durchsuchbare Auswahl das Auffinden einer Option, ohne freie Eingaben zuzulassen.
             </Typography>
 
             <Typography sx={{mt: 2}}>
-                Eine optische Alternative zum Einzelauswahl (Auswahlmenü)-Element stellt das
+                Eine optische Alternative zum Einzelauswahl-Element stellt das
                 Einzelauswahl (Optionsfelder)-Element dar, welches die Optionen mit einzelnen Optionsfeldern darstellt.
             </Typography>
 
@@ -370,6 +668,31 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     onChange={() => {
                     }}
                     hint="Hinweis zur Einzelauswahl"
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <SelectFieldComponent
+                    label="Durchsuchbare Einzelauswahl"
+                    value={undefined}
+                    options={[
+                        {
+                            label: 'Baugenehmigung',
+                            value: 'building_permit',
+                        },
+                        {
+                            label: 'Gewerbeanmeldung',
+                            value: 'business_registration',
+                        },
+                        {
+                            label: 'Meldebescheinigung',
+                            value: 'registration_certificate',
+                        },
+                    ]}
+                    onChange={() => {
+                    }}
+                    presentation={SelectFieldPresentation.Combobox}
+                    hint="Tippen Sie, um die vorgegebenen Optionen zu filtern."
                 />
             </Box>
 
@@ -429,19 +752,88 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 liegenden Elementen ein. Es hilft Ihnen dabei, verschiedene Abfragen und/oder Informationen innerhalb
                 eines Abschnittes visuell deutlicher voneinander zu trennen.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <Typography variant="body2">Persönliche Angaben</Typography>
+                <Box
+                    sx={{
+                        height: 24,
+                        my: 1.5,
+                        borderRadius: 1,
+                        border: '1px dashed',
+                        borderColor: 'divider',
+                        bgcolor: 'action.hover',
+                    }}
+                />
+                <Typography variant="body2">Weitere Hinweise</Typography>
+            </Box>
         </Box>
     ),
     [ElementType.Table]: (
         <Box>
             <Typography>
-                Das Tabellen-Element ermöglicht Ihnen das Entgegennehmen von einfachen Text- und Zahleneingaben in tabellarischer Form.
+                Das Tabellen-Element ermöglicht Ihnen das Entgegennehmen von einfachen Text- und Zahleneingaben in
+                tabellarischer Form.
                 Der Einsatz des Elements wird dabei je nach Umfang für maximal bis zu drei Spalten empfohlen.
             </Typography>
 
-            <AlertComponent color={"info"}>
-                Für komplexere Eingaben – etwa mit Datumsfeldern oder vielen Datenpunkten – empfiehlt sich die Strukturierte Listeneingabe.
-                Sie erlaubt die Verwendung aller Elementtypen, bietet detaillierte Konfigurationsmöglichkeiten und sorgt für eine deutlich bessere Nutzerfreundlichkeit.
+            <AlertComponent color={'info'}>
+                Für komplexere Eingaben – etwa mit Datumsfeldern oder vielen Datenpunkten – empfiehlt sich die
+                Strukturierte Listeneingabe.
+                Sie erlaubt die Verwendung aller Elementtypen, bietet detaillierte Konfigurationsmöglichkeiten und sorgt
+                für eine deutlich bessere Nutzerfreundlichkeit.
             </AlertComponent>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box
+                sx={{
+                    mt: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                }}
+            >
+                <Box sx={{display: 'grid', gridTemplateColumns: '1.4fr 1fr', bgcolor: 'action.selected'}}>
+                    <Typography
+                        sx={{
+                            fontWeight: 700,
+                            px: 1.5,
+                            py: 1
+                        }}>Bezeichnung</Typography>
+                    <Typography
+                        sx={{
+                            fontWeight: 700,
+                            px: 1.5,
+                            py: 1
+                        }}>Menge</Typography>
+                </Box>
+                <Box sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.4fr 1fr',
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                }}>
+                    <Typography sx={{px: 1.5, py: 1}}>Unterlage A</Typography>
+                    <Typography sx={{px: 1.5, py: 1}}>2</Typography>
+                </Box>
+                <Box sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.4fr 1fr',
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                }}>
+                    <Typography sx={{px: 1.5, py: 1}}>Unterlage B</Typography>
+                    <Typography sx={{px: 1.5, py: 1}}>1</Typography>
+                </Box>
+            </Box>
         </Box>
     ),
     [ElementType.Text]: (
@@ -498,12 +890,358 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Box>
         </Box>
     ),
+    [ElementType.ChipInput]: (
+        <Box>
+            <Typography>
+                Das Tag-Liste (Schlagwörter)-Element dient zur Erfassung mehrerer kurzer Freitext-Einträge, z. B.
+                Schlagwörter
+                oder Stichpunkte.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <ChipInputFieldComponent
+                    label="Schlagwörter"
+                    value={['Wohnen', 'Familie']}
+                    onChange={() => {
+                    }}
+                    placeholder="Eintrag hinzufügen"
+                    hint="Drücken Sie Enter, um einen Eintrag zu übernehmen."
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <ChipInputFieldComponent
+                    label="Schlagwörter"
+                    value={[]}
+                    onChange={() => {
+                    }}
+                    error="Bitte geben Sie mindestens einen Eintrag an."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DateTime]: (
+        <Box>
+            <Typography>
+                Das Datum und Uhrzeit-Element dient Ihnen dazu, einen konkreten Zeitpunkt abzufragen.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DateTimeExample/>
+            </Box>
+        </Box>
+    ),
+    [ElementType.DateRange]: (
+        <Box>
+            <Typography>
+                Das Element „Datumsspanne“ ermöglicht die Erfassung eines Start- und Enddatums.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DateRangeExample/>
+            </Box>
+        </Box>
+    ),
+    [ElementType.TimeRange]: (
+        <Box>
+            <Typography>
+                Das Element „Zeitspanne“ ermöglicht die Erfassung einer Start- und Enduhrzeit.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <TimeRangeFieldComponent
+                    label="Zeitspanne"
+                    value={{
+                        start: '09:00',
+                        end: '17:00',
+                    }}
+                    onChange={() => {
+                    }}
+                    hint="Bitte geben Sie die Uhrzeitspanne an."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DateTimeRange]: (
+        <Box>
+            <Typography>
+                Das Element „Datum- und Zeitspanne“ ermöglicht die Erfassung eines Start- und Endzeitpunkts.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DateTimeRangeExample/>
+            </Box>
+        </Box>
+    ),
+    [ElementType.MapPoint]: (
+        <Box>
+            <Typography>
+                Das Kartenpunkt-Element ermöglicht die Erfassung eines Standorts auf einer Karte.
+            </Typography>
+            <Typography sx={{mt: 2}}>
+                Der aktuelle Stand ist eine technische Preview. Ein produktiver Einsatz wird derzeit nicht empfohlen.
+            </Typography>
+            <AlertComponent
+                color="warning"
+                sx={{mt: 2}}
+            >
+                Die technische Preview nutzt öffentliche OpenStreetMap- und Nominatim-Dienste.
+                Dadurch bestehen insbesondere Risiken bei Datenschutz, Verfügbarkeit und Rate Limits.
+            </AlertComponent>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <MapPointFieldComponent
+                    label="Standort"
+                    value={{
+                        latitude: 52.52,
+                        longitude: 13.405,
+                        address: 'Berlin, Deutschland',
+                    }}
+                    onChange={() => {
+                    }}
+                    hint="Klicken Sie in die Karte oder suchen Sie nach einer Adresse."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DomainAndUserSelect]: (
+        <Box>
+            <Typography>
+                Das Domänen- und Mitarbeitendenauswahl-Element ermöglicht die Mehrfachauswahl von
+                Organisationseinheiten, Teams und Mitarbeitenden.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DomainUserSelectFieldComponent
+                    label="Personenkreis"
+                    value={[
+                        {
+                            type: 'orgUnit',
+                            id: '1',
+                        },
+                        {
+                            type: 'user',
+                            id: 'user_123',
+                        },
+                    ]}
+                    onChange={() => {
+                    }}
+                    options={[
+                        {
+                            value: createOrgUnitOptionValue(1),
+                            key: createDomainAndUserSelectValueKey(createOrgUnitOptionValue(1)),
+                            label: 'Ordnungsamt',
+                            subLabel: 'Bereich',
+                            group: 'Organisationseinheiten',
+                            icon: getDepartmentTypeIcons(3),
+                        },
+                        {
+                            value: createTeamOptionValue(7),
+                            key: createDomainAndUserSelectValueKey(createTeamOptionValue(7)),
+                            label: 'Bürgerbüro Nord',
+                            group: 'Teams',
+                            icon: ModuleIcons.teams,
+                        },
+                        {
+                            value: createUserOptionValue('user_123'),
+                            key: createDomainAndUserSelectValueKey(createUserOptionValue('user_123')),
+                            label: 'Wagner, Marie-Therese',
+                            subLabel: 'm.wagner@example.org',
+                            group: 'Mitarbeitende',
+                            icon: <PersonOutlineOutlinedIcon/>,
+                        },
+                    ]}
+                    hint="Optionen werden im Formular asynchron geladen und nach Kategorien gruppiert."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.AssignmentContext]: (
+        <Box>
+            <Typography>
+                Das Element „Verantwortlicher Personenkreis“ kombiniert die Auswahl von Organisationseinheiten,
+                Teams und Mitarbeitenden mit zusätzlichen Zuweisungspräferenzen.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <AssignmentContextFieldComponent
+                    domainAndUserSelectionLabel="Verantwortlicher Personenkreis"
+                    value={{
+                        domainAndUserSelection: [
+                            {
+                                type: 'orgUnit',
+                                id: '1',
+                            },
+                            {
+                                type: 'user',
+                                id: 'user_123',
+                            },
+                        ],
+                        generalAssigneePreference: 'previousProcessStepAssignee',
+                        repeatExecutionAssigneePreference: 'previousIterationAssignee',
+                    }}
+                    onChange={() => {
+                    }}
+                    options={[
+                        {
+                            value: createOrgUnitOptionValue(1),
+                            key: createDomainAndUserSelectValueKey(createOrgUnitOptionValue(1)),
+                            label: 'Ordnungsamt',
+                            subLabel: 'Bereich',
+                            group: 'Organisationseinheiten',
+                            icon: getDepartmentTypeIcons(3),
+                        },
+                        {
+                            value: createTeamOptionValue(7),
+                            key: createDomainAndUserSelectValueKey(createTeamOptionValue(7)),
+                            label: 'Bürgerbüro Nord',
+                            group: 'Teams',
+                            icon: ModuleIcons.teams,
+                        },
+                        {
+                            value: createUserOptionValue('user_123'),
+                            key: createDomainAndUserSelectValueKey(createUserOptionValue('user_123')),
+                            label: 'Wagner, Marie-Therese',
+                            subLabel: 'Mitarbeiter:in',
+                            group: 'Mitarbeitende',
+                            icon: <PersonOutlineOutlinedIcon/>,
+                        },
+                    ]}
+                    domainAndUserSelectionHint="Die Zuweisung erfolgt auf Basis der Auslastung betroffener Personen."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DataModelSelect]: (
+        <Box>
+            <Typography>
+                Das Element „Datenmodell-Auswahl“ ermöglicht die Auswahl genau eines Datenmodells.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DataModelSelectFieldComponent
+                    label="Datenmodell"
+                    value="adressen"
+                    onChange={() => {
+                    }}
+                    options={[
+                        {
+                            key: 'adressen',
+                            value: 'adressen',
+                            label: 'Adressbuch',
+                            subLabel: 'adressen',
+                            icon: ModuleIcons.dataModels,
+                        },
+                        {
+                            key: 'anliegen',
+                            value: 'anliegen',
+                            label: 'Anliegen',
+                            subLabel: 'anliegen',
+                            icon: ModuleIcons.dataModels,
+                        },
+                    ]}
+                    hint="Die Optionen werden im Formular asynchron geladen."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DataObjectSelect]: (
+        <Box>
+            <Typography>
+                Das Element „Datenobjekt-Auswahl“ ermöglicht die Auswahl genau eines Datenobjekts.
+                Die verfügbaren Einträge richten sich nach dem konfigurierten Datenmodell.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DataObjectSelectFieldComponent
+                    label="Datenobjekt"
+                    value="obj_001"
+                    dataModelKey="adressen"
+                    dataLabelAttributeKey="name"
+                    onChange={() => {
+                    }}
+                    options={[
+                        {
+                            key: 'obj_001',
+                            value: 'obj_001',
+                            label: 'Max Mustermann',
+                            subLabel: 'adressen · obj_001',
+                            icon: ModuleIcons.dataObjects,
+                        },
+                        {
+                            key: 'obj_002',
+                            value: 'obj_002',
+                            label: 'Erika Mustermann',
+                            subLabel: 'adressen · obj_002',
+                            icon: ModuleIcons.dataObjects,
+                        },
+                    ]}
+                    hint="Die Optionen werden im Formular asynchron geladen."
+                />
+            </Box>
+        </Box>
+    ),
     [ElementType.Time]: (
         <Box>
             <Typography>
-                Das Uhrzeit-Element dient Ihnen dazu, Eingaben der Uhrzeit (0-24 Uhr) von Ihren Nutzer:innen entgegenzunehmen.
+                Das Uhrzeit-Element dient Ihnen dazu, Eingaben der Uhrzeit (0-24 Uhr) von Ihren Nutzer:innen
+                entgegenzunehmen.
                 Es beinhaltet zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <TimeFieldComponent
+                    label="Uhrzeit"
+                    value="09:30"
+                    onChange={() => {
+                    }}
+                    hint="Bitte geben Sie eine Uhrzeit an."
+                />
+            </Box>
         </Box>
     ),
     [ElementType.FileUpload]: (
@@ -523,42 +1261,269 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Die maximale Gesamtgröße aller zu übertragenden Dateien ist abhängig von den in der verwendeten
                 Schnittstelle hinterlegten Einstellungen.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <FileUploadComponent
+                    id="example-file-upload"
+                    label="Nachweise hochladen"
+                    value={undefined}
+                    onChange={() => {
+                    }}
+                    hint="PDF-, PNG- oder JPG-Dateien können hier hochgeladen werden."
+                    isMultifile
+                    maxFiles={3}
+                />
+            </Box>
         </Box>
     ),
     [ElementType.IntroductionStep]: null,
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: null,
+    [ElementType.FunctionInput]: null,
+    [ElementType.NoCodeInput]: (
+        <Box>
+            <Typography>
+                Das Element „No-Code-Eingabe“ ermöglicht die Modellierung von Ausdrücken über den integrierten
+                No-Code-Editor.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Das Ergebnis wird als strukturierter Ausdruck gespeichert und kann in Folgeprozessen ausgewertet
+                werden.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box
+                sx={{
+                    mt: 2,
+                    p: 1.5,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    bgcolor: 'action.hover',
+                    fontFamily: 'Monaco, monospace',
+                    fontSize: 14,
+                }}
+            >
+                Wenn <strong>Einkommen</strong> größer als <strong>5000</strong>, dann
+                <br/>
+                setze <strong>Prüfung erforderlich</strong> auf <strong>Ja</strong>
+            </Box>
+        </Box>
+    ),
+    [ElementType.ProcessDataKeyInput]: null,
+    [ElementType.ProcessInstanceAttachmentSetSelect]: null,
+    [ElementType.ProcessIdentityIdInput]: null,
+    [ElementType.HtmlTemplateInput]: null,
+    [ElementType.StoragePathSelector]: null,
+    [ElementType.CodeInput]: (
+        <Box>
+            <Typography>
+                Das Element „Codeeingabe“ stellt einen integrierten Code-Editor auf Basis von Monaco bereit.
+                Damit können Nutzer:innen mehrzeiligen Quelltext strukturiert erfassen.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <CodeInputFieldComponent
+                    label="JavaScript-Code"
+                    value={'function greet(name) {\n    return `Hallo ${name}`;\n}'}
+                    onChange={() => {
+                    }}
+                    hint="Die Eingabe wird als Text gespeichert."
+                    height="240px"
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.RichTextInput]: (
+        <Box>
+            <Typography>
+                Das Element „Markdown-Eingabe“ erlaubt die Erfassung formatierter Texte (z. B. mit Überschriften,
+                Listen und Links).
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <RichTextInputComponent
+                    label="Beschreibung"
+                    value={'## Beispiel\n\n- Erster Punkt\n- Zweiter Punkt'}
+                    onChange={() => {
+                    }}
+                    hint="Die Eingabe wird als Markdown gespeichert."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.UiDefinitionInput]: (
+        <Box>
+            <Typography>
+                Das Element „UI-Definition-Editor“ zeigt eine kompakte Zusammenfassung der hinterlegten
+                UI-Definition an und öffnet die Bearbeitung in einem separaten Dialog.
+            </Typography>
+        </Box>
+    ),
+    [ElementType.IdentityConfigElement]: (
+        <Box>
+            <Typography>
+                Das Element „Identitätseingabe“ startet die Anmeldung über einen konfigurierten
+                Identifizierungsanbieter und kann optional eine alternative E-Mail-Eingabe erlauben.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Attribute aus der Identifizierung können anschließend in andere Formularfelder
+                außerhalb von Wiederholungscontainern übernommen werden.
+            </Typography>
+        </Box>
+    ),
+    [ElementType.PaymentConfigElement]: (
+        <Box>
+            <Typography>
+                Das Element „Zahlungskonfiguration“ legt den Zahlungsdienstleister, den
+                Buchungstext und die Zahlungsposten eines Formulars fest.
+            </Typography>
+        </Box>
+    ),
+    [ElementType.TabLayout]: null,
+    [ElementType.SummaryLayout]: (
+        <Box>
+            <Typography>
+                Das Element „Zusammenfassung“ erlaubt die Anzeige von beliebigen Elementen als reduzierte Darstellung.
+                Kind-Elemente dieses Elementes sind <em>ausschließlich</em> zur Anzeige von Daten gedacht und können keine Nutzereingaben entgegennehmen.
+                Die anzuzeigenden Werte müssen über die Verwendung von Datenschlüsseln oder Funktionen des Typs „Dynamischer Wert“ gesetzt werden.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiel
+            </Divider>
+
+            <TextFieldSummary
+                model={{
+                    ...generateElementWithDefaultValues(ElementType.Text),
+                    label: 'Vorname'
+                }}
+                value="Max"
+                authoredElementValues={{}}
+                derivedData={{
+                    elementStates: {},
+                    effectiveValues: {},
+                }}
+            />
+
+            <TextFieldSummary
+                model={{
+                    ...generateElementWithDefaultValues(ElementType.Text),
+                    label: 'Nachname'
+                }}
+                value="Mustermann"
+                authoredElementValues={{}}
+                derivedData={{
+                    elementStates: {},
+                    effectiveValues: {},
+                }}
+            />
+
+            <NumberSummary
+                model={{
+                    ...generateElementWithDefaultValues(ElementType.Number),
+                    label: 'Alter'
+                }}
+                value={42}
+                authoredElementValues={{}}
+                derivedData={{
+                    elementStates: {},
+                    effectiveValues: {},
+                }}
+            />
+        </Box>
+    ),
+    [ElementType.ProcessAttachmentDisplay]: (
+        <Box>
+            <Typography>
+                Das Element zeigt alle Vorgangsanhänge aus einem Anlagensatz mit dem festgelegten Schlüssel an.
+                Gefundene Anhänge können in einem neuen Tab angesehen und bei Bedarf heruntergeladen werden.
+                Eine optionale Beschriftung und ein Hinweis ergänzen die Darstellung um weitere Informationen.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiel
+            </Divider>
+
+            <ProcessAttachmentDisplayComponent
+                labelText="Bescheide"
+                items={[
+                    {
+                        key: 'example',
+                        fileName: 'Erfolgsbescheid.pdf',
+                        originalFileName: 'Bescheid.pdf',
+                    },
+                ]}
+            />
+        </Box>
+    ),
 };
 
 export function ElementInfoTab({
-    type,
-    onClose,
-}: {type: ElementType, onClose: () => void}) {
+                                   type,
+                                   parentElement,
+                                   onAddElement,
+                                   primaryActionLabel,
+                                   primaryActionIcon,
+                                   primaryActionDisabledReason,
+                                   onClose,
+                               }: {
+    type: ElementType,
+    parentElement?: AnyElement,
+    onAddElement: (element: AnyElement) => void,
+    primaryActionLabel: string,
+    primaryActionIcon: ReactNode,
+    primaryActionDisabledReason?: string,
+    onClose: () => void,
+}) {
+    const ElementIcon = getElementIconForType(type);
+
+    const handleAddElement = () => {
+        if (primaryActionDisabledReason != null) {
+            return;
+        }
+
+        const newElement = generateElementWithDefaultValues(type, parentElement);
+        if (newElement != null) {
+            onAddElement(newElement);
+        }
+    };
+
     return (
-        <DialogContent tabIndex={0}>
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                }}
-            >
-                <h3>{getElementNameForType(type)}</h3>
-
-                <Tooltip title="Schließen">
-                    <IconButton
-                        onClick={onClose}
-                        size="small"
-                    >
-                        <CloseOutlinedIcon/>
-                    </IconButton>
-                </Tooltip>
-            </Box>
-
-            {
-                elementDescriptions[type]
-            }
-        </DialogContent>
+        <SelectionDetailsPanel
+            icon={<ElementIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
+            label={getElementGroupLabelForType(type)}
+            title={getElementNameForType(type)}
+            description={getElementDescriptionForType(type)}
+            primaryActionLabel={primaryActionLabel}
+            primaryActionIcon={primaryActionIcon}
+            onPrimaryAction={handleAddElement}
+            primaryActionDisabled={primaryActionDisabledReason != null}
+            primaryActionDisabledTooltip={primaryActionDisabledReason}
+            onClose={onClose}
+        >
+            {elementDescriptions[type]}
+        </SelectionDetailsPanel>
     );
 }

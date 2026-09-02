@@ -8,4 +8,5 @@ export const DefaultTabs = {
     test: 'test',
     publish: 'publish',
     metadata: 'metadata',
+    references: 'references',
 };

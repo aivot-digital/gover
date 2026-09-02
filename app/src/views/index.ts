@@ -1,42 +1,66 @@
 import {ElementType} from '../data/element-type/element-type';
-import {BaseView} from "./base-view";
-import {TextFieldView} from "./text-field-view";
-import {ElementTypesMap} from "../data/element-type/element-types-map";
-import {CheckboxFieldView} from "./checkbox-field-view";
-import {NumberFieldView} from "./number-field-view";
-import {AlertView} from "./alert-view";
-import {SelectFieldView} from "./select-field-view";
-import {ContainerView} from "./container-view";
-import {DateFieldView} from "./date-field-view";
-import {RootComponentView} from "../components/root/root.component.view";
-import {StepComponentView} from "../components/step/step.component.view";
-import {ImageView} from "../components/image/image-view";
-import {HeadlineComponentView} from "../components/headline/headline.component.view";
-import {MultiCheckboxFieldComponentView} from "../components/multi-checkbox-field/multi-checkbox-field.component.view";
-import {ReplicatingContainerView} from "../components/replicating-container/replicating-container.view";
-import {RichtextComponentView} from "../components/richtext/richtext.component.view";
-import {RadioFieldComponentView} from "../components/radio-field/radio-field.component.view";
-import {SpacerComponentView} from "../components/spacer/spacer.component.view";
-import {TableFieldComponentView} from "../components/table-field/table-field.component.view";
-import {TimeFieldComponentView} from "../components/time-field/time-field.component.view";
-import {GeneralInformationComponentView} from "../components/general-information/general-information.component.view";
-import {SummaryComponentView} from "../components/summary/summary.component.view";
-import {SubmitComponentView} from "../components/submit/submit.component.view";
-import {FileUploadView} from "../components/file-upload-field/file-upload.view";
+import {type BaseView} from './base-view';
+import {TextFieldView} from './text-field-view';
+import {CheckboxFieldView} from './checkbox-field-view';
+import {NumberFieldView} from './number-field-view';
+import {AlertView} from './alert-view';
+import {SelectFieldView} from './select-field-view';
+import {ContainerView} from './container-view';
+import {DateFieldView} from './date-field-view';
+import {RootComponentView} from '../components/form/root.component.view';
+import {StepComponentView} from '../components/step/step.component.view';
+import {ImageView} from '../components/image/image-view';
+import {HeadlineComponentView} from '../components/headline/headline.component.view';
+import {MultiCheckboxFieldComponentView} from '../components/multi-checkbox-field/multi-checkbox-field.component.view';
+import {ReplicatingContainerView} from '../components/replicating-container/replicating-container.view';
+import {RichtextComponentView} from '../components/richtext/richtext.component.view';
+import {RadioFieldComponentView} from '../components/radio-field/radio-field.component.view';
+import {SpacerComponentView} from '../components/spacer/spacer.component.view';
+import {TableFieldComponentView} from '../components/table-field/table-field.component.view';
+import {TimeFieldComponentView} from '../components/time-field/time-field.component.view';
+import {GeneralInformationComponentView} from '../components/general-information/general-information.component.view';
+import {SummaryComponentView} from '../components/summary/summary.component.view';
+import {SubmitComponentView} from '../components/submit/submit.component.view';
+import {FileUploadView} from '../components/file-upload-field/file-upload.view';
+import {CodeInputView} from './code-input-view';
+import {FunctionInputView} from './function-input-view';
+import {RichTextView} from './rich-text-input-view';
+import {ChipInputFieldView} from './chip-input-field-view';
+import {DateTimeFieldView} from './date-time-field-view';
+import {DateRangeFieldView} from './date-range-field-view';
+import {TimeRangeFieldView} from './time-range-field-view';
+import {DateTimeRangeFieldView} from './date-time-range-field-view';
+import {MapPointFieldView} from './map-point-field-view';
+import {DomainUserSelectFieldView} from './domain-user-select-field-view';
+import {AssignmentContextFieldView} from './assignment-context-field-view';
+import {DataModelSelectFieldView} from './data-model-select-field-view';
+import {DataObjectSelectFieldView} from './data-object-select-field-view';
+import {NoCodeInputFieldView} from './no-code-input-field-view';
+import {UiDefinitionInputFieldView} from './ui-definition-input-field-view';
+import {SummaryLayoutView} from './summary-layout-view';
+import {ProcessDataKeyInputFieldView} from './process-data-key-input-field-view';
+import {IdentityConfigView} from './identity-config-view';
+import {ProcessAttachmentDisplayView} from './process-attachment-display-view';
+import {ProcessInstanceAttachmentSetSelectFieldView} from './process-instance-attachment-set-select-field-view';
+import {ProcessIdentityIdInputFieldView} from './process-identity-id-input-field-view';
+import {HtmlTemplateInputView} from './html-template-input-view';
+import {StoragePathSelectorInputView} from './storage-path-selector-input-view';
+import {PaymentConfigView} from './payment-config-view';
+import {LinkButtonView} from './link-button-view';
 
-const views: ElementTypesMap<BaseView<any, any> | null> = {
-    [ElementType.Root]: RootComponentView,
+export const views: Record<ElementType, BaseView<any, any> | null> = {
+    [ElementType.FormLayout]: RootComponentView,
     [ElementType.Step]: StepComponentView,
     [ElementType.Alert]: AlertView,
     [ElementType.Image]: ImageView,
-    [ElementType.Container]: ContainerView,
+    [ElementType.GroupLayout]: ContainerView,
     [ElementType.Checkbox]: CheckboxFieldView,
     [ElementType.Date]: DateFieldView,
     [ElementType.Headline]: HeadlineComponentView,
     [ElementType.MultiCheckbox]: MultiCheckboxFieldComponentView,
     [ElementType.Number]: NumberFieldView,
     [ElementType.ReplicatingContainer]: ReplicatingContainerView,
-    [ElementType.Richtext]: RichtextComponentView,
+    [ElementType.RichText]: RichtextComponentView,
     [ElementType.Radio]: RadioFieldComponentView,
     [ElementType.Select]: SelectFieldView,
     [ElementType.Spacer]: SpacerComponentView,
@@ -48,6 +72,33 @@ const views: ElementTypesMap<BaseView<any, any> | null> = {
     [ElementType.SubmitStep]: SubmitComponentView,
     [ElementType.SubmittedStep]: null,
     [ElementType.FileUpload]: FileUploadView,
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: ContainerView, // TODO
+    [ElementType.FunctionInput]: FunctionInputView,
+    [ElementType.CodeInput]: CodeInputView,
+    [ElementType.RichTextInput]: RichTextView,
+    [ElementType.UiDefinitionInput]: UiDefinitionInputFieldView,
+    [ElementType.IdentityConfigElement]: IdentityConfigView,
+    [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: ChipInputFieldView,
+    [ElementType.DateTime]: DateTimeFieldView,
+    [ElementType.DateRange]: DateRangeFieldView,
+    [ElementType.TimeRange]: TimeRangeFieldView,
+    [ElementType.DateTimeRange]: DateTimeRangeFieldView,
+    [ElementType.MapPoint]: MapPointFieldView,
+    [ElementType.DomainAndUserSelect]: DomainUserSelectFieldView,
+    [ElementType.AssignmentContext]: AssignmentContextFieldView,
+    [ElementType.DataModelSelect]: DataModelSelectFieldView,
+    [ElementType.DataObjectSelect]: DataObjectSelectFieldView,
+    [ElementType.NoCodeInput]: NoCodeInputFieldView,
+    [ElementType.SummaryLayout]: SummaryLayoutView,
+    [ElementType.ProcessDataKeyInput]: ProcessDataKeyInputFieldView,
+    [ElementType.ProcessInstanceAttachmentSetSelect]: ProcessInstanceAttachmentSetSelectFieldView,
+    [ElementType.ProcessIdentityIdInput]: ProcessIdentityIdInputFieldView,
+    [ElementType.HtmlTemplateInput]: HtmlTemplateInputView,
+    [ElementType.StoragePathSelector]: StoragePathSelectorInputView,
+    [ElementType.ProcessAttachmentDisplay]: ProcessAttachmentDisplayView,
+    [ElementType.PaymentConfigElement]: PaymentConfigView,
+    [ElementType.LinkButton]: LinkButtonView,
 };
-
-export default views;

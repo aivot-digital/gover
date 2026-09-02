@@ -1,15 +1,14 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import KeyOutlinedIcon from '@mui/icons-material/KeyOutlined';
+import KeyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Key';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import {SecretsApiService} from '../../secrets-api-service';
 import {Secret} from '../../models/secret';
 import React from 'react';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
+import {Permission} from '../../../../data/permissions/permission';
 
 export function SecretsDetailsPage() {
-    useAdminGuard();
-
     return (
         <PageWrapper
             title="Geheimnis bearbeiten"
@@ -17,6 +16,14 @@ export function SecretsDetailsPage() {
             background
         >
             <GenericDetailsPage<Secret, string, undefined>
+                permissionCheck={{
+                    create: Permission.SECRET_CREATE,
+                    read: Permission.SECRET_READ,
+                    update: Permission.SECRET_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={{
                     icon: <KeyOutlinedIcon />,
                     title: 'Geheimnis bearbeiten',
@@ -27,14 +34,18 @@ export function SecretsDetailsPage() {
                             <>
                                 <Typography
                                     variant="body1"
-                                    paragraph
+                                    sx={{
+                                        marginBottom: "16px"
+                                    }}
                                 >
                                     Verwalten Sie hier sicher die Geheimnisse Ihrer Webanwendung, wie API-Schlüssel, Passwörter oder andere vertrauliche Daten.
                                     Diese werden getrennt vom Code gespeichert, um Sicherheitsrisiken zu minimieren und eine einfache Aktualisierung ohne Anpassung der Anwendung zu ermöglichen.
                                 </Typography>
                                 <Typography
                                     variant="body1"
-                                    paragraph
+                                    sx={{
+                                        marginBottom: "16px"
+                                    }}
                                 >
                                     Alle Geheimnisse sind verschlüsselt und nur für autorisierte Nutzer:innen oder Dienste mit entsprechender Berechtigung zugänglich.
                                 </Typography>
@@ -58,14 +69,15 @@ export function SecretsDetailsPage() {
                     }
                 }}
                 getHeaderTitle={(item, isNewItem, notFound) => {
-                    if (notFound) return "Geheimnis nicht gefunden";
-                    if (isNewItem) return "Neues Geheimnis anlegen";
-                    return `Geheimnis: ${item?.name ?? "Unbenannt"}`;
+                    if (notFound) return 'Geheimnis nicht gefunden';
+                    if (isNewItem) return 'Neues Geheimnis anlegen';
+                    return `Geheimnis: ${item?.name ?? 'Unbenannt'}`;
                 }}
                 parentLink={{
-                    label: "Liste der Geheimnisse",
-                    to: "/secrets",
+                    label: 'Liste der Geheimnisse',
+                    to: '/secrets',
                 }}
+                entityType={ServerEntityType.Secrets}
             />
         </PageWrapper>
     );

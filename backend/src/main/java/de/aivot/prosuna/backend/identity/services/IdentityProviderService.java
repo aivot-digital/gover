@@ -1,0 +1,391 @@
+package de.aivot.prosuna.backend.identity.services;
+
+import de.aivot.prosuna.backend.asset.entities.AssetEntity;
+import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
+import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
+import de.aivot.prosuna.backend.core.services.HttpService;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
+import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
+import de.aivot.prosuna.backend.identity.models.OpenIdConfiguration;
+import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.lib.models.Filter;
+import de.aivot.prosuna.backend.lib.services.EntityService;
+import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
+import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+
+import java.net.URI;
+import java.net.http.HttpResponse;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Service for managing identity providers in the Prosuna system.
+ *
+ * <p>
+ * Provides CRUD operations, validation, and business logic for {@link IdentityProviderEntity} objects.
+ * Handles OpenID Connect configuration retrieval, ensures data integrity, and enforces business rules
+ * such as only allowing deletion of custom providers without linked forms.
+ * </p>
+ *
+ * <p>Key functionalities include:</p>
+ * <ul>
+ *     <li>CRUD operations for identity providers with validation and filtering support.</li>
+ *     <li>Preparation of providers from OpenID Connect discovery endpoints.</li>
+ *     <li>Validation of linked secrets and assets.</li>
+ *     <li>Business rule enforcement for provider updates and deletions.</li>
+ * </ul>
+ *
+ * @see IdentityProviderEntity
+ * @see IdentityProviderType
+ * @see ResponseException
+ */
+@Service
+public class IdentityProviderService implements EntityService<IdentityProviderEntity, UUID> {
+    private final IdentityProviderRepository identityProviderRepository;
+    private final SecretRepository secretRepository;
+    private final AssetRepository assetRepository;
+    private final HttpService httpService;
+
+    @Autowired
+    public IdentityProviderService(IdentityProviderRepository identityProviderRepository,
+                                   SecretRepository secretRepository,
+                                   AssetRepository assetRepository,
+                                   HttpService httpService) {
+        this.identityProviderRepository = identityProviderRepository;
+        this.secretRepository = secretRepository;
+        this.assetRepository = assetRepository;
+        this.httpService = httpService;
+    }
+
+    /**
+     * Prepares an {@link IdentityProviderEntity} by retrieving and parsing the OpenID Connect configuration
+     * from the specified endpoint.
+     *
+     * <p>This method performs the following steps:</p>
+     * <ul>
+     *     <li>Sends an HTTP GET request to the provided endpoint to fetch the OpenID Connect configuration.</li>
+     *     <li>Validates the HTTP response status code and throws a {@link ResponseException} if it is not 200.</li>
+     *     <li>Parses the response body into an {@link OpenIdConfiguration} object.</li>
+     *     <li>Maps the configuration properties to a new {@link IdentityProviderEntity} instance.</li>
+     * </ul>
+     *
+     * <p>Exceptions are thrown in the following cases:</p>
+     * <ul>
+     *     <li>If the endpoint cannot be reached or an I/O error occurs.</li>
+     *     <li>If the HTTP response status code is not 200.</li>
+     *     <li>If the response body cannot be parsed into a valid {@link OpenIdConfiguration} object.</li>
+     * </ul>
+     *
+     * @param endpoint The OpenID Connect discovery endpoint URL.
+     * @return A prepared {@link IdentityProviderEntity} with the configuration details.
+     * @throws ResponseException If the endpoint is unreachable, returns an invalid response, or the response cannot be parsed.
+     */
+    @Nonnull
+    public IdentityProviderEntity prepare(@Nonnull String endpoint) throws ResponseException {
+        var uri = URI.create(endpoint);
+
+        HttpResponse<String> response;
+        try {
+            response = httpService.get(uri);
+        } catch (HttpConnectionException e) {
+            throw ResponseException.internalServerError(
+                    e,
+                    "Der Endpoint %s konnte nicht erreicht werden. Bitte überprüfen Sie den Endpoint.",
+                    uri.toString()
+            );
+        }
+
+        if (response.statusCode() != 200) {
+            throw ResponseException.conflict(
+                    "Der Endpoint %s hat den Status %d zurückgegeben. Bitte überprüfen Sie den Endpoint.",
+                    uri.toString(),
+                    response.statusCode()
+            );
+        }
+
+        var body = response.body();
+
+        OpenIdConfiguration openIdConfiguration;
+        try {
+            openIdConfiguration = JsonMapperFactory
+                    .getInstance()
+                    .readValue(body, OpenIdConfiguration.class);
+        } catch (JacksonException e) {
+            throw ResponseException.internalServerError(
+                    e,
+                    "Der Endpoint %s hat eine ungültige Antwort zurückgegeben. Bitte überprüfen Sie den Endpoint.",
+                    uri.toString()
+            );
+        }
+
+        return new IdentityProviderEntity()
+                .setAuthorizationEndpoint(openIdConfiguration.getAuthorizationEndpoint())
+                .setTokenEndpoint(openIdConfiguration.getTokenEndpoint())
+                .setUserinfoEndpoint(openIdConfiguration.getUserinfoEndpoint())
+                .setEndSessionEndpoint(openIdConfiguration.getEndSessionEndpoint())
+                .setDefaultScopes(Arrays.asList(openIdConfiguration.getScopesSupported()));
+    }
+
+    /**
+     * Creates a new {@link IdentityProviderEntity} with default values and saves it to the database.
+     *
+     * <p>This method performs the following steps:</p>
+     * <ul>
+     *     <li>Generates a unique key for the entity.</li>
+     *     <li>Sets the type of the identity provider to {@link IdentityProviderType#Custom}.</li>
+     *     <li>Validates and cleans up the {@code clientSecretKey} and {@code iconAssetKey} fields.</li>
+     *     <li>Saves the entity to the database using the {@link IdentityProviderRepository}.</li>
+     * </ul>
+     *
+     * @param entity The {@link IdentityProviderEntity} to be created.
+     * @return The saved {@link IdentityProviderEntity}.
+     * @throws ResponseException If an error occurs during the creation process.
+     */
+    @Nonnull
+    @Override
+    public IdentityProviderEntity create(@Nonnull IdentityProviderEntity entity) throws ResponseException {
+        // Set default values
+        entity.setKey(UUID.randomUUID());
+        entity.setType(IdentityProviderType.Custom);
+
+        cleanClientSecretKey(entity);
+        cleanIconAssetKey(entity);
+
+        return identityProviderRepository
+                .save(entity);
+    }
+
+    /**
+     * Retrieves a paginated list of {@link IdentityProviderEntity} objects based on the provided
+     * {@link Pageable}, {@link Specification}, and {@link Filter}.
+     *
+     * <p>This method allows filtering and pagination of identity providers stored in the database.</p>
+     *
+     * @param pageable      The pagination information.
+     * @param specification The specification for filtering the entities.
+     * @param filter        Additional filter criteria.
+     * @return A {@link Page} containing the filtered and paginated {@link IdentityProviderEntity} objects.
+     * @throws ResponseException If an error occurs during the retrieval process.
+     */
+    @Nullable
+    @Override
+    public Page<IdentityProviderEntity> performList(
+            @Nonnull Pageable pageable,
+            @Nullable Specification<IdentityProviderEntity> specification,
+            @Nullable Filter<IdentityProviderEntity> filter
+    ) throws ResponseException {
+        return identityProviderRepository
+                .findAll(specification, pageable);
+    }
+
+    /**
+     * Checks if an {@link IdentityProviderEntity} exists with the given ID.
+     *
+     * @param id The ID of the {@link IdentityProviderEntity} to check.
+     * @return {@code true} if the entity exists, {@code false} otherwise.
+     */
+    @Override
+    public boolean exists(@Nonnull UUID id) {
+        return identityProviderRepository
+                .existsById(id);
+    }
+
+    /**
+     * Checks if an {@link IdentityProviderEntity} exists that matches the given {@link Specification}.
+     *
+     * @param specification The specification to match the entity.
+     * @return {@code true} if a matching entity exists, {@code false} otherwise.
+     */
+    @Override
+    public boolean exists(@Nonnull Specification<IdentityProviderEntity> specification) {
+        return identityProviderRepository
+                .exists(specification);
+    }
+
+    /**
+     * Retrieves an {@link IdentityProviderEntity} by its ID.
+     *
+     * @param id The ID of the {@link IdentityProviderEntity} to retrieve.
+     * @return An {@link Optional} containing the entity if found, or empty if not found.
+     * @throws ResponseException If an error occurs during the retrieval process.
+     */
+    @Nonnull
+    @Override
+    public Optional<IdentityProviderEntity> retrieve(@Nonnull UUID id) throws ResponseException {
+        return identityProviderRepository
+                .findById(id);
+    }
+
+    /**
+     * Retrieves an {@link IdentityProviderEntity} that matches the given {@link Specification}.
+     *
+     * @param specification The specification to match the entity.
+     * @return An {@link Optional} containing the entity if found, or empty if not found.
+     * @throws ResponseException If an error occurs during the retrieval process.
+     */
+    @Nonnull
+    @Override
+    public Optional<IdentityProviderEntity> retrieve(@Nonnull Specification<IdentityProviderEntity> specification) throws ResponseException {
+        return identityProviderRepository
+                .findOne(specification);
+    }
+
+    /**
+     * Updates an existing {@link IdentityProviderEntity} with the provided updated values.
+     *
+     * <p>This method performs the following steps:</p>
+     * <ul>
+     *     <li>If the existing entity is not of type {@link IdentityProviderType#Custom}, only the
+     *         {@code isEnabled} field is updated. Other fields remain unchanged.</li>
+     *     <li>If the entity is of type {@link IdentityProviderType#Custom}, fixed fields such as
+     *         {@code key} and {@code type} are preserved from the existing entity.</li>
+     *     <li>Validates and cleans up the {@code clientSecretKey} and {@code iconAssetKey} fields
+     *         using helper methods.</li>
+     *     <li>Saves the updated entity to the database using the {@link IdentityProviderRepository}.</li>
+     * </ul>
+     *
+     * <p>Exceptions are thrown in the following cases:</p>
+     * <ul>
+     *     <li>If the entity is not of type {@link IdentityProviderType#Custom} and an invalid update is attempted.</li>
+     *     <li>If any validation or cleanup operation fails.</li>
+     * </ul>
+     *
+     * @param id             The ID of the entity being updated.
+     * @param updatedEntity  The {@link IdentityProviderEntity} containing the updated values.
+     * @param existingEntity The existing {@link IdentityProviderEntity} to be updated.
+     * @return The updated and saved {@link IdentityProviderEntity}.
+     * @throws ResponseException If the entity is not of type {@link IdentityProviderType#Custom} or
+     *                           if an error occurs during the update process.
+     */
+    @Nonnull
+    @Override
+    public IdentityProviderEntity performUpdate(
+            @Nonnull UUID id,
+            @Nonnull IdentityProviderEntity updatedEntity,
+            @Nonnull IdentityProviderEntity existingEntity
+    ) throws ResponseException {
+        if (existingEntity.getType() != IdentityProviderType.Custom) {
+            // Copy only value allowed to modify for system providers
+            existingEntity.setIsEnabled(updatedEntity.getIsEnabled());
+
+            return identityProviderRepository
+                    .save(existingEntity);
+        } else {
+            // Copy fix values
+            updatedEntity.setKey(existingEntity.getKey());
+            updatedEntity.setType(existingEntity.getType());
+
+            cleanClientSecretKey(updatedEntity);
+            cleanIconAssetKey(updatedEntity);
+
+            return identityProviderRepository
+                    .save(updatedEntity);
+        }
+    }
+
+    /**
+     * Deletes the specified {@link IdentityProviderEntity} from the database.
+     *
+     * <p>This method performs the following validations before deletion:</p>
+     * <ul>
+     *     <li>Ensures that the identity provider is of type {@link IdentityProviderType#Custom}.
+     *         If it is not, a {@link ResponseException} is thrown.</li>
+     *     <li>Checks if there are any forms linked to the identity provider. If such forms exist,
+     *         a {@link ResponseException} is thrown, requiring the user to remove the links before deletion.</li>
+     * </ul>
+     *
+     * @param entity The {@link IdentityProviderEntity} to be deleted.
+     * @throws ResponseException If the entity is not of type {@link IdentityProviderType#Custom} or
+     *                           if there are forms linked to the identity provider.
+     */
+    @Override
+    public void performDelete(@Nonnull IdentityProviderEntity entity) throws ResponseException {
+        if (entity.getType() != IdentityProviderType.Custom) {
+            throw ResponseException.conflict(
+                    "Der Nutzerkontenanbieter %s (%s) ist ein Systemanbieter und kann nicht gelöscht werden.",
+                    entity.getName(),
+                    entity.getKey()
+            );
+        }
+
+        if (entity.getIsEnabled()) {
+            throw ResponseException.conflict(
+                    "Der Nutzerkontenanbieter %s (%s) ist noch aktiviert. Bitte deaktivieren Sie den Anbieter, bevor Sie ihn löschen.",
+                    entity.getName(),
+                    entity.getKey()
+            );
+        }
+
+        // TODO: Check if a process node exists which config references this identity provider.
+
+        identityProviderRepository
+                .delete(entity);
+    }
+
+    // region Helpers
+
+    /**
+     * Validates and cleans the client secret key of the given entity.
+     * <p>
+     * If the client secret key is set but does not exist in the secret repository, it is set to null.
+     * </p>
+     * @param updatedEntity The entity whose client secret key should be validated and cleaned.
+     */
+    private void cleanClientSecretKey(@Nonnull IdentityProviderEntity updatedEntity) {
+        if (updatedEntity.getClientSecretKey() == null) {
+            updatedEntity.setClientSecretKey(null);
+        } else {
+            Optional<SecretEntity> secretEntity;
+            try {
+                secretEntity = secretRepository
+                        .findById(updatedEntity.getClientSecretKey());
+            } catch (Exception e) {
+                secretEntity = Optional.empty();
+            }
+
+            if (secretEntity.isEmpty()) {
+                updatedEntity.setClientSecretKey(null);
+            }
+        }
+    }
+
+    /**
+     * Validates and cleans the icon asset key of the given entity.
+     * <p>
+     * If the icon asset key is set but does not exist in the asset repository, it is set to null.
+     * </p>
+     * @param updatedEntity The entity whose icon asset key should be validated and cleaned.
+     */
+    private void cleanIconAssetKey(@Nonnull IdentityProviderEntity updatedEntity) {
+        if (updatedEntity.getIconAssetKey() == null) {
+            updatedEntity.setIconAssetKey(null);
+            return;
+        }
+
+        Optional<AssetEntity> assetEntity;
+        try {
+            assetEntity = assetRepository
+                    .findById(updatedEntity.getIconAssetKey());
+        } catch (Exception e) {
+            updatedEntity.setIconAssetKey(null);
+            return;
+        }
+
+        if (assetEntity.isEmpty()) {
+            updatedEntity.setIconAssetKey(null);
+        }
+    }
+
+    // endregion
+}

@@ -1,0 +1,77 @@
+import {ElementType} from '../../../data/element-type/element-type';
+import {NoCodeDataType} from '../../../data/no-code-data-type';
+
+export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
+    [ElementType.Alert]: NoCodeDataType.Runtime,
+    [ElementType.Checkbox]: NoCodeDataType.Runtime,
+    [ElementType.Image]: NoCodeDataType.Runtime,
+    [ElementType.GroupLayout]: NoCodeDataType.Runtime,
+    [ElementType.Date]: NoCodeDataType.Date,
+    [ElementType.Step]: NoCodeDataType.Runtime,
+    [ElementType.FormLayout]: NoCodeDataType.Runtime,
+    [ElementType.Headline]: NoCodeDataType.Runtime,
+    [ElementType.MultiCheckbox]: NoCodeDataType.List,
+    [ElementType.Number]: NoCodeDataType.Number,
+    [ElementType.ReplicatingContainer]: NoCodeDataType.List,
+    [ElementType.RichText]: NoCodeDataType.Runtime,
+    [ElementType.Radio]: NoCodeDataType.String,
+    [ElementType.Select]: NoCodeDataType.String,
+    [ElementType.Spacer]: NoCodeDataType.Runtime,
+    [ElementType.Table]: NoCodeDataType.List,
+    [ElementType.Text]: NoCodeDataType.String,
+    [ElementType.Time]: NoCodeDataType.Time,
+    [ElementType.IntroductionStep]: NoCodeDataType.Runtime,
+    [ElementType.SummaryStep]: NoCodeDataType.Runtime,
+    [ElementType.SubmitStep]: NoCodeDataType.Runtime,
+    [ElementType.SubmittedStep]: NoCodeDataType.Runtime,
+    [ElementType.FileUpload]: NoCodeDataType.List,
+    [ElementType.DialogLayout]: NoCodeDataType.Runtime,
+    [ElementType.StepperLayout]: NoCodeDataType.Runtime,
+    [ElementType.ConfigLayout]: NoCodeDataType.Runtime,
+    [ElementType.FunctionInput]: NoCodeDataType.Runtime,
+    [ElementType.CodeInput]: NoCodeDataType.String,
+    [ElementType.RichTextInput]: NoCodeDataType.String,
+    [ElementType.UiDefinitionInput]: NoCodeDataType.Runtime,
+    [ElementType.IdentityConfigElement]: NoCodeDataType.Runtime,
+    [ElementType.PaymentConfigElement]: NoCodeDataType.Runtime,
+    [ElementType.TabLayout]: NoCodeDataType.Runtime,
+    [ElementType.ChipInput]: NoCodeDataType.List,
+    [ElementType.DateTime]: NoCodeDataType.DateTime,
+    [ElementType.DateRange]: NoCodeDataType.Object,
+    [ElementType.TimeRange]: NoCodeDataType.Object,
+    [ElementType.DateTimeRange]: NoCodeDataType.Object,
+    [ElementType.MapPoint]: NoCodeDataType.Object,
+    [ElementType.DomainAndUserSelect]: NoCodeDataType.List,
+    [ElementType.AssignmentContext]: NoCodeDataType.Object,
+    [ElementType.DataModelSelect]: NoCodeDataType.String,
+    [ElementType.DataObjectSelect]: NoCodeDataType.String,
+    [ElementType.NoCodeInput]: NoCodeDataType.Runtime,
+    [ElementType.SummaryLayout]: NoCodeDataType.Runtime,
+    [ElementType.ProcessDataKeyInput]: NoCodeDataType.String,
+    [ElementType.ProcessInstanceAttachmentSetSelect]: NoCodeDataType.List,
+    [ElementType.ProcessIdentityIdInput]: NoCodeDataType.List,
+    [ElementType.HtmlTemplateInput]: NoCodeDataType.Object,
+    [ElementType.StoragePathSelector]: NoCodeDataType.Object,
+    [ElementType.ProcessAttachmentDisplay]: NoCodeDataType.Runtime,
+    [ElementType.LinkButton]: NoCodeDataType.Runtime,
+}
+
+export function matchesDesiredNoCodeDataType(
+    actualType: NoCodeDataType,
+    desiredType: NoCodeDataType,
+): boolean {
+    return desiredType === NoCodeDataType.Runtime ||
+        actualType === desiredType ||
+        actualType === NoCodeDataType.Runtime;
+}
+
+export function elementMatchesDesiredNoCodeDataType(
+    elementType: ElementType,
+    desiredType: NoCodeDataType | undefined,
+): boolean {
+    if (desiredType == null) {
+        return true;
+    }
+
+    return matchesDesiredNoCodeDataType(NoCodeDataTypeMap[elementType], desiredType);
+}

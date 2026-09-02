@@ -1,12 +1,10 @@
-import {Api} from '../../hooks/use-api';
-import {CrudApiService} from '../../services/crud-api-service';
 import {IdentityProviderDetailsDTO} from './models/identity-provider-details-dto';
 import {IdentityProviderListDTO} from './models/identity-provider-list-dto';
 import {IdentityProviderRequestDTO} from './models/identity-provider-request-dto';
 import {IdentityProviderType} from './enums/identity-provider-type';
-import {IdentityProviderInfo} from './models/identity-provider-info';
-import {IdentityData} from './models/identity-data';
-import {IdentityIdHeader} from './constants/identity-id-header';
+import {IdentityDataMap} from './models/identity-data';
+import {createApiPath} from '../../utils/url-path-utils';
+import {BaseCrudApiService} from '../../services/base-crud-api-service';
 
 export interface IdentityProvidersFilter {
     keys: string[];
@@ -18,9 +16,20 @@ export interface IdentityProvidersFilter {
     isTestProvider: boolean;
 }
 
-export class IdentityProvidersApiService extends CrudApiService<IdentityProviderRequestDTO, IdentityProviderListDTO, IdentityProviderListDTO, IdentityProviderDetailsDTO, IdentityProviderDetailsDTO, string, IdentityProvidersFilter> {
-    constructor(api: Api) {
-        super(api, 'identity-providers/');
+export interface IdentityProviderTestStartResponseDTO {
+    redirectUrl: string;
+}
+
+export class IdentityProvidersApiService extends BaseCrudApiService<
+    IdentityProviderRequestDTO,
+    IdentityProviderListDTO,
+    IdentityProviderDetailsDTO,
+    IdentityProviderRequestDTO,
+    string,
+    IdentityProvidersFilter
+> {
+    constructor() {
+        super('/api/identity-providers/');
     }
 
     public initialize(): IdentityProviderDetailsDTO {
@@ -39,28 +48,67 @@ export class IdentityProvidersApiService extends CrudApiService<IdentityProvider
             userinfoEndpoint: undefined,
             endSessionEndpoint: undefined,
             isEnabled: false,
-            iconAssetKey: undefined,
+            iconAssetKey: null,
             defaultScopes: [],
             isTestProvider: false,
         };
     }
 
     public async prepare(endpoint: string): Promise<IdentityProviderDetailsDTO> {
-        return await this.api.post<IdentityProviderDetailsDTO>('identity-providers/prepare/', {
+        return await this.post<any, IdentityProviderDetailsDTO>('/api/identity-providers/prepare/', {
             endpoint: endpoint,
         });
     }
 
-    public static createLink(key: string, additionalScopes?: string[]): string {
-        return '/api/public/identity/' + key + '/start/' + (additionalScopes != null ? '?additionalScopes=' + additionalScopes.join('%20') : '');
+    public async startTest(key: string, origin: string): Promise<string> {
+        const response = await this.post<{ origin: string }, IdentityProviderTestStartResponseDTO>(
+            `${this.buildPath(key)}test/start/`,
+            {origin},
+            {},
+        );
+        return response.redirectUrl;
     }
 
-    public static async fetchIdentity(identityId: string): Promise<IdentityData> {
-        const res = await fetch('/api/public/identity/get/', {
-            headers: {
-                [IdentityIdHeader]: identityId,
-            },
-        });
+    public static createLink(key: string,
+                             identityId: string,
+                             relatedProcessNodeId: number,
+                             additionalScopes?: string[],
+                             origin?: string): string {
+        const path = createApiPath('/api/public/identity/' + key + '/' + identityId + '/start/');
+
+        const resolvedOrigin = origin ?? `${window.location.origin}${window.location.pathname}`;
+        const additionalScopesParam = additionalScopes != null ? additionalScopes.join(' ') : '';
+
+        const searchParams = new URLSearchParams();
+        searchParams.set('origin', resolvedOrigin);
+        if (additionalScopesParam) {
+            searchParams.set('additionalScopes', additionalScopesParam);
+        }
+
+        searchParams.set('relatedProcessNodeId', relatedProcessNodeId.toString());
+
+        return path + '?' + searchParams.toString();
+    }
+
+    public static async fetchIdentity(clear: boolean, relatedNodeId: number | undefined): Promise<IdentityDataMap> {
+        const qp = new URLSearchParams();
+        if (clear) {
+            qp.set('clear', 'true');
+        }
+        if (relatedNodeId != null) {
+            qp.set('relatedProcessNodeId', relatedNodeId.toString());
+        }
+
+        const res = await fetch(createApiPath('api/public/identity/get/?' + qp.toString()));
         return await res.json();
+    }
+
+    public static async clearIdentity(relatedNodeId: number): Promise<void> {
+        const qp = new URLSearchParams();
+        qp.set('relatedProcessNodeId', relatedNodeId.toString());
+
+        await fetch(createApiPath('api/public/identity/session/?' + qp.toString()), {
+            method: 'DELETE',
+        });
     }
 }

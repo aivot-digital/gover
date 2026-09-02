@@ -1,0 +1,20 @@
+Hallo,
+
+[(${assignmentIntro})]
+Prozess: [(${process.internalTitle})] - Version [(${processInstanceTask.processVersion})]
+Aufgabe: [(${taskName})]
+Aktenzeichen: [(${fileNumbersDisplay})]
+Aufgabe erhalten: [(${startedLabel})] Uhr
+[# th:if="${deadlineLabel != null}"]Fälligkeit: [(${deadlineLabel})] Uhr
+[/]
+Zugewiesen durch: [(${assignmentSource})]
+
+Aufgabe öffnen:
+[(${base.config.createUrl(taskPath)})]
+
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

@@ -1,0 +1,267 @@
+package de.aivot.prosuna.backend.models.config;
+
+import de.aivot.prosuna.backend.core.enums.ModuleFlags;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import jakarta.annotation.Nullable;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Component
+@ConfigurationProperties(prefix = "prosuna")
+public class ProsunaConfig {
+    private String fromMail;
+    private List<String> reportMail;
+    private String sentryServer;
+    private String sentryWebApp;
+    private String environment;
+    private List<String> departmentLevelLabels;
+    @Deprecated
+    private List<String> fileExtensions;
+    @Deprecated
+    private List<String> contentTypes;
+    private String prosunaHostname;
+    private Integer maxSubmissionCopyRetryCount;
+    private List<String> bootstrapAdminMail;
+    private String registryHostname;
+    private String supportUrl;
+    private String timezone;
+
+    private Map<ProcessNodeType, Integer> processNodeLimits;
+    private List<ModuleFlags> moduleFlags;
+
+
+    public String getDefaultLogoUrl() {
+        return createUrl("/assets/default-logo.png");
+    }
+
+    public String getDefaultFaviconUrl() {
+        return createUrl("/assets/default-favicon.ico");
+    }
+
+    public String createUrl(String path) {
+        var uri = URI.create(prosunaHostname);
+        return uri.resolve(path).toString();
+    }
+
+    public String createUrl(String base, Object... parts) {
+        var uri = URI.create(prosunaHostname);
+
+        var resolvedParts = Arrays
+                .stream(parts)
+                .filter(Objects::nonNull)
+                .map(Object::toString)
+                .map(part -> URLEncoder.encode(part, StandardCharsets.UTF_8))
+                .collect(Collectors.joining("/"));
+
+        if (base.endsWith("/")) {
+            return uri.resolve(base + resolvedParts).toString();
+        } else {
+            return uri.resolve(base + "/" + resolvedParts).toString();
+        }
+    }
+
+    public String createUrlWithTrailingSlash(String base, Object... parts) {
+        var url = createUrl(base, parts);
+        if (!url.endsWith("/")) {
+            url += "/";
+        }
+        return url;
+    }
+
+    // region Getters & Setters
+
+    public String getFromMail() {
+        return fromMail;
+    }
+
+    public void setFromMail(String fromMail) {
+        this.fromMail = fromMail;
+    }
+
+    public List<String> getReportMail() {
+        return reportMail;
+    }
+
+    public void setReportMail(List<String> reportMail) {
+        this.reportMail = reportMail;
+    }
+
+    public String getSentryServer() {
+        return sentryServer;
+    }
+
+    public void setSentryServer(String sentryServer) {
+        this.sentryServer = sentryServer;
+    }
+
+    public String getSentryWebApp() {
+        return sentryWebApp;
+    }
+
+    public void setSentryWebApp(String sentryWebApp) {
+        this.sentryWebApp = sentryWebApp;
+    }
+
+    public String getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(String environment) {
+        this.environment = environment;
+    }
+
+    public List<String> getDepartmentLevelLabels() {
+        return departmentLevelLabels;
+    }
+
+    public void setDepartmentLevelLabels(List<String> departmentLevelLabels) {
+        this.departmentLevelLabels = departmentLevelLabels;
+    }
+
+    public List<String> getFileExtensions() {
+        return fileExtensions;
+    }
+
+    public void setFileExtensions(List<String> fileExtensions) {
+        this.fileExtensions = fileExtensions;
+    }
+
+    public List<String> getContentTypes() {
+        return contentTypes;
+    }
+
+    public void setContentTypes(List<String> contentTypes) {
+        this.contentTypes = contentTypes;
+    }
+
+    public String getProsunaHostname() {
+        return prosunaHostname;
+    }
+
+    public void setProsunaHostname(String prosunaHostname) {
+        this.prosunaHostname = prosunaHostname;
+    }
+
+    public Integer getMaxSubmissionCopyRetryCount() {
+        return maxSubmissionCopyRetryCount;
+    }
+
+    public void setMaxSubmissionCopyRetryCount(Integer maxSubmissionCopyRetryCount) {
+        this.maxSubmissionCopyRetryCount = maxSubmissionCopyRetryCount;
+    }
+
+    public List<String> getBootstrapAdminMail() {
+        return bootstrapAdminMail;
+    }
+
+    public void setBootstrapAdminMail(List<String> bootstrapAdminMail) {
+        this.bootstrapAdminMail = bootstrapAdminMail;
+    }
+
+    public String getRegistryHostname() {
+        return registryHostname;
+    }
+
+    public ProsunaConfig setRegistryHostname(String registryHostname) {
+        this.registryHostname = registryHostname;
+        return this;
+    }
+
+    @Nullable
+    public String getSupportUrl() {
+        return supportUrl;
+    }
+
+    public void setSupportUrl(@Nullable String supportUrl) {
+        if (supportUrl == null || supportUrl.isBlank()) {
+            this.supportUrl = null;
+            return;
+        }
+
+        URI uri;
+        try {
+            uri = URI.create(supportUrl.trim());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("PROSUNA_SUPPORT_URL must be a valid absolute HTTP(S) URL", exception);
+        }
+
+        if (!uri.isAbsolute() || uri.getHost() == null ||
+                !("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))) {
+            throw new IllegalArgumentException("PROSUNA_SUPPORT_URL must be a valid absolute HTTP(S) URL");
+        }
+        this.supportUrl = uri.toString();
+    }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
+    public ZoneId getZoneId() {
+        return ZoneId.of(timezone);
+    }
+
+    public boolean hasModuleFlag(ModuleFlags flag) {
+        return moduleFlags != null && moduleFlags.contains(flag);
+    }
+
+    public boolean isFormModuleEnabled() {
+        return hasModuleFlag(ModuleFlags.FORM);
+    }
+
+    public boolean isProcessModuleEnabled() {
+        return hasModuleFlag(ModuleFlags.PROCESS);
+    }
+
+    /**
+     * Missing limits are treated as unlimited so adding a new process node type or running with older configuration does not silently turn into a zero-capacity system.
+     */
+    public int getProcessNodeLimit(ProcessNodeType type) {
+        if (processNodeLimits == null) {
+            return -1;
+        }
+
+        var limit = processNodeLimits.get(type);
+        return limit != null ? limit : -1;
+    }
+
+    public boolean isProcessNodeTypeUnlimited(ProcessNodeType type) {
+        return isProcessModuleEnabled() || getProcessNodeLimit(type) < 0;
+    }
+
+    public List<ModuleFlags> getModuleFlags() {
+        if (moduleFlags == null) {
+            return new LinkedList<>();
+        }
+        return moduleFlags;
+    }
+
+    public ProsunaConfig setModuleFlags(List<ModuleFlags> moduleFlags) {
+        this.moduleFlags = moduleFlags;
+        return this;
+    }
+
+    public Map<ProcessNodeType, Integer> getProcessNodeLimits() {
+        if (processNodeLimits == null) {
+            return new HashMap<>();
+        }
+        return processNodeLimits;
+    }
+
+    public ProsunaConfig setProcessNodeLimits(Map<ProcessNodeType, Integer> processNodeLimits) {
+        this.processNodeLimits = processNodeLimits;
+        return this;
+    }
+
+    // endregion
+}

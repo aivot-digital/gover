@@ -1,0 +1,37 @@
+name: Test Frontend
+
+on:
+  workflow_call:
+    inputs:
+      build_version:
+        required: true
+        type: string
+
+jobs:
+  testFrontend:
+    name: Run frontend checks
+    runs-on: ubuntu-24.04
+    env:
+      BUILD_VERSION: ${{ inputs.build_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26.7.0
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Run typecheck
+        working-directory: app
+        run: npm run typecheck
+
+      - name: Run unit tests
+        working-directory: app
+        run: npm test

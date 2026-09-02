@@ -1,0 +1,494 @@
+package de.aivot.prosuna.backend.mail.services;
+
+import de.aivot.prosuna.backend.config.services.SystemConfigService;
+import de.aivot.prosuna.backend.config.services.UserConfigService;
+import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
+import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
+import de.aivot.prosuna.backend.department.filters.DepartmentMembershipFilter;
+import de.aivot.prosuna.backend.department.services.DepartmentMembershipService;
+import de.aivot.prosuna.backend.department.services.DepartmentService;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
+import de.aivot.prosuna.backend.exceptions.NoValidUserEMailsInDepartmentException;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.mail.enums.MailTemplate;
+import de.aivot.prosuna.backend.mail.models.MailSendOptions;
+import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.models.lib.MailAttachmentBytes;
+import de.aivot.prosuna.backend.services.TemplateLoaderService;
+import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.user.services.UserService;
+import de.aivot.prosuna.backend.utils.StringUtils;
+import jakarta.activation.DataSource;
+import jakarta.activation.FileDataSource;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.util.ByteArrayDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Pageable;
+import org.springframework.mail.MailException;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Component;
+import org.thymeleaf.templatemode.TemplateMode;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.*;
+
+@Component
+public class MailService {
+    private static final Logger logger = LoggerFactory.getLogger(MailService.class);
+    private static final String SENDER_LOGO_CONTENT_ID = "sender-logo";
+
+    private final ProsunaConfig prosunaConfig;
+    private final JavaMailSender mailSender;
+
+    private final SystemConfigService systemConfigService;
+    private final DepartmentService departmentService;
+    private final VDepartmentShadowedService vDepartmentShadowedService;
+    private final DepartmentMembershipService departmetMembershipService;
+
+    private final MailLogoService mailLogoService;
+    private final UserService userService;
+    private final UserConfigService userConfigService;
+
+    @Value("${spring.mail.host}")
+    private String mailHost;
+
+    @Autowired
+    public MailService(
+            ProsunaConfig prosunaConfig,
+            JavaMailSender mailSender,
+            SystemConfigService systemConfigService,
+            DepartmentService departmentService,
+            VDepartmentShadowedService vDepartmentShadowedService,
+            DepartmentMembershipService departmentMembershipService,
+            MailLogoService mailLogoService,
+            UserService userService,
+            UserConfigService userConfigService) {
+        this.prosunaConfig = prosunaConfig;
+        this.mailSender = mailSender;
+        this.systemConfigService = systemConfigService;
+        this.departmentService = departmentService;
+        this.vDepartmentShadowedService = vDepartmentShadowedService;
+        this.departmetMembershipService = departmentMembershipService;
+        this.mailLogoService = mailLogoService;
+        this.userService = userService;
+        this.userConfigService = userConfigService;
+    }
+
+    public void sendMailToDepartment(
+            Integer departmentId,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> context,
+            Set<String> userIdsToIgnore
+    ) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+        var department = departmentService
+                .retrieve(departmentId)
+                .orElseThrow(() -> new MessagingException("Department with ID " + departmentId + " not found"));
+
+        sendMailToDepartment(department, subject, template, context, userIdsToIgnore);
+    }
+
+    public void sendMailToDepartment(
+            DepartmentEntity department,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> context,
+            Set<String> userIdsToIgnore
+    ) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+        context.put("department", department);
+
+        var departmentTheme = departmentService
+                .getDepartmentTheme(department);
+
+        var membershipSpec = new DepartmentMembershipFilter()
+                .setDepartmentId(department.getId());
+
+        var memberships = departmetMembershipService
+                .list(Pageable.unpaged(), membershipSpec);
+
+        var hasSentAtLeastOnce = false;
+
+        for (var membership : memberships) {
+            if (userIdsToIgnore != null && userIdsToIgnore.contains(membership.getUserId())) {
+                hasSentAtLeastOnce = true;
+                continue;
+            }
+
+            context.put("membership", membership);
+            try {
+                var hasSent = sendMailToUser(departmentTheme,
+                        membership.getUserId(),
+                        subject,
+                        template,
+                        context);
+                if (hasSent) {
+                    hasSentAtLeastOnce = true;
+                }
+            } catch (ResponseException e) {
+                logger.error("Failed to send mail to " + membership.getUserId(), e);
+            }
+        }
+
+        if (!hasSentAtLeastOnce) {
+            throw new NoValidUserEMailsInDepartmentException("No valid email addresses (user/team) found in department " + department.getId());
+        }
+    }
+
+    public void sendMailToDepartmentsById(
+            Collection<Integer> departmentIds,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> context,
+            Set<String> userIdsToIgnore
+    ) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+        Set<DepartmentEntity> departments = new HashSet<>();
+
+        for (Integer departmentId : departmentIds) {
+            DepartmentEntity department = departmentService
+                    .retrieve(departmentId)
+                    .orElseThrow(() -> new MessagingException("Department with ID " + departmentId + " not found"));
+            departments.add(department);
+        }
+
+        sendMailToDepartments(departments, subject, template, context, userIdsToIgnore);
+    }
+
+    public void sendMailToDepartments(
+            Collection<DepartmentEntity> departments,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> context,
+            Set<String> userIdsToIgnore
+    ) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+        Set<String> alreadyNotifiedUserIds = new HashSet<>();
+        boolean hasSentAtLeastOnce = false;
+
+        for (DepartmentEntity department : departments) {
+            context.put("department", department);
+
+            var theme = departmentService
+                    .getDepartmentTheme(department);
+
+            var membershipSpec = new DepartmentMembershipFilter()
+                    .setDepartmentId(department.getId());
+
+            var memberships = departmetMembershipService
+                    .list(Pageable.unpaged(), membershipSpec);
+
+            for (var membership : memberships) {
+                var userId = membership.getUserId();
+
+                if ((userIdsToIgnore != null && userIdsToIgnore.contains(userId)) || alreadyNotifiedUserIds.contains(userId)) {
+                    hasSentAtLeastOnce = true;
+                    continue;
+                }
+
+                context.put("membership", membership);
+                try {
+                    var hasSent = sendMailToUser(theme, userId, subject, template, context);
+                    if (hasSent) {
+                        alreadyNotifiedUserIds.add(userId);
+                        hasSentAtLeastOnce = true;
+                    }
+                } catch (ResponseException e) {
+                    logger.error("Failed to send mail to " + userId, e);
+                }
+            }
+        }
+
+        if (!hasSentAtLeastOnce) {
+            throw new NoValidUserEMailsInDepartmentException("No valid recipients found in given departments");
+        }
+    }
+
+    /**
+     * Send a mail to a user
+     *
+     * @param userId   The ID of the user
+     * @param subject  The subject of the mail
+     * @param template The mail template
+     * @param context  The context for the mail template
+     * @return True if the mail was sent, false if the user is deleted, inactive, has no email. If the user has disabled mail notifications, the sending will be seen as successful.
+     * @throws MessagingException If the mail could not be sent
+     * @throws IOException        If the mail template could not be loaded
+     * @throws ResponseException  If the user config definition is not found
+     */
+    public boolean sendMailToUser(
+            ThemeEntity theme,
+            String userId,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> context
+    ) throws MessagingException, IOException, ResponseException {
+        // Retrieve the user entity
+        var user = userService
+                .retrieve(userId)
+                .orElseThrow(() -> new MessagingException("User with id \"" + userId + "\" not found"));
+        return sendMailToUser(theme, user, subject, template, context);
+    }
+
+    /**
+     * Send a mail to a user
+     *
+     * @param user     The user entity
+     * @param subject  The subject of the mail
+     * @param template The mail template
+     * @param context  The context for the mail template
+     * @return True if the mail was sent, false if the user is deleted, inactive, has no email. If the user has disabled mail notifications, the sending will be seen as successful.
+     * @throws MessagingException If the mail could not be sent
+     * @throws IOException        If the mail template could not be loaded
+     * @throws ResponseException  If the user config definition is not found
+     */
+    public boolean sendMailToUser(
+            ThemeEntity theme,
+            UserEntity user,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> context
+    ) throws MessagingException, IOException, ResponseException {
+        // Check if the user is deleted in the IdP
+        if (user.getDeletedInIdp()) {
+            return false;
+        }
+
+        // Check if the user is inactive
+        if (!Boolean.TRUE.equals(user.getEnabled())) {
+            return false;
+        }
+
+        // Check if the mail of the user is not verified
+        if (!Boolean.TRUE.equals(user.getVerified())) {
+            return false;
+        }
+
+        // Check if the user has an email address
+        if (StringUtils.isNullOrEmpty(user.getEmail())) {
+            return false;
+        }
+
+        if (template.getUserConfigKey() != null) {
+            var def = userConfigService
+                    .getDefinition(template.getUserConfigKey())
+                    .orElseThrow(() -> ResponseException.internalServerError("User config definition not found: " + template.getUserConfigKey()));
+
+            var config = userConfigService
+                    .retrieve(template.getUserConfigKey(), user.getId());
+
+            var parsedValue = def
+                    .parseValueFromDB(config.getValue());
+
+            if (parsedValue == null || (parsedValue instanceof Collection<?> list && !list.contains("mail"))) {
+                // User has disabled mail notifications
+                return true;
+            }
+        }
+
+        context.put("user", user);
+        sendMail(
+                theme,
+                user.getEmail(),
+                Optional.empty(),
+                Optional.empty(),
+                subject,
+                template,
+                context,
+                Optional.empty()
+        );
+
+        return true;
+    }
+
+    public void sendMail(
+            ThemeEntity theme,
+            String to,
+            Optional<String> cc,
+            Optional<String> bcc,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> context,
+            Optional<Collection<Path>> attachmentPaths
+    ) throws MessagingException, MailException, IOException, ResponseException {
+        sendMail(theme, to, cc, bcc, subject, template, context, attachmentPaths, Optional.empty());
+    }
+
+    public void sendMail(
+            ThemeEntity theme,
+            String to,
+            Optional<String> cc,
+            Optional<String> bcc,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> context,
+            Optional<Collection<Path>> attachmentPaths,
+            MailSendOptions options
+    ) throws MessagingException, MailException, ResponseException {
+        sendMail(theme, to, cc, bcc, subject, template, context, attachmentPaths, Optional.empty(), options);
+    }
+
+    public void sendMail(
+            ThemeEntity theme,
+            String to,
+            Optional<String> cc,
+            Optional<String> bcc,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> context,
+            Optional<Collection<Path>> attachmentPaths,
+            Optional<Collection<MailAttachmentBytes>> attachmentBytes
+    ) throws MessagingException, MailException, ResponseException {
+        sendMail(
+                theme,
+                to,
+                cc,
+                bcc,
+                subject,
+                template,
+                context,
+                attachmentPaths,
+                attachmentBytes,
+                MailSendOptions.defaults()
+        );
+    }
+
+    public void sendMail(
+            ThemeEntity theme,
+            String to,
+            Optional<String> cc,
+            Optional<String> bcc,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> context,
+            Optional<Collection<Path>> attachmentPaths,
+            Optional<Collection<MailAttachmentBytes>> attachmentBytes,
+            MailSendOptions options
+    ) throws MessagingException, MailException, ResponseException {
+        InternetAddress[] mailToList = InternetAddress.parse(to);
+
+        MimeMessage message = mailSender.createMimeMessage();
+
+        message.setRecipients(
+                Message.RecipientType.TO,
+                mailToList
+        );
+
+        if (cc.isPresent()) {
+            message.setRecipients(
+                    Message.RecipientType.CC,
+                    InternetAddress.parse(cc.get())
+            );
+        }
+        if (bcc.isPresent()) {
+            message.setRecipients(
+                    Message.RecipientType.BCC,
+                    InternetAddress.parse(bcc.get())
+            );
+        }
+
+        // Mail clients apply dark mode inconsistently. Embed one light-scheme logo on a neutral raster surface
+        // instead of attaching a second variant that clients cannot select reliably.
+        var senderLogo = mailLogoService.createSenderLogo(theme.getLogoKey());
+        context.put("base", createBaseContext(senderLogo.isPresent()));
+        context.put("mailSignature", resolveDefaultMailSignature(context, options));
+
+        String textMessage = loadTemplate(template.getKey() + ".txt", context, TemplateMode.TEXT);
+        String htmlMessage = loadTemplate(template.getKey() + ".html", context, TemplateMode.HTML);
+
+        message.setFrom(prosunaConfig.getFromMail());
+        message.setSubject(subject.replaceAll("\\r?\\n", " "), "utf-8");
+        var messageHelper = new MimeMessageHelper(
+                message,
+                MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+                StandardCharsets.UTF_8.name()
+        );
+        messageHelper.setText(textMessage, htmlMessage);
+
+        if (senderLogo.isPresent()) {
+            var logo = senderLogo.get();
+            messageHelper.addInline(
+                    SENDER_LOGO_CONTENT_ID,
+                    logo.filename(),
+                    new ByteArrayDataSource(logo.bytes(), logo.contentType())
+            );
+        }
+
+        if (attachmentPaths.isPresent()) {
+            for (Path path : attachmentPaths.get()) {
+                DataSource source = new FileDataSource(path.toFile());
+                messageHelper.addAttachment(path.getFileName().toString(), source);
+            }
+        }
+
+        if (attachmentBytes.isPresent()) {
+            for (var entry : attachmentBytes.get()) {
+                DataSource source = new ByteArrayDataSource(entry.bytes(), entry.contentType().toString());
+                messageHelper.addAttachment(entry.filename(), source);
+            }
+        }
+
+        if (!mailHost.isEmpty()) {
+            mailSender.send(message);
+        }
+    }
+
+    private String resolveDefaultMailSignature(
+            Map<String, Object> context,
+            MailSendOptions options
+    ) {
+        if (!options.includeDefaultMailSignature()) {
+            return null;
+        }
+
+        var department = context.get("department");
+        String signature = null;
+
+        if (department instanceof VDepartmentShadowedEntity shadowedDepartment) {
+            signature = shadowedDepartment.getDefaultMailSignature();
+        } else if (department instanceof DepartmentEntity departmentEntity) {
+            // Resolve through the hierarchy view so child departments inherit their parent's signature.
+            signature = departmentEntity.getId() == null
+                    ? departmentEntity.getDefaultMailSignature()
+                    : vDepartmentShadowedService
+                            .retrieve(departmentEntity.getId())
+                            .map(VDepartmentShadowedEntity::getDefaultMailSignature)
+                            .orElse(departmentEntity.getDefaultMailSignature());
+        }
+
+        return signature == null || signature.isBlank() ? null : signature.strip();
+    }
+
+    public boolean isSendingConfigured() {
+        return !mailHost.isBlank();
+    }
+
+    private String loadTemplate(String template, Map<String, Object> data, TemplateMode mode) {
+        return new TemplateLoaderService()
+                .processTemplate("mail/" + template, data, mode);
+    }
+
+    // TODO: This was copied to the pdf service. Needs unification!
+    private HashMap<String, Object> createBaseContext(boolean hasLogo) throws ResponseException {
+        var context = new HashMap<String, Object>();
+
+        context.put("providerName", systemConfigService
+                .retrieve(ProviderNameSystemConfigDefinition.KEY)
+                .getValue()
+        );
+
+        context.put("hasLogo", hasLogo);
+
+        context.put("config", prosunaConfig);
+
+        return context;
+    }
+}

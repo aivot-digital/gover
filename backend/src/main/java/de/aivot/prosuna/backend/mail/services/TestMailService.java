@@ -1,0 +1,57 @@
+package de.aivot.prosuna.backend.mail.services;
+
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.mail.enums.MailTemplate;
+import de.aivot.prosuna.backend.system.services.SystemService;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
+import jakarta.mail.MessagingException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Optional;
+
+@Component
+public class TestMailService {
+    private final MailService mailService;
+    private final MailConfigurationService mailConfigurationService;
+    private final SystemService systemService;
+
+    @Autowired
+    public TestMailService(
+            MailService mailService,
+            MailConfigurationService mailConfigurationService,
+            SystemService systemService
+    ) {
+        this.mailService = mailService;
+        this.mailConfigurationService = mailConfigurationService;
+        this.systemService = systemService;
+    }
+
+    public void send(UserEntity triggeringUser, String to) throws MessagingException, IOException, ResponseException {
+        if (!mailConfigurationService.isConfigured()) {
+            throw new MessagingException("Die E-Mail-Anbindung ist nicht vollständig konfiguriert.");
+        }
+
+        String title = "SMTP-Test";
+
+        var context = new HashMap<String, Object>();
+        context.put("title", title);
+        context.put("triggeringUser", triggeringUser);
+
+        var theme = systemService
+                .retrieveDefaultTheme();
+
+        mailService.sendMail(
+                theme,
+                to,
+                Optional.empty(),
+                Optional.empty(),
+                "[Prosuna] [Test] " + title,
+                MailTemplate.SmtpTest,
+                context,
+                Optional.empty()
+        );
+    }
+}

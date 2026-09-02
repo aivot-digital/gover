@@ -1,9 +1,10 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Alert, Box, Button, Dialog, DialogActions, DialogContent, Grid, TextField, Tooltip, Typography} from '@mui/material';
+import {Alert, Box, Button, ButtonBase, Dialog, DialogActions, DialogContent, Grid, Tooltip, Typography} from '@mui/material';
 import {StepIcons} from '../../data/step-icons';
+import {type StepIcon} from '../../models/step-icon';
 import Fuse from 'fuse.js';
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
+import {SearchInput} from '../../components/search-input/search-input';
 
 interface IconPickerDialogProps {
     open: boolean;
@@ -13,6 +14,7 @@ interface IconPickerDialogProps {
     title?: string;
     showLabels?: boolean;
     autoSelect?: boolean;
+    icons?: StepIcon[];
 }
 
 export function IconPickerDialog({
@@ -23,18 +25,19 @@ export function IconPickerDialog({
                                      title,
                                      showLabels = false,
                                      autoSelect = false,
-                                 }: IconPickerDialogProps): JSX.Element {
+                                     icons = StepIcons,
+                                 }: IconPickerDialogProps) {
     const [selected, setSelected] = useState<string | undefined>(selectedIconId);
     const [search, setSearch] = useState('');
 
-    const fuse = useMemo(() => new Fuse(StepIcons, {
+    const fuse = useMemo(() => new Fuse(icons, {
         keys: ['label'],
         threshold: 0.4,
-    }), []);
+    }), [icons]);
 
     const filteredIcons = search
         ? fuse.search(search).map(result => result.item)
-        : StepIcons;
+        : icons;
 
     const handleSelect = (id: string) => {
         if (autoSelect) {
@@ -53,6 +56,7 @@ export function IconPickerDialog({
     useEffect(() => {
         if (open) {
             setSelected(selectedIconId);
+            setSearch('');
         }
     }, [open, selectedIconId]);
 
@@ -70,18 +74,15 @@ export function IconPickerDialog({
                 {title ?? 'Icon auswählen'}
             </DialogTitleWithClose>
             <DialogContent sx={{maxHeight: '70vh', overflow: 'hidden', display: 'flex', flexDirection: 'column'}}>
-                <TextField
-                    fullWidth
-                    variant="outlined"
-                    placeholder="Symbol suchen..."
+                <SearchInput
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    sx={{mt: 0, mb: 2}}
-                    size={'small'}
-                    InputProps={{
-                        startAdornment: (
-                            <SearchOutlinedIcon sx={{mr: 1}} />
-                        ),
+                    onChange={setSearch}
+                    label="Symbol suchen"
+                    placeholder="Name des Symbols eingeben"
+                    size="small"
+                    sx={{
+                        mt: 1,
+                        mb: 2,
                     }}
                 />
                 <Box sx={{overflowY: 'auto', height: '70vh', p: 1}}>
@@ -97,39 +98,39 @@ export function IconPickerDialog({
                                 const isSelected = selected === icon.id;
                                 return (
                                     <Grid
-                                        item
-                                        xs={12}
-                                        sm={6}
-                                        md={4}
                                         key={icon.id}
-                                    >
+                                        size={{
+                                            xs: 12,
+                                            sm: 6,
+                                            md: 4
+                                        }}>
                                         <Tooltip
                                             title={!showLabels ? icon.label : ''}
                                             arrow
                                         >
-                                            <Box
+                                            <ButtonBase
                                                 onClick={() => handleSelect(icon.id)}
+                                                aria-label={icon.label}
+                                                aria-pressed={isSelected}
                                                 sx={(theme) => ({
                                                     border: '1px solid',
-                                                    borderColor: isSelected ? 'primary.main' : 'grey.400',
+                                                    borderColor: isSelected ? 'primary.main' : 'divider',
                                                     borderRadius: 1,
                                                     px: 2,
                                                     py: 1.5,
-                                                    cursor: 'pointer',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: showLabels ? 'flex-start' : 'center',
                                                     gap: showLabels ? 2 : 0,
                                                     height: showLabels ? 64 : 88,
+                                                    width: '100%',
                                                     flexDirection: showLabels ? 'row' : 'column',
-                                                    transition: 'all 0.2s ease-in-out',
-                                                    backgroundColor: isSelected ? 'grey.100' : 'background.paper',
-                                                    boxShadow: isSelected ? `inset 0 0 0 2px ${theme.palette.primary.light}` : 'none',
+                                                    transition: theme.transitions.create(['border-color', 'background-color', 'box-shadow']),
+                                                    backgroundColor: isSelected ? 'action.selected' : 'background.paper',
+                                                    boxShadow: isSelected ? `inset 0 0 0 1px ${theme.palette.primary.main}` : 'none',
                                                     '&:hover': {
-                                                        borderColor: 'grey.400',
-                                                        backgroundColor: 'grey.100',
-                                                        transform: 'scale(1.03)',
-                                                        transition: 'transform 0.15s ease-in-out',
+                                                        borderColor: 'primary.main',
+                                                        backgroundColor: 'action.hover',
                                                     },
                                                 })}
                                             >
@@ -143,7 +144,7 @@ export function IconPickerDialog({
                                                         {icon.label}
                                                     </Typography>
                                                 )}
-                                            </Box>
+                                            </ButtonBase>
                                         </Tooltip>
                                     </Grid>
                                 );

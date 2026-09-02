@@ -1,0 +1,46 @@
+<mjml lang="de">
+    <mj-head>
+        <mj-include path="../partials/head.mjml"/>
+
+        <mj-html-attributes>
+            <mj-selector path=".primary-action a">
+                <mj-html-attribute name="th:href">${base.config.createUrl('/staff/submissions/' + submission.id)}</mj-html-attribute>
+            </mj-selector>
+        </mj-html-attributes>
+
+        <mj-preview>
+            Eingang eines neuen Antrages – zur weiteren Bearbeitung
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        ein neuer Antrag ist in Prosuna eingegangen.
+                        <br/>
+                        <br/>
+                        Antrag auf: <b th:text="${form.internalTitle}">Beispielformular</b> - Version
+                        <b th:text="${form.version}">1.2.3</b>
+                        <br/>
+                        Antragseingang: <b th:text="${#numberformat.formatInstant(submission.created, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54:34</b> Uhr
+                    </p>
+                </mj-text>
+
+                <mj-button align="left"
+                           css-class="primary-action"
+                           href="#"
+                           padding="24px 0 0">
+                    Antrag öffnen
+                </mj-button>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/default-mail-signature.mjml"/>
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

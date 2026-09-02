@@ -1,15 +1,17 @@
 import {BaseInputElement} from '../base-input-element';
 import {ElementType} from '../../../../data/element-type/element-type';
 
-export interface FileUploadElement extends BaseInputElement<FileUploadElementItem[], ElementType.FileUpload> {
-    extensions?: string[];
-    isMultifile?: boolean;
-    maxFiles?: number;
-    minFiles?: number;
+export interface FileUploadElement extends BaseInputElement<ElementType.FileUpload> {
+    extensions: string[] | null | undefined;
+    isMultifile: boolean | null | undefined;
+    maxFiles: number | null | undefined;
+    minFiles: number | null | undefined;
+    submittedFileName: string | null | undefined;
 }
 
 export interface FileUploadElementItem {
     name: string;
+    originalFileName?: string | null;
     uri: string;
     size: number;
 }

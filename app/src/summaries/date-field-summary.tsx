@@ -1,16 +1,20 @@
 import {Grid, Typography, useTheme} from '@mui/material';
-import {format} from 'date-fns';
-import {BaseSummaryProps} from "./base-summary";
-import {DateFieldComponentModelMode, DateFieldElement} from "../models/elements/form/input/date-field-element";
-import {isStringNullOrEmpty} from "../utils/string-utils";
-import {formatNumStringToGermanNum} from "../utils/format-german-numbers";
-import React from "react";
+import {BaseSummaryProps} from './base-summary';
+import {DateFieldComponentModelMode, DateFieldElement} from '../models/elements/form/input/date-field-element';
+import React from 'react';
+import {dateValueToDateTime} from '../utils/temporal-utils';
 
-export function DateFieldSummary({
-                                     model,
-                                     value,
-                                 }: BaseSummaryProps<DateFieldElement, string>) {
-    const date = value != null && value.length > 0 && new Date(value);
+export function DateFieldSummary(props: BaseSummaryProps<DateFieldElement, string>) {
+    const {
+        value,
+        model,
+    } = props;
+
+    const precision = model.mode ?? DateFieldComponentModelMode.Day;
+    const date = value != null && value.length > 0
+        ? dateValueToDateTime(value, precision)
+        : null;
+
     let formatting = 'dd.MM.yyyy';
     switch (model.mode) {
         case DateFieldComponentModelMode.Day:
@@ -22,20 +26,19 @@ export function DateFieldSummary({
             formatting = 'yyyy';
             break;
     }
+
     const theme = useTheme();
 
     return (
         <Grid
             container
             sx={{
-                borderBottom: "1px solid #D4D4D4",
+                borderBottom: '1px solid',
+                borderBottomColor: 'divider',
                 py: 1,
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -43,7 +46,10 @@ export function DateFieldSummary({
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant="body2"
                     sx={{
@@ -57,13 +63,13 @@ export function DateFieldSummary({
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
                 <Typography variant={"body2"}>
                     {
-                        date ? format(date, formatting) : 'Keine Angabe'
+                        date?.toFormat(formatting) ?? 'Keine Angabe'
                     }
                 </Typography>
             </Grid>

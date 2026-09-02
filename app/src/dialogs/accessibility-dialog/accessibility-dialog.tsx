@@ -1,45 +1,53 @@
-import {Alert, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type Department} from '../../modules/departments/models/department';
-import {useSelector} from 'react-redux';
 import {type AccessibilityDialogProps} from './accessibility-dialog-props';
-import {selectLoadedForm} from '../../slices/app-slice';
-import {useApi} from "../../hooks/use-api";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../data/system-config-keys";
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../data/system-config-keys';
+import {PublicDepartmentResponseDTO} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {MarkdownContent} from '../../components/markdown-content/markdown-content';
 
 export const AccessibilityDialogId = 'accessibility';
 
-export function AccessibilityDialog(props: AccessibilityDialogProps): JSX.Element {
-    const api = useApi();
-    const application = useSelector(selectLoadedForm);
-
-    const [department, setDepartment] = useState<Department>();
+export function AccessibilityDialog(props: AccessibilityDialogProps) {
+    const [department, setDepartment] = useState<PublicDepartmentResponseDTO>();
     const accessibilityDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId));
+    const parsedAccessibilityDepartmentId = accessibilityDepartmentId != null && accessibilityDepartmentId !== '' && !Number.isNaN(parseInt(accessibilityDepartmentId)) ?
+        parseInt(accessibilityDepartmentId) :
+        null;
+    const selectedAccessibilityDepartmentId = props.isListingPage ?
+        parsedAccessibilityDepartmentId :
+        props.version?.accessibilityDepartmentId ?? null;
 
     useEffect(() => {
-        if (
-            !props.isListingPage &&
-            application?.accessibilityDepartmentId != null &&
-            (department == null || department.id !== application.accessibilityDepartmentId)
-        ) {
-            new DepartmentsApiService(api)
-                .retrievePublic(application.accessibilityDepartmentId)
-                .then(setDepartment);
-        } else if (
-            props.isListingPage &&
-            accessibilityDepartmentId != null &&
-            accessibilityDepartmentId != '' &&
-            (department == null || department.id !== parseInt(accessibilityDepartmentId))
-        ){
-            new DepartmentsApiService(api)
-                .retrievePublic(parseInt(accessibilityDepartmentId))
-                .then(setDepartment);
+        if (selectedAccessibilityDepartmentId == null) {
+            setDepartment(undefined);
+            return;
         }
-    }, [accessibilityDepartmentId, application, department]);
+
+        let isCancelled = false;
+
+        // Clear stale department data immediately when the configured source is removed or changed.
+        setDepartment(undefined);
+        new DepartmentApiService()
+            .retrievePublic(selectedAccessibilityDepartmentId)
+            .then((department) => {
+                if (!isCancelled) {
+                    setDepartment(department);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [selectedAccessibilityDepartmentId]);
+
+    const commonAccessibility = department?.commonAccessibility;
+    const processSpecificAccessibilityStatement = props.isListingPage ? undefined : props.version?.processSpecificAccessibilityStatement;
+    const hasAccessibilityText = [commonAccessibility, processSpecificAccessibilityStatement]
+        .some((text) => text != null && text.trim().length > 0);
 
     return (
         <Dialog
@@ -56,21 +64,34 @@ export function AccessibilityDialog(props: AccessibilityDialogProps): JSX.Elemen
                 Informationen zur Barrierefreiheit
             </DialogTitleWithClose>
             {
-                department?.accessibility ?
-                    <DialogContent
-                        dangerouslySetInnerHTML={{__html: department?.accessibility}}
-                    />
+                hasAccessibilityText ?
+                    <DialogContent>
+                        {
+                            commonAccessibility != null &&
+                            commonAccessibility.trim().length > 0 &&
+                            <MarkdownContent markdown={commonAccessibility}/>
+                        }
+                        {
+                            processSpecificAccessibilityStatement != null &&
+                            processSpecificAccessibilityStatement.trim().length > 0 &&
+                            <Box sx={{mt: commonAccessibility != null && commonAccessibility.trim().length > 0 ? 3 : 0}}>
+                                <MarkdownContent markdown={processSpecificAccessibilityStatement}/>
+                            </Box>
+                        }
+                    </DialogContent>
                     :
                     <DialogContent tabIndex={0}>
                         <Alert severity="info">
-                            Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ einen Fachbereich als Quelle für die Informationen zur Barrierefreiheit aus.
+                            Für die Barrierefreiheitserklärung wurden keine Inhalte gefunden. Wählen Sie eine
+                            Organisationseinheit mit allgemeiner Barrierefreiheitserklärung aus und pflegen Sie bei
+                            Bedarf den prozessspezifischen Teil in den versionsspezifischen Einstellungen.
                         </Alert>
                     </DialogContent>
             }
             <DialogActions>
+                <Box/>
                 <Button
                     onClick={props.onHide}
-                    variant="contained"
                 >
                     Informationen schließen
                 </Button>

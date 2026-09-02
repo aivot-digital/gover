@@ -1,25 +1,26 @@
 import Editor from '@monaco-editor/react';
-import {Box, Button, FormControlLabel, Switch, Typography} from '@mui/material';
+import {Box, Button, FormControlLabel, Switch, useTheme} from '@mui/material';
 import React, {type ChangeEvent, useCallback, useRef, useState} from 'react';
 import {type StructureTabProps} from './structure-tab-props';
 import {type AnyElement} from '../../models/elements/any-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {IconButton} from '../icon-button/icon-button';
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {downloadObjectFile, uploadObjectFile} from '../../utils/download-utils';
-import {generateComponentTitle} from '../../utils/generate-component-title';
-import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
-import {useConfirm} from "../../providers/confirm-provider";
-import {AlertComponent} from "../alert/alert-component";
+import {generateComponentStructureFilename} from '../../utils/generate-component-structure-filename';
+import FileUploadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
+import {useConfirm} from '../../providers/confirm-provider';
+import {AlertComponent} from '../alert/alert-component';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
-export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>): JSX.Element {
+export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) {
+    const theme = useTheme();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
-    const editorRef = useRef<any>();
+    const editorRef = useRef<any>(undefined);
     const [editable, setEditable] = useState(false);
 
     const handleEditorDidMount = useCallback((editor: any, _: any) => {
@@ -38,7 +39,6 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>):
                             <AlertComponent color={"warning"}>
                                 <strong>Achtung:</strong> Diese Aktion kann zu unerwartetem Verhalten führen und sollte
                                 {" "}<strong>nur von erfahrenen Entwickler:innen</strong> durchgeführt werden.
-                                Änderungen können nicht automatisch rückgängig gemacht werden.
                             </AlertComponent>
                             Möchten Sie wirklich fortfahren?
                         </div>
@@ -80,7 +80,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>):
     };
 
     const handleDownload = (): void => {
-        downloadObjectFile(generateComponentTitle(props.elementModel) + '.json', props.elementModel);
+        downloadObjectFile(generateComponentStructureFilename(props.elementModel), props.elementModel);
     };
 
     const handleUpload = (): void => {
@@ -93,7 +93,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>):
     };
 
     return (
-        <Box sx={{p: 4}}>
+        <Box>
             <ElementEditorSectionHeader
                 title="Elementstruktur"
                 disableMarginTop
@@ -170,13 +170,15 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>):
             <Box
                 sx={{
                     py: 2,
-                    border: '1px solid rgba(0, 0, 0, 0.23)',
+                    border: '1px solid',
+                    borderColor: 'divider',
                     borderRadius: 1,
                 }}
             >
                 <Editor
                     height="calc(100vh - 400px)"
                     defaultLanguage="json"
+                    theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'light'}
                     value={JSON.stringify(props.elementModel, null, 4)}
                     options={{
                         minimap: {

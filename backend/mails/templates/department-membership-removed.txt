@@ -1,0 +1,12 @@
+Hallo,
+
+Sie wurden in Prosuna aus einer Organisationseinheit entfernt.
+Organisationseinheit: [(${department.name})]
+Entfernt durch: [(${admin.getFullName()})]
+
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

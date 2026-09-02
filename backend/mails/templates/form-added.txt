@@ -1,0 +1,17 @@
+Hallo,
+
+es wurde ein neues Formular in Prosuna erstellt.
+Formular: [(${form.internalTitle})]
+Version: [(${form.version})]
+Entwickelnde Organisationseinheit: [(${developingDepartment != null ? developingDepartment.name : '—'})]
+Angelegt durch: [(${triggeringUser.getFullName})]
+
+Formular öffnen:
+[(${base.config.createUrl('/staff/forms/' + form.id + '/' + form.version)})]
+
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

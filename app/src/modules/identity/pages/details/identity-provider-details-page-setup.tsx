@@ -3,9 +3,9 @@ import React, {useContext, useMemo} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
-import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
-import CodeOutlinedIcon from '@mui/icons-material/CodeOutlined';
-import {SettingsSuggestOutlined} from '@mui/icons-material';
+import LinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
+import CodeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code';
+import SettingsApplicationsOutlined from '@aivot/mui-material-symbols-400-n25-outlined/SettingsApplications';
 import {SamlMetadataDialog} from '../../../../dialogs/saml-metadata-dialog/saml-metadata-dialog';
 
 interface SetupInfoBlockProps {
@@ -123,7 +123,7 @@ function SetupInfoBlock({ title, description, links }: SetupInfoBlockProps) {
                         variant="contained"
                         color="primary"
                         onClick={handleFetchMetadata}
-                        startIcon={<SettingsSuggestOutlined />}
+                        startIcon={<SettingsApplicationsOutlined />}
                     >
                         Metadaten für Einrichtung auslesen
                     </Button>
@@ -164,13 +164,12 @@ export function IdentityProviderDetailsPageSetup() {
             {identityProvider?.type === IdentityProviderType.BundID && (
                 <SetupInfoBlock
                     title="Einrichtung der BundID"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BundID einer technischen Anbindung im Self Service Portal (SSP)
-                    des Bundesministerium des Innern und für Heimat bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BundID einer technischen Anbindung im Self Service Portal (SSP) des Bundesministerium des Innern und für Heimat bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'Leitfaden zur Anbindung der BundID',
-                            url: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/einrichten/bund-id',
+                            url: 'https://docs.prosuna.de',
                         },
                         {
                             icon: <LinkOutlinedIcon />,
@@ -194,13 +193,12 @@ export function IdentityProviderDetailsPageSetup() {
             {identityProvider?.type === IdentityProviderType.BayernID && (
                 <SetupInfoBlock
                     title="Einrichtung der BayernID"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BayernID einer technischen Anbindung bei der AKDB bedarf.
-                    Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BayernID einer technischen Anbindung bei der AKDB bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'Leitfaden zur Anbindung der BayernID',
-                            url: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/einrichten/bayern-id',
+                            url: 'https://docs.prosuna.de',
                         },
                         {
                             icon: <LinkOutlinedIcon />,
@@ -219,13 +217,12 @@ export function IdentityProviderDetailsPageSetup() {
             {identityProvider?.type === IdentityProviderType.SHID && (
                 <SetupInfoBlock
                     title="Einrichtung des Servicekonto Schleswig-Holstein"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Servicekontos Schleswig-Holstein einer technischen Anbindung bei der Dataport bedarf.
-                    Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Servicekontos Schleswig-Holstein einer technischen Anbindung bei der Dataport bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'Leitfaden zur Anbindung des Servicekontos Schleswig-Holstein',
-                            url: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/einrichten/servicekonto-sh',
+                            url: 'https://docs.prosuna.de',
                         },
                         {
                             icon: <LinkOutlinedIcon />,
@@ -244,13 +241,12 @@ export function IdentityProviderDetailsPageSetup() {
             {identityProvider?.type === IdentityProviderType.MUK && (
                 <SetupInfoBlock
                     title="Einrichtung des Mein Unternehmenskonto (MUK)"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Mein Unternehmenskontos einer technischen Anbindung im Self Service Portal (SSP) des Bayerischen Staatsministeriums für Digitales bedarf.
-                    Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Mein Unternehmenskontos einer technischen Anbindung im Self Service Portal (SSP) des Bayerischen Staatsministeriums für Digitales bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'Leitfaden zur Anbindung des Mein Unternehmenskontos',
-                            url: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/einrichten/mein-unternehmenskonto',
+                            url: 'https://docs.prosuna.de',
                         },
                         {
                             icon: <LinkOutlinedIcon />,

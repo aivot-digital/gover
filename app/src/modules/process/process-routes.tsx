@@ -1,0 +1,110 @@
+import {type RouteObject} from 'react-router-dom';
+import React from 'react';
+import {ProcessListPage} from './pages/list/process-list-page';
+import {ProcessDetailsPage} from './pages/details/process-details-page';
+import {ProcessInstanceListPage} from './pages/list/process-instance-page';
+import {ProcessInstanceTaskListPage} from './pages/list/process-instance-task-page';
+import {ProcessTaskViewPage} from './pages/details/process-task-view-page';
+import {ProcessTaskViewPageIndex} from './pages/details/process-task-view-page-index';
+import {ProcessTaskViewPageEdit} from './pages/details/process-task-view-page-edit';
+import {ProcessTaskViewPageCommunication} from './pages/details/process-task-view-page-communication';
+import {ProcessAssignedTaskListPage} from './pages/list/process-assigned-task-page';
+import {ProcessNodeEditor} from './pages/details/components/process-node-editor/process-node-editor';
+import {
+    ProcessNodeEditorConfigurationTab,
+} from './pages/details/components/process-node-editor/tabs/process-node-editor-configuration-tab';
+import {
+    ProcessNodeEditorMoreTab,
+} from './pages/details/components/process-node-editor/tabs/process-node-editor-more-tab';
+import {
+    ProcessNodeEditorOutputsTab,
+} from './pages/details/components/process-node-editor/tabs/process-node-editor-outputs-tab';
+import {
+    ProcessNodeEditorTestingTab,
+} from './pages/details/components/process-node-editor/tabs/process-node-editor-testing-tab';
+import {
+    ProcessNodeEditorPlaceholder,
+} from './pages/details/components/process-node-editor/process-node-editor-placeholder';
+import {
+    duplicatePageWarningRouteHandle,
+} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
+import {ProcessInstanceDetailsPage} from './pages/details/process-instance-details-page';
+
+export const processRoutes: RouteObject[] = [
+    {
+        path: '/processes',
+        element: <ProcessListPage/>,
+    },
+    {
+        path: '/processes/:processId/versions/:processVersion',
+        element: <ProcessDetailsPage/>,
+        children: [
+            {
+                index: true,
+                element: <ProcessNodeEditorPlaceholder/>,
+            },
+            {
+                path: 'nodes/:nodeId',
+                element: <ProcessNodeEditor/>,
+                handle: duplicatePageWarningRouteHandle,
+                children: [
+                    {
+                        index: true,
+                        element: <ProcessNodeEditorConfigurationTab/>,
+                    },
+                    {
+                        path: 'tabs/configuration',
+                        element: <ProcessNodeEditorConfigurationTab/>,
+                    },
+                    {
+                        path: 'tabs/outputs',
+                        element: <ProcessNodeEditorOutputsTab/>,
+                    },
+                    {
+                        path: 'tabs/more',
+                        element: <ProcessNodeEditorMoreTab/>,
+                    },
+                    {
+                        path: 'tabs/testing',
+                        element: <ProcessNodeEditorTestingTab/>,
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        path: '/process-instances',
+        element: <ProcessInstanceListPage/>,
+    },
+    {
+        path: '/process-instances/:id',
+        element: <ProcessInstanceDetailsPage/>,
+    },
+    {
+        path: '/processes/:processId/versions/:processVersion/instances/:instanceId/tasks',
+        element: <ProcessInstanceTaskListPage/>,
+    },
+    {
+        path: '/tasks',
+        element: <ProcessAssignedTaskListPage/>,
+    },
+    {
+        path: '/tasks/:instanceId/:taskId',
+        element: <ProcessTaskViewPage/>,
+        handle: duplicatePageWarningRouteHandle,
+        children: [
+            {
+                index: true,
+                element: <ProcessTaskViewPageIndex/>,
+            },
+            {
+                path: 'edit',
+                element: <ProcessTaskViewPageEdit/>,
+            },
+            {
+                path: 'communication',
+                element: <ProcessTaskViewPageCommunication/>,
+            },
+        ],
+    },
+];

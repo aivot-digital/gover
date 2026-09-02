@@ -3,20 +3,35 @@ import {BaseViewProps} from './base-view';
 import {TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
+import {TextFieldComponentProps} from '../components/text-field/text-field-component-props';
+import Autocomplete from '@mui/material/Autocomplete';
+import {isStringNullOrEmpty} from '../utils/string-utils';
 
 export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
     const {
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
-        valueOverride,
+        onBlur,
     } = props;
 
     const {
-        disabled
+        label,
+        autocomplete,
+        placeholder,
+        hint,
+        isMultiline,
+        required,
+        disabled,
+        maxCharacters,
+        minCharacters,
+        suggestions,
+        prefix,
+        copyable,
+        copyValueTemplate,
     } = element;
 
     const isDisabled = useMemo(() => {
@@ -27,29 +42,54 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
-    const handleBlur = (val: string | null | undefined) => {
-        if (valueOverride?.onBlur) {
-            valueOverride.onBlur(element.id, val);
+    const handleBlur = (val: string | null) => {
+        if (onBlur != null) {
+            onBlur(val, [element.id]);
         }
     };
 
+    const textFieldProps: TextFieldComponentProps = useMemo(() => ({
+        label: label ?? '',
+        autocomplete: autocomplete ?? undefined,
+        placeholder: placeholder ?? undefined,
+        error: errors != null ? errors.join(' ') : undefined,
+        hint: hint ?? undefined,
+        multiline: isMultiline ?? undefined,
+        required: required ?? undefined,
+        disabled: isDisabled,
+        busy: isBusy,
+        maxCharacters: maxCharacters ?? undefined,
+        minCharacters: minCharacters ?? undefined,
+        value: value == null ? value : value.toString(),
+        onChange: val => setValue(val),
+        onBlur: onBlur != null ? handleBlur : undefined,
+        debounce: 1000,
+        startIcon: isStringNullOrEmpty(prefix) ? undefined : prefix,
+        copyable: copyable ?? false,
+        copyValueTemplate: copyValueTemplate ?? undefined,
+    }), [label, autocomplete, placeholder, errors, hint, isMultiline, required, isDisabled, isBusy, maxCharacters, minCharacters, value, setValue, onBlur, element.id, prefix, copyable, copyValueTemplate]);
+
+    if (suggestions != null) {
+        return (
+            <Autocomplete
+                freeSolo={true}
+                disablePortal={false}
+                options={suggestions.map(s => ({
+                    label: s,
+                }))}
+                renderInput={(params) => (
+                    <TextFieldComponent
+                        {...textFieldProps}
+                        muiPassTroughProps={params}
+                    />
+                )}
+            />
+        );
+    }
+
     return (
         <TextFieldComponent
-            label={element.label ?? ''}
-            autocomplete={element.autocomplete}
-            placeholder={element.placeholder}
-            error={error}
-            hint={element.hint}
-            multiline={element.isMultiline}
-            required={element.required}
-            disabled={isDisabled}
-            busy={isBusy}
-            maxCharacters={element.maxCharacters}
-            minCharacters={element.minCharacters}
-            value={value?.toString() ?? undefined}
-            onChange={val => setValue(val)}
-            onBlur={valueOverride?.onBlur ? handleBlur : undefined}
-            debounce={1000}
+            {...textFieldProps}
         />
     );
 }

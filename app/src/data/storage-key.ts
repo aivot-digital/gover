@@ -2,7 +2,8 @@ export enum StorageKey {
     AuthDataAccessToken = 'access_token',
     AuthDataRefreshToken = 'refresh_token',
 
-    IntroDismissed = 'intro_dismissed',
+    PreReleaseVersionNoticeDismissed = 'pre_release_version_notice_dismissed',
+    ColorMode = 'color_mode',
 
     SubmissionsIncludePaymentPending = 'submissions_include_payment_pending',
     SubmissionsIncludeArchived = 'submissions_include_archived',
@@ -13,4 +14,6 @@ export enum StorageKey {
 
     TokenDebuggerActive = 'debug_tokens',
     CaptchaDebuggerActive = 'debug_captcha',
+
+    ShowExperimentalFeatures = 'show_experimental_features',
 }

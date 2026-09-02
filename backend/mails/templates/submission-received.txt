@@ -1,0 +1,15 @@
+Hallo,
+
+ein neuer Antrag ist in Prosuna eingegangen.
+Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
+Antragseingang: [(${#numberformat.formatInstant(submission.created, 'dd.MM.yyyy HH:mm')})] Uhr
+
+Antrag öffnen:
+[(${base.config.createUrl('/staff/submissions/' + submission.id)})]
+
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

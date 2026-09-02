@@ -1,21 +1,25 @@
 export enum NoCodeDataType {
-    Any = 0,
+    Runtime = 'Runtime',
 
-    Boolean = 10,
-    Number = 11,
-    String = 12,
-    Date = 13,
+    Boolean = 'Boolean',
+    Number = 'Number',
+    String = 'String',
+    Date = 'Date',
+    DateTime = 'DateTime',
+    Time = 'Time',
 
-    List = 100,
-    Object = 101,
+    List = 'List',
+    Object = 'Object',
 }
 
 export const NoCodeDataTypeLabels: Record<NoCodeDataType, string> = {
-    [NoCodeDataType.Any]: 'Beliebiger Wert',
+    [NoCodeDataType.Runtime]: 'Beliebiger Wert',
     [NoCodeDataType.Boolean]: 'Wahrheitswert',
     [NoCodeDataType.Number]: 'Zahlenwert',
     [NoCodeDataType.String]: 'Textwert',
     [NoCodeDataType.Date]: 'Datumswert',
+    [NoCodeDataType.DateTime]: 'Datums- und Zeitwert',
+    [NoCodeDataType.Time]: 'Uhrzeitwert',
     [NoCodeDataType.List]: 'Liste',
     [NoCodeDataType.Object]: 'Objekt',
 };

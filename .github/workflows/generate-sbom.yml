@@ -1,0 +1,184 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      build_version:
+        required: true
+        type: string
+      build_date:
+        required: true
+        type: string
+
+jobs:
+  generateSbom:
+    name: Generate SBOM
+    runs-on: ubuntu-24.04
+    env:
+      BUILD_VERSION: ${{ inputs.build_version }}
+      BUILD_DATE: ${{ inputs.build_date }}
+      SBOM_DIR: build/sbom
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java and Node.js
+        uses: actions/setup-java@v5
+        with:
+          java-version: 25
+          distribution: temurin
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.7.0
+
+      - name: Prepare sbom output directory
+        run: mkdir -p "$SBOM_DIR/partials"
+
+      - name: Update package.json versions
+        run: |
+          echo "Injecting version: ${{ env.BUILD_VERSION }}"
+          jq --arg v "${{ env.BUILD_VERSION }}" '.version = $v' app/package.json > app/tmp.json && mv app/tmp.json app/package.json
+          jq --arg v "${{ env.BUILD_VERSION }}" '.version = $v' backend/mails/package.json > backend/mails/tmp.json && mv backend/mails/tmp.json backend/mails/package.json
+
+      - name: Install dependencies
+        run: |
+          npm install --prefix app
+          npm install --prefix backend/mails
+          npm install @cyclonedx/cyclonedx-npm --prefix app
+          npm install @cyclonedx/cyclonedx-npm --prefix backend/mails
+
+      - name: Generate frontend & mail SBOMs
+        run: |
+          (cd app && npx --yes @cyclonedx/cyclonedx-npm --output-file "../$SBOM_DIR/partials/sbom.frontend.json")
+          (cd backend/mails && npx --yes @cyclonedx/cyclonedx-npm --output-file "../../$SBOM_DIR/partials/sbom.mails.json")
+
+      - name: Inject backend version and generate SBOM
+        working-directory: backend
+        run: |
+          mvn versions:set -DnewVersion=${{ env.BUILD_VERSION }} -DgenerateBackupPoms=false
+          mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
+          cp target/bom.json "../$SBOM_DIR/partials/sbom.backend.json"
+
+      - name: Install cyclonedx-cli
+        run: |
+          curl -sSL https://github.com/CycloneDX/cyclonedx-cli/releases/latest/download/cyclonedx-linux-x64 -o cyclonedx
+          chmod +x cyclonedx
+          sudo mv cyclonedx /usr/local/bin/
+
+      - name: Verify SBOM files exist
+        run: |
+          test -f "$SBOM_DIR/partials/sbom.frontend.json" || (echo "Missing sbom.frontend.json" && exit 1)
+          test -f "$SBOM_DIR/partials/sbom.mails.json" || (echo "Missing sbom.mails.json" && exit 1)
+          test -f "$SBOM_DIR/partials/sbom.backend.json" || (echo "Missing sbom.backend.json" && exit 1)
+
+      - name: Merge SBOMs
+        run: |
+          cyclonedx merge \
+            --input-files "$SBOM_DIR/partials/sbom.frontend.json" \
+                          "$SBOM_DIR/partials/sbom.mails.json" \
+                          "$SBOM_DIR/partials/sbom.backend.json" \
+            --output-file "$SBOM_DIR/sbom.json"
+
+      - name: Generate license reports (CSV and TXT)
+        run: python3 .github/scripts/generate_license_reports.py
+
+      - name: Generate manifest.json
+        run: |
+          sbom_format="$(jq -er '.bomFormat | select(type == "string" and length > 0)' "$SBOM_DIR/sbom.json")"
+          sbom_spec_version="$(jq -er '.specVersion | select(type == "string" and length > 0)' "$SBOM_DIR/sbom.json")"
+          generated_at="$(jq -er '.metadata.timestamp | select(type == "string" and length > 0)' "$SBOM_DIR/sbom.json")"
+          component_count="$(jq -er '.components | length' "$SBOM_DIR/sbom.json")"
+
+          jq -n \
+            --arg name "prosuna" \
+            --arg version "${{ env.BUILD_VERSION }}" \
+            --arg commit "${{ github.sha }}" \
+            --arg buildDate "${{ env.BUILD_DATE }}" \
+            --arg generatedAt "$generated_at" \
+            --arg sbomFormat "$sbom_format" \
+            --arg sbomSpecVersion "$sbom_spec_version" \
+            --argjson componentCount "$component_count" \
+            '{
+              schemaVersion: 1,
+              name: $name,
+              version: $version,
+              commit: $commit,
+              buildDate: $buildDate,
+              generatedAt: $generatedAt,
+              sbomFormat: $sbomFormat,
+              sbomSpecVersion: $sbomSpecVersion,
+              componentCount: $componentCount,
+              sboms: {
+                frontend: "partials/sbom.frontend.json",
+                mails: "partials/sbom.mails.json",
+                backend: "partials/sbom.backend.json",
+                merged: "sbom.json"
+              },
+              reports: [
+                "licenses.csv",
+                "licenses.txt"
+              ]
+            }' > "$SBOM_DIR/manifest.json"
+
+      - name: Verify SBOM bundle
+        run: |
+          jq -e \
+            --arg version "${{ env.BUILD_VERSION }}" \
+            '.schemaVersion == 1 and .name == "prosuna" and .version == $version and .componentCount >= 0' \
+            "$SBOM_DIR/manifest.json" > /dev/null
+
+          jq -r '.sboms[], .reports[]' "$SBOM_DIR/manifest.json" | while IFS= read -r relative_path; do
+            test -f "$SBOM_DIR/$relative_path" || {
+              echo "Missing referenced SBOM bundle file: $relative_path"
+              exit 1
+            }
+          done
+
+      - name: Run license compliance check
+        id: license-check
+        run: |
+          python3 .github/scripts/check_licenses.py || true
+
+      - name: Post or update license compliance comment
+        if: >
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('license_report.md', 'utf8');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const existing = comments.find(comment =>
+              comment.body.includes('<!-- license-check -->')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                comment_id: existing.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            }
+
+      - name: Upload SBOM bundle as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: sbom-bundle
+          path: ${{ env.SBOM_DIR }}/

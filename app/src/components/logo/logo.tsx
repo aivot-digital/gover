@@ -1,62 +1,95 @@
-import React, {useEffect, useState} from 'react';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectSystemConfigValue} from '../../slices/system-config-slice';
-import {SystemConfigKeys} from '../../data/system-config-keys';
-import {Box, Skeleton} from '@mui/material';
-import {AssetsApiService} from '../../modules/assets/assets-api-service';
+import React, {useEffect, useMemo, useState} from 'react';
+import {Box, useTheme} from '@mui/material';
+import {createApiPath} from '../../utils/url-path-utils';
 
 interface LogoProps {
+    updated?: string | null | undefined;
+    src?: string;
+    srcDark?: string;
     width?: number;
     height?: number;
+    onStatusChange?: (status: 'loading' | 'failed' | 'present') => void;
 }
 
-export function Logo(props: LogoProps): JSX.Element {
-    const [imageFailed, setImageFailed] = useState(false);
-    const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
-    const logo = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.logo));
+export function Logo(props: LogoProps) {
+    const {
+        updated,
+        src,
+        srcDark,
+        width,
+        height,
+        onStatusChange,
+    } = props;
+    const theme = useTheme();
+
+    const [imageStatus, setImageStatus] = useState<'loading' | 'failed' | 'present'>('loading');
 
     useEffect(() => {
-        setImageFailed(false);
-    }, [logo]);
+        onStatusChange?.(imageStatus);
+    }, [imageStatus, onStatusChange]);
 
-    if (logo == null) {
-        return (
-            <Skeleton
-                sx={{
-                    display: 'inline-block',
-                    width: '100%',
-                    maxWidth: props.width ?? 200,
-                    height: props.height ?? 100,
-                }}
-            />
+    const url = useMemo(() => {
+        const resolvedSrc = theme.palette.mode === 'dark' ? srcDark ?? src : src;
+        let url = resolvedSrc ?? createApiPath(
+            `/api/public/system/logo/${theme.palette.mode === 'dark' ? '?color-scheme=dark' : ''}`,
         );
-    }
 
-    if (imageFailed) {
+        if (updated == null) {
+            return url;
+        }
+
+        const t = new Date(updated).getTime();
+
+        if (url.includes('?')) {
+            return `${url}&t=${t}`;
+        }
+        return `${url}?t=${t}`;
+    }, [src, srcDark, theme.palette.mode, updated]);
+
+    useEffect(() => {
+        setImageStatus('loading');
+    }, [url]);
+
+    if (imageStatus === 'failed') {
+        // empty Box is required so that the space is reserved in the footer
         return (
-            <Box
-                sx={{
-                    display: 'inline-block',
-                    width: '100%',
-                    maxWidth: props.width ?? 200,
-                    maxHeight: props.height ?? 100,
-                }}
-            />
+            <Box/>
         );
     }
 
     return (
-        <img
-            src={AssetsApiService.useAssetLink(logo)}
-            alt={"Logo " + name}
-            style={{
-                width: 'auto',
-                maxWidth: props.width ?? 200,
-                maxHeight: props.height ?? 100,
+        <Box
+            sx={{
+                position: 'relative',
             }}
-            onError={() => {
-                setImageFailed(true);
-            }}
-        />
+        >
+            {
+                imageStatus === 'loading' &&
+                <Box
+                    sx={{
+                        display: 'inline-block',
+                        width: '100%',
+                        maxWidth: width ?? 200,
+                        maxHeight: height ?? 100,
+                    }}
+                />
+            }
+
+            <img
+                src={url}
+                alt={'Logo ' + AppConfig.providerName}
+                style={{
+                    width: 'auto',
+                    maxWidth: width ?? 200,
+                    maxHeight: height ?? 100,
+                }}
+                onLoad={() => {
+                    setImageStatus('present');
+                }}
+                onError={() => {
+                    setImageStatus('failed');
+                }}
+            />
+        </Box>
     );
 }

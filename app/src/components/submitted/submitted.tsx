@@ -1,9 +1,7 @@
-import {Box, Button, Divider, Grid, Link, Typography} from '@mui/material';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {Box, Button, CircularProgress, Container, Divider, Grid, Link, Typography, useTheme} from '@mui/material';
+import React, {useEffect, useState} from 'react';
 import {Preamble} from '../preamble/preamble';
-import ReactCanvasConfetti from 'react-canvas-confetti';
-import {useSelector} from 'react-redux';
-import {selectLoadedForm, showDialog} from '../../slices/app-slice';
+import {showDialog} from '../../slices/app-slice';
 import {validateEmail} from '../../utils/validate-email';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {InfoDialog} from '../../dialogs/info-dialog/info-dialog';
@@ -11,39 +9,43 @@ import {TextFieldComponent} from '../text-field/text-field-component';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
-import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
-import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined';
+import EmailOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Mail';
+import PictureAsPdfOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/PictureAsPdf';
+import PaymentOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CreditCard';
+import CheckCircleTwoToneIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import {Rating} from '../rating/rating';
-import {useApi} from '../../hooks/use-api';
 import {AlertComponent} from '../alert/alert-component';
 import qrcode from 'qrcode';
-import {Form} from '../../models/entities/form';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
-import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submission-status-response-dto';
-import {SubmissionsApiService} from '../../modules/submissions/submissions-api-service';
-import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
-
-const animationStartDelay = 200;
-const animationDuration = 2000;
-
-interface ConfettiAnimationSettings {
-    startVelocity: number;
-    particleCount: number;
-    angle: number;
-    spread: number;
-    origin: {
-        x: number;
-    };
-    colors: string[];
-    disableForReducedMotion: boolean;
-}
+import {ElementType} from '../../data/element-type/element-type';
+import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
+import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
+import {CanvasConfettiOverlay, prosunaConfettiColors} from '../confetti/canvas-confetti-overlay';
+import {FormLayoutElement} from '../../models/elements/form-layout-element';
+import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
+import {ProcessEntity} from '../../modules/process/entities/process-entity';
+import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
+import {FormDepartmentAddresses} from '../form-department-addresses/form-department-addresses';
+import {
+    CustomerTaskViewApiService,
+} from '../../pages/customer-pages/customer-instance-view/customer-task-view-api-service';
+import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-api-service';
+import {downloadBlobFile} from '../../utils/download-utils';
+import {ProcessTaskStatus} from '../../modules/process/enums/process-task-status';
+import {ProcessInstanceStatus} from '../../modules/process/enums/process-instance-status';
 
 interface SubmittedProps {
-    submission: SubmissionListResponseDTO;
-    form: Form;
+    startedProcessAccessKey: string;
+    paymentRequired: boolean;
+    formElement: FormLayoutElement;
+    node: ProcessNodeEntity;
+    process: ProcessEntity;
+    version: ProcessVersionEntity;
 }
+
+const handledConfettiAccessKeys = new Set<string>();
 
 const useSetMailErrorWithSnackbar = (setMailError: (message: string) => void) => {
     const dispatch = useAppDispatch();
@@ -63,22 +65,47 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
     };
 };
 
-export function Submitted(props: SubmittedProps): JSX.Element {
-    const api = useApi();
-    const application = useSelector(selectLoadedForm);
-    const submitStep = application?.root.submitStep;
+export function Submitted(props: SubmittedProps) {
+    const {
+        formElement,
+        node,
+        paymentRequired,
+        process,
+        startedProcessAccessKey,
+        version,
+    } = props;
+
+    const theme = useTheme();
+
+    const submitStep = formElement.children?.find(c => c.type === ElementType.SubmitStep) as SubmitStepElement;
     const confettiDisabled = submitStep?.disableConfetti === true;
 
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
     const [qrCode, setQrCode] = useState<string>();
-    const [shouldRenderConfetti, setShouldRenderConfetti] = useState(false);
+    const [confettiPlayKey, setConfettiPlayKey] = useState<number | null>(null);
+    const [formTaskAccessKey, setFormTaskAccessKey] = useState<string>();
+    const [processFailed, setProcessFailed] = useState(false);
+    const [isPrintDownloadPending, setIsPrintDownloadPending] = useState(false);
+    const SubmittedStatusIcon = processFailed ? ErrorOutlineOutlinedIcon : CheckCircleTwoToneIcon;
 
     useEffect(() => {
-        new SubmissionsApiService(api)
-            .getStatus(props.submission.id)
-            .then(setStatus);
-    }, [api, props.submission]);
+        const trimmedAccessKey = startedProcessAccessKey.trim();
+
+        if (trimmedAccessKey.length === 0 || handledConfettiAccessKeys.has(trimmedAccessKey)) {
+            setConfettiPlayKey(null);
+            return;
+        }
+
+        handledConfettiAccessKeys.add(trimmedAccessKey);
+
+        if (confettiDisabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            setConfettiPlayKey(null);
+            return;
+        }
+
+        setConfettiPlayKey((currentValue) => (currentValue ?? 0) + 1);
+    }, [confettiDisabled, startedProcessAccessKey]);
 
     useEffect(() => {
         if (
@@ -93,92 +120,71 @@ export function Submitted(props: SubmittedProps): JSX.Element {
         });
     }, [status]);
 
-    const canvasStyles = {
-        position: 'fixed',
-        pointerEvents: 'none',
-        width: '100%',
-        height: '100%',
-        top: 0,
-        left: 0,
-    };
+    const dispatch = useAppDispatch();
 
-    function getAnimationSettings(angle: number, originX: number): ConfettiAnimationSettings {
-        return {
-            startVelocity: 40,
-            particleCount: 2,
-            angle,
-            spread: 80,
-            origin: {x: originX},
-            colors: ['#fcaa67', '#b0413e'],
-            disableForReducedMotion: true,
-        };
-    }
-
-    const refAnimationInstance = useRef<null | ((settings: ConfettiAnimationSettings) => void)>(null);
-    const animationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const animationStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const animationStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const getInstance = useCallback((instance: any) => {
-        refAnimationInstance.current = instance;
-    }, []);
-
-    const nextTickAnimation = useCallback(() => {
-        if (refAnimationInstance.current) {
-            refAnimationInstance.current(getAnimationSettings(60, 0));
-            refAnimationInstance.current(getAnimationSettings(120, 1));
-        }
-    }, []);
-
-    const startAnimation = useCallback(() => {
-        if (animationIntervalRef.current == null) {
-            animationIntervalRef.current = setInterval(nextTickAnimation, 16);
-        }
-    }, [nextTickAnimation]);
-
-    const pauseAnimation = useCallback(() => {
-        if (animationIntervalRef.current != null) {
-            clearInterval(animationIntervalRef.current);
-            animationIntervalRef.current = null;
-        }
-    }, []);
-
-    /* TODO: This function will be used some time in the future. Do not remove or ask Daniel first.
-    const stopAnimation = useCallback(() => {
-        if (animationIntervalRef.current != null) {
-            clearInterval(animationIntervalRef.current);
-            animationIntervalRef.current = null;
-        }
-        // @ts-ignore
-        refAnimationInstance.current && refAnimationInstance.current.reset();
-    }, []);
-     */
-
-    // Mutation Observer to watch the dom for the Canvas element of the confetti to set ARIA attribute
     useEffect(() => {
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList') {
-                    const canvasElement = document.querySelector('canvas');
-                    if (canvasElement) {
-                        canvasElement.setAttribute('aria-hidden', 'true');
-                        observer.disconnect();
-                    }
-                }
-            });
-        });
+        const trimmedAccessKey = startedProcessAccessKey.trim();
+        setFormTaskAccessKey(undefined);
+        setProcessFailed(false);
 
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-        });
+        if (trimmedAccessKey.length === 0) {
+            return;
+        }
+
+        let isCancelled = false;
+        let intervalId: ReturnType<typeof setInterval> | undefined;
+
+        const fetchFirstTask = () => {
+            new CustomerTaskViewApiService()
+                .getInstanceStatus(trimmedAccessKey)
+                .then((res) => {
+                    if (isCancelled) {
+                        return;
+                    }
+
+                    if (res.status === ProcessInstanceStatus.Failed) {
+                        setProcessFailed(true);
+                        setFormTaskAccessKey(undefined);
+                        if (intervalId != null) {
+                            clearInterval(intervalId);
+                        }
+                        return;
+                    }
+
+                    const firstTask = res.tasks?.[0];
+                    const isPrintReady = firstTask?.status === ProcessTaskStatus.AwaitingPayment ||
+                        firstTask?.status === ProcessTaskStatus.Completed;
+                    if (isPrintReady) {
+                        setFormTaskAccessKey(firstTask.accessKey);
+                        if (intervalId != null) {
+                            clearInterval(intervalId);
+                        }
+                    }
+                })
+                .catch((err) => {
+                    console.error(err);
+
+                    if (isCancelled) {
+                        return;
+                    }
+
+                    if (intervalId != null) {
+                        clearInterval(intervalId);
+                    }
+                    dispatch(showErrorSnackbar('Die Druckversion konnte nicht vorbereitet werden. Bitte versuchen Sie es später erneut.'));
+                });
+        };
+
+        fetchFirstTask();
+        intervalId = setInterval(fetchFirstTask, 1000);
 
         return () => {
-            observer.disconnect();
+            isCancelled = true;
+            if (intervalId != null) {
+                clearInterval(intervalId);
+            }
         };
-    }, []);
-
-    const dispatch = useAppDispatch();
+    }, [dispatch, startedProcessAccessKey]);
 
     const [email, setEmail] = useState('');
     const [privacy, setPrivacy] = useState(false);
@@ -188,6 +194,35 @@ export function Submitted(props: SubmittedProps): JSX.Element {
     const setMailErrorWithSnackbar = useSetMailErrorWithSnackbar(setMailError);
     const [mailSent, setMailSent] = useState(false);
     const [showMailSentDialog, setShowMailSentDialog] = useState(false);
+    const paymentTaskPath = processFailed || formTaskAccessKey == null ?
+        undefined :
+        `/process/${encodeURIComponent(startedProcessAccessKey.trim())}/tasks/${encodeURIComponent(formTaskAccessKey)}`;
+
+    const downloadSubmittedPrint = (): void => {
+        const formSlug = node.configuration.formSlug;
+        if (processFailed || typeof formSlug !== 'string' || formSlug.trim().length === 0 || formTaskAccessKey == null) {
+            return;
+        }
+
+        setIsPrintDownloadPending(true);
+        new FormTriggerApiService()
+            .downloadSubmittedSummaryPdf(
+                process.slug,
+                formSlug.trim(),
+                startedProcessAccessKey,
+                formTaskAccessKey,
+                version.processVersion,
+            )
+            .then((blob) => {
+                downloadBlobFile('Antrag.pdf', blob);
+            })
+            .catch(() => {
+                dispatch(showErrorSnackbar('Der Antrag konnte nicht als PDF heruntergeladen werden. Bitte versuchen Sie es später erneut.'));
+            })
+            .finally(() => {
+                setIsPrintDownloadPending(false);
+            });
+    };
 
     const sendApplicationCopyMail = (): void => {
         if (status != null) {
@@ -197,7 +232,8 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     setPrivacyError(undefined);
                     setMailError(undefined);
 
-                    new FormsApiService(api)
+                    /* TODO: Implement Send Mail Copy
+                    new FormApiService()
                         .sendApplicationCopy(status.submissionId, email)
                         .then(() => {
                             setShowMailSentDialog(true);
@@ -219,6 +255,7 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                                 dispatch(showErrorSnackbar('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
                             }
                         });
+                     */
                 } else {
                     setMailErrorWithSnackbar('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
                 }
@@ -228,54 +265,59 @@ export function Submitted(props: SubmittedProps): JSX.Element {
         }
     };
 
-    useEffect(() => {
-        if (confettiDisabled || !shouldRenderConfetti) {
-            pauseAnimation();
-            return;
-        }
-
-        animationStartTimeoutRef.current = setTimeout(() => {
-            startAnimation();
-        }, animationStartDelay);
-
-        animationStopTimeoutRef.current = setTimeout(() => {
-            pauseAnimation();
-        }, animationDuration);
-
-        return () => {
-            if (animationStartTimeoutRef.current != null) {
-                clearTimeout(animationStartTimeoutRef.current);
-                animationStartTimeoutRef.current = null;
-            }
-
-            if (animationStopTimeoutRef.current != null) {
-                clearTimeout(animationStopTimeoutRef.current);
-                animationStopTimeoutRef.current = null;
-            }
-
-            pauseAnimation();
-        };
-    }, [confettiDisabled, pauseAnimation, shouldRenderConfetti, startAnimation]);
-
-    useEffect(() => {
-        if (confettiDisabled) {
-            setShouldRenderConfetti(false);
-            return;
-        }
-
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
-        const handleChange = () => {
-            setShouldRenderConfetti(mediaQuery.matches);
-        };
-        handleChange();
-        mediaQuery.addEventListener('change', handleChange);
-        return () => {
-            mediaQuery.removeEventListener('change', handleChange);
-        };
-    }, [confettiDisabled]);
-
     return (
-        <>
+        <Container
+            component="main"
+            role="main"
+            sx={{
+                pt: 8,
+                pb: 16,
+            }}
+        >
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    mb: 4,
+                }}
+            >
+                <Typography
+                    component="h2"
+                    sx={{
+                        fontFamily: theme.typography.h2.fontFamily,
+                        fontWeight: 500,
+                        fontSize: '1.3125rem',
+                        lineHeight: 1.2,
+                        color: 'text.primary',
+                        pt: '4px',
+                        m: 0,
+                    }}
+                >
+                    {processFailed ? 'Verarbeitung fehlgeschlagen' : 'Angaben erfolgreich übermittelt'}
+                </Typography>
+                <SubmittedStatusIcon
+                    sx={{
+                        color: processFailed ? theme.palette.error.main : theme.palette.primary.main,
+                        flexShrink: 0,
+                        mt: -0.75,
+                        ml: 0.75,
+                        transform: 'translateY(5px)',
+                    }}
+                />
+            </Box>
+
+            {
+                processFailed &&
+                <AlertComponent
+                    color="error"
+                    title="Ihr Antrag konnte nicht verarbeitet werden"
+                    sx={{my: 0, mb: 4}}
+                >
+                    Bei der Verarbeitung Ihres Antrags ist ein Fehler aufgetreten. Bitte wenden Sie sich an die
+                    zuständige Stelle. Die Kontaktdaten finden Sie unten.
+                </AlertComponent>
+            }
+
             {
                 status != null &&
                 status.paymentProviderName != null &&
@@ -287,9 +329,10 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                         columnSpacing={4}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            md={8}
+                            size={{
+                                xs: 12,
+                                md: 8,
+                            }}
                         >
                             <AlertComponent
                                 color="warning"
@@ -298,8 +341,10 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                             >
                                 <p>
                                     Um Ihren Antrag bearbeiten zu können, ist die Bezahlung der Gebühren erforderlich.
-                                    Die Zahlung wird durch den Dienstleister <strong>{status.paymentProviderName}</strong> abgewickelt.
-                                    Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben und den Bezahlvorgang vollständig abschließen.
+                                    Die Zahlung wird durch den
+                                    Dienstleister <strong>{status.paymentProviderName}</strong> abgewickelt.
+                                    Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben
+                                    und den Bezahlvorgang vollständig abschließen.
                                 </p>
                                 <p>
                                     <strong>Wichtig:</strong>
@@ -309,13 +354,14 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            md={4}
                             sx={{
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
+                            }}
+                            size={{
+                                xs: 12,
+                                md: 4,
                             }}
                         >
                             <Box
@@ -327,7 +373,8 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                                 }}
                             >
                                 <a
-                                    href={status.paymentProviderUrl}
+                                    href={processFailed ? undefined : status.paymentProviderUrl}
+                                    aria-disabled={processFailed}
                                     target={'_blank'}
                                 >
                                     <img
@@ -342,7 +389,8 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                             <Button
                                 component="a"
                                 variant="contained"
-                                href={status.paymentProviderUrl}
+                                href={processFailed ? undefined : status.paymentProviderUrl}
+                                disabled={processFailed}
                                 size={'large'}
                                 startIcon={<PaymentOutlinedIcon
                                     sx={{marginTop: '-2px'}}
@@ -356,7 +404,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     </Grid>
                 </Box>
             }
-
             {
                 status != null &&
                 status.paymentDone &&
@@ -369,11 +416,11 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     }}
                 >
                     Sie haben Ihre Gebühren erfolgreich online bezahlt.
-                    Der Antrag wird nach Bestätigung durch den Zahlungs&shy;dienstleister (in der Regel innerhalb weniger Minuten) für die weitere Bearbeitung freigegeben.
+                    Der Antrag wird nach Bestätigung durch den Zahlungs&shy;dienstleister (in der Regel innerhalb
+                    weniger Minuten) für die weitere Bearbeitung freigegeben.
                     Vielen Dank!
                 </AlertComponent>
             }
-
             {
                 status != null &&
                 status.paymentFailed &&
@@ -386,46 +433,98 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     }}
                 >
                     Die Bezahlung der Gebühren ist fehlgeschlagen. Bitte wenden Sie sich an die zuständige Dienststelle.
-                    <br />
-                    Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an: {status.submissionId}.
+                    <br/>
+                    Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung
+                    an: {status.submissionId}.
                 </AlertComponent>
             }
-
             {
                 status != null &&
                 status.paymentProviderName != null &&
                 status.paymentProviderUrl != null &&
-                <Divider sx={{my: 8}} />
+                <Divider sx={{my: 8, maxWidth: 800}}/>
             }
-
             {
                 submitStep?.textPostSubmit != null &&
                 !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
                     text={submitStep?.textPostSubmit}
-                    logoLink={application?.root.introductionStep.initiativeLogoLink}
-                    logoAlt={application?.root.introductionStep.initiativeName}
+                    logoLink={(formElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeLogoLink ?? undefined}
+                    logoAlt={(formElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeName ?? undefined}
                 />
             }
-
+            <FormDepartmentAddresses
+                formElement={formElement}
+                variant="grid"
+            />
             {
-                status != null &&
-                !status.accessExpired &&
+                paymentRequired &&
+                <Box
+                    sx={{
+                        mt: 4,
+                        maxWidth: 800,
+                    }}
+                >
+                    <AlertComponent
+                        color="warning"
+                        title="Zahlung erforderlich"
+                        sx={{my: 0}}
+                    >
+                        <p>
+                            Für Ihren Antrag ist eine Zahlung erforderlich. Öffnen Sie die Zahlungsaufgabe, um
+                            fortzufahren.
+                        </p>
+
+                        {
+                            paymentTaskPath == null ?
+                                <Button
+                                    variant="contained"
+                                    disabled
+                                    startIcon={
+                                        processFailed ?
+                                            <PaymentOutlinedIcon sx={{marginTop: '-2px'}}/> :
+                                            <CircularProgress
+                                                color="inherit"
+                                                size={18}
+                                            />
+                                    }
+                                >
+                                    {processFailed ? 'Zahlung nicht verfügbar' : 'Zahlung wird vorbereitet'}
+                                </Button> :
+                                <Button
+                                    component="a"
+                                    variant="contained"
+                                    href={paymentTaskPath}
+                                    disabled={processFailed}
+                                    startIcon={<PaymentOutlinedIcon
+                                        sx={{marginTop: '-2px'}}
+                                    />}
+                                >
+                                    Zur Zahlung
+                                </Button>
+                        }
+                    </AlertComponent>
+                </Box>
+            }
+            {
+                (status == null || !status.accessExpired) &&
                 <Grid
                     container
-                    spacing={6}
+                    columnSpacing={6}
+                    rowSpacing={6}
                     sx={{
                         mt: 4,
                     }}
                 >
                     <Grid
-                        item
-                        md={6}
+                        size={{
+                            xs: 12,
+                            md: status == null ? 12 : 6,
+                        }}
                     >
                         <Typography
                             component="h3"
                             variant="h5"
-                            color="primary"
                         >
                             Antrag als PDF herunterladen
                         </Typography>
@@ -443,78 +542,92 @@ export function Submitted(props: SubmittedProps): JSX.Element {
 
                         <Button
                             variant="contained"
-                            startIcon={<PictureAsPdfOutlinedIcon
-                                sx={{marginTop: '-2px'}}
-                            />}
-                            component="a"
-                            target="_blank"
-                            href={`/api/public/prints/${status.submissionId}`}
-                            size={'large'}
+                            startIcon={
+                                isPrintDownloadPending ?
+                                    <CircularProgress
+                                        color="inherit"
+                                        size={18}
+                                    /> :
+                                    <PictureAsPdfOutlinedIcon
+                                        sx={{marginTop: '-2px'}}
+                                    />
+                            }
+                            onClick={downloadSubmittedPrint}
+                            size="large"
+                            disabled={processFailed || formTaskAccessKey == null || isPrintDownloadPending}
                         >
-                            Antrag als PDF herunterladen
+                            {
+                                processFailed ?
+                                    'PDF nicht verfügbar' :
+                                    formTaskAccessKey == null ?
+                                    'PDF wird vorbereitet' :
+                                    'Antrag als PDF herunterladen'
+                            }
                         </Button>
                     </Grid>
-                    <Grid
-                        item
-                        md={6}
-                    >
-                        <Typography
-                            component="h3"
-                            variant="h5"
-                            color="primary"
-                        >
-                            Antrag per E-Mail erhalten
-                        </Typography>
-
-                        <Typography
-                            sx={{
-                                mt: 1,
-                                mb: 2.4,
+                    {
+                        status != null &&
+                        <Grid
+                            size={{
+                                xs: 12,
+                                md: 6,
                             }}
-                            variant={'body2'}
                         >
-                            Lassen Sie sich Ihren eingereichten Antrag durch das Ausfüllen des folgenden Formulars an
-                            die
-                            von Ihnen angegebene E-Mail-Adresse zusenden.
-                        </Typography>
+                            <Typography
+                                component="h3"
+                                variant="h5"
+                            >
+                                Antrag per E-Mail erhalten
+                            </Typography>
 
-                        <TextFieldComponent
-                            label="E-Mail-Adresse"
-                            placeholder="name@beispiel.de"
-                            value={email}
-                            disabled={status.copySent || mailSent}
-                            onChange={(val) => {
-                                setEmail(val ?? '');
-                            }}
-                            required
-                            error={mailError}
-                        />
+                            <Typography
+                                sx={{
+                                    mt: 1,
+                                    mb: 2.4,
+                                }}
+                                variant={'body2'}
+                            >
+                                Lassen Sie sich Ihren eingereichten Antrag durch das Ausfüllen des folgenden Formulars an
+                                die
+                                von Ihnen angegebene E-Mail-Adresse zusenden.
+                            </Typography>
 
-                        <CheckboxFieldComponent
-                            label="Ich erteile mein Einverständnis, dass der Antrag per unverschlüsselter E-Mail versandt wird."
-                            value={privacy}
-                            onChange={setPrivacy}
-                            error={privacyError}
-                            disabled={status.copySent || mailSent}
-                        />
+                            <TextFieldComponent
+                                label="E-Mail-Adresse"
+                                placeholder="name@beispiel.de"
+                                value={email}
+                                disabled={status.copySent || mailSent}
+                                onChange={(val) => {
+                                    setEmail(val ?? '');
+                                }}
+                                required
+                                error={mailError}
+                            />
 
-                        <Button
-                            sx={{mt: 4}}
-                            variant="contained"
-                            startIcon={<EmailOutlinedIcon
-                                sx={{marginTop: '-2px'}}
-                            />}
-                            onClick={sendApplicationCopyMail}
-                            size={'large'}
-                            disabled={status.copySent || mailSent}
-                        >
-                            Antrag per E-Mail erhalten
-                        </Button>
-                    </Grid>
+                            <CheckboxFieldComponent
+                                label="Ich erteile mein Einverständnis, dass der Antrag per unverschlüsselter E-Mail versandt wird."
+                                value={privacy}
+                                onChange={setPrivacy}
+                                error={privacyError}
+                                disabled={status.copySent || mailSent}
+                            />
+
+                            <Button
+                                sx={{mt: 4}}
+                                variant="contained"
+                                startIcon={<EmailOutlinedIcon
+                                    sx={{marginTop: '-2px'}}
+                                />}
+                                onClick={sendApplicationCopyMail}
+                                size={'large'}
+                                disabled={status.copySent || mailSent}
+                            >
+                                Antrag per E-Mail erhalten
+                            </Button>
+                        </Grid>
+                    }
                 </Grid>
             }
-
-
             {
                 status != null &&
                 status.accessExpired &&
@@ -527,34 +640,32 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                         color="warning"
                         title="Zugriff abgelaufen"
                     >
-                        Aus Sicherheitsgründen ist der Zugriff auf Ihren eingereichten Antrag nicht mehr möglich. Dies passiert im Regelfall, wenn zu viel Zeit zwischen der Einreichung des Antrages und dem Bezahlen der Gebühren vergeht.
-                        Sollten Sie die von Ihnen eingereichten Antragsunterlagen inklusive des Zahlungsbelegs für Ihre Unterlagen wünschen, wenden Sie sich bitte an den Fachlichen Support auf der <Link
+                        Aus Sicherheitsgründen ist der Zugriff auf Ihren eingereichten Antrag nicht mehr möglich. Dies
+                        passiert im Regelfall, wenn zu viel Zeit zwischen der Einreichung des Antrages und dem Bezahlen
+                        der Gebühren vergeht.
+                        Sollten Sie die von Ihnen eingereichten Antragsunterlagen inklusive des Zahlungsbelegs für Ihre
+                        Unterlagen wünschen, wenden Sie sich bitte an den Fachlichen Support auf der <Link
                         onClick={() => {
                             dispatch(showDialog(HelpDialogId));
                         }}
                     >Hilfe-Seite</Link>.
-                        <br />
-                        Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an: {status.submissionId}.
+                        <br/>
+                        Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung
+                        an: {status.submissionId}.
                     </AlertComponent>
                 </Box>
             }
-
-            <Divider sx={{my: 8}} />
-
+            <Divider sx={{my: 8, maxWidth: 800}}/>
             <Typography
                 component="h3"
                 variant="h5"
-                sx={{textAlign: 'center'}}
-                color="primary"
             >
                 Wie hat Ihnen dieser Prozess gefallen?
             </Typography>
             <Typography
                 sx={{
-                    textAlign: 'center',
                     mt: 1,
                     maxWidth: 500,
-                    mx: "auto",
                 }}
                 variant={'body2'}
             >
@@ -564,27 +675,25 @@ export function Submitted(props: SubmittedProps): JSX.Element {
             <Box
                 sx={{
                     display: 'flex',
-                    justifyContent: 'center',
+                    justifyContent: 'flex-start',
                     mt: 4,
                 }}
             >
                 <Rating
                     onChange={(newValue) => {
                         if (status != null && newValue != null) {
-                            new FormsApiService(api)
+                            /* TODO: Implement Rating
+                            new FormApiService()
                                 .rateApplication(status.submissionId, newValue);
+                             */
                         }
                     }}
                 />
             </Box>
-
-            {!confettiDisabled && shouldRenderConfetti && (
-                <ReactCanvasConfetti
-                    refConfetti={getInstance}
-                    // @ts-expect-error
-                    style={canvasStyles}
-                />
-            )}
+            <CanvasConfettiOverlay
+                playKey={processFailed ? null : confettiPlayKey}
+                colors={prosunaConfettiColors}
+            />
 
             <InfoDialog
                 title="E-Mail versendet"
@@ -594,8 +703,9 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     setShowMailSentDialog(false);
                 }}
             >
-                Eine E-Mail mit dem eingereichten Antrag wurde an die angegebene <span style={{whiteSpace: 'nowrap'}}>E-Mail-Adresse</span> versendet.
+                Eine E-Mail mit dem eingereichten Antrag wurde an die
+                angegebene <span style={{whiteSpace: 'nowrap'}}>E-Mail-Adresse</span> versendet.
             </InfoDialog>
-        </>
+        </Container>
     );
 }

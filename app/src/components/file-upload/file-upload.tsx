@@ -1,8 +1,8 @@
 import React, {useRef} from 'react';
 import {Box, IconButton, Typography} from '@mui/material';
 import {FileUploadProps} from './file-upload-props';
-import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import FileUploadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 /**
  * @deprecated Use FieldUploadFieldComponent
@@ -70,7 +70,7 @@ export function FileUpload({
                                     sx={{ml: 1}}
                                     onClick={() => handleRemove(file)}
                                 >
-                                    <DeleteForeverOutlinedIcon/>
+                                    <Delete/>
                                 </IconButton>
                             </Box>
                         ))
@@ -100,9 +100,10 @@ export function FileUpload({
                 </Box>
                 <Box>
                     <Typography
-                        sx={{mt: 1}}
-                        color="#aaa"
-                    >
+                        sx={{
+                            color: "#aaa",
+                            mt: 1
+                        }}>
                         Klicken Sie hier, um eine Datei für den Upload auszuwählen
                     </Typography>
                 </Box>
@@ -110,10 +111,11 @@ export function FileUpload({
                     extensions != null &&
                     <Box>
                         <Typography
-                            color="#ccc"
                             variant="caption"
-                            sx={{mt: 1}}
-                        >
+                            sx={{
+                                color: "#ccc",
+                                mt: 1
+                            }}>
                             Akzeptierte Formate: {extensions.map(ext => '.' + ext).join(', ')}
                         </Typography>
                     </Box>

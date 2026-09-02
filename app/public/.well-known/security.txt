@@ -1,0 +1,5 @@
+# security.txt for Prosuna developed by Aivot
+# visit https://prosuna.de for more information
+Contact: mailto:security@aivot.de
+Expires: 2026-10-014T23:59:59Z
+Preferred-Languages: de, en

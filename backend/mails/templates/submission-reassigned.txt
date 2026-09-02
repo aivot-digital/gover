@@ -1,0 +1,18 @@
+Hallo,
+
+ein Antrag wurde in Prosuna neu zugewiesen.
+Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
+Aktenzeichen: [(${submission.fileNumber})]
+Neue zuständige Mitarbeiter:in: [(${newAssignee.getFullName})]
+Bisher zuständige Mitarbeiter:in: [(${previousAssignee.getFullName})]
+Zugewiesen durch: [(${triggeringUser.getFullName})]
+
+Antrag öffnen:
+[(${base.config.createUrl('/staff/submissions/' + submission.id)})]
+
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

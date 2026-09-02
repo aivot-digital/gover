@@ -1,5 +1,5 @@
-import {ConditionOperator} from "../data/condition-operator";
-import {BaseEvaluator} from "./base-evaluator";
+import {ConditionOperator} from '../data/condition-operator';
+import {BaseEvaluator} from './base-evaluator';
 
 const defNumberRegex = /^[1-9][0-9]*?(\.[0-9]+)$/;
 

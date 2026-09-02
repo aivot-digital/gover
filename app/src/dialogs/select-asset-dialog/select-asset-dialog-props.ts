@@ -1,8 +1,9 @@
 export interface SelectAssetDialogProps {
+    id?: string;
     title: string;
     show: boolean;
     mimetype?: string;
     onSelect: (assetKey: string) => void;
     onCancel: () => void;
-    mode: 'private' | 'public' | 'all';
+    mode: 'public' | 'all';
 }

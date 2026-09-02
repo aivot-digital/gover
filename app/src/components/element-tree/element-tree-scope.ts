@@ -1,1 +1,1 @@
-export type ElementTreeScope = 'application' | 'preset';
+export type ElementTreeScope = 'application' | 'preset' | 'data_modelling';

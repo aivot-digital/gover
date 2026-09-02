@@ -1,0 +1,133 @@
+package de.aivot.prosuna.backend.xrepository.services;
+
+import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
+import de.aivot.prosuna.backend.core.services.HttpService;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.xrepository.models.XRepositoryCodeList;
+import jakarta.annotation.Nonnull;
+import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.dataformat.xml.XmlMapper;
+
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class XRepositoryCodeListService {
+    private static final String XREPOSITORY_API_URL = "https://www.xrepository.de/api/xrepository/";
+    private static final XmlMapper XML_MAPPER = XmlMapper
+            .builder()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
+    private final HttpService httpService;
+
+    public XRepositoryCodeListService(HttpService httpService) {
+        this.httpService = httpService;
+    }
+
+    @Nonnull
+    public XRepositoryCodeList getCodeList(@Nonnull String codeListUrn) throws ResponseException {
+        var encodedCoreLisUrn = URLEncoder.encode(codeListUrn, StandardCharsets.UTF_8);
+        var uri = URI
+                .create(XREPOSITORY_API_URL + encodedCoreLisUrn + ":technischerBestandteilGenericode");
+
+        HttpResponse<String> response;
+        try {
+            response = httpService
+                    .get(uri);
+        } catch (HttpConnectionException e) {
+            throw ResponseException
+                    .internalServerError(e, "Beim Abrufen der Codeliste mit der URN %s ist ein Fehler aufgetreten: %s", codeListUrn, e.getMessage());
+        }
+
+        switch (response.statusCode()) {
+            case 200:
+                try {
+                    return XML_MAPPER.readValue(response.body(), XRepositoryCodeList.class);
+                } catch (JacksonException e) {
+                    throw ResponseException.internalServerError(e, "Fehler beim Parsen der Codeliste mit der URN %s: %s", codeListUrn, e.getMessage());
+                }
+            case 404:
+                throw ResponseException.notFound("Die Codeliste mit der URN %s wurde nicht gefunden.", codeListUrn);
+            default:
+                throw ResponseException.internalServerError("Fehler beim Abrufen der Codeliste mit der URN %s. Der Statuscode war %d", codeListUrn, response.statusCode());
+        }
+    }
+
+    public List<RadioInputElementOption> getRadioFieldOptionCodeList(@Nonnull String codeListUrn) throws ResponseException {
+        var codeList = getCodeList(codeListUrn);
+
+        var labelColumnRef = codeList
+                .getColumnSet()
+                .getKey()
+                .getColumnRef()
+                .getRef();
+
+        var options = new LinkedList<RadioInputElementOption>();
+
+        for (var row : codeList.getCodeList().getRow()) {
+            for (var col : row.getValue()) {
+                if (col.getColumnRef().equals(labelColumnRef)) {
+                    options.add(RadioInputElementOption.of(
+                            col.getSimpleValue(),
+                            col.getSimpleValue()
+                    ));
+                }
+            }
+        }
+
+        return options;
+    }
+
+    public List<SelectInputElementOption> getSelectFieldOptionCodeList(@Nonnull String codeListUrn) throws ResponseException {
+        var codeList = getCodeList(codeListUrn);
+
+        var labelColumnRef = codeList
+                .getColumnSet()
+                .getKey()
+                .getColumnRef()
+                .getRef();
+
+        var options = new LinkedList<SelectInputElementOption>();
+
+        for (var row : codeList.getCodeList().getRow()) {
+            for (var col : row.getValue()) {
+                if (col.getColumnRef().equals(labelColumnRef)) {
+                    options.add(SelectInputElementOption.of(
+                            col.getSimpleValue(),
+                            col.getSimpleValue()
+                    ));
+                }
+            }
+        }
+
+        return options;
+    }
+
+    public List<Map<String, String>> getReducedCodeList(@Nonnull String codeListUrn) throws ResponseException {
+        var codeList = getCodeList(codeListUrn);
+
+        var res = new LinkedList<Map<String, String>>();
+
+        for (var row : codeList.getCodeList().getRow()) {
+            var map = new HashMap<String, String>();
+
+            for (var col : row.getValue()) {
+                map.put(col.getColumnRef(), col.getSimpleValue());
+            }
+
+            res.add(map);
+        }
+
+        return res;
+    }
+}

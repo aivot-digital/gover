@@ -3,19 +3,20 @@ import {BaseViewProps} from './base-view';
 import {NumberFieldElement} from '../models/elements/form/input/number-field-element';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
+import {getDisabledFieldBackground} from '../theming/field-state-colors';
 
 export function NumberFieldView(props: BaseViewProps<NumberFieldElement, number>) {
     const {
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
 
     const {
-        disabled
+        disabled,
     } = element;
 
     const isDisabled = useMemo(() => {
@@ -29,20 +30,19 @@ export function NumberFieldView(props: BaseViewProps<NumberFieldElement, number>
     return (
         <NumberFieldComponent
             label={element.label ?? ''}
-            value={value ?? undefined}
+            value={value}
             onChange={setValue}
-            placeholder={element.placeholder}
-            decimalPlaces={element.decimalPlaces}
-            hint={element.hint}
-            error={error}
-            suffix={element.suffix}
-            required={element.required}
+            placeholder={element.placeholder ?? undefined}
+            decimalPlaces={element.decimalPlaces ?? undefined}
+            hint={element.hint ?? undefined}
+            error={errors != null ? errors.join(' ') : undefined}
+            suffix={element.suffix ?? undefined}
+            required={element.required ?? undefined}
             disabled={isDisabled}
             debounce={1000}
-
-            sx={{
-                backgroundColor: isBusy ? "#F8F8F8" : undefined,
-                cursor: isBusy ? "not-allowed" : undefined,
+            controlSx={{
+                backgroundColor: isBusy ? getDisabledFieldBackground : undefined,
+                cursor: isBusy ? 'not-allowed' : undefined,
             }}
             readOnly={isBusy}
         />

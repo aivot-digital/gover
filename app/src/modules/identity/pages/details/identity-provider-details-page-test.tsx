@@ -1,19 +1,30 @@
 import {Box, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
+import React, {useContext, useEffect, useState} from 'react';
+import {
+    GenericDetailsPageContext,
+    GenericDetailsPageContextType,
+} from '../../../../components/generic-details-page/generic-details-page-context';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {useSearchParams} from 'react-router-dom';
-import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityResultState} from '../../enums/identity-result-state';
 import {IdentityStateQueryParam} from '../../constants/identity-state-query-param';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {IdentityData} from '../../models/identity-data';
-import {IdentityIdQueryParam} from '../../constants/identity-id-query-param';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
+import {ApiError, isApiError} from '../../../../models/api-error';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
 
 export function IdentityProviderDetailsPageTest() {
     const [urlSearchParams, _] = useSearchParams();
+    const dispatch = useAppDispatch();
+    const canTestIdentityProvider = useHasSystemPermission(Permission.IDENTITY_PROVIDER_UPDATE);
 
     const {
         item: identityProvider,
@@ -21,33 +32,41 @@ export function IdentityProviderDetailsPageTest() {
 
     const [identityData, setIdentityData] = useState<IdentityData>();
     const [identityError, setIdentityError] = useState<string>();
-
-    const testLink = useMemo(() => {
-        if (identityProvider == null) {
-            return '#';
-        }
-
-        return IdentityProvidersApiService.createLink(identityProvider.key);
-    }, [identityProvider]);
+    const [isStartingTest, setIsStartingTest] = useState(false);
 
     useEffect(() => {
+        if (identityProvider == null) {
+            return;
+        }
+
         const stateStr = urlSearchParams.get(IdentityStateQueryParam);
         const state = stateStr != null ? parseInt(stateStr) : IdentityResultState.UnknownError;
-        const id = urlSearchParams.get(IdentityIdQueryParam);
 
         switch (state) {
             case IdentityResultState.Success:
-                if (id == null) {
-                    setIdentityError('Es wurde kein Nutzerkonto übergeben.');
-                    break;
-                }
-
                 setIdentityError(undefined);
                 IdentityProvidersApiService
-                    .fetchIdentity(id)
-                    .then(setIdentityData)
+                    .fetchIdentity(true, undefined)
+                    .then((res) => {
+                        if (res[identityProvider.key] != null) {
+                            setIdentityData(res[identityProvider.key]);
+                        } else {
+                            const err: ApiError = {
+                                message: 'Die Identität wurde nicht gesetzt',
+                                details: `In der Map der Identitäten ist keine Identität mit dem Provider-Key ${identityProvider.key} vorhanden.`,
+                                displayableToUser: true,
+                                status: 404,
+                            };
+                            throw err;
+                        }
+                    })
                     .catch(err => {
                         console.error(err);
+                        if (isApiError(err) && err.displayableToUser) {
+                            setIdentityError(err.message);
+                        } else {
+                            setIdentityError('Beim Abruf der Identität ist ein Fehler aufgetreten');
+                        }
                     });
                 break;
             default:
@@ -55,7 +74,26 @@ export function IdentityProviderDetailsPageTest() {
                 setIdentityError('Unbekannter Fehler aufgetreten. Bitte versuchen Sie es erneut.');
                 break;
         }
-    }, [urlSearchParams]);
+    }, [urlSearchParams, identityProvider]);
+
+    const handleStartTest = async () => {
+        if (identityProvider == null || !canTestIdentityProvider || isStartingTest) {
+            return;
+        }
+
+        setIsStartingTest(true);
+        try {
+            const redirectUrl = await new IdentityProvidersApiService()
+                .startTest(
+                    identityProvider.key,
+                    `${window.location.origin}${window.location.pathname}`,
+                );
+            window.location.href = redirectUrl;
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Der Test des Nutzerkontenanbieters konnte nicht gestartet werden.'));
+            setIsStartingTest(false);
+        }
+    };
 
     return (
         <Box>
@@ -68,7 +106,7 @@ export function IdentityProviderDetailsPageTest() {
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
                 Um die korrekte Funktion und Erscheinung eines Nutzerkontos sicherzustellen, können Sie hier einen Test durchführen.
-                Nach einem erfolgreichen Test werden Sie auf diese Seite zurückgeleitet und können die Daten einsehen, die an Gover übermittelt wurden.
+                Nach einem erfolgreichen Test werden Sie auf diese Seite zurückgeleitet und können die Daten einsehen, die an Prosuna übermittelt wurden.
             </Typography>
 
             <Box
@@ -77,15 +115,21 @@ export function IdentityProviderDetailsPageTest() {
                     mb: 2,
                 }}
             >
-                <Button
-                    component="a"
-                    href={testLink}
-                    variant="contained"
-                    startIcon={<ScienceOutlinedIcon />}
-                    disabled={identityProvider == null}
+                <DisabledTooltip
+                    title={formatMissingPermissionTooltip(Permission.IDENTITY_PROVIDER_UPDATE)}
+                    disabled={!canTestIdentityProvider}
                 >
-                    Authentifizierung testen
-                </Button>
+                    <Button
+                        onClick={() => {
+                            void handleStartTest();
+                        }}
+                        variant="contained"
+                        startIcon={<ScienceOutlinedIcon />}
+                        disabled={identityProvider == null || isStartingTest || !canTestIdentityProvider}
+                    >
+                        Authentifizierung testen
+                    </Button>
+                </DisabledTooltip>
             </Box>
 
             {
@@ -111,7 +155,7 @@ export function IdentityProviderDetailsPageTest() {
                             maxWidth: 900,
                         }}
                     >
-                        Hier sehen Sie die Daten, die von dem Nutzerkontenanbieter an Gover übermittelt wurden.
+                        Hier sehen Sie die Daten, die von dem Nutzerkontenanbieter an Prosuna übermittelt wurden.
                         Bitte beachten Sie, dass nur die Attribute angezeigt werden, die auch in der Konfiguration des Anbieters zugewiesen worden sind.
                     </Typography>
 
@@ -182,12 +226,15 @@ export function IdentityProviderDetailsPageTest() {
                             maxWidth: 900,
                         }}
                     >
-                        Hier sehen Sie, im Gegensatz zu den obigen Testergebnissen, den vollständigen Datensatz, welcher vom Nutzerkontenanbieter an Gover übermittelt wurde.
+                        Hier sehen Sie, im Gegensatz zu den obigen Testergebnissen, den vollständigen Datensatz, welcher vom Nutzerkontenanbieter an Prosuna übermittelt wurde.
                         Dieser kann auch Attribute enthalten, welche Sie in der Konfiguration des Nutzerkontenanbieters nicht zugewiesen haben.
-                        Bitte beachten Sie, dass ausschließlich im Nutzerkontenanbieter zugewiesene Attribute auch innerhalb von Gover verwendbar sind.
+                        Bitte beachten Sie, dass ausschließlich im Nutzerkontenanbieter zugewiesene Attribute auch innerhalb von Prosuna verwendbar sind.
                     </Typography>
 
-                    <ExpandableCodeBlock value={JSON.stringify(identityData.attributes, null, '\t')} />
+                    <ExpandableCodeBlock
+                        value={JSON.stringify(identityData.attributes, null, '\t')}
+                        language="json"
+                    />
                 </Box>
             }
         </Box>

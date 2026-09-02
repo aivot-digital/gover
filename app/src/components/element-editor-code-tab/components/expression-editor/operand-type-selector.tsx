@@ -1,81 +1,116 @@
-import {Box, Button, ButtonGroup, FormHelperText, Typography} from '@mui/material';
+import {Box, Button, Typography} from '@mui/material';
 import {OperandTypeIcon} from './operand-type-icon';
 import React from 'react';
-import {NoCodeExpression, NoCodeOperand} from '../../../../models/functions/no-code-expression';
+import {NoCodeOperand} from '../../../../models/functions/no-code-expression';
+import {Hint} from '../../../hint/hint';
 
 interface OperandTypeSelectorProps {
-    expression: NoCodeExpression;
+    label?: string;
     onChange: (newOperand: NoCodeOperand | null) => void;
     optional: boolean;
-    hint: string;
+    hint: string | undefined | null;
 }
 
 export function OperandTypeSelector(props: OperandTypeSelectorProps) {
+    const {
+        label,
+        onChange,
+        optional,
+        hint,
+    } = props;
+
     return (
         <Box
             sx={{
                 display: 'flex',
-                flexDirection: 'column',
+                flexDirection: 'row',
+                alignItems: 'center',
                 width: '100%',
-                paddingY: 2,
+                gap: 2,
+                pl: 1,
+                py: 0.5,
             }}
         >
-            <ButtonGroup
-                fullWidth
+            {
+                label != null &&
+                <Typography
+                    variant="caption"
+                    color="textSecondary"
+                    sx={{
+                        width: '96px',
+                        textOverflow: 'ellipsis',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    {label}&nbsp;*
+                </Typography>
+            }
+
+            <Button
+                variant="outlined"
+                size="small"
+                sx={{
+                    borderStyle: optional ? 'dashed' : 'solid',
+                    opacity: optional ? 0.75 : 1,
+                }}
+                onClick={() => {
+                    onChange({
+                        type: 'NoCodeExpression',
+                        operatorIdentifier: '',
+                        operands: [],
+                    });
+                }}
+                startIcon={OperandTypeIcon.exp}
             >
-                <Button
-                    variant="outlined"
-                    sx={{
-                        borderStyle: props.optional ? 'dashed' : 'solid',
-                        opacity: props.optional ? 0.75 : 1,
-                    }}
-                    onClick={() => {
-                        props.onChange({
-                            operatorIdentifier: '',
-                            operands: [],
-                        });
-                    }}
-                    startIcon={OperandTypeIcon.exp}
-                >
-                    Ausdruck
-                </Button>
+                Ausdruck
+            </Button>
 
-                <Button
-                    variant="outlined"
-                    sx={{
-                        borderStyle: props.optional ? 'dashed' : 'solid',
-                        opacity: props.optional ? 0.75 : 1,
-                    }}
-                    onClick={() => {
-                        props.onChange({
-                            elementId: '',
-                        });
-                    }}
-                    startIcon={OperandTypeIcon.reference}
-                >
-                    Referenz
-                </Button>
+            <Button
+                variant="outlined"
+                size="small"
+                sx={{
+                    borderStyle: optional ? 'dashed' : 'solid',
+                    opacity: optional ? 0.75 : 1,
+                }}
+                onClick={() => {
+                    onChange({
+                        type: 'NoCodeReference',
+                        elementId: '',
+                    });
+                }}
+                startIcon={OperandTypeIcon.reference}
+            >
+                Referenz
+            </Button>
 
-                <Button
-                    variant="outlined"
-                    sx={{
-                        borderStyle: props.optional ? 'dashed' : 'solid',
-                        opacity: props.optional ? 0.75 : 1,
-                    }}
-                    onClick={() => {
-                        props.onChange({
-                            value: '',
-                        });
-                    }}
-                    startIcon={OperandTypeIcon.value}
-                >
-                    Wert
-                </Button>
-            </ButtonGroup>
+            <Button
+                variant="outlined"
+                size="small"
+                sx={{
+                    borderStyle: optional ? 'dashed' : 'solid',
+                    opacity: optional ? 0.75 : 1,
+                }}
+                onClick={() => {
+                    onChange({
+                        type: 'NoCodeStaticValue',
+                        value: '',
+                    });
+                }}
+                startIcon={OperandTypeIcon.value}
+            >
+                Wert
+            </Button>
 
-            <FormHelperText>
-                {props.hint}
-            </FormHelperText>
+            {
+                hint != null &&
+                <Hint
+                    label="Hilfe"
+                    summary={hint}
+                    detailsTitle={label ?? 'Hilfe'}
+                    details={hint}
+                />
+            }
         </Box>
     );
 }

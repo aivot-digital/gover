@@ -2,10 +2,9 @@ import {type HeadlineElement} from '../../models/elements/form/content/headline-
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
-import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
-export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement, ElementTreeEntity>): JSX.Element {
+export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement>) {
     return (
         <>
             <Grid
@@ -13,10 +12,10 @@ export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement, 
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.content ?? ''}
                         label="Überschrift"
@@ -29,18 +28,18 @@ export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement, 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                />
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }} />
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <CheckboxFieldComponent
                         label="Kompakte Überschrift verwenden"
-                        value={props.element.small}
+                        value={props.element.small ?? undefined}
                         onChange={(val) => {
                             props.onPatch({
                                 small: val,
@@ -51,13 +50,13 @@ export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement, 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <CheckboxFieldComponent
                         label="In Großbuchstaben anzeigen"
-                        value={props.element.uppercase}
+                        value={props.element.uppercase ?? undefined}
                         onChange={(val) => {
                             props.onPatch({
                                 uppercase: val,

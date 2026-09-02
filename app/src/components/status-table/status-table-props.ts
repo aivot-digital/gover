@@ -3,9 +3,14 @@ import {SxProps, TypographyVariant} from '@mui/material';
 
 export type StatusTablePropsItem = PropsWithChildren<{
     label: string;
-    icon?: JSX.Element;
+    icon?: React.ReactNode;
     alignTop?: boolean;
     subItems?: StatusTablePropsItem[] | null;
+    details?: React.ReactNode;
+    detailsLabel?: string;
+    detailsExpandedLabel?: string;
+    detailsDefaultExpanded?: boolean;
+    indentDetails?: boolean;
 }>;
 
 export interface StatusTableProps {
@@ -17,6 +22,7 @@ export interface StatusTableProps {
     descriptionSx?: SxProps;
     cardSx?: SxProps;
     cardVariant?: 'outlined' | 'elevation';
-    labelIcon?: JSX.Element;
+    labelIcon?: React.ReactNode;
     items: StatusTablePropsItem[];
+    dense?: boolean;
 }

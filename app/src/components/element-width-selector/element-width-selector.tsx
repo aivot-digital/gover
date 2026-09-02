@@ -1,0 +1,275 @@
+import {Box, ListSubheader, MenuItem, type SxProps, TextField, type Theme, Typography} from '@mui/material';
+import {alpha} from '@mui/material/styles';
+import React, {useMemo} from 'react';
+import {ElementType} from '../../data/element-type/element-type';
+import {
+    ElementWidthChoice,
+    getElementWidthChoices,
+    getElementWidthRestrictionHint,
+    normalizeElementWeight,
+} from '../../utils/element-widths';
+import {
+    FormField,
+    type FormFieldLayoutProps,
+    getCompositeControlAriaProps,
+    getNativeInputAriaProps,
+} from '../form-field';
+import {formFieldInputRootSx} from '../../theming/form-field-tokens';
+
+interface ElementWidthSelectorProps extends FormFieldLayoutProps {
+    label: string;
+    elementType: ElementType;
+    value: number | null | undefined;
+    onChange: (value: number) => void;
+    hint?: string;
+    disabled?: boolean;
+    controlSx?: SxProps<Theme>;
+}
+
+function ElementWidthBar(props: {
+    choice: ElementWidthChoice;
+    muted?: boolean;
+}) {
+    const {
+        choice,
+        muted = false,
+    } = props;
+
+    const hasRemainingWidth = choice.value < 12;
+
+    return (
+        <Box
+            sx={{
+                display: 'grid',
+                gap: 1,
+                gridTemplateColumns: hasRemainingWidth ? `${choice.value}fr ${12 - choice.value}fr` : '1fr',
+                minWidth: 0,
+                width: '100%',
+            }}
+        >
+            <Box
+                sx={(theme) => ({
+                    backgroundColor: muted
+                        ? alpha(theme.palette.text.secondary, 0.18)
+                        : alpha(theme.palette.primary.dark, 0.50),
+                    borderRadius: 999,
+                    height: 8,
+                    minWidth: 10,
+                })}
+            />
+
+            {
+                hasRemainingWidth &&
+                <Box
+                    sx={(theme) => ({
+                        backgroundColor: muted
+                            ? alpha(theme.palette.text.secondary, 0.08)
+                            : alpha(theme.palette.text.primary, 0.14),
+                        borderRadius: 999,
+                        height: 8,
+                        minWidth: 10,
+                    })}
+                />
+            }
+        </Box>
+    );
+}
+
+function ElementWidthOptionContent(props: {
+    choice: ElementWidthChoice;
+    variant: 'field' | 'menu';
+}) {
+    const {
+        choice,
+        variant,
+    } = props;
+
+    const compact = variant === 'field';
+
+    return (
+        <Box
+            sx={{
+                display: 'grid',
+                alignItems: 'center',
+                columnGap: compact ? 1.25 : 1.5,
+                gridTemplateColumns: compact ? '68px minmax(120px, 1fr) 60px' : '68px minmax(180px, 1fr) 60px',
+                minWidth: 0,
+                width: '100%',
+            }}
+        >
+            <Typography
+                className="element-width-option-label"
+                noWrap
+                sx={{
+                    fontSize: 16,
+                    fontWeight: 400,
+                    color: choice.disabled ? 'text.disabled' : 'text.primary',
+                    fontVariantNumeric: 'tabular-nums',
+                    minWidth: 0,
+                    width: '68px'
+                }}>
+                {choice.label}
+            </Typography>
+
+            <Box
+                sx={{
+                    alignItems: 'center',
+                    display: 'flex',
+                    minWidth: 0,
+                }}
+            >
+                <ElementWidthBar
+                    choice={choice}
+                    muted={choice.disabled}
+                />
+            </Box>
+
+            <Typography
+                noWrap
+                sx={{
+                    fontSize: 12,
+                    color: choice.disabled ? 'text.disabled' : 'text.secondary',
+                    justifySelf: 'end',
+                    fontVariantNumeric: 'tabular-nums',
+                    textAlign: 'right',
+                    width: '60px'
+                }}>
+                {choice.fractionLabel}
+            </Typography>
+        </Box>
+    );
+}
+
+export function ElementWidthSelector(props: ElementWidthSelectorProps) {
+    const {
+        label,
+        elementType,
+        value,
+        onChange,
+        hint,
+        disabled = false,
+    } = props;
+
+    const normalizedValue = useMemo(() => normalizeElementWeight(elementType, value), [elementType, value]);
+    const choices = useMemo(() => getElementWidthChoices(elementType), [elementType]);
+    const selectedChoice = useMemo(() => {
+        return choices.find(choice => choice.value === normalizedValue) ?? choices[choices.length - 1];
+    }, [choices, normalizedValue]);
+    const restrictionHint = useMemo(() => getElementWidthRestrictionHint(elementType), [elementType]);
+    const helperText = useMemo(() => {
+        return [
+            hint,
+            restrictionHint,
+        ]
+            .filter((part): part is string => part != null && part.length > 0)
+            .join(' ');
+    }, [hint, restrictionHint]);
+    const hasDisabledChoices = useMemo(() => choices.some(choice => choice.disabled), [choices]);
+
+    return (
+        <FormField
+            id={props.id}
+            label={label}
+            hint={helperText}
+            disabled={disabled}
+            ariaLabel={props.ariaLabel}
+            ariaDescribedBy={props.ariaDescribedBy}
+            labelAction={props.labelAction}
+            margin={props.margin}
+            showOptionalIndicator={props.showOptionalIndicator ?? false}
+            sx={props.sx}
+        >
+            {(field) => (
+                <TextField
+                    id={field.controlId}
+                    fullWidth
+                    select
+                    size="small"
+                    margin="none"
+                    value={normalizedValue.toString()}
+                    onChange={(event) => {
+                        const nextChoice = choices.find(choice => choice.value.toString() === event.target.value);
+
+                        if (nextChoice != null && !nextChoice.disabled) {
+                            onChange(nextChoice.value);
+                        }
+                    }}
+                    disabled={disabled}
+                    sx={[
+                        {
+                            '& .MuiInputBase-root': formFieldInputRootSx,
+                            '& .MuiSelect-select': {
+                                alignItems: 'center',
+                                display: 'flex',
+                            },
+                            '& .MuiSelect-select > .MuiBox-root': {
+                                width: '100%',
+                            },
+                        },
+                        ...(Array.isArray(props.controlSx) ? props.controlSx : [props.controlSx]),
+                    ]}
+                    slotProps={{
+                        htmlInput: getNativeInputAriaProps(field),
+                        select: {
+                            ...getCompositeControlAriaProps(field),
+                            labelId: field.labelId,
+                            renderValue: () => (
+                                <ElementWidthOptionContent
+                                    choice={selectedChoice}
+                                    variant="field"
+                                />
+                            ),
+                            MenuProps: {
+                                slotProps: {
+                                    paper: {sx: {minWidth: 360}},
+                                },
+                            },
+                        },
+                    }}
+                >
+            {
+                hasDisabledChoices && restrictionHint != null &&
+                <ListSubheader
+                    disableSticky
+                    sx={{
+                        color: 'text.secondary',
+                        fontSize: 12,
+                        lineHeight: 1.4,
+                        py: 1.25,
+                        whiteSpace: 'normal',
+                    }}
+                >
+                    {restrictionHint}
+                </ListSubheader>
+            }
+            {
+                choices.map((choice) => (
+                    <MenuItem
+                        key={choice.value}
+                        value={choice.value.toString()}
+                        disabled={choice.disabled}
+                        sx={{
+                            py: 1.25,
+                            '&.Mui-disabled': {
+                                opacity: 1,
+                            },
+                            '&.Mui-selected': {
+                                backgroundColor: 'action.selected',
+                            },
+                            '&.Mui-selected:hover': {
+                                backgroundColor: 'action.selected',
+                            },
+                        }}
+                    >
+                        <ElementWidthOptionContent
+                            choice={choice}
+                            variant="menu"
+                        />
+                    </MenuItem>
+                ))
+            }
+                </TextField>
+            )}
+        </FormField>
+    );
+}

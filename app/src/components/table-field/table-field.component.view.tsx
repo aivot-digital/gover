@@ -1,6 +1,5 @@
-import {Box, Button, FormHelperText, FormLabel} from '@mui/material';
 import {TableFieldElement} from '../../models/elements/form/input/table-field-element';
-import {DataGrid, GridCellEditCommitParams, GridColumns, GridRenderCellParams, GridSelectionModel} from '@mui/x-data-grid';
+import {DataGrid, GridColDef, GridPaginationModel, GridRenderCellParams, GridRowId, GridRowSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
 import React, {useMemo, useState} from 'react';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {BaseViewProps} from '../../views/base-view';
@@ -8,6 +7,13 @@ import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {parseGermanNumber} from '../../utils/parse-german-numbers';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
+import {getSelectedRowIds, hasSelectedGridRows} from './table-field-selection';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
+import AddIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import {type Action} from '../actions/actions-props';
+import {TableFieldLayout} from './table-field-layout';
+import {TableFieldColumnHeader} from './table-field-column-header';
 
 // TODO: Unify with table-field-component.tsx
 export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, { [key: string]: string | number | null }[]>) {
@@ -15,7 +21,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -26,9 +32,12 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         disabled,
     } = element;
 
-    const [selectionModel, setSelectionModel] = useState<GridSelectionModel>();
+    const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>();
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
-    const [pageSize, setPageSize] = useState(8);
+    const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+        pageSize: 8,
+        page: 0,
+    });
 
     const isDisabled = useMemo(() => {
         return disabled || isGloballyDisabled;
@@ -44,7 +53,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         }
 
         const newRow = (fields ?? []).reduce((acc, val) => {
-            acc[val.label] = null;
+            acc[val.key ?? ''] = null;
             return acc;
         }, {} as { [key: string]: string | number | null });
 
@@ -57,68 +66,80 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
 
     const handleDelete = () => {
         if (element.id != null && selectionModel != null) {
-            const updatedRows = (value ?? []).filter((_: any, index: number) => !selectionModel.includes(index));
-            setValue(updatedRows.length > 0 ? updatedRows : undefined);
-            setSelectionModel([]);
+            const selectedIds = new Set(getSelectedRowIds(selectionModel, rows.map((row) => row._id)));
+            const updatedRows = (value ?? []).filter((_: any, index: number) => !selectedIds.has(index));
+            setValue(updatedRows.length > 0 ? updatedRows : null);
+            setSelectionModel({
+                type: 'include',
+                ids: new Set(),
+            });
             setConfirmDelete(undefined);
         }
     };
 
-    const handleCellEdit = (params: GridCellEditCommitParams) => {
-        if (fields == null) {
-            return;
-        }
-
-        const field = fields
-            .find(field => field.label === params.field);
-
-        if (field == null) {
-            return;
-        }
-
-        let cellValue = params.value;
-
-        if (cellValue == null) {
-            cellValue = undefined;
-        } else if (field.datatype === 'number') {
-            if (typeof cellValue === 'string' && isNaN(Number(cellValue))) {
-                cellValue = parseGermanNumber(cellValue);
+    const handleCellEdit = (newRow: GridValidRowModel, oldRow: GridValidRowModel, params: {
+        rowId: GridRowId;
+    }) => {
+        const processedRow: Record<string, string | number | null> = {};
+        for (const field of fields ?? []) {
+            if (field.key == null) {
+                continue;
             }
 
-            cellValue = parseFloat(Number(cellValue).toFixed(field.decimalPlaces ?? 0));
-        } else if (field.datatype === 'string') {
-            if (isStringNullOrEmpty(cellValue)) {
-                cellValue = undefined;
+            let cellValue = newRow[field.key];
+
+            if (cellValue == null) {
+                cellValue = null;
+            } else if (field.datatype === 'number') {
+                if (typeof cellValue === 'string' && isNaN(Number(cellValue))) {
+                    cellValue = parseGermanNumber(cellValue);
+                }
+
+                cellValue = parseFloat(Number(cellValue).toFixed(field.decimalPlaces ?? 0));
+            } else if (field.datatype === 'string') {
+                if (isStringNullOrEmpty(cellValue)) {
+                    cellValue = null;
+                } else {
+                    cellValue = cellValue.toString();
+                }
             }
 
-            cellValue = cellValue.toString();
+            processedRow[field.key] = cellValue;
         }
 
         const updatedValues = [
             ...(value ?? []),
         ];
 
-        updatedValues[params.id as number] = {
-            ...updatedValues[params.id as number],
-            [params.field]: cellValue,
-        };
+        updatedValues[params.rowId as number] = processedRow;
 
         setValue(updatedValues);
+
+        return {
+            ...processedRow,
+            _id: params.rowId,
+        }
     };
 
-    const columns: GridColumns = useMemo(() => {
+    const columns: GridColDef[] = useMemo(() => {
         if (fields == null) {
             return [];
         }
 
         return fields
             .map((field) => ({
-                field: field.label,
-                headerName: field.label + (field.optional ? '' : ' *'),
+                field: field.key ?? '',
+                headerName: field.label ?? '',
+                renderHeader: () => (
+                    <TableFieldColumnHeader
+                        label={field.label ?? ''}
+                        optional={field.optional === true}
+                    />
+                ),
                 editable: !field.disabled && !isDisabled && !isBusy && !isDeriving,
                 flex: 1,
-                type: field.datatype,
-                renderCell: (params: GridRenderCellParams<string>) => (
+                type: field.datatype ?? 'string',
+                renderCell: (params: GridRenderCellParams<any>) => (
                     (params.value == null || params.value.length === 0) &&
                     field.placeholder != null &&
                     field.placeholder.length > 0 ?
@@ -142,96 +163,83 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
 
         return value
             .map((data: any, index: number) => ({
-                id: index,
+                _id: index,
                 ...data,
             }));
     }, [value]);
 
-    const hasSelectedRows = useMemo(() => selectionModel != null && selectionModel.length > 0, [selectionModel]);
+    const hasSelectedRows = useMemo(() => hasSelectedGridRows(selectionModel, rows.map((row) => row._id)), [rows, selectionModel]);
+    const fieldError = errors != null && errors.length > 0 ? errors.join(' ') : undefined;
+    const tableActions: Action[] = [
+        {
+            icon: <AddIcon/>,
+            iconPosition: 'start',
+            label: 'Hinzufügen',
+            tooltip: 'Tabellenzeile hinzufügen',
+            ariaLabel: 'Tabellenzeile hinzufügen',
+            onClick: handleAddRow,
+            disabled: isDisabled || isBusy || (element.maximumRows != null && rows.length >= element.maximumRows),
+        },
+        {
+            icon: <Delete/>,
+            iconPosition: 'start',
+            label: 'Löschen',
+            tooltip: 'Ausgewählte Tabellenzeilen löschen',
+            ariaLabel: 'Ausgewählte Tabellenzeilen löschen',
+            onClick: () => setConfirmDelete(() => handleDelete),
+            disabled: isDisabled || isBusy || !hasSelectedRows,
+            color: 'error',
+        },
+    ];
 
     return (
         <>
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 1,
-                }}
+            <TableFieldLayout
+                label={element.label ?? ''}
+                hint={element.hint ?? undefined}
+                error={fieldError}
+                required={element.required ?? undefined}
+                disabled={isDisabled}
+                busy={isBusy}
+                actions={tableActions}
             >
-                <FormLabel
-                    error={error != null}
-                >
-                    {element.label} {element.required && ' *'}
-                </FormLabel>
+                {(fieldContext) => (
+                    <DataGrid
+                        rows={rows}
+                        getRowId={row => row._id}
+                        columns={columns}
+                        paginationModel={paginationModel}
+                        pageSizeOptions={[8, 16, 32]}
+                        onPaginationModelChange={(newPaginationModel) => setPaginationModel(newPaginationModel)}
+                        autoHeight
 
-                {
-                    !element.disabled &&
-                    <Box>
-                        <Button
-                            onClick={handleAddRow}
-                            disabled={isDisabled || isBusy || (element.maximumRows != null && rows.length >= element.maximumRows)}
-                        >
-                            Hinzufügen
-                        </Button>
-                        <Button
-                            color="error"
-                            onClick={() => setConfirmDelete(() => handleDelete)}
-                            disabled={isDisabled || isBusy || !hasSelectedRows}
-                            sx={{ml: 1}}
-                        >
-                            Löschen
-                        </Button>
-                    </Box>
-                }
-            </Box>
+                        // Keep the selection column mounted while deriving to avoid a layout shift.
+                        checkboxSelection={!element.disabled}
+                        disableRowSelectionExcludeModel
 
-            <div
-                style={{
-                    width: '100%',
-                }}
-            >
-                <DataGrid
-                    rows={rows}
-                    columns={columns}
-                    pageSize={pageSize}
-                    rowsPerPageOptions={[8, 16, 32]}
-                    onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-                    autoHeight
+                        disableRowSelectionOnClick
+                        onRowSelectionModelChange={isDisabled || isBusy ? undefined : setSelectionModel}
+                        rowSelectionModel={selectionModel}
 
-                    // can stay active on isBusy because pointerEvents are blocked via CSS and to prevent layout shift
-                    checkboxSelection={!element.disabled}
+                        processRowUpdate={isDisabled || isBusy ? undefined : handleCellEdit}
 
-                    disableSelectionOnClick={true}
-                    onSelectionModelChange={!isBusy ? setSelectionModel : undefined}
-                    selectionModel={selectionModel}
+                        disableColumnSelector
+                        disableColumnFilter
 
-                    onCellEditCommit={!isBusy ? handleCellEdit : undefined}
-
-                    disableColumnSelector
-                    disableColumnFilter
-
-                    sx={{
-                        backgroundColor: isBusy ? '#F8F8F8' : undefined,
-                        cursor: isBusy ? 'not-allowed' : undefined,
-                        pointerEvents: isBusy ? 'none' : 'auto',
-                    }}
-                />
-            </div>
-
-            {
-                (error || element.hint) &&
-                <FormHelperText
-                    sx={{mt: 1}}
-                    error={error != null}
-                >
-                    {
-                        error == null ?
-                            element.hint :
-                            error
-                    }
-                </FormHelperText>
-            }
+                        aria-labelledby={fieldContext.labelId}
+                        aria-describedby={fieldContext.describedBy}
+                        aria-invalid={fieldContext.invalid || undefined}
+                        aria-busy={fieldContext.busy || undefined}
+                        sx={{
+                            backgroundColor: isBusy ? getDisabledFieldBackground : undefined,
+                            borderBottom: '1px solid',
+                            borderBottomColor: 'divider',
+                            cursor: (isBusy || isDisabled) ? 'not-allowed' : undefined,
+                            pointerEvents: isBusy ? 'none' : 'auto',
+                        }}
+                    />
+                )}
+            </TableFieldLayout>
 
             <ConfirmDialog
                 title="Möchten Sie die ausgewählten Einträge wirklich löschen?"
