@@ -71,6 +71,20 @@ public class TemplateRenderService {
     @Nullable
     public String interpolate(@Nonnull ProcessExecutionData foldedProcessData,
                               @Nullable String template) {
+        return interpolate((Map<String, Object>) foldedProcessData, template);
+    }
+
+    /**
+     * Renders the given template against the provided data map.
+     *
+     * <p>The method first parses the full template and rejects invalid syntax before any JavaScript is executed.
+     * That prevents partially rendered output and ensures the same parser drives both editor validation and runtime
+     * rendering. A single JavaScript engine is reused for the full render so nested loops and conditions share one
+     * consistent execution environment instead of repeatedly bootstrapping isolated engines.
+     */
+    @Nullable
+    public String interpolate(@Nonnull Map<String, Object> renderData,
+                              @Nullable String template) {
         if (template == null) {
             return null;
         }
@@ -83,7 +97,7 @@ public class TemplateRenderService {
         try (var engine = javascriptEngineFactoryService.getEngine()) {
             var renderer = new TemplateRenderer(
                     new TemplateExpressionEvaluator(engine, parseResult.source()),
-                    new TemplateRenderContext(foldedProcessData),
+                    new TemplateRenderContext(renderData),
                     parseResult.blocks()
             );
             return renderer.render(parseResult.nodes());
