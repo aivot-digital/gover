@@ -58,7 +58,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
             });
     }, []);
 
-    const isDisabled = useMemo(() => {
+    const isReadOnly = useMemo(() => {
         return Boolean(element.disabled) || isGloballyDisabled;
     }, [element.disabled, isGloballyDisabled]);
 
@@ -127,13 +127,13 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
             hint={element.hint}
             error={errorText || undefined}
             required={element.required ?? false}
-            disabled={isDisabled}
+            readOnly={isReadOnly}
             busy={isFieldBusy}
             labelAction={(
                 <Button
                     size="small"
                     startIcon={<Add/>}
-                    disabled={element.disabled || isDisabled || isFieldBusy}
+                    disabled={isReadOnly || isFieldBusy}
                     onClick={handleAddSlot}
                 >
                     Hinzufügen
@@ -202,11 +202,12 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                         getId={(i) => i.id ?? ''}
                         items={value ?? []}
                         title={getIdentityDisplayName}
-                        subTitle={(i) => getIdentityConfigSubtitle(i, isDisabled || isFieldBusy)}
+                        subTitle={(i) => getIdentityConfigSubtitle(i, isReadOnly || isFieldBusy)}
                         dialogContentComponent={Component}
                         onDialogSave={handleSlotChanged}
                         onDelete={handleDelete}
-                        disabled={element.disabled || isDisabled || isFieldBusy}
+                        readOnly={isReadOnly}
+                        busy={isFieldBusy}
                     />
                 </Stack>
             }
@@ -219,13 +220,14 @@ function wrapIdentityConfigSlot(providers: IdentityProviderListDTO[]): DialogLis
     return (props: {
         item: IdentityConfigElementSlot,
         onChange: (item: IdentityConfigElementSlot) => void,
-        disabled?: boolean
+        readOnly?: boolean,
+        busy?: boolean
     }) => (
         <IdentityConfigSlot
             item={props.item}
             onChange={props.onChange}
             providers={providers}
-            disabled={props.disabled}
+            disabled={props.readOnly || props.busy}
         />
     );
 }

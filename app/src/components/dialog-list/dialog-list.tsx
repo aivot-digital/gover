@@ -24,7 +24,8 @@ import ErrorIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 export type DialogListPropsDialogContentComponent<T> = FunctionComponent<{
     item: T;
     onChange: (item: T) => void;
-    disabled?: boolean;
+    readOnly?: boolean;
+    busy?: boolean;
 }>
 
 interface DialogListProps<T> {
@@ -37,7 +38,9 @@ interface DialogListProps<T> {
     dialogContentComponent: DialogListPropsDialogContentComponent<T>;
     onDialogSave: (edited: T, original: T) => void;
     onDelete: (item: T) => void;
-    disabled?: boolean;
+    // Read-only lists keep their detail dialog available; busy only suspends mutations temporarily.
+    readOnly?: boolean;
+    busy?: boolean;
     hasError?: (item: T) => boolean;
 }
 
@@ -52,11 +55,13 @@ export function DialogList<T>(props: DialogListProps<T>) {
         dialogContentComponent: DialogContentComponent,
         onDialogSave,
         onDelete,
-        disabled,
+        readOnly,
+        busy,
         hasError,
     } = props;
 
-    const isReadonly = disabled === true;
+    const isReadOnly = readOnly === true;
+    const isBusy = busy === true;
     const confirm = useConfirm();
 
     const [showDialog, setShowDialog] = useState(false);
@@ -75,7 +80,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
     };
 
     const handleDialogSave = () => {
-        if (openForItem == null) {
+        if (openForItem == null || isReadOnly || isBusy) {
             return;
         }
 
@@ -89,7 +94,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
             return;
         }
 
-        if (!isReadonly && !deepEquals(openForItem.original, openForItem.edited)) {
+        if (!isReadOnly && !deepEquals(openForItem.original, openForItem.edited)) {
             const conf = await confirm({
                 title: 'Änderungen verwerfen',
                 children: (
@@ -117,6 +122,10 @@ export function DialogList<T>(props: DialogListProps<T>) {
     };
 
     const handleDelete = async (item: T) => {
+        if (isReadOnly || isBusy) {
+            return;
+        }
+
         const conf = await confirm({
             title: 'Eintrag löschen',
             children: (
@@ -223,7 +232,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
                                                     overflow: 'hidden',
                                                     textOverflow: 'ellipsis',
                                                     whiteSpace: 'nowrap',
-                                                    color: disabled ? 'text.disabled' : 'text.secondary',
+                                                    color: isReadOnly || isBusy ? 'text.disabled' : 'text.secondary',
                                                     fontSize: '0.75rem',
                                                     lineHeight: 1.2,
                                                 }}
@@ -254,9 +263,10 @@ export function DialogList<T>(props: DialogListProps<T>) {
 
                                 <Actions
                                     dense
+                                    isBusy={isBusy}
                                     sx={{pr: 0.75}}
                                     actions={
-                                        isReadonly
+                                        isReadOnly
                                             ? [
                                                 {
                                                     icon: <Visibility/>,
@@ -305,7 +315,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
                 <DialogTitleWithClose
                     onClose={handleCancel}
                 >
-                    {isReadonly ? dialogViewTitle ?? dialogTitle : dialogTitle}
+                    {isReadOnly ? dialogViewTitle ?? dialogTitle : dialogTitle}
                 </DialogTitleWithClose>
 
                 <DialogContent>
@@ -319,7 +329,8 @@ export function DialogList<T>(props: DialogListProps<T>) {
                                     edited: changed,
                                 });
                             }}
-                            disabled={disabled}
+                            readOnly={isReadOnly}
+                            busy={isBusy}
                         />
                     }
                 </DialogContent>
@@ -331,10 +342,11 @@ export function DialogList<T>(props: DialogListProps<T>) {
                     }}
                 >
                     {
-                        !isReadonly &&
+                        !isReadOnly &&
                         <Button
                             variant="contained"
                             onClick={handleDialogSave}
+                            disabled={isBusy}
                         >
                             Übernehmen
                         </Button>
@@ -342,11 +354,11 @@ export function DialogList<T>(props: DialogListProps<T>) {
 
                     <Button
                         sx={{
-                            ml: isReadonly ? 0 : 'auto',
+                            ml: isReadOnly ? 0 : 'auto',
                         }}
                         onClick={handleCancel}
                     >
-                        {isReadonly ? 'Schließen' : 'Abbrechen'}
+                        {isReadOnly ? 'Schließen' : 'Abbrechen'}
                     </Button>
                 </DialogActions>
             </Dialog>

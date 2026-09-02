@@ -176,6 +176,35 @@ describe('PaymentConfigView', () => {
         }));
     });
 
+    it('should keep payment configuration and item details viewable when the form is read-only', async () => {
+        renderPaymentConfigView({
+            isBusy: true,
+            value: {
+                paymentProviderKey: 'live-provider',
+                purpose: 'Gebühr',
+                description: 'Beschreibung',
+                mapRequestor: false,
+                requestorMapping: null,
+                items: [createPaymentItem()],
+                successMessage: null,
+                failureMessage: null,
+            },
+        });
+
+        const viewPaymentConfig = screen.getByRole('button', {name: 'Ansehen'});
+        await waitFor(() => expect(viewPaymentConfig).toBeEnabled());
+        fireEvent.click(viewPaymentConfig);
+
+        expect(screen.getByText('Zahlungskonfiguration ansehen')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Übernehmen'})).not.toBeInTheDocument();
+
+        const viewPaymentItem = screen.getByRole('button', {name: 'Ansehen'});
+        expect(viewPaymentItem).toBeEnabled();
+        fireEvent.click(viewPaymentItem);
+
+        expect(screen.getByText('Zahlungspositionen ansehen')).toBeInTheDocument();
+    });
+
     it('should save success and failure messages', async () => {
         const setValue = vi.fn();
 
@@ -416,6 +445,7 @@ function renderPaymentConfigView(options?: {
     value?: PaymentConfigElementValue | null;
     setValue?: Mock;
     errorDetails?: Record<string, any> | null;
+    isBusy?: boolean;
 }) {
     const rootElement: FormLayoutElement = {
         id: 'root',
@@ -459,6 +489,7 @@ function createBaseProps(options?: {
     value?: PaymentConfigElementValue | null;
     setValue?: Mock;
     errorDetails?: Record<string, any> | null;
+    isBusy?: boolean;
 }): BaseViewProps<PaymentConfigElement, PaymentConfigElementValue> {
     return {
         element: {
@@ -479,7 +510,7 @@ function createBaseProps(options?: {
             testProtocolSet: undefined,
             visibility: undefined,
         },
-        isBusy: false,
+        isBusy: options?.isBusy ?? false,
         isDeriving: false,
         value: options?.value ?? {
             paymentProviderKey: null,
