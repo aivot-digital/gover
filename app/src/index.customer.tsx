@@ -7,6 +7,7 @@ import {createRoutesFromChildren, matchRoutes, useLocation, useNavigationType} f
 import {createRoot} from 'react-dom/client';
 import {isStringNotNullOrEmpty} from './utils/string-utils';
 import {CustomerShellRouter} from './shells/customer/customer-shell-router';
+import './components/code-editor/configure-monaco';
 
 
 const rootElement = document.getElementById('root')!;

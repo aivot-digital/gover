@@ -1,6 +1,5 @@
-import Editor, {loader, Monaco} from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
-import {editor} from 'monaco-editor';
+import Editor, {type Monaco} from '@monaco-editor/react';
+import {type editor} from 'monaco-editor';
 import {Box, useTheme} from '@mui/material';
 import React, {useCallback, useEffect, useRef} from 'react';
 import {CodeEditorProps} from './code-editor-props';
