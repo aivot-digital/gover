@@ -1,11 +1,9 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.ByteArrayCommunicationMessageAttachment;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageAttachment;
-import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -26,6 +24,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
@@ -61,18 +60,15 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     private static final String OUTPUT_SENT_AT = "sentAt";
     private static final String OUTPUT_SEND_RESULT = "sendResult";
 
-    private final CommunicationService communicationService;
     private final TemplateRenderService templateRenderService;
     private final ProcessInstanceAttachmentSetService attachmentSetService;
     private final ProcessInstanceAttachmentService attachmentService;
     private final StorageService storageService;
 
-    public CommunicationMessageActionNodeV1(CommunicationService communicationService,
-                                            TemplateRenderService templateRenderService,
+    public CommunicationMessageActionNodeV1(TemplateRenderService templateRenderService,
                                             ProcessInstanceAttachmentSetService attachmentSetService,
                                             ProcessInstanceAttachmentService attachmentService,
                                             StorageService storageService) {
-        this.communicationService = communicationService;
         this.templateRenderService = templateRenderService;
         this.attachmentSetService = attachmentSetService;
         this.attachmentService = attachmentService;
@@ -217,24 +213,6 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var attachments = resolveAttachments(context, attachmentSetDataKeys);
         var sentAt = Instant.now();
 
-        Map<String, Object> communicationSendResult;
-        try {
-            communicationSendResult = communicationService.sendMessage(identity, new CommunicationMessage(
-                    subject,
-                    body,
-                    body,
-                    sentAt,
-                    attachments
-            ));
-        } catch (CommunicationException e) {
-            throw new ProcessNodeExecutionExceptionUnknown(
-                    e,
-                    "Die Nachricht an die Identität %s konnte nicht versendet werden: %s",
-                    StringUtils.quote(identityId),
-                    e.getMessage()
-            );
-        }
-
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(OUTPUT_IDENTITY_ID, identityId);
         nodeData.put(OUTPUT_BINDING_ID, identity.communicationProviderBindingId());
@@ -242,12 +220,16 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         nodeData.put(OUTPUT_BODY, body);
         nodeData.put(OUTPUT_ATTACHMENT_SET_DATA_KEYS, attachmentSetDataKeys);
         nodeData.put(OUTPUT_SENT_AT, sentAt);
-        nodeData.put(OUTPUT_SEND_RESULT, communicationSendResult);
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_OUTPUT)
                 .setProcessData(context.getCurrentProcessExecutionData().getProcessData())
-                .setNodeData(nodeData);
+                .setNodeData(nodeData)
+                .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
+                        identityId,
+                        new CommunicationMessage(subject, body, body, sentAt, attachments),
+                        OUTPUT_SEND_RESULT
+                ));
     }
 
     @Nonnull

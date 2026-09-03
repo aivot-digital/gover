@@ -1,6 +1,11 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
+import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
+import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.services.ProcessTaskMailService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -13,11 +18,15 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
@@ -40,8 +49,170 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class ProcessNodeExecutionResultHandlerTest {
+    @Test
+    void handleResult_DispatchesCommunicationAndMapsProviderResultBeforeOutputs() throws Exception {
+        var communicationService = mock(CommunicationService.class);
+        var identity = identity("applicant");
+        var message = CommunicationMessage.of("Subject", "Body", "Body");
+        var sendResult = Map.<String, Object>of("messageId", "message-1");
+        when(communicationService.sendMessage(same(identity), same(message))).thenReturn(sendResult);
+
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(
+                savedTasks,
+                Map.of(),
+                new RecordingProcessTaskMailService(),
+                communicationService
+        );
+        var task = processInstanceTask(null);
+
+        handler.handleResult(
+                new RecordingProcessNodeExecutionLogger(),
+                null,
+                new TestProcessNodeDefinition("Fallback task", List.of(
+                        new ProcessNodeOutput("sendResult", "Send result", "Provider result", "Record<string, unknown>")
+                )),
+                processNode("Nachricht", Map.of("sendResult", "delivery")),
+                processInstance(identity),
+                task,
+                null,
+                new ProcessNodeExecutionResultTaskUpdated()
+                        .setNodeData(Map.of("existing", true))
+                        .setProcessData(Map.of())
+                        .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
+                                identity.identityId(),
+                                message,
+                                "sendResult"
+                        ))
+        );
+
+        verify(communicationService).sendMessage(same(identity), same(message));
+        assertEquals(sendResult, task.getNodeData().get("sendResult"));
+        assertEquals(Map.of("delivery", sendResult), task.getProcessData());
+        assertEquals(ProcessTaskStatus.Running, task.getStatus());
+        assertEquals(1, savedTasks.size());
+    }
+
+    @Test
+    void handleResult_AppliesPaymentRequestedOnlyAfterCommunicationSucceeds() throws Exception {
+        var communicationService = mock(CommunicationService.class);
+        var identity = identity("applicant");
+        var message = CommunicationMessage.of("Payment", "Please pay", "Please pay");
+        when(communicationService.sendMessage(same(identity), same(message))).thenReturn(Map.of());
+
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(
+                savedTasks,
+                Map.of(),
+                new RecordingProcessTaskMailService(),
+                communicationService
+        );
+        var task = processInstanceTask(null);
+
+        handler.handleResult(
+                new RecordingProcessNodeExecutionLogger(),
+                null,
+                new TestProcessNodeDefinition("Payment"),
+                processNode("Payment"),
+                processInstance(identity),
+                task,
+                null,
+                new ProcessNodeExecutionResultPaymentRequested("transaction-1", "Provider")
+                        .setRuntimeData(Map.of("transactionKey", "transaction-1"))
+                        .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
+                                identity.identityId(),
+                                message,
+                                null
+                        ))
+        );
+
+        verify(communicationService).sendMessage(same(identity), same(message));
+        assertEquals(ProcessTaskStatus.AwaitingPayment, task.getStatus());
+        assertEquals("transaction-1", task.getRuntimeData().get("transactionKey"));
+        assertEquals(1, savedTasks.size());
+    }
+
+    @Test
+    void handleResult_MarksTaskFailedWhenCommunicationFails() throws Exception {
+        var communicationService = mock(CommunicationService.class);
+        var identity = identity("applicant");
+        var message = CommunicationMessage.of("Subject", "Body", "Body");
+        when(communicationService.sendMessage(same(identity), same(message)))
+                .thenThrow(new CommunicationException("Versand fehlgeschlagen"));
+
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(
+                savedTasks,
+                Map.of(),
+                new RecordingProcessTaskMailService(),
+                communicationService
+        );
+        var task = processInstanceTask(null);
+
+        assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> handler.handleResult(
+                new RecordingProcessNodeExecutionLogger(),
+                null,
+                new TestProcessNodeDefinition("Fallback task"),
+                processNode("Nachricht"),
+                processInstance(identity),
+                task,
+                null,
+                new ProcessNodeExecutionResultTaskUpdated()
+                        .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
+                                identity.identityId(),
+                                message,
+                                null
+                        ))
+        ));
+
+        assertEquals(ProcessTaskStatus.Failed, task.getStatus());
+        assertNotNull(task.getFinished());
+        assertEquals(1, savedTasks.size());
+    }
+
+    @Test
+    void handleResult_MarksTaskFailedWhenCommunicationIdentityIsMissing() {
+        var communicationService = mock(CommunicationService.class);
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(
+                savedTasks,
+                Map.of(),
+                new RecordingProcessTaskMailService(),
+                communicationService
+        );
+        var task = processInstanceTask(null);
+
+        assertThrows(ProcessNodeExecutionExceptionMissingValue.class, () -> handler.handleResult(
+                new RecordingProcessNodeExecutionLogger(),
+                null,
+                new TestProcessNodeDefinition("Fallback task"),
+                processNode("Nachricht"),
+                processInstance(),
+                task,
+                null,
+                new ProcessNodeExecutionResultTaskUpdated()
+                        .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
+                                "missing",
+                                CommunicationMessage.of("Subject", "Body", "Body"),
+                                null
+                        ))
+        ));
+
+        verifyNoInteractions(communicationService);
+        assertEquals(ProcessTaskStatus.Failed, task.getStatus());
+        assertNotNull(task.getFinished());
+        assertEquals(1, savedTasks.size());
+    }
+
     @Test
     void handleResult_AppliesOutputMappingsWithExplicitArrayIndices() throws ProcessNodeExecutionException {
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
@@ -227,8 +398,16 @@ class ProcessNodeExecutionResultHandlerTest {
     private static ProcessNodeExecutionResultHandler createHandler(List<ProcessInstanceTaskEntity> savedTasks,
                                                                    Map<String, UserEntity> users,
                                                                    RecordingProcessTaskMailService mailService) {
+        return createHandler(savedTasks, users, mailService, null);
+    }
+
+    private static ProcessNodeExecutionResultHandler createHandler(List<ProcessInstanceTaskEntity> savedTasks,
+                                                                   Map<String, UserEntity> users,
+                                                                   RecordingProcessTaskMailService mailService,
+                                                                   CommunicationService communicationService) {
         return new ProcessNodeExecutionResultHandler(
                 null,
+                communicationService,
                 proxy(ProcessInstanceRepository.class),
                 createTaskRepository(savedTasks),
                 proxy(ProcessEdgeRepository.class),
@@ -254,6 +433,15 @@ class ProcessNodeExecutionResultHandlerTest {
     }
 
     private static ProcessInstanceEntity processInstance() {
+        return processInstance(new IdentityData[0]);
+    }
+
+    private static ProcessInstanceEntity processInstance(IdentityData... identities) {
+        var identityDataMap = new IdentityDataMap();
+        for (var identity : identities) {
+            identityDataMap.put(identity.identityId(), identity);
+        }
+
         return new ProcessInstanceEntity(
                 42L,
                 null,
@@ -264,7 +452,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 null,
                 null,
                 List.of("AZ-123"),
-                new IdentityDataMap(),
+                identityDataMap,
                 Instant.now(),
                 Instant.now(),
                 null,
@@ -273,6 +461,20 @@ class ProcessNodeExecutionResultHandlerTest {
                 11,
                 null,
                 null
+        );
+    }
+
+    private static IdentityData identity(String identityId) {
+        return new IdentityData(
+                "session",
+                identityId,
+                IdentityType.Email,
+                null,
+                null,
+                identityId + "@example.com",
+                Map.of(),
+                null,
+                Map.of()
         );
     }
 

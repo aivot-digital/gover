@@ -1,8 +1,5 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
-import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
-import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
-import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -64,7 +61,6 @@ import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -79,6 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -102,7 +99,6 @@ class PaymentRequestActionNodeV1Test {
     private PaymentTransactionService paymentTransactionService;
     private PaymentProviderRepository paymentProviderRepository;
     private PaymentProviderDefinitionsService paymentProviderDefinitionsService;
-    private CommunicationService communicationService;
     private AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
     private PaymentRequestActionNodeV1 node;
 
@@ -112,7 +108,6 @@ class PaymentRequestActionNodeV1Test {
         paymentTransactionService = mock(PaymentTransactionService.class);
         paymentProviderRepository = mock(PaymentProviderRepository.class);
         paymentProviderDefinitionsService = mock(PaymentProviderDefinitionsService.class);
-        communicationService = mock(CommunicationService.class);
         assignmentContextAssigneeResolverService = mock(AssignmentContextAssigneeResolverService.class);
         node = new PaymentRequestActionNodeV1(
                 paymentPayloadCreationService,
@@ -122,7 +117,6 @@ class PaymentRequestActionNodeV1Test {
                 new TemplateRenderService(new JavascriptEngineFactoryService(List.of())),
                 prosunaConfig(),
                 JsonMapperTestUtils.createMapper(),
-                communicationService,
                 assignmentContextAssigneeResolverService
         );
     }
@@ -230,8 +224,6 @@ class PaymentRequestActionNodeV1Test {
         when(paymentTransactionService.create(
                 paymentProvider, paymentPayload, "https://example.test/process/instance-access/tasks/task-access"
         )).thenReturn(transaction);
-        when(communicationService.sendMessage(any(), any())).thenReturn(Map.of());
-
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultPaymentRequested.class,
                 node.init(context(configuration, processData, processInstance(identity), task()))
@@ -246,11 +238,13 @@ class PaymentRequestActionNodeV1Test {
         assertEquals("INITIAL", result.getNodeData().get("paymentStatus"));
         assertEquals(Map.of("name", "Ada"), result.getProcessData());
 
-        var messageCaptor = ArgumentCaptor.forClass(CommunicationMessage.class);
-        verify(communicationService).sendMessage(same(identity), messageCaptor.capture());
-        assertEquals("Zahlung für Ada", messageCaptor.getValue().subject());
-        assertEquals("Hallo **Ada**", messageCaptor.getValue().body());
-        assertEquals("Hallo **Ada**", messageCaptor.getValue().htmlBody());
+        var communicationRequest = result.getCommunicationRequest();
+        assertNotNull(communicationRequest);
+        assertEquals(RECIPIENT_IDENTITY_ID, communicationRequest.recipientIdentityId());
+        assertNull(communicationRequest.nodeDataOutputKey());
+        assertEquals("Zahlung für Ada", communicationRequest.message().subject());
+        assertEquals("Hallo **Ada**", communicationRequest.message().body());
+        assertEquals("Hallo **Ada**", communicationRequest.message().htmlBody());
         verify(assignmentContextAssigneeResolverService, never()).resolveAssignee(
                 any(), any(), any(), any(), any(), any(), any(), any(), any()
         );
@@ -284,9 +278,9 @@ class PaymentRequestActionNodeV1Test {
 
         assertEquals("staff-1", result.getAssignedUserId());
         assertEquals(Map.of("name", "Ada"), result.getProcessData());
+        assertNull(result.getCommunicationRequest());
         verify(paymentPayloadCreationService, never()).createRequest(any(), any(), any());
         verify(paymentTransactionService, never()).create(any(), any(), any());
-        verify(communicationService, never()).sendMessage(any(), any());
     }
 
     @Test
@@ -329,8 +323,6 @@ class PaymentRequestActionNodeV1Test {
         when(paymentTransactionService.create(
                 paymentProvider, paymentPayload, "https://example.test/process/instance-access/tasks/task-access"
         )).thenReturn(transaction);
-        when(communicationService.sendMessage(any(), any())).thenReturn(Map.of());
-
         var update = authored(
                 "subject", "Bearbeitet {{ $.name }}",
                 "body", "Manuell **{{ $.name }}**"
@@ -344,10 +336,11 @@ class PaymentRequestActionNodeV1Test {
                 ).orElseThrow()
         );
 
-        var messageCaptor = ArgumentCaptor.forClass(CommunicationMessage.class);
-        verify(communicationService).sendMessage(same(identity), messageCaptor.capture());
-        assertEquals("Bearbeitet {{ $.name }}", messageCaptor.getValue().subject());
-        assertEquals("Manuell **{{ $.name }}**", messageCaptor.getValue().body());
+        var communicationRequest = result.getCommunicationRequest();
+        assertNotNull(communicationRequest);
+        assertEquals(RECIPIENT_IDENTITY_ID, communicationRequest.recipientIdentityId());
+        assertEquals("Bearbeitet {{ $.name }}", communicationRequest.message().subject());
+        assertEquals("Manuell **{{ $.name }}**", communicationRequest.message().body());
         assertEquals("runtime", result.getRuntimeData().get("existing"));
         var savedStaffData = assertInstanceOf(
                 AuthoredElementValues.class,
@@ -377,7 +370,6 @@ class PaymentRequestActionNodeV1Test {
 
         verify(paymentPayloadCreationService, never()).createRequest(any(), any(), any());
         verify(paymentTransactionService, never()).create(any(), any(), any());
-        verify(communicationService, never()).sendMessage(any(), any());
     }
 
     @Test
@@ -434,31 +426,6 @@ class PaymentRequestActionNodeV1Test {
                 () -> node.init(context(configuration, processData, processInstance(recipientIdentity()), task()))
         );
         verify(paymentTransactionService, never()).create(any(), any(), any());
-        verify(communicationService, never()).sendMessage(any(), any());
-    }
-
-    @Test
-    void initAutomatic_MapsCommunicationFailureToExecutionException() throws Exception {
-        var paymentProviderKey = UUID.randomUUID();
-        var paymentConfig = paymentConfig(paymentProviderKey);
-        var configuration = nodeConfiguration(paymentConfig, "automatic");
-        var paymentProvider = paymentProvider(paymentProviderKey);
-        var paymentPayload = paymentPayload();
-        var processData = new ProcessExecutionData();
-
-        when(paymentProviderRepository.findById(paymentProviderKey)).thenReturn(Optional.of(paymentProvider));
-        when(paymentPayloadCreationService.createRequest(
-                eq(paymentConfig), any(DerivedRuntimeElementData.class), same(processData)
-        )).thenReturn(Optional.of(paymentPayload));
-        when(paymentTransactionService.create(any(), any(), any()))
-                .thenReturn(paymentTransaction(paymentProviderKey, XBezahldienstStatus.INITIAL));
-        when(communicationService.sendMessage(any(), any()))
-                .thenThrow(new CommunicationException("Versand fehlgeschlagen"));
-
-        assertThrows(
-                ProcessNodeExecutionExceptionUnknown.class,
-                () -> node.init(context(configuration, processData, processInstance(recipientIdentity()), task()))
-        );
     }
 
     @Test

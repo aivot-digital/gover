@@ -2,9 +2,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.zxing.WriterException;
-import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
-import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -28,7 +26,6 @@ import de.aivot.prosuna.backend.elements.uiPresets.PaymentGroupPreset;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
-import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
@@ -56,6 +53,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.TaskViewEvent;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultNoop;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
@@ -117,7 +115,6 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     private final TemplateRenderService templateRenderService;
     private final ProsunaConfig prosunaConfig;
     private final JsonMapper jsonMapper;
-    private final CommunicationService communicationService;
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
 
     public PaymentRequestActionNodeV1(PaymentPayloadCreationService paymentPayloadCreationService,
@@ -127,7 +124,6 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                                       TemplateRenderService templateRenderService,
                                       ProsunaConfig prosunaConfig,
                                       JsonMapper jsonMapper,
-                                      CommunicationService communicationService,
                                       AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService) {
         this.paymentPayloadCreationService = paymentPayloadCreationService;
         this.paymentTransactionService = paymentTransactionService;
@@ -136,7 +132,6 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         this.templateRenderService = templateRenderService;
         this.prosunaConfig = prosunaConfig;
         this.jsonMapper = jsonMapper;
-        this.communicationService = communicationService;
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
     }
 
@@ -374,7 +369,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 "Nachrichtentext"
         );
 
-        return createAndSendPaymentRequest(
+        return createPaymentRequest(
                 context.getCurrentProcessExecutionData(),
                 context.getThisProcessInstance(),
                 context.getThisTask(),
@@ -504,7 +499,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 configuration,
                 context.getThisProcessInstance()
         );
-        var result = createAndSendPaymentRequest(
+        var result = createPaymentRequest(
                 context.getCurrentProcessExecutionData(),
                 context.getThisProcessInstance(),
                 context.getThisTask(),
@@ -641,7 +636,6 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
         return new ResolvedRequestConfiguration(
                 recipientIdentityId,
-                recipientIdentity,
                 paymentConfig,
                 resolvePaymentProvider(paymentConfig)
         );
@@ -792,7 +786,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     }
 
     @Nonnull
-    private ProcessNodeExecutionResult createAndSendPaymentRequest(
+    private ProcessNodeExecutionResult createPaymentRequest(
             @Nonnull ProcessExecutionData processExecutionData,
             @Nonnull ProcessInstanceEntity processInstance,
             @Nonnull ProcessInstanceTaskEntity task,
@@ -810,13 +804,6 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 resolvedConfiguration.paymentProvider(),
                 paymentPayload,
                 paymentUrl
-        );
-
-        sendPaymentRequest(
-                resolvedConfiguration.recipientIdentityId(),
-                resolvedConfiguration.recipientIdentity(),
-                subject,
-                content
         );
 
         var runtimeData = new LinkedHashMap<>(task.getRuntimeData());
@@ -838,28 +825,12 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                         paymentPayload,
                         transaction
                 ))
-                .setProcessData(processExecutionData.getProcessData());
-    }
-
-    private void sendPaymentRequest(
-            @Nonnull String recipientIdentityId,
-            @Nonnull IdentityData recipientIdentity,
-            @Nonnull String subject,
-            @Nonnull String content
-    ) throws ProcessNodeExecutionExceptionUnknown {
-        try {
-            communicationService.sendMessage(
-                    recipientIdentity,
-                    CommunicationMessage.of(subject, content, content)
-            );
-        } catch (CommunicationException e) {
-            throw new ProcessNodeExecutionExceptionUnknown(
-                    e,
-                    "Die Zahlungsaufforderung konnte nicht an die Identität %s versendet werden: %s",
-                    StringUtils.quote(recipientIdentityId),
-                    e.getMessage()
-            );
-        }
+                .setProcessData(processExecutionData.getProcessData())
+                .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
+                        resolvedConfiguration.recipientIdentityId(),
+                        CommunicationMessage.of(subject, content, content),
+                        null
+                ));
     }
 
     @Nonnull
@@ -951,7 +922,6 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     private record ResolvedRequestConfiguration(
             @Nonnull String recipientIdentityId,
-            @Nonnull IdentityData recipientIdentity,
             @Nonnull PaymentConfigElementValue paymentConfig,
             @Nonnull PaymentProviderEntity paymentProvider
     ) {

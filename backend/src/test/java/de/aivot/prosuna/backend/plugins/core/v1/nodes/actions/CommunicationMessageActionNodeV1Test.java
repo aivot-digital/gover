@@ -1,7 +1,5 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
-import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
-import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -26,17 +24,16 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class CommunicationMessageActionNodeV1Test {
     @Test
     void metadataExposesAutomaticExecutionAndTypedOutputs() {
-        var node = createNode(mock(CommunicationService.class), mock(TemplateRenderService.class));
+        var node = createNode(mock(TemplateRenderService.class));
 
         assertArrayEquals(
                 new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic},
@@ -59,7 +56,7 @@ class CommunicationMessageActionNodeV1Test {
 
     @Test
     void configurationUsesProcessIdentityIdInputElement() throws Exception {
-        var node = createNode(mock(CommunicationService.class), mock(TemplateRenderService.class));
+        var node = createNode(mock(TemplateRenderService.class));
 
         var layout = node.getConfigurationLayout(new ProcessNodeDefinitionConfigurationLayoutContext(
                 null,
@@ -73,10 +70,9 @@ class CommunicationMessageActionNodeV1Test {
     }
 
     @Test
-    void initSendsMessageToConfiguredIdentity() throws Exception {
-        var communicationService = mock(CommunicationService.class);
+    void initReturnsCommunicationRequestForConfiguredIdentity() throws Exception {
         var templateRenderService = mock(TemplateRenderService.class);
-        var node = createNode(communicationService, templateRenderService);
+        var node = createNode(templateRenderService);
         var configuration = new CommunicationMessageActionNodeV1.Configuration();
         configuration.identityId = "applicant";
         configuration.subject = "Subject {{ $.caseNumber }}";
@@ -99,15 +95,21 @@ class CommunicationMessageActionNodeV1Test {
         when(templateRenderService.interpolate(eq(executionData), eq(configuration.subject))).thenReturn("Subject 123");
         when(templateRenderService.interpolate(eq(executionData), eq(configuration.body))).thenReturn("Hello");
 
-        node.init(context);
+        var result = node.init(context);
 
-        verify(communicationService).sendMessage(eq(identity), any(CommunicationMessage.class));
+        var communicationRequest = result.getCommunicationRequest();
+        assertNotNull(communicationRequest);
+        assertEquals("applicant", communicationRequest.recipientIdentityId());
+        assertEquals("sendResult", communicationRequest.nodeDataOutputKey());
+        assertEquals("Subject 123", communicationRequest.message().subject());
+        assertEquals("Hello", communicationRequest.message().body());
+        assertEquals("Hello", communicationRequest.message().htmlBody());
+        assertEquals(result.getNodeData().get("sentAt"), communicationRequest.message().timestamp());
+        assertEquals(5, result.getNodeData().get("communicationProviderBindingId"));
     }
 
-    private static CommunicationMessageActionNodeV1 createNode(CommunicationService communicationService,
-                                                               TemplateRenderService templateRenderService) {
+    private static CommunicationMessageActionNodeV1 createNode(TemplateRenderService templateRenderService) {
         return new CommunicationMessageActionNodeV1(
-                communicationService,
                 templateRenderService,
                 mock(ProcessInstanceAttachmentSetService.class),
                 mock(ProcessInstanceAttachmentService.class),
