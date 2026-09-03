@@ -17,6 +17,7 @@ import dev.fitko.fitconnect.api.domain.zbp.message.AuthenticationLevel;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -136,8 +137,15 @@ class FitConnectZbpCommunicationProviderV1Test {
         assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel("qaa", Map.of()));
     }
 
-    private ApplicationConfig getApplicationConfig(FitConnectZbpCommunicationProviderV1.Config config) {
-        return ReflectionTestUtils.invokeMethod(definition, "getApplicationConfig", config);
+    private ApplicationConfig getApplicationConfig(FitConnectZbpCommunicationProviderV1.Config config) throws CommunicationException {
+        try {
+            return ReflectionTestUtils.invokeMethod(definition, "getApplicationConfig", config);
+        } catch (UndeclaredThrowableException e) {
+            if (e.getUndeclaredThrowable() instanceof CommunicationException communicationException) {
+                throw communicationException;
+            }
+            throw e;
+        }
     }
 
     private AuthenticationLevel mapAuthenticationLevel(String attributeKey, Map<String, String> attributes) {
