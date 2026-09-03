@@ -185,7 +185,7 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
             hint={element.hint}
             error={errorText || undefined}
             required={element.required ?? false}
-            disabled={isDisabled}
+            readOnly={isDisabled}
             busy={isFieldBusy}
             labelAction={(
                 <DisabledTooltip
@@ -195,7 +195,7 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                     <Button
                         size="small"
                         startIcon={<Add/>}
-                        disabled={element.disabled || isDisabled || isFieldBusy || value != null}
+                        disabled={isDisabled || isFieldBusy || value != null}
                         onClick={handleAdd}
                     >
                         Hinzufügen
@@ -272,7 +272,8 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                     onDelete={() => {
                         setValue(null);
                     }}
-                    disabled={element.disabled || isDisabled || isFieldBusy}
+                    readOnly={isDisabled}
+                    busy={isFieldBusy}
                 />
             )}
         </FormFieldGroup>
@@ -316,13 +317,15 @@ function wrapPaymentConfigDialogContent(paymentProviders: SelectFieldComponentOp
     return (props: {
         item: PaymentConfigElementValue,
         onChange: (item: PaymentConfigElementValue) => void,
-        disabled?: boolean
+        readOnly?: boolean,
+        busy?: boolean
     }) => (
         <PaymentConfigDialogContent
             item={props.item}
             onChange={props.onChange}
             paymentProviders={paymentProviders}
-            disabled={props.disabled}
+            readOnly={props.readOnly}
+            busy={props.busy}
             rootElement={rootElement}
             errorDetails={errorDetails}
         />
@@ -332,7 +335,8 @@ function wrapPaymentConfigDialogContent(paymentProviders: SelectFieldComponentOp
 interface PaymentConfigDialogContentProps {
     item: PaymentConfigElementValue;
     onChange: (item: PaymentConfigElementValue) => void;
-    disabled?: boolean;
+    readOnly?: boolean;
+    busy?: boolean;
     paymentProviders: SelectFieldComponentOption<string>[],
     rootElement: AnyElement;
     errorDetails?: PaymentConfigErrorDetails;
@@ -342,13 +346,14 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
     const {
         item: currentValue,
         onChange,
-        disabled: isDisabled = false,
+        readOnly: isReadOnly = false,
+        busy: isFieldBusy = false,
         paymentProviders: paymentProviderOptions,
         rootElement,
         errorDetails,
     } = props;
 
-    const isFieldBusy = isDisabled;
+    const isInteractionDisabled = isReadOnly || isFieldBusy;
 
     const updateValue = (patch: Partial<PaymentConfigElementValue>) => {
         onChange({
@@ -425,7 +430,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         onChange={(providerKey) => updateValue({paymentProviderKey: providerKey})}
                         options={paymentProviderOptions}
                         required={true}
-                        disabled={isDisabled || isFieldBusy}
+                        disabled={isInteractionDisabled}
                         emptyStatePlaceholder="Keine Zahlungsdienstleister vorhanden"
                         error={getFieldError(errorDetails, 'paymentProviderKey')}
                     />
@@ -437,7 +442,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         value={currentValue.purpose}
                         onChange={(purpose) => updateValue({purpose})}
                         required={true}
-                        disabled={isDisabled || isFieldBusy}
+                        disabled={isInteractionDisabled}
                         hint="Der Buchungstext erscheint auf der Abrechnung der antragstellenden Person (z. B. Bank oder Kreditkarte)."
                         error={getFieldError(errorDetails, 'purpose')}
                     />
@@ -449,7 +454,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         value={currentValue.description}
                         onChange={(description) => updateValue({description})}
                         required={true}
-                        disabled={isDisabled || isFieldBusy}
+                        disabled={isInteractionDisabled}
                         multiline
                         rows={2}
                         hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die anfallenden Gebühren."
@@ -466,7 +471,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     requestorMapping: currentValue.requestorMapping ?? EmptyRequestorMapping,
                 })}
                 variant="switch"
-                disabled={isDisabled || isFieldBusy}
+                disabled={isInteractionDisabled}
                 sx={{mt: 1.5, mb: 0}}
                 hint="Sie können hier Angaben zu der Person oder Organisation, welche die Zahlung ausführt, dem Zahlungsvorgang zuordnen. Diese Daten werden an den Zahlungsanbieter übertragen."
                 error={getFieldError(errorDetails, 'requestorMapping')}
@@ -477,7 +482,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                 <RequestorMappingEditor
                     value={currentValue.requestorMapping ?? EmptyRequestorMapping}
                     onChange={updateRequestorMapping}
-                    disabled={isDisabled || isFieldBusy}
+                    disabled={isInteractionDisabled}
                     errorDetails={getNestedErrorDetails(errorDetails, 'requestorMapping')}
                 />
             }
@@ -485,7 +490,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
             <FormFieldGroup
                 label="Zahlungspositionen"
                 required
-                disabled={isDisabled}
+                readOnly={isReadOnly}
                 busy={isFieldBusy}
                 error={itemsError}
                 margin="none"
@@ -494,7 +499,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     <Button
                         size="small"
                         startIcon={<Add/>}
-                        disabled={isDisabled || isFieldBusy}
+                        disabled={isInteractionDisabled}
                         onClick={handleAddItem}
                     >
                         Hinzufügen
@@ -513,11 +518,12 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         getId={(row) => row.index.toString()}
                         items={itemRows}
                         title={(row) => getPaymentItemTitle(row.item)}
-                        subTitle={(row) => getPaymentItemSubtitle(row.item, isDisabled || isFieldBusy)}
+                        subTitle={(row) => getPaymentItemSubtitle(row.item, isInteractionDisabled)}
                         dialogContentComponent={ItemDialogContent}
                         onDialogSave={handleItemChanged}
                         onDelete={handleDeleteItem}
-                        disabled={isDisabled || isFieldBusy}
+                        readOnly={isReadOnly}
+                        busy={isFieldBusy}
                         hasError={(row) => hasErrorDetails(getItemErrorDetails(errorDetails, row.index))}
                     />
                 )}
@@ -534,7 +540,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     onChange={(successMessage) => updateValue({
                         successMessage: isStringNullOrEmpty(successMessage) ? null : successMessage,
                     })}
-                    disabled={isDisabled || isFieldBusy}
+                    disabled={isInteractionDisabled}
                     hint="Diese Meldung wird in der Vorgangsansicht angezeigt, nachdem die Zahlung erfolgreich abgeschlossen wurde."
                     error={getFieldError(errorDetails, 'successMessage')}
                 />
@@ -551,7 +557,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     onChange={(failureMessage) => updateValue({
                         failureMessage: isStringNullOrEmpty(failureMessage) ? null : failureMessage,
                     })}
-                    disabled={isDisabled || isFieldBusy}
+                    disabled={isInteractionDisabled}
                     hint="Diese Meldung wird in der Vorgangsansicht angezeigt, wenn die Zahlung fehlgeschlagen ist oder abgebrochen wurde."
                     error={getFieldError(errorDetails, 'failureMessage')}
                 />
@@ -768,7 +774,8 @@ function wrapPaymentConfigItem(rootElement: AnyElement, errorDetails: PaymentCon
     return (props: {
         item: PaymentItemRow,
         onChange: (item: PaymentItemRow) => void,
-        disabled?: boolean
+        readOnly?: boolean,
+        busy?: boolean
     }) => (
         <PaymentConfigItemEditor
             item={props.item.item}
@@ -777,7 +784,7 @@ function wrapPaymentConfigItem(rootElement: AnyElement, errorDetails: PaymentCon
                 item,
             })}
             rootElement={rootElement}
-            disabled={props.disabled ?? false}
+            disabled={props.readOnly === true || props.busy === true}
             errorDetails={getItemErrorDetails(errorDetails, props.item.index)}
         />
     );

@@ -19,6 +19,8 @@ export const FormFieldTokens = {
 export const formFieldRootSx = {
     minWidth: 0,
     width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
 } satisfies SxProps<Theme>;
 
 export function getFormFieldMarginSx(margin: FormFieldMargin): SxProps<Theme> {
@@ -37,6 +39,9 @@ export const formFieldLabelRowSx = {
     gridTemplateColumns: 'minmax(0, 1fr) max-content',
     alignItems: 'center',
     columnGap: FormFieldTokens.labelActionGap,
+    minWidth: 0,
+    width: '100%',
+    maxWidth: '100%',
     minHeight: FormFieldTokens.labelRowMinHeight,
     mb: FormFieldTokens.labelToControlGap,
 } satisfies SxProps<Theme>;

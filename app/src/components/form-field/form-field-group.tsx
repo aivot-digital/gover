@@ -118,7 +118,7 @@ export function FormFieldGroup(props: FormFieldGroupProps) {
         >
             <Box
                 component="legend"
-                sx={{float: 'none', width: '100%', p: 0}}
+                sx={{float: 'none', width: '100%', maxWidth: '100%', p: 0}}
             >
                 <Box component="span" sx={formFieldLabelRowSx}>
                     <FormLabel

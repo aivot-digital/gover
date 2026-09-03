@@ -10,6 +10,7 @@ import {FormFieldGroup} from './form-field-group';
 import {
     FormFieldTokens,
     formFieldLabelRowSx,
+    formFieldRootSx,
     getFormFieldMarginSx,
 } from '../../theming/form-field-tokens';
 
@@ -82,6 +83,20 @@ describe('FormField', () => {
         expect(FormFieldTokens.labelToControlGap).toBe(0.5);
         expect(FormFieldTokens.helperTextGap).toBe(1);
         expect(formFieldLabelRowSx.alignItems).toBe('center');
+    });
+
+    it('keeps field wrappers within narrow grid and flex containers', () => {
+        expect(formFieldRootSx).toMatchObject({
+            minWidth: 0,
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+        });
+        expect(formFieldLabelRowSx).toMatchObject({
+            minWidth: 0,
+            width: '100%',
+            maxWidth: '100%',
+        });
     });
 
     it('keeps only a minimal leading margin in the field spacing presets', () => {

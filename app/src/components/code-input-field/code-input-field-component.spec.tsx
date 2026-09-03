@@ -9,6 +9,9 @@ vi.mock('../code-editor/code-editor', () => ({
         ariaLabelledBy?: string;
         ariaDescribedBy?: string;
         value?: string | null;
+        disabled?: boolean;
+        readOnly?: boolean;
+        busy?: boolean;
     }) => (
         <textarea
             id={props.id}
@@ -16,6 +19,9 @@ vi.mock('../code-editor/code-editor', () => ({
             aria-labelledby={props.ariaLabelledBy}
             aria-describedby={props.ariaDescribedBy}
             value={props.value ?? ''}
+            data-disabled={props.disabled || undefined}
+            data-read-only={props.readOnly || undefined}
+            data-busy={props.busy || undefined}
             readOnly
         />
     ),
@@ -52,5 +58,26 @@ describe('CodeInputFieldComponent', () => {
         expect(expand).toHaveAttribute('aria-controls');
         expect(document.querySelector('textarea[aria-label="Validierungslogik im großen Editor"]'))
             .toHaveAccessibleDescription('Die Funktion muss einen Wahrheitswert zurückgeben.');
+    });
+
+    it('opens the large read-only view when editing is disabled', () => {
+        render(
+            <CodeInputFieldComponent
+                label="Validierungslogik"
+                value="return true;"
+                onChange={vi.fn()}
+                disabled
+            />,
+        );
+
+        const expand = screen.getByLabelText('Validierungslogik: In großer Ansicht öffnen');
+        expect(expand).toBeEnabled();
+
+        fireEvent.click(expand);
+
+        expect(document.querySelector('[role="dialog"]')).toBeInTheDocument();
+        const dialogEditor = document.querySelector('textarea[aria-label="Validierungslogik im großen Editor"]');
+        expect(dialogEditor).toHaveAttribute('data-disabled', 'true');
+        expect(dialogEditor).toHaveAttribute('data-read-only', 'true');
     });
 });

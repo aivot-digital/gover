@@ -37,6 +37,7 @@ describe('TestLab', () => {
         expect(componentsTab).toHaveAttribute('aria-controls', 'test-lab-panel-components');
         expect(systemStatesTab).toHaveAttribute('aria-controls', 'test-lab-panel-system-states');
         expect(tabPaper).toContainElement(componentsPanel);
+        expect(tabPaper).toHaveStyle({minWidth: 0, maxWidth: '100%'});
         expect(componentsPanel).toHaveTextContent('Feldkomponenten');
 
         fireEvent.click(systemStatesTab);

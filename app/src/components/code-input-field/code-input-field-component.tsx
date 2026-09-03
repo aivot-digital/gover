@@ -46,6 +46,7 @@ export function CodeInputFieldComponent(props: CodeInputFieldComponentProps) {
     const controlId = props.id ?? `code-input-${generatedId}`;
     const dialogId = `${controlId}-dialog`;
     const isReadOnly = Boolean(disabled) || Boolean(readOnly) || Boolean(busy);
+    const expandActionLabel = isReadOnly ? 'In großer Ansicht öffnen' : 'In großem Editor öffnen';
     const hasError = error != null && error.length > 0;
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -108,15 +109,15 @@ export function CodeInputFieldComponent(props: CodeInputFieldComponentProps) {
                 return (
                     <Stack direction="row" spacing={0.5} sx={{alignItems: 'center'}}>
                         {suppliedLabelAction}
-                        <Tooltip title="In großem Editor öffnen" arrow>
+                        <Tooltip title={expandActionLabel} arrow>
                             <span>
                                 <IconButton
                                     size="small"
-                                    aria-label={`${label}: In großem Editor öffnen`}
+                                    aria-label={`${label}: ${expandActionLabel}`}
                                     aria-haspopup="dialog"
                                     aria-controls={isDialogOpen ? dialogId : undefined}
                                     aria-expanded={isDialogOpen}
-                                    disabled={field.disabled || field.busy}
+                                    disabled={field.busy}
                                     onClick={() => setIsDialogOpen(true)}
                                 >
                                     <OpenInFull fontSize="small"/>

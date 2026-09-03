@@ -1,4 +1,4 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../data/element-type/element-type';
 import {createDerivedRuntimeElementData} from '../models/element-data';
@@ -114,5 +114,56 @@ describe('IdentityConfigView', () => {
         expect(getComputedStyle(subtitle).fontSize).toBe('12px');
         expect(getComputedStyle(subtitle).color).not.toBe(getComputedStyle(title).color);
         expect(getComputedStyle(subtitle.parentElement!).gap).toBe('2px');
+    });
+
+    it('keeps configured identities available for viewing when the form is read-only', async () => {
+        const element = {
+            type: ElementType.IdentityConfigElement,
+            id: 'identity-config',
+            label: 'Benötigte Identitäten',
+            required: false,
+            disabled: false,
+        } as IdentityConfigElement;
+
+        render(
+            <ConfirmProvider>
+                <IdentityConfigView
+                    element={element}
+                    value={[{
+                        id: 'applicant',
+                        title: 'Antragstellende Person',
+                        description: null,
+                        allowsMail: false,
+                        isOptional: false,
+                        options: [],
+                    }]}
+                    setValue={vi.fn()}
+                    onBlur={vi.fn()}
+                    errors={null}
+                    isBusy
+                    isDeriving={false}
+                    authoredElementValues={{}}
+                    onAuthoredElementValuesChange={vi.fn()}
+                    derivedData={createDerivedRuntimeElementData()}
+                    onDerive={async () => createDerivedRuntimeElementData()}
+                    onEvent={async () => undefined}
+                    onResetErrors={vi.fn()}
+                    suppressErrors={false}
+                    derivationTriggerIdQueue={[]}
+                />
+            </ConfirmProvider>,
+        );
+
+        const addButton = screen.getByRole('button', {name: 'Hinzufügen'});
+        const viewButton = screen.getByRole('button', {name: 'Ansehen'});
+
+        expect(addButton).toBeDisabled();
+        await waitFor(() => expect(viewButton).toBeEnabled());
+
+        fireEvent.click(viewButton);
+
+        expect(screen.getByText('Identität ansehen')).toBeInTheDocument();
+        expect(screen.getAllByRole('button', {name: 'Schließen'})).toHaveLength(2);
+        expect(screen.queryByRole('button', {name: 'Übernehmen'})).not.toBeInTheDocument();
     });
 });

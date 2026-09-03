@@ -92,6 +92,12 @@ const fieldGridSx = {
     gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 18rem), 1fr))',
     alignItems: 'start',
     gap: 3,
+    minWidth: 0,
+    maxWidth: '100%',
+    '& > *': {
+        minWidth: 0,
+        maxWidth: '100%',
+    },
 };
 
 const domainAndUserOptions: DomainAndUserSelectOption[] = [
@@ -414,6 +420,7 @@ export function FieldLayoutGallery() {
         <Box
             component="section"
             aria-labelledby="field-layout-gallery-title"
+            sx={{minWidth: 0, maxWidth: '100%'}}
         >
             <Typography
                 id="field-layout-gallery-title"
