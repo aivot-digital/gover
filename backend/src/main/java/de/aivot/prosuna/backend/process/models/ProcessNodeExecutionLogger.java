@@ -56,12 +56,22 @@ public class ProcessNodeExecutionLogger {
                      @Nonnull String title,
                      @Nonnull String format,
                      @Nullable Object... args) {
+        logf(level, isTechnical, isAuditable, title, Map.of(), format, args);
+    }
+
+    public void logf(@Nonnull ProcessNodeExecutionLogLevel level,
+                     @Nonnull Boolean isTechnical,
+                     @Nonnull Boolean isAuditable,
+                     @Nonnull String title,
+                     @Nonnull Map<String, Object> details,
+                     @Nonnull String format,
+                     @Nullable Object... args) {
         String message = String.format(format, args);
-        var details = new HashMap<String, Object>();
+        var eventDetails = new HashMap<>(details);
         if (identityId != null) {
-            details.put("identityId", identityId);
+            eventDetails.put("identityId", identityId);
         }
-        saveEvent(level, isTechnical, isAuditable, title, message, details);
+        saveEvent(level, isTechnical, isAuditable, title, message, eventDetails);
     }
 
     public void logException(ProcessNodeExecutionException exception) {

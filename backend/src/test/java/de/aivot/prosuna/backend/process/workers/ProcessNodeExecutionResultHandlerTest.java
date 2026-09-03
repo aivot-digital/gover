@@ -61,9 +61,12 @@ class ProcessNodeExecutionResultHandlerTest {
     @Test
     void handleResult_DispatchesCommunicationAndMapsProviderResultBeforeOutputs() throws Exception {
         var communicationService = mock(CommunicationService.class);
-        var identity = identity("applicant");
+        var identity = providerIdentity("applicant");
         var message = CommunicationMessage.of("Subject", "Body", "Body");
-        var sendResult = Map.<String, Object>of("messageId", "message-1");
+        var sendResult = Map.<String, Object>of(
+                "submissionId", "submission-1",
+                "status", "SUBMITTED"
+        );
         when(communicationService.sendMessage(same(identity), same(message))).thenReturn(sendResult);
 
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
@@ -74,15 +77,17 @@ class ProcessNodeExecutionResultHandlerTest {
                 communicationService
         );
         var task = processInstanceTask(null);
+        var logger = new RecordingProcessNodeExecutionLogger();
+        var processInstance = processInstance(identity);
 
         handler.handleResult(
-                new RecordingProcessNodeExecutionLogger(),
+                logger,
                 null,
                 new TestProcessNodeDefinition("Fallback task", List.of(
                         new ProcessNodeOutput("sendResult", "Send result", "Provider result", "Record<string, unknown>")
                 )),
                 processNode("Nachricht", Map.of("sendResult", "delivery")),
-                processInstance(identity),
+                processInstance,
                 task,
                 null,
                 new ProcessNodeExecutionResultTaskUpdated()
@@ -100,6 +105,44 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(Map.of("delivery", sendResult), task.getProcessData());
         assertEquals(ProcessTaskStatus.Running, task.getStatus());
         assertEquals(1, savedTasks.size());
+
+        var event = logger.events.stream()
+                .filter(candidate -> candidate.title().equals("Nachricht versendet"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(ProcessNodeExecutionLogLevel.Info, event.level());
+        assertFalse(event.technical());
+        assertEquals(true, event.auditable());
+        assertEquals(
+                "Die Nachricht mit dem Betreff „Subject“ wurde erfolgreich an die Identität „applicant“ versendet.",
+                event.message()
+        );
+
+        assertEquals(Map.of(
+                "id", processInstance.getId(),
+                "caseNumber", processInstance.getCaseNumber(),
+                "processId", processInstance.getProcessId(),
+                "initialProcessVersion", processInstance.getInitialProcessVersion()
+        ), event.details().get("processInstance"));
+
+        @SuppressWarnings("unchecked")
+        var identityDetails = (Map<String, Object>) event.details().get("recipientIdentity");
+        assertEquals(identity.identityId(), identityDetails.get("identityId"));
+        assertEquals(identity.type(), identityDetails.get("type"));
+        assertEquals(identity.providerKey(), identityDetails.get("providerKey"));
+        assertEquals(identity.metadataIdentifier(), identityDetails.get("metadataIdentifier"));
+        assertEquals(identity.emailAddress(), identityDetails.get("emailAddress"));
+        assertEquals(identity.communicationProviderBindingId(), identityDetails.get("communicationProviderBindingId"));
+        assertFalse(identityDetails.containsKey("sessionId"));
+        assertFalse(identityDetails.containsKey("attributes"));
+        assertFalse(identityDetails.containsKey("communicationProviderData"));
+
+        assertEquals(Map.of(
+                "subject", "Subject",
+                "body", "Body",
+                "htmlBody", "Body"
+        ), event.details().get("message"));
+        assertEquals(sendResult, event.details().get("sendResult"));
     }
 
     @Test
@@ -117,9 +160,10 @@ class ProcessNodeExecutionResultHandlerTest {
                 communicationService
         );
         var task = processInstanceTask(null);
+        var logger = new RecordingProcessNodeExecutionLogger();
 
         handler.handleResult(
-                new RecordingProcessNodeExecutionLogger(),
+                logger,
                 null,
                 new TestProcessNodeDefinition("Payment"),
                 processNode("Payment"),
@@ -139,6 +183,9 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(ProcessTaskStatus.AwaitingPayment, task.getStatus());
         assertEquals("transaction-1", task.getRuntimeData().get("transactionKey"));
         assertEquals(1, savedTasks.size());
+        assertEquals(1, logger.events.stream()
+                .filter(event -> event.title().equals("Nachricht versendet"))
+                .count());
     }
 
     @Test
@@ -157,9 +204,10 @@ class ProcessNodeExecutionResultHandlerTest {
                 communicationService
         );
         var task = processInstanceTask(null);
+        var logger = new RecordingProcessNodeExecutionLogger();
 
         assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> handler.handleResult(
-                new RecordingProcessNodeExecutionLogger(),
+                logger,
                 null,
                 new TestProcessNodeDefinition("Fallback task"),
                 processNode("Nachricht"),
@@ -177,6 +225,9 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(ProcessTaskStatus.Failed, task.getStatus());
         assertNotNull(task.getFinished());
         assertEquals(1, savedTasks.size());
+        assertEquals(0, logger.events.stream()
+                .filter(event -> event.title().equals("Nachricht versendet"))
+                .count());
     }
 
     @Test
@@ -190,9 +241,10 @@ class ProcessNodeExecutionResultHandlerTest {
                 communicationService
         );
         var task = processInstanceTask(null);
+        var logger = new RecordingProcessNodeExecutionLogger();
 
         assertThrows(ProcessNodeExecutionExceptionMissingValue.class, () -> handler.handleResult(
-                new RecordingProcessNodeExecutionLogger(),
+                logger,
                 null,
                 new TestProcessNodeDefinition("Fallback task"),
                 processNode("Nachricht"),
@@ -211,6 +263,9 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(ProcessTaskStatus.Failed, task.getStatus());
         assertNotNull(task.getFinished());
         assertEquals(1, savedTasks.size());
+        assertEquals(0, logger.events.stream()
+                .filter(event -> event.title().equals("Nachricht versendet"))
+                .count());
     }
 
     @Test
@@ -444,7 +499,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         return new ProcessInstanceEntity(
                 42L,
-                null,
+                "CASE-42",
                 UUID.randomUUID().toString(),
                 7,
                 1,
@@ -475,6 +530,20 @@ class ProcessNodeExecutionResultHandlerTest {
                 Map.of(),
                 null,
                 Map.of()
+        );
+    }
+
+    private static IdentityData providerIdentity(String identityId) {
+        return new IdentityData(
+                "session",
+                identityId,
+                IdentityType.IdentityProvider,
+                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                "bund-id",
+                null,
+                Map.of("name", "Sensitive Applicant"),
+                23,
+                Map.of("token", "sensitive")
         );
     }
 
@@ -607,6 +676,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
     private static final class RecordingProcessNodeExecutionLogger extends ProcessNodeExecutionLogger {
         private int exceptionCount;
+        private final List<RecordedLogEvent> events = new ArrayList<>();
 
         private RecordingProcessNodeExecutionLogger() {
             super(42L, 9L, null, null, null);
@@ -619,6 +689,32 @@ class ProcessNodeExecutionResultHandlerTest {
                          String title,
                          String format,
                          Object... args) {
+            events.add(new RecordedLogEvent(
+                    level,
+                    isTechnical,
+                    isAuditable,
+                    title,
+                    String.format(format, args),
+                    Map.of()
+            ));
+        }
+
+        @Override
+        public void logf(ProcessNodeExecutionLogLevel level,
+                         Boolean isTechnical,
+                         Boolean isAuditable,
+                         String title,
+                         Map<String, Object> details,
+                         String format,
+                         Object... args) {
+            events.add(new RecordedLogEvent(
+                    level,
+                    isTechnical,
+                    isAuditable,
+                    title,
+                    String.format(format, args),
+                    details
+            ));
         }
 
         @Override
@@ -630,6 +726,16 @@ class ProcessNodeExecutionResultHandlerTest {
         public void logException(Exception exception) {
             exceptionCount++;
         }
+    }
+
+    private record RecordedLogEvent(
+            ProcessNodeExecutionLogLevel level,
+            boolean technical,
+            boolean auditable,
+            String title,
+            String message,
+            Map<String, Object> details
+    ) {
     }
 
     private static final class TestProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
