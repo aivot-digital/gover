@@ -1,11 +1,10 @@
 import {Box, Button, Divider, Grid, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {useContext, useMemo, useState} from 'react';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType,
 } from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
-import {Api, useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
@@ -16,15 +15,12 @@ import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
-import HelpIconOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import Tooltip from '@mui/material/Tooltip';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
-import {SecretEntityResponseDTO} from '../../../secrets/dtos/secret-entity-response-dto';
-import {SecretsApiService} from '../../../secrets/secrets-api-service';
-import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
+import {SecretSelectComponent} from '../../../secrets/components/secret-select-component';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
 import {IdentityAdditionalParameter} from '../../models/identity-additional-parameter';
@@ -165,12 +161,9 @@ function getIndexedFieldError(
 export function IdentityProviderDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const api = useApi();
     const showConfirm = useConfirm();
     const canDeleteIdentityProvider = useHasSystemPermission(Permission.IDENTITY_PROVIDER_DELETE);
     const canReadSecrets = useHasSystemPermission(Permission.SECRET_READ);
-
-    const [secrets, setSecrets] = useState<SecretEntityResponseDTO[]>();
 
     const [endpointConfigUrl, setEndpointConfigUrl] = useState('');
     const [endpointConfigUrlError, setEndpointConfigUrlError] = useState<string>();
@@ -225,24 +218,11 @@ export function IdentityProviderDetailsPageIndex() {
         ? formatMissingPermissionTooltip(Permission.IDENTITY_PROVIDER_DELETE)
         : undefined;
 
-    useEffect(() => {
-        if (!canReadSecrets) {
-            setSecrets([]);
-            return;
-        }
-
-        fetchSecrets(api)
-            .then(setSecrets)
-            .catch((err) => {
-                console.error(err);
-            });
-    }, [api, canReadSecrets]);
-
     const inputsDisabled = useMemo(() => (
         isBusy || identityProvider == null || !isEditable
     ), [isBusy, identityProvider, isEditable]);
 
-    if (identityProvider == null || secrets == null) {
+    if (identityProvider == null) {
         return (
             <GenericDetailsSkeleton/>
         );
@@ -280,26 +260,6 @@ export function IdentityProviderDetailsPageIndex() {
             .finally(() => {
                 setIsBusy(false);
                 dispatch(hideLoadingOverlay());
-            });
-    };
-
-    const handleRefreshSecrets = () => {
-        if (!canReadSecrets) {
-            return;
-        }
-
-        setIsBusy(true);
-        fetchSecrets(api)
-            .then(setSecrets)
-            .then(() => {
-                dispatch(showSuccessSnackbar('Die Liste der Geheimnisse wurde erfolgreich neu geladen.'));
-            })
-            .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Aktualisieren der Geheimnisse.'));
-            })
-            .finally(() => {
-                setIsBusy(false);
             });
     };
 
@@ -502,18 +462,6 @@ export function IdentityProviderDetailsPageIndex() {
         'additionalParams',
         'Bitte füllen Sie alle Schlüssel/Wert-Paare vollständig aus.',
     );
-
-    const secretOptions = canReadSecrets
-        ? secrets.map((secret) => ({
-            value: secret.key,
-            label: secret.name,
-        }))
-        : identityProvider.clientSecretKey != null
-            ? [{
-                value: identityProvider.clientSecretKey,
-                label: 'Keine Berechtigung zur Einsicht',
-            }]
-            : [];
 
     const secretSelectionHint = canReadSecrets
         ? 'Nur notwendig, wenn der Nutzerkontenanbieter dies erfordert.'
@@ -834,19 +782,17 @@ export function IdentityProviderDetailsPageIndex() {
                         md: 6,
                     }}
                 >
-                    <SelectFieldComponent
+                    <SecretSelectComponent
                         label="Client Secret"
-                        value={identityProvider.clientSecretKey ?? undefined}
+                        value={canReadSecrets ? identityProvider.clientSecretKey ?? undefined : undefined}
                         onChange={(value) => {
-                            if (isStringNullOrEmpty(value)) {
-                                handleInputChange('clientSecretKey')(undefined);
-                            } else {
-                                handleInputChange('clientSecretKey')(value);
-                            }
+                            handleInputChange('clientSecretKey')(value ?? undefined);
                         }}
                         disabled={inputsDisabled || isSystemProvider || !canReadSecrets}
-                        options={
-                            secretOptions
+                        placeholder={
+                            !canReadSecrets && identityProvider.clientSecretKey != null
+                                ? 'Keine Berechtigung zur Einsicht'
+                                : undefined
                         }
                         hint={secretSelectionHint}
                     />
@@ -1008,31 +954,6 @@ export function IdentityProviderDetailsPageIndex() {
                 </DisabledTooltip>
 
                 {
-                    !isSystemProvider &&
-                    !inputsDisabled &&
-                    <DisabledTooltip
-                        title={canReadSecrets
-                            ? 'Aktualisieren Sie die Liste der Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'
-                            : formatMissingPermissionTooltip(Permission.SECRET_READ)}
-                        disabled={isBusy || !canReadSecrets}
-                    >
-                        <span>
-                            <Tooltip title={canReadSecrets ? 'Aktualisieren Sie die Liste der Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.' : ''} arrow>
-                                <Button
-                                    onClick={handleRefreshSecrets}
-                                    disabled={isBusy || !canReadSecrets}
-                                >
-                                    Geheimnisse neu laden <HelpIconOutlined
-                                    fontSize="small"
-                                    sx={{ml: 1}}
-                                />
-                                </Button>
-                            </Tooltip>
-                        </span>
-                    </DisabledTooltip>
-                }
-
-                {
                     isStringNotNullOrEmpty(identityProvider.key) &&
                     !isSystemProvider &&
                     originalIdentityProvider != null &&
@@ -1101,11 +1022,4 @@ export function IdentityProviderDetailsPageIndex() {
             />
         </Box>
     );
-}
-
-async function fetchSecrets(api: Api): Promise<SecretEntityResponseDTO[]> {
-    const secrets = await new SecretsApiService(api)
-        .listAll();
-
-    return secrets.content;
 }
