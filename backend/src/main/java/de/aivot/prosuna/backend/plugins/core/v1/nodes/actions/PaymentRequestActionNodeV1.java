@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DomainAndUserSelectProcessAccessConstraint;
@@ -65,6 +66,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
+import de.aivot.prosuna.backend.utils.NumberUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -76,6 +78,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig> {
@@ -104,6 +107,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                     "statusDetail: string | null; } | null";
 
     private static final String STAFF_TASK_ROOT_ID = "root";
+    private static final String STAFF_TASK_PAYMENT_INFORMATION_ID = "payment-information";
     private static final String STAFF_TASK_SUBJECT_FIELD_ID = "subject";
     private static final String STAFF_TASK_CONTENT_FIELD_ID = "body";
     private static final String STAFF_TASK_SEND_EVENT = "send";
@@ -368,12 +372,17 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 automaticContent.content,
                 "Nachrichtentext"
         );
+        var paymentPayload = createPaymentPayload(
+                resolvedConfiguration.paymentConfig(),
+                context.getCurrentProcessExecutionData()
+        );
 
         return createPaymentRequest(
                 context.getCurrentProcessExecutionData(),
                 context.getThisProcessInstance(),
                 context.getThisTask(),
                 resolvedConfiguration,
+                paymentPayload,
                 subject,
                 content,
                 null
@@ -385,8 +394,12 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             @Nonnull ProcessNodeExecutionInitContext<PaymentRequestActionNodeConfig> context,
             @Nonnull PaymentRequestActionNodeConfig configuration
     ) throws ProcessNodeExecutionException {
-        resolveRequestConfiguration(configuration, context.getThisProcessInstance());
+        var resolvedConfiguration = resolveRequestConfiguration(configuration, context.getThisProcessInstance());
         var manualContent = requireManualContent(configuration);
+        var paymentPayload = createPaymentPayload(
+                resolvedConfiguration.paymentConfig(),
+                context.getCurrentProcessExecutionData()
+        );
 
         var assigneeUserId = assignmentContextAssigneeResolverService
                 .resolveAssignee(
@@ -405,14 +418,26 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                         StringUtils.quote(context.getThisNode().resolveName(this))
                 ));
 
+        var runtimeData = new LinkedHashMap<>(context.getThisTask().getRuntimeData());
+        runtimeData.put(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD, paymentPayload);
+
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setRuntimeData(runtimeData)
                 .setProcessData(context.getCurrentProcessExecutionData().getProcessData());
     }
 
     @Nonnull
     @Override
-    public LayoutElement<?> getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<PaymentRequestActionNodeConfig> context) {
+    public LayoutElement<?> getStaffTaskView(
+            @Nonnull ProcessNodeExecutionContextUIStaff<PaymentRequestActionNodeConfig> context
+    ) throws ResponseException {
+        var paymentPayload = resolveRuntimePaymentPayloadForStaffView(context);
+
+        var paymentInformation = new RichTextContentElement();
+        paymentInformation.setId(STAFF_TASK_PAYMENT_INFORMATION_ID);
+        paymentInformation.setContent(createPaymentInformationMarkdown(paymentPayload));
+
         var subjectField = new TextInputElement();
         subjectField.setId(STAFF_TASK_SUBJECT_FIELD_ID);
         subjectField.setLabel("Betreff der Zahlungsaufforderung");
@@ -425,7 +450,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
         var root = new GroupLayoutElement();
         root.setId(STAFF_TASK_ROOT_ID);
-        root.setChildren(new LinkedList<>(List.of(subjectField, contentField)));
+        root.setChildren(new LinkedList<>(List.of(paymentInformation, subjectField, contentField)));
         return root;
     }
 
@@ -499,11 +524,13 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 configuration,
                 context.getThisProcessInstance()
         );
+        var paymentPayload = resolveRuntimePaymentPayload(context.getThisTask());
         var result = createPaymentRequest(
                 context.getCurrentProcessExecutionData(),
                 context.getThisProcessInstance(),
                 context.getThisTask(),
                 resolvedConfiguration,
+                paymentPayload,
                 subject,
                 content,
                 update
@@ -791,14 +818,11 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             @Nonnull ProcessInstanceEntity processInstance,
             @Nonnull ProcessInstanceTaskEntity task,
             @Nonnull ResolvedRequestConfiguration resolvedConfiguration,
+            @Nonnull PaymentPayload paymentPayload,
             @Nonnull String subject,
             @Nonnull String content,
             @Nullable AuthoredElementValues staffTaskViewData
     ) throws ProcessNodeExecutionException {
-        var paymentPayload = createPaymentPayload(
-                resolvedConfiguration.paymentConfig(),
-                processExecutionData
-        );
         var paymentUrl = createPaymentUrl(processInstance, task);
         var transaction = createPaymentTransaction(
                 resolvedConfiguration.paymentProvider(),
@@ -831,6 +855,82 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                         CommunicationMessage.of(subject, content, content),
                         null
                 ));
+    }
+
+    @Nonnull
+    private PaymentPayload resolveRuntimePaymentPayload(
+            @Nonnull ProcessInstanceTaskEntity task
+    ) throws ProcessNodeExecutionException {
+        var paymentPayloadData = task
+                .getRuntimeData()
+                .get(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD);
+        if (paymentPayloadData == null) {
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Für die manuelle Zahlungsaufforderung wurde keine vorberechnete Zahlung in den Laufzeitdaten gefunden."
+            );
+        }
+        if (paymentPayloadData instanceof PaymentPayload paymentPayload) {
+            return paymentPayload;
+        }
+
+        try {
+            return jsonMapper.convertValue(paymentPayloadData, PaymentPayload.class);
+        } catch (RuntimeException e) {
+            throw new ProcessNodeExecutionExceptionInvalidDataType(
+                    e,
+                    "Die vorberechnete Zahlung der manuellen Zahlungsaufforderung konnte nicht gelesen werden."
+            );
+        }
+    }
+
+    @Nonnull
+    private PaymentPayload resolveRuntimePaymentPayloadForStaffView(
+            @Nonnull ProcessNodeExecutionContextUIStaff<PaymentRequestActionNodeConfig> context
+    ) throws ResponseException {
+        try {
+            return resolveRuntimePaymentPayload(context.getThisTask());
+        } catch (ProcessNodeExecutionException e) {
+            throw ResponseException.internalServerError(e, e.getMessage());
+        }
+    }
+
+    @Nonnull
+    private static String createPaymentInformationMarkdown(@Nonnull PaymentPayload paymentPayload) {
+        var itemMarkdown = paymentPayload
+                .getPaymentItems()
+                .stream()
+                .map(item -> "- %s: %s Euro%s".formatted(
+                        item.getDescription(),
+                        NumberUtils.formatGermanNumber(item.getTotalPrice(), 2),
+                        item.getTaxRate().signum() > 0
+                                ? " inkl. %s %% Steuern".formatted(NumberUtils.formatGermanNumber(item.getTaxRate(), 2))
+                                : ""
+                ))
+                .collect(Collectors.joining("\n"));
+        var includesTaxes = paymentPayload
+                .getPaymentItems()
+                .stream()
+                .anyMatch(item -> item.getTaxRate().signum() > 0);
+
+        return """
+                # Zahlungsinformationen
+
+                **Buchungstext:** %s
+
+                **Beschreibung:** %s
+
+                **Zahlungspositionen:**
+
+                %s
+
+                **Gesamtbetrag:** %s Euro%s
+                """.formatted(
+                paymentPayload.getPurpose(),
+                paymentPayload.getDescription(),
+                itemMarkdown,
+                NumberUtils.formatGermanNumber(paymentPayload.getTotal(), 2),
+                includesTaxes ? " inkl. Steuern" : ""
+        );
     }
 
     @Nonnull

@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElement;
@@ -23,6 +24,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.models.PaymentItem;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
@@ -251,14 +253,19 @@ class PaymentRequestActionNodeV1Test {
     }
 
     @Test
-    void initManual_AssignsStaffWithoutCreatingPaymentOrSendingMessage() throws Exception {
+    void initManual_CalculatesAndStoresPaymentWithoutCreatingTransactionOrSendingMessage() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
-        var configuration = nodeConfiguration(paymentConfig(paymentProviderKey), "manual");
+        var paymentConfig = paymentConfig(paymentProviderKey);
+        var configuration = nodeConfiguration(paymentConfig, "manual");
+        var paymentPayload = paymentPayload();
         var identity = recipientIdentity();
         var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
 
         when(paymentProviderRepository.findById(paymentProviderKey))
                 .thenReturn(Optional.of(paymentProvider(paymentProviderKey)));
+        when(paymentPayloadCreationService.createRequest(
+                eq(paymentConfig), any(DerivedRuntimeElementData.class), same(processData)
+        )).thenReturn(Optional.of(paymentPayload));
         when(assignmentContextAssigneeResolverService.resolveAssignee(
                 eq(PROCESS_ID),
                 eq(PROCESS_VERSION),
@@ -277,9 +284,12 @@ class PaymentRequestActionNodeV1Test {
         );
 
         assertEquals("staff-1", result.getAssignedUserId());
+        assertEquals(paymentPayload, result.getRuntimeData().get(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD));
         assertEquals(Map.of("name", "Ada"), result.getProcessData());
         assertNull(result.getCommunicationRequest());
-        verify(paymentPayloadCreationService, never()).createRequest(any(), any(), any());
+        verify(paymentPayloadCreationService).createRequest(
+                eq(paymentConfig), any(DerivedRuntimeElementData.class), same(processData)
+        );
         verify(paymentTransactionService, never()).create(any(), any(), any());
     }
 
@@ -287,9 +297,43 @@ class PaymentRequestActionNodeV1Test {
     void staffTask_DefaultDataRendersManualTemplatesOnce() throws Exception {
         var configuration = nodeConfiguration(paymentConfig(UUID.randomUUID()), "manual");
         var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
-        var context = staffContext(configuration, processData, processInstance(recipientIdentity()), task());
+        var paymentPayload = paymentPreviewPayload();
+        var persistedPaymentPayload = JsonMapperTestUtils
+                .createMapper()
+                .convertValue(paymentPayload, Map.class);
+        var context = staffContext(
+                configuration,
+                processData,
+                processInstance(recipientIdentity()),
+                task(Map.of(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD, persistedPaymentPayload), Map.of(), Map.of())
+        );
 
         var layout = node.getStaffTaskView(context);
+        var root = assertInstanceOf(GroupLayoutElement.class, layout);
+        assertEquals(
+                List.of("payment-information", "subject", "body"),
+                root.getChildren().stream().map(element -> element.getId()).toList()
+        );
+        var paymentInformation = layout
+                .findChild("payment-information", RichTextContentElement.class)
+                .orElseThrow();
+        assertEquals(
+                """
+                        # Zahlungsinformationen
+
+                        **Buchungstext:** Gebührenbescheid AZ-123
+
+                        **Beschreibung:** Gebühren für die Bearbeitung
+
+                        **Zahlungspositionen:**
+
+                        - Verwaltungsgebühr: 11,90 Euro inkl. 19,00 % Steuern
+                        - Porto: 2,00 Euro
+
+                        **Gesamtbetrag:** 13,90 Euro inkl. Steuern
+                        """,
+                paymentInformation.getContent()
+        );
         assertTrue(Boolean.TRUE.equals(layout.findChild("subject", TextInputElement.class).orElseThrow().getRequired()));
         assertTrue(Boolean.TRUE.equals(layout.findChild("body", RichTextInputElement.class).orElseThrow().getRequired()));
         assertEquals(
@@ -314,12 +358,16 @@ class PaymentRequestActionNodeV1Test {
         var transaction = paymentTransaction(paymentProviderKey, XBezahldienstStatus.INITIAL);
         var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
         var identity = recipientIdentity();
-        var task = task(Map.of("existing", "runtime"), Map.of(), Map.of());
+        var task = task(
+                Map.of(
+                        "existing", "runtime",
+                        PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD, paymentPayload
+                ),
+                Map.of(),
+                Map.of()
+        );
 
         when(paymentProviderRepository.findById(paymentProviderKey)).thenReturn(Optional.of(paymentProvider));
-        when(paymentPayloadCreationService.createRequest(
-                eq(paymentConfig), any(DerivedRuntimeElementData.class), same(processData)
-        )).thenReturn(Optional.of(paymentPayload));
         when(paymentTransactionService.create(
                 paymentProvider, paymentPayload, "https://example.test/process/instance-access/tasks/task-access"
         )).thenReturn(transaction);
@@ -348,6 +396,65 @@ class PaymentRequestActionNodeV1Test {
         );
         assertEquals("Bearbeitet {{ $.name }}", savedStaffData.get("subject"));
         assertEquals("Manuell **{{ $.name }}**", savedStaffData.get("body"));
+        verify(paymentPayloadCreationService, never()).createRequest(any(), any(), any());
+    }
+
+    @Test
+    void staffTaskView_FailsWhenPreparedPaymentIsMissing() {
+        var configuration = nodeConfiguration(paymentConfig(UUID.randomUUID()), "manual");
+
+        assertThrows(
+                ResponseException.class,
+                () -> node.getStaffTaskView(staffContext(
+                        configuration,
+                        new ProcessExecutionData(),
+                        processInstance(recipientIdentity()),
+                        task()
+                ))
+        );
+    }
+
+    @Test
+    void staffTaskView_FailsWhenPreparedPaymentCannotBeRead() {
+        var configuration = nodeConfiguration(paymentConfig(UUID.randomUUID()), "manual");
+
+        assertThrows(
+                ResponseException.class,
+                () -> node.getStaffTaskView(staffContext(
+                        configuration,
+                        new ProcessExecutionData(),
+                        processInstance(recipientIdentity()),
+                        task(
+                                Map.of(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD, List.of("invalid")),
+                                Map.of(),
+                                Map.of()
+                        )
+                ))
+        );
+    }
+
+    @Test
+    void staffTask_SendFailsWhenPreparedPaymentIsMissing() throws Exception {
+        var paymentProviderKey = UUID.randomUUID();
+        var configuration = nodeConfiguration(paymentConfig(paymentProviderKey), "manual");
+        when(paymentProviderRepository.findById(paymentProviderKey))
+                .thenReturn(Optional.of(paymentProvider(paymentProviderKey)));
+
+        assertThrows(
+                ProcessNodeExecutionExceptionMissingValue.class,
+                () -> node.onEventFromStaffTaskView(
+                        staffContext(
+                                configuration,
+                                new ProcessExecutionData(),
+                                processInstance(recipientIdentity()),
+                                task()
+                        ),
+                        authored("subject", "Betreff", "body", "Nachricht"),
+                        "send"
+                )
+        );
+        verify(paymentPayloadCreationService, never()).createRequest(any(), any(), any());
+        verify(paymentTransactionService, never()).create(any(), any(), any());
     }
 
     @Test
@@ -424,6 +531,29 @@ class PaymentRequestActionNodeV1Test {
         assertThrows(
                 ProcessNodeExecutionExceptionInvalidConfiguration.class,
                 () -> node.init(context(configuration, processData, processInstance(recipientIdentity()), task()))
+        );
+        verify(paymentTransactionService, never()).create(any(), any(), any());
+    }
+
+    @Test
+    void initManual_FailsWhenPaymentPayloadIsEmptyBeforeAssigningStaff() throws Exception {
+        var paymentProviderKey = UUID.randomUUID();
+        var paymentConfig = paymentConfig(paymentProviderKey);
+        var configuration = nodeConfiguration(paymentConfig, "manual");
+        var processData = new ProcessExecutionData();
+
+        when(paymentProviderRepository.findById(paymentProviderKey))
+                .thenReturn(Optional.of(paymentProvider(paymentProviderKey)));
+        when(paymentPayloadCreationService.createRequest(
+                eq(paymentConfig), any(DerivedRuntimeElementData.class), same(processData)
+        )).thenReturn(Optional.empty());
+
+        assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(context(configuration, processData, processInstance(recipientIdentity()), task()))
+        );
+        verify(assignmentContextAssigneeResolverService, never()).resolveAssignee(
+                any(), any(), any(), any(), any(), any(), any(), any(), any()
         );
         verify(paymentTransactionService, never()).create(any(), any(), any());
     }
@@ -634,6 +764,26 @@ class PaymentRequestActionNodeV1Test {
                 .setDescription("Beschreibung")
                 .setTotal(BigDecimal.valueOf(12.34))
                 .setPaymentItems(List.of());
+    }
+
+    private static PaymentPayload paymentPreviewPayload() {
+        var administrationFee = new PaymentItem();
+        administrationFee.setDescription("Verwaltungsgebühr");
+        administrationFee.setQuantity(2L);
+        administrationFee.setNetPrice(BigDecimal.valueOf(5));
+        administrationFee.setTaxRate(BigDecimal.valueOf(19));
+
+        var postage = new PaymentItem();
+        postage.setDescription("Porto");
+        postage.setQuantity(1L);
+        postage.setNetPrice(BigDecimal.valueOf(2));
+        postage.setTaxRate(BigDecimal.ZERO);
+
+        return new PaymentPayload()
+                .setPurpose("Gebührenbescheid AZ-123")
+                .setDescription("Gebühren für die Bearbeitung")
+                .setTotal(BigDecimal.valueOf(13.90))
+                .setPaymentItems(List.of(administrationFee, postage));
     }
 
     private static PaymentProviderEntity paymentProvider(UUID paymentProviderKey) {
