@@ -100,6 +100,19 @@ public class ProcessInstanceEntity {
     @NotNull(message = "Die Initial-Knoten-ID darf nicht null sein.")
     private Integer initialNodeId;
 
+    /**
+     * Internal idempotency key assigned by an external trigger while importing an event.
+     *
+     * <p>The value is intentionally not exposed through the process-instance API. A null value
+     * means that the instance was not reserved by an external trigger or that a failed import may
+     * be retried.</p>
+     */
+    @Nullable
+    @JsonIgnore
+    @Size(max = 128, message = "Die externe Eingangsreferenz darf maximal 128 Zeichen lang sein.")
+    @Column(length = 128, unique = true)
+    private String inboundReference;
+
     @Nullable
     @Column(columnDefinition = "timestamp with time zone")
     private Instant keepUntil;
@@ -164,13 +177,13 @@ public class ProcessInstanceEntity {
                 Objects.equals(assignedFileNumbers, that.assignedFileNumbers) && Objects.equals(identities, that.identities) &&
                 Objects.equals(started, that.started) && Objects.equals(updated, that.updated) && Objects.equals(finished, that.finished) &&
                 Objects.equals(runtime, that.runtime) && Objects.equals(initialPayload, that.initialPayload) &&
-                Objects.equals(initialNodeId, that.initialNodeId) && Objects.equals(keepUntil, that.keepUntil) &&
+                Objects.equals(initialNodeId, that.initialNodeId) && Objects.equals(inboundReference, that.inboundReference) && Objects.equals(keepUntil, that.keepUntil) &&
                 Objects.equals(createdForTestClaimId, that.createdForTestClaimId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, caseNumber, accessKey, processId, initialProcessVersion, status, statusOverride, assignedUserId, assignedFileNumbers, identities, started, updated, finished, runtime, initialPayload, initialNodeId, keepUntil, createdForTestClaimId);
+        return Objects.hash(id, caseNumber, accessKey, processId, initialProcessVersion, status, statusOverride, assignedUserId, assignedFileNumbers, identities, started, updated, finished, runtime, initialPayload, initialNodeId, inboundReference, keepUntil, createdForTestClaimId);
     }
 
 
@@ -325,6 +338,16 @@ public class ProcessInstanceEntity {
 
     public ProcessInstanceEntity setInitialNodeId(@Nonnull Integer initialNodeId) {
         this.initialNodeId = initialNodeId;
+        return this;
+    }
+
+    @Nullable
+    public String getInboundReference() {
+        return inboundReference;
+    }
+
+    public ProcessInstanceEntity setInboundReference(@Nullable String inboundReference) {
+        this.inboundReference = inboundReference;
         return this;
     }
 
