@@ -51,7 +51,7 @@ public class CommunicationService {
      * Sends through the binding selected while the identity was authenticated. This is the only
      * runtime entry point that invokes a communication-provider definition.
      */
-    public Map<String, Object> sendMessage(@Nonnull IdentityData identityData, @Nonnull CommunicationMessage message) {
+    public Map<String, Object> sendMessage(@Nonnull IdentityData identityData, @Nonnull CommunicationMessage message) throws CommunicationException {
         if (identityData.type() == IdentityType.Email) {
             var emailAddress = identityData.emailAddress();
             if (emailAddress == null) {
@@ -72,7 +72,7 @@ public class CommunicationService {
     }
 
     @Nonnull
-    public List<CommunicationProviderBindingEntity> getAvailableBindings(@Nonnull IdentityData identityData) {
+    public List<CommunicationProviderBindingEntity> getAvailableBindings(@Nonnull IdentityData identityData) throws CommunicationException {
         requireIdentityProviderIdentity(identityData);
         var identityProvider = loadIdentityProvider(identityData.providerKey(), identityData.identityId());
         requireIdentityProviderEnabled(identityProvider);
@@ -101,7 +101,7 @@ public class CommunicationService {
     }
 
     @Nonnull
-    public CustomerConfiguration getCustomerConfiguration(@Nonnull IdentityData identityData) {
+    public CustomerConfiguration getCustomerConfiguration(@Nonnull IdentityData identityData) throws CommunicationException {
         var resolved = resolveSelected(identityData);
         return getCustomerConfigurationResolved(resolved, identityData);
     }
@@ -118,7 +118,7 @@ public class CommunicationService {
     }
 
     @Nonnull
-    private ResolvedCommunicationProvider resolveSelected(@Nonnull IdentityData identityData) {
+    private ResolvedCommunicationProvider resolveSelected(@Nonnull IdentityData identityData) throws CommunicationException {
         requireIdentityProviderIdentity(identityData);
         var bindingId = identityData.communicationProviderBindingId();
         if (bindingId == null) {
@@ -148,7 +148,7 @@ public class CommunicationService {
 
     @Nonnull
     private ResolvedCommunicationProvider resolve(@Nonnull CommunicationProviderBindingEntity binding,
-                                                  @Nonnull IdentityProviderEntity identityProvider) {
+                                                  @Nonnull IdentityProviderEntity identityProvider) throws CommunicationException {
         if (!binding.getEnabled()) {
             throw new CommunicationException("Die Kommunikationsanbindung %s ist deaktiviert.", binding.getName());
         }
@@ -201,7 +201,7 @@ public class CommunicationService {
 
     @Nonnull
     private IdentityProviderEntity loadIdentityProvider(@Nullable UUID identityProviderKey,
-                                                        @Nonnull String identityId) {
+                                                        @Nonnull String identityId) throws CommunicationException {
         if (identityProviderKey == null) {
             throw new CommunicationException(
                     "Für die Identität %s ist kein Nutzerkontenanbieter hinterlegt.",
@@ -226,13 +226,13 @@ public class CommunicationService {
         }
     }
 
-    private static void requireIdentityProviderEnabled(@Nonnull IdentityProviderEntity identityProvider) {
+    private static void requireIdentityProviderEnabled(@Nonnull IdentityProviderEntity identityProvider) throws CommunicationException {
         if (!Boolean.TRUE.equals(identityProvider.getIsEnabled())) {
             throw new CommunicationException("Der Nutzerkontenanbieter %s ist deaktiviert.", identityProvider.getName());
         }
     }
 
-    private static void requireIdentityProviderIdentity(@Nonnull IdentityData identityData) {
+    private static void requireIdentityProviderIdentity(@Nonnull IdentityData identityData) throws CommunicationException {
         if (identityData.type() != IdentityType.IdentityProvider) {
             throw new CommunicationException(
                     "Für die E-Mail-Identität %s stehen keine Kommunikationsanbieter zur Auswahl.",
@@ -247,7 +247,7 @@ public class CommunicationService {
             @Nonnull IdentityProviderEntity identityProvider,
             @Nonnull CommunicationProviderBindingEntity binding,
             @Nonnull CommunicationProviderDefinition<C, I> definition
-    ) {
+    ) throws CommunicationException {
         var providerConfiguration = configurationService.mapProviderConfiguration(provider, definition);
         var bindingConfiguration = configurationService.mapBindingConfiguration(binding, identityProvider, definition);
         return new ResolvedCommunicationProvider(
@@ -265,7 +265,7 @@ public class CommunicationService {
     @SuppressWarnings("unchecked")
     private <C, I> Map<String, Object> sendResolved(@Nonnull ResolvedCommunicationProvider resolved,
                                                     @Nonnull IdentityData identityData,
-                                                    @Nonnull CommunicationMessage message) {
+                                                    @Nonnull CommunicationMessage message) throws CommunicationException {
         var definition = (CommunicationProviderDefinition<C, I>) resolved.definition();
         var context = (CommunicationProviderContext<C, I>) resolved.context();
         Map<String, Object> sendResult;
@@ -288,7 +288,7 @@ public class CommunicationService {
     private <C, I> CustomerConfiguration getCustomerConfigurationResolved(
             @Nonnull ResolvedCommunicationProvider resolved,
             @Nonnull IdentityData identityData
-    ) {
+    ) throws CommunicationException {
         var definition = (CommunicationProviderDefinition<C, I>) resolved.definition();
         var context = (CommunicationProviderContext<C, I>) resolved.context();
 

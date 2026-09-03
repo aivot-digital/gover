@@ -167,12 +167,12 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         defaultMailCommunicationService.sendMessage(recipient, message);
 
         assert message.subject() != null;
-        assert message.body() != null;
+        assert message.htmlBody() != null;
 
         return Map.of(
                 "recipient", recipient,
                 "subject", message.subject(),
-                "body", message.body()
+                "body", message.htmlBody()
         );
     }
 

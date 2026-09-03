@@ -26,7 +26,7 @@ public class CommunicationProviderConfigurationService {
 
     @Nonnull
     public <C> C mapProviderConfiguration(@Nonnull CommunicationProviderEntity provider,
-                                          @Nonnull CommunicationProviderDefinition<C, ?> definition) {
+                                          @Nonnull CommunicationProviderDefinition<C, ?> definition) throws CommunicationException {
         try {
             return map(
                     definition.getConfigLayout(),
@@ -35,8 +35,6 @@ public class CommunicationProviderConfigurationService {
                     "Die Konfiguration des Kommunikationsanbieters %s (ID %d) ist ungültig."
                             .formatted(provider.getName(), provider.getId())
             );
-        } catch (CommunicationException e) {
-            throw e;
         } catch (Exception e) {
             throw new CommunicationException(
                     "Die Konfiguration des Kommunikationsanbieters %s (ID %d) konnte nicht geladen werden."
@@ -49,7 +47,7 @@ public class CommunicationProviderConfigurationService {
     @Nonnull
     public <I> I mapBindingConfiguration(@Nonnull CommunicationProviderBindingEntity binding,
                                          @Nonnull IdentityProviderEntity identityProvider,
-                                         @Nonnull CommunicationProviderDefinition<?, I> definition) {
+                                         @Nonnull CommunicationProviderDefinition<?, I> definition) throws CommunicationException {
         try {
             return map(
                     definition.getIdentityProviderBindingConfigLayout(identityProvider),
@@ -58,8 +56,6 @@ public class CommunicationProviderConfigurationService {
                     "Die Konfiguration der Kommunikationsanbindung %s (ID %d) ist ungültig."
                             .formatted(binding.getName(), binding.getId())
             );
-        } catch (CommunicationException e) {
-            throw e;
         } catch (Exception e) {
             throw new CommunicationException(
                     "Die Konfiguration der Kommunikationsanbindung %s (ID %d) konnte nicht geladen werden."
@@ -79,7 +75,7 @@ public class CommunicationProviderConfigurationService {
     private <T> T map(@Nonnull BaseElement layout,
                       @Nonnull AuthoredElementValues values,
                       @Nonnull Class<T> targetClass,
-                      @Nonnull String validationMessage) throws ElementDataConversionException {
+                      @Nonnull String validationMessage) throws ElementDataConversionException, CommunicationException {
         var derived = elementDerivationService.derive(new ElementDerivationRequest(layout, values));
         if (derived.hasAnyError()) {
             throw new CommunicationException(validationMessage);

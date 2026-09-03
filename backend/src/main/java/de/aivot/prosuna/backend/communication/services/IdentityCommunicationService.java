@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.communication.services;
 
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
+import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -45,7 +46,12 @@ public class IdentityCommunicationService {
                                  @Nonnull AuthoredElementValues customerData) throws ResponseException {
         var cacheEntity = getAuthenticatedIdentity(identitySessionId, relatedProcessNodeId, identityId);
         var identity = IdentityData.from(cacheEntity);
-        var available = communicationService.getAvailableBindings(identity);
+        List<CommunicationProviderBindingEntity> available;
+        try {
+            available = communicationService.getAvailableBindings(identity);
+        } catch (CommunicationException e) {
+            throw ResponseException.internalServerError("Fehler beim Abrufen der verfügbaren Kommunikationsanbieter.", e);
+        }
         requireAvailableBinding(available);
         if (available.stream().noneMatch(binding -> Objects.equals(binding.getId(), bindingId))) {
             throw ResponseException.badRequest("Der ausgewählte Kommunikationsanbieter steht für diese Identität nicht zur Verfügung.");
@@ -68,7 +74,12 @@ public class IdentityCommunicationService {
                                   @Nonnull AuthoredElementValues customerData) throws ResponseException {
         var cacheEntity = getAuthenticatedIdentity(identitySessionId, relatedProcessNodeId, identityId);
         var identity = IdentityData.from(cacheEntity);
-        var available = communicationService.getAvailableBindings(identity);
+        List<CommunicationProviderBindingEntity> available;
+        try {
+            available = communicationService.getAvailableBindings(identity);
+        } catch (CommunicationException e) {
+            throw ResponseException.internalServerError("Fehler beim Abrufen der verfügbaren Kommunikationsanbieter.", e);
+        }
         requireAvailableBinding(available);
         if (available.stream().noneMatch(binding -> Objects.equals(binding.getId(), bindingId))) {
             throw ResponseException.badRequest("Der ausgewählte Kommunikationsanbieter steht für diese Identität nicht zur Verfügung.");
@@ -91,7 +102,12 @@ public class IdentityCommunicationService {
     @Nonnull
     private SelectionState normalizeAndCreateState(@Nonnull IdentityCacheEntity cacheEntity) throws ResponseException {
         var identity = IdentityData.from(cacheEntity);
-        var available = communicationService.getAvailableBindings(identity);
+        List<CommunicationProviderBindingEntity> available;
+        try {
+            available = communicationService.getAvailableBindings(identity);
+        } catch (CommunicationException e) {
+            throw ResponseException.internalServerError("Fehler beim Abrufen der verfügbaren Kommunikationsanbieter.", e);
+        }
         requireAvailableBinding(available);
         var selectedIsAvailable = available.stream()
                 .anyMatch(binding -> Objects.equals(binding.getId(), cacheEntity.getCommunicationProviderBindingId()));
@@ -111,7 +127,7 @@ public class IdentityCommunicationService {
 
     @Nonnull
     private SelectionState createState(@Nonnull IdentityData identity,
-                                       @Nonnull List<CommunicationProviderBindingEntity> available) {
+                                       @Nonnull List<CommunicationProviderBindingEntity> available) throws ResponseException {
         var selectedBindingId = identity.communicationProviderBindingId();
         var choices = available.stream().map(BindingChoice::from).toList();
         var customerData = new AuthoredElementValues();
@@ -123,7 +139,12 @@ public class IdentityCommunicationService {
             return new SelectionState(true, false, null, choices, null, customerData, DerivedRuntimeElementData.empty());
         }
 
-        var customerConfiguration = communicationService.getCustomerConfiguration(identity);
+        CommunicationService.CustomerConfiguration customerConfiguration = null;
+        try {
+            customerConfiguration = communicationService.getCustomerConfiguration(identity);
+        } catch (CommunicationException e) {
+            throw ResponseException.internalServerError("Fehler beim Abrufen der Konfiguration für den ausgewählten Kommunikationsanbieter.", e);
+        }
         return new SelectionState(
                 true,
                 customerConfiguration.ready(),

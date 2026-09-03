@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.communication.exceptions;
 
-public class CommunicationException extends RuntimeException {
+public class CommunicationException extends Exception {
     public CommunicationException(String message) {
         super(message);
     }

@@ -100,8 +100,8 @@ class CommunicationServiceTest {
     }
 
     @Test
-    void sendMessageResolvesSelectedBindingAndInvokesDefinition() {
-        var message = new CommunicationMessage("Subject", "Body", Instant.now(), null);
+    void sendMessageResolvesSelectedBindingAndInvokesDefinition() throws Exception {
+        var message = new CommunicationMessage("Subject", "Body", "Body", Instant.now(), null);
 
         communicationService.sendMessage(identity, message);
 
@@ -116,19 +116,19 @@ class CommunicationServiceTest {
     }
 
     @Test
-    void sendMessageRejectsTestAndProductionProviderMismatch() {
+    void sendMessageRejectsTestAndProductionProviderMismatch() throws Exception {
         provider.setTestProvider(true);
 
         assertThrows(CommunicationException.class, () -> communicationService.sendMessage(
                 identity,
-                new CommunicationMessage("Subject", "Body", Instant.now(), null)
+                new CommunicationMessage("Subject", "Body", "Body", Instant.now(), null)
         ));
 
         verify(definition, never()).sendMessage(any(), any(), any());
     }
 
     @Test
-    void sendMessageRequiresASelectedBinding() {
+    void sendMessageRequiresASelectedBinding() throws Exception {
         var identityWithoutSelection = new IdentityData(
                 identity.sessionId(), identity.identityId(), IdentityType.IdentityProvider, identity.providerKey(),
                 identity.metadataIdentifier(), null, identity.attributes(), null, Map.of()
@@ -136,14 +136,14 @@ class CommunicationServiceTest {
 
         assertThrows(CommunicationException.class, () -> communicationService.sendMessage(
                 identityWithoutSelection,
-                new CommunicationMessage("Subject", "Body", Instant.now(), null)
+                new CommunicationMessage("Subject", "Body", "Body", Instant.now(), null)
         ));
 
         verify(definition, never()).sendMessage(any(), any(), any());
     }
 
     @Test
-    void availableBindingsContainOnlyFullyUsableBindings() {
+    void availableBindingsContainOnlyFullyUsableBindings() throws Exception {
         var disabled = new CommunicationProviderBindingEntity()
                 .setId(13)
                 .setIdentityProviderKey(identity.providerKey())
@@ -160,12 +160,12 @@ class CommunicationServiceTest {
     }
 
     @Test
-    void emailIdentityUsesDefaultMailWithoutResolvingAProvider() {
+    void emailIdentityUsesDefaultMailWithoutResolvingAProvider() throws Exception {
         var emailIdentity = new IdentityData(
                 "session", "applicant", IdentityType.Email, null, null, "customer@example.test",
                 Map.of(), null, Map.of()
         );
-        var message = new CommunicationMessage("Subject", "Body", Instant.now(), null);
+        var message = new CommunicationMessage("Subject", "Body", "Body", Instant.now(), null);
 
         communicationService.sendMessage(emailIdentity, message);
 

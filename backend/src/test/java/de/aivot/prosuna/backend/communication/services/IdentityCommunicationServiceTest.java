@@ -48,7 +48,7 @@ class IdentityCommunicationServiceTest {
     }
 
     @Test
-    void noAvailableBindingIsAConfigurationConflict() {
+    void noAvailableBindingIsAConfigurationConflict() throws Exception {
         when(communicationService.getAvailableBindings(any())).thenReturn(List.of());
 
         var exception = assertThrows(
@@ -128,7 +128,7 @@ class IdentityCommunicationServiceTest {
     }
 
     @Test
-    void unavailableBindingCannotBeSelected() {
+    void unavailableBindingCannotBeSelected() throws Exception {
         when(communicationService.getAvailableBindings(any())).thenReturn(List.of(mail));
 
         assertThrows(ResponseException.class, () -> service.select(

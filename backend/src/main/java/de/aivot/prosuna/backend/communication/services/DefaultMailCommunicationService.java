@@ -28,7 +28,7 @@ public class DefaultMailCommunicationService {
         this.mailSender = mailSender;
     }
 
-    public void sendMessage(@Nonnull String rawRecipient, @Nonnull CommunicationMessage message) {
+    public void sendMessage(@Nonnull String rawRecipient, @Nonnull CommunicationMessage message) throws CommunicationException {
         final String recipient;
         try {
             recipient = EmailAddressUtils.normalizeSingleAddress(rawRecipient);
@@ -42,6 +42,9 @@ public class DefaultMailCommunicationService {
         if (message.body() == null || message.body().isBlank()) {
             throw new CommunicationException("Der Inhalt der E-Mail darf nicht leer sein.");
         }
+        if (message.htmlBody() == null || message.htmlBody().isBlank()) {
+            throw new CommunicationException("Der HTML-Inhalt der E-Mail darf nicht leer sein.");
+        }
 
         try {
             var mimeMessage = mailSender.createMimeMessage();
@@ -50,7 +53,7 @@ public class DefaultMailCommunicationService {
             helper.setTo(recipient);
             helper.setSubject(message.subject());
 
-            var document = Parser.builder().build().parse(message.body());
+            var document = Parser.builder().build().parse(message.htmlBody());
             helper.setText(HtmlRenderer.builder().build().render(document), true);
 
             if (message.attachments() != null) {

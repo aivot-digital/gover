@@ -1,14 +1,23 @@
 package de.aivot.prosuna.backend.plugins.core.v1.communication;
 
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
+import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
+import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEntity;
+import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
+import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
+import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import dev.fitko.fitconnect.api.config.ApplicationConfig;
+import dev.fitko.fitconnect.api.domain.zbp.message.AuthenticationLevel;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,9 +29,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-class FitConnectCommunicationProviderV1Test {
+class FitConnectZbpCommunicationProviderV1Test {
     private final SecretService secretService = mock(SecretService.class);
-    private final FitConnectCommunicationProviderV1 definition = new FitConnectCommunicationProviderV1(
+    private final FitConnectZbpCommunicationProviderV1 definition = new FitConnectZbpCommunicationProviderV1(
             mock(StorageService.class),
             secretService
     );
@@ -32,7 +41,7 @@ class FitConnectCommunicationProviderV1Test {
         var layout = definition.getConfigLayout();
 
         assertTrue(layout.findChild(
-                FitConnectCommunicationProviderV1.Config.SENDER_CLIENT_SECRET_KEY_FIELD_ID,
+                FitConnectZbpCommunicationProviderV1.Config.SENDER_CLIENT_SECRET_KEY_FIELD_ID,
                 SecretSelectInputElement.class
         ).isPresent());
         verifyNoInteractions(secretService);
@@ -91,12 +100,73 @@ class FitConnectCommunicationProviderV1Test {
         assertEquals(cause, exception.getCause());
     }
 
-    private ApplicationConfig getApplicationConfig(FitConnectCommunicationProviderV1.Config config) {
+    @Test
+    void authenticationLevelUsesConfiguredAttributeForCustomIdentityProvider() {
+        var attributes = Map.of(
+                "configured_qaa", "level3",
+                "trust_level_authentication", "level4"
+        );
+
+        var authenticationLevel = mapAuthenticationLevel("configured_qaa", attributes);
+
+        assertEquals(AuthenticationLevel.THREE, authenticationLevel);
+    }
+
+    @Test
+    void authenticationLevelMapsKnownValuesAndFallsBackForUnknownValue() {
+        assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel("qaa", Map.of("qaa", "level1")));
+        assertEquals(AuthenticationLevel.TWO, mapAuthenticationLevel("qaa", Map.of("qaa", "level2")));
+        assertEquals(AuthenticationLevel.THREE, mapAuthenticationLevel("qaa", Map.of("qaa", "level3")));
+        assertEquals(AuthenticationLevel.FOUR, mapAuthenticationLevel("qaa", Map.of("qaa", "level4")));
+        assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel("qaa", Map.of("qaa", "unknown")));
+        assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel("qaa", Map.of("qaa", "")));
+    }
+
+    @Test
+    void authenticationLevelFallsBackWhenBindingAttributeIsMissing() {
+        var attributes = Map.of("qaa", "level4");
+
+        assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel(null, attributes));
+        assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel("", attributes));
+        assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel(" ", attributes));
+    }
+
+    @Test
+    void authenticationLevelFallsBackWhenIdentityAttributeIsMissing() {
+        assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel("qaa", Map.of()));
+    }
+
+    private ApplicationConfig getApplicationConfig(FitConnectZbpCommunicationProviderV1.Config config) {
         return ReflectionTestUtils.invokeMethod(definition, "getApplicationConfig", config);
     }
 
-    private static FitConnectCommunicationProviderV1.Config config(String clientId, String secretKey) {
-        var config = new FitConnectCommunicationProviderV1.Config();
+    private AuthenticationLevel mapAuthenticationLevel(String attributeKey, Map<String, String> attributes) {
+        var bindingConfig = new FitConnectZbpCommunicationProviderV1.IdentityBinding();
+        bindingConfig.storkQaaLevel = attributeKey;
+        var context = new CommunicationProviderContext<>(
+                mock(CommunicationProviderEntity.class),
+                new IdentityProviderEntity().setType(IdentityProviderType.Custom),
+                mock(CommunicationProviderBindingEntity.class),
+                new FitConnectZbpCommunicationProviderV1.Config(),
+                bindingConfig
+        );
+        var identity = new IdentityData(
+                "session-id",
+                "identity-id",
+                IdentityType.IdentityProvider,
+                UUID.randomUUID(),
+                "custom",
+                null,
+                attributes,
+                null,
+                Map.of()
+        );
+
+        return ReflectionTestUtils.invokeMethod(definition, "mapAuthenticationLevel", context, identity);
+    }
+
+    private static FitConnectZbpCommunicationProviderV1.Config config(String clientId, String secretKey) {
+        var config = new FitConnectZbpCommunicationProviderV1.Config();
         config.senderClientId = clientId;
         config.senderClientSecret = secretKey;
         return config;

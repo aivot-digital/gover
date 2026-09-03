@@ -218,7 +218,7 @@ public class CommunicationProviderManagementService {
     private <C> void validateProviderConfigurationTyped(
             @Nonnull CommunicationProviderEntity provider,
             @Nonnull CommunicationProviderDefinition<C, ?> definition
-    ) {
+    ) throws CommunicationException {
         configurationService.mapProviderConfiguration(provider, definition);
     }
 
@@ -226,7 +226,7 @@ public class CommunicationProviderManagementService {
             @Nonnull CommunicationProviderBindingEntity binding,
             @Nonnull IdentityProviderEntity identityProvider,
             @Nonnull CommunicationProviderDefinition<?, I> definition
-    ) {
+    ) throws CommunicationException {
         configurationService.mapBindingConfiguration(binding, identityProvider, definition);
     }
 }

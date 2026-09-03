@@ -222,6 +222,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
             communicationSendResult = communicationService.sendMessage(identity, new CommunicationMessage(
                     subject,
                     body,
+                    body,
                     sentAt,
                     attachments
             ));

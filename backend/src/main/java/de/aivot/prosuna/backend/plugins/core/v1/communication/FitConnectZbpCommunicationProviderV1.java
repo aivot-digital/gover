@@ -16,6 +16,7 @@ import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
@@ -54,14 +55,14 @@ import java.util.UUID;
  * enabled in a binding before transport and addressing have been implemented.
  */
 @Component
-public class FitConnectCommunicationProviderV1 implements CommunicationProviderDefinition<FitConnectCommunicationProviderV1.Config, FitConnectCommunicationProviderV1.IdentityBinding> {
-    public static final String COMPONENT_KEY = "fit_connect_communication_provider";
+public class FitConnectZbpCommunicationProviderV1 implements CommunicationProviderDefinition<FitConnectZbpCommunicationProviderV1.Config, FitConnectZbpCommunicationProviderV1.IdentityBinding> {
+    public static final String COMPONENT_KEY = "fit_connect_zbp_communication_provider";
     private static final String MessageSendingIdentifier = "urn:schema-fitko-de:fit-connect:id.bund.de:message_v6"; // constant
 
     private final StorageService storageService;
     private final SecretService secretService;
 
-    public FitConnectCommunicationProviderV1(StorageService storageService, SecretService secretService) {
+    public FitConnectZbpCommunicationProviderV1(StorageService storageService, SecretService secretService) {
         this.storageService = storageService;
         this.secretService = secretService;
     }
@@ -87,19 +88,19 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
     @Nonnull
     @Override
     public String getName() {
-        return "FIT-Connect-Kommunikation";
+        return "FIT-Connect-ZBP-Kommunikation";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Versendet Nachrichten und Anhänge über FIT-Connect an ein Behördenpostfach.";
+        return "Versendet Nachrichten und Anhänge über FIT-Connect an das zentrale Bürgerpostfach.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Versendet Nachrichten einschließlich Anhängen über einen konfigurierten FIT-Connect-Zustellpunkt an das Behördenpostfach einer Identität.";
+        return "Versendet Nachrichten einschließlich Anhängen über einen konfigurierten FIT-Connect-Zustellpunkt an das zentrale Bürgerpostfach einer Identität.";
     }
 
 
@@ -240,16 +241,18 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
             }
         }
 
+        final AuthenticationLevel mappedAuthenticationLevel = mapAuthenticationLevel(context, identity);
+
         final CreateMessage zbpMessage = CreateMessage
                 .builder()
-                .content(message.body())
+                .content(message.htmlBody())
                 .sender("FIT-Connect")
                 .service("FIT-Connect Test")
                 .title(message.subject())
-                .retrievalConfirmationAddress("retrieval@mail.net")
-                .replyAddress("reply@mail.net")
+                //.retrievalConfirmationAddress("retrieval@mail.net")
+                //.replyAddress("reply@mail.net")
                 .mailboxUuid(postfachId)
-                .stork_qaa_level(AuthenticationLevel.ONE)
+                .stork_qaa_level(mappedAuthenticationLevel)
                 .attachmentMetadata(attachments)
                 .build();
 
@@ -280,8 +283,28 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
         );
     }
 
+    private AuthenticationLevel mapAuthenticationLevel(CommunicationProviderContext<Config, IdentityBinding> context,
+                                                       IdentityData identity) {
+        var attributeKey = context.identityProviderBindingConfiguration().storkQaaLevel;
+        if (attributeKey == null || attributeKey.isBlank()) {
+            return AuthenticationLevel.ONE;
+        }
+
+        var authenticationLevel = identity.attributes().get(attributeKey);
+        if (authenticationLevel == null) {
+            return AuthenticationLevel.ONE;
+        }
+
+        return switch (authenticationLevel) {
+            case "level2" -> AuthenticationLevel.TWO;
+            case "level3" -> AuthenticationLevel.THREE;
+            case "level4" -> AuthenticationLevel.FOUR;
+            default -> AuthenticationLevel.ONE;
+        };
+    }
+
     @Nonnull
-    private static UUID getPostfachId(@Nonnull CommunicationProviderContext<Config, IdentityBinding> context, @Nonnull IdentityData identity) {
+    private static UUID getPostfachId(@Nonnull CommunicationProviderContext<Config, IdentityBinding> context, @Nonnull IdentityData identity) throws CommunicationException {
         var postfachIdAttribute = context
                 .identityProviderBindingConfiguration()
                 .bpk2Attribute;
@@ -298,7 +321,7 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
     }
 
     @Nonnull
-    private static UUID getDestinationId(Config config) {
+    private static UUID getDestinationId(Config config) throws CommunicationException {
         UUID destinationId;
         try {
             destinationId = UUID.fromString(config.destinationId);
@@ -308,7 +331,7 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
         return destinationId;
     }
 
-    private ApplicationConfig getApplicationConfig(Config config) {
+    private ApplicationConfig getApplicationConfig(Config config) throws CommunicationException {
         final EnvironmentName environmentName = new EnvironmentName("TEST");
 
         final UUID senderClientSecretKey;
@@ -347,7 +370,7 @@ public class FitConnectCommunicationProviderV1 implements CommunicationProviderD
                 .build();
     }
 
-    private AuthorKeyPair getAuthorKeyPair(Config config) {
+    private AuthorKeyPair getAuthorKeyPair(Config config) throws CommunicationException {
         String privateKeyPem;
         try {
             privateKeyPem = resolveFile(config.zbpCertificatePrivateKeyPath);

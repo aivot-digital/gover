@@ -37,6 +37,7 @@ class DefaultMailCommunicationServiceTest {
         service.sendMessage(" customer@example.test ", new CommunicationMessage(
                 "Status update",
                 "Hello **customer**",
+                "Hello **customer**",
                 Instant.now(),
                 List.of()
         ));
@@ -52,7 +53,7 @@ class DefaultMailCommunicationServiceTest {
     void rejectsMultipleRecipientsBeforeCreatingAMessage() {
         assertThrows(CommunicationException.class, () -> service.sendMessage(
                 "first@example.test,second@example.test",
-                new CommunicationMessage("Subject", "Body", Instant.now(), List.of())
+                new CommunicationMessage("Subject", "Body", "Body", Instant.now(), List.of())
         ));
 
         verify(mailSender, never()).createMimeMessage();
@@ -62,7 +63,7 @@ class DefaultMailCommunicationServiceTest {
     void rejectsAnEmptySubjectBeforeSending() {
         assertThrows(CommunicationException.class, () -> service.sendMessage(
                 "customer@example.test",
-                new CommunicationMessage(" ", "Body", Instant.now(), List.of())
+                new CommunicationMessage(" ", "Body", "Body", Instant.now(), List.of())
         ));
 
         verify(mailSender, never()).send(org.mockito.ArgumentMatchers.any(MimeMessage.class));
