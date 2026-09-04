@@ -18,7 +18,7 @@ import de.aivot.prosuna.backend.elements.uiPresets.PaymentGroupPreset;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
 import de.aivot.prosuna.backend.enums.ElementType;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
@@ -96,13 +96,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     private static final String OUTPUT_FILES_TYPE_DEFINITION =
             "Array<{ name: string; originalFileName: string; uri: string; size: number; }>";
     private static final String OUTPUT_PAYMENT_DETAILS_TYPE_DEFINITION =
-            "{ transactionUrl: string | null; transactionRedirectUrl: string | null; " +
-                    "transactionId: string | null; transactionReference: string | null; " +
-                    "transactionTimestamp: string | null; " +
-                    "paymentMethod: \"GIROPAY\" | \"PAYDIRECT\" | \"CREDITCARD\" | \"PAYPAL\" | \"OTHER\" | null; " +
-                    "paymentMethodDetail: string | null; " +
-                    "status: \"INITIAL\" | \"PAYED\" | \"FAILED\" | \"CANCELED\" | null; " +
-                    "statusDetail: string | null; }";
+            "{ providerTransactionId: string; providerReference: string | null; " +
+                    "status: \"PENDING\" | \"PAID\" | \"FAILED\" | \"CANCELED\"; " +
+                    "paymentUrl: string | null; paidAt: string | null; " +
+                    "paymentMethod: { code: string; detail: string | null; } | null; " +
+                    "statusMessage: string | null; }";
 
     private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processNodeRepository;
@@ -595,23 +593,23 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                     ));
 
             // If the transaction is still in the initial state, exit this method and wait for the next resume.
-            if (tx.getStatus() == XBezahldienstStatus.INITIAL) {
+            if (tx.getStatus() == PaymentStatus.PENDING) {
                 return new ProcessNodeExecutionResultNoop();
             }
 
-            if (tx.getStatus() != XBezahldienstStatus.PAYED) {
+            if (tx.getStatus() != PaymentStatus.PAID) {
                 if (StringUtils.isNotNullOrEmpty(tx.getPaymentError())) {
                     throw new ProcessNodeExecutionExceptionIO(
                             "Die Zahlungsanforderung mit dem Schlüssel %s ist nicht abgeschlossen. Aktueller Status: %s. Der folgende Fehler wurde gemeldet: %s",
                             StringUtils.quote(txKey),
-                            StringUtils.quote(tx.getStatus().getKey()),
+                            StringUtils.quote(tx.getStatus().name()),
                             StringUtils.quote(tx.getPaymentError())
                     );
                 } else {
                     throw new ProcessNodeExecutionExceptionIO(
                             "Die Zahlungsanforderung mit dem Schlüssel %s ist nicht abgeschlossen. Aktueller Status: %s.",
                             StringUtils.quote(txKey),
-                            StringUtils.quote(tx.getStatus().getKey())
+                            StringUtils.quote(tx.getStatus().name())
                     );
                 }
             } else {

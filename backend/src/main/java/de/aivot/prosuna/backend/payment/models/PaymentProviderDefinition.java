@@ -12,9 +12,11 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.math.BigDecimal;
+import java.net.URI;
+import java.time.Instant;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public interface PaymentProviderDefinition extends PluginComponent {
     @Nonnull
@@ -33,7 +35,7 @@ public interface PaymentProviderDefinition extends PluginComponent {
     GroupLayoutElement getPaymentConfigLayout() throws ResponseException;
 
     @Nonnull
-    default XBezahldienstePaymentRequest createPaymentRequest(
+    default PaymentRequest createPaymentRequest(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
             @Nonnull DerivedRuntimeElementData config,
             @Nonnull PaymentPayload payload,
@@ -49,56 +51,60 @@ public interface PaymentProviderDefinition extends PluginComponent {
             throw new PaymentException("Failed to create payment request. Products are empty");
         }
 
-        // Transform the list of paymentItems to a list of XBezahldienstePaymentItem
-        var xBezahldienstePaymentItems = new LinkedList<XBezahldienstePaymentItem>();
+        var paymentRequestItems = new LinkedList<PaymentRequestItem>();
         for (var product : payload.getPaymentItems()) {
             product
-                    .toXBezahldienstePaymentItem()
-                    .ifPresent(xBezahldienstePaymentItems::add);
+                    .toPaymentRequestItem()
+                    .ifPresent(paymentRequestItems::add);
         }
 
-        // Check that the list of XBezahldienstePaymentItem is not empty
-        if (xBezahldienstePaymentItems.isEmpty()) {
+        if (paymentRequestItems.isEmpty()) {
             throw new PaymentException("No items for payment request");
         }
 
-        // Construct the payment request
-        var request = new XBezahldienstePaymentRequest();
-        request.setRandomRequestId();
-        request.setDescription(payload.getDescription());
-        request.setPurpose(payload.getPurpose());
-        request.setRequestTimestampNow();
-        request.setItemsAndCalculateGrosAmount(xBezahldienstePaymentItems);
-        request.setRequestor(payload.getRequestor());
-
-        request.setRedirectUrl(redirectURL);
-
-        if (request.getGrosAmount().equals(BigDecimal.ZERO)) {
-            throw new PaymentException("Gros amount is 0");
+        var grossAmount = paymentRequestItems.stream()
+                .map(PaymentRequestItem::grossAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (grossAmount.compareTo(BigDecimal.ZERO) == 0) {
+            throw new PaymentException("Gross amount is 0");
         }
 
-        return request;
+        try {
+            return new PaymentRequest(
+                    UUID.randomUUID().toString(),
+                    Instant.now(),
+                    PaymentRequest.DEFAULT_CURRENCY,
+                    grossAmount,
+                    payload.getPurpose(),
+                    payload.getDescription(),
+                    URI.create(redirectURL),
+                    paymentRequestItems,
+                    payload.getRequestor()
+            );
+        } catch (IllegalArgumentException e) {
+            throw new PaymentException(e, "Failed to create payment request");
+        }
     }
 
     @Nonnull
-    XBezahldienstePaymentTransaction initiatePayment(
+    PaymentInformation initiatePayment(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
             @Nonnull DerivedRuntimeElementData config,
-            @Nonnull XBezahldienstePaymentRequest paymentRequest
+            @Nonnull PaymentRequest paymentRequest
     ) throws PaymentException;
 
     @Nonnull
-    XBezahldienstePaymentTransaction onPaymentResultPull(
+    PaymentInformation onPaymentResultPull(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
             @Nonnull DerivedRuntimeElementData config,
-            @Nonnull XBezahldienstePaymentTransaction paymentTransaction
+            @Nonnull PaymentInformation paymentInformation
     ) throws PaymentException;
 
     @Nonnull
-    XBezahldienstePaymentTransaction onPaymentResultPush(
+    PaymentInformation onPaymentResultPush(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
             @Nonnull DerivedRuntimeElementData config,
-            @Nonnull XBezahldienstePaymentTransaction paymentTransaction,
+            @Nonnull PaymentInformation paymentInformation,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException;
 }

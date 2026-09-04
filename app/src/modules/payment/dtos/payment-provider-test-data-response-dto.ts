@@ -1,9 +1,9 @@
-import {XBezahldienstePaymentRequest} from '../../../models/xbezahldienste/x-bezahldienste-payment-request';
-import {XBezahldienstePaymentTransaction} from '../../../models/xbezahldienste/x-bezahldienste-payment-transaction';
+import {PaymentRequest} from '../../../models/payment/payment-request';
+import {PaymentInformation} from '../../../models/payment/payment-information';
 
 export interface PaymentProviderTestDataResponseDTO {
     ok: boolean;
-    request?: XBezahldienstePaymentRequest | null;
-    transaction?: XBezahldienstePaymentTransaction | null;
+    request?: PaymentRequest | null;
+    paymentInformation?: PaymentInformation | null;
     errorMessage?: string | null;
 }

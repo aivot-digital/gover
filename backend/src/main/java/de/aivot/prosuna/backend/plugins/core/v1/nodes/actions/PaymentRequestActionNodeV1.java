@@ -26,7 +26,7 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutEleme
 import de.aivot.prosuna.backend.elements.uiPresets.PaymentGroupPreset;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
@@ -96,15 +96,12 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     private static final String OUTPUT_PAYMENT_STATUS = "paymentStatus";
     private static final String OUTPUT_PAYMENT_DETAILS = "paymentDetails";
     private static final String OUTPUT_PAYMENT_STATUS_TYPE_DEFINITION =
-            "\"INITIAL\" | \"PAYED\" | \"FAILED\" | \"CANCELED\"";
+            "\"PENDING\" | \"PAID\" | \"FAILED\" | \"CANCELED\"";
     private static final String OUTPUT_PAYMENT_DETAILS_TYPE_DEFINITION =
-            "{ transactionUrl: string | null; transactionRedirectUrl: string | null; " +
-                    "transactionId: string | null; transactionReference: string | null; " +
-                    "transactionTimestamp: string | null; " +
-                    "paymentMethod: \"GIROPAY\" | \"PAYDIRECT\" | \"CREDITCARD\" | \"PAYPAL\" | \"OTHER\" | null; " +
-                    "paymentMethodDetail: string | null; " +
-                    "status: " + OUTPUT_PAYMENT_STATUS_TYPE_DEFINITION + " | null; " +
-                    "statusDetail: string | null; } | null";
+            "{ providerTransactionId: string; providerReference: string | null; " +
+                    "status: " + OUTPUT_PAYMENT_STATUS_TYPE_DEFINITION + "; paymentUrl: string | null; " +
+                    "paidAt: string | null; paymentMethod: { code: string; detail: string | null; } | null; " +
+                    "statusMessage: string | null; } | null";
 
     private static final String STAFF_TASK_ROOT_ID = "root";
     private static final String STAFF_TASK_PAYMENT_INFORMATION_ID = "payment-information";
@@ -326,7 +323,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_DETAILS,
                         "Zahlungsdetails",
-                        "Die Zahlungsinformationen des Zahlungsanbieters nach Abschluss der Zahlung.",
+                        "Die aktuellen Zahlungsinformationen des Zahlungsanbieters.",
                         OUTPUT_PAYMENT_DETAILS_TYPE_DEFINITION
                 )
         );
@@ -544,21 +541,21 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         var transaction = resolveRuntimePaymentTransaction(context);
         var paymentStatus = resolveStatus(transaction);
 
-        if (paymentStatus == XBezahldienstStatus.INITIAL) {
+        if (paymentStatus == PaymentStatus.PENDING) {
             return new ProcessNodeExecutionResultNoop();
         }
 
-        if (paymentStatus != XBezahldienstStatus.PAYED) {
+        if (paymentStatus != PaymentStatus.PAID) {
             throw new ProcessNodeExecutionExceptionIO(
                     "Die Zahlungstransaktion %s wurde nicht erfolgreich abgeschlossen. Status: %s%s",
                     StringUtils.quote(transaction.getKey()),
-                    StringUtils.quote(paymentStatus.getKey()),
+                    StringUtils.quote(paymentStatus.name()),
                     StringUtils.isNotNullOrEmpty(transaction.getPaymentError()) ? " Fehler: " + transaction.getPaymentError() : ""
             );
         }
 
         var nodeData = new LinkedHashMap<>(context.getThisTask().getNodeData());
-        nodeData.put(OUTPUT_PAYMENT_STATUS, paymentStatus.getKey());
+        nodeData.put(OUTPUT_PAYMENT_STATUS, paymentStatus.name());
         nodeData.put(OUTPUT_PAYMENT_DETAILS, transaction.getPaymentInformation());
 
         return ProcessNodeExecutionResultTaskCompleted
@@ -966,7 +963,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         nodeData.put(OUTPUT_PAYMENT_PURPOSE, paymentPayload.getPurpose());
         nodeData.put(OUTPUT_PAYMENT_DESCRIPTION, paymentPayload.getDescription());
         nodeData.put(OUTPUT_PAYMENT_TOTAL, paymentPayload.getTotal());
-        nodeData.put(OUTPUT_PAYMENT_STATUS, resolveStatus(transaction).getKey());
+        nodeData.put(OUTPUT_PAYMENT_STATUS, resolveStatus(transaction).name());
         nodeData.put(OUTPUT_PAYMENT_DETAILS, transaction.getPaymentInformation());
         return nodeData;
     }
@@ -1015,9 +1012,9 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     }
 
     @Nonnull
-    private static XBezahldienstStatus resolveStatus(@Nonnull PaymentTransactionEntity transaction) {
+    private static PaymentStatus resolveStatus(@Nonnull PaymentTransactionEntity transaction) {
         var status = transaction.getStatus();
-        return status == null ? XBezahldienstStatus.INITIAL : status;
+        return status == null ? PaymentStatus.PENDING : status;
     }
 
     private record ResolvedRequestConfiguration(

@@ -7,7 +7,7 @@ import {Box, Typography} from '@mui/material';
 import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
 import {TransactionsApiService} from '../../transaction-api-service';
 import {PaymentTransactionResponseDTO} from '../../dtos/payment-transaction-response-dto';
-import {XBezahldienstePaymentStatus} from '../../../../data/xbezahldienste-payment-status';
+import {PaymentStatus} from '../../../../data/payment-status';
 import {formatNumToGermanNum} from '../../../../utils/format-german-numbers';
 import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 
@@ -22,11 +22,11 @@ const columns: GridColDef<PaymentTransactionResponseDTO>[] = [
         },
     },
     {
-        field: 'paymentInformation.transactionId',
+        field: 'paymentInformation.providerTransactionId',
         headerName: 'Schlüssel der Transaktion',
         flex: 1,
         valueGetter: (_, row) => {
-            const value = row.paymentInformation?.transactionId;
+            const value = row.paymentInformation?.providerTransactionId;
             return value ? String(value) : 'Keine Transaktions-ID vorhanden';
         },
         sortable: false,
@@ -42,12 +42,12 @@ const columns: GridColDef<PaymentTransactionResponseDTO>[] = [
         sortable: false,
     },
     {
-        field: 'paymentRequest.grosAmount',
+        field: 'paymentRequest.grossAmount',
         headerName: 'Gesamtbetrag in Euro',
         flex: 1,
         align: 'right',
         valueGetter: (_, row) => {
-            const value = row.paymentRequest?.grosAmount;
+            const value = row.paymentRequest?.grossAmount;
             return value ? formatNumToGermanNum(Number(value), 2) + ' €' : 'Kein Gesamtbetrag vorhanden';
         },
         sortable: false,
@@ -92,7 +92,7 @@ export function PaymentProviderDetailsPageTransactions() {
                             options.order,
                             {
                                 paymentProviderKey: paymentProvider.key,
-                                status: XBezahldienstePaymentStatus.Initial,
+                                status: PaymentStatus.Pending,
                                 purpose: options.search,
                             },
                         );

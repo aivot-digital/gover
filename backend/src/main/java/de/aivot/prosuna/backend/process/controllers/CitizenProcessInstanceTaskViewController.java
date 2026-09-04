@@ -13,7 +13,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButton
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
@@ -25,7 +25,6 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessTestClaimEntity;
-import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceTaskFilter;
@@ -187,7 +186,7 @@ public class CitizenProcessInstanceTaskViewController {
         var taskViewData = fetchTaskViewData(procAccess, taskAccess);
         var transaction = resolvePaymentConfirmationTransaction(taskViewData);
 
-        if (transaction.getStatus() != XBezahldienstStatus.PAYED) {
+        if (transaction.getStatus() != PaymentStatus.PAID) {
             throw ResponseException.notFound();
         }
 

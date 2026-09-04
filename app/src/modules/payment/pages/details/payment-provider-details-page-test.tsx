@@ -150,7 +150,7 @@ export function PaymentProviderDetailsPageTest() {
                                     Steuerbetrag: {item.totalTaxAmount} {result.request!.currency} ({item.taxRate} %)
                                 </div>
                             ))}
-                            Gesamtbetrag: {result.request.grosAmount} {result.request.currency}
+                            Gesamtbetrag: {result.request.grossAmount} {result.request.currency}
                         </Typography>
                     }
 
@@ -174,14 +174,13 @@ export function PaymentProviderDetailsPageTest() {
                     }
 
                     {
-                        result.transaction != null &&
-                        result.transaction.paymentInformation != null &&
+                        result.paymentInformation != null &&
                         <Typography>
-                            ID der Transaktion: {result.transaction.paymentInformation.transactionId}
+                            ID der Transaktion: {result.paymentInformation.providerTransactionId}
                             <br/>
                             Bezahl-URL: <a style={{color: 'inherit'}}
                                            target="_blank"
-                                           href={result.transaction.paymentInformation.transactionRedirectUrl}>{result.transaction.paymentInformation.transactionRedirectUrl}</a>
+                                           href={result.paymentInformation.paymentUrl ?? undefined}>{result.paymentInformation.paymentUrl}</a>
                             <br/>
                         </Typography>
                     }

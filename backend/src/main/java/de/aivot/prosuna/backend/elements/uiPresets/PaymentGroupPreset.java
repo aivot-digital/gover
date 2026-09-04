@@ -9,7 +9,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.content.ImageConte
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.models.PaymentItem;
@@ -40,7 +40,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
         setId("payment-group");
 
         String content = switch (transaction.getStatus()) {
-            case XBezahldienstStatus.INITIAL -> {
+            case PENDING -> {
                 yield """
                         # Zahlung ausstehend
                         Um Ihre Einreichung bearbeiten zu können, ist eine Zahlung erforderlich.
@@ -79,7 +79,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                                         .anyMatch(i -> i != 0) ? "inkl. Steuern." : ""
                         );
             }
-            case XBezahldienstStatus.FAILED -> {
+            case FAILED -> {
                 yield """
                         # Zahlung fehlgeschlagen
                         %s
@@ -90,7 +90,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                                         : "Die Zahlung wurde abgebrochen. Bitte wenden Sie sich an den Support, um weitere Informationen zu erhalten und die Zahlung erneut zu versuchen."
                         );
             }
-            case XBezahldienstStatus.CANCELED -> {
+            case CANCELED -> {
                 yield """
                         # Zahlung abgebrochen
                         %s
@@ -101,7 +101,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                                         : "Die Zahlung wurde abgebrochen. Bitte wenden Sie sich an den Support, um weitere Informationen zu erhalten und die Zahlung erneut zu versuchen."
                         );
             }
-            case XBezahldienstStatus.PAYED -> {
+            case PAID -> {
                 yield """
                         # Zahlung erfolgreich
                         %s
@@ -122,18 +122,18 @@ public class PaymentGroupPreset extends GroupLayoutElement {
         richtext.setWeight(12.0);
         leftGroup.addChild(richtext);
 
-        if (transaction.getStatus() == XBezahldienstStatus.INITIAL) {
+        if (transaction.getStatus() == PaymentStatus.PENDING) {
             LinkButtonContentElement payButton = new LinkButtonContentElement();
             payButton.setId("pay");
             payButton.setLabel("Zahlung durchführen");
-            payButton.setHref(transaction.getPaymentInformation().getTransactionRedirectUrl().toString());
+            payButton.setHref(transaction.getPaymentInformation().paymentUrl().toString());
             payButton.setWeight(6.0);
             payButton.setOpenInNewTab(false);
             leftGroup.addChild(payButton);
 
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
             BitMatrix bmx = qrCodeWriter.encode(
-                    transaction.getPaymentInformation().getTransactionRedirectUrl().toString(),
+                    transaction.getPaymentInformation().paymentUrl().toString(),
                     BarcodeFormat.QR_CODE,
                     256, 256
             );
@@ -151,7 +151,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
             addChild(image);
         }
 
-        if (transaction.getStatus() == XBezahldienstStatus.PAYED) {
+        if (transaction.getStatus() == PaymentStatus.PAID) {
             LinkButtonContentElement downloadButton = new LinkButtonContentElement();
             downloadButton.setId("download");
             downloadButton.setLabel("Zahlungsbestätigung herunterladen");

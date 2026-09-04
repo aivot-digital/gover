@@ -1,7 +1,6 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.asset.services.AssetService;
-import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
@@ -13,8 +12,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfi
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
-import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
@@ -23,14 +21,12 @@ import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
+import de.aivot.prosuna.backend.payment.models.PaymentInformation;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
-import de.aivot.prosuna.backend.plugins.form.v1.services.FormPaymentService;
 import de.aivot.prosuna.backend.process.entities.*;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
@@ -40,7 +36,6 @@ import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.*;
 import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
-import de.aivot.prosuna.backend.payment.services.PaymentProviderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.system.services.SystemService;
@@ -56,6 +51,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
+import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -400,7 +397,7 @@ class FormTriggerControllerV1Test {
     @Test
     void getPaymentConfirmationShouldStreamPdfForPaidTransactionResolvedByRedirectUrl() throws Exception {
         var transaction = createPaymentTransaction(
-                XBezahldienstStatus.PAYED,
+                PaymentStatus.PAID,
                 "https://gover.example/process/instance-access-key/tasks/task-access-key"
         );
         var fixture = createPrintFixture(false, transaction, false);
@@ -432,7 +429,7 @@ class FormTriggerControllerV1Test {
     @Test
     void getPaymentConfirmationShouldUseRuntimeTransactionKey() throws Exception {
         var transaction = createPaymentTransaction(
-                XBezahldienstStatus.PAYED,
+                PaymentStatus.PAID,
                 "https://gover.example/process/instance-access-key/tasks/task-access-key"
         );
         var fixture = createPrintFixture(false, transaction, true);
@@ -460,7 +457,7 @@ class FormTriggerControllerV1Test {
     @Test
     void getPaymentConfirmationShouldRejectUnpaidTransaction() throws Exception {
         var transaction = createPaymentTransaction(
-                XBezahldienstStatus.INITIAL,
+                PaymentStatus.PENDING,
                 "https://gover.example/process/instance-access-key/tasks/task-access-key"
         );
         var fixture = createPrintFixture(false, transaction, false);
@@ -903,20 +900,21 @@ class FormTriggerControllerV1Test {
         );
     }
 
-    private PaymentTransactionEntity createPaymentTransaction(XBezahldienstStatus status,
+    private PaymentTransactionEntity createPaymentTransaction(PaymentStatus status,
                                                               String redirectUrl) {
-        var request = new XBezahldienstePaymentRequest();
-        request.setGrosAmount(BigDecimal.valueOf(12.34));
-
-        var information = new XBezahldienstePaymentInformation();
-        information.setStatus(status);
-        information.setTransactionId("TX-123");
-        information.setTransactionTimestamp("2026-08-17T10:00:00.000Z");
+        var information = new PaymentInformation(
+                "TX-123",
+                null,
+                status,
+                status == PaymentStatus.PENDING ? URI.create("https://payment.example.test/TX-123") : null,
+                status == PaymentStatus.PAID ? Instant.parse("2026-08-17T10:00:00.000Z") : null,
+                null,
+                null
+        );
 
         return new PaymentTransactionEntity()
                 .setKey("tx-key")
                 .setPaymentProviderKey(UUID.randomUUID())
-                .setPaymentRequest(request)
                 .setPaymentInformation(information)
                 .setRedirectUrl(redirectUrl);
     }

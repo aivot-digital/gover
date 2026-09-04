@@ -5,11 +5,7 @@ import de.aivot.prosuna.backend.exceptions.BadRequestException;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
-import de.aivot.prosuna.backend.payment.models.PaymentItem;
-import de.aivot.prosuna.backend.payment.models.PaymentPayload;
-import de.aivot.prosuna.backend.payment.models.PaymentProviderTestResult;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
+import de.aivot.prosuna.backend.payment.models.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -87,7 +83,7 @@ public class PaymentProviderTestService {
                 .setPaymentItems(List.of(paymentItem))
                 .setTotal(paymentItem.getTotalPrice());
 
-        XBezahldienstePaymentRequest paymentRequest;
+        PaymentRequest paymentRequest;
         try {
             paymentRequest = paymentProviderDefinition
                     .createPaymentRequest(
@@ -100,9 +96,9 @@ public class PaymentProviderTestService {
             return PaymentProviderTestResult.fromException(null, e);
         }
 
-        XBezahldienstePaymentTransaction transaction;
+        PaymentInformation paymentInformation;
         try {
-            transaction = paymentProviderDefinition
+            paymentInformation = paymentProviderDefinition
                     .initiatePayment(
                             paymentProviderEntity,
                             derivedConfiguration,
@@ -112,6 +108,6 @@ public class PaymentProviderTestService {
             return PaymentProviderTestResult.fromException(paymentRequest, e);
         }
 
-        return PaymentProviderTestResult.fromTransaction(paymentRequest, transaction);
+        return PaymentProviderTestResult.fromPaymentInformation(paymentRequest, paymentInformation);
     }
 }

@@ -1,0 +1,984 @@
+openapi: 3.0.3
+
+info:
+  title: XBezahldienste API
+  version: 1.2.0
+  description: |
+    <h1>XBezahldienste OpenAPI-Spezifikation</h1>
+    <p>
+      XBezahldienste ist ein fachlicher Standard in Form einer OpenAPI-Spezifikation und beschreibt die
+      Kommunikationsbeziehung zwischen (EfA-)Online-Diensten und Bezahldiensten.
+    </p>
+    <p>
+      Weitere Dokumentation zur Schnittstelle finden Sie im
+      <a href="https://docs.fitko.de/xbezahldienste/">Entwicklungsportal der FITKO</a>.
+    </p>
+    <h2>Ansprechpartner</h2>
+    <ul>
+      <li>Betrieb: Koordinierungsstelle für IT-Standards</li>
+      <li>
+        Betreuung und Weiterentwicklung: <a href="mailto:xbezahldienste@nortal.com">Nortal im Auftrag der KoSIT</a>
+      </li>
+    </ul>
+  contact:
+    name: AP7 Bezahldienste
+  x-summary: "Diese Standard-API für Bezahldienste soll den EfA-Online-Diensten ermöglichen standardisiert Bezahlungen bei unterschiedlichen Bezahldiensten von Bund, Ländern und Kommunen zu initiieren."
+
+servers:
+  # Example servers
+  - url: https://api.example.com/v1
+    description: Produktive Umgebung
+  - url: https://api.test.example.com/v1
+    description: Test Umgebung
+  - url: http://localhost:8081/xbzd/bezahldienst/api/v1
+    description: Lokale Entwicklungsumgebung
+tags:
+  - name: Bezahldienst
+    description: Alle Endpunkte fuer das Initiieren und überprüfen des Bezahlvorgangs.
+  - name: Betrieb
+    description: "Methoden für Betrieb, Wartung und Administration."
+
+paths:
+  "/paymenttransaction/{originatorId}/{endPointId}":
+    post:
+      tags:
+        - Bezahldienst
+      description: "Sendet einen PaymentRequest und legt damit eine PaymentTransaction im Bezahldienst an."
+      summary: "Sendet einen PaymentRequest und legt damit eine PaymentTransaction im Bezahldienst an."
+      operationId: initiatePaymentTransaction
+      parameters:
+        - $ref: '#/components/parameters/XBezahldiensteVersion'
+        - $ref: '#/components/parameters/OriginatorId'
+        - $ref: '#/components/parameters/EndPointId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTransaction'
+        "400":
+          $ref: '#/components/responses/400Error'
+        "404":
+          $ref: '#/components/responses/404Error'
+        "503":
+          $ref: '#/components/responses/503Error'
+
+  "/paymenttransaction/{originatorId}/{endPointId}/{transactionId}":
+    get:
+      tags:
+        - Bezahldienst
+      description: "Abfrage einer Payment Transaction. Insb. um den Status zu prüfen"
+      summary: "Abfrage einer Payment Transaction. Insb. um den Status zu prüfen"
+      operationId: getPaymentTransaction
+      parameters:
+        - $ref: '#/components/parameters/XBezahldiensteVersion'
+        - $ref: '#/components/parameters/OriginatorId'
+        - $ref: '#/components/parameters/EndPointId'
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTransaction'
+        "404":
+          $ref: '#/components/responses/404Error'
+        "503":
+          $ref: '#/components/responses/503Error'
+
+  "/payment-methods/{originatorId}/{endPointId}":
+    get:
+      tags:
+        - Bezahldienst
+      summary: "Zahlarten-Verfügbarkeit erhalten"
+      description: >
+        Gibt die konfigurierten Zahlarten zurück, gruppiert nach Verfügbarkeit.
+        Gefiltert für OriginatorId und EndPointId.
+      operationId: getPaymentMethodsAvailability
+      parameters:
+        - $ref: '#/components/parameters/XBezahldiensteVersion'
+        - $ref: '#/components/parameters/OriginatorId'
+        - $ref: '#/components/parameters/EndPointId'
+      responses:
+        "200":
+          $ref: '#/components/responses/PaymentMethodsAvailabilityResponse'
+        "403":
+          $ref: '#/components/responses/403Error'
+        "503":
+          $ref: '#/components/responses/503Error'
+
+  "/status":
+    get:
+      tags:
+        - Betrieb
+      description: "Abfrage des Status des Bezahldienstes - War ursprünglich vorgesehen, wird aber vermutlich durch CR 009 entfernt."
+      summary: "Abfrage des Status des Bezahldienstes"
+      operationId: getStatus
+      parameters:
+        - $ref: '#/components/parameters/XBezahldiensteVersion'
+      responses:
+        "200":
+          $ref: '#/components/responses/200Healthy'
+        "403":
+          $ref: '#/components/responses/403Error'
+        "503":
+          $ref: '#/components/responses/503Error'
+
+  "/status/{originatorId}/{endPointId}":
+    get:
+      tags:
+        - Betrieb
+      description: "Abfrage des Status der konkreten Konfiguration des Bezahldienstes."
+      summary: "Abfrage des Status der konkreten Konfiguration des Bezahldienstes."
+      operationId: getStatusByIds
+      parameters:
+        - $ref: '#/components/parameters/XBezahldiensteVersion'
+        - $ref: '#/components/parameters/OriginatorId'
+        - $ref: '#/components/parameters/EndPointId'
+      responses:
+        "200":
+          $ref: '#/components/responses/200Healthy'
+        "403":
+          $ref: '#/components/responses/403Error'
+        "503":
+          $ref: '#/components/responses/503Error'
+
+  "/maintenance/{originatorId}/{endPointId}":
+    get:
+      tags:
+        - Betrieb
+      summary: "Wartungszeiträume abfragen"
+      description: >
+        Ruft eine Liste von aktuellen und geplanten Wartungszeiträumen ab.
+        Enthält Verweise auf betroffene Zahlarten.
+        Gefiltert für OriginatorId und EndPointId.
+      operationId: getMaintenance
+      parameters:
+        - $ref: '#/components/parameters/XBezahldiensteVersion'
+        - $ref: '#/components/parameters/OriginatorId'
+        - $ref: '#/components/parameters/EndPointId'
+      responses:
+        "200":
+          $ref: '#/components/responses/MaintenanceResponse'
+        "403":
+          $ref: '#/components/responses/403Error'
+        "503":
+          $ref: '#/components/responses/503Error'
+
+components:
+  schemas:
+    PaymentTransaction:
+      type: object
+      required:
+        - paymentInformation
+      additionalProperties: false
+      properties:
+        paymentInformation:
+          $ref: "#/components/schemas/PaymentInformation"
+        paymentRequest:
+          $ref: "#/components/schemas/PaymentRequest"
+
+    PaymentInformation:
+      description: "Dieses Objekt enthält die Informationen vom Bezahldienst, die 1-zu-1 in den Antrag übernommen werden können. Die Antrags-API wird künftig angeglichen."
+      type: object
+      required:
+        - transactionUrl
+        - transactionRedirectUrl
+        - transactionId
+        - status
+      additionalProperties: false
+      properties:
+        transactionUrl:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 2082
+          example: "https://payment.bundesland.zzzz/api/v1/paymenttransaction/12002312/MELD-ANT-FORM-4711/9xxd-432x-6543-xfd6-gfdx-fd27"
+          description: Die Rest-URL der Payment Transaction für die Statusabfrage. Diese Information könnte aus den Informationen generiert werden. Eine explizite Ablage der URL dient der Robustheit der Schnittstelle.
+        transactionRedirectUrl:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 5000
+          example: "https://portal.bundesland.zzzz/ui/doPayment/9xxd-432x-6543-xfd6-gfdx-fd27-CHECKSUM"
+          description: Die Redirect-URL an die der Online-Dienst den Benutzer weiterleiten soll. Diese URL öffnet die "Paypage" / "Bezahlseite" des Bezahldienstes. Diese URL muss nur im Status "INITIAL" (also bei der Post-Response oder Statusabfrage vor Abschluss / Abbruch der Transaktion) enthalten sein. Nach Abschluss der Transaktion sollte diese URL nicht enthalten sein.
+        transactionId:
+          type: string
+          minLength: 1
+          maxLength: 44
+          pattern: '^[\w-]+$'
+          example: "9xxd-432x-6543-xfd6-gfdx-fd27"
+          description: Eine vom Bezahldienst vergebene Transaktions-ID beim POST des Requests. Diese ID wird für die späteren Abfragen (GET) verwendet. Dies kann schon das Kassenzeichen sein. Sofern dies später vergeben wird, kann hier eine 'technische' ID des Bezahldienstes vergeben werden. Falls der Bezahldienst keine eigenen IDs hier verwendet, kann die Schnittstelle auch die Request-ID zurück geben.
+        transactionReference:
+          type: string
+          minLength: 1
+          maxLength: 36
+          pattern: '^[\w-]+$'
+          example: "KA-2020-1234"
+          description: 'Das "fachliche" Kennzeichen für eine Bezahlung. Dieses kann bei dem POST des Requests vom Bezahldienst vergeben werden oder erst nach der Autorisierung durch den Bezahler. Daher ist die relevante ID für diese Schnittstelle die transactionId, die durch den Bezahldienst bei der Anlage des Payment-Requests vergeben wird.'
+        transactionTimestamp:
+          type: string
+          format: date-time
+          example: "2025-10-06T12:32:00.711Z"
+          description: 'Zeitstempel der erfolgreichen Durchführung der Bezahlung.'
+        paymentMethod:
+          allOf:
+            - $ref: "#/components/schemas/PaymentMethod"
+          example: "CREDITCARD"
+          description: "Die vom Benutzer ausgewählte Zahlart. Das Feld ist nur bei einer erfolgreichen Zahlung vorhanden / befüllt."
+        paymentMethodDetail:
+          type: string
+          minLength: 1
+          maxLength: 36
+          pattern: '^[\w-]+$'
+          example: "Visa"
+          description: 'Weitere Erläuterung zur gewählten Zahlart.'
+        status:
+          type: string
+          enum:
+            - INITIAL
+            - PAYED
+            - FAILED
+            - CANCELED
+          description: "Der Status der Transaktion soll dem EfA-Onlinedienst erkennbar machen, ob die Bezahlung erfolgreich durchgeführt wurde. <ul> <li>INITIAL - der Antrag hat einen Payment-Request ausgelöst und eine Payment-Transaction wurde angelegt. Der Nutzer hat aber im Bezahldienst noch keine Wirkung erzeugt. Der Benutzer kann mit dem Link zum Bezahldienst weitergeleitet werden. NEUE / Eränzende Info: Solange der Benutzer eine bestimmte Zahlart ausgewählt und abgebrochen hat - aber noch die Option hat, stattdessen eine andere Zahlart zu verwenden, so bleibt der Status auf INITIAL</li> <li>PAYED - der Nutzer hat die Bezahlung im Bezahldienst erfolgreich durchgeführt.</li> <li>FAILED - der Vorgang wurde vom Bezahldienst aufgrund der Nutzereingaben final abgebrochen.</li> <li>CANCELED - der Nutzer hat die Bezahlung im Bezahldienst final abgebrochen.</li> </ul>"
+        statusDetail:
+          type: string
+          minLength: 1
+          maxLength: 99
+          pattern: '^[\w-]+$'
+          example: "Transaktion-XYZ_wurde_erfolgreich_gebucht_auf_Konto_ABC_in_Hoehe_von_36EUR"
+          description: "Optionale ergänzende Erläuterungen zum Status. Diese Informationen werden Teil des Antrags und bieten dem Bezahldienst die Möglichkeit Informationen an das Fachverfahren / Sachbearbeitung zu schicken. Grundsätzlich ist dieses Feld nicht notwendig - Inhalte sind zwischen Bezahldienst und Fachverfahren abzustimmen."
+
+    PaymentRequest:
+      type: object
+      required:
+        - requestId
+        - requestTimestamp
+        - currency
+        - grossAmount
+        - redirectUrl
+        - items
+      additionalProperties: false
+      properties:
+        requestId:
+          type: string
+          minLength: 1
+          maxLength: 36
+          pattern: '^[\w-]+$'
+          example: "XYZ12345-2021"
+          description: Die Request-ID wird vom Online-Dienst vergeben und vom Bezahldienst abgelegt.
+        requestTimestamp:
+          type: string
+          format: date-time
+          example: "2025-10-06T14:32:00.711+02:00"
+          description: Zeitstempel des Online-Antrags / Payment-Requests.
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[\w]+$'
+          example: "EUR"
+          description: Im ersten Schritt ist hier nur 'EUR' vorgesehen. Perspektivisch sollte hier die entsprechende ISO-Norm referenziert werden.
+        grossAmount:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 999999
+          exclusiveMinimum: true
+          example: 30.00
+          description: Der Gesamtbetrag dient dem Bezahldienst zur Validierung der einzelnen Positionen.
+        purpose:
+          type: string
+          minLength: 1
+          maxLength: 27
+          pattern: '^[\w\s-]+$'
+          example: "Antrag fuer Antragsformular"
+          description: Verwendungszweck / Buchungstext der Payment Transaction.
+        description:
+          allOf:
+            - $ref: "#/components/schemas/DatatypeC"
+            - minLength: 1
+              maxLength: 250
+              example: "Anträge für Antragsformulare"
+              description: N Die Beschreibung des Payment Requests. Kann auf der Paypage / PSP Seite angezeigt werden.
+        redirectUrl:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 2082
+          example: "https://efa-od-xy.de/sdfsdfsdf/success?sid=DSYXD1234FSD"
+          description: Rücksprung-URL vom Bezahldienst zum Online-Dienst. Der Status (Erfolg / Abbruch) muss über die Statusabfrage (GET) abgefragt werden.
+        items:
+          type: array
+          minItems: 1
+          maxItems: 99
+          items:
+            $ref: "#/components/schemas/PaymentItem"
+        requestor:
+          $ref: "#/components/schemas/Requestor"
+
+    PaymentItem:
+      type: object
+      required:
+        - id
+        - reference
+        - taxRate
+        - quantity
+        - totalNetAmount
+        - totalTaxAmount
+        - singleNetAmount
+        - singleTaxAmount
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 36
+          pattern: '^[\w-]+$'
+          example: "01"
+          description: ID der Position vom Online-Dienst vergeben
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 36
+          pattern: '^[\w-]+$'
+          example: "XYZ22113"
+          description: Eine fachliche Referenz auf den "Artikel" bzw. den Inhalt der Position.
+        description:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeC"
+            - minLength: 1
+            - maxLength: 250
+          example: "XYZ22113-01 - Antrag auf Erteilung eines Antragsformulars"
+          description: Beschreibung der Position vom Online-Dienst zur Verwendung z. B. auf der Pay-Page.
+        taxRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          example: 19
+          description: "Steuersatz als Prozentbetrag"
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 999999
+          example: 3
+        totalNetAmount:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 999999
+          example: 25.20
+          description: "Nettobetrag der Position"
+        totalTaxAmount:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 999999
+          example: 4.80
+          description: "Steuerbetrag der Position"
+        singleNetAmount:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 999999
+          example: 8.40
+          description: Nettobetrag der Position
+        singleTaxAmount:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 999999
+          example: 1.60
+          description: Steuerbetrag der Position
+        bookingData:
+          type: object
+          minProperties: 0
+          maxProperties: 99
+          description: Container für Key-Value-Paare für zusätzliche Informationen für die Verbuchung im Bezahldienst oder nachgelagerten Systemen
+          additionalProperties:
+            type: string
+            minLength: 1
+            maxLength: 250
+            pattern: '^[\w\s\-,\.\u00C0-\u017F]+$'
+          example:
+            haushaltstelle: "1234"
+            objektnummer: "0815"
+            href: "AlphaBetaGamma"
+
+    Requestor:
+      # Kompatibilität zu 1.1.0: Ein `Requestor@1.1.0` wird als `RequestorLegacy` behandelt.
+      # Server müssen darauf auch mit einem `RequestorLegacy` antworten.
+      type: object
+      anyOf:
+        - $ref: "#/components/schemas/RequestorTyped"
+        - $ref: "#/components/schemas/RequestorLegacy"
+
+    RequestorTyped:
+      type: object
+      oneOf:
+        - $ref: "#/components/schemas/RequestorIndividual"
+        - $ref: "#/components/schemas/RequestorOrganization"
+      discriminator:
+        propertyName: requestorType
+        mapping:
+          INDIVIDUAL: "#/components/schemas/RequestorIndividual"
+          ORGANIZATION: "#/components/schemas/RequestorOrganization"
+
+    RequestorIndividual:
+      type: object
+      additionalProperties: false
+      required:
+        - requestorType
+        - name
+        - firstName
+        - address
+      properties:
+        requestorType:
+          type: string
+          enum:
+            - INDIVIDUAL
+        name:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeA"
+            - minLength: 1
+            - maxLength: 250
+          example: "Mustermann"
+          description: Familienname des Bezahlers
+        firstName:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeA"
+            - minLength: 1
+            - maxLength: 250
+          pattern: '^[\w\s\-,\.\u00C0-\u017F]+$'
+          example: "Max"
+          description: Vorname(n) des Bezahlers
+        gender:
+          type: string
+          enum:
+            - M
+            - F
+            - D
+          description: "Geschlecht des Bezahlers: (M)ale=Männlich, (F)emale=Weiblich, (D)iverse=Divers"
+        address:
+          $ref: "#/components/schemas/AddressTyped"
+
+    RequestorOrganization:
+      type: object
+      additionalProperties: false
+      required:
+        - requestorType
+        - name
+        - address
+      properties:
+        requestorType:
+          type: string
+          enum:
+            - ORGANIZATION
+        name:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeD"
+            - minLength: 1
+            - maxLength: 250
+          example: "Bundesministerium der Finanzen"
+          description: "Name der Organisation"
+        address:
+          $ref: "#/components/schemas/AddressTyped"
+
+    RequestorLegacy:
+      deprecated: true
+      type: object
+      required:
+        - name
+        - firstName
+        - address
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeA"
+            - minLength: 1
+            - maxLength: 250
+          example: "Mustermann"
+          description: Familienname des Bezahlers
+        firstName:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeA"
+            - minLength: 1
+            - maxLength: 250
+          pattern: '^[\w\s\-,\.\u00C0-\u017F]+$'
+          example: "Max"
+          description: Vorname(n) des Bezahlers
+        gender:
+          type: string
+          enum:
+            - M
+            - F
+            - D
+          description: "Geschlecht des Bezahlers: (M)ale=Männlich, (F)emale=Weiblich, (D)iverse=Divers"
+        isOrganization:
+          type: boolean
+          example: true
+          description: "Wahr für Organisationen / juristische Personen, Falsch für 'natürliche' Antragsteller"
+        organizationName:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeD"
+            - minLength: 1
+            - maxLength: 250
+          example: "Bundesministerium der Finanzen"
+          description: "Soll nur existieren, wenn isOrganization == true"
+        address:
+          $ref: "#/components/schemas/Address"
+
+    AddressTyped:
+      type: object
+      oneOf:
+        - $ref: "#/components/schemas/PostalAddress"
+      discriminator:
+        propertyName: addressType
+        mapping:
+          POSTAL_ADDRESS: "#/components/schemas/PostalAddress"
+
+    PostalAddress:
+      type: object
+      additionalProperties: false
+      required:
+        - addressType
+        - addressLine1
+        - city
+        - postalCode
+        - countryCode
+      description: "Eine Gruppe von Informationselementen, die Informationen über die Anschrift enthalten."
+      properties:
+        addressType:
+          type: string
+          enum:
+            - POSTAL_ADDRESS
+        addressLine1:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeB"
+            - minLength: 1
+            - maxLength: 250
+          example: "Wilhelmstraße 97"
+          description: >
+            Die Hauptzeile einer Anschrift. Üblicherweise ist dies entweder Straße und Hausnummer
+            oder der Text 'Postfach' gefolgt von der Postfachnummer.
+        addressLine2:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeB"
+            - minLength: 1
+            - maxLength: 250
+          description: >
+            Eine zusätzliche Adresszeile in einer Anschrift, die verwendet werden kann, um weitere
+            Einzelheiten in Ergänzung zur Hauptzeile anzugeben.
+        addressLine3:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeB"
+            - minLength: 1
+            - maxLength: 250
+          description: >
+            Eine zusätzliche Adresszeile in einer Anschrift, die verwendet werden kann, um weitere
+            Einzelheiten in Ergänzung zur Hauptzeile anzugeben.
+        city:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeB"
+            - minLength: 1
+            - maxLength: 250
+          example: "Berlin"
+          description: "Die Bezeichnung der Stadt oder Gemeinde, in der sich die Anschrift befindet."
+        postalCode:
+          type: string
+          minLength: 1
+          maxLength: 16
+          example: "10117"
+          description: "Die Postleitzahl."
+        countrySubdivision:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeB"
+            - minLength: 1
+            - maxLength: 250
+          description: "Die Unterteilung eines Landes (wie Region, Bundesland, Provinz etc.)."
+        countryCode:
+          type: string
+          minLength: 2
+          maxLength: 2
+          pattern: '^[A-Z]{2}$'
+          example: "DE"
+          description: >
+            Ein Code, mit dem das Land bezeichnet wird. Anmerkung: Die Liste der zulässigen Länder
+            ist bei der ISO 3166-1 'Codes for the representation of names of countries and their
+            subdivisions' erhältlich. Nur die Alpha-2-Darstellung darf verwendet werden.
+
+    Address:
+      deprecated: true
+      type: object
+      additionalProperties: false
+      properties:
+        street:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeB"
+            - minLength: 1
+            - maxLength: 250
+          example: "Wilhelmstraße"
+          description: Strasse
+        houseNumber:
+          type: string
+          minLength: 1
+          maxLength: 20
+          pattern: '^[\w-]+$'
+          example: "97"
+          description: "Hausnummer"
+        addressLine:
+          type: array
+          minItems: 0
+          maxItems: 9
+          items:
+            type: string
+            allOf:
+              - $ref: "#/components/schemas/DatatypeB"
+              - minLength: 1
+              - maxLength: 250
+          example: [ "Dienstsitz Berlin", "Postanschrift: 11016 Berlin" ]
+          description: Zum Abbilden von Internationalen Adressen werden generische "Adresszeilen" verwendet und nicht "Straße / Hausnummer".
+        postalCode:
+          type: string
+          minLength: 5
+          maxLength: 5
+          pattern: '^[\d]+$'
+          example: "10117"
+          description: Postleitzahl
+        city:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeB"
+            - minLength: 1
+            - maxLength: 250
+          example: "Berlin"
+          description: "Stadt"
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+          pattern: '^[\w]+$'
+          example: "DE"
+          description: "ISO 3166-1, Alpha-2 code, zwei Großbuchstaben"
+
+    SystemResponse:
+      type: object
+      additionalProperties: false
+      description: "Systemmeldung entsprechend RFC7807"
+      properties:
+        type:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 2082
+          example: "https://docs.fitko.de/xbezahldienste/API-SystemResponse/"
+          description: "Link auf eine Seite mit der Fehlerbeschreibung"
+        status:
+          type: integer
+          format: int32
+          minimum: 100
+          maximum: 511
+          example: 400
+          description: HTTP Response Code
+        title:
+          type: string
+          minLength: 1
+          maxLength: 250
+          pattern: '^[\w\s\.-]+$'
+          example: "Bad Request"
+          description: HTTP Response Text
+        detail:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: '^[\w\s\-,\.\u00C0-\u017F]+$'
+          example: "In den BookingData fehlen die für diesen Bezahldienst notwendigen Felder Kapitel, Titel, TitelKennz, TitelZusatz"
+          description: "Funktionale Beschreibung des Fehlers. Hier sollen aber nur 'fachliche Beschreibungen' erfolgen. Aus Sicherheitsgründen sollten die Bezahldienste hier keine Systeminterna herausgeben. Eine Referenz-Nummer für den Austausch zwischen den Betriebsorganisationen scheint sinnvoll."
+        functionalCode:
+          type: string
+          enum:
+            - NO_VALID_ORIGINATOR_OR_DESTINATION
+            - NO_VALID_ORIGINATOR_OR_ENDPOINT
+            - PAYMENT_EXISTS
+            - CALCULATION_ERROR
+            - BOOKING_DATA_MISSING
+            - VALIDATION_ERROR
+            - UNSPECIFIED
+            - FORBIDDEN
+          example: BOOKING_DATA_MISSING
+          description: "Die genauen Ausprägungen der Funktionalen Response müssen noch diskutiert werden. Arbeitsthese: <ul> <li>NO_VALID_ORIGINATOR_OR_DESTINATION - Deprecated - siehe nächsten Punkt.</li> <li>NO_VALID_ORIGINATOR_OR_ENDPOINT - Der Mandant kann anhand OriginatorID und EndPointID nicht ermittelt werden.</li> <li>PAYMENT_EXISTS - Mit dieser Transaktions-ID wurde bereits ein PaymentRequest platziert.</li> <li>CALCULATION_ERROR - Die Summe des PaymentRequests passt nicht zu den Positionen - z.B. fehlerhafter grossAmount.</li> <li>BOOKING_DATA_MISSING - Notwendige Daten für die Verbuchung (in bookingData) fehlen - genaue Beschreibung im functionalText.</li> <li>VALIDATION_ERROR - Andere Validierungsfehler / semantische Fehler wie z.B. nicht unterstützte Währung.</li> <li>UNSPECIFIED - Alle Fehler, die hier aktuell nicht konkret definiert sind.</li> <li>FORBIDDEN - Fehlende Authentisierungsdaten oder keine Authorisierung in diesem Kontext.</li> </ul>"
+
+    DatatypeA:
+      type: string
+      description: >
+        DIN 91379. Der Datentyp A gibt wieder, welche Schriftzeichen für Namen natürlicher Personen verwendet werden
+        sollten.
+
+    DatatypeB:
+      type: string
+      description: >
+        DIN 91379. Der Datentyp B wurde vor allem für sonstige Namen, wie z. B. Ortsnamen und Straßennamen mit
+        Hausnummer, entworfen.
+
+    DatatypeC:
+      type: string
+      description: >
+        DIN 91379. Der Datentyp C wurde für alle normativen Schriftzeichen der DIN-Norm entworfen. Er ist somit die
+        technische Umsetzung der Schnittstellenvereinbarung 'Alle nach Norm DIN 91379 normativen Schriftzeichen'. Texte
+        mit griechischen oder kyrillischen Buchstaben oder mit erweiterten (nicht-normativen) Nicht-Buchstaben sind
+        unzulässig.
+
+    DatatypeD:
+      type: string
+      description: DIN 91379. Der Datentyp D wurde vor allem für Namen juristischer Personen und für Produktnamen entworfen.
+
+    MaintenanceWindow:
+      type: object
+      additionalProperties: false
+      description: "Ein einzelnes Wartungsfenster"
+      properties:
+        startTime:
+          type: string
+          format: date-time
+          description: "Beginn des Wartungszeitraums (inklusive). Wenn nicht angegeben, gilt das Wartungsfenster ab sofort."
+          example: "2024-03-15T02:00:00Z"
+        endTime:
+          type: string
+          format: date-time
+          description: "Ende des Wartungszeitraums (exklusive). Wenn nicht angegeben, gilt das Wartungsfenster bis auf Weiteres."
+          example: "2024-03-15T06:00:00Z"
+        description:
+          type: string
+          maxLength: 250
+          description: "Beschreibung der Wartungsarbeit"
+          example: "Geplante Wartung des Kreditkartensystems"
+        paymentMethods:
+          $ref: "#/components/schemas/PaymentMethodsDown"
+      example:
+        startTime: "2024-03-15T02:00:00Z"
+        endTime: "2024-03-15T06:00:00Z"
+        description: "Geplante Wartung des Kreditkartensystems"
+
+    PaymentMethod:
+      type: string
+      enum:
+        - GIROPAY
+        - PAYDIRECT
+        - CREDITCARD
+        - PAYPAL
+        - OTHER
+      example: "CREDITCARD"
+      description: "Definierte Zahlarten"
+
+    PaymentMethodList:
+      type: array
+      items:
+        $ref: "#/components/schemas/PaymentMethod"
+      description: "Liste von Zahlarten"
+
+    PaymentMethodsDown:
+      type: object
+      additionalProperties: false
+      description: "Nicht verfügbare Zahlarten"
+      properties:
+        down:
+          $ref: "#/components/schemas/PaymentMethodList"
+
+    PaymentMethodsAvailability:
+      type: object
+      additionalProperties: false
+      description: "Verfügbare und nicht verfügbare Zahlarten"
+      properties:
+        up:
+          $ref: "#/components/schemas/PaymentMethodList"
+        down:
+          $ref: "#/components/schemas/PaymentMethodList"
+
+    MaintenanceWindows:
+      type: object
+      additionalProperties: false
+      description: "Informationen über aktuelle und geplante Wartungszeiträume"
+      properties:
+        maintenanceWindows:
+          type: array
+          items:
+            $ref: "#/components/schemas/MaintenanceWindow"
+
+  parameters:
+    XBezahldiensteVersion:
+      name: X-XBezahldienste-Version
+      in: header
+      description: Version der XBezahldienste-Schnittstelle, die vom Client verwendet wird.
+      example: "1.2.0"
+      schema:
+        type: string
+    OriginatorId:
+      name: originatorId
+      in: path
+      description: Enthält die Kennung des auslösenden Online-Dienstes, z. B. den fachlichen Kontext.
+      required: true
+      example: "MELD-ANT-FORM-4711"
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 36
+        pattern: '^[\w-]+$'
+    EndPointId:
+      name: endPointId
+      in: path
+      description: Enthält ein weiteres Ordnungskriterium für die Identifikation der zuständigen Behörde, z. B. den AGS
+      required: true
+      example: "BERLIN"
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 36
+        pattern: '^[\w-]+$'
+    TransactionId:
+      name: transactionId
+      in: path
+      description: Vom Bezahldienst vergebene Transaktions-ID - kann auch das Kassenzeichen sein
+      required: true
+      example: "9xxd-432x-6543-xfd6-gfdx-fd27"
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 36
+        pattern: '^[\w-]+$'
+
+  responses:
+    200Healthy:
+      description: "Erfolgsmeldung auf Statusabfrage"
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/SystemResponse'
+          example:
+            type: "https://docs.fitko.de/xbezahldienste/API-SystemResponse/#200healthy"
+            status: 200
+            title: "OK"
+            detail: "Everything is up and running"
+
+    MaintenanceResponse:
+      description: "Informationen über aktuelle und geplante Wartungszeiträume"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MaintenanceWindows"
+          example:
+            maintenanceWindows:
+              - startTime: "2024-03-15T02:00:00Z"
+                endTime: "2024-03-15T06:00:00Z"
+                description: "Geplante Wartung des Kreditkartensystems"
+                paymentMethods:
+                  down:
+                    - CREDITCARD
+                    - PAYPAL
+              - startTime: "2024-03-20T01:00:00Z"
+                endTime: "2024-03-20T03:00:00Z"
+                description: "Geplante Wartung der PayPal-Schnittstelle"
+                paymentMethods:
+                  down:
+                    - PAYPAL
+
+    PaymentMethodsAvailabilityResponse:
+      description: "Verfügbarkeitsstatus von Zahlarten"
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              paymentMethods:
+                $ref: "#/components/schemas/PaymentMethodsAvailability"
+          example:
+            paymentMethods:
+              up:
+                - GIROPAY
+                - PAYDIRECT
+                - PAYPAL
+                - OTHER
+              down:
+                - CREDITCARD
+                - OTHER
+
+    400Error:
+      description: Bad request - Syntaktischer oder semantischer Fehler
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/SystemResponse'
+          example:
+            type: "https://docs.fitko.de/xbezahldienste/API-SystemResponse/#400error"
+            status: 400
+            title: "Bad Request"
+            detail: "In den BookingData fehlen die für diesen Bezahldienst notwendigen Felder Kapitel, Titel, TitelKennz, TitelZusatz"
+            functionalCode: "BOOKING_DATA_MISSING"
+
+    403Error:
+      description: Forbidden
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/SystemResponse'
+          example:
+            type: "https://docs.fitko.de/xbezahldienste/API-SystemResponse/#403error"
+            status: 403
+            title: "Forbidden"
+            detail: "Die Authentifzierung ist fehlgeschlagen."
+            functionalCode: "FORBIDDEN"
+    404Error:
+      description: Not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/SystemResponse'
+          example:
+            type: "https://docs.fitko.de/xbezahldienste/API-SystemResponse/#404error"
+            status: 404
+            title: "Not found"
+            detail: "Zu diesen Parametern ist kein gültiger Mandant vorhanden. EndPoint ID unbekannt."
+            functionalCode: "NO_VALID_ORIGINATOR_OR_ENDPOINT"
+
+    503Error:
+      description: Service unavailable
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/SystemResponse'
+          example:
+            type: "https://docs.fitko.de/xbezahldienste/API-SystemResponse/#503error"
+            status: 503
+            title: "Service temporarily unavailable"
+            detail: "Interner temporärer Server Fehler"
+            functionalCode: "UNSPECIFIED"
+
+# Diese Spezifikation definiert keine standardisierten OpenAPI-Sicherheitsmechanismen.
+# Authentifizierung und Autorisierung werden von der jeweiligen Implementierung ergänzt.
+security: []

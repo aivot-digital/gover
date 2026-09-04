@@ -15,7 +15,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputEl
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -28,7 +28,7 @@ import de.aivot.prosuna.backend.payment.models.PaymentItem;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
+import de.aivot.prosuna.backend.payment.models.PaymentInformation;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
@@ -203,8 +203,8 @@ class PaymentRequestActionNodeV1Test {
         ));
         assertEquals("string", outputTypes.get("recipientIdentityId"));
         assertEquals("number", outputTypes.get("paymentTotal"));
-        assertEquals("\"INITIAL\" | \"PAYED\" | \"FAILED\" | \"CANCELED\"", outputTypes.get("paymentStatus"));
-        assertTrue(outputTypes.get("paymentDetails").startsWith("{ transactionUrl:"));
+        assertEquals("\"PENDING\" | \"PAID\" | \"FAILED\" | \"CANCELED\"", outputTypes.get("paymentStatus"));
+        assertTrue(outputTypes.get("paymentDetails").startsWith("{ providerTransactionId:"));
     }
 
     @Test
@@ -214,7 +214,7 @@ class PaymentRequestActionNodeV1Test {
         var configuration = nodeConfiguration(paymentConfig, "automatic");
         var paymentProvider = paymentProvider(paymentProviderKey);
         var paymentPayload = paymentPayload();
-        var transaction = paymentTransaction(paymentProviderKey, XBezahldienstStatus.INITIAL)
+        var transaction = paymentTransaction(paymentProviderKey, PaymentStatus.PENDING)
                 .setRedirectUrl("https://example.test/process/instance-access/tasks/task-access");
         var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
         var identity = recipientIdentity();
@@ -237,7 +237,7 @@ class PaymentRequestActionNodeV1Test {
         assertEquals(paymentPayload, result.getRuntimeData().get(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD));
         assertEquals(RECIPIENT_IDENTITY_ID, result.getNodeData().get("recipientIdentityId"));
         assertEquals("https://example.test/process/instance-access/tasks/task-access", result.getNodeData().get("paymentUrl"));
-        assertEquals("INITIAL", result.getNodeData().get("paymentStatus"));
+        assertEquals("PENDING", result.getNodeData().get("paymentStatus"));
         assertEquals(Map.of("name", "Ada"), result.getProcessData());
 
         var communicationRequest = result.getCommunicationRequest();
@@ -355,7 +355,7 @@ class PaymentRequestActionNodeV1Test {
         var configuration = nodeConfiguration(paymentConfig, "manual");
         var paymentProvider = paymentProvider(paymentProviderKey);
         var paymentPayload = paymentPayload();
-        var transaction = paymentTransaction(paymentProviderKey, XBezahldienstStatus.INITIAL);
+        var transaction = paymentTransaction(paymentProviderKey, PaymentStatus.PENDING);
         var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
         var identity = recipientIdentity();
         var task = task(
@@ -562,7 +562,7 @@ class PaymentRequestActionNodeV1Test {
     void resume_ReturnsNoopWhilePaymentIsPending() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
         when(paymentTransactionService.retrieve("tx-1"))
-                .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, XBezahldienstStatus.INITIAL)));
+                .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, PaymentStatus.PENDING)));
 
         var result = node.resume(context(
                 nodeConfiguration(paymentConfig(paymentProviderKey), "automatic"),
@@ -577,7 +577,7 @@ class PaymentRequestActionNodeV1Test {
     @Test
     void resume_CompletesWhenPaymentIsPaid() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
-        var paymentInformation = paymentInformation(XBezahldienstStatus.PAYED);
+        var paymentInformation = paymentInformation(PaymentStatus.PAID);
         when(paymentTransactionService.retrieve("tx-1"))
                 .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, paymentInformation)));
 
@@ -589,14 +589,14 @@ class PaymentRequestActionNodeV1Test {
                         processInstance(recipientIdentity()),
                         task(
                                 Map.of(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY, "tx-1"),
-                                Map.of("paymentStatus", "INITIAL", "paymentDetails", "initial-details"),
+                                Map.of("paymentStatus", "PENDING", "paymentDetails", "initial-details"),
                                 Map.of("existing", "value")
                         )
                 ))
         );
 
         assertEquals("paid", result.getViaPort());
-        assertEquals("PAYED", result.getNodeData().get("paymentStatus"));
+        assertEquals("PAID", result.getNodeData().get("paymentStatus"));
         assertEquals(paymentInformation, result.getNodeData().get("paymentDetails"));
         assertEquals(Map.of("existing", "value"), result.getProcessData());
     }
@@ -604,7 +604,7 @@ class PaymentRequestActionNodeV1Test {
     @Test
     void resume_FailsWhenPaymentFailed() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
-        var transaction = paymentTransaction(paymentProviderKey, XBezahldienstStatus.FAILED)
+        var transaction = paymentTransaction(paymentProviderKey, PaymentStatus.FAILED)
                 .setPaymentError("Provider rejected payment");
         when(paymentTransactionService.retrieve("tx-1")).thenReturn(Optional.of(transaction));
 
@@ -642,7 +642,7 @@ class PaymentRequestActionNodeV1Test {
         );
 
         when(paymentTransactionService.retrieve("tx-1"))
-                .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, XBezahldienstStatus.PAYED)));
+                .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, PaymentStatus.PAID)));
         var paymentProvider = paymentProvider(paymentProviderKey);
         when(paymentProviderRepository.findById(paymentProviderKey)).thenReturn(Optional.of(paymentProvider));
         var paymentProviderDefinition = mock(PaymentProviderDefinition.class);
@@ -796,14 +796,14 @@ class PaymentRequestActionNodeV1Test {
 
     private static PaymentTransactionEntity paymentTransaction(
             UUID paymentProviderKey,
-            XBezahldienstStatus status
+            PaymentStatus status
     ) {
         return paymentTransaction(paymentProviderKey, paymentInformation(status));
     }
 
     private static PaymentTransactionEntity paymentTransaction(
             UUID paymentProviderKey,
-            XBezahldienstePaymentInformation paymentInformation
+            PaymentInformation paymentInformation
     ) {
         return new PaymentTransactionEntity()
                 .setKey("tx-1")
@@ -811,11 +811,16 @@ class PaymentRequestActionNodeV1Test {
                 .setPaymentInformation(paymentInformation);
     }
 
-    private static XBezahldienstePaymentInformation paymentInformation(XBezahldienstStatus status) {
-        var paymentInformation = new XBezahldienstePaymentInformation();
-        paymentInformation.setStatus(status);
-        paymentInformation.setTransactionRedirectUrl(URI.create("https://payment.example.test/tx-1"));
-        return paymentInformation;
+    private static PaymentInformation paymentInformation(PaymentStatus status) {
+        return new PaymentInformation(
+                "tx-1",
+                null,
+                status,
+                status == PaymentStatus.PENDING ? URI.create("https://payment.example.test/tx-1") : null,
+                null,
+                null,
+                null
+        );
     }
 
     private static IdentityData recipientIdentity() {

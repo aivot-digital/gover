@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.payment.models;
 
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
+import de.aivot.prosuna.backend.payment.models.PaymentRequest;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -22,7 +22,7 @@ public class GiroPayPaymentRequest {
     private String urlNotify;
     private String hash;
 
-    public static GiroPayPaymentRequest valueOf(XBezahldienstePaymentRequest xRequest, String merchantId, String projectId, String giroPayPassword, String notifyUrl) {
+    public static GiroPayPaymentRequest valueOf(PaymentRequest xRequest, String merchantId, String projectId, String giroPayPassword, String notifyUrl) {
         var gRequest = new GiroPayPaymentRequest();
 
         var merchantIdInt = Integer.parseInt(merchantId);
@@ -31,12 +31,12 @@ public class GiroPayPaymentRequest {
         gRequest.setMerchantId(merchantIdInt);
         gRequest.setProjectId(projectIdInt);
 
-        gRequest.setMerchantTxId(xRequest.getRequestId());
-        gRequest.setAmount(xRequest.getGrosAmount().multiply(BigDecimal.valueOf(100)).intValue()); // Convert to cents
-        gRequest.setCurrency(xRequest.getCurrency());
-        gRequest.setPurpose(xRequest.getPurpose());
+        gRequest.setMerchantTxId(xRequest.requestId());
+        gRequest.setAmount(xRequest.grossAmount().multiply(BigDecimal.valueOf(100)).intValue()); // Convert to cents
+        gRequest.setCurrency(xRequest.currency());
+        gRequest.setPurpose(xRequest.purpose());
 
-        gRequest.setUrlRedirect(xRequest.getRedirectUrl());
+        gRequest.setUrlRedirect(xRequest.redirectUrl().toString());
         gRequest.setUrlNotify(notifyUrl);
 
         String hash;

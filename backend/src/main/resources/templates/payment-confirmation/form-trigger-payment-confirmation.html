@@ -94,38 +94,38 @@
                 </div>
 
                 <!-- Daten des Zahlenden -->
-                <div th:if="${transaction.getPaymentRequest().getRequestor() != null}">
+                <div th:if="${transaction.getPaymentRequest().requestor() != null}">
                     <div
-                            th:if="${transaction.getPaymentRequest().getRequestor().getIsOrganization()}"
-                            th:text="${transaction.getPaymentRequest().getRequestor().getOrganizationName()}"
+                            th:if="${transaction.getPaymentRequest().requestor().organization()}"
+                            th:text="${transaction.getPaymentRequest().requestor().organizationName()}"
                     >
                         Name der Organisation
                     </div>
 
-                    <div th:unless="${transaction.getPaymentRequest().getRequestor().getIsOrganization()}">
-                        <span th:text="${transaction.getPaymentRequest().getRequestor().getFirstName()}">
+                    <div th:unless="${transaction.getPaymentRequest().requestor().organization()}">
+                        <span th:text="${transaction.getPaymentRequest().requestor().firstName()}">
                             Vorname
                         </span>
-                        <span th:text="${transaction.getPaymentRequest().getRequestor().getName()}">
+                        <span th:text="${transaction.getPaymentRequest().requestor().name()}">
                             Nachname
                         </span>
                     </div>
 
-                    <div th:if="${transaction.getPaymentRequest().getRequestor().getAddress() != null}">
+                    <div th:if="${transaction.getPaymentRequest().requestor().address() != null}">
                         <div>
-                            <span th:text="${transaction.getPaymentRequest().getRequestor().getAddress().getStreet()}">
+                            <span th:text="${transaction.getPaymentRequest().requestor().address().street()}">
                                 Straße
                             </span>
-                            <span th:text="${transaction.getPaymentRequest().getRequestor().getAddress().getHouseNumber()}">
+                            <span th:text="${transaction.getPaymentRequest().requestor().address().houseNumber()}">
                                 Hausnummer
                             </span>
                         </div>
 
                         <div>
-                            <span th:text="${transaction.getPaymentRequest().getRequestor().getAddress().getPostalCode()}">
+                            <span th:text="${transaction.getPaymentRequest().requestor().address().postalCode()}">
                                 PLZ
                             </span>
-                            <span th:text="${transaction.getPaymentRequest().getRequestor().getAddress().getCity()}">
+                            <span th:text="${transaction.getPaymentRequest().requestor().address().city()}">
                                 Ort
                             </span>
                         </div>
@@ -137,7 +137,7 @@
             <div id="daten">
                 <div>
                     <strong>Transaktionsnummer</strong><br/>
-                    <span th:text="${transaction.getPaymentInformation().getTransactionId()}">123</span>
+                    <span th:text="${transaction.getPaymentInformation().providerTransactionId()}">123</span>
                 </div>
 
                 <div>
@@ -147,7 +147,7 @@
 
                 <div>
                     <strong>Rechnungsdatum</strong><br/>
-                    <span th:text="${#numberformat.formatISOTimestamp(transaction.getPaymentInformation().getTransactionTimestamp(), 'dd.MM.yyyy')}">
+                    <span th:text="${#numberformat.formatInstant(transaction.getPaymentInformation().paidAt(), 'dd.MM.yyyy')}">
                         01.01.2000
                     </span>
                 </div>
@@ -169,9 +169,9 @@
                 <br/>
                 <br/>
                 hiermit bestätigen wir den Erhalt Ihrer Zahlung in Höhe von
-                <span th:text="${#numberformat.format(transaction.getPaymentRequest().getGrosAmount(), 2)}">1234,22</span>
+                <span th:text="${#numberformat.format(transaction.getPaymentRequest().grossAmount(), 2)}">1234,22</span>
                 Euro vom
-                <span th:text="${#numberformat.formatISOTimestamp(transaction.getPaymentInformation().getTransactionTimestamp(), 'dd.MM.yyyy')}"></span>.
+                <span th:text="${#numberformat.formatInstant(transaction.getPaymentInformation().paidAt(), 'dd.MM.yyyy')}"></span>.
                 <br/>
                 <br/>
                 Mit freundlichen Grüßen <br/>

@@ -15,7 +15,7 @@
 
     <div
             class="d-flex"
-            th:if="${ paymentTransaction.paymentInformation?.status?.name == 'INITIAL' }"
+            th:if="${ paymentTransaction.paymentInformation?.status?.name == 'PENDING' }"
     >
         <div style="flex: 1">
             <p th:if="${ base.isCitizenPrint }">
@@ -33,10 +33,10 @@
             <ul>
                 <li th:each="item : ${ paymentTransaction.paymentRequest.items }">
                     <span th:text="${ item.description }"></span>
-                    <span th:text="${ #numberformat.format(item.getBruttoAmount(), 2) } + ' Euro'"></span>
+                    <span th:text="${ #numberformat.format(item.grossAmount(), 2) } + ' Euro'"></span>
                     <span
-                            th:if="${item.getTaxRate() != null && item.getTaxRate() > 0}"
-                            th:text="'inkl. ' + ${ #numberformat.format(item.getTaxRate(), 0) } + '% Steuern'"
+                            th:if="${item.taxRate() != null && item.taxRate() > 0}"
+                            th:text="'inkl. ' + ${ #numberformat.format(item.taxRate(), 0) } + '% Steuern'"
                     ></span>
                 </li>
             </ul>
@@ -45,14 +45,14 @@
 
             <p>
                 Gesamtbetrag:
-                <strong th:text="${ #numberformat.format(paymentTransaction.paymentRequest.getGrosAmount(), 2) } + ' Euro inkl. Steuern'"></strong>
+                <strong th:text="${ #numberformat.format(paymentTransaction.paymentRequest.grossAmount(), 2) } + ' Euro inkl. Steuern'"></strong>
             </p>
 
             <p>
                 <a
                         class="do-not-print-link"
-                        th:href="${paymentTransaction.paymentInformation.transactionRedirectUrl}"
-                        th:text="${paymentTransaction.paymentInformation.transactionRedirectUrl}"
+                        th:href="${paymentTransaction.paymentInformation.paymentUrl}"
+                        th:text="${paymentTransaction.paymentInformation.paymentUrl}"
                 >
                     Link zur Bezahlung
                 </a>
@@ -61,7 +61,7 @@
 
         <div style="margin-left: auto">
             <img
-                    th:src="${ #qrcode.create(paymentTransaction.paymentInformation.getTransactionRedirectUrl()) }"
+                    th:src="${ #qrcode.create(paymentTransaction.paymentInformation.paymentUrl()) }"
                     width="160px"
                     height="160px"
                     alt="QR-Code mit Link zur Zahlung"
@@ -69,7 +69,7 @@
         </div>
     </div>
 
-    <div th:if="${ paymentTransaction.paymentInformation.getStatus().name() == 'PAYED' }">
+    <div th:if="${ paymentTransaction.paymentInformation.status().name() == 'PAID' }">
         <p>
             Die Gebühr wurde bereits bezahlt.
         </p>
@@ -89,7 +89,7 @@
                         <strong>Zahlungsdatum:</strong>
                     </td>
                     <td>
-                        <span th:text="${ #numberformat.formatISOTimestamp(paymentTransaction.paymentInformation.getTransactionTimestamp(), 'dd.MM.yyyy HH:mm') }"></span>
+                        <span th:text="${ #numberformat.formatInstant(paymentTransaction.paymentInformation.paidAt(), 'dd.MM.yyyy HH:mm') }"></span>
                         Uhr
                     </td>
                 </tr>
@@ -106,7 +106,7 @@
                         <strong>Transaktions-ID:</strong>
                     </td>
                     <td>
-                        <span th:text="${ paymentTransaction.paymentInformation.transactionId }"></span>
+                        <span th:text="${ paymentTransaction.paymentInformation.providerTransactionId }"></span>
                     </td>
                 </tr>
                 <tr style="vertical-align: top">
@@ -115,16 +115,16 @@
                     </td>
                     <td>
                         Insgesamt entrichtete Gebühr:
-                        <span th:text="${ #numberformat.format(paymentTransaction.paymentRequest.getGrosAmount(), 2) }"></span>
+                        <span th:text="${ #numberformat.format(paymentTransaction.paymentRequest.grossAmount(), 2) }"></span>
                         Euro inkl. Steuern
 
                         <ul>
                             <li th:each="item : ${paymentTransaction.paymentRequest.items}">
                                 <span th:text="${item.description}"></span>
-                                <span th:text="${ #numberformat.format(item.getBruttoAmount(), 2) } + ' Euro'"></span>
+                                <span th:text="${ #numberformat.format(item.grossAmount(), 2) } + ' Euro'"></span>
                                 <span
-                                        th:if="${item.getTaxRate() != null && item.getTaxRate() > 0}"
-                                        th:text="'inkl. ' + ${ #numberformat.format(item.getTaxRate(), 0) } + '% Steuern'"
+                                        th:if="${item.taxRate() != null && item.taxRate() > 0}"
+                                        th:text="'inkl. ' + ${ #numberformat.format(item.taxRate(), 0) } + '% Steuern'"
                                 ></span>
                             </li>
                         </ul>
@@ -135,14 +135,14 @@
                         <strong>Zahlungsmittel:</strong>
                     </td>
                     <td>
-                        <span th:text="${ paymentTransaction.paymentInformation.paymentMethod.getLabel() }"></span>
+                        <span th:text="${ paymentTransaction.paymentInformation.paymentMethod != null ? paymentTransaction.paymentInformation.paymentMethod.displayName() : 'Nicht angegeben' }"></span>
                     </td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <div th:if="${ paymentTransaction.paymentInformation.getStatus().name() == 'FAILED' or  paymentTransaction.paymentInformation.getStatus().name() == 'CANCELED' }">
+    <div th:if="${ paymentTransaction.paymentInformation.status().name() == 'FAILED' or  paymentTransaction.paymentInformation.status().name() == 'CANCELED' }">
         <p th:if="${ base.isCitizenPrint() }">
             Die Bezahlung der Gebühren ist fehlgeschlagen.
             Bitte wenden Sie sich an die zuständige Dienststelle.
@@ -158,10 +158,10 @@
         <ul>
             <li th:each="item : ${paymentTransaction.paymentRequest.items}">
                 <span th:text="${item.description}"></span>
-                <span th:text="${ #numberformat.format(item.getBruttoAmount(), 2) } + ' Euro'"></span>
+                <span th:text="${ #numberformat.format(item.grossAmount(), 2) } + ' Euro'"></span>
                 <span
-                        th:if="${item.getTaxRate() != null && item.getTaxRate() > 0}"
-                        th:text="'inkl. ' + ${ #numberformat.format(item.getTaxRate(), 0) } + '% Steuern'"
+                        th:if="${item.taxRate() != null && item.taxRate() > 0}"
+                        th:text="'inkl. ' + ${ #numberformat.format(item.taxRate(), 0) } + '% Steuern'"
                 ></span>
             </li>
         </ul>
@@ -170,7 +170,7 @@
 
         <p>
             Gesamtbetrag:
-            <strong th:text="${ #numberformat.format(paymentTransaction.paymentRequest.getGrosAmount(), 2) } + ' Euro inkl. Steuern'"></strong>
+            <strong th:text="${ #numberformat.format(paymentTransaction.paymentRequest.grossAmount(), 2) } + ' Euro inkl. Steuern'"></strong>
         </p>
     </div>
 </section>

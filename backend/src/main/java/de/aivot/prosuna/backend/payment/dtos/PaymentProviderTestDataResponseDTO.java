@@ -1,15 +1,15 @@
 package de.aivot.prosuna.backend.payment.dtos;
 
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
+import de.aivot.prosuna.backend.payment.models.PaymentInformation;
+import de.aivot.prosuna.backend.payment.models.PaymentRequest;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 public record PaymentProviderTestDataResponseDTO(
         @Nonnull Boolean ok,
-        @Nullable XBezahldienstePaymentRequest request,
-        @Nullable XBezahldienstePaymentTransaction transaction,
+        @Nullable PaymentRequest request,
+        @Nullable PaymentInformation paymentInformation,
         @Nullable String errorMessage
 ) {
 }

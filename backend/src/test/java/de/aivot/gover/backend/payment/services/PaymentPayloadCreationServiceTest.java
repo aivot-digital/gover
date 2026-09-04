@@ -3,7 +3,7 @@ package de.aivot.prosuna.backend.payment.services;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValueItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValueRequestorMapping;
-import de.aivot.prosuna.backend.enums.XBezahldienstGender;
+import de.aivot.prosuna.backend.payment.models.PaymentGender;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
@@ -85,11 +85,11 @@ class PaymentPayloadCreationServiceTest {
         assertEquals("PAY AZ-1", request.getPurpose());
         assertEquals("Fee for Ada", request.getDescription());
         assertEquals(new BigDecimal("23.80"), request.getTotal());
-        assertEquals(false, request.getRequestor().getIsOrganization());
-        assertEquals("Lovelace", request.getRequestor().getName());
-        assertEquals(XBezahldienstGender.FEMALE, request.getRequestor().getGender());
-        assertEquals("London", request.getRequestor().getAddress().getCity());
-        assertEquals("GB", request.getRequestor().getAddress().getCountry());
+        assertEquals(false, request.getRequestor().organization());
+        assertEquals("Lovelace", request.getRequestor().name());
+        assertEquals(PaymentGender.F, request.getRequestor().gender());
+        assertEquals("London", request.getRequestor().address().city());
+        assertEquals("GB", request.getRequestor().address().country());
 
         var item = request.getPaymentItems().getFirst();
         assertEquals("fee-1", item.getId());
@@ -135,12 +135,12 @@ class PaymentPayloadCreationServiceTest {
         )), null, processData).orElseThrow();
 
         var requestor = request.getRequestor();
-        assertEquals(false, requestor.getIsOrganization());
-        assertEquals("Doe", requestor.getName());
-        assertEquals("Jane", requestor.getFirstName());
-        assertEquals(XBezahldienstGender.DIVERSE, requestor.getGender());
-        assertNull(requestor.getOrganizationName());
-        assertEquals("Berlin", requestor.getAddress().getCity());
+        assertEquals(false, requestor.organization());
+        assertEquals("Doe", requestor.name());
+        assertEquals("Jane", requestor.firstName());
+        assertEquals(PaymentGender.D, requestor.gender());
+        assertNull(requestor.organizationName());
+        assertEquals("Berlin", requestor.address().city());
     }
 
     @Test
@@ -154,12 +154,12 @@ class PaymentPayloadCreationServiceTest {
                 .orElseThrow();
 
         var requestor = request.getRequestor();
-        assertEquals(false, requestor.getIsOrganization());
-        assertNull(requestor.getName());
-        assertNull(requestor.getFirstName());
-        assertNull(requestor.getGender());
-        assertNull(requestor.getOrganizationName());
-        assertNotNull(requestor.getAddress());
+        assertEquals(false, requestor.organization());
+        assertNull(requestor.name());
+        assertNull(requestor.firstName());
+        assertNull(requestor.gender());
+        assertNull(requestor.organizationName());
+        assertNull(requestor.address());
     }
 
     @Test
@@ -194,12 +194,12 @@ class PaymentPayloadCreationServiceTest {
         )), null, processData).orElseThrow();
 
         var requestor = request.getRequestor();
-        assertEquals(true, requestor.getIsOrganization());
-        assertEquals("Acme GmbH", requestor.getOrganizationName());
-        assertNull(requestor.getName());
-        assertNull(requestor.getFirstName());
-        assertNull(requestor.getGender());
-        assertEquals("Hamburg", requestor.getAddress().getCity());
+        assertEquals(true, requestor.organization());
+        assertEquals("Acme GmbH", requestor.organizationName());
+        assertNull(requestor.name());
+        assertNull(requestor.firstName());
+        assertNull(requestor.gender());
+        assertEquals("Hamburg", requestor.address().city());
     }
 
     @Test
@@ -213,12 +213,12 @@ class PaymentPayloadCreationServiceTest {
                 .orElseThrow();
 
         var requestor = request.getRequestor();
-        assertEquals(true, requestor.getIsOrganization());
-        assertNull(requestor.getOrganizationName());
-        assertNull(requestor.getName());
-        assertNull(requestor.getFirstName());
-        assertNull(requestor.getGender());
-        assertNotNull(requestor.getAddress());
+        assertEquals(true, requestor.organization());
+        assertNull(requestor.organizationName());
+        assertNull(requestor.name());
+        assertNull(requestor.firstName());
+        assertNull(requestor.gender());
+        assertNull(requestor.address());
     }
 
     @Test
@@ -255,11 +255,11 @@ class PaymentPayloadCreationServiceTest {
         )), null, processData).orElseThrow();
 
         var requestor = request.getRequestor();
-        assertEquals(true, requestor.getIsOrganization());
-        assertEquals("Dynamic GmbH", requestor.getOrganizationName());
-        assertNull(requestor.getName());
-        assertNull(requestor.getFirstName());
-        assertEquals("Munich", requestor.getAddress().getCity());
+        assertEquals(true, requestor.organization());
+        assertEquals("Dynamic GmbH", requestor.organizationName());
+        assertNull(requestor.name());
+        assertNull(requestor.firstName());
+        assertEquals("Munich", requestor.address().city());
     }
 
     @Test
@@ -277,12 +277,12 @@ class PaymentPayloadCreationServiceTest {
                 .orElseThrow();
 
         var requestor = request.getRequestor();
-        assertEquals(false, requestor.getIsOrganization());
-        assertNull(requestor.getName());
-        assertNull(requestor.getFirstName());
-        assertNull(requestor.getGender());
-        assertNull(requestor.getOrganizationName());
-        assertNotNull(requestor.getAddress());
+        assertEquals(false, requestor.organization());
+        assertNull(requestor.name());
+        assertNull(requestor.firstName());
+        assertNull(requestor.gender());
+        assertNull(requestor.organizationName());
+        assertNull(requestor.address());
     }
 
     @Test

@@ -4,13 +4,15 @@ import de.aivot.prosuna.backend.models.payment.PaymentProduct;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.utils.StringUtils;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
-public class PaymentItem {
+public class PaymentItem implements Serializable {
     private String id;
     private String reference;
     private String description;
@@ -19,6 +21,18 @@ public class PaymentItem {
     private BigDecimal netPrice;
     private List<PaymentProduct.BookingDataItem> bookingData;
     private String taxInformation;
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        PaymentItem that = (PaymentItem) o;
+        return Objects.equals(id, that.id) && Objects.equals(reference, that.reference) && Objects.equals(description, that.description) && Objects.equals(quantity, that.quantity) && Objects.equals(taxRate, that.taxRate) && Objects.equals(netPrice, that.netPrice) && Objects.equals(bookingData, that.bookingData) && Objects.equals(taxInformation, that.taxInformation);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, reference, description, quantity, taxRate, netPrice, bookingData, taxInformation);
+    }
 
     public String getId() {
         return id;
@@ -59,6 +73,7 @@ public class PaymentItem {
     /**
      * Tax rate in percent.
      * Must be 100 based like 19% not 0.19.
+     *
      * @param taxRate
      */
     public void setTaxRate(BigDecimal taxRate) {
@@ -118,7 +133,11 @@ public class PaymentItem {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
-    public Optional<XBezahldienstePaymentItem> toXBezahldienstePaymentItem() throws PaymentException {
+    public Optional<PaymentRequestItem> toPaymentRequestItem() throws PaymentException {
+        if (StringUtils.isNullOrEmpty(this.getId())) {
+            throw new PaymentException("Product has no ID");
+        }
+
         if (StringUtils.isNullOrEmpty(this.getReference())) {
             throw new PaymentException("Product %s has no reference", this.getId());
         }
@@ -133,6 +152,10 @@ public class PaymentItem {
 
         if (this.getNetPrice() == null) {
             throw new PaymentException("Product %s  has no net price", this.getId());
+        }
+
+        if (this.getQuantity() == null) {
+            throw new PaymentException("Product %s has no quantity", this.getId());
         }
 
         if (this.getQuantity() > 0) {
@@ -159,33 +182,27 @@ public class PaymentItem {
                     .multiply(BigDecimal.valueOf(this.getQuantity()).setScale(2, RoundingMode.HALF_UP))
                     .setScale(2, RoundingMode.HALF_UP);
 
-            var item = new XBezahldienstePaymentItem();
-
-            item.setId(this.getId());
-            item.setReference(this.getReference());
-            item.setDescription(this.getDescription());
-
-            item.setQuantity(this.getQuantity());
-
-            item.setTaxRate(tax);
-
-            item.setSingleNetAmount(netPricePerItem);
-            item.setSingleTaxAmount(taxPerItem);
-
-            item.setTotalNetAmount(totalNetPrice);
-            item.setTotalTaxAmount(totalTax);
-
             var bookingData = new HashMap<String, String>();
             if (this.getBookingData() != null) {
                 for (var dataItem : this.getBookingData()) {
                     bookingData.put(dataItem.key(), dataItem.value());
                 }
             }
-            item.setBookingData(bookingData);
-
-            return Optional.of(item);
+            return Optional.of(new PaymentRequestItem(
+                    getId(),
+                    getReference(),
+                    getDescription(),
+                    tax,
+                    quantity.longValue(),
+                    totalNetPrice,
+                    totalTax,
+                    netPricePerItem,
+                    taxPerItem,
+                    bookingData
+            ));
         }
 
         return Optional.empty();
     }
+
 }

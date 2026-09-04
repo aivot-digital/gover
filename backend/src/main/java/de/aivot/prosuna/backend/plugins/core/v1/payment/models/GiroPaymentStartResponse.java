@@ -1,13 +1,9 @@
 package de.aivot.prosuna.backend.plugins.core.v1.payment.models;
 
-import de.aivot.prosuna.backend.enums.XBezahldienstPaymentMethod;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
+import de.aivot.prosuna.backend.payment.models.PaymentInformation;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 
 import java.net.URI;
-import java.time.Instant;
 
 public class GiroPaymentStartResponse {
     private int rc;
@@ -15,24 +11,16 @@ public class GiroPaymentStartResponse {
     private String reference;
     private String redirect;
 
-    public XBezahldienstePaymentTransaction toXBezahldienstePaymentTransaction(XBezahldienstePaymentRequest xRequest, String paymentProviderUrl) {
-        var xTransaction = new XBezahldienstePaymentTransaction();
-
-        var xInfo = new XBezahldienstePaymentInformation();
-        xInfo.setStatus(XBezahldienstStatus.INITIAL);
-        xInfo.setStatusDetail(null);
-        xInfo.setTransactionId(reference);
-        xInfo.setTransactionReference(reference);
-        xInfo.setTransactionRedirectUrl(URI.create(redirect));
-        xInfo.setPaymentMethod(XBezahldienstPaymentMethod.GIROPAY);
-        xInfo.setPaymentMethodDetail(null);
-        xInfo.setTransactionTimestamp(Instant.now().toString());
-        xInfo.setTransactionUrl(URI.create(paymentProviderUrl));
-
-        xTransaction.setPaymentRequest(xRequest);
-        xTransaction.setPaymentInformation(xInfo);
-
-        return xTransaction;
+    public PaymentInformation toPaymentInformation() {
+        return new PaymentInformation(
+                reference,
+                reference,
+                PaymentStatus.PENDING,
+                URI.create(redirect),
+                null,
+                null,
+                msg
+        );
     }
 
     public int getRc() {

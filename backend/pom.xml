@@ -337,6 +337,7 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -344,6 +345,82 @@
                     <layout>ZIP</layout>
                     <classifier>exec</classifier>
                 </configuration>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>7.24.0</version>
+                <executions>
+                    <!-- Generate XBezahldienste v1.1.0 Models from OpenAPI YAML -->
+                    <execution>
+                        <id>generate-models-v1-1-0</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Path to your OpenAPI YAML file -->
+                            <inputSpec>${project.basedir}/src/main/openapi/xbezahldienste/XBezahldienste-v1.1.0.openapi.yaml</inputSpec>
+
+                            <!-- Generator to use (e.g., 'spring' for server interfaces, 'java' for API clients) -->
+                            <generatorName>spring</generatorName>
+
+                            <!-- Packages for generated code -->
+                            <modelPackage>de.aivot.prosuna.backend.xbezahldienste.v1_1_0</modelPackage>
+
+                            <!-- Do not generate API implementations, only interfaces and models -->
+                            <generateApis>false</generateApis>
+                            <generateSupportingFiles>false</generateSupportingFiles>
+                            <generateModels>true</generateModels>
+
+                            <!-- Turn off model tests and docs to keep the target folder clean -->
+                            <generateModelTests>false</generateModelTests>
+                            <generateModelDocumentation>false</generateModelDocumentation>
+
+                            <configOptions>
+                                <useSpringBoot4>true</useSpringBoot4>
+                                <openApiNullable>false</openApiNullable>
+                                <generatedConstructorWithRequiredArgs>false</generatedConstructorWithRequiredArgs>
+                                <useOneOfInterfaces>false</useOneOfInterfaces>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+
+                    <!-- Generate XBezahldienste v1.2.0 Models from OpenAPI YAML -->
+                    <execution>
+                        <id>generate-models-v1-2-0</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Path to your OpenAPI YAML file -->
+                            <inputSpec>${project.basedir}/src/main/openapi/xbezahldienste/XBezahldienste-v1.2.0.openapi.yaml</inputSpec>
+
+                            <!-- Generator to use (e.g., 'spring' for server interfaces, 'java' for API clients) -->
+                            <generatorName>spring</generatorName>
+
+                            <!-- Packages for generated code -->
+                            <modelPackage>de.aivot.prosuna.backend.xbezahldienste.v1_2_0</modelPackage>
+
+                            <!-- Do not generate API implementations, only interfaces and models -->
+                            <generateApis>false</generateApis>
+                            <generateSupportingFiles>false</generateSupportingFiles>
+                            <generateModels>true</generateModels>
+
+                            <!-- Turn off model tests and docs to keep the target folder clean -->
+                            <generateModelTests>false</generateModelTests>
+                            <generateModelDocumentation>false</generateModelDocumentation>
+
+                            <configOptions>
+                                <useSpringBoot4>true</useSpringBoot4>
+                                <openApiNullable>false</openApiNullable>
+                                <generatedConstructorWithRequiredArgs>false</generatedConstructorWithRequiredArgs>
+                                <useOneOfInterfaces>false</useOneOfInterfaces>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

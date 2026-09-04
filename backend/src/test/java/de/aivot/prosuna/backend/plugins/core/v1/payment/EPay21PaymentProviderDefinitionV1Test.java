@@ -1,9 +1,9 @@
 package de.aivot.prosuna.backend.plugins.core.v1.payment;
 
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentItem;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
-import de.aivot.prosuna.backend.payment.models.XBezahldiensteRequestor;
+import de.aivot.prosuna.backend.xbezahldienste.v1_1_0.PaymentItem;
+import de.aivot.prosuna.backend.xbezahldienste.v1_1_0.PaymentRequest;
+import de.aivot.prosuna.backend.xbezahldienste.v1_1_0.Requestor;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -31,7 +31,7 @@ class EPay21PaymentProviderDefinitionV1Test {
 
     @Test
     void shouldIncludeNonNullRequestor() throws Exception {
-        var requestor = new XBezahldiensteRequestor();
+        var requestor = new Requestor();
         requestor.setName("Mustermann");
         var paymentRequest = paymentRequestWith(requestor);
 
@@ -46,18 +46,21 @@ class EPay21PaymentProviderDefinitionV1Test {
     void shouldNotChangeSharedMapperNullInclusion() throws Exception {
         var paymentRequest = paymentRequestWith(null);
 
-        assertTrue(sharedMapper.valueToTree(paymentRequest).has("requestor"));
+        var includesNullRequestorBeforeSerialization = sharedMapper.valueToTree(paymentRequest).has("requestor");
 
         epay21PaymentProviderDefinitionV1.serializePaymentRequest(paymentRequest, sharedMapper);
 
-        assertTrue(sharedMapper.valueToTree(paymentRequest).has("requestor"));
+        assertEquals(
+                includesNullRequestorBeforeSerialization,
+                sharedMapper.valueToTree(paymentRequest).has("requestor")
+        );
     }
 
-    private static XBezahldienstePaymentRequest paymentRequestWith(XBezahldiensteRequestor requestor) {
-        var paymentItem = new XBezahldienstePaymentItem();
+    private static PaymentRequest paymentRequestWith(Requestor requestor) {
+        var paymentItem = new PaymentItem();
         paymentItem.setBookingData(new HashMap<>());
 
-        var paymentRequest = new XBezahldienstePaymentRequest();
+        var paymentRequest = new PaymentRequest();
         paymentRequest.setItems(List.of(paymentItem));
         paymentRequest.setRequestor(requestor);
         return paymentRequest;

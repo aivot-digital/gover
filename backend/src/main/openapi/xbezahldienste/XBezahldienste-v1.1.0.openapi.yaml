@@ -1,0 +1,638 @@
+openapi: 3.0.3
+info:
+  title: XBezahldienste API
+  description: '<h1>Standardisierte Schnittstelle für Bezahldienste im Portalverbund</h1> <p>Diese Seite enthält nur die Schnittstellenspezifikation im OpenAPI3 Format. Weitere Dokumentation zur Schnittstelle finden Sie im <a href="https://docs.fitko.de/xbezahldienste/">Entwicklungsportal der FITKO</a>.</p> <h2>Ansprechpartner</h2> <ul><li>Betrieb: Koordinierungsstelle für IT-Standards</li> <li>Federführung: Fred Kellermann (BMF Referat II E 2)</li> <li>Technischer Entwurf: Stefan Nowak (Capgemini im Auftrag des BMI)</li><li>Weiterentwicklung: Denny Hübner und Martin Köhn (Nortal im Auftrag der KoSIT)</li></ul>'
+  contact:
+    name: AP7 Bezahldienste
+  version: 1.1.0
+  x-summary: "Diese Standard-API für Bezahldienste soll den EfA-Online-Diensten ermöglichen standardisiert Bezahlungen bei unterschiedlichen Bezahldiensten von Bund, Ländern und Kommunen zu initiieren."
+servers:
+  - url: "http://payment.infra-lab.de/v1"
+    description: Infra-Lab Payment Demo
+    x-sandbox: true
+  - url: "https://ssl.webpack.de/payment.infra-lab.de/v1"
+    description: Infra-Lab Payment Demo TLS
+    x-sandbox: true
+tags:
+  - name: Bezahldienst
+    description: Alle Endpunkte fuer das Initiieren und überprüfen des Bezahlvorgangs.
+  - name: Betrieb
+    description: "Methoden für Betrieb, Wartung und Administration."
+paths:
+  "/paymenttransaction/{originatorId}/{endPointId}":
+    post:
+      tags:
+        - Bezahldienst
+      description: "Sendet einen PaymentRequest und legt damit eine PaymentTransaction im Bezahldienst an."
+      summary: "Sendet einen PaymentRequest und legt damit eine PaymentTransaction im Bezahldienst an."
+      operationId: initiatePaymentTransaction
+      security:
+        - OAuth2: [ post ]
+      parameters:
+        - $ref: '#/components/parameters/OriginatorId'
+        - $ref: '#/components/parameters/EndPointId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTransaction'
+        "400":
+          $ref: '#/components/responses/400Error'
+        "404":
+          $ref: '#/components/responses/404Error'
+        "503":
+          $ref: '#/components/responses/503Error'
+
+  "/paymenttransaction/{originatorId}/{endPointId}/{transactionId}":
+    get:
+      tags:
+        - Bezahldienst
+      description: "Abfrage einer Payment Transaction. Insb. um den Status zu prüfen"
+      summary: "Abfrage einer Payment Transaction. Insb. um den Status zu prüfen"
+      operationId: getPaymentTransaction
+      security:
+        - OAuth2: [ read ]
+      parameters:
+        - $ref: '#/components/parameters/OriginatorId'
+        - $ref: '#/components/parameters/EndPointId'
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTransaction'
+        "404":
+          $ref: '#/components/responses/404Error'
+        "503":
+          $ref: '#/components/responses/503Error'
+  "/status":
+    get:
+      tags:
+        - Betrieb
+      description: "Abfrage des Status des Bezahldienstes - War ursprünglich vorgesehen, wird aber vermutlich durch CR 009 entfernt."
+      summary: "Abfrage des Status des Bezahldienstes"
+      operationId: getStatus
+      security:
+        - OAuth2: [ read ]
+      responses:
+        "200":
+          $ref: '#/components/responses/200Healthy'
+        "403":
+          $ref: '#/components/responses/403Error'
+        "503":
+          $ref: '#/components/responses/503Error'
+  "/status/{originatorId}/{endPointId}":
+    get:
+      tags:
+        - Betrieb
+      description: "Abfrage des Status der konkreten Konfiguration des Bezahldienstes."
+      summary: "Abfrage des Status der konkreten Konfiguration des Bezahldienstes."
+      operationId: getStatusByIds
+      parameters:
+        - $ref: '#/components/parameters/OriginatorId'
+        - $ref: '#/components/parameters/EndPointId'
+      security:
+        - OAuth2: [ read ]
+      responses:
+        "200":
+          $ref: '#/components/responses/200Healthy'
+        "403":
+          $ref: '#/components/responses/403Error'
+        "503":
+          $ref: '#/components/responses/503Error'
+
+components:
+  schemas:
+    PaymentTransaction:
+      type: object
+      required:
+        - paymentInformation
+      additionalProperties: false
+      properties:
+        paymentInformation:
+          $ref: "#/components/schemas/PaymentInformation"
+        paymentRequest:
+          $ref: "#/components/schemas/PaymentRequest"
+
+    PaymentInformation:
+      description: "Dieses Objekt enthält die Informationen vom Bezahldienst, die 1-zu-1 in den Antrag übernommen werden können. Die Antrags-API wird künftig angeglichen."
+      type: object
+      required:
+        - transactionUrl
+        - transactionRedirectUrl
+        - transactionId
+        - paymentRequest
+        - status
+      additionalProperties: false
+      properties:
+        transactionUrl:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 2082
+          example: "https://payment.bundesland.zzzz/api/v1/paymenttransaction/12002312/MELD-ANT-FORM-4711/9xxd-432x-6543-xfd6-gfdx-fd27"
+          description: Die Rest-URL der Payment Transaction für die Statusabfrage. Diese Information könnte aus den Informationen generiert werden. Eine explizite Ablage der URL dient der Robustheit der Schnittstelle.
+        transactionRedirectUrl:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 5000
+          example: "https://portal.bundesland.zzzz/ui/doPayment/9xxd-432x-6543-xfd6-gfdx-fd27-CHECKSUM"
+          description: Die Redirect-URL an die der Online-Dienst den Benutzer weiterleiten soll. Diese URL öffnet die "Paypage" / "Bezahlseite" des Bezahldienstes. Diese URL muss nur im Status "INITIAL" (also bei der Post-Response oder Statusabfrage vor Abschluss / Abbruch der Transaktion) enthalten sein. Nach Abschluss der Transaktion sollte diese URL nicht enthalten sein.
+        transactionId:
+          type: string
+          minLength: 1
+          maxLength: 44
+          pattern: '^[\w\d-]+$'
+          example: "9xxd-432x-6543-xfd6-gfdx-fd27"
+          description: Eine vom Bezahldienst vergebene Transaktions-ID beim POST des Requests. Diese ID wird für die späteren Abfragen (GET) verwendet. Dies kann schon das Kassenzeichen sein. Sofern dies später vergeben wird, kann hier eine 'technische' ID des Bezahldienstes vergeben werden. Falls der Bezahldienst keine eigenen IDs hier verwendet, kann die Schnittstelle auch die Request-ID zurück geben.
+        transactionReference:
+          type: string
+          minLength: 1
+          maxLength: 36
+          pattern: '^[\w\d-]+$'
+          example: "KA-2020-1234"
+          description: 'Das "fachliche" Kennzeichen für eine Bezahlung. Dieses kann bei dem POST des Requests vom Bezahldienst vergeben werden oder erst nach der Autorisierung durch den Bezahler. Daher ist die relevante ID für diese Schnittstelle die transactionId, die durch den Bezahldienst bei der Anlage des Payment-Requests vergeben wird.'
+        transactionTimestamp:
+          type: string
+          format: date-time
+          description: 'Zeitstempel der erfolgreichen Durchführung der Bezahlung.'
+        paymentMethod:
+          type: string
+          enum:
+            - GIROPAY
+            - PAYDIRECT
+            - CREDITCARD
+            - PAYPAL
+            - OTHER
+          example: "CREDITCARD"
+          description: "Die vom Benutzer ausgewählte Zahlart. Das Feld ist nur bei einer erfolgreichen Zahlung vorhanden / befüllt."
+        paymentMethodDetail:
+          type: string
+          minLength: 1
+          maxLength: 36
+          pattern: '^[\w\d-]+$'
+          example: "Visa"
+          description: 'Weitere Erläuterung zur gewählten Zahlart.'
+        status:
+          type: string
+          enum:
+            - INITIAL
+            - PAYED
+            - FAILED
+            - CANCELED
+          description: "Der Status der Transaktion soll dem EfA-Onlinedienst erkennbar machen, ob die Bezahlung erfolgreich durchgeführt wurde. <ul> <li>INITIAL - der Antrag hat einen Payment-Request ausgelöst und eine Payment-Transaction wurde angelegt. Der Nutzer hat aber im Bezahldienst noch keine Wirkung erzeugt. Der Benutzer kann mit dem Link zum Bezahldienst weitergeleitet werden. NEUE / Eränzende Info: Solange der Benutzer eine bestimmte Zahlart ausgewählt und abgebrochen hat - aber noch die Option hat, stattdessen eine andere Zahlart zu verwenden, so bleibt der Status auf INITIAL</li> <li>PAYED - der Nutzer hat die Bezahlung im Bezahldienst erfolgreich durchgeführt.</li> <li>FAILED - der Vorgang wurde vom Bezahldienst aufgrund der Nutzereingaben final abgebrochen.</li> <li>CANCELED - der Nutzer hat die Bezahlung im Bezahldienst final abgebrochen.</li> </ul>"
+        statusDetail:
+          type: string
+          minLength: 1
+          maxLength: 99
+          pattern: '^[\w\d-]+$'
+          example: "Transaktion XYZ wurde erfolgreich gebucht auf Konto ABC in Hoehe von 36EUR"
+          description: "Optionale ergänzende Erläuterungen zum Status. Diese Informationen werden Teil des Antrags und bieten dem Bezahldienst die Möglichkeit Informationen an das Fachverfahren / Sachbearbeitung zu schicken. Grundsätzlich ist dieses Feld nicht notwendig - Inhalte sind zwischen Bezahldienst und Fachverfahren abzustimmen."
+    PaymentRequest:
+      type: object
+      required:
+        - requestId
+        - requestTimestamp
+        - currency
+        - grossAmount
+        - redirectUrl
+        - items
+      additionalProperties: false
+      properties:
+        requestId:
+          type: string
+          minLength: 1
+          maxLength: 36
+          pattern: '^[\w\d-]+$'
+          example: "XYZ12345-2021"
+          description: Die Request-ID wird vom Online-Dienst vergeben und vom Bezahldienst abgelegt.
+        requestTimestamp:
+          type: string
+          format: date-time
+          description: Zeitstempel des Online-Antrags / Payment-Requests.
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[\w]+$'
+          example: "EUR"
+          description: Im ersten Schritt ist hier nur 'EUR' vorgesehen. Perspektivisch sollte hier die entsprechende ISO-Norm referenziert werden.
+        grossAmount:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 999999
+          exclusiveMinimum: true
+          example: 30.00
+          description: Der Gesamtbetrag dient dem Bezahldienst zur Validierung der einzelnen Positionen.
+        purpose:
+          type: string
+          minLength: 1
+          maxLength: 27
+          pattern: '^[\w\d\s-]+$'
+          example: "Antrag fuer Antragsformular"
+          description: Verwendungszweck / Buchungstext der Payment Transaction.
+        description:
+          allOf:
+            - $ref: "#/components/schemas/DatatypeC"
+            - minLength: 1
+              maxLength: 250
+              example: "Anträge für Antragsformulare"
+              description: N Die Beschreibung des Payment Requests. Kann auf der Paypage / PSP Seite angezeigt werden.
+        redirectUrl:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 2082
+          example: "https://efa-od-xy.de/sdfsdfsdf/success?sid=DSYXD1234FSD"
+          description: Rücksprung-URL vom Bezahldienst zum Online-Dienst. Der Status (Erfolg / Abbruch) muss über die Statusabfrage (GET) abgefragt werden.
+        items:
+          type: array
+          minItems: 1
+          maxItems: 99
+          items:
+            $ref: "#/components/schemas/PaymentItem"
+        requestor:
+          $ref: "#/components/schemas/Requestor"
+
+    PaymentItem:
+      type: object
+      required:
+        - id
+        - reference
+        - taxRate
+        - quantity
+        - totalNetAmount
+        - totalTaxAmount
+        - singleNetAmount
+        - singleTaxAmount
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 36
+          pattern: '^[\w\d-]+$'
+          example: "01"
+          description: ID der Position vom Online-Dienst vergeben
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 36
+          pattern: '^[\w\d-]+$'
+          example: "XYZ22113"
+          description: Eine fachliche Referenz auf den "Artikel" bzw. den Inhalt der Position.
+        description:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeC"
+            - minLength: 1
+            - maxLength: 250
+          example: "XYZ22113-01 - Antrag auf Erteilung eines Antragsformulars"
+          description: Beschreibung der Position vom Online-Dienst zur Verwendung z. B. auf der Pay-Page.
+        taxRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          example: 19
+          description: "Steuersatz als Prozentbetrag"
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 999999
+          example: 3
+        totalNetAmount:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 999999
+          example: 25.20
+          description: "Nettobetrag der Position"
+        totalTaxAmount:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 999999
+          example: 4.80
+          description: "Steuerbetrag der Position"
+        singleNetAmount:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 999999
+          example: 8.40
+          description: Nettobetrag der Position
+        singleTaxAmount:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 999999
+          example: 1.60
+          description: Steuerbetrag der Position
+
+        bookingData:
+          type: object
+          description: Container für Key-Value-Paare für zusätzliche Informationen für die Verbuchung im Bezahldienst oder nachgelagerten Systemen
+          additionalProperties:
+            minItems: 0
+            maxItems: 99
+            type: string
+            minLength: 1
+            maxLength: 250
+            pattern: '^[\w\d\s-,\.\u00C0-\u017F]+$'
+          example:
+            haushaltstelle: "1234"
+            objektnummer: "0815"
+            href: "AlphaBetaGamma"
+
+    Requestor:
+      type: object
+      required:
+        - name
+        - firstName
+        - isIrganization
+        - address
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeA"
+            - minLength: 1
+            - maxLength: 250
+          example: "Mustermann"
+          description: Familienname des Bezahlers
+        firstName:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeA"
+            - minLength: 1
+            - maxLength: 250
+          pattern: '^[\w\d\s-,\.\u00C0-\u017F]+$'
+          example: "Max"
+          description: Vorname(n) des Bezahlers
+        gender:
+          type: string
+          enum:
+            - M
+            - F
+            - D
+          description: "Geschlecht des Bezahlers: (M)ale=Männlich, (F)emale=Weiblich, (D)iverse=Divers"
+        isOrganization:
+          type: boolean
+          example: true
+          description: "Wahr für Organisationen / juristische Personen, Falsch für 'natürliche' Antragsteller"
+        organizationName:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeD"
+            - minLength: 1
+            - maxLength: 250
+          example: "Bundesministerium der Finanzen"
+          description: "Soll nur existieren, wenn isOrganization == true"
+        address:
+          $ref: "#/components/schemas/Address"
+
+    Address:
+      type: object
+      additionalProperties: false
+      properties:
+        street:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeB"
+            - minLength: 1
+            - maxLength: 250
+          example: "Wilhelmstraße"
+          description: Strasse
+        houseNumber:
+          type: string
+          minLength: 1
+          maxLength: 20
+          pattern: '^[\w\d-]+$'
+          example: "97"
+          description: "Hausnummer"
+        addressLine:
+          type: array
+          minItems: 0
+          maxItems: 9
+          items:
+            type: string
+            allOf:
+              - $ref: "#/components/schemas/DatatypeB"
+              - minLength: 1
+              - maxLength: 250
+          example: [ "Dienstsitz Berlin", "Postanschrift: 11016 Berlin" ]
+          description: Zum Abbilden von Internationalen Adressen werden generische "Adresszeilen" verwendet und nicht "Straße / Hausnummer".
+
+        postalCode:
+          type: string
+          minLength: 5
+          maxLength: 5
+          pattern: '^[\d]+$'
+          example: "10117"
+          description: Postleitzahl
+        city:
+          type: string
+          allOf:
+            - $ref: "#/components/schemas/DatatypeB"
+            - minLength: 1
+            - maxLength: 250
+          example: "Berlin"
+          description: "Stadt"
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+          pattern: '^[\w]+$'
+          example: "DE"
+          description: "ISO 3166-1, Alpha-2 code, zwei Großbuchstaben"
+
+    SystemResponse:
+      type: object
+      additionalProperties: false
+      description: "Systemmeldung entsprechend RFC7807"
+      properties:
+        type:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 2082
+          example: "https://docs.fitko.de/xbezahldienste/API-SystemResponse/"
+          description: "Link auf eine Seite mit der Fehlerbeschreibung"
+        status:
+          type: integer
+          format: int32
+          minimum: 100
+          maximum: 511
+          example: 400
+          description: HTTP Response Code
+        title:
+          type: string
+          minLength: 1
+          maxLength: 250
+          pattern: '^[\w\d\s\.-]+$'
+          example: "Bad Request"
+          description: HTTP Response Text
+        detail:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: '^[\w\d\s-,\.\u00C0-\u017F]+$'
+          example: "In den BookingData fehlen die für diesen Bezahldienst notwendigen Felder Kapitel, Titel, TitelKennz, TitelZusatz"
+          description: "Funktionale Beschreibung des Fehlers. Hier sollen aber nur 'fachliche Beschreibungen' erfolgen. Aus Sicherheitsgründen sollten die Bezahldienste hier keine Systeminterna herausgeben. Eine Referenz-Nummer für den Austausch zwischen den Betriebsorganisationen scheint sinnvoll."
+        functionalCode:
+          type: string
+          enum:
+            - NO_VALID_ORIGINATOR_OR_DESTINATION
+            - NO_VALID_ORIGINATOR_OR_ENDPOINT
+            - PAYMENT_EXISTS
+            - CALCULATION_ERROR
+            - BOOKING_DATA_MISSING
+            - VALIDATION_ERROR
+            - UNSPECIFIED
+            - FORBIDDEN
+          example: BOOKING_DATA_MISSING
+          description: "Die genauen Ausprägungen der Funktionalen Response müssen noch diskutiert werden. Arbeitsthese: <ul> <li>NO_VALID_ORIGINATOR_OR_DESTINATION - Deprecated - siehe nächsten Punkt.</li> <li>NO_VALID_ORIGINATOR_OR_ENDPOINT - Der Mandant kann anhand OriginatorID und EndPointID nicht ermittelt werden.</li> <li>PAYMENT_EXISTS - Mit dieser Transaktions-ID wurde bereits ein PaymentRequest platziert.</li> <li>CALCULATION_ERROR - Die Summe des PaymentRequests passt nicht zu den Positionen - z.B. fehlerhafter grossAmount.</li> <li>BOOKING_DATA_MISSING - Notwendige Daten für die Verbuchung (in bookingData) fehlen - genaue Beschreibung im functionalText.</li> <li>VALIDATION_ERROR - Andere Validierungsfehler / semantische Fehler wie z.B. nicht unterstützte Währung.</li> <li>UNSPECIFIED - Alle Fehler, die hier aktuell nicht konkret definiert sind.</li> <li>FORBIDDEN - Fehlende Authentisierungsdaten oder keine Authorisierung in diesem Kontext.</li> </ul>"
+    DatatypeA:
+      type: string
+      description: Der Datentyp A gibt wieder, welche Schriftzeichen in hoheitlichen Dokumenten für Namen natürlicher Personen verwendet werden.
+      pattern: '(&#x0020;|&#x0027;|[&#x002C;-\\&#x002E;]|[&#x0041;-\\&#x005A;]|[&#x0060;-\\&#x007A;]|&#x007E;|&#x00A8;|&#x00B4;|&#x00B7;|[&#x00C0;-\\&#x00D6;]|[&#x00D8;-\\&#x00F6;]|[&#x00F8;-\\&#x017E;]|[&#x0187;-\\&#x0188;]|&#x018F;|&#x0197;|[&#x01A0;-\\&#x01A1;]|[&#x01AF;-\\&#x01B0;]|&#x01B7;|[&#x01CD;-\\&#x01DC;]|[&#x01DE;-\\&#x01DF;]|[&#x01E2;-\\&#x01F0;]|[&#x01F4;-\\&#x01F5;]|[&#x01F8;-\\&#x01FF;]|[&#x0212;-\\&#x0213;]|[&#x0218;-\\&#x021B;]|[&#x021E;-\\&#x021F;]|[&#x0227;-\\&#x0233;]|&#x0259;|&#x0268;|&#x0292;|[&#x02B9;-\\&#x02BA;]|[&#x02BE;-\\&#x02BF;]|&#x02C8;|&#x02CC;|[&#x1E02;-\\&#x1E03;]|[&#x1E06;-\\&#x1E07;]|[&#x1E0A;-\\&#x1E11;]|[&#x1E1C;-\\&#x1E2B;]|[&#x1E2F;-\\&#x1E37;]|[&#x1E3A;-\\&#x1E3B;]|[&#x1E40;-\\&#x1E49;]|[&#x1E52;-\\&#x1E5B;]|[&#x1E5E;-\\&#x1E63;]|[&#x1E6A;-\\&#x1E6F;]|[&#x1E80;-\\&#x1E87;]|[&#x1E8C;-\\&#x1E97;]|&#x1E9E;|[&#x1EA0;-\\&#x1EF9;]|&#x2019;|&#x2021;|&#x0041;&#x030B;|&#x0043;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0315;|&#x0323;|&#x0326;|&#x0328;&#x0306;)|&#x0044;&#x0302;|&#x0046;(&#x0300;|&#x0304;)|&#x0047;&#x0300;|&#x0048;(&#x0304;|&#x0326;|&#x0331;)|&#x004A;(&#x0301;|&#x030C;)|&#x004B;(&#x0300;|&#x0302;|&#x0304;|&#x0307;|&#x0315;|&#x031B;|&#x0326;|&#x035F;&#x0048;|&#x035F;&#x0068;)|&#x004C;(&#x0302;|&#x0325;|&#x0325;&#x0304;|&#x0326;)|&#x004D;(&#x0300;|&#x0302;|&#x0306;|&#x0310;)|&#x004E;(&#x0302;|&#x0304;|&#x0306;|&#x0326;)|&#x0050;(&#x0300;|&#x0304;|&#x0315;|&#x0323;)|&#x0052;(&#x0306;|&#x0325;|&#x0325;&#x0304;)|&#x0053;(&#x0300;|&#x0304;|&#x031B;&#x0304;|&#x0331;)|&#x0054;(&#x0300;|&#x0304;|&#x0308;|&#x0315;|&#x031B;)|&#x0055;&#x0307;|&#x005A;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0327;)|&#x0061;&#x030B;|&#x0063;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0315;|&#x0323;|&#x0326;|&#x0328;&#x0306;)|&#x0064;&#x0302;|&#x0066;(&#x0300;|&#x0304;)|&#x0067;&#x0300;|&#x0068;(&#x0304;|&#x0326;)|&#x006A;&#x0301;|&#x006B;(&#x0300;|&#x0302;|&#x0304;|&#x0307;|&#x0315;|&#x031B;|&#x0326;|&#x035F;&#x0068;)|&#x006C;(&#x0302;|&#x0325;|&#x0325;&#x0304;|&#x0326;)|&#x006D;(&#x0300;|&#x0302;|&#x0306;|&#x0310;)|&#x006E;(&#x0302;|&#x0304;|&#x0306;|&#x0326;)|&#x0070;(&#x0300;|&#x0304;|&#x0315;|&#x0323;)|&#x0072;(&#x0306;|&#x0325;|&#x0325;&#x0304;)|&#x0073;(&#x0300;|&#x0304;|&#x031B;&#x0304;|&#x0331;)|&#x0074;(&#x0300;|&#x0304;|&#x0315;|&#x031B;)|&#x0075;&#x0307;|&#x007A;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0327;)|&#x00C7;&#x0306;|&#x00DB;&#x0304;|&#x00E7;&#x0306;|&#x00FB;&#x0304;|&#x00FF;&#x0301;|&#x010C;(&#x0315;|&#x0323;)|&#x010D;(&#x0315;|&#x0323;)|&#x012A;&#x0301;|&#x012B;&#x0301;|&#x017D;(&#x0326;|&#x0327;)|&#x017E;(&#x0326;|&#x0327;)|&#x1E32;&#x0304;|&#x1E33;&#x0304;|&#x1E62;&#x0304;|&#x1E63;&#x0304;|&#x1E6C;&#x0304;|&#x1E6D;&#x0304;|&#x1EA0;&#x0308;|&#x1EA1;&#x0308;|&#x1ECC;&#x0308;|&#x1ECD;&#x0308;|&#x1EE4;(&#x0304;|&#x0308;)|&#x1EE5;(&#x0304;|&#x0308;))*'
+    DatatypeB:
+      type: string
+      description: Der Datentyp B wurde vor allem für sonstige Namen, wie z. B. Ortsnamen und Straßennamen mit Hausnummer, entworfen.
+      pattern: '([&#x0020;-\\&#x007E;]|[&#x00A1;-\\&#x00A3;]|&#x00A5;|[&#x00A7;-\\&#x00AC;]|[&#x00AE;-\\&#x00B7;]|[&#x00B9;-\\&#x00BB;]|[&#x00BF;-\\&#x017E;]|[&#x0187;-\\&#x0188;]|&#x018F;|&#x0197;|[&#x01A0;-\\&#x01A1;]|[&#x01AF;-\\&#x01B0;]|&#x01B7;|[&#x01CD;-\\&#x01DC;]|[&#x01DE;-\\&#x01DF;]|[&#x01E2;-\\&#x01F0;]|[&#x01F4;-\\&#x01F5;]|[&#x01F8;-\\&#x01FF;]|[&#x0212;-\\&#x0213;]|[&#x0218;-\\&#x021B;]|[&#x021E;-\\&#x021F;]|[&#x0227;-\\&#x0233;]|&#x0259;|&#x0268;|&#x0292;|[&#x02B9;-\\&#x02BA;]|[&#x02BE;-\\&#x02BF;]|&#x02C8;|&#x02CC;|[&#x1E02;-\\&#x1E03;]|[&#x1E06;-\\&#x1E07;]|[&#x1E0A;-\\&#x1E11;]|[&#x1E1C;-\\&#x1E2B;]|[&#x1E2F;-\\&#x1E37;]|[&#x1E3A;-\\&#x1E3B;]|[&#x1E40;-\\&#x1E49;]|[&#x1E52;-\\&#x1E5B;]|[&#x1E5E;-\\&#x1E63;]|[&#x1E6A;-\\&#x1E6F;]|[&#x1E80;-\\&#x1E87;]|[&#x1E8C;-\\&#x1E97;]|&#x1E9E;|[&#x1EA0;-\\&#x1EF9;]|&#x2019;|&#x2021;|&#x20AC;|&#x0041;&#x030B;|&#x0043;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0315;|&#x0323;|&#x0326;|&#x0328;&#x0306;)|&#x0044;&#x0302;|&#x0046;(&#x0300;|&#x0304;)|&#x0047;&#x0300;|&#x0048;(&#x0304;|&#x0326;|&#x0331;)|&#x004A;(&#x0301;|&#x030C;)|&#x004B;(&#x0300;|&#x0302;|&#x0304;|&#x0307;|&#x0315;|&#x031B;|&#x0326;|&#x035F;&#x0048;|&#x035F;&#x0068;)|&#x004C;(&#x0302;|&#x0325;|&#x0325;&#x0304;|&#x0326;)|&#x004D;(&#x0300;|&#x0302;|&#x0306;|&#x0310;)|&#x004E;(&#x0302;|&#x0304;|&#x0306;|&#x0326;)|&#x0050;(&#x0300;|&#x0304;|&#x0315;|&#x0323;)|&#x0052;(&#x0306;|&#x0325;|&#x0325;&#x0304;)|&#x0053;(&#x0300;|&#x0304;|&#x031B;&#x0304;|&#x0331;)|&#x0054;(&#x0300;|&#x0304;|&#x0308;|&#x0315;|&#x031B;)|&#x0055;&#x0307;|&#x005A;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0327;)|&#x0061;&#x030B;|&#x0063;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0315;|&#x0323;|&#x0326;|&#x0328;&#x0306;)|&#x0064;&#x0302;|&#x0066;(&#x0300;|&#x0304;)|&#x0067;&#x0300;|&#x0068;(&#x0304;|&#x0326;)|&#x006A;&#x0301;|&#x006B;(&#x0300;|&#x0302;|&#x0304;|&#x0307;|&#x0315;|&#x031B;|&#x0326;|&#x035F;&#x0068;)|&#x006C;(&#x0302;|&#x0325;|&#x0325;&#x0304;|&#x0326;)|&#x006D;(&#x0300;|&#x0302;|&#x0306;|&#x0310;)|&#x006E;(&#x0302;|&#x0304;|&#x0306;|&#x0326;)|&#x0070;(&#x0300;|&#x0304;|&#x0315;|&#x0323;)|&#x0072;(&#x0306;|&#x0325;|&#x0325;&#x0304;)|&#x0073;(&#x0300;|&#x0304;|&#x031B;&#x0304;|&#x0331;)|&#x0074;(&#x0300;|&#x0304;|&#x0315;|&#x031B;)|&#x0075;&#x0307;|&#x007A;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0327;)|&#x00C7;&#x0306;|&#x00DB;&#x0304;|&#x00E7;&#x0306;|&#x00FB;&#x0304;|&#x00FF;&#x0301;|&#x010C;(&#x0315;|&#x0323;)|&#x010D;(&#x0315;|&#x0323;)|&#x012A;&#x0301;|&#x012B;&#x0301;|&#x017D;(&#x0326;|&#x0327;)|&#x017E;(&#x0326;|&#x0327;)|&#x1E32;&#x0304;|&#x1E33;&#x0304;|&#x1E62;&#x0304;|&#x1E63;&#x0304;|&#x1E6C;&#x0304;|&#x1E6D;&#x0304;|&#x1EA0;&#x0308;|&#x1EA1;&#x0308;|&#x1ECC;&#x0308;|&#x1ECD;&#x0308;|&#x1EE4;(&#x0304;|&#x0308;)|&#x1EE5;(&#x0304;|&#x0308;))*'
+    DatatypeC:
+      type: string
+      description: Der Datentyp C wurde für alle normativen Schriftzeichen der DIN SPEC entworfen. Er ist somit die technische Umsetzung der Schnittstellenvereinbarung Alle nach DIN SPEC 91379 normativen Schriftzeichen. Texte mit griechischen oder kyrillischen Buchstaben oder mit erweiterten (nicht-normativen) Nicht-Buchstaben sind unzulässig.
+      pattern: '([&#x0009;-\\&#x000A;]|&#x000D;|[&#x0020;-\\&#x007E;]|[&#x00A0;-\\&#x00AC;]|[&#x00AE;-\\&#x017E;]|[&#x0187;-\\&#x0188;]|&#x018F;|&#x0197;|[&#x01A0;-\\&#x01A1;]|[&#x01AF;-\\&#x01B0;]|&#x01B7;|[&#x01CD;-\\&#x01DC;]|[&#x01DE;-\\&#x01DF;]|[&#x01E2;-\\&#x01F0;]|[&#x01F4;-\\&#x01F5;]|[&#x01F8;-\\&#x01FF;]|[&#x0212;-\\&#x0213;]|[&#x0218;-\\&#x021B;]|[&#x021E;-\\&#x021F;]|[&#x0227;-\\&#x0233;]|&#x0259;|&#x0268;|&#x0292;|[&#x02B9;-\\&#x02BA;]|[&#x02BE;-\\&#x02BF;]|&#x02C8;|&#x02CC;|[&#x1E02;-\\&#x1E03;]|[&#x1E06;-\\&#x1E07;]|[&#x1E0A;-\\&#x1E11;]|[&#x1E1C;-\\&#x1E2B;]|[&#x1E2F;-\\&#x1E37;]|[&#x1E3A;-\\&#x1E3B;]|[&#x1E40;-\\&#x1E49;]|[&#x1E52;-\\&#x1E5B;]|[&#x1E5E;-\\&#x1E63;]|[&#x1E6A;-\\&#x1E6F;]|[&#x1E80;-\\&#x1E87;]|[&#x1E8C;-\\&#x1E97;]|&#x1E9E;|[&#x1EA0;-\\&#x1EF9;]|&#x2019;|&#x2021;|&#x20AC;|&#x0041;&#x030B;|&#x0043;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0315;|&#x0323;|&#x0326;|&#x0328;&#x0306;)|&#x0044;&#x0302;|&#x0046;(&#x0300;|&#x0304;)|&#x0047;&#x0300;|&#x0048;(&#x0304;|&#x0326;|&#x0331;)|&#x004A;(&#x0301;|&#x030C;)|&#x004B;(&#x0300;|&#x0302;|&#x0304;|&#x0307;|&#x0315;|&#x031B;|&#x0326;|&#x035F;&#x0048;|&#x035F;&#x0068;)|&#x004C;(&#x0302;|&#x0325;|&#x0325;&#x0304;|&#x0326;)|&#x004D;(&#x0300;|&#x0302;|&#x0306;|&#x0310;)|&#x004E;(&#x0302;|&#x0304;|&#x0306;|&#x0326;)|&#x0050;(&#x0300;|&#x0304;|&#x0315;|&#x0323;)|&#x0052;(&#x0306;|&#x0325;|&#x0325;&#x0304;)|&#x0053;(&#x0300;|&#x0304;|&#x031B;&#x0304;|&#x0331;)|&#x0054;(&#x0300;|&#x0304;|&#x0308;|&#x0315;|&#x031B;)|&#x0055;&#x0307;|&#x005A;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0327;)|&#x0061;&#x030B;|&#x0063;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0315;|&#x0323;|&#x0326;|&#x0328;&#x0306;)|&#x0064;&#x0302;|&#x0066;(&#x0300;|&#x0304;)|&#x0067;&#x0300;|&#x0068;(&#x0304;|&#x0326;)|&#x006A;&#x0301;|&#x006B;(&#x0300;|&#x0302;|&#x0304;|&#x0307;|&#x0315;|&#x031B;|&#x0326;|&#x035F;&#x0068;)|&#x006C;(&#x0302;|&#x0325;|&#x0325;&#x0304;|&#x0326;)|&#x006D;(&#x0300;|&#x0302;|&#x0306;|&#x0310;)|&#x006E;(&#x0302;|&#x0304;|&#x0306;|&#x0326;)|&#x0070;(&#x0300;|&#x0304;|&#x0315;|&#x0323;)|&#x0072;(&#x0306;|&#x0325;|&#x0325;&#x0304;)|&#x0073;(&#x0300;|&#x0304;|&#x031B;&#x0304;|&#x0331;)|&#x0074;(&#x0300;|&#x0304;|&#x0315;|&#x031B;)|&#x0075;&#x0307;|&#x007A;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0327;)|&#x00C7;&#x0306;|&#x00DB;&#x0304;|&#x00E7;&#x0306;|&#x00FB;&#x0304;|&#x00FF;&#x0301;|&#x010C;(&#x0315;|&#x0323;)|&#x010D;(&#x0315;|&#x0323;)|&#x012A;&#x0301;|&#x012B;&#x0301;|&#x017D;(&#x0326;|&#x0327;)|&#x017E;(&#x0326;|&#x0327;)|&#x1E32;&#x0304;|&#x1E33;&#x0304;|&#x1E62;&#x0304;|&#x1E63;&#x0304;|&#x1E6C;&#x0304;|&#x1E6D;&#x0304;|&#x1EA0;&#x0308;|&#x1EA1;&#x0308;|&#x1ECC;&#x0308;|&#x1ECD;&#x0308;|&#x1EE4;(&#x0304;|&#x0308;)|&#x1EE5;(&#x0304;|&#x0308;))*'
+    DatatypeD:
+      type: string
+      description: Der Datentyp D wurde vor allem für Namen juristischer Personen und für Produktnamen entworfen.
+      pattern: '([&#x0020;-\\&#x007E;]|[&#x00A1;-\\&#x00AC;]|[&#x00AE;-\\&#x017E;]|[&#x0187;-\\&#x0188;]|&#x018F;|&#x0192;|&#x0197;|[&#x01A0;-\\&#x01A1;]|[&#x01AF;-\\&#x01B0;]|&#x01B7;|[&#x01CD;-\\&#x01DC;]|[&#x01DE;-\\&#x01DF;]|[&#x01E2;-\\&#x01F0;]|[&#x01F4;-\\&#x01F5;]|[&#x01F8;-\\&#x01FF;]|[&#x0212;-\\&#x0213;]|[&#x0218;-\\&#x021B;]|[&#x021E;-\\&#x021F;]|[&#x0227;-\\&#x0233;]|&#x0259;|&#x0268;|&#x0292;|&#x02B0;|&#x02B3;|[&#x02B9;-\\&#x02BA;]|[&#x02BE;-\\&#x02BF;]|&#x02C6;|&#x02C8;|&#x02CC;|&#x02DC;|&#x02E2;|&#x0386;|[&#x0388;-\\&#x038A;]|&#x038C;|[&#x038E;-\\&#x03A1;]|[&#x03A3;-\\&#x03CE;]|&#x1D48;|&#x1D57;|[&#x1E02;-\\&#x1E03;]|[&#x1E06;-\\&#x1E07;]|[&#x1E0A;-\\&#x1E11;]|[&#x1E1C;-\\&#x1E2B;]|[&#x1E2F;-\\&#x1E37;]|[&#x1E3A;-\\&#x1E3B;]|[&#x1E40;-\\&#x1E49;]|[&#x1E52;-\\&#x1E5B;]|[&#x1E5E;-\\&#x1E63;]|[&#x1E6A;-\\&#x1E6F;]|[&#x1E80;-\\&#x1E87;]|[&#x1E8C;-\\&#x1E97;]|&#x1E9E;|[&#x1EA0;-\\&#x1EF9;]|[&#x2018;-\\&#x201A;]|[&#x201C;-\\&#x201E;]|[&#x2020;-\\&#x2021;]|&#x2026;|&#x2030;|[&#x2039;-\\&#x203A;]|&#x2070;|[&#x2074;-\\&#x2079;]|[&#x207F;-\\&#x2089;]|&#x20AC;|&#x2122;|&#x221E;|[&#x2264;-\\&#x2265;]|&#x0041;&#x030B;|&#x0043;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0315;|&#x0323;|&#x0326;|&#x0328;&#x0306;)|&#x0044;&#x0302;|&#x0046;(&#x0300;|&#x0304;)|&#x0047;&#x0300;|&#x0048;(&#x0304;|&#x0326;|&#x0331;)|&#x004A;(&#x0301;|&#x030C;)|&#x004B;(&#x0300;|&#x0302;|&#x0304;|&#x0307;|&#x0315;|&#x031B;|&#x0326;|&#x035F;&#x0048;|&#x035F;&#x0068;)|&#x004C;(&#x0302;|&#x0325;|&#x0325;&#x0304;|&#x0326;)|&#x004D;(&#x0300;|&#x0302;|&#x0306;|&#x0310;)|&#x004E;(&#x0302;|&#x0304;|&#x0306;|&#x0326;)|&#x0050;(&#x0300;|&#x0304;|&#x0315;|&#x0323;)|&#x0052;(&#x0306;|&#x0325;|&#x0325;&#x0304;)|&#x0053;(&#x0300;|&#x0304;|&#x031B;&#x0304;|&#x0331;)|&#x0054;(&#x0300;|&#x0304;|&#x0308;|&#x0315;|&#x031B;)|&#x0055;&#x0307;|&#x005A;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0327;)|&#x0061;&#x030B;|&#x0063;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0315;|&#x0323;|&#x0326;|&#x0328;&#x0306;)|&#x0064;&#x0302;|&#x0066;(&#x0300;|&#x0304;)|&#x0067;&#x0300;|&#x0068;(&#x0304;|&#x0326;)|&#x006A;&#x0301;|&#x006B;(&#x0300;|&#x0302;|&#x0304;|&#x0307;|&#x0315;|&#x031B;|&#x0326;|&#x035F;&#x0068;)|&#x006C;(&#x0302;|&#x0325;|&#x0325;&#x0304;|&#x0326;)|&#x006D;(&#x0300;|&#x0302;|&#x0306;|&#x0310;)|&#x006E;(&#x0302;|&#x0304;|&#x0306;|&#x0326;)|&#x0070;(&#x0300;|&#x0304;|&#x0315;|&#x0323;)|&#x0072;(&#x0306;|&#x0325;|&#x0325;&#x0304;)|&#x0073;(&#x0300;|&#x0304;|&#x031B;&#x0304;|&#x0331;)|&#x0074;(&#x0300;|&#x0304;|&#x0315;|&#x031B;)|&#x0075;&#x0307;|&#x007A;(&#x0300;|&#x0304;|&#x0306;|&#x0308;|&#x0327;)|&#x00C7;&#x0306;|&#x00DB;&#x0304;|&#x00E7;&#x0306;|&#x00FB;&#x0304;|&#x00FF;&#x0301;|&#x010C;(&#x0315;|&#x0323;)|&#x010D;(&#x0315;|&#x0323;)|&#x012A;&#x0301;|&#x012B;&#x0301;|&#x017D;(&#x0326;|&#x0327;)|&#x017E;(&#x0326;|&#x0327;)|&#x1E32;&#x0304;|&#x1E33;&#x0304;|&#x1E62;&#x0304;|&#x1E63;&#x0304;|&#x1E6C;&#x0304;|&#x1E6D;&#x0304;|&#x1EA0;&#x0308;|&#x1EA1;&#x0308;|&#x1ECC;&#x0308;|&#x1ECD;&#x0308;|&#x1EE4;(&#x0304;|&#x0308;)|&#x1EE5;(&#x0304;|&#x0308;))*'
+  parameters:
+    OriginatorId:
+      name: originatorId
+      in: path
+      description: Enthält die Kennung des auslösenden Online-Dienstes, z. B. den fachlichen Kontext.
+      required: true
+      example: "MELD-ANT-FORM-4711"
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 36
+        pattern: '^[\w\d-]+$'
+    EndPointId:
+      name: endPointId
+      in: path
+      description: Enthält ein weiteres Ordnungskriterium für die Identifikation der zuständigen Behörde, z. B. den AGS
+      required: true
+      example: "BERLIN"
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 36
+        pattern: '^[\w\d-]+$'
+    TransactionId:
+      name: transactionId
+      in: path
+      description: Vom Bezahldienst vergebene Transaktions-ID - kann auch das Kassenzeichen sein
+      required: true
+      example: "9xxd-432x-6543-xfd6-gfdx-fd27"
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 36
+        pattern: '^[\w\d-]+$'
+
+  responses:
+
+    200Healthy:
+      description: "Erfolgsmeldung auf Statusabfrage"
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/SystemResponse'
+          example:
+            type: "https://docs.fitko.de/xbezahldienste/API-SystemResponse/#200healthy"
+            status: 200
+            title: "OK"
+            detail: "Everything is up and running"
+
+    400Error:
+      description: Bad request - Syntaktischer oder semantischer Fehler
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/SystemResponse'
+          example:
+            type: "https://docs.fitko.de/xbezahldienste/API-SystemResponse/#400error"
+            status: 400
+            title: "Bad Request"
+            detail: "In den BookingData fehlen die für diesen Bezahldienst notwendigen Felder Kapitel, Titel, TitelKennz, TitelZusatz"
+            functionalCode: "BOOKING_DATA_MISSING"
+
+    403Error:
+      description: Forbidden
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/SystemResponse'
+          example:
+            type: "https://docs.fitko.de/xbezahldienste/API-SystemResponse/#403error"
+            status: 403
+            title: "Forbidden"
+            detail: "Die Authentifzierung ist fehlgeschlagen."
+            functionalCode: "FORBIDDEN"
+    404Error:
+      description: Not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/SystemResponse'
+          example:
+            type: "https://docs.fitko.de/xbezahldienste/API-SystemResponse/#404error"
+            status: 404
+            title: "Not found"
+            detail: "Zu diesen Parametern ist kein gültiger Mandant vorhanden. EndPoint ID unbekannt."
+            functionalCode: "NO_VALID_ORIGINATOR_OR_ENDPOINT"
+
+    503Error:
+      description: Service unavailable
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/SystemResponse'
+          example:
+            type: "https://docs.fitko.de/xbezahldienste/API-SystemResponse/#503error"
+            status: 503
+            title: "Service temporarily unavailable"
+            detail: "Interner temporärer Server Fehler"
+            functionalCode: "UNSPECIFIED"
+
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      description: "ToBeDone: JWT Token entsprechend RFC 8725 beschreiben"
+      flows:
+        clientCredentials:
+          #          tokenUrl: https://ssl.webpack.de/payment.infra-lab.de/auth/getAccessToken
+          tokenUrl: http://payment.infra-lab.de/auth/getAccessToken
+          scopes:
+            post: Post PaymentRequest
+            read: Read (status of) PaymentTransaction
+            admin: Grants access to admin operations

@@ -2,13 +2,12 @@ package de.aivot.prosuna.backend.elements.uiPresets;
 
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.payment.models.PaymentInformation;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
-import de.aivot.prosuna.backend.elements.uiPresets.PaymentGroupPreset;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -21,7 +20,7 @@ import static org.mockito.Mockito.when;
 class PaymentGroupPresetTest {
     @Test
     void shouldUseConfiguredPaymentResultMessages() throws Exception {
-        var paidPreset = createPreset(XBezahldienstStatus.PAYED, "# Bezahlt\n**Danke.**", "# Nicht bezahlt.");
+        var paidPreset = createPreset(PaymentStatus.PAID, "# Bezahlt\n**Danke.**", "# Nicht bezahlt.");
         var paidMessage = renderMessage(paidPreset);
         assertTrue(paidMessage.contains("# Zahlung erfolgreich\n# Bezahlt\n**Danke.**"));
         assertEquals(
@@ -30,12 +29,12 @@ class PaymentGroupPresetTest {
         );
 
         assertTrue(renderMessage(
-                XBezahldienstStatus.FAILED,
+                PaymentStatus.FAILED,
                 "# Bezahlt\n**Danke.**",
                 "# Nicht bezahlt\nBitte **erneut versuchen**."
         ).contains("# Zahlung fehlgeschlagen\n# Nicht bezahlt\nBitte **erneut versuchen**."));
         assertTrue(renderMessage(
-                XBezahldienstStatus.CANCELED,
+                PaymentStatus.CANCELED,
                 "# Bezahlt\n**Danke.**",
                 "# Nicht bezahlt\nBitte **erneut versuchen**."
         ).contains("# Zahlung abgebrochen\n# Nicht bezahlt\nBitte **erneut versuchen**."));
@@ -43,12 +42,12 @@ class PaymentGroupPresetTest {
 
     @Test
     void shouldKeepDefaultPaymentResultMessagesWhenConfiguredMessagesAreBlank() throws Exception {
-        assertTrue(renderMessage(XBezahldienstStatus.PAYED, " ", null).contains("# Zahlung erfolgreich"));
-        assertTrue(renderMessage(XBezahldienstStatus.FAILED, null, " ").contains("# Zahlung fehlgeschlagen"));
-        assertTrue(renderMessage(XBezahldienstStatus.CANCELED, null, " ").contains("# Zahlung abgebrochen"));
+        assertTrue(renderMessage(PaymentStatus.PAID, " ", null).contains("# Zahlung erfolgreich"));
+        assertTrue(renderMessage(PaymentStatus.FAILED, null, " ").contains("# Zahlung fehlgeschlagen"));
+        assertTrue(renderMessage(PaymentStatus.CANCELED, null, " ").contains("# Zahlung abgebrochen"));
     }
 
-    private static String renderMessage(XBezahldienstStatus status,
+    private static String renderMessage(PaymentStatus status,
                                         String successMessage,
                                         String failureMessage) throws Exception {
         return renderMessage(createPreset(status, successMessage, failureMessage));
@@ -59,7 +58,7 @@ class PaymentGroupPresetTest {
         return richText.getContent();
     }
 
-    private static PaymentGroupPreset createPreset(XBezahldienstStatus status,
+    private static PaymentGroupPreset createPreset(PaymentStatus status,
                                                    String successMessage,
                                                    String failureMessage) throws Exception {
         return new PaymentGroupPreset(
@@ -85,9 +84,10 @@ class PaymentGroupPresetTest {
         return definition;
     }
 
-    private static PaymentTransactionEntity paymentTransaction(XBezahldienstStatus status) {
-        var paymentInformation = new XBezahldienstePaymentInformation();
-        paymentInformation.setStatus(status);
+    private static PaymentTransactionEntity paymentTransaction(PaymentStatus status) {
+        var paymentInformation = new PaymentInformation(
+                "tx-1", null, status, null, null, null, null
+        );
 
         return new PaymentTransactionEntity()
                 .setKey("tx-1")

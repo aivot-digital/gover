@@ -15,9 +15,11 @@ import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
+import de.aivot.prosuna.backend.payment.models.PaymentInformation;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
+import de.aivot.prosuna.backend.payment.models.PaymentRequest;
+import de.aivot.prosuna.backend.payment.xbezahldienste.XBezahldiensteV110Mapper;
+import de.aivot.prosuna.backend.xbezahldienste.v1_1_0.PaymentTransaction;
 import de.aivot.prosuna.backend.plugin.models.PluginComponent;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
@@ -192,10 +194,10 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
     @Nonnull
     @Override
-    public XBezahldienstePaymentTransaction initiatePayment(
+    public PaymentInformation initiatePayment(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
             @Nonnull DerivedRuntimeElementData config,
-            @Nonnull XBezahldienstePaymentRequest paymentRequest
+            @Nonnull PaymentRequest paymentRequest
     ) throws PaymentException {
         var originatorID = getOriginatorID(paymentProviderEntity, config);
         var endpointID = getEndpointID(paymentProviderEntity, config);
@@ -207,7 +209,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         String body;
         try {
             body = objectMapper
-                    .writeValueAsString(paymentRequest);
+                    .writeValueAsString(XBezahldiensteV110Mapper.toExternal(paymentRequest));
         } catch (JacksonException e) {
             throw new PaymentException(e, "Failed to serialize payment request for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -255,9 +257,9 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
             );
         }
 
-        XBezahldienstePaymentTransaction tx;
+        PaymentTransaction tx;
         try {
-            tx = objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
+            tx = objectMapper.readValue(response.body(), PaymentTransaction.class);
         } catch (JacksonException e) {
             client.close();
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
@@ -265,15 +267,15 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         client.close();
 
-        return tx;
+        return XBezahldiensteV110Mapper.toDomain(tx.getPaymentInformation());
     }
 
     @Nonnull
     @Override
-    public XBezahldienstePaymentTransaction onPaymentResultPull(
+    public PaymentInformation onPaymentResultPull(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
             @Nonnull DerivedRuntimeElementData config,
-            @Nonnull XBezahldienstePaymentTransaction transaction
+            @Nonnull PaymentInformation paymentInformation
     ) throws PaymentException {
         var originatorID = getOriginatorID(paymentProviderEntity, config);
         var endpointID = getEndpointID(paymentProviderEntity, config);
@@ -287,7 +289,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
                 .build();
 
         var paymentPath = String
-                .format("%spaymenttransaction/%s/%s/%s", normalizedPaymentTransactionUrl, originatorID, endpointID, transaction.getPaymentInformation().getTransactionId());
+                .format("%spaymenttransaction/%s/%s/%s", normalizedPaymentTransactionUrl, originatorID, endpointID, paymentInformation.providerTransactionId());
 
         var request = HttpRequest
                 .newBuilder(URI.create(paymentPath))
@@ -314,11 +316,11 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
             );
         }
 
-        XBezahldienstePaymentTransaction updatedTransaction;
+        PaymentTransaction updatedTransaction;
         try {
             updatedTransaction = JsonMapperFactory
                     .getInstance()
-                    .readValue(response.body(), XBezahldienstePaymentTransaction.class);
+                    .readValue(response.body(), PaymentTransaction.class);
         } catch (JacksonException e) {
             client.close();
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
@@ -326,18 +328,18 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         client.close();
 
-        return updatedTransaction;
+        return XBezahldiensteV110Mapper.toDomain(updatedTransaction.getPaymentInformation());
     }
 
     @Nonnull
     @Override
-    public XBezahldienstePaymentTransaction onPaymentResultPush(
+    public PaymentInformation onPaymentResultPush(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
             @Nonnull DerivedRuntimeElementData config,
-            @Nonnull XBezahldienstePaymentTransaction paymentRequest,
+            @Nonnull PaymentInformation paymentInformation,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
-        return onPaymentResultPull(paymentProviderEntity, config, paymentRequest);
+        return onPaymentResultPull(paymentProviderEntity, config, paymentInformation);
     }
 
     @Nonnull

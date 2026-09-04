@@ -21,10 +21,9 @@ import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementFlattenUtils;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
-import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
@@ -1046,7 +1045,7 @@ public class FormTriggerControllerV1 {
         );
 
         var transaction = resolvePaymentTransaction(context, instanceAccessKey, taskAccessKey);
-        if (transaction.getStatus() != XBezahldienstStatus.PAYED) {
+        if (transaction.getStatus() != PaymentStatus.PAID) {
             throw ResponseException.notFound();
         }
 

@@ -8,7 +8,7 @@ public class PaymentPayload {
     private String description;
     private BigDecimal total;
     private List<PaymentItem> paymentItems;
-    private XBezahldiensteRequestor requestor;
+    private PaymentRequestor requestor;
 
     public String getPurpose() {
         return purpose;
@@ -46,11 +46,11 @@ public class PaymentPayload {
         return this;
     }
 
-    public XBezahldiensteRequestor getRequestor() {
+    public PaymentRequestor getRequestor() {
         return requestor;
     }
 
-    public PaymentPayload setRequestor(XBezahldiensteRequestor requestor) {
+    public PaymentPayload setRequestor(PaymentRequestor requestor) {
         this.requestor = requestor;
         return this;
     }

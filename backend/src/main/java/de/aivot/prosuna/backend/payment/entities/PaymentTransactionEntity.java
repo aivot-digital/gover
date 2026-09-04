@@ -1,9 +1,9 @@
 package de.aivot.prosuna.backend.payment.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
+import de.aivot.prosuna.backend.payment.models.PaymentInformation;
+import de.aivot.prosuna.backend.payment.models.PaymentRequest;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -29,10 +29,10 @@ public class PaymentTransactionEntity {
 
     @NotNull
     @JdbcTypeCode(SqlTypes.JSON)
-    private XBezahldienstePaymentRequest paymentRequest;
+    private PaymentRequest paymentRequest;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    private XBezahldienstePaymentInformation paymentInformation;
+    private PaymentInformation paymentInformation;
 
     private String paymentError;
 
@@ -62,8 +62,8 @@ public class PaymentTransactionEntity {
     }
 
     @Nonnull
-    public XBezahldienstStatus getStatus() {
-        return paymentInformation != null ? paymentInformation.getStatus() : XBezahldienstStatus.INITIAL;
+    public PaymentStatus getStatus() {
+        return paymentInformation != null ? paymentInformation.status() : PaymentStatus.PENDING;
     }
 
     public String getKey() {
@@ -84,20 +84,20 @@ public class PaymentTransactionEntity {
         return this;
     }
 
-    public XBezahldienstePaymentRequest getPaymentRequest() {
+    public PaymentRequest getPaymentRequest() {
         return paymentRequest;
     }
 
-    public PaymentTransactionEntity setPaymentRequest(XBezahldienstePaymentRequest paymentRequest) {
+    public PaymentTransactionEntity setPaymentRequest(PaymentRequest paymentRequest) {
         this.paymentRequest = paymentRequest;
         return this;
     }
 
-    public XBezahldienstePaymentInformation getPaymentInformation() {
+    public PaymentInformation getPaymentInformation() {
         return paymentInformation;
     }
 
-    public PaymentTransactionEntity setPaymentInformation(XBezahldienstePaymentInformation paymentInformation) {
+    public PaymentTransactionEntity setPaymentInformation(PaymentInformation paymentInformation) {
         this.paymentInformation = paymentInformation;
         return this;
     }

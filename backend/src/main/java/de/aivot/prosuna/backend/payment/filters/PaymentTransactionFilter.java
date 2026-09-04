@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.payment.filters;
 
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.utils.specification.SpecificationBuilder;
@@ -12,7 +12,7 @@ import java.util.UUID;
 
 public class PaymentTransactionFilter implements Filter<PaymentTransactionEntity> {
     private UUID paymentProviderKey;
-    private XBezahldienstStatus status;
+    private PaymentStatus status;
     private Boolean hasError;
 
     private PaymentTransactionFilter() {
@@ -27,7 +27,7 @@ public class PaymentTransactionFilter implements Filter<PaymentTransactionEntity
         return this;
     }
 
-    public PaymentTransactionFilter setStatus(XBezahldienstStatus status) {
+    public PaymentTransactionFilter setStatus(PaymentStatus status) {
         this.status = status;
         return this;
     }
@@ -43,7 +43,7 @@ public class PaymentTransactionFilter implements Filter<PaymentTransactionEntity
         var spec = SpecificationBuilder
                 .create(PaymentTransactionEntity.class)
                 .withEquals("paymentProviderKey", paymentProviderKey)
-                .withJsonEquals("paymentInformation", List.of("status"), status != null ? status.getKey() : null);
+                .withJsonEquals("paymentInformation", List.of("status"), status != null ? status.name() : null);
 
         if (hasError != null) {
             if (Boolean.TRUE.equals(hasError)) {

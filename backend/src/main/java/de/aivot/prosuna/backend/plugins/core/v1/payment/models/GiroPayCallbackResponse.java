@@ -1,14 +1,15 @@
 package de.aivot.prosuna.backend.plugins.core.v1.payment.models;
 
-import de.aivot.prosuna.backend.enums.XBezahldienstPaymentMethod;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
+import de.aivot.prosuna.backend.payment.models.PaymentInformation;
+import de.aivot.prosuna.backend.payment.models.PaymentMethod;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.function.Consumer;
 
 public class GiroPayCallbackResponse {
@@ -22,25 +23,17 @@ public class GiroPayCallbackResponse {
     private String gcResultPayment;
     private String gcHash;
 
-    public XBezahldienstePaymentInformation toXBezahldienstePaymentInformation(XBezahldienstePaymentInformation xInfoEx) {
-        var xInfo = new XBezahldienstePaymentInformation();
-
-        if (RESULT_PAYMENT_SUCCESS.equals(gcResultPayment)) {
-            xInfo.setStatus(XBezahldienstStatus.PAYED);
-        } else {
-            xInfo.setStatus(XBezahldienstStatus.FAILED);
-        }
-
-        xInfo.setStatusDetail(gcResultPayment);
-        xInfo.setTransactionId(gcReference);
-        xInfo.setTransactionReference(gcReference);
-        xInfo.setTransactionRedirectUrl(null);
-        xInfo.setPaymentMethod(XBezahldienstPaymentMethod.GIROPAY);
-        xInfo.setPaymentMethodDetail(null);
-        xInfo.setTransactionTimestamp(xInfoEx.getTransactionTimestamp());
-        xInfo.setTransactionUrl(xInfoEx.getTransactionUrl());
-
-        return xInfo;
+    public PaymentInformation toPaymentInformation(PaymentInformation existingInformation) {
+        var paid = RESULT_PAYMENT_SUCCESS.equals(gcResultPayment);
+        return new PaymentInformation(
+                existingInformation.providerTransactionId(),
+                gcReference,
+                paid ? PaymentStatus.PAID : PaymentStatus.FAILED,
+                null,
+                paid ? Instant.now() : null,
+                paid ? new PaymentMethod("GIROPAY", null) : null,
+                gcResultPayment
+        );
     }
 
     public static String generateHash(GiroPayCallbackResponse gReponse, String projectPassword) throws NoSuchAlgorithmException, InvalidKeyException {

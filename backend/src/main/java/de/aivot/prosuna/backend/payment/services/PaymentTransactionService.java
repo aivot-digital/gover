@@ -3,7 +3,6 @@ package de.aivot.prosuna.backend.payment.services;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.lib.services.DeleteEntityService;
@@ -70,10 +69,8 @@ public class PaymentTransactionService implements
      * Otherwise, a PaymentException is logged and thrown.
      *
      * @param paymentProviderEntity The payment provider the transaction should be created for
-     * @param purpose               The purpose of the payment
-     * @param description           The description of the payment
+     * @param payload               The payment data to submit
      * @param finalRedirectUrl      The URL to redirect to after the payment has been processed
-     * @param paymentItems          The items to be paid
      * @return The created payment transaction
      * @throws PaymentException If an error occurs during the payment process
      */
@@ -109,7 +106,7 @@ public class PaymentTransactionService implements
         var derivedConfiguration = derivePaymentProviderConfiguration(paymentProviderEntity, paymentProviderDefinition);
 
         // Create and set payment request
-        XBezahldienstePaymentRequest paymentRequest;
+        PaymentRequest paymentRequest;
         try {
             paymentRequest = paymentProviderDefinition.createPaymentRequest(
                     paymentProviderEntity,
@@ -135,9 +132,9 @@ public class PaymentTransactionService implements
         transactionEntity.setPaymentRequest(paymentRequest);
 
         // Initiate and set payment
-        XBezahldienstePaymentTransaction xBezahldienstePaymentTransaction;
+        PaymentInformation paymentInformation;
         try {
-            xBezahldienstePaymentTransaction = paymentProviderDefinition.initiatePayment(
+            paymentInformation = paymentProviderDefinition.initiatePayment(
                     paymentProviderEntity,
                     derivedConfiguration,
                     transactionEntity.getPaymentRequest()
@@ -157,7 +154,7 @@ public class PaymentTransactionService implements
                     .setMetadata(metadata).log();
             throw e;
         }
-        transactionEntity.setPaymentInformation(xBezahldienstePaymentTransaction.getPaymentInformation());
+        transactionEntity.setPaymentInformation(paymentInformation);
 
         return paymentTransactionRepository.save(transactionEntity);
     }
@@ -250,29 +247,24 @@ public class PaymentTransactionService implements
             throw error;
         }
 
-        // Create a new transaction object with the data from the transaction entity
-        var xBezahldiensteTransaction = new XBezahldienstePaymentTransaction();
-        xBezahldiensteTransaction.setPaymentRequest(transaction.getPaymentRequest());
-        xBezahldiensteTransaction.setPaymentInformation(transaction.getPaymentInformation());
-
         var derivedConfiguration = derivePaymentProviderConfiguration(provider, providerDefinition);
 
         // Try to check the payment status. If an error occurs, set the error message on the transaction and rethrow the exception
-        XBezahldienstePaymentTransaction xBezahldiensteTransactionUpdated;
+        PaymentInformation updatedPaymentInformation;
         try {
-            xBezahldiensteTransactionUpdated = callbackData != null ?
+            updatedPaymentInformation = callbackData != null ?
                     providerDefinition
                             .onPaymentResultPush(
                                     provider,
                                     derivedConfiguration,
-                                    xBezahldiensteTransaction,
+                                    transaction.getPaymentInformation(),
                                     callbackData
                             ) :
                     providerDefinition
                             .onPaymentResultPull(
                                     provider,
                                     derivedConfiguration,
-                                    xBezahldiensteTransaction
+                                    transaction.getPaymentInformation()
                             );
         } catch (PaymentException e) {
             transaction.setPaymentError(e.getMessage());
@@ -281,23 +273,25 @@ public class PaymentTransactionService implements
         }
 
         // Check if the payment status has changed
-        var originalPaymentStatus = transaction.getPaymentInformation().getStatus();
-        var updatedPaymentStatus = xBezahldiensteTransactionUpdated.getPaymentInformation().getStatus();
+        var originalPaymentStatus = transaction.getPaymentInformation().status();
+        var updatedPaymentStatus = updatedPaymentInformation.status();
 
         var paymentStatusChanged = !Objects.equals(originalPaymentStatus, updatedPaymentStatus);
+        var paymentInformationChanged = !Objects.equals(transaction.getPaymentInformation(), updatedPaymentInformation);
 
-        // If the payment status has changed, update the transaction and notify all listeners
-        if (paymentStatusChanged) {
+        // Persist all information changes, but notify listeners only about status transitions.
+        if (paymentInformationChanged) {
             // Update and save the transaction
-            transaction.setPaymentInformation(xBezahldiensteTransactionUpdated.getPaymentInformation());
+            transaction.setPaymentInformation(updatedPaymentInformation);
             var updatedTransaction = paymentTransactionRepository.save(transaction);
 
-            // Iterate over all listeners and notify them about the change
-            for (var listener : paymentTransactionChangeListeners) {
-                try {
-                    listener.onChange(updatedTransaction);
-                } catch (ResponseException e) {
-                    throw new PaymentException(e, "Error notifying change listener for transaction %s", updatedTransaction.getKey());
+            if (paymentStatusChanged) {
+                for (var listener : paymentTransactionChangeListeners) {
+                    try {
+                        listener.onChange(updatedTransaction);
+                    } catch (ResponseException e) {
+                        throw new PaymentException(e, "Error notifying change listener for transaction %s", updatedTransaction.getKey());
+                    }
                 }
             }
         }
@@ -307,7 +301,7 @@ public class PaymentTransactionService implements
     public void poll() {
         var spec = PaymentTransactionFilter
                 .create()
-                .setStatus(XBezahldienstStatus.INITIAL)
+                .setStatus(PaymentStatus.PENDING)
                 .setHasError(false)
                 .build();
 

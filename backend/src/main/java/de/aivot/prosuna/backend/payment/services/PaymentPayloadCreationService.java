@@ -4,7 +4,6 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValueItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValueRequestorMapping;
-import de.aivot.prosuna.backend.enums.XBezahldienstGender;
 import de.aivot.prosuna.backend.javascript.exceptions.JavascriptException;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
@@ -12,10 +11,7 @@ import de.aivot.prosuna.backend.models.payment.PaymentProduct;
 import de.aivot.prosuna.backend.nocode.models.NoCodeOperand;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
-import de.aivot.prosuna.backend.payment.models.PaymentItem;
-import de.aivot.prosuna.backend.payment.models.PaymentPayload;
-import de.aivot.prosuna.backend.payment.models.XBezahldiensteAddress;
-import de.aivot.prosuna.backend.payment.models.XBezahldiensteRequestor;
+import de.aivot.prosuna.backend.payment.models.*;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
@@ -281,7 +277,7 @@ public class PaymentPayloadCreationService {
     }
 
     @Nullable
-    private XBezahldiensteRequestor createRequestor(
+    private PaymentRequestor createRequestor(
             @Nonnull PaymentConfigElementValue paymentConfigElementValue,
             @Nonnull ProcessExecutionData processExecutionData
     ) throws PaymentException {
@@ -303,43 +299,37 @@ public class PaymentPayloadCreationService {
     }
 
     @Nonnull
-    private XBezahldiensteRequestor createPersonRequestor(
+    private PaymentRequestor createPersonRequestor(
             @Nonnull PaymentConfigElementValueRequestorMapping mapping,
             @Nonnull ProcessExecutionData processExecutionData
     ) throws PaymentException {
-        var requestor = new XBezahldiensteRequestor();
-        requestor.setIsOrganization(false);
-        requestor.setName(readString(processExecutionData, mapping.lastNameDestinationKey()));
-        requestor.setFirstName(readString(processExecutionData, mapping.firstNameDestinationKey()));
-        requestor.setGender(readGender(processExecutionData, mapping.genderDestinationKey()));
-
-        var address = createAddress(mapping, processExecutionData);
-        if (address != null) {
-            requestor.setAddress(address);
-        }
-
-        return requestor;
+        return new PaymentRequestor(
+                readString(processExecutionData, mapping.lastNameDestinationKey()),
+                readString(processExecutionData, mapping.firstNameDestinationKey()),
+                readGender(processExecutionData, mapping.genderDestinationKey()),
+                false,
+                null,
+                createAddress(mapping, processExecutionData)
+        );
     }
 
     @Nonnull
-    private XBezahldiensteRequestor createOrganizationRequestor(
+    private PaymentRequestor createOrganizationRequestor(
             @Nonnull PaymentConfigElementValueRequestorMapping mapping,
             @Nonnull ProcessExecutionData processExecutionData
     ) {
-        var requestor = new XBezahldiensteRequestor();
-        requestor.setIsOrganization(true);
-        requestor.setOrganizationName(readString(processExecutionData, mapping.organizationNameDestinationKey()));
-
-        var address = createAddress(mapping, processExecutionData);
-        if (address != null) {
-            requestor.setAddress(address);
-        }
-
-        return requestor;
+        return new PaymentRequestor(
+                null,
+                null,
+                null,
+                true,
+                readString(processExecutionData, mapping.organizationNameDestinationKey()),
+                createAddress(mapping, processExecutionData)
+        );
     }
 
     @Nonnull
-    private XBezahldiensteRequestor createDynamicRequestor(
+    private PaymentRequestor createDynamicRequestor(
             @Nonnull PaymentConfigElementValueRequestorMapping mapping,
             @Nonnull ProcessExecutionData processExecutionData
     ) throws PaymentException {
@@ -354,30 +344,26 @@ public class PaymentPayloadCreationService {
     }
 
     @Nullable
-    private XBezahldiensteAddress createAddress(
+    private PaymentAddress createAddress(
             @Nonnull PaymentConfigElementValueRequestorMapping mapping,
             @Nonnull ProcessExecutionData processExecutionData
     ) {
-        var address = new XBezahldiensteAddress();
-        address.setStreet(readString(processExecutionData, mapping.streetDestinationKey()));
-        address.setHouseNumber(readString(processExecutionData, mapping.houseNumberDestinationKey()));
-        address.setAddressLineFromString(readString(processExecutionData, mapping.addressLineDestinationKey()));
-        address.setPostalCode(readString(processExecutionData, mapping.postalCodeDestinationKey()));
-        address.setCity(readString(processExecutionData, mapping.cityDestinationKey()));
-
+        var street = readString(processExecutionData, mapping.streetDestinationKey());
+        var houseNumber = readString(processExecutionData, mapping.houseNumberDestinationKey());
+        var addressLine = readString(processExecutionData, mapping.addressLineDestinationKey());
+        var addressLines = addressLine == null
+                ? List.<String>of()
+                : addressLine.lines().filter(line -> !line.isBlank()).toList();
+        var postalCode = readString(processExecutionData, mapping.postalCodeDestinationKey());
+        var city = readString(processExecutionData, mapping.cityDestinationKey());
         var country = readString(processExecutionData, mapping.countryDestinationKey());
-        address.setCountry(country == null ? null : country.toUpperCase(Locale.ROOT));
+        country = country == null ? null : country.toUpperCase(Locale.ROOT);
 
-        if (address.getStreet() == null &&
-                address.getHouseNumber() == null &&
-                address.getAddressLine() == null &&
-                address.getPostalCode() == null &&
-                address.getCity() == null &&
-                address.getCountry() == null) {
+        if (street == null && houseNumber == null && addressLines.isEmpty() &&
+                postalCode == null && city == null && country == null) {
             return null;
         }
-
-        return address;
+        return new PaymentAddress(street, houseNumber, addressLines, postalCode, city, country);
     }
 
     @Nullable
@@ -412,7 +398,7 @@ public class PaymentPayloadCreationService {
     }
 
     @Nullable
-    private XBezahldienstGender readGender(@Nonnull ProcessExecutionData processExecutionData,
+    private PaymentGender readGender(@Nonnull ProcessExecutionData processExecutionData,
                                            @Nullable String destinationKey) throws PaymentException {
         if (StringUtils.isNullOrEmpty(destinationKey)) {
             return null;
@@ -422,18 +408,18 @@ public class PaymentPayloadCreationService {
         if (value == null) {
             return null;
         }
-        if (value instanceof XBezahldienstGender gender) {
+        if (value instanceof PaymentGender gender) {
             return gender;
         }
 
         var valueAsString = value.toString().trim();
-        for (var gender : XBezahldienstGender.values()) {
+        for (var gender : PaymentGender.values()) {
             if (gender.matches(valueAsString) || gender.name().equalsIgnoreCase(valueAsString)) {
                 return gender;
             }
         }
 
-        throw new PaymentException("Der Wert für %s ist kein gültiges XBezahldienste-Geschlecht.", destinationKey);
+        throw new PaymentException("Der Wert für %s ist kein gültiges Geschlecht.", destinationKey);
     }
 
     private boolean parseBoolean(@Nonnull String value) throws PaymentException {

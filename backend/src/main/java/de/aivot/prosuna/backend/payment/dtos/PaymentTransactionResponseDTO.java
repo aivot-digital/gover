@@ -1,9 +1,9 @@
 package de.aivot.prosuna.backend.payment.dtos;
 
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
+import de.aivot.prosuna.backend.payment.models.PaymentInformation;
+import de.aivot.prosuna.backend.payment.models.PaymentRequest;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -13,11 +13,11 @@ import java.util.UUID;
 public record PaymentTransactionResponseDTO(
         @Nonnull String key,
         @Nonnull UUID paymentProviderKey,
-        @Nonnull XBezahldienstePaymentRequest paymentRequest,
-        @Nonnull XBezahldienstePaymentInformation paymentInformation,
+        @Nonnull PaymentRequest paymentRequest,
+        @Nonnull PaymentInformation paymentInformation,
         @Nullable String paymentError,
         @Nonnull Boolean hasError,
-        @Nonnull XBezahldienstStatus status,
+        @Nonnull PaymentStatus status,
         @Nonnull Instant created
         ) {
     public static PaymentTransactionResponseDTO fromEntity(

@@ -233,7 +233,7 @@ public class PaymentProviderController {
         return new PaymentProviderTestDataResponseDTO(
                 result.ok(),
                 result.request(),
-                result.transaction(),
+                result.paymentInformation(),
                 result.errorMessage()
         );
     }

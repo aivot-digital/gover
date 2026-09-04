@@ -8,13 +8,13 @@ import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.models.PaymentInformation;
 import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -335,7 +335,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         var fixture = createPaymentConfirmationFixture(Map.of(
                 PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY, "tx-1"
         ));
-        var transaction = paymentTransaction(XBezahldienstStatus.PAYED, expectedPaymentRedirectUrl(fixture));
+        var transaction = paymentTransaction(PaymentStatus.PAID, expectedPaymentRedirectUrl(fixture));
         var process = processEntity();
         var department = new VDepartmentShadowedEntity()
                 .setId(process.getDepartmentId())
@@ -395,7 +395,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY, "tx-1"
         ));
         when(fixture.paymentTransactionService().retrieve("tx-1"))
-                .thenReturn(Optional.of(paymentTransaction(XBezahldienstStatus.INITIAL, expectedPaymentRedirectUrl(fixture))));
+                .thenReturn(Optional.of(paymentTransaction(PaymentStatus.PENDING, expectedPaymentRedirectUrl(fixture))));
 
         var response = new MockHttpServletResponse();
         var ex = assertThrows(
@@ -412,7 +412,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY, "tx-1"
         ));
         when(fixture.paymentTransactionService().retrieve("tx-1"))
-                .thenReturn(Optional.of(paymentTransaction(XBezahldienstStatus.PAYED, "https://example.test/process/other/tasks/task")));
+                .thenReturn(Optional.of(paymentTransaction(PaymentStatus.PAID, "https://example.test/process/other/tasks/task")));
 
         var response = new MockHttpServletResponse();
         var ex = assertThrows(
@@ -620,10 +620,16 @@ class CitizenProcessInstanceTaskViewControllerTest {
         return "https://example.test/process/" + fixture.procAccess() + "/tasks/" + fixture.taskAccess();
     }
 
-    private static PaymentTransactionEntity paymentTransaction(XBezahldienstStatus status, String redirectUrl) {
-        var paymentInformation = new XBezahldienstePaymentInformation();
-        paymentInformation.setStatus(status);
-        paymentInformation.setTransactionRedirectUrl(URI.create("https://payment.example.test/tx-1"));
+    private static PaymentTransactionEntity paymentTransaction(PaymentStatus status, String redirectUrl) {
+        var paymentInformation = new PaymentInformation(
+                "tx-1",
+                null,
+                status,
+                status == PaymentStatus.PENDING ? URI.create("https://payment.example.test/tx-1") : null,
+                null,
+                null,
+                null
+        );
 
         return new PaymentTransactionEntity()
                 .setKey("tx-1")

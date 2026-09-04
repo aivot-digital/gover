@@ -18,9 +18,9 @@ import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentHttpRequestException;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentMissingDataException;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentSerializationException;
+import de.aivot.prosuna.backend.payment.models.PaymentInformation;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
+import de.aivot.prosuna.backend.payment.models.PaymentRequest;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.payment.models.GiroPayCallbackResponse;
 import de.aivot.prosuna.backend.plugins.core.v1.payment.models.GiroPayPaymentRequest;
@@ -153,10 +153,10 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
 
     @Nonnull
     @Override
-    public XBezahldienstePaymentTransaction initiatePayment(
+    public PaymentInformation initiatePayment(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
             @Nonnull DerivedRuntimeElementData config,
-            @Nonnull XBezahldienstePaymentRequest paymentRequest
+            @Nonnull PaymentRequest paymentRequest
     ) throws PaymentException {
         var effectiveValues = config.getEffectiveValues();
 
@@ -173,7 +173,8 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         var passwordSecret = getPasswordSecret(paymentProviderEntity, config);
 
         var notifyUrl = paymentRequest
-                .getRedirectUrl()
+                .redirectUrl()
+                .toString()
                 .replace("redirect", "notify");
 
         var giroPayPaymentRequest = GiroPayPaymentRequest
@@ -233,26 +234,26 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
             );
         }
 
-        return transaction.toXBezahldienstePaymentTransaction(paymentRequest, PAYMENT_URL);
+        return transaction.toPaymentInformation();
     }
 
     @Nonnull
     @Override
-    public XBezahldienstePaymentTransaction onPaymentResultPull(
+    public PaymentInformation onPaymentResultPull(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
             @Nonnull DerivedRuntimeElementData config,
-            @Nonnull XBezahldienstePaymentTransaction paymentRequest
+            @Nonnull PaymentInformation paymentInformation
     ) throws PaymentException {
         // No implementation for checkPaymentStatus because GiroCheckout has no API for this
-        return paymentRequest;
+        return paymentInformation;
     }
 
     @Nonnull
     @Override
-    public XBezahldienstePaymentTransaction onPaymentResultPush(
+    public PaymentInformation onPaymentResultPush(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
             @Nonnull DerivedRuntimeElementData config,
-            @Nonnull XBezahldienstePaymentTransaction paymentTransaction,
+            @Nonnull PaymentInformation paymentInformation,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
         var objectMapper = JsonMapperFactory
@@ -282,11 +283,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
             );
         }
 
-        var updatedPaymentInformation = callbackResponse.toXBezahldienstePaymentInformation(paymentTransaction.getPaymentInformation());
-
-        paymentTransaction.setPaymentInformation(updatedPaymentInformation);
-
-        return paymentTransaction;
+        return callbackResponse.toPaymentInformation(paymentInformation);
     }
 
 

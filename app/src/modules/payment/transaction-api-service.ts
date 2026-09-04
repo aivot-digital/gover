@@ -1,11 +1,11 @@
 import {Api} from '../../hooks/use-api';
 import {PaymentTransactionResponseDTO} from './dtos/payment-transaction-response-dto';
 import {CrudApiService} from '../../services/crud-api-service';
-import {XBezahldienstePaymentStatus} from '../../data/xbezahldienste-payment-status';
+import {PaymentStatus} from '../../data/payment-status';
 
 interface PaymentTransactionFilters {
     paymentProviderKey: string;
-    status: XBezahldienstePaymentStatus;
+    status: PaymentStatus;
     purpose: string;
     hasError: boolean;
 }
@@ -18,8 +18,11 @@ export class TransactionsApiService extends CrudApiService<PaymentTransactionRes
     public initialize(): PaymentTransactionResponseDTO {
         return {
             key: '',
-            paymentInformation: {},
+            paymentInformation: null,
+            paymentRequest: null,
             paymentProviderKey: '',
+            hasError: false,
+            status: PaymentStatus.Pending,
             created: new Date().toISOString(),
         };
     }

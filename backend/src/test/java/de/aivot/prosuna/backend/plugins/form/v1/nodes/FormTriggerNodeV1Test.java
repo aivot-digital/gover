@@ -12,7 +12,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputEle
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.payment.models.PaymentStatus;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.pdf.enums.FormPdfScope;
@@ -20,7 +20,7 @@ import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
+import de.aivot.prosuna.backend.payment.models.PaymentInformation;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -163,13 +163,11 @@ class FormTriggerNodeV1Test {
 
         assertNotNull(output);
         assertEquals(
-                "{ transactionUrl: string | null; transactionRedirectUrl: string | null; " +
-                        "transactionId: string | null; transactionReference: string | null; " +
-                        "transactionTimestamp: string | null; " +
-                        "paymentMethod: \"GIROPAY\" | \"PAYDIRECT\" | \"CREDITCARD\" | \"PAYPAL\" | \"OTHER\" | null; " +
-                        "paymentMethodDetail: string | null; " +
-                        "status: \"INITIAL\" | \"PAYED\" | \"FAILED\" | \"CANCELED\" | null; " +
-                        "statusDetail: string | null; }",
+                "{ providerTransactionId: string; providerReference: string | null; " +
+                        "status: \"PENDING\" | \"PAID\" | \"FAILED\" | \"CANCELED\"; " +
+                        "paymentUrl: string | null; paidAt: string | null; " +
+                        "paymentMethod: { code: string; detail: string | null; } | null; " +
+                        "statusMessage: string | null; }",
                 output.typeDefinition()
         );
     }
@@ -427,7 +425,7 @@ class FormTriggerNodeV1Test {
                 .setProcessData(Map.of("name", "Ada"));
 
         when(paymentTransactionService.retrieve(transactionKey))
-                .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, XBezahldienstStatus.PAYED)));
+                .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, PaymentStatus.PAID)));
         var paymentProvider = paymentProvider(paymentProviderKey);
         when(paymentProviderRepository.findById(paymentProviderKey))
                 .thenReturn(Optional.of(paymentProvider));
@@ -480,7 +478,7 @@ class FormTriggerNodeV1Test {
         var instance = processInstance(Map.of()).setAccessKey("instance-access");
 
         when(paymentTransactionService.retrieve(transactionKey))
-                .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, XBezahldienstStatus.PAYED)));
+                .thenReturn(Optional.of(paymentTransaction(paymentProviderKey, PaymentStatus.PAID)));
         var paymentProvider = paymentProvider(paymentProviderKey);
         when(paymentProviderRepository.findById(paymentProviderKey))
                 .thenReturn(Optional.of(paymentProvider));
@@ -597,9 +595,10 @@ class FormTriggerNodeV1Test {
         return definition;
     }
 
-    private static PaymentTransactionEntity paymentTransaction(UUID paymentProviderKey, XBezahldienstStatus status) {
-        var paymentInformation = new XBezahldienstePaymentInformation();
-        paymentInformation.setStatus(status);
+    private static PaymentTransactionEntity paymentTransaction(UUID paymentProviderKey, PaymentStatus status) {
+        var paymentInformation = new PaymentInformation(
+                "tx-1", null, status, null, null, null, null
+        );
 
         return new PaymentTransactionEntity()
                 .setKey("tx-1")

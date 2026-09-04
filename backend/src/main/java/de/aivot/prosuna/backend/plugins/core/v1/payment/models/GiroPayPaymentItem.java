@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.payment.models;
 
-import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentItem;
+import de.aivot.prosuna.backend.payment.models.PaymentRequestItem;
 
 import java.math.BigDecimal;
 
@@ -10,14 +10,14 @@ public class GiroPayPaymentItem {
     private int quantity;
     private int grossAmount;
 
-    public static GiroPayPaymentItem valueOf(XBezahldienstePaymentItem xItem) {
+    public static GiroPayPaymentItem valueOf(PaymentRequestItem item) {
         GiroPayPaymentItem gItem = new GiroPayPaymentItem();
 
-        gItem.setName(xItem.getDescription());
+        gItem.setName(item.description());
         gItem.setEan(null);
-        gItem.setQuantity(xItem.getQuantity().intValue());
+        gItem.setQuantity(Math.toIntExact(item.quantity()));
 
-        var itemTotalAmount = xItem.getSingleNetAmount().add(xItem.getSingleTaxAmount());
+        var itemTotalAmount = item.singleNetAmount().add(item.singleTaxAmount());
         var itemTotalAmountInCents = itemTotalAmount.multiply(BigDecimal.valueOf(100)).intValue();
         gItem.setGrossAmount(itemTotalAmountInCents);
 
