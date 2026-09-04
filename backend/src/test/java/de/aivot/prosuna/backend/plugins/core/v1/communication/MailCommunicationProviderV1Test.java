@@ -7,9 +7,12 @@ import de.aivot.prosuna.backend.communication.models.CommunicationProviderContex
 import de.aivot.prosuna.backend.communication.models.MailCommunicationSendOptions;
 import de.aivot.prosuna.backend.communication.services.DefaultMailCommunicationService;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
+import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
@@ -57,13 +60,25 @@ class MailCommunicationProviderV1Test {
         var customSenderName = layout.findChild(MailCommunicationProviderV1.CUSTOM_SENDER_NAME_FIELD_ID, TextInputElement.class).orElseThrow();
         var customSenderAddress = layout.findChild(MailCommunicationProviderV1.CUSTOM_SENDER_ADDRESS_FIELD_ID, TextInputElement.class).orElseThrow();
         var replyToAddress = layout.findChild(MailCommunicationProviderV1.REPLY_TO_ADDRESS_FIELD_ID, TextInputElement.class).orElseThrow();
+        var defaultSenderGroup = layout.findChild(MailCommunicationProviderV1.DEFAULT_SENDER_GROUP_ID, GroupLayoutElement.class).orElseThrow();
+        var customSenderGroup = layout.findChild(MailCommunicationProviderV1.CUSTOM_SENDER_GROUP_ID, GroupLayoutElement.class).orElseThrow();
+        var customSenderAlert = layout.findChild(MailCommunicationProviderV1.CUSTOM_SENDER_ALERT_ID, AlertContentElement.class).orElseThrow();
 
         assertEquals(List.of(
                 MailCommunicationProviderV1.SENDER_MODE_FIELD_ID,
                 MailCommunicationProviderV1.DEFAULT_SENDER_GROUP_ID,
-                MailCommunicationProviderV1.CUSTOM_SENDER_GROUP_ID,
-                MailCommunicationProviderV1.REPLY_TO_ADDRESS_FIELD_ID
+                MailCommunicationProviderV1.CUSTOM_SENDER_GROUP_ID
         ), layout.getChildren().stream().map(element -> element.getId()).toList());
+        assertEquals(List.of(
+                MailCommunicationProviderV1.DEFAULT_SENDER_NAME_FIELD_ID,
+                MailCommunicationProviderV1.DEFAULT_SENDER_ADDRESS_FIELD_ID
+        ), defaultSenderGroup.getChildren().stream().map(element -> element.getId()).toList());
+        assertEquals(List.of(
+                MailCommunicationProviderV1.CUSTOM_SENDER_ALERT_ID,
+                MailCommunicationProviderV1.CUSTOM_SENDER_NAME_FIELD_ID,
+                MailCommunicationProviderV1.CUSTOM_SENDER_ADDRESS_FIELD_ID,
+                MailCommunicationProviderV1.REPLY_TO_ADDRESS_FIELD_ID
+        ), customSenderGroup.getChildren().stream().map(element -> element.getId()).toList());
         assertEquals(List.of(
                 MailCommunicationProviderV1.SENDER_MODE_DEFAULT,
                 MailCommunicationProviderV1.SENDER_MODE_CUSTOM
@@ -85,8 +100,13 @@ class MailCommunicationProviderV1Test {
         assertEquals(254, replyToAddress.getMaxCharacters());
         assertNotNull(customSenderAddress.getPattern());
         assertNotNull(replyToAddress.getPattern());
-        assertNotNull(layout.findChild(MailCommunicationProviderV1.DEFAULT_SENDER_GROUP_ID).orElseThrow().getVisibility());
-        assertNotNull(layout.findChild(MailCommunicationProviderV1.CUSTOM_SENDER_GROUP_ID).orElseThrow().getVisibility());
+        assertNotNull(defaultSenderGroup.getVisibility());
+        assertNotNull(customSenderGroup.getVisibility());
+        assertEquals(AlertType.Warning, customSenderAlert.getAlertType());
+        assertEquals("Eigene Absenderadresse prüfen", customSenderAlert.getTitle());
+        assertTrue(customSenderAlert.getText().contains("smtp.example.test"));
+        assertTrue(customSenderAlert.getText().contains("angemeldeten Kontos"));
+        assertTrue(customSenderAlert.getText().contains("Spam"));
 
         assertThrows(ValidationException.class, () -> customSenderName.validate(" "));
         assertThrows(ValidationException.class, () -> customSenderAddress.validate("first@example.test,second@example.test"));
@@ -126,7 +146,7 @@ class MailCommunicationProviderV1Test {
         assertNotNull(config.customSender);
         assertEquals("Custom Service", config.customSender.name);
         assertEquals("custom@example.test", config.customSender.address);
-        assertEquals("replies@example.test", config.replyToAddress);
+        assertEquals("replies@example.test", config.customSender.replyToAddress);
     }
 
     @Test
@@ -157,10 +177,9 @@ class MailCommunicationProviderV1Test {
     }
 
     @Test
-    void sendsWithTheDefaultSenderAndConfiguredReplyTo() throws Exception {
+    void sendsWithTheDefaultSenderWithoutReplyTo() throws Exception {
         var config = new MailCommunicationProviderV1.Config();
         config.senderMode = MailCommunicationProviderV1.SENDER_MODE_DEFAULT;
-        config.replyToAddress = "replies@example.test";
         var bindingConfig = new MailCommunicationProviderV1.IdentityBinding();
         bindingConfig.emailAttribute = "mail";
         var message = message();
@@ -172,7 +191,7 @@ class MailCommunicationProviderV1Test {
                 same(message),
                 argThat(options -> options.senderName() == null
                         && options.senderAddress() == null
-                        && options.replyToAddress().equals("replies@example.test"))
+                        && options.replyToAddress() == null)
         );
     }
 
@@ -183,7 +202,7 @@ class MailCommunicationProviderV1Test {
         config.customSender = new MailCommunicationProviderV1.CustomSenderConfig();
         config.customSender.name = "Custom Service";
         config.customSender.address = "custom@example.test";
-        config.replyToAddress = "replies@example.test";
+        config.customSender.replyToAddress = "replies@example.test";
         var bindingConfig = new MailCommunicationProviderV1.IdentityBinding();
         bindingConfig.emailAttribute = "mail";
         var message = message();

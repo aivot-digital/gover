@@ -13,6 +13,7 @@ import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
@@ -22,6 +23,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputEle
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
+import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
@@ -56,6 +58,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
     public static final String CUSTOM_SENDER_NAME_FIELD_ID = "customSenderName";
     public static final String CUSTOM_SENDER_ADDRESS_FIELD_ID = "customSenderAddress";
     public static final String REPLY_TO_ADDRESS_FIELD_ID = "replyToAddress";
+    public static final String CUSTOM_SENDER_ALERT_ID = "customSenderAlert";
     private static final String CONFIG_LAYOUT_ID = "mail-provider-config";
 
     private final DefaultMailCommunicationService defaultMailCommunicationService;
@@ -151,7 +154,10 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
                 .ifPresent(group -> group.setVisibility(senderModeVisibility(SENDER_MODE_DEFAULT)));
         layout
                 .findChild(CUSTOM_SENDER_GROUP_ID, GroupLayoutElement.class)
-                .ifPresent(group -> group.setVisibility(senderModeVisibility(SENDER_MODE_CUSTOM)));
+                .ifPresent(group -> {
+                    group.setVisibility(senderModeVisibility(SENDER_MODE_CUSTOM));
+                    group.getChildren().addFirst(createCustomSenderAlert(mailConfiguration.host()));
+                });
         layout
                 .findChild(CUSTOM_SENDER_ADDRESS_FIELD_ID, TextInputElement.class)
                 .ifPresent(field -> field.setPattern(emailPattern()));
@@ -239,7 +245,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         }
         var config = context.communicationProviderConfiguration();
         var options = switch (config.senderMode) {
-            case SENDER_MODE_DEFAULT -> MailCommunicationSendOptions.defaultSender(config.replyToAddress);
+            case SENDER_MODE_DEFAULT -> MailCommunicationSendOptions.defaults();
             case SENDER_MODE_CUSTOM -> {
                 if (config.customSender == null) {
                     throw new CommunicationException("Die eigene Absenderkonfiguration fehlt.");
@@ -247,7 +253,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
                 yield MailCommunicationSendOptions.customSender(
                         config.customSender.name,
                         config.customSender.address,
-                        config.replyToAddress
+                        config.customSender.replyToAddress
                 );
             }
             case null, default -> throw new CommunicationException("Die Absenderkonfiguration ist ungültig.");
@@ -315,6 +321,20 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         return value == null || value.isBlank() ? "Nicht konfiguriert" : value.trim();
     }
 
+    private static AlertContentElement createCustomSenderAlert(String smtpHost) {
+        var smtpServer = smtpHost == null || smtpHost.isBlank()
+                ? "den verwendeten SMTP-Server"
+                : "den SMTP-Server „%s“".formatted(smtpHost.trim());
+        var alert = new AlertContentElement();
+        alert.setId(CUSTOM_SENDER_ALERT_ID);
+        alert.setTitle("Eigene Absenderadresse prüfen");
+        alert.setText("""
+                Der SMTP-Zugang für %s erlaubt möglicherweise nicht jede Absenderadresse. Viele E-Mail-Anbieter lassen nur die Adresse des angemeldeten Kontos oder vorher freigeschaltete Adressen zu. Wenn die hier eingetragene Absenderadresse nicht freigegeben ist, lehnt der Server den Versand ab. In manchen Fällen wird die Nachricht zwar zugestellt, aber als Spam eingestuft. Verwenden Sie deshalb nur eine Adresse, die bei diesem Anbieter für den Versand freigeschaltet ist.
+                """.formatted(smtpServer).trim());
+        alert.setAlertType(AlertType.Warning);
+        return alert;
+    }
+
     @LayoutElementPOJOBinding(id = CONFIG_LAYOUT_ID, type = ElementType.ConfigLayout)
     public static class Config {
         @InputElementPOJOBinding(id = SENDER_MODE_FIELD_ID, type = ElementType.Radio, properties = {
@@ -330,18 +350,6 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         public DefaultSenderConfig defaultSender;
 
         public CustomSenderConfig customSender;
-
-        @InputElementPOJOBinding(id = REPLY_TO_ADDRESS_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Reply-To-Adresse"),
-                @ElementPOJOBindingProperty(
-                        key = "hint",
-                        strValue = "Optional. Bleibt das Feld leer, werden Antworten an die verwendete From-Adresse gesendet."
-                ),
-                @ElementPOJOBindingProperty(key = "autocomplete", strValue = "email"),
-                @ElementPOJOBindingProperty(key = "required", falseValue = true),
-                @ElementPOJOBindingProperty(key = "maxCharacters", intValue = 254),
-        })
-        public String replyToAddress;
     }
 
     @LayoutElementPOJOBinding(id = DEFAULT_SENDER_GROUP_ID, type = ElementType.GroupLayout)
@@ -357,6 +365,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
                 @ElementPOJOBindingProperty(key = "disabled", boolValue = true),
         })
         public String address;
+
     }
 
     @LayoutElementPOJOBinding(id = CUSTOM_SENDER_GROUP_ID, type = ElementType.GroupLayout)
@@ -377,6 +386,18 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
                 @ElementPOJOBindingProperty(key = "maxCharacters", intValue = 254),
         })
         public String address;
+
+        @InputElementPOJOBinding(id = REPLY_TO_ADDRESS_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Reply-To-Adresse"),
+                @ElementPOJOBindingProperty(
+                        key = "hint",
+                        strValue = "Optional. Bleibt das Feld leer, werden Antworten an die From-Adresse gesendet."
+                ),
+                @ElementPOJOBindingProperty(key = "autocomplete", strValue = "email"),
+                @ElementPOJOBindingProperty(key = "required", falseValue = true),
+                @ElementPOJOBindingProperty(key = "maxCharacters", intValue = 254),
+        })
+        public String replyToAddress;
     }
 
     @LayoutElementPOJOBinding(id = "mail-identity-provider-binding-config", type = ElementType.ConfigLayout)
