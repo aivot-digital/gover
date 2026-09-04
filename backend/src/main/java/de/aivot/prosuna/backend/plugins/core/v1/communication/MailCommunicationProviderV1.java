@@ -4,21 +4,35 @@ import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefinition;
+import de.aivot.prosuna.backend.communication.models.MailCommunicationSendOptions;
 import de.aivot.prosuna.backend.communication.services.DefaultMailCommunicationService;
 import de.aivot.prosuna.backend.communication.utils.EmailAddressUtils;
+import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
+import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
+import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.mail.services.MailConfigurationService;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
@@ -32,10 +46,25 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
     public static final String EMAIL_ATTRIBUTE_FIELD_ID = "emailAttribute";
     public static final String CUSTOMER_EMAIL_FIELD_ID = "email";
 
-    private final DefaultMailCommunicationService defaultMailCommunicationService;
+    public static final String SENDER_MODE_FIELD_ID = "senderMode";
+    public static final String SENDER_MODE_DEFAULT = "default";
+    public static final String SENDER_MODE_CUSTOM = "custom";
+    public static final String DEFAULT_SENDER_GROUP_ID = "defaultSenderGroup";
+    public static final String DEFAULT_SENDER_NAME_FIELD_ID = "defaultSenderName";
+    public static final String DEFAULT_SENDER_ADDRESS_FIELD_ID = "defaultSenderAddress";
+    public static final String CUSTOM_SENDER_GROUP_ID = "customSenderGroup";
+    public static final String CUSTOM_SENDER_NAME_FIELD_ID = "customSenderName";
+    public static final String CUSTOM_SENDER_ADDRESS_FIELD_ID = "customSenderAddress";
+    public static final String REPLY_TO_ADDRESS_FIELD_ID = "replyToAddress";
+    private static final String CONFIG_LAYOUT_ID = "mail-provider-config";
 
-    public MailCommunicationProviderV1(DefaultMailCommunicationService defaultMailCommunicationService) {
+    private final DefaultMailCommunicationService defaultMailCommunicationService;
+    private final MailConfigurationService mailConfigurationService;
+
+    public MailCommunicationProviderV1(DefaultMailCommunicationService defaultMailCommunicationService,
+                                       MailConfigurationService mailConfigurationService) {
         this.defaultMailCommunicationService = defaultMailCommunicationService;
+        this.mailConfigurationService = mailConfigurationService;
     }
 
     @Nonnull
@@ -82,10 +111,54 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
 
     @Nonnull
     @Override
-    public ConfigLayoutElement getConfigLayout() {
-        var layout = new ConfigLayoutElement();
-        layout.setId("mail-provider-config");
-        layout.setChildren(List.of());
+    public ConfigLayoutElement getConfigLayout() throws ResponseException {
+        final ConfigLayoutElement layout;
+        try {
+            layout = ElementPOJOMapper.createFromPOJO(Config.class);
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError(
+                    "Das Konfigurationslayout für den E-Mail-Kommunikationsanbieter konnte nicht erstellt werden.",
+                    e
+            );
+        }
+
+        layout
+                .findChild(SENDER_MODE_FIELD_ID, RadioInputElement.class)
+                .ifPresent(senderMode -> {
+                    senderMode.setOptions(List.of(
+                            RadioInputElementOption.of(SENDER_MODE_DEFAULT, "Standardabsender verwenden"),
+                            RadioInputElementOption.of(SENDER_MODE_CUSTOM, "Eigenen Absender verwenden")
+                    ));
+                    senderMode.setValue(new ElementValueFunctions().setNoCode(
+                            NoCodeStaticValue.of(SENDER_MODE_DEFAULT)
+                    ));
+                });
+
+        var mailConfiguration = mailConfigurationService.getConfiguration();
+
+        layout
+                .findChild(DEFAULT_SENDER_NAME_FIELD_ID, TextInputElement.class)
+                .ifPresent(field -> field.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(
+                        displayConfiguredValue(mailConfiguration.senderName())
+                ))));
+        layout
+                .findChild(DEFAULT_SENDER_ADDRESS_FIELD_ID, TextInputElement.class)
+                .ifPresent(field -> field.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(
+                        displayConfiguredValue(mailConfiguration.senderAddress())
+                ))));
+        layout
+                .findChild(DEFAULT_SENDER_GROUP_ID, GroupLayoutElement.class)
+                .ifPresent(group -> group.setVisibility(senderModeVisibility(SENDER_MODE_DEFAULT)));
+        layout
+                .findChild(CUSTOM_SENDER_GROUP_ID, GroupLayoutElement.class)
+                .ifPresent(group -> group.setVisibility(senderModeVisibility(SENDER_MODE_CUSTOM)));
+        layout
+                .findChild(CUSTOM_SENDER_ADDRESS_FIELD_ID, TextInputElement.class)
+                .ifPresent(field -> field.setPattern(emailPattern()));
+        layout
+                .findChild(REPLY_TO_ADDRESS_FIELD_ID, TextInputElement.class)
+                .ifPresent(field -> field.setPattern(optionalEmailPattern()));
+
         return layout;
     }
 
@@ -164,7 +237,22 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         if (recipient == null) {
             throw new CommunicationException("Für die Identität %s ist keine E-Mail-Adresse verfügbar.", identity.identityId());
         }
-        defaultMailCommunicationService.sendMessage(recipient, message);
+        var config = context.communicationProviderConfiguration();
+        var options = switch (config.senderMode) {
+            case SENDER_MODE_DEFAULT -> MailCommunicationSendOptions.defaultSender(config.replyToAddress);
+            case SENDER_MODE_CUSTOM -> {
+                if (config.customSender == null) {
+                    throw new CommunicationException("Die eigene Absenderkonfiguration fehlt.");
+                }
+                yield MailCommunicationSendOptions.customSender(
+                        config.customSender.name,
+                        config.customSender.address,
+                        config.replyToAddress
+                );
+            }
+            case null, default -> throw new CommunicationException("Die Absenderkonfiguration ist ungültig.");
+        };
+        defaultMailCommunicationService.sendMessage(recipient, message, options);
 
         assert message.subject() != null;
         assert message.htmlBody() != null;
@@ -201,8 +289,94 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         return null;
     }
 
-    @LayoutElementPOJOBinding(id = "mail-provider-config", type = ElementType.ConfigLayout)
+    private static ElementVisibilityFunctions senderModeVisibility(@Nonnull String senderMode) {
+        return ElementVisibilityFunctions.of(NoCodeExpression.of(
+                NoCodeEqualsOperator.OPERATOR_ID,
+                NoCodeReference.of(SENDER_MODE_FIELD_ID),
+                NoCodeStaticValue.of(senderMode)
+        )).recalculateReferencedIds();
+    }
+
+    private static TextInputElementPattern emailPattern() {
+        return TextInputElementPattern.of(
+                EmailAddressUtils.EMAIL_PATTERN_VALUE,
+                "Bitte geben Sie eine gültige E-Mail-Adresse ein."
+        );
+    }
+
+    private static TextInputElementPattern optionalEmailPattern() {
+        return TextInputElementPattern.of(
+                "^(?:$|[^\\s@]+@[^\\s@]+\\.[^\\s@]+)$",
+                "Bitte geben Sie eine gültige E-Mail-Adresse ein."
+        );
+    }
+
+    private static String displayConfiguredValue(String value) {
+        return value == null || value.isBlank() ? "Nicht konfiguriert" : value.trim();
+    }
+
+    @LayoutElementPOJOBinding(id = CONFIG_LAYOUT_ID, type = ElementType.ConfigLayout)
     public static class Config {
+        @InputElementPOJOBinding(id = SENDER_MODE_FIELD_ID, type = ElementType.Radio, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Absender"),
+                @ElementPOJOBindingProperty(
+                        key = "hint",
+                        strValue = "Wählen Sie, ob der globale Standardabsender oder eigene Absenderdaten verwendet werden sollen."
+                ),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+        })
+        public String senderMode;
+
+        public DefaultSenderConfig defaultSender;
+
+        public CustomSenderConfig customSender;
+
+        @InputElementPOJOBinding(id = REPLY_TO_ADDRESS_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Reply-To-Adresse"),
+                @ElementPOJOBindingProperty(
+                        key = "hint",
+                        strValue = "Optional. Bleibt das Feld leer, werden Antworten an die verwendete From-Adresse gesendet."
+                ),
+                @ElementPOJOBindingProperty(key = "autocomplete", strValue = "email"),
+                @ElementPOJOBindingProperty(key = "required", falseValue = true),
+                @ElementPOJOBindingProperty(key = "maxCharacters", intValue = 254),
+        })
+        public String replyToAddress;
+    }
+
+    @LayoutElementPOJOBinding(id = DEFAULT_SENDER_GROUP_ID, type = ElementType.GroupLayout)
+    public static class DefaultSenderConfig {
+        @InputElementPOJOBinding(id = DEFAULT_SENDER_NAME_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "From Name"),
+                @ElementPOJOBindingProperty(key = "disabled", boolValue = true),
+        })
+        public String name;
+
+        @InputElementPOJOBinding(id = DEFAULT_SENDER_ADDRESS_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "From Adresse"),
+                @ElementPOJOBindingProperty(key = "disabled", boolValue = true),
+        })
+        public String address;
+    }
+
+    @LayoutElementPOJOBinding(id = CUSTOM_SENDER_GROUP_ID, type = ElementType.GroupLayout)
+    public static class CustomSenderConfig {
+        @InputElementPOJOBinding(id = CUSTOM_SENDER_NAME_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "From Name"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Anzeigename des Absenders."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "maxCharacters", intValue = 255),
+        })
+        public String name;
+
+        @InputElementPOJOBinding(id = CUSTOM_SENDER_ADDRESS_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "From Adresse"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "E-Mail-Adresse des Absenders."),
+                @ElementPOJOBindingProperty(key = "autocomplete", strValue = "email"),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "maxCharacters", intValue = 254),
+        })
+        public String address;
     }
 
     @LayoutElementPOJOBinding(id = "mail-identity-provider-binding-config", type = ElementType.ConfigLayout)

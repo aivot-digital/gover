@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.communication.services;
 
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
+import de.aivot.prosuna.backend.communication.models.MailCommunicationSendOptions;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.utils.EmailAddressUtils;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
@@ -29,11 +30,46 @@ public class DefaultMailCommunicationService {
     }
 
     public void sendMessage(@Nonnull String rawRecipient, @Nonnull CommunicationMessage message) throws CommunicationException {
+        sendMessage(rawRecipient, message, MailCommunicationSendOptions.defaults());
+    }
+
+    public void sendMessage(@Nonnull String rawRecipient,
+                            @Nonnull CommunicationMessage message,
+                            @Nonnull MailCommunicationSendOptions options) throws CommunicationException {
         final String recipient;
         try {
             recipient = EmailAddressUtils.normalizeSingleAddress(rawRecipient);
         } catch (IllegalArgumentException e) {
             throw new CommunicationException("Die E-Mail-Adresse der Identität ist ungültig.", e);
+        }
+
+        final String senderName;
+        final String senderAddress;
+        if (!options.useDefaultSender()) {
+            senderName = trimToNull(options.senderName());
+            if (senderName == null) {
+                throw new CommunicationException("Der konfigurierte Absendername darf nicht leer sein.");
+            }
+            try {
+                senderAddress = EmailAddressUtils.normalizeSingleAddress(options.senderAddress());
+            } catch (IllegalArgumentException e) {
+                throw new CommunicationException("Die konfigurierte Absenderadresse ist ungültig.", e);
+            }
+        } else {
+            senderName = null;
+            senderAddress = null;
+        }
+
+        final String replyToAddress;
+        var rawReplyToAddress = trimToNull(options.replyToAddress());
+        if (rawReplyToAddress == null) {
+            replyToAddress = null;
+        } else {
+            try {
+                replyToAddress = EmailAddressUtils.normalizeSingleAddress(rawReplyToAddress);
+            } catch (IllegalArgumentException e) {
+                throw new CommunicationException("Die konfigurierte Reply-To-Adresse ist ungültig.", e);
+            }
         }
 
         if (message.subject() == null || message.subject().isBlank()) {
@@ -49,7 +85,14 @@ public class DefaultMailCommunicationService {
         try {
             var mimeMessage = mailSender.createMimeMessage();
             var helper = new MimeMessageHelper(mimeMessage, true, StandardCharsets.UTF_8.name());
-            helper.setFrom(prosunaConfig.getFromMail());
+            if (senderAddress == null) {
+                helper.setFrom(prosunaConfig.getFromMail());
+            } else {
+                helper.setFrom(senderAddress, senderName);
+            }
+            if (replyToAddress != null) {
+                helper.setReplyTo(replyToAddress);
+            }
             helper.setTo(recipient);
             helper.setSubject(message.subject());
 
@@ -84,5 +127,9 @@ public class DefaultMailCommunicationService {
                     e
             );
         }
+    }
+
+    private static String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }
