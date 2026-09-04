@@ -89,9 +89,9 @@ public class AuthController {
             Bitte starten Sie die Anmeldung erneut.
             """;
 
-    private static final String FAILED_TO_LOAD_CACHED_AUTH_FLOW_STATE_MESSAGE = "Zwischengespeicherte Authentifizierungsdaten konnten nicht geladen werden";
+    private static final String FAILED_TO_LOAD_CACHED_AUTH_FLOW_STATE_MESSAGE = "Authentifizierungsdaten konnten nicht geladen werden";
     private static final String FAILED_TO_LOAD_CACHED_AUTH_FLOW_STATE_DESCRIPTION = """
-            Die für die Anmeldung zwischengespeicherten Daten konnten nicht geladen werden.
+            Die für die Anmeldung zwischengespeicherten Authentifizierungsdaten konnten nicht geladen werden.
             Deshalb kann die Anmeldung nicht fortgesetzt werden.
             Bitte starten Sie die Anmeldung erneut.
             """;
