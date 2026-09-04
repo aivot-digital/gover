@@ -67,7 +67,7 @@ public class AuthController {
     private static final String DEFAULT_APP_URI = "/staff";
     private static final String CALLBACK_ERROR_VIEW = "auth/oidc-callback-error";
 
-    private static final String MISSING_AUTHORIZATION_CODE_MESSAGE = "Kein Autorisierungscode erhaltens";
+    private static final String MISSING_AUTHORIZATION_CODE_MESSAGE = "Kein Autorisierungscode erhalten";
     private static final String MISSING_AUTHORIZATION_CODE_DESCRIPTION = """
             Bei der Anmeldung wurde kein erforderlicher Autorisierungscode zurückgegeben.
             Deshalb konnte die Anmeldung nicht abgeschlossen werden.
