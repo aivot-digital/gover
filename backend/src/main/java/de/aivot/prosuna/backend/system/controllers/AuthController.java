@@ -110,8 +110,10 @@ public class AuthController {
             """;
 
     private static final String GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION = """
-            Die Antwort des Identitätsanbieters konnte nicht korrekt verarbeitet werden.
-            Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support, falls der Fehler bestehen bleibt.
+            Die Antwort des Identitätsanbieters konnte bei der Anmeldung nicht korrekt verarbeitet werden.
+            Deshalb konnte die Anmeldung nicht abgeschlossen werden.
+            Bitte versuchen Sie die Anmeldung erneut.
+            Falls der Fehler weiterhin auftritt, melden Sie das Problem für eine Fehlerbehebung.
             """;
 
     public static final String ACCESS_COOKIE_NAME = "access";
