@@ -1,14 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.fitconnect;
 
-import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.StoragePathSelectorInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
-import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
-import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
-import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
@@ -40,6 +33,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class FitConnectTriggerNodeV1Test {
+    private static final String REMOVED_DESTINATION_TYPE_CONFIG_KEY = "destination_type";
+
     @Test
     void createsConfigurationLayoutForAllConfigFields() throws Exception {
         var publicUrlService = mock(PublicUrlService.class);
@@ -61,7 +56,6 @@ class FitConnectTriggerNodeV1Test {
 
         assertTrue(layout.findChild(FitConnectTriggerConfigV1.SLUG_CONFIG_KEY).isPresent());
         assertTrue(layout.findChild(FitConnectTriggerConfigV1.ENVIRONMENT_CONFIG_KEY).isPresent());
-        assertTrue(layout.findChild(FitConnectTriggerConfigV1.DESTINATION_TYPE_CONFIG_KEY).isPresent());
         assertTrue(layout.findChild(FitConnectTriggerConfigV1.DESTINATION_ID_CONFIG_KEY).isPresent());
         assertTrue(layout.findChild(FitConnectTriggerConfigV1.SUBSCRIBER_CLIENT_ID_CONFIG_KEY).isPresent());
         assertTrue(layout.findChild(FitConnectTriggerConfigV1.SUBSCRIBER_CLIENT_SECRET_CONFIG_KEY).isPresent());
@@ -70,41 +64,18 @@ class FitConnectTriggerNodeV1Test {
         assertTrue(layout.findChild(FitConnectTriggerConfigV1.PrivateDecryptionKeyConfig.KEY_FILE_CONFIG_KEY).isPresent());
         assertTrue(layout.findChild(FitConnectTriggerConfigV1.CALLBACK_SECRET_KEY).isPresent());
         assertTrue(layout.findChild(FitConnectTriggerConfigV1.COPY_TO_PROCESS_DATA_CONFIG_KEY).isPresent());
+        assertTrue(layout.findChild(REMOVED_DESTINATION_TYPE_CONFIG_KEY).isEmpty());
 
-        var destinationType = layout
-                .findChild(FitConnectTriggerConfigV1.DESTINATION_TYPE_CONFIG_KEY, RadioInputElement.class)
-                .orElseThrow();
-        assertTrue(destinationType.getRequired());
-        assertNull(destinationType.getValue());
-        assertEquals(
-                List.of(
-                        RadioInputElementOption.of(
-                                FitConnectTriggerConfigV1.DESTINATION_TYPE_OPTION_ONLINE_SERVICE,
-                                "Onlinedienst-Zustellpunkt"
-                        ),
-                        RadioInputElementOption.of(
-                                FitConnectTriggerConfigV1.DESTINATION_TYPE_OPTION_ADMINISTRATION,
-                                "Verwaltungs-Zustellpunkt"
-                        )
-                ),
-                destinationType.getOptions()
-        );
-
-        var administrationKeyVisibility = ElementVisibilityFunctions
-                .of(NoCodeExpression.of(
-                        NoCodeEqualsOperator.OPERATOR_ID,
-                        new NoCodeReference(FitConnectTriggerConfigV1.DESTINATION_TYPE_CONFIG_KEY),
-                        new NoCodeStaticValue(FitConnectTriggerConfigV1.DESTINATION_TYPE_OPTION_ADMINISTRATION)
-                ))
-                .recalculateReferencedIds();
         var privateSigningKey = layout
                 .findChild(FitConnectTriggerConfigV1.PRIVATE_SIGNING_KEY_CONFIG_KEY, StoragePathSelectorInputElement.class)
                 .orElseThrow();
         var privateDecryptionKeys = layout
                 .findChild(FitConnectTriggerConfigV1.PRIVATE_DECRYPTION_KEYS_CONFIG_KEY, ReplicatingContainerLayoutElement.class)
                 .orElseThrow();
-        assertEquals(administrationKeyVisibility, privateSigningKey.getVisibility());
-        assertEquals(administrationKeyVisibility, privateDecryptionKeys.getVisibility());
+        assertTrue(privateSigningKey.getRequired());
+        assertTrue(privateDecryptionKeys.getRequired());
+        assertNull(privateSigningKey.getVisibility());
+        assertNull(privateDecryptionKeys.getVisibility());
     }
 
     @Test

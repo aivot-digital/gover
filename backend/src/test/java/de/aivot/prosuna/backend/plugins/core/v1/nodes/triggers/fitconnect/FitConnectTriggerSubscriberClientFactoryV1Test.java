@@ -22,18 +22,9 @@ class FitConnectTriggerSubscriberClientFactoryV1Test {
             new FitConnectTriggerSubscriberClientFactoryV1(secretService, storageService);
 
     @Test
-    void onlineServiceDestinationDoesNotRequirePrivateKeys() throws Exception {
-        var config = validConfig(FitConnectTriggerConfigV1.DESTINATION_TYPE_OPTION_ONLINE_SERVICE);
-
-        var issues = factory.validateConfiguration(config);
-
-        assertTrue(issues.isEmpty());
-        verifyNoInteractions(storageService);
-    }
-
-    @Test
-    void administrationDestinationRequiresPrivateKeys() throws Exception {
-        var config = validConfig(FitConnectTriggerConfigV1.DESTINATION_TYPE_OPTION_ADMINISTRATION);
+    void missingPrivateKeysAreRejected() throws Exception {
+        var config = validConfig();
+        config.privateDecryptionKeys = null;
 
         var issues = factory.validateConfiguration(config);
 
@@ -48,21 +39,18 @@ class FitConnectTriggerSubscriberClientFactoryV1Test {
     }
 
     @Test
-    void missingOrUnknownDestinationTypeIsRejectedWithoutValidatingPrivateKeys() throws Exception {
-        for (var destinationType : new String[]{null, "unknown"}) {
-            var config = validConfig(destinationType);
+    void emptyPrivateDecryptionKeyListIsRejected() throws Exception {
+        var config = validConfig();
 
-            var issues = factory.validateConfiguration(config);
+        var issues = factory.validateConfiguration(config);
 
-            assertEquals(
-                    List.of(FitConnectTriggerConfigV1.DESTINATION_TYPE_CONFIG_KEY),
-                    issues.stream().map(FitConnectTriggerSubscriberClientFactoryV1.ValidationIssue::fieldId).toList()
-            );
-        }
+        assertTrue(issues.stream().anyMatch(
+                issue -> FitConnectTriggerConfigV1.PRIVATE_DECRYPTION_KEYS_CONFIG_KEY.equals(issue.fieldId())
+        ));
         verifyNoInteractions(storageService);
     }
 
-    private FitConnectTriggerConfigV1 validConfig(String destinationType) throws Exception {
+    private FitConnectTriggerConfigV1 validConfig() throws Exception {
         var subscriberClientSecretId = UUID.randomUUID();
         var callbackSecretId = UUID.randomUUID();
         var secret = mock(SecretEntity.class);
@@ -71,7 +59,6 @@ class FitConnectTriggerSubscriberClientFactoryV1Test {
         when(secretService.decrypt(secret)).thenReturn("decrypted-secret");
 
         var config = new FitConnectTriggerConfigV1();
-        config.destinationType = destinationType;
         config.subscriberClientId = "subscriber-client";
         config.subscriberClientSecret = subscriberClientSecretId.toString();
         config.callbackSecret = callbackSecretId.toString();

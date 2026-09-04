@@ -29,10 +29,6 @@ import java.util.UUID;
 @Service
 public class FitConnectTriggerSubscriberClientFactoryV1 {
     private static final Set<String> SUPPORTED_ENVIRONMENTS = Set.of("TEST", "STAGE", "PROD");
-    private static final Set<String> SUPPORTED_DESTINATION_TYPES = Set.of(
-            FitConnectTriggerConfigV1.DESTINATION_TYPE_OPTION_ONLINE_SERVICE,
-            FitConnectTriggerConfigV1.DESTINATION_TYPE_OPTION_ADMINISTRATION
-    );
 
     private final SecretService secretService;
     private final StorageService storageService;
@@ -88,14 +84,6 @@ public class FitConnectTriggerSubscriberClientFactoryV1 {
     public List<ValidationIssue> validateConfiguration(@Nonnull FitConnectTriggerConfigV1 config) {
         var issues = new ArrayList<ValidationIssue>();
 
-        var destinationType = StringUtils.toNullableTrimmedString(config.destinationType);
-        if (destinationType == null || !SUPPORTED_DESTINATION_TYPES.contains(destinationType)) {
-            issues.add(new ValidationIssue(
-                    FitConnectTriggerConfigV1.DESTINATION_TYPE_CONFIG_KEY,
-                    "Wählen Sie aus, ob der Trigger als Onlinedienst- oder Verwaltungs-Zustellpunkt verwendet wird."
-            ));
-        }
-
         var normalizedEnvironment = normalizeEnvironmentOrNull(config.environment);
         if (normalizedEnvironment == null || !SUPPORTED_ENVIRONMENTS.contains(normalizedEnvironment)) {
             issues.add(new ValidationIssue(
@@ -122,30 +110,28 @@ public class FitConnectTriggerSubscriberClientFactoryV1 {
                 "Das Callback-Secret",
                 issues
         );
-        if (FitConnectTriggerConfigV1.DESTINATION_TYPE_OPTION_ADMINISTRATION.equals(destinationType)) {
-            validateJwkReference(
-                    config.privateSigningKey,
-                    FitConnectTriggerConfigV1.PRIVATE_SIGNING_KEY_CONFIG_KEY,
-                    "Der private Signaturschlüssel",
-                    KeyOperation.SIGN,
-                    issues
-            );
+        validateJwkReference(
+                config.privateSigningKey,
+                FitConnectTriggerConfigV1.PRIVATE_SIGNING_KEY_CONFIG_KEY,
+                "Der private Signaturschlüssel",
+                KeyOperation.SIGN,
+                issues
+        );
 
-            if (config.privateDecryptionKeys == null || config.privateDecryptionKeys.isEmpty()) {
-                issues.add(new ValidationIssue(
+        if (config.privateDecryptionKeys == null || config.privateDecryptionKeys.isEmpty()) {
+            issues.add(new ValidationIssue(
+                    FitConnectTriggerConfigV1.PRIVATE_DECRYPTION_KEYS_CONFIG_KEY,
+                    "Mindestens ein privater Entschlüsselungsschlüssel muss hinterlegt werden."
+            ));
+        } else {
+            for (var keyConfig : config.privateDecryptionKeys) {
+                validateJwkReference(
+                        keyConfig == null ? null : keyConfig.keyFile,
                         FitConnectTriggerConfigV1.PRIVATE_DECRYPTION_KEYS_CONFIG_KEY,
-                        "Mindestens ein privater Entschlüsselungsschlüssel muss hinterlegt werden."
-                ));
-            } else {
-                for (var keyConfig : config.privateDecryptionKeys) {
-                    validateJwkReference(
-                            keyConfig == null ? null : keyConfig.keyFile,
-                            FitConnectTriggerConfigV1.PRIVATE_DECRYPTION_KEYS_CONFIG_KEY,
-                            "Der private Entschlüsselungsschlüssel",
-                            KeyOperation.UNWRAP_KEY,
-                            issues
-                    );
-                }
+                        "Der private Entschlüsselungsschlüssel",
+                        KeyOperation.UNWRAP_KEY,
+                        issues
+                );
             }
         }
 

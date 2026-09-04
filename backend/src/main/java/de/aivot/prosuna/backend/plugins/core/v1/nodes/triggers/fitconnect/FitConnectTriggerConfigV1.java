@@ -18,9 +18,6 @@ public class FitConnectTriggerConfigV1 {
 
     public static final String SLUG_CONFIG_KEY = "slug";
     public static final String ENVIRONMENT_CONFIG_KEY = "environment";
-    public static final String DESTINATION_TYPE_CONFIG_KEY = "destination_type";
-    public static final String DESTINATION_TYPE_OPTION_ONLINE_SERVICE = "online_service";
-    public static final String DESTINATION_TYPE_OPTION_ADMINISTRATION = "administration";
     public static final String DESTINATION_ID_CONFIG_KEY = "destination_id";
     public static final String SUBSCRIBER_CLIENT_ID_CONFIG_KEY = "subscriber_client_id";
     public static final String SUBSCRIBER_CLIENT_SECRET_CONFIG_KEY = "subscriber_client_secret";
@@ -46,15 +43,6 @@ public class FitConnectTriggerConfigV1 {
             @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
     })
     public String environment = DEFAULT_ENVIRONMENT;
-
-    /** Type of system represented by this trigger; a missing value is an invalid configuration. */
-    @InputElementPOJOBinding(id = DESTINATION_TYPE_CONFIG_KEY, type = ElementType.Radio, properties = {
-            @ElementPOJOBindingProperty(key = "label", strValue = "Art des Zustellpunkts"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob der Trigger als Onlinedienst- oder Verwaltungs-Zustellpunkt verwendet wird."),
-            @ElementPOJOBindingProperty(key = "required", boolValue = true),
-            @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
-    })
-    public String destinationType;
 
     /** Destination UUID expected in every callback handled by this trigger. */
     @InputElementPOJOBinding(id = DESTINATION_ID_CONFIG_KEY, type = ElementType.Text, properties = {
@@ -83,8 +71,7 @@ public class FitConnectTriggerConfigV1 {
     })
     public String subscriberClientSecret;
 
-    /** Asset containing the private signing JWK used for subscriber events; required only for administration destinations. */
-    @Nullable
+    /** Asset containing the private signing JWK used for subscriber events. */
     @InputElementPOJOBinding(id = PRIVATE_SIGNING_KEY_CONFIG_KEY, type = ElementType.StoragePathSelector, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "Privater Signaturschlüssel"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Asset-Datei mit dem privaten Signatur-JWK des Subscribers."),
@@ -94,8 +81,7 @@ public class FitConnectTriggerConfigV1 {
     })
     public StoragePathSelectorInputElementValue privateSigningKey;
 
-    /** Private decryption JWKs; administration destinations require at least one entry, while online service destinations may leave the list empty. */
-    @Nullable
+    /** Private decryption JWKs; at least one entry is required and multiple entries support key rollover. */
     public List<PrivateDecryptionKeyConfig> privateDecryptionKeys = new LinkedList<>();
 
     /** Secret reference used exclusively to verify incoming callback HMACs. */

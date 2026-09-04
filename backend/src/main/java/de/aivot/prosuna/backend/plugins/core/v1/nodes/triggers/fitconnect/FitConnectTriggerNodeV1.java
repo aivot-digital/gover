@@ -3,10 +3,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.fitconnect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
-import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.StoragePathSelectorInputElement;
@@ -17,11 +14,7 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutEleme
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.enums.StoragePathSelectorMode;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
-import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
-import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
-import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
@@ -199,33 +192,6 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
                         SelectInputElementOption.of("STAGE", "STAGE"),
                         SelectInputElementOption.of("PROD", "PROD")
                 )));
-
-        layout
-                .findChild(FitConnectTriggerConfigV1.DESTINATION_TYPE_CONFIG_KEY, RadioInputElement.class)
-                .ifPresent(field -> field.setOptions(List.of(
-                        RadioInputElementOption.of(
-                                FitConnectTriggerConfigV1.DESTINATION_TYPE_OPTION_ONLINE_SERVICE,
-                                "Onlinedienst-Zustellpunkt"
-                        ),
-                        RadioInputElementOption.of(
-                                FitConnectTriggerConfigV1.DESTINATION_TYPE_OPTION_ADMINISTRATION,
-                                "Verwaltungs-Zustellpunkt"
-                        )
-                )));
-
-        var administrationKeyVisibility = ElementVisibilityFunctions
-                .of(NoCodeExpression.of(
-                        NoCodeEqualsOperator.OPERATOR_ID,
-                        new NoCodeReference(FitConnectTriggerConfigV1.DESTINATION_TYPE_CONFIG_KEY),
-                        new NoCodeStaticValue(FitConnectTriggerConfigV1.DESTINATION_TYPE_OPTION_ADMINISTRATION)
-                ))
-                .recalculateReferencedIds();
-        layout
-                .findChild(FitConnectTriggerConfigV1.PRIVATE_SIGNING_KEY_CONFIG_KEY)
-                .ifPresent(field -> field.setVisibility(administrationKeyVisibility));
-        layout
-                .findChild(FitConnectTriggerConfigV1.PRIVATE_DECRYPTION_KEYS_CONFIG_KEY)
-                .ifPresent(field -> field.setVisibility(administrationKeyVisibility));
 
         configureKeyFileSelector(layout, FitConnectTriggerConfigV1.PRIVATE_SIGNING_KEY_CONFIG_KEY);
         configureKeyFileSelector(layout, FitConnectTriggerConfigV1.PrivateDecryptionKeyConfig.KEY_FILE_CONFIG_KEY);
