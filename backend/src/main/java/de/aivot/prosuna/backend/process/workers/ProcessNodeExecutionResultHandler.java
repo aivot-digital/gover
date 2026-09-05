@@ -1,5 +1,8 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
+import de.aivot.prosuna.backend.communication.services.CommunicationService;
+import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.services.ProcessTaskMailService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -11,6 +14,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionBrokenImplementation;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
@@ -33,12 +37,14 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
 @Service
 public class ProcessNodeExecutionResultHandler {
     private final RabbitTemplate rabbitTemplate;
+    private final CommunicationService communicationService;
     private final ProcessInstanceRepository processInstanceRepository;
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final ProcessEdgeRepository processDefinitionEdgeRepository;
@@ -49,6 +55,7 @@ public class ProcessNodeExecutionResultHandler {
 
     @Autowired
     public ProcessNodeExecutionResultHandler(RabbitTemplate rabbitTemplate,
+                                             CommunicationService communicationService,
                                              ProcessInstanceRepository processInstanceRepository,
                                              ProcessInstanceTaskRepository processInstanceTaskRepository,
                                              ProcessEdgeRepository processDefinitionEdgeRepository,
@@ -57,6 +64,7 @@ public class ProcessNodeExecutionResultHandler {
                                              ProcessNodeRepository processNodeRepository,
                                              ProcessNodeDefinitionService processNodeDefinitionService) {
         this.rabbitTemplate = rabbitTemplate;
+        this.communicationService = communicationService;
         this.processInstanceRepository = processInstanceRepository;
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processDefinitionEdgeRepository = processDefinitionEdgeRepository;
@@ -106,6 +114,8 @@ public class ProcessNodeExecutionResultHandler {
                 executionResult
         );
 
+        handleCommunicationRequest(context);
+
         switch (executionResult) {
             case ProcessNodeExecutionResultPaymentRequested paymentRequested -> handlePaymentRequested(context.withResult(paymentRequested));
             case ProcessNodeExecutionResultTaskUpdated taskUpdated -> handleTaskUpdated(context.withResult(taskUpdated));
@@ -125,6 +135,96 @@ public class ProcessNodeExecutionResultHandler {
                     executionResult.getClass().getName()
             );
         }
+    }
+
+    private void handleCommunicationRequest(@Nonnull HandlerContext<?> context) throws ProcessNodeExecutionException {
+        var communicationRequest = context.result.getCommunicationRequest();
+        if (communicationRequest == null) {
+            return;
+        }
+
+        var recipientIdentity = context.processInstance
+                .getIdentities()
+                .get(communicationRequest.recipientIdentityId());
+        if (recipientIdentity == null) {
+            markTaskFailed(context.processInstanceTask);
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Die Empfängeridentität %s ist in der Prozessinstanz nicht vorhanden.",
+                    StringUtils.quote(communicationRequest.recipientIdentityId())
+            );
+        }
+
+        final Map<String, Object> sendResult;
+        try {
+            sendResult = communicationService.sendMessage(recipientIdentity, communicationRequest.message());
+        } catch (CommunicationException e) {
+            markTaskFailed(context.processInstanceTask);
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die Nachricht an die Identität %s konnte nicht versendet werden: %s",
+                    StringUtils.quote(communicationRequest.recipientIdentityId()),
+                    e.getMessage()
+            );
+        }
+
+        logCommunicationSent(context, recipientIdentity, communicationRequest, sendResult);
+
+        if (communicationRequest.nodeDataOutputKey() == null) {
+            return;
+        }
+
+        var nodeData = context.result.getNodeData() == null
+                ? new LinkedHashMap<String, Object>()
+                : new LinkedHashMap<>(context.result.getNodeData());
+        nodeData.put(communicationRequest.nodeDataOutputKey(), sendResult);
+        context.result.setNodeData(nodeData);
+    }
+
+    private void logCommunicationSent(@Nonnull HandlerContext<?> context,
+                                      @Nonnull IdentityData recipientIdentity,
+                                      @Nonnull ProcessNodeExecutionResultCommunicationRequest communicationRequest,
+                                      @Nonnull Map<String, Object> sendResult) {
+        var processInstanceDetails = new LinkedHashMap<String, Object>();
+        processInstanceDetails.put("id", context.processInstance.getId());
+        processInstanceDetails.put("caseNumber", context.processInstance.getCaseNumber());
+        processInstanceDetails.put("processId", context.processInstance.getProcessId());
+        processInstanceDetails.put("initialProcessVersion", context.processInstance.getInitialProcessVersion());
+
+        var recipientIdentityDetails = new LinkedHashMap<String, Object>();
+        recipientIdentityDetails.put("identityId", recipientIdentity.identityId());
+        recipientIdentityDetails.put("type", recipientIdentity.type());
+        recipientIdentityDetails.put("providerKey", recipientIdentity.providerKey());
+        recipientIdentityDetails.put("metadataIdentifier", recipientIdentity.metadataIdentifier());
+        recipientIdentityDetails.put("emailAddress", recipientIdentity.emailAddress());
+        recipientIdentityDetails.put("communicationProviderBindingId", recipientIdentity.communicationProviderBindingId());
+
+        var messageDetails = new LinkedHashMap<String, Object>();
+        messageDetails.put("subject", communicationRequest.message().subject());
+        messageDetails.put("body", communicationRequest.message().body());
+        messageDetails.put("htmlBody", communicationRequest.message().htmlBody());
+
+        var eventDetails = new LinkedHashMap<String, Object>();
+        eventDetails.put("processInstance", processInstanceDetails);
+        eventDetails.put("recipientIdentity", recipientIdentityDetails);
+        eventDetails.put("message", messageDetails);
+        eventDetails.put("sendResult", sendResult);
+
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                false,
+                true,
+                "Nachricht versendet",
+                eventDetails,
+                "Die Nachricht mit dem Betreff %s wurde erfolgreich an die Identität %s versendet.",
+                StringUtils.quote(communicationRequest.message().subject()),
+                StringUtils.quote(recipientIdentity.identityId())
+        );
+    }
+
+    private void markTaskFailed(@Nonnull ProcessInstanceTaskEntity task) {
+        task.setStatus(ProcessTaskStatus.Failed);
+        task.setFinished(Instant.now());
+        processInstanceTaskRepository.save(task);
     }
 
     private void handlePaymentRequested(@Nonnull HandlerContext<ProcessNodeExecutionResultPaymentRequested> context) {

@@ -5,15 +5,12 @@ import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.exceptions.StorageException;
@@ -41,18 +38,15 @@ import java.util.stream.Collectors;
 public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<S3StorageProviderDefinitionV1.Config> {
     private static final String ACCESS_DENIED_ERROR_CODE = "AccessDenied";
 
-    private final SecretRepository secretRepository;
     private final SecretService secretService;
     private final KnownExtensionsService knownExtensionsService;
     private final StorageProviderRepository storageProviderRepository;
 
     // TODO: Maybe cache MinioClients for better performance
 
-    public S3StorageProviderDefinitionV1(SecretRepository secretRepository,
-                                         SecretService secretService,
+    public S3StorageProviderDefinitionV1(SecretService secretService,
                                          KnownExtensionsService knownExtensionsService,
                                          StorageProviderRepository storageProviderRepository) {
-        this.secretRepository = secretRepository;
         this.secretService = secretService;
         this.knownExtensionsService = knownExtensionsService;
         this.storageProviderRepository = storageProviderRepository;
@@ -164,21 +158,6 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(e);
         }
-
-        layout
-                .findChild("secret_key_secret", SelectInputElement.class)
-                .ifPresent(field -> {
-                    var options = secretRepository
-                            .findAll()
-                            .stream()
-                            .map(secret -> SelectInputElementOption.of(
-                                    secret.getKey().toString(),
-                                    secret.getName()
-                            ))
-                            .toList();
-
-                    field.setOptions(options);
-                });
 
         return layout;
     }
@@ -879,7 +858,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         })
         public String accessKey;
 
-        @InputElementPOJOBinding(id = "secret_key_secret", type = ElementType.Select, properties = {
+        @InputElementPOJOBinding(id = "secret_key_secret", type = ElementType.SecretSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Secret Key"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Das Geheimnis des Secret Keys für den Zugriff auf den S3-kompatiblen Speicher."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),

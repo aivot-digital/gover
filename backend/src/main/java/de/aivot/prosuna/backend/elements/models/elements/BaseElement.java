@@ -75,6 +75,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = ProcessAttachmentDisplayContentElement.class, name = ElementType.ID_ProcessAttachmentDisplay),
         @JsonSubTypes.Type(value = ProcessInstanceAttachmentSetSelectElement.class, name = ElementType.ID_ProcessInstanceAttachmentSetSelect),
         @JsonSubTypes.Type(value = ProcessIdentityIdInputElement.class, name = ElementType.ID_ProcessIdentityIdInput),
+        @JsonSubTypes.Type(value = SecretSelectInputElement.class, name = ElementType.ID_SecretSelectInput),
         @JsonSubTypes.Type(value = HtmlTemplateInputElement.class, name = ElementType.ID_HtmlTemplateInput),
         @JsonSubTypes.Type(value = StoragePathSelectorInputElement.class, name = ElementType.ID_StoragePathSelector),
         @JsonSubTypes.Type(value = PaymentConfigElement.class, name = ElementType.ID_PaymentConfig),

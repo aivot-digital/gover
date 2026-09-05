@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.identity.cache.entities;
 
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.data.annotation.Id;
@@ -25,17 +26,25 @@ public class IdentityCacheEntity implements Serializable {
     @Nullable
     private String codeVerifier;
     @Nonnull
-    private UUID providerKey = UUID.randomUUID();
+    private IdentityType type = IdentityType.IdentityProvider;
+    @Nullable
+    private UUID providerKey;
     @Nonnull
     private String identityId = "";
-    @Nonnull
-    private String metadataIdentifier = "";
+    @Nullable
+    private String metadataIdentifier;
+    @Nullable
+    private String emailAddress;
     @Nonnull
     private String origin = "";
     @Nonnull
     private String stateNonce = "";
     @Nullable
     private Map<String, String> identityData;
+    @Nullable
+    private Integer communicationProviderBindingId;
+    @Nullable
+    private Map<String, Object> communicationProviderData;
 
     // region Constructors
     public IdentityCacheEntity() {
@@ -45,22 +54,30 @@ public class IdentityCacheEntity implements Serializable {
                                @Nonnull String sessionId,
                                @Nonnull Integer relatedProcessNodeId,
                                @Nullable String codeVerifier,
-                               @Nonnull UUID providerKey,
+                               @Nonnull IdentityType type,
+                               @Nullable UUID providerKey,
                                @Nonnull String identityId,
-                               @Nonnull String metadataIdentifier,
+                               @Nullable String metadataIdentifier,
+                               @Nullable String emailAddress,
                                @Nonnull String origin,
                                @Nonnull String stateNonce,
-                               @Nullable Map<String, String> identityData) {
+                               @Nullable Map<String, String> identityData,
+                               @Nullable Integer communicationProviderBindingId,
+                               @Nullable Map<String, Object> communicationProviderData) {
         this.id = id;
         this.sessionId = sessionId;
         this.relatedProcessNodeId = relatedProcessNodeId;
         this.codeVerifier = codeVerifier;
+        this.type = type;
         this.providerKey = providerKey;
         this.identityId = identityId;
         this.metadataIdentifier = metadataIdentifier;
+        this.emailAddress = emailAddress;
         this.origin = origin;
         this.stateNonce = stateNonce;
         this.identityData = identityData;
+        this.communicationProviderBindingId = communicationProviderBindingId;
+        this.communicationProviderData = communicationProviderData;
     }
 
     // endregion
@@ -71,18 +88,13 @@ public class IdentityCacheEntity implements Serializable {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         IdentityCacheEntity that = (IdentityCacheEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(sessionId, that.sessionId) &&
-                Objects.equals(relatedProcessNodeId, that.relatedProcessNodeId) && Objects.equals(codeVerifier, that.codeVerifier) &&
-                Objects.equals(providerKey, that.providerKey) && Objects.equals(identityId, that.identityId) &&
-                Objects.equals(metadataIdentifier, that.metadataIdentifier) && Objects.equals(origin, that.origin) &&
-                Objects.equals(stateNonce, that.stateNonce) && Objects.equals(identityData, that.identityData);
+        return Objects.equals(id, that.id) && Objects.equals(sessionId, that.sessionId) && Objects.equals(relatedProcessNodeId, that.relatedProcessNodeId) && Objects.equals(codeVerifier, that.codeVerifier) && type == that.type && Objects.equals(providerKey, that.providerKey) && Objects.equals(identityId, that.identityId) && Objects.equals(metadataIdentifier, that.metadataIdentifier) && Objects.equals(emailAddress, that.emailAddress) && Objects.equals(origin, that.origin) && Objects.equals(stateNonce, that.stateNonce) && Objects.equals(identityData, that.identityData) && Objects.equals(communicationProviderBindingId, that.communicationProviderBindingId) && Objects.equals(communicationProviderData, that.communicationProviderData);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, sessionId, relatedProcessNodeId, codeVerifier, providerKey, identityId, metadataIdentifier, origin, stateNonce, identityData);
+        return Objects.hash(id, sessionId, relatedProcessNodeId, codeVerifier, type, providerKey, identityId, metadataIdentifier, emailAddress, origin, stateNonce, identityData, communicationProviderBindingId, communicationProviderData);
     }
-
 
     // endregion
 
@@ -129,11 +141,21 @@ public class IdentityCacheEntity implements Serializable {
     }
 
     @Nonnull
+    public IdentityType getType() {
+        return type;
+    }
+
+    public IdentityCacheEntity setType(@Nonnull IdentityType type) {
+        this.type = type;
+        return this;
+    }
+
+    @Nullable
     public UUID getProviderKey() {
         return providerKey;
     }
 
-    public IdentityCacheEntity setProviderKey(@Nonnull UUID providerKey) {
+    public IdentityCacheEntity setProviderKey(@Nullable UUID providerKey) {
         this.providerKey = providerKey;
         return this;
     }
@@ -148,13 +170,23 @@ public class IdentityCacheEntity implements Serializable {
         return this;
     }
 
-    @Nonnull
+    @Nullable
     public String getMetadataIdentifier() {
         return metadataIdentifier;
     }
 
-    public IdentityCacheEntity setMetadataIdentifier(@Nonnull String metadataIdentifier) {
+    public IdentityCacheEntity setMetadataIdentifier(@Nullable String metadataIdentifier) {
         this.metadataIdentifier = metadataIdentifier;
+        return this;
+    }
+
+    @Nullable
+    public String getEmailAddress() {
+        return emailAddress;
+    }
+
+    public IdentityCacheEntity setEmailAddress(@Nullable String emailAddress) {
+        this.emailAddress = emailAddress;
         return this;
     }
 
@@ -188,6 +220,25 @@ public class IdentityCacheEntity implements Serializable {
         return this;
     }
 
+    @Nullable
+    public Integer getCommunicationProviderBindingId() {
+        return communicationProviderBindingId;
+    }
+
+    public IdentityCacheEntity setCommunicationProviderBindingId(@Nullable Integer communicationProviderBindingId) {
+        this.communicationProviderBindingId = communicationProviderBindingId;
+        return this;
+    }
+
+    @Nullable
+    public Map<String, Object> getCommunicationProviderData() {
+        return communicationProviderData;
+    }
+
+    public IdentityCacheEntity setCommunicationProviderData(@Nullable Map<String, Object> communicationProviderData) {
+        this.communicationProviderData = communicationProviderData;
+        return this;
+    }
 
     // endregion
 }

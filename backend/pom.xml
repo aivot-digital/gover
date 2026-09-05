@@ -40,13 +40,14 @@
         <batik.version>1.19</batik.version>
         <zxing.version>3.5.4</zxing.version>
         <minio.version>9.0.3</minio.version>
-        <okhttp.version>5.4.0</okhttp.version>
+        <okhttp.version>5.5.0</okhttp.version>
         <altcha.version>2.0.3</altcha.version>
         <bucket4j.version>8.0.1</bucket4j.version>
         <jackson-dataformat-xml.version>3.1.4</jackson-dataformat-xml.version>
         <springdoc.version>3.1.0</springdoc.version>
         <commonmark.version>0.30.0</commonmark.version>
         <fastcsv.version>4.4.0</fastcsv.version>
+        <fitconnect.version>4.0.0-rc.1</fitconnect.version>
     </properties>
 
     <profiles>
@@ -316,6 +317,16 @@
             <groupId>de.siegmar</groupId>
             <artifactId>fastcsv</artifactId>
             <version>${fastcsv.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.fitko.fitconnect</groupId>
+            <artifactId>sdk-client</artifactId>
+            <version>${fitconnect.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.fitko.fitconnect</groupId>
+            <artifactId>zbp-client</artifactId>
+            <version>${fitconnect.version}</version>
         </dependency>
     </dependencies>
 

@@ -3,19 +3,21 @@ package de.aivot.prosuna.backend.identity.controllers;
 import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
+import de.aivot.prosuna.backend.communication.services.IdentityCommunicationService;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -27,56 +29,15 @@ import java.util.UUID;
 public class IdentityController {
     public static final String IDENTITY_COOKIE_NAME = IdentityCookieUtils.IDENTITY_COOKIE_NAME;
     public static final String IDENTITY_COOKIE_PATH = IdentityCookieUtils.IDENTITY_COOKIE_PATH;
-    private static final int STAFF_TEST_RELATED_PROCESS_NODE_ID = 0;
 
     private final IdentityService identityService;
+    private final IdentityCommunicationService identityCommunicationService;
 
     @Autowired
-    public IdentityController(IdentityService identityService) {
+    public IdentityController(IdentityService identityService,
+                              IdentityCommunicationService identityCommunicationService) {
         this.identityService = identityService;
-    }
-
-    @GetMapping("{providerKey}/{identityId}/start/")
-    @Operation(
-            summary = "Start Identity Provider Authentication",
-            description = "Initiates the authentication process with the specified identity provider."
-    )
-    public void start(
-            @Nonnull @PathVariable UUID providerKey,
-            @Nonnull @PathVariable String identityId,
-            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.ORIGIN, required = true) String origin,
-            @Nullable @RequestParam(name = IdentityQueryParameterConstants.ADDITIONAL_SCOPES, required = false) List<String> additionalScopes,
-            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID, required = true) Integer relatedProcessNodeId,
-            @Nonnull @CookieValue(name = IDENTITY_COOKIE_NAME, required = false) String preexistingIdentitySessionId,
-            @Nonnull HttpServletRequest request,
-            @Nonnull HttpServletResponse response
-    ) throws ResponseException, IOException {
-        if (isLegacyStaffTestStart(providerKey, identityId, relatedProcessNodeId)) {
-            // Staff test flows must be started through the permission-guarded staff endpoint.
-            throw ResponseException.forbidden("Der Test des Nutzerkontenanbieters darf nur über den geschützten Staff-Endpunkt gestartet werden.");
-        }
-
-        var redirectUrl = identityService
-                .createRedirectURL(
-                        preexistingIdentitySessionId,
-                        providerKey,
-                        identityId,
-                        origin,
-                        additionalScopes == null ? List.of() : additionalScopes,
-                        relatedProcessNodeId
-                );
-
-        response
-                .sendRedirect(redirectUrl.toString());
-    }
-
-    private static boolean isLegacyStaffTestStart(
-            @Nonnull UUID providerKey,
-            @Nonnull String identityId,
-            @Nonnull Integer relatedProcessNodeId
-    ) {
-        return relatedProcessNodeId == STAFF_TEST_RELATED_PROCESS_NODE_ID &&
-                providerKey.toString().equalsIgnoreCase(identityId);
+        this.identityCommunicationService = identityCommunicationService;
     }
 
     @GetMapping("{providerKey}/callback/{identitySessionId}/{identityCacheEntityId}/")
@@ -165,5 +126,55 @@ public class IdentityController {
         }
 
         response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+    }
+
+    @GetMapping("{identityId}/communication/")
+    @Operation(summary = "Get communication-provider selection for an authenticated identity")
+    public IdentityCommunicationService.SelectionState getCommunicationSelection(
+            @Nonnull @PathVariable String identityId,
+            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID) Integer relatedProcessNodeId,
+            @Nonnull @CookieValue(name = IDENTITY_COOKIE_NAME) String identitySessionId
+    ) throws ResponseException {
+        return identityCommunicationService.getState(identitySessionId, relatedProcessNodeId, identityId);
+    }
+
+    @PutMapping("{identityId}/communication/")
+    @Operation(summary = "Select and configure a communication provider for an authenticated identity")
+    public IdentityCommunicationService.SelectionState selectCommunicationProvider(
+            @Nonnull @PathVariable String identityId,
+            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID) Integer relatedProcessNodeId,
+            @Nonnull @CookieValue(name = IDENTITY_COOKIE_NAME) String identitySessionId,
+            @Nonnull @Valid @RequestBody CommunicationSelectionRequest request
+    ) throws ResponseException {
+        return identityCommunicationService.select(
+                identitySessionId,
+                relatedProcessNodeId,
+                identityId,
+                request.bindingId(),
+                request.customerData()
+        );
+    }
+
+    @PostMapping("{identityId}/communication/derive/")
+    @Operation(summary = "Preview communication-provider customer configuration without saving it")
+    public IdentityCommunicationService.SelectionState deriveCommunicationProviderConfiguration(
+            @Nonnull @PathVariable String identityId,
+            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID) Integer relatedProcessNodeId,
+            @Nonnull @CookieValue(name = IDENTITY_COOKIE_NAME) String identitySessionId,
+            @Nonnull @Valid @RequestBody CommunicationSelectionRequest request
+    ) throws ResponseException {
+        return identityCommunicationService.preview(
+                identitySessionId,
+                relatedProcessNodeId,
+                identityId,
+                request.bindingId(),
+                request.customerData()
+        );
+    }
+
+    public record CommunicationSelectionRequest(
+            @Nonnull @NotNull Integer bindingId,
+            @Nonnull @NotNull AuthoredElementValues customerData
+    ) {
     }
 }

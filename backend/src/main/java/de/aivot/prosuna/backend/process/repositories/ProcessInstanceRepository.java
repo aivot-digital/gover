@@ -19,6 +19,10 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
 
     Optional<ProcessInstanceEntity> findByAccessKey(String accessKey);
 
+    Optional<ProcessInstanceEntity> findByInboundReference(String inboundReference);
+
+    boolean existsByInboundReference(String inboundReference);
+
     List<ProcessInstanceEntity> findAllByStatusAndKeepUntilLessThanEqual(ProcessInstanceStatus status,
                                                                          Instant keepUntil,
                                                                          Pageable pageable);

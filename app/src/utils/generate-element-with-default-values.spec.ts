@@ -5,6 +5,12 @@ import {type FileUploadElement} from '../models/elements/form/input/file-upload-
 import {generateElementWithDefaultValues} from './generate-element-with-default-values';
 import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
 import type {LinkButtonElement} from '../models/elements/form/content/link-button-element';
+import type {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
+import type {SecretSelectInputElement} from '../models/elements/form/input/secret-select-input-element';
+import {
+    type StoragePathSelectorInputElement,
+    StoragePathSelectorMode,
+} from '../models/elements/form/input/storage-path-selector-input-element';
 
 describe('generateElementWithDefaultValues', () => {
     it('should default text fields to not being copyable', () => {
@@ -38,5 +44,31 @@ describe('generateElementWithDefaultValues', () => {
         const element = generateElementWithDefaultValues(ElementType.FileUpload) as FileUploadElement;
 
         expect(element.submittedFileName).toBe('Anlage');
+    });
+
+    it('should initialize process identity ID inputs as scalar selections', () => {
+        const element = generateElementWithDefaultValues(ElementType.ProcessIdentityIdInput) as ProcessIdentityIdInputElement;
+
+        expect(element.label).toBe('Prozessidentität');
+        expect(element.placeholder).toBe('Prozessidentität auswählen');
+        expect(element).not.toHaveProperty('minItems');
+        expect(element).not.toHaveProperty('maxItems');
+        expect(element).not.toHaveProperty('suggestions');
+        expect(element).not.toHaveProperty('allowDuplicates');
+    });
+
+    it('should initialize secret selections without embedding options', () => {
+        const element = generateElementWithDefaultValues(ElementType.SecretSelectInput) as SecretSelectInputElement;
+
+        expect(element.label).toBe('Geheimnis');
+        expect(element.placeholder).toBe('Geheimnis auswählen');
+        expect(element).not.toHaveProperty('options');
+    });
+
+    it('should initialize storage path selectors in folder mode', () => {
+        const element = generateElementWithDefaultValues(ElementType.StoragePathSelector) as StoragePathSelectorInputElement;
+
+        expect(element.mode).toBe(StoragePathSelectorMode.Folder);
+        expect(element.placeholder).toBe('Ordner auswählen');
     });
 });

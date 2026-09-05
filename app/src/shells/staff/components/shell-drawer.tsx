@@ -293,6 +293,12 @@ const BaseDrawerGroups: DrawerGroup[] = [
                                 requiredSystemPermission: Permission.IDENTITY_PROVIDER_READ,
                             },
                             {
+                                ...drawerModuleIcon('communication'),
+                                label: 'Kommunikationsanbieter',
+                                to: '/communication-providers',
+                                requiredSystemPermission: Permission.COMMUNICATION_PROVIDER_READ,
+                            },
+                            {
                                 ...drawerModuleIcon('payment'),
                                 label: 'Zahlungsanbieter',
                                 to: '/payment-providers',

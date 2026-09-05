@@ -259,7 +259,7 @@ class AuthControllerTest {
                 modelAndView,
                 response,
                 400,
-                "Kein Autorisierungscode erhaltens",
+                "Kein Autorisierungscode erhalten",
                 """
                         Bei der Anmeldung wurde kein erforderlicher Autorisierungscode zurückgegeben.
                         Deshalb konnte die Anmeldung nicht abgeschlossen werden.

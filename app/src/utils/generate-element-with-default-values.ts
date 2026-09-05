@@ -54,9 +54,13 @@ import {IdentityConfigElement} from '../models/elements/form/input/identity-conf
 import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
 import {ProcessInstanceAttachmentSetSelectElement} from '../models/elements/form/input/process-instance-attachment-set-select-element';
 import {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
+import {SecretSelectInputElement} from '../models/elements/form/input/secret-select-input-element';
 import {getDefaultElementWeight} from './element-widths';
 import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
-import {StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
+import {
+    StoragePathSelectorInputElement,
+    StoragePathSelectorMode,
+} from '../models/elements/form/input/storage-path-selector-input-element';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 import {SelectFieldPresentation} from '../models/elements/form/input/select-field-presentation';
 import {PaymentConfigElement} from '../models/elements/form/input/payment-config-element';
@@ -144,6 +148,7 @@ const elementConstructors: {
     [ElementType.ProcessDataKeyInput]: (id: string) => ProcessDataKeyInputFieldElement;
     [ElementType.ProcessInstanceAttachmentSetSelect]: (id: string) => ProcessInstanceAttachmentSetSelectElement;
     [ElementType.ProcessIdentityIdInput]: (id: string) => ProcessIdentityIdInputElement;
+    [ElementType.SecretSelectInput]: (id: string) => SecretSelectInputElement;
     [ElementType.HtmlTemplateInput]: (id: string) => HtmlTemplateInputElement;
     [ElementType.StoragePathSelector]: (id: string) => StoragePathSelectorInputElement;
     [ElementType.PaymentConfigElement]: (id: string) => PaymentConfigElement;
@@ -510,12 +515,13 @@ const elementConstructors: {
     }),
     [ElementType.ProcessIdentityIdInput]: (id) => ({
         ...makeInputBase(ElementType.ProcessIdentityIdInput, id),
-        label: 'Prozessidentitäten',
-        placeholder: 'Identität hinzufügen',
-        suggestions: undefined,
-        minItems: undefined,
-        maxItems: undefined,
-        allowDuplicates: false,
+        label: 'Prozessidentität',
+        placeholder: 'Prozessidentität auswählen',
+    }),
+    [ElementType.SecretSelectInput]: (id) => ({
+        ...makeInputBase(ElementType.SecretSelectInput, id),
+        label: 'Geheimnis',
+        placeholder: 'Geheimnis auswählen',
     }),
     [ElementType.HtmlTemplateInput]: (id) => ({
         ...makeInputBase(ElementType.HtmlTemplateInput, id),
@@ -524,6 +530,7 @@ const elementConstructors: {
     [ElementType.StoragePathSelector]: (id) => ({
         ...makeInputBase(ElementType.StoragePathSelector, id),
         label: 'Speicherpfad',
+        mode: StoragePathSelectorMode.Folder,
         placeholder: 'Ordner auswählen',
         storageProviderSelectHint: undefined,
         allowedStorageProviderTypes: undefined,

@@ -6,11 +6,8 @@ import {IdentityButton, type IdentityButtonProps} from './identity-button';
 
 const defaultProps: IdentityButtonProps = {
     isAuthenticated: false,
-    relatedProcessNodeId: 12,
-    identityId: 'person',
-    identityProviderKey: 'bund-id',
+    startUri: '/api/public/form/process/form/identities/person/providers/bund-id/start/',
     identityProviderAssetKey: null,
-    additionalScopes: [],
     identityProviderName: 'BundID',
     identityProviderType: IdentityProviderType.BundID,
 };
@@ -29,7 +26,7 @@ describe('IdentityButton', () => {
 
         expect(screen.getByRole('link', {name: /Mit „BundID“ anmelden/})).toHaveAttribute(
             'href',
-            expect.stringContaining('/api/public/identity/bund-id/person/start/'),
+            defaultProps.startUri,
         );
         expect(screen.getByTestId('identity-provider-logo')).toHaveAttribute('aria-label', 'Logo BundID');
     });

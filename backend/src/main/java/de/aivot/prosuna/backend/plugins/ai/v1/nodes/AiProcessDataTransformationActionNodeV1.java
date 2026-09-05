@@ -16,7 +16,6 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.ElementOverrideFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
@@ -38,7 +37,6 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinit
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -97,18 +95,15 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
     private final HttpService httpService;
     private final TemplateRenderService templateRenderService;
-    private final SecretRepository secretRepository;
     private final SecretService secretService;
     private final AiPluginProperties aiPluginProperties;
 
     public AiProcessDataTransformationActionNodeV1(HttpService httpService,
                                                    TemplateRenderService templateRenderService,
-                                                   SecretRepository secretRepository,
                                                    SecretService secretService,
                                                    AiPluginProperties aiPluginProperties) {
         this.httpService = httpService;
         this.templateRenderService = templateRenderService;
-        this.secretRepository = secretRepository;
         this.secretService = secretService;
         this.aiPluginProperties = aiPluginProperties;
     }
@@ -185,13 +180,6 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                     e.getMessage()
             );
         }
-
-        layout.findChild(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, SelectInputElement.class)
-                .ifPresent(field -> field.setOptions(secretRepository
-                        .findAll()
-                        .stream()
-                        .map(secret -> SelectInputElementOption.of(secret.getKey().toString(), secret.getName()))
-                        .toList()));
 
         var modelSelectOverride = new ElementOverrideFunctions();
         modelSelectOverride.setType(OverrideFunctionType.Javascript);
@@ -693,7 +681,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         /**
          * Reference to a stored secret that contains the bearer token for the AI request. The selected secret is decrypted only during execution.
          */
-        @InputElementPOJOBinding(id = API_KEY_SECRET_FIELD_ID, type = ElementType.Select, properties = {
+        @InputElementPOJOBinding(id = API_KEY_SECRET_FIELD_ID, type = ElementType.SecretSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "API-Schlüssel"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie ein hinterlegtes Geheimnis aus, das den Bearer-Token für die KI enthält."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),

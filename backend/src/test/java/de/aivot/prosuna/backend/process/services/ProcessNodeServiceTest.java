@@ -1,11 +1,14 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.core.enums.ModuleFlags;
+import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.plugins.form.FormPlugin;
@@ -317,6 +320,120 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void validate_ShouldAcceptForwardedProcessIdentityId() throws Exception {
+        var provider = new IdentityIdValidationTestNodeDefinition();
+        var sourceNode = createNode(1, "source");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "source-identity");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, sourceNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any()))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var result = service.validate(targetNode, provider, false);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void validate_ShouldRejectUnavailableProcessIdentityId() throws Exception {
+        var provider = new IdentityIdValidationTestNodeDefinition();
+        var sourceNode = createNode(1, "source");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "missing-identity");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, sourceNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any()))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var problems = service.validate(targetNode, provider, false).orElseThrow();
+        var expectedError = "Die ausgewählte Prozessidentität „missing-identity“ ist nicht mehr verfügbar.";
+
+        assertEquals(List.of("Identity: " + expectedError), problems.problems());
+        assertEquals(
+                expectedError,
+                problems
+                        .derivedRuntimeElementData()
+                        .getElementStates()
+                        .get(IdentityIdValidationTestNodeDefinition.FIELD_ID)
+                        .getError()
+        );
+    }
+
+    @Test
+    void validate_ShouldRejectProcessIdentityIdWhenIncomingMetadataCannotBeResolved() throws Exception {
+        var provider = new IdentityIdValidationTestNodeDefinition();
+        var sourceNode = createNode(1, "source")
+                .setProcessNodeDefinitionKey("test.process.missing");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "source-identity");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, sourceNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any()))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var problems = service.validate(targetNode, provider, false).orElseThrow();
+        var expectedError = "Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden.";
+
+        assertEquals(List.of("Identity: " + expectedError), problems.problems());
+        assertEquals(
+                expectedError,
+                problems
+                        .derivedRuntimeElementData()
+                        .getElementStates()
+                        .get(IdentityIdValidationTestNodeDefinition.FIELD_ID)
+                        .getError()
+        );
+    }
+
+    @Test
+    void validate_ShouldMergeUnavailableProcessIdentityAndProviderErrors() throws Exception {
+        var provider = new IdentityIdValidationTestNodeDefinition(true);
+        var sourceNode = createNode(1, "source");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "missing-identity");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, sourceNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any()))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var problems = service.validate(targetNode, provider, false).orElseThrow();
+
+        assertEquals(
+                "Die ausgewählte Prozessidentität „missing-identity“ ist nicht mehr verfügbar. Provider error.",
+                problems
+                        .derivedRuntimeElementData()
+                        .getElementStates()
+                        .get(IdentityIdValidationTestNodeDefinition.FIELD_ID)
+                        .getError()
+        );
+    }
+
+    @Test
     void create_ShouldRejectWhenNodeTypeLimitIsReached() {
         prosunaConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, 1));
         when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
@@ -518,6 +635,12 @@ class ProcessNodeServiceTest {
                             processNodeEntity.getDataKey(),
                             null,
                             processNodeEntity
+                    )
+                    .addForwardedIdentity(
+                            processNodeEntity.getDataKey() + "-identity",
+                            processNodeEntity.getDataKey() + " identity",
+                            null,
+                            processNodeEntity
                     );
         }
 
@@ -533,6 +656,112 @@ class ProcessNodeServiceTest {
         }
 
         public static class TestNodeConfig {
+        }
+    }
+
+    private static final class IdentityIdValidationTestNodeDefinition implements ProcessNodeDefinition<IdentityIdValidationTestNodeDefinition.TestNodeConfig> {
+        private static final String FIELD_ID = "identity";
+
+        private final boolean includeProviderError;
+
+        private IdentityIdValidationTestNodeDefinition() {
+            this(false);
+        }
+
+        private IdentityIdValidationTestNodeDefinition(boolean includeProviderError) {
+            this.includeProviderError = includeProviderError;
+        }
+
+        @Nonnull
+        @Override
+        public String getParentPluginKey() {
+            return "test.process";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentKey() {
+            return "identity-id-validation-node";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Nonnull
+        @Override
+        public String getName() {
+            return "Identity ID validation node";
+        }
+
+        @Nonnull
+        @Override
+        public String getAbstract() {
+            return "Test node definition for process identity ID validation.";
+        }
+
+        @Nonnull
+        @Override
+        public String getDescription() {
+            return "Test node definition for process identity ID validation.";
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeType getType() {
+            return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodePort> getPorts() {
+            return List.of();
+        }
+
+        @Nonnull
+        @Override
+        public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) {
+            var layout = new ConfigLayoutElement();
+            layout.setId(getKey() + "-config");
+
+            var field = new ProcessIdentityIdInputElement();
+            field.setId(FIELD_ID);
+            field.setLabel("Identity");
+            layout.addChild(field);
+
+            return layout;
+        }
+
+        @Override
+        public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                               @Nonnull TestNodeConfig configuration) {
+            return includeProviderError
+                    ? Map.of(FIELD_ID, List.of("Provider error."))
+                    : Map.of();
+        }
+
+        @Override
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<TestNodeConfig> context) {
+            return new ProcessNodeExecutionResultTaskCompleted();
+        }
+
+        @Nonnull
+        @Override
+        public Class<TestNodeConfig> getNodeConfigurationClass() {
+            return TestNodeConfig.class;
+        }
+
+        public static class TestNodeConfig {
+            @InputElementPOJOBinding(id = FIELD_ID, type = ElementType.ProcessIdentityIdInput)
+            public String identityId;
         }
     }
 

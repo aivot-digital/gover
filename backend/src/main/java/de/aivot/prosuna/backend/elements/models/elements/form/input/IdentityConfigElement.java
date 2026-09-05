@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
@@ -77,8 +78,8 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
         var missingTrustLevelProviderNames = new ArrayList<String>();
 
         for (var slot : value) {
-            if (!hasSelectedOption(slot)) {
-                validationErrors.add("Für jede Identität muss mindestens ein Identitätsanbieter ausgewählt werden.");
+            if (!hasAcquisitionMethod(slot)) {
+                validationErrors.add("Für jede Identität muss mindestens ein Nutzerkontenanbieter oder die direkte E-Mail-Eingabe aktiviert werden.");
                 continue;
             }
 
@@ -116,6 +117,21 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
             if (identityProvider.isEmpty()) {
                 validationErrors.add("Ein ausgewählter Identitätsanbieter konnte nicht gefunden werden.");
                 continue;
+            }
+
+            try {
+                var hasCommunicationBinding = !SpringContext
+                        .getBean(CommunicationService.class)
+                        .getUsableBindings(identityProvider.get())
+                        .isEmpty();
+                if (!hasCommunicationBinding) {
+                    validationErrors.add(String.format(
+                            "Für den Identitätsanbieter \"%s\" ist keine verwendbare Kommunikationsanbindung konfiguriert.",
+                            identityProvider.get().getName()
+                    ));
+                }
+            } catch (Exception e) {
+                throw new ValidationException(this, "Die Kommunikationsanbindungen konnten nicht überprüft werden.");
             }
 
             if (requiresTrustLevel(identityProvider.get()) && !hasSelectedTrustLevel(option)) {
@@ -196,5 +212,9 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
                 .getOptions()
                 .stream()
                 .anyMatch(option -> option != null && option.getIdentityProviderKey() != null);
+    }
+
+    private boolean hasAcquisitionMethod(IdentityConfigElementSlot slot) {
+        return slot != null && (Boolean.TRUE.equals(slot.getAllowsMail()) || hasSelectedOption(slot));
     }
 }

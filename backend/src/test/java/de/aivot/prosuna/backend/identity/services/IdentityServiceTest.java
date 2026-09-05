@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityAdditionalParameter;
 import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
@@ -22,12 +23,14 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -65,6 +68,64 @@ class IdentityServiceTest {
                 identityProviderService,
                 identityCacheRepository
         );
+    }
+
+    @Test
+    void setEmailIdentityStoresOnlyTheNormalizedAddressAndReplacesTheSameSlot() {
+        var previousIdentity = new IdentityCacheEntity(
+                "previous", "session", 42, null, IdentityType.IdentityProvider, UUID.randomUUID(),
+                "applicant", "metadata", null, VALID_ORIGIN, VALID_STATE, Map.of("sub", "123"), null, null
+        );
+        when(identityCacheRepository.findAllBySessionIdAndRelatedProcessNodeId("session", 42))
+                .thenReturn(List.of(previousIdentity));
+        when(identityCacheRepository.save(any(IdentityCacheEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var stored = identityService.setEmailIdentity("session", 42, "applicant", " customer@example.test ");
+
+        assertEquals(IdentityType.Email, stored.getType());
+        assertEquals("session", stored.getSessionId());
+        assertEquals("applicant", stored.getIdentityId());
+        assertEquals("customer@example.test", stored.getEmailAddress());
+        assertEquals(Map.of("email", "customer@example.test"), stored.getIdentityData());
+        assertNull(stored.getProviderKey());
+        assertNull(stored.getMetadataIdentifier());
+        assertNull(stored.getCommunicationProviderBindingId());
+        assertNull(stored.getCommunicationProviderData());
+        verify(identityCacheRepository).deleteAll(List.of(previousIdentity));
+        verify(identityCacheRepository).save(stored);
+    }
+
+    @Test
+    void setEmailIdentityRejectsInvalidAddressesWithoutChangingTheCache() {
+        assertThrows(IllegalArgumentException.class, () ->
+                identityService.setEmailIdentity("session", 42, "applicant", "first@example.test,second@example.test")
+        );
+
+        verify(identityCacheRepository, org.mockito.Mockito.never()).save(any());
+        verify(identityCacheRepository, org.mockito.Mockito.never())
+                .findAllBySessionIdAndRelatedProcessNodeId(any(), any());
+    }
+
+    @Test
+    void clearIdentityDeletesOnlyTheRequestedSlot() {
+        var selected = new IdentityCacheEntity(
+                "selected", "session", 42, null, IdentityType.Email, null,
+                "applicant", null, "customer@example.test", "", "",
+                Map.of("email", "customer@example.test"), null, null
+        );
+        var other = new IdentityCacheEntity(
+                "other", "session", 42, null, IdentityType.Email, null,
+                "representative", null, "other@example.test", "", "",
+                Map.of("email", "other@example.test"), null, null
+        );
+        when(identityCacheRepository.findAllBySessionIdAndRelatedProcessNodeId("session", 42))
+                .thenReturn(List.of(selected, other));
+        when(identityCacheRepository.existsBySessionId("session")).thenReturn(true);
+
+        assertTrue(identityService.clearIdentity("session", 42, "applicant"));
+
+        verify(identityCacheRepository).deleteAll(List.of(selected));
     }
 
     @Test
@@ -109,6 +170,21 @@ class IdentityServiceTest {
         assertEquals(VALID_ORIGIN, savedIdentity.getOrigin());
         assertEquals(VALID_IDENTITY_ID, savedIdentity.getIdentityId());
         assertNotEquals(VALID_ORIGIN, returnedState);
+    }
+
+    @Test
+    void createRedirectURL_ShouldRejectDisabledProvider() throws ResponseException {
+        var providerKey = UUID.randomUUID();
+        var provider = new IdentityProviderEntity()
+                .setKey(providerKey)
+                .setIsEnabled(false);
+        when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
+
+        var exception = assertThrows(ResponseException.class, () -> identityService.createRedirectURL(
+                null, providerKey, VALID_IDENTITY_ID, VALID_ORIGIN, List.of(), 1
+        ));
+
+        assertEquals("Der Nutzerkontenanbieter ist nicht aktiviert.", exception.getMessage());
     }
 
     @Test
@@ -507,11 +583,15 @@ class IdentityServiceTest {
                 sessionId,
                 null,
                 null,
+                IdentityType.IdentityProvider,
                 providerKey,
                 VALID_IDENTITY_ID,
                 "meta",
+                null,
                 origin,
                 stateNonce,
+                null,
+                null,
                 null
         );
     }

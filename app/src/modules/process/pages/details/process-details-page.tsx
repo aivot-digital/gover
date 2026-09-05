@@ -90,16 +90,18 @@ import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {NodeProblemsAlert} from '../../components/node-problems-alert';
 import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
 import {AlertComponent} from '../../../../components/alert/alert-component';
-import {useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
 import {getProcessNodeLimit, isFormModuleEnabled, isProcessNodeTypeUnlimited} from '../../../../utils/module-flags';
 import {
     buildProcessInstanceAttachmentSetItems,
     ProcessInstanceAttachmentSetList,
 } from '../../components/process-instance-attachment-set-list';
+import {ProcessInstanceIdentityList} from '../../components/process-instance-identity-list';
 import {SearchItemService} from '../../../search/search-item-service';
 import {useDeleteProcess} from '../../hooks/use-delete-process';
 import {ProcessNotesOverviewDialog} from './components/process-notes-overview-dialog';
 import {useRevokeProcessVersion} from '../../hooks/use-revoke-process-version';
+import {Permission} from '../../../../data/permissions/permission';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -507,6 +509,8 @@ export function ProcessDetailsPage(): ReactNode {
     const user = useAppSelector(selectUser);
     const notImplemented = useNotImplemented();
     const refreshPermissionSet = useRefreshPermissionSet();
+    const canReadIdentityProviders = useHasSystemPermission(Permission.IDENTITY_PROVIDER_READ);
+    const canReadCommunicationProviders = useHasSystemPermission(Permission.COMMUNICATION_PROVIDER_READ);
     const deleteProcess = useDeleteProcess();
     const revokeProcessVersion = useRevokeProcessVersion();
 
@@ -768,6 +772,10 @@ export function ProcessDetailsPage(): ReactNode {
 
     const isFlowEditorReady = requiredFlowNodeProviderSignature.length === 0 || flowNodeProviders.length === requiredFlowNodeProviders.length;
     const shouldKeepFlowEditorMounted = flowEditorKey != null && readyFlowEditorKey === flowEditorKey;
+    const processInstanceIdentities = runtimeData?.instance.identities ?? null;
+    const processInstanceIdentityCount = processInstanceIdentities == null
+        ? 0
+        : Object.keys(processInstanceIdentities).length;
 
     const processInstanceAttachmentSetItems = useMemo(() => {
         if (runtimeData == null || processFlow == null) {
@@ -828,6 +836,33 @@ export function ProcessDetailsPage(): ReactNode {
             ),
         });
     }, [confirm, handleDownloadAttachment, processInstanceAttachmentSetItems]);
+
+    const handleOpenIdentitiesDialog = useCallback((): void => {
+        if (processInstanceIdentities == null || processInstanceIdentityCount === 0) {
+            return;
+        }
+
+        void confirm({
+            title: 'Identitäten',
+            width: 'md',
+            hideCancelButton: true,
+            confirmButtonText: 'Schließen',
+            children: (
+                <ProcessInstanceIdentityList
+                    identities={processInstanceIdentities}
+                    canReadIdentityProviders={canReadIdentityProviders}
+                    canReadCommunicationProviders={canReadCommunicationProviders}
+                    title={null}
+                />
+            ),
+        });
+    }, [
+        canReadCommunicationProviders,
+        canReadIdentityProviders,
+        confirm,
+        processInstanceIdentities,
+        processInstanceIdentityCount,
+    ]);
 
     const selectedNode = useMemo(() => {
         if (processFlow == null) {
@@ -2157,6 +2192,13 @@ export function ProcessDetailsPage(): ReactNode {
                 disabled: runtimeData == null,
             },
             {
+                tooltip: 'Identitäten anzeigen',
+                ariaLabel: 'Identitäten anzeigen',
+                icon: ModuleIcons.identity,
+                onClick: handleOpenIdentitiesDialog,
+                visible: processInstanceIdentityCount > 0,
+            },
+            {
                 tooltip: 'Anlagensätze anzeigen',
                 ariaLabel: 'Anlagensätze anzeigen',
                 icon: <AttachFile/>,
@@ -2249,6 +2291,8 @@ export function ProcessDetailsPage(): ReactNode {
         instanceId,
         isRefreshingRuntimeData,
         loadRuntimeData,
+        handleOpenIdentitiesDialog,
+        processInstanceIdentityCount,
         handleOpenAttachmentSetsDialog,
         processInstanceAttachmentSetItems.length,
         runtimeData,

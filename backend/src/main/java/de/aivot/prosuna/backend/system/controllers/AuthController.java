@@ -67,7 +67,7 @@ public class AuthController {
     private static final String DEFAULT_APP_URI = "/staff";
     private static final String CALLBACK_ERROR_VIEW = "auth/oidc-callback-error";
 
-    private static final String MISSING_AUTHORIZATION_CODE_MESSAGE = "Kein Autorisierungscode erhaltens";
+    private static final String MISSING_AUTHORIZATION_CODE_MESSAGE = "Kein Autorisierungscode erhalten";
     private static final String MISSING_AUTHORIZATION_CODE_DESCRIPTION = """
             Bei der Anmeldung wurde kein erforderlicher Autorisierungscode zurückgegeben.
             Deshalb konnte die Anmeldung nicht abgeschlossen werden.
@@ -89,9 +89,9 @@ public class AuthController {
             Bitte starten Sie die Anmeldung erneut.
             """;
 
-    private static final String FAILED_TO_LOAD_CACHED_AUTH_FLOW_STATE_MESSAGE = "Zwischengespeicherte Authentifizierungsdaten konnten nicht geladen werden";
+    private static final String FAILED_TO_LOAD_CACHED_AUTH_FLOW_STATE_MESSAGE = "Authentifizierungsdaten konnten nicht geladen werden";
     private static final String FAILED_TO_LOAD_CACHED_AUTH_FLOW_STATE_DESCRIPTION = """
-            Die für die Anmeldung zwischengespeicherten Daten konnten nicht geladen werden.
+            Die für die Anmeldung zwischengespeicherten Authentifizierungsdaten konnten nicht geladen werden.
             Deshalb kann die Anmeldung nicht fortgesetzt werden.
             Bitte starten Sie die Anmeldung erneut.
             """;
@@ -110,8 +110,10 @@ public class AuthController {
             """;
 
     private static final String GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION = """
-            Die Antwort des Identitätsanbieters konnte nicht korrekt verarbeitet werden.
-            Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support, falls der Fehler bestehen bleibt.
+            Die Antwort des Identitätsanbieters konnte bei der Anmeldung nicht korrekt verarbeitet werden.
+            Deshalb konnte die Anmeldung nicht abgeschlossen werden.
+            Bitte versuchen Sie die Anmeldung erneut.
+            Falls der Fehler weiterhin auftritt, melden Sie das Problem für eine Fehlerbehebung.
             """;
 
     public static final String ACCESS_COOKIE_NAME = "access";

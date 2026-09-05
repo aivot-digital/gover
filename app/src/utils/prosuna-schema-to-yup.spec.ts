@@ -263,6 +263,36 @@ describe('temporal range validation', () => {
     });
 });
 
+describe('process identity ID validation', () => {
+    it('should validate a scalar identity ID instead of a list', async () => {
+        const schema = prosunaSchemaToYup({
+            id: 'identity',
+            type: ElementType.ProcessIdentityIdInput,
+            label: 'Prozessidentität',
+            required: true,
+        } as any, {}).identity;
+
+        await expect(schema.validate(' citizen ')).resolves.toBe('citizen');
+        await expect(schema.validate(['citizen'])).rejects.toThrow();
+        await expect(schema.validate('')).rejects.toThrow('Prozessidentität ist ein Pflichtfeld.');
+    });
+});
+
+describe('secret selection validation', () => {
+    it('should validate a scalar secret key without requiring embedded options', async () => {
+        const schema = prosunaSchemaToYup({
+            id: 'secret',
+            type: ElementType.SecretSelectInput,
+            label: 'Geheimnis',
+            required: true,
+        } as any, {}).secret;
+
+        await expect(schema.validate(' secret-key ')).resolves.toBe('secret-key');
+        await expect(schema.validate(['secret-key'])).rejects.toThrow();
+        await expect(schema.validate('')).rejects.toThrow('Geheimnis ist ein Pflichtfeld.');
+    });
+});
+
 function createGroupLayout(children: any[]): any {
     return {
         id: 'root',

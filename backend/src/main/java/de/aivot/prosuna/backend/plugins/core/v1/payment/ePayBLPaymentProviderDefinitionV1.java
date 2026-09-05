@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.asset.repositories.VStorageIndexItemWithAssetRep
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
@@ -160,21 +161,12 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         clientCertificateInput.setWeight(6.0d);
         list.add(clientCertificateInput);
 
-        var clientSecretInput = new SelectInputElement();
+        var clientSecretInput = new SecretSelectInputElement();
         clientSecretInput.setId(CERTIFICATE_PASSWORD_FIELD);
         clientSecretInput.setRequired(true);
         clientSecretInput.setLabel("Zertifikatpasswort");
         clientSecretInput.setPlaceholder("ePayBL Zertifikat Passwort");
         clientSecretInput.setHint("Das vom Zahlungsdienstleister bereitgestellte Passwort für das .p12-Zertifikat. Es muss zuvor unter \"Geheimnisse\" hinterlegt werden, um hier auswählbar zu sein.");
-        var clientSecretInputOptions = secretService
-                .list()
-                .stream()
-                .map(secret -> new SelectInputElementOption()
-                        .setValue(secret.getKey().toString())
-                        .setLabel(secret.getName())
-                )
-                .toList();
-        clientSecretInput.setOptions(clientSecretInputOptions);
         clientSecretInput.setWeight(6.0d);
         list.add(clientSecretInput);
 
