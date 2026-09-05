@@ -35,7 +35,7 @@ public class FitConnectTriggerConfigV1 {
     })
     public String slug = "";
 
-    /** FIT-Connect environment used for all subscriber API calls. */
+    /** FIT-Connect environment used for all organisation API calls. */
     @InputElementPOJOBinding(id = ENVIRONMENT_CONFIG_KEY, type = ElementType.Select, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "FIT-Connect-Umgebung"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Die Umgebung, aus der Einreichungen abgerufen werden."),
@@ -53,28 +53,28 @@ public class FitConnectTriggerConfigV1 {
     })
     public String destinationId;
 
-    /** Client ID used to authenticate the subscriber against FIT-Connect. */
+    /** Client ID used to authenticate the receiving organisation against FIT-Connect. */
     @InputElementPOJOBinding(id = SUBSCRIBER_CLIENT_ID_CONFIG_KEY, type = ElementType.Text, properties = {
-            @ElementPOJOBindingProperty(key = "label", strValue = "Subscriber-Client-ID"),
+            @ElementPOJOBindingProperty(key = "label", strValue = "Organisations-Client-ID"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Client-ID des FIT-Connect-Empfängers."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
             @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
     })
     public String subscriberClientId;
 
-    /** Secret reference whose decrypted value is the subscriber client secret. */
+    /** Secret reference whose decrypted value is the receiving organisation's client secret. */
     @InputElementPOJOBinding(id = SUBSCRIBER_CLIENT_SECRET_CONFIG_KEY, type = ElementType.SecretSelectInput, properties = {
-            @ElementPOJOBindingProperty(key = "label", strValue = "Subscriber-Client-Secret"),
+            @ElementPOJOBindingProperty(key = "label", strValue = "Organisations-Client-Secret"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Geheimnis des FIT-Connect-Empfängers."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
             @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
     })
     public String subscriberClientSecret;
 
-    /** Asset containing the private signing JWK used for subscriber events. */
+    /** Asset containing the private signing JWK used for organisation events. */
     @InputElementPOJOBinding(id = PRIVATE_SIGNING_KEY_CONFIG_KEY, type = ElementType.StoragePathSelector, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "Privater Signaturschlüssel"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Asset-Datei mit dem privaten Signatur-JWK des Subscribers."),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Asset-Datei mit dem privaten Signatur-JWK der Organisation."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
             @ElementPOJOBindingProperty(key = "allowReadOnlyStorageProviders", boolValue = true),
             @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),

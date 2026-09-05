@@ -71,14 +71,14 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
 
     private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processNodeRepository;
-    private final FitConnectTriggerSubscriberClientFactoryV1 subscriberClientFactory;
+    private final FitConnectTriggerOrganisationFactoryV1 organisationFactory;
 
     public FitConnectTriggerNodeV1(PublicUrlService publicUrlService,
                                    ProcessNodeRepository processNodeRepository,
-                                   FitConnectTriggerSubscriberClientFactoryV1 subscriberClientFactory) {
+                                   FitConnectTriggerOrganisationFactoryV1 organisationFactory) {
         this.publicUrlService = publicUrlService;
         this.processNodeRepository = processNodeRepository;
-        this.subscriberClientFactory = subscriberClientFactory;
+        this.organisationFactory = organisationFactory;
     }
 
     @Nonnull
@@ -242,7 +242,7 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
             }
         }
 
-        for (var issue : subscriberClientFactory.validateConfiguration(configuration)) {
+        for (var issue : organisationFactory.validateConfiguration(configuration)) {
             addValidationError(errors, issue.fieldId(), issue.message());
         }
         return errors.isEmpty() ? null : errors;

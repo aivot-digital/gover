@@ -9,10 +9,25 @@ import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceService;
-import dev.fitko.fitconnect.api.domain.model.attachment.Attachment;
-import dev.fitko.fitconnect.api.domain.model.metadata.v1.MetadataV1;
-import dev.fitko.fitconnect.api.domain.subscriber.ReceivedSubmission;
-import dev.fitko.fitconnect.client.SubscriberClient;
+import dev.fitko.fitconnect.core.validation.api.Severity;
+import dev.fitko.fitconnect.rest.model.event.Event;
+import dev.fitko.fitconnect.rest.model.event.problems.data.DataJsonSyntaxViolation;
+import dev.fitko.fitconnect.rest.model.metadata.ContentStructure;
+import dev.fitko.fitconnect.rest.model.metadata.data.Data;
+import dev.fitko.fitconnect.rest.model.metadata.data.MimeType;
+import dev.fitko.fitconnect.rest.model.metadata.data.SubmissionSchema;
+import dev.fitko.fitconnect.rest.model.metadata.v1.MetadataV1;
+import dev.fitko.fitconnect.rest.model.submission.PublicService;
+import dev.fitko.fitconnect.rest.model.submission.SubmissionForPickup;
+import dev.fitko.fitconnect.sdk.api.Attachment;
+import dev.fitko.fitconnect.sdk.api.ReceivedSubmission;
+import dev.fitko.fitconnect.sdk.api.diagnostics.ReceiveIssue;
+import dev.fitko.fitconnect.sdk.api.diagnostics.ReceiveReport;
+import dev.fitko.fitconnect.sdk.api.diagnostics.ReceiveStage;
+import dev.fitko.fitconnect.sdk.api.event.CaseEvent;
+import dev.fitko.fitconnect.sdk.api.event.TransferLog;
+import dev.fitko.fitconnect.sdk.clients.Organisation;
+import dev.fitko.fitconnect.sdk.clients.OrganisationCases;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
@@ -35,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -52,17 +69,16 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         var fixture = createFixture("{\"applicant\":\"Ada\"}");
         var attachmentId = UUID.fromString("bd75e803-2c76-4c2e-9841-29b2e70e945f");
         var attachmentBytes = "proof".getBytes(StandardCharsets.UTF_8);
-        var attachment = Attachment.fromByteArray(
-                attachmentBytes,
-                "application/pdf",
-                "proof.pdf",
-                "Nachweis",
-                attachmentId
-        );
-        when(fixture.receivedSubmission().getAttachments()).thenReturn(List.of(attachment));
-        var metadata = new MetadataV1();
+        var attachment = Attachment.builder()
+                .fromBytes(attachmentBytes)
+                .mimeType("application/pdf")
+                .fileName("proof.pdf")
+                .description("Nachweis")
+                .withCustomId(attachmentId)
+                .build();
+        fixture.receivedAttachments().add(attachment);
+        var metadata = fixture.metadata();
         metadata.setSchema("https://schema.fitko.de/fit-connect/schemas/metadata/1.6.0/metadata.schema.json");
-        when(fixture.receivedSubmission().getMetadata()).thenReturn(metadata);
 
         fixture.service().importSubmission(
                 null,
@@ -76,6 +92,9 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         var importedPayload = fixture.savedPayloads().getFirst();
         assertEquals(Map.of("applicant", "Ada"), importedPayload.get(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_PAYLOAD));
         assertEquals(STARTED_AT, importedPayload.get(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_STARTED));
+        @SuppressWarnings("unchecked")
+        var submission = (Map<String, Object>) importedPayload.get(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_SUBMISSION);
+        assertEquals(Instant.parse("2026-09-02T11:59:00Z"), submission.get("submittedAt"));
         @SuppressWarnings("unchecked")
         var importedMetadata = (Map<String, Object>) importedPayload.get(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_METADATA);
         assertEquals(metadata.getSchema(), importedMetadata.get("$schema"));
@@ -93,9 +112,9 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         assertEquals(10L, attachmentCaptor.getValue().getProcessInstanceId());
         assertEquals(99, attachmentCaptor.getValue().getAttachmentSetId());
 
-        var order = inOrder(fixture.processInstanceService(), fixture.receivedSubmission());
+        var order = inOrder(fixture.processInstanceService(), fixture.organisation());
         order.verify(fixture.processInstanceService()).save(any(ProcessInstanceEntity.class));
-        order.verify(fixture.receivedSubmission()).acceptSubmission();
+        order.verify(fixture.organisation()).accept(fixture.receivedSubmission());
         order.verify(fixture.processInstanceService()).save(any(ProcessInstanceEntity.class));
     }
 
@@ -108,8 +127,8 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         fixture.service().importSubmission(null, fixture.node(), fixture.config(), reference(), STARTED_AT);
 
         verify(fixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
-        verify(fixture.subscriberClientFactory(), never()).create(any());
-        verify(fixture.receivedSubmission(), never()).acceptSubmission();
+        verify(fixture.organisationFactory(), never()).create(any());
+        verify(fixture.organisation(), never()).accept(any(ReceivedSubmission.class));
     }
 
     @Test
@@ -128,8 +147,8 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-        verify(fixture.receivedSubmission()).rejectSubmission(anyList());
-        verify(fixture.receivedSubmission(), never()).acceptSubmission();
+        verify(fixture.organisation()).reject(eq(fixture.receivedSubmission()), anyList());
+        verify(fixture.organisation(), never()).accept(any(ReceivedSubmission.class));
         assertEquals(List.of(ProcessInstanceStatus.Failed), fixture.savedStatuses());
         assertNotNull(fixture.savedInboundReferences().getFirst());
     }
@@ -151,8 +170,48 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-        verify(fixture.receivedSubmission()).rejectSubmission(anyList());
-        verify(fixture.receivedSubmission(), never()).acceptSubmission();
+        verify(fixture.organisation()).reject(eq(fixture.receivedSubmission()), anyList());
+        verify(fixture.organisation(), never()).accept(any(ReceivedSubmission.class));
+        assertEquals(List.of(ProcessInstanceStatus.Failed), fixture.savedStatuses());
+        assertNotNull(fixture.savedInboundReferences().getFirst());
+    }
+
+    @Test
+    void sdkReceiveErrorsAreRejectedBeforeImport() throws Exception {
+        var fixture = createFixture("{}");
+        var problem = new DataJsonSyntaxViolation("Ungültiges JSON");
+        var report = new ReceiveReport(List.of(new ReceiveIssue(
+                Severity.ERROR,
+                ReceiveStage.DATA,
+                "Die Nutzdaten konnten nicht validiert werden.",
+                "Die sendende Stelle muss die Nutzdaten korrigieren.",
+                problem
+        )));
+        var rejectedSubmission = receivedSubmission(
+                "{}",
+                fixture.metadata(),
+                fixture.receivedAttachments(),
+                report
+        );
+        when(fixture.organisation().receive(any(SubmissionForPickup.class))).thenReturn(rejectedSubmission);
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> fixture.service().importSubmission(
+                        null,
+                        fixture.node(),
+                        fixture.config(),
+                        reference(),
+                        STARTED_AT
+                )
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verify(fixture.organisation()).reject(
+                eq(rejectedSubmission),
+                argThat(problems -> problems.size() == 1 && problems.getFirst() == problem)
+        );
+        verify(fixture.organisation(), never()).accept(any(ReceivedSubmission.class));
         assertEquals(List.of(ProcessInstanceStatus.Failed), fixture.savedStatuses());
         assertNotNull(fixture.savedInboundReferences().getFirst());
     }
@@ -160,7 +219,7 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
     @Test
     void transientRetrievalFailureReleasesInboundReferenceForRetry() throws Exception {
         var fixture = createFixture("{}");
-        when(fixture.subscriberClient().requestSubmission(SUBMISSION_ID))
+        when(fixture.organisation().receive(any(SubmissionForPickup.class)))
                 .thenThrow(new IllegalStateException("temporarily unavailable"));
 
         var exception = assertThrows(
@@ -184,9 +243,24 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         var processInstanceService = mock(ProcessInstanceService.class);
         var attachmentService = mock(ProcessInstanceAttachmentService.class);
         var attachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
-        var subscriberClientFactory = mock(FitConnectTriggerSubscriberClientFactoryV1.class);
-        var subscriberClient = mock(SubscriberClient.class);
-        var receivedSubmission = mock(ReceivedSubmission.class);
+        var organisationFactory = mock(FitConnectTriggerOrganisationFactoryV1.class);
+        var organisation = mock(Organisation.class);
+        var cases = mock(OrganisationCases.class);
+        var receivedAttachments = new ArrayList<Attachment>();
+        var metadata = new MetadataV1();
+        metadata.setSchema("https://schema.fitko.de/fit-connect/schemas/metadata/1.6.0/metadata.schema.json");
+        metadata.setContentStructure(new ContentStructure(
+                new Data(
+                        null,
+                        null,
+                        new SubmissionSchema(
+                                URI.create("https://example.test/schema"),
+                                MimeType.APPLICATION_JSON
+                        )
+                ),
+                List.of()
+        ));
+        var receivedSubmission = receivedSubmission(rawPayload, metadata, receivedAttachments, ReceiveReport.EMPTY);
         var savedStatuses = new ArrayList<ProcessInstanceStatus>();
         var savedPayloads = new ArrayList<Map<String, Object>>();
         var savedInboundReferences = new ArrayList<String>();
@@ -216,18 +290,16 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
                         .setStorageProviderId(7)
                         .setStoragePathFromRoot("fit-connect/proof.pdf"));
 
-        when(subscriberClientFactory.create(any())).thenReturn(subscriberClient);
-        when(subscriberClient.requestSubmission(SUBMISSION_ID)).thenReturn(receivedSubmission);
-        when(receivedSubmission.getDestinationId()).thenReturn(DESTINATION_ID);
-        when(receivedSubmission.getSubmissionId()).thenReturn(SUBMISSION_ID);
-        when(receivedSubmission.getCaseId()).thenReturn(CASE_ID);
-        when(receivedSubmission.getDataAsBytes()).thenReturn(rawPayload.getBytes(StandardCharsets.UTF_8));
-        when(receivedSubmission.getSubmittedAt()).thenReturn(Date.from(Instant.parse("2026-09-02T11:59:00Z")));
-        when(receivedSubmission.getRegion()).thenReturn(Optional.empty());
-        when(receivedSubmission.getDataMimeType()).thenReturn("application/json");
-        when(receivedSubmission.getDataSchemaUri()).thenReturn(URI.create("https://example.test/schema"));
-        when(receivedSubmission.getAttachments()).thenReturn(List.of());
-
+        when(organisationFactory.create(any())).thenReturn(organisation);
+        when(organisation.receive(any(SubmissionForPickup.class))).thenReturn(receivedSubmission);
+        when(organisation.cases()).thenReturn(cases);
+        when(cases.logOf(any(SubmissionForPickup.class))).thenReturn(new TransferLog(List.of(
+                CaseEvent.builder()
+                        .event(Event.SUBMIT_SUBMISSION)
+                        .issueTime(Date.from(Instant.parse("2026-09-02T11:59:00Z")))
+                        .problems(List.of())
+                        .build()
+        )));
         var node = new ProcessNodeEntity()
                 .setId(5)
                 .setProcessId(1)
@@ -238,7 +310,7 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
                 processInstanceService,
                 attachmentService,
                 attachmentSetService,
-                subscriberClientFactory,
+                organisationFactory,
                 JsonMapper.builder().build()
         );
 
@@ -246,9 +318,11 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
                 service,
                 processInstanceService,
                 attachmentService,
-                subscriberClientFactory,
-                subscriberClient,
+                organisationFactory,
+                organisation,
                 receivedSubmission,
+                metadata,
+                receivedAttachments,
                 node,
                 config,
                 savedStatuses,
@@ -265,13 +339,32 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         );
     }
 
+    private static ReceivedSubmission receivedSubmission(String rawPayload,
+                                                         MetadataV1 metadata,
+                                                         List<Attachment> attachments,
+                                                         ReceiveReport report) {
+        return ReceivedSubmission
+                .builder()
+                .data(rawPayload.getBytes(StandardCharsets.UTF_8))
+                .metadata(metadata)
+                .submissionId(SUBMISSION_ID)
+                .caseId(CASE_ID)
+                .destinationId(DESTINATION_ID)
+                .serviceType(new PublicService("Test service", "urn:de:service:test"))
+                .attachments(attachments)
+                .report(report)
+                .build();
+    }
+
     private record Fixture(
             FitConnectTriggerSubmissionImportServiceV1 service,
             ProcessInstanceService processInstanceService,
             ProcessInstanceAttachmentService attachmentService,
-            FitConnectTriggerSubscriberClientFactoryV1 subscriberClientFactory,
-            SubscriberClient subscriberClient,
+            FitConnectTriggerOrganisationFactoryV1 organisationFactory,
+            Organisation organisation,
             ReceivedSubmission receivedSubmission,
+            MetadataV1 metadata,
+            List<Attachment> receivedAttachments,
             ProcessNodeEntity node,
             FitConnectTriggerConfigV1 config,
             List<ProcessInstanceStatus> savedStatuses,

@@ -15,11 +15,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-class FitConnectTriggerSubscriberClientFactoryV1Test {
+class FitConnectTriggerOrganisationFactoryV1Test {
     private final SecretService secretService = mock(SecretService.class);
     private final StorageService storageService = mock(StorageService.class);
-    private final FitConnectTriggerSubscriberClientFactoryV1 factory =
-            new FitConnectTriggerSubscriberClientFactoryV1(secretService, storageService);
+    private final FitConnectTriggerOrganisationFactoryV1 factory =
+            new FitConnectTriggerOrganisationFactoryV1(secretService, storageService);
 
     @Test
     void missingPrivateKeysAreRejected() throws Exception {
@@ -33,7 +33,7 @@ class FitConnectTriggerSubscriberClientFactoryV1Test {
                         FitConnectTriggerConfigV1.PRIVATE_SIGNING_KEY_CONFIG_KEY,
                         FitConnectTriggerConfigV1.PRIVATE_DECRYPTION_KEYS_CONFIG_KEY
                 ),
-                issues.stream().map(FitConnectTriggerSubscriberClientFactoryV1.ValidationIssue::fieldId).toList()
+                issues.stream().map(FitConnectTriggerOrganisationFactoryV1.ValidationIssue::fieldId).toList()
         );
         verifyNoInteractions(storageService);
     }

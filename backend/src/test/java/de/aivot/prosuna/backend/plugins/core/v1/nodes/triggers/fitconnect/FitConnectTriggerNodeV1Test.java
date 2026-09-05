@@ -43,7 +43,7 @@ class FitConnectTriggerNodeV1Test {
         var node = new FitConnectTriggerNodeV1(
                 publicUrlService,
                 mock(ProcessNodeRepository.class),
-                mock(FitConnectTriggerSubscriberClientFactoryV1.class)
+                mock(FitConnectTriggerOrganisationFactoryV1.class)
         );
         var process = new ProcessEntity().setSlug("example");
 
@@ -147,7 +147,7 @@ class FitConnectTriggerNodeV1Test {
         return new FitConnectTriggerNodeV1(
                 mock(PublicUrlService.class),
                 mock(ProcessNodeRepository.class),
-                mock(FitConnectTriggerSubscriberClientFactoryV1.class)
+                mock(FitConnectTriggerOrganisationFactoryV1.class)
         );
     }
 

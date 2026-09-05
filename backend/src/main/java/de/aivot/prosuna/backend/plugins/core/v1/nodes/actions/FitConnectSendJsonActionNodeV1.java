@@ -19,7 +19,6 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -27,18 +26,17 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinit
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.utils.StringUtils;
-import dev.fitko.fitconnect.api.config.ApplicationConfig;
-import dev.fitko.fitconnect.api.config.EnvironmentName;
-import dev.fitko.fitconnect.api.config.SenderConfig;
-import dev.fitko.fitconnect.api.config.SubscriberConfig;
-import dev.fitko.fitconnect.api.domain.model.event.EventState;
-import dev.fitko.fitconnect.api.domain.model.event.Status;
-import dev.fitko.fitconnect.api.domain.model.submission.SentSubmission;
-import dev.fitko.fitconnect.api.domain.sender.SendableSubmission;
-import dev.fitko.fitconnect.api.exceptions.client.FitConnectSenderException;
-import dev.fitko.fitconnect.api.exceptions.internal.RestApiException;
-import dev.fitko.fitconnect.client.SenderClient;
-import dev.fitko.fitconnect.client.bootstrap.ClientFactory;
+import dev.fitko.fitconnect.core.http.api.RestApiException;
+import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
+import dev.fitko.fitconnect.rest.model.event.EventState;
+import dev.fitko.fitconnect.rest.model.submission.SentSubmission;
+import dev.fitko.fitconnect.sdk.FitConnectSdk;
+import dev.fitko.fitconnect.sdk.api.Addressing;
+import dev.fitko.fitconnect.sdk.api.OutgoingSubmission;
+import dev.fitko.fitconnect.sdk.api.Participant;
+import dev.fitko.fitconnect.sdk.api.SubmissionData;
+import dev.fitko.fitconnect.sdk.api.event.CaseEvent;
+import dev.fitko.fitconnect.sdk.clients.OnlineService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -103,7 +101,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
     @Nonnull
     @Override
     public String getDescription() {
-        return "";
+        return "Überträgt einen JSON-Datensatz aus den Vorgangsdaten über einen konfigurierten FIT-Connect-Onlinedienst an den ausgewählten Empfänger-Zustellpunkt.";
     }
 
     @Nonnull
@@ -130,12 +128,6 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
                         "Der JSON-Datensatz wurde erfolgreich an FIT-Connect übertragen."
                 )
         );
-    }
-
-    @Nonnull
-    @Override
-    public List<ProcessNodeOutput> getOutputs() {
-        return List.of();
     }
 
     @Nonnull
@@ -173,36 +165,42 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
             @Nonnull ProcessNodeEntity processNodeEntity,
             @Nonnull SendDataFitConnectActionNodeV1Config configuration
     ) {
+        var errors = new LinkedHashMap<String, List<String>>();
         var environment = normalizeEnvironment(configuration.environment);
         if (environment == null || !SUPPORTED_ENVIRONMENTS.contains(environment)) {
-            return Map.of(
+            errors.put(
                     SendDataFitConnectActionNodeV1Config.ENVIRONMENT_FIELD_ID,
                     List.of("Wählen Sie eine unterstützte FIT-Connect-Umgebung aus.")
             );
         }
-        return null;
+        validateUuid(
+                configuration.destinationId,
+                SendDataFitConnectActionNodeV1Config.DESTINATION_ID_FIELD_ID,
+                "Die Empfänger-Zustellpunkt-ID muss eine gültige UUID sein.",
+                errors
+        );
+        validateUuid(
+                configuration.senderDestinationId,
+                SendDataFitConnectActionNodeV1Config.SENDER_DESTINATION_ID_FIELD_ID,
+                "Die Absender-Zustellpunkt-ID muss eine gültige UUID sein.",
+                errors
+        );
+        return errors.isEmpty() ? null : errors;
     }
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<SendDataFitConnectActionNodeV1Config> context) throws ProcessNodeExecutionException {
         final SendDataFitConnectActionNodeV1Config config = context.getConfigurationOfExecutingNode();
-        final String environment = requireEnvironment(config.environment);
-
-        final String destinationIdStr = StringUtils.toNullableTrimmedString(config.destinationId);
-        if (destinationIdStr == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die FIT-Connect-Zustellpunkt-ID muss hinterlegt werden.");
-        }
-
-        UUID destinationId;
-        try {
-            destinationId = UUID.fromString(destinationIdStr);
-        } catch (IllegalArgumentException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die FIT-Connect-Zustellpunkt-ID „%s“ ist keine gültige UUID.",
-                    destinationIdStr
-            );
-        }
+        final String environmentName = requireEnvironment(config.environment);
+        final FitConnectEnvironment environment = resolveEnvironment(environmentName);
+        final UUID destinationId = requireUuid(
+                config.destinationId,
+                "Empfänger-Zustellpunkt-ID"
+        );
+        final UUID senderDestinationId = requireUuid(
+                config.senderDestinationId,
+                "Absender-Zustellpunkt-ID"
+        );
 
         var jsonData = ProcessDataValueUtils
                 .resolveProcessDataValue(
@@ -211,78 +209,85 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
                 );
         var jsonBody = jsonMapper.writeValueAsString(jsonData);
 
-        var serviceSchema = URI.create(config.jsonSchemaLink);
+        final URI serviceSchema;
+        try {
+            serviceSchema = URI.create(config.jsonSchemaLink);
+        } catch (Exception e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Der JSON-Schema-Link „%s“ ist keine gültige URI.",
+                    config.jsonSchemaLink
+            );
+        }
 
-        final SendableSubmission submission = SendableSubmission
-                .Builder()
-                .setDestination(destinationId)
-                .setServiceType(config.serviceIdentifier, config.serviceName)
-                .setJsonData(jsonBody, serviceSchema)
+        final OutgoingSubmission submission = OutgoingSubmission
+                .to(Participant.of(
+                        destinationId,
+                        Addressing.toService(config.serviceIdentifier, config.serviceName)
+                ))
+                .setData(SubmissionData.json(jsonBody, serviceSchema))
                 .build();
 
-        final ApplicationConfig applicationConfig = getApplicationConfig(config, environment);
-
-        final SenderClient senderClient;
+        final String senderClientSecret = resolveSenderClientSecret(config);
+        final OnlineService onlineService;
         try {
-            senderClient = createSenderClient(applicationConfig);
+            onlineService = createOnlineService(
+                    config.senderClientId,
+                    senderClientSecret,
+                    environment,
+                    senderDestinationId
+            );
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der FIT-Connect-Sender-Client für die Umgebung „%s“ konnte nicht initialisiert werden: %s",
-                    environment,
+                    "Der FIT-Connect-Onlinedienst „%s“ für die Umgebung „%s“ konnte nicht initialisiert werden: %s",
+                    senderDestinationId,
+                    environmentName,
                     resolveExceptionMessage(e)
             );
         }
 
         final SentSubmission sentSubmission;
         try {
-            sentSubmission = senderClient.send(submission);
-        } catch (FitConnectSenderException e) {
+            sentSubmission = onlineService.send(submission);
+        } catch (Exception e) {
             if (hasNotFoundCause(e)) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                         e,
                         "Der FIT-Connect-Zustellpunkt „%s“ wurde in der Umgebung „%s“ nicht gefunden.",
                         destinationId,
-                        environment
+                        environmentName
                 );
             }
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
                     "Die JSON-Daten konnten nicht an den FIT-Connect-Zustellpunkt „%s“ in der Umgebung „%s“ übertragen werden: %s",
                     destinationId,
-                    environment,
+                    environmentName,
                     resolveExceptionMessage(e)
             );
         }
 
-        final Status status;
+        final CaseEvent status;
         try {
-            status = senderClient.getSubmissionStatus(sentSubmission);
-        } catch (FitConnectSenderException e) {
+            status = onlineService.cases().logOf(sentSubmission).latest();
+        } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
                     "Der Status der FIT-Connect-Einreichung an den Zustellpunkt „%s“ in der Umgebung „%s“ konnte nicht abgerufen werden: %s",
                     destinationId,
-                    environment,
+                    environmentName,
                     resolveExceptionMessage(e)
             );
         }
 
-        if (status == null) {
-            throw new ProcessNodeExecutionExceptionUnknown(
-                    "FIT-Connect lieferte für die Einreichung an den Zustellpunkt „%s“ in der Umgebung „%s“ keinen Status zurück.",
-                    destinationId,
-                    environment
-            );
-        }
-
-        if (status.getState() != EventState.ACCEPTED && status.getState() != EventState.SUBMITTED) {
+        if (status.state() != EventState.ACCEPTED && status.state() != EventState.SUBMITTED) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     "FIT-Connect meldete für die Einreichung an den Zustellpunkt „%s“ in der Umgebung „%s“ den Status „%s“. Probleme: %s",
                     destinationId,
-                    environment,
-                    status.getState(),
-                    status.getProblems()
+                    environmentName,
+                    status.state(),
+                    status.problems()
             );
         }
 
@@ -293,13 +298,21 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
     }
 
     @Nonnull
-    SenderClient createSenderClient(@Nonnull ApplicationConfig applicationConfig) {
-        return ClientFactory.createSenderClient(applicationConfig);
+    OnlineService createOnlineService(@Nonnull String clientId,
+                                      @Nonnull String clientSecret,
+                                      @Nonnull FitConnectEnvironment environment,
+                                      @Nonnull UUID senderDestinationId) {
+        return FitConnectSdk
+                .fromConfigBuilder()
+                .credentials(clientId, clientSecret)
+                .environment(environment)
+                .build()
+                .onlineService(senderDestinationId);
     }
 
-    private ApplicationConfig getApplicationConfig(
-            SendDataFitConnectActionNodeV1Config config,
-            String environment
+    @Nonnull
+    private String resolveSenderClientSecret(
+            @Nonnull SendDataFitConnectActionNodeV1Config config
     ) throws ProcessNodeExecutionException {
         final UUID senderClientSecretKey;
         try {
@@ -319,22 +332,50 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
             throw new ProcessNodeExecutionExceptionInvalidConfiguration("Failed to decrypt sender client secret: " + senderClientSecretKey, e);
         }
 
-        final SenderConfig senderConfig = SenderConfig
-                .builder()
-                .clientId(config.senderClientId)
-                .clientSecret(senderClientSecret)
-                .build();
+        return senderClientSecret;
+    }
 
-        final SubscriberConfig subscriberConfig = SubscriberConfig
-                .builder()
-                .build();
+    private static void validateUuid(@Nullable String rawValue,
+                                     @Nonnull String fieldId,
+                                     @Nonnull String errorMessage,
+                                     @Nonnull Map<String, List<String>> errors) {
+        try {
+            UUID.fromString(StringUtils.toNullableTrimmedString(rawValue));
+        } catch (Exception e) {
+            errors.put(fieldId, List.of(errorMessage));
+        }
+    }
 
-        return ApplicationConfig
-                .builder()
-                .activeEnvironment(new EnvironmentName(environment))
-                .senderConfig(senderConfig)
-                .subscriberConfig(subscriberConfig)
-                .build();
+    @Nonnull
+    private static UUID requireUuid(@Nullable String rawValue,
+                                    @Nonnull String description) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var value = StringUtils.toNullableTrimmedString(rawValue);
+        if (value == null) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die FIT-Connect-%s muss hinterlegt werden.",
+                    description
+            );
+        }
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Die FIT-Connect-%s „%s“ ist keine gültige UUID.",
+                    description,
+                    value
+            );
+        }
+    }
+
+    @Nonnull
+    private static FitConnectEnvironment resolveEnvironment(@Nonnull String environment) {
+        return switch (environment) {
+            case SendDataFitConnectActionNodeV1Config.ENVIRONMENT_TEST -> FitConnectEnvironment.TEST;
+            case SendDataFitConnectActionNodeV1Config.ENVIRONMENT_STAGE -> FitConnectEnvironment.STAGE;
+            case SendDataFitConnectActionNodeV1Config.ENVIRONMENT_PROD -> FitConnectEnvironment.PROD;
+            default -> throw new IllegalArgumentException("Unsupported FIT-Connect environment: " + environment);
+        };
     }
 
     @Nullable
@@ -387,6 +428,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         public static final String SERVICE_IDENTIFIER_FIELD_ID = "serviceIdentifier";
         public static final String SERVICE_NAME_FIELD_ID = "serviceName";
         public static final String DESTINATION_ID_FIELD_ID = "destinationId";
+        public static final String SENDER_DESTINATION_ID_FIELD_ID = "senderDestinationId";
         public static final String SENDER_CLIENT_ID_FIELD_ID = "senderClientId";
         public static final String SENDER_CLIENT_SECRET_KEY_FIELD_ID = "senderClientSecret";
         public static final String JSON_DATASET_PROCESS_KEY_FIELD_ID = "jsonDatasetProcessKey";
@@ -419,14 +461,23 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         })
         public String serviceName;
 
-        /** UUID of the destination in the selected FIT-Connect environment. */
+        /** UUID of the receiving organisation in the selected FIT-Connect environment. */
         @InputElementPOJOBinding(id = DESTINATION_ID_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Zustellpunkt-ID"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Zustellpunkt-ID für die Nachrichtenübermittlung."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Empfänger-Zustellpunkt-ID"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Zustellpunkt-ID der Organisation, die den Datensatz empfängt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public String destinationId;
+
+        /** UUID of the type-C online service that sends the submission. */
+        @InputElementPOJOBinding(id = SENDER_DESTINATION_ID_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Absender-Zustellpunkt-ID"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Zustellpunkt-ID des Onlinedienstes, der den Datensatz versendet."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String senderDestinationId;
 
         /** Client ID used to authenticate the sender against FIT-Connect. */
         @InputElementPOJOBinding(id = SENDER_CLIENT_ID_FIELD_ID, type = ElementType.Text, properties = {
