@@ -30,6 +30,7 @@ function createTask(
         processData,
         processDataDiff: {},
         assignedUserId: null,
+        assignedCustomerIdentityId: null,
         deadline: null,
         ...overrides,
     };

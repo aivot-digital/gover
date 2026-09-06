@@ -9,7 +9,7 @@ export interface ProcessInstanceStatusResponse {
     title: string;
     status: ProcessInstanceStatus;
     statusOverride: string;
-    tasks: ProcessInstanceTaskStatusResponse[];
+    tasks: ProcessInstanceTaskStatusResponse[] | null;
 }
 
 export interface ProcessInstanceTaskStatusResponse {
@@ -22,6 +22,23 @@ export interface TaskViewResponse {
     layout: GroupLayout;
     data: AuthoredElementValues;
     events: Array<TaskViewEvent>;
+}
+
+export function getActiveCustomerTasks(
+    tasks: ProcessInstanceTaskStatusResponse[] | null | undefined,
+): ProcessInstanceTaskStatusResponse[] {
+    return (tasks ?? []).filter((task) => (
+        task.status === ProcessTaskStatus.AwaitingCustomer ||
+        task.status === ProcessTaskStatus.AwaitingPayment
+    ));
+}
+
+export function buildCustomerInstancePath(instanceAccessKey: string): string {
+    return `/process/${encodeURIComponent(instanceAccessKey)}`;
+}
+
+export function buildCustomerTaskPath(instanceAccessKey: string, taskAccessKey: string): string {
+    return `${buildCustomerInstancePath(instanceAccessKey)}/tasks/${encodeURIComponent(taskAccessKey)}`;
 }
 
 export class CustomerTaskViewApiService extends BaseApiService {

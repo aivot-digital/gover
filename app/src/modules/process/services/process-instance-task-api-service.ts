@@ -80,6 +80,7 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
         return {
             accessKey: "",
             assignedUserId: null,
+            assignedCustomerIdentityId: null,
             finished: null,
             id: 0,
             previousProcessInstanceTaskId: null,

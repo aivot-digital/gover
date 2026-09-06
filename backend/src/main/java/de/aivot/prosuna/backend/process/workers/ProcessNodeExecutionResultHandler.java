@@ -11,11 +11,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionBrokenImplementation;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -117,11 +113,17 @@ public class ProcessNodeExecutionResultHandler {
         handleCommunicationRequest(context);
 
         switch (executionResult) {
-            case ProcessNodeExecutionResultPaymentRequested paymentRequested -> handlePaymentRequested(context.withResult(paymentRequested));
-            case ProcessNodeExecutionResultTaskUpdated taskUpdated -> handleTaskUpdated(context.withResult(taskUpdated));
-            case ProcessNodeExecutionResultTaskCompleted taskCompleted -> handleTaskComplete(context.withResult(taskCompleted));
-            case ProcessNodeExecutionResultInstanceCompleted instanceCompleted -> handleInstanceComplete(context.withResult(instanceCompleted));
+            case ProcessNodeExecutionResultPaymentRequested paymentRequested ->
+                    handlePaymentRequested(context.withResult(paymentRequested));
+            case ProcessNodeExecutionResultTaskUpdated taskUpdated ->
+                    handleTaskUpdated(context.withResult(taskUpdated));
+            case ProcessNodeExecutionResultTaskCompleted taskCompleted ->
+                    handleTaskComplete(context.withResult(taskCompleted));
+            case ProcessNodeExecutionResultInstanceCompleted instanceCompleted ->
+                    handleInstanceComplete(context.withResult(instanceCompleted));
             case ProcessNodeExecutionResultTaskAssigned assigned -> handleAssigned(context.withResult(assigned));
+            case ProcessNodeExecutionResultTaskAssignedCustomer assignedCustomer ->
+                    handleAssignedCustomer(context.withResult(assignedCustomer));
             case ProcessNodeExecutionResultNoop ignored -> {
                 // Do nothing here.
             }
@@ -335,6 +337,55 @@ public class ProcessNodeExecutionResultHandler {
                     "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an '%s' konnte nicht versendet werden.",
                     assignedUser.getFullName()
             ));
+        }
+    }
+
+
+    private void handleAssignedCustomer(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskAssignedCustomer> context) throws ProcessNodeExecutionException {
+        String previousAssignedUserId = context.processInstanceTask.getAssignedCustomerIdentityId();
+
+        final IdentityData assignedCustomer = context
+                .processInstance()
+                .getIdentities()
+                .get(context.result.getIdentityId());
+
+
+        if (assignedCustomer == null) {
+            throw new ProcessNodeExecutionExceptionInvalidAssignment(
+                    """
+                            Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat eine ungültige Identitäts-ID %s zurückgegeben.
+                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            """,
+                    StringUtils.quote(context.provider.getName()),
+                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
+                    StringUtils.quote(context.result.getIdentityId())
+            );
+        }
+
+        context.processInstanceTask.setAssignedCustomerIdentityId(assignedCustomer.identityId());
+        context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingCustomer);
+
+        assignAndSaveDataLayersAndStatusOverride(context, false);
+
+        if (context.triggeringUser != null) {
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    false,
+                    true,
+                    "Aufgabe neu zugewiesen",
+                    "Die Aufgabe wurde durch %s der Identitäts-ID %s zugewiesen.",
+                    StringUtils.quote(context.triggeringUser.getFullName()),
+                    StringUtils.quote(assignedCustomer.identityId())
+            );
+        } else {
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    true,
+                    true,
+                    "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " automatisch zugewiesen",
+                    "Die Aufgabe wurde automatisch der Identitäts-ID %s zugewiesen.",
+                    StringUtils.quote(assignedCustomer.identityId())
+            );
         }
     }
 

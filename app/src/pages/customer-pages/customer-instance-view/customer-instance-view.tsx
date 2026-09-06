@@ -1,7 +1,13 @@
 import {Box, Stack, Typography} from '@mui/material';
 import {Outlet, useNavigate, useParams} from 'react-router-dom';
-import {useCallback, useEffect, useState} from 'react';
-import {CustomerTaskViewApiService, ProcessInstanceStatusResponse} from './customer-task-view-api-service';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+    buildCustomerInstancePath,
+    buildCustomerTaskPath,
+    CustomerTaskViewApiService,
+    getActiveCustomerTasks,
+    ProcessInstanceStatusResponse,
+} from './customer-task-view-api-service';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {setErrorMessage} from '../../../slices/shell-slice';
@@ -10,6 +16,11 @@ import {ProcessInstanceStatusIcon} from '../../../modules/process/components/pro
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 
 const INSTANCE_POLL_INTERVAL_MS = 2000;
+
+export interface CustomerInstanceViewOutletContext {
+    refreshInstanceStatus: () => Promise<void>;
+    invalidateInstanceTasks: () => void;
+}
 
 export function CustomerInstanceView() {
     const {
@@ -24,11 +35,27 @@ export function CustomerInstanceView() {
     const navigate = useNavigate();
 
     const [instanceStatus, setInstanceStatus] = useState<ProcessInstanceStatusResponse | null | 'failed'>(null);
+    const statusRequestGenerationRef = useRef(0);
+
+    const refreshInstanceStatus = useCallback(async (): Promise<void> => {
+        const requestGeneration = ++statusRequestGenerationRef.current;
+        try {
+            const status = await new CustomerTaskViewApiService().getInstanceStatus(instanceAccessKey);
+
+            if (requestGeneration === statusRequestGenerationRef.current) {
+                setInstanceStatus(status);
+            }
+        } catch (error) {
+            if (requestGeneration === statusRequestGenerationRef.current) {
+                throw error;
+            }
+
+            // A newer status request or an explicit invalidation already superseded this request.
+        }
+    }, [instanceAccessKey]);
 
     const fetchInstanceStatus = useCallback(() => {
-        new CustomerTaskViewApiService()
-            .getInstanceStatus(instanceAccessKey)
-            .then(setInstanceStatus)
+        void refreshInstanceStatus()
             .catch((error) => {
                 if (isApiError(error) && error.displayableToUser) {
                     dispatch(setErrorMessage({
@@ -43,7 +70,26 @@ export function CustomerInstanceView() {
                 }
                 setInstanceStatus('failed');
             });
-    }, [instanceAccessKey]);
+    }, [dispatch, refreshInstanceStatus]);
+
+    const invalidateInstanceTasks = useCallback(() => {
+        statusRequestGenerationRef.current += 1;
+        setInstanceStatus((currentStatus) => {
+            if (currentStatus == null || currentStatus === 'failed') {
+                return currentStatus;
+            }
+
+            return {
+                ...currentStatus,
+                tasks: null,
+            };
+        });
+    }, []);
+
+    const outletContext = useMemo<CustomerInstanceViewOutletContext>(() => ({
+        refreshInstanceStatus,
+        invalidateInstanceTasks,
+    }), [invalidateInstanceTasks, refreshInstanceStatus]);
 
     useEffect(() => {
         fetchInstanceStatus();
@@ -58,14 +104,22 @@ export function CustomerInstanceView() {
     }, [fetchInstanceStatus]);
 
     useEffect(() => {
-        if (instanceStatus == null || instanceStatus == 'failed' || instanceStatus.tasks.length === 0 || taskAccessKey != null) {
+        if (instanceStatus == null || instanceStatus === 'failed' || instanceStatus.tasks == null) {
             return;
         }
 
-        if (taskAccessKey == null) {
-            navigate(`/process/${instanceAccessKey}/tasks/${instanceStatus.tasks[0].accessKey}`);
+        const activeTasks = getActiveCustomerTasks(instanceStatus.tasks);
+        if (taskAccessKey != null && activeTasks.some((task) => task.accessKey === taskAccessKey)) {
+            return;
         }
-    }, [instanceStatus]);
+
+        const nextTask = activeTasks[0];
+        if (nextTask != null) {
+            navigate(buildCustomerTaskPath(instanceAccessKey, nextTask.accessKey), {replace: true});
+        } else if (taskAccessKey != null) {
+            navigate(buildCustomerInstancePath(instanceAccessKey), {replace: true});
+        }
+    }, [instanceAccessKey, instanceStatus, navigate, taskAccessKey]);
 
     if (instanceStatus == null) {
         return (
@@ -76,6 +130,9 @@ export function CustomerInstanceView() {
     if (instanceStatus == 'failed') {
         return null;
     }
+
+    const activeTasks = getActiveCustomerTasks(instanceStatus.tasks);
+    const selectedTaskIsActive = taskAccessKey != null && activeTasks.some((task) => task.accessKey === taskAccessKey);
 
     return (
         <PageWrapper
@@ -95,13 +152,23 @@ export function CustomerInstanceView() {
             </Stack>
 
             {
-                instanceStatus.tasks.length == 0 &&
+                instanceStatus.tasks == null &&
+                <LoadingPlaceholder/>
+            }
+
+            {
+                instanceStatus.tasks != null && activeTasks.length === 0 &&
                 <NoTaskToDoPlaceholder/>
             }
 
             {
-                instanceStatus.tasks.length > 0 &&
-                <Outlet/>
+                instanceStatus.tasks != null && activeTasks.length > 0 && !selectedTaskIsActive &&
+                <LoadingPlaceholder/>
+            }
+
+            {
+                instanceStatus.tasks != null && selectedTaskIsActive &&
+                <Outlet context={outletContext}/>
             }
         </PageWrapper>
     );

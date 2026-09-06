@@ -1,0 +1,110 @@
+import React from 'react';
+import {render, screen, waitFor} from '@testing-library/react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {ProcessInstanceStatus} from '../../../modules/process/enums/process-instance-status';
+import {ProcessTaskStatus} from '../../../modules/process/enums/process-task-status';
+import {
+    CustomerTaskViewApiService,
+    type ProcessInstanceStatusResponse,
+} from './customer-task-view-api-service';
+import {CustomerInstanceView} from './customer-instance-view';
+
+const mocks = vi.hoisted(() => ({
+    dispatch: vi.fn(),
+    navigate: vi.fn(),
+    params: {
+        instanceAccessKey: 'instance-key',
+        taskAccessKey: undefined as string | undefined,
+    },
+}));
+
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...await importOriginal<typeof import('react-router-dom')>(),
+    Outlet: () => <div>Aktive Aufgabenansicht</div>,
+    useNavigate: () => mocks.navigate,
+    useParams: () => mocks.params,
+}));
+
+vi.mock('../../../hooks/use-app-dispatch', () => ({
+    useAppDispatch: () => mocks.dispatch,
+}));
+
+vi.mock('../../../components/page-wrapper/page-wrapper', () => ({
+    PageWrapper: ({children}: {children: React.ReactNode}) => <>{children}</>,
+}));
+
+vi.mock('../../../modules/process/components/process-instance-status-icon', () => ({
+    ProcessInstanceStatusIcon: () => null,
+}));
+
+vi.mock('../../../components/loading-placeholder/loading-placeholder', () => ({
+    LoadingPlaceholder: () => <div>Lädt</div>,
+}));
+
+describe('CustomerInstanceView', () => {
+    beforeEach(() => {
+        mocks.dispatch.mockReset();
+        mocks.navigate.mockReset();
+        mocks.params.instanceAccessKey = 'instance-key';
+        mocks.params.taskAccessKey = undefined;
+    });
+
+    it('ignores completed history and opens the first active customer task', async () => {
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus').mockResolvedValue(createStatus([
+            createTask('completed-task', ProcessTaskStatus.Completed),
+            createTask('payment-task', ProcessTaskStatus.AwaitingPayment),
+            createTask('form-task', ProcessTaskStatus.AwaitingCustomer),
+        ]));
+
+        render(<CustomerInstanceView/>);
+
+        await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith(
+            '/process/instance-key/tasks/payment-task',
+            {replace: true},
+        ));
+        expect(screen.queryByText('Aktive Aufgabenansicht')).not.toBeInTheDocument();
+    });
+
+    it('keeps the route when the selected task is still active', async () => {
+        mocks.params.taskAccessKey = 'form-task';
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus').mockResolvedValue(createStatus([
+            createTask('completed-task', ProcessTaskStatus.Completed),
+            createTask('form-task', ProcessTaskStatus.AwaitingCustomer),
+        ]));
+
+        render(<CustomerInstanceView/>);
+
+        expect(await screen.findByText('Aktive Aufgabenansicht')).toBeInTheDocument();
+        expect(mocks.navigate).not.toHaveBeenCalled();
+    });
+
+    it('returns from a stale task route to the instance page when no active task remains', async () => {
+        mocks.params.taskAccessKey = 'completed-task';
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus').mockResolvedValue(createStatus([
+            createTask('completed-task', ProcessTaskStatus.Completed),
+        ]));
+
+        render(<CustomerInstanceView/>);
+
+        await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith('/process/instance-key', {replace: true}));
+        expect(screen.getByText('Freuen Sie sich. Es gibt für Sie nichts zu tun!')).toBeInTheDocument();
+        expect(screen.queryByText('Aktive Aufgabenansicht')).not.toBeInTheDocument();
+    });
+});
+
+function createStatus(tasks: ProcessInstanceStatusResponse['tasks']): ProcessInstanceStatusResponse {
+    return {
+        title: 'Testvorgang',
+        status: ProcessInstanceStatus.Running,
+        statusOverride: '',
+        tasks,
+    };
+}
+
+function createTask(accessKey: string, status: ProcessTaskStatus) {
+    return {
+        accessKey,
+        status,
+        statusOverride: '',
+    };
+}
