@@ -15,6 +15,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputEl
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
@@ -137,27 +138,27 @@ class PaymentRequestActionNodeV1Test {
         ).isPresent());
 
         var executionType = layout.findChild(
-                PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.EXECUTION_TYPE_FIELD_ID,
+                SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_FIELD_ID,
                 RadioInputElement.class
         ).orElseThrow();
         assertEquals(List.of(
                 RadioInputElementOption.of("automatic", "Automatisch versenden"),
-                RadioInputElementOption.of("manual", "Vor dem Versand bearbeiten")
+                RadioInputElementOption.of("manual", "Manuell bearbeiten und versenden")
         ), executionType.getOptions());
 
         var automaticGroup = layout.findChild(
-                PaymentRequestActionNodeV1.AutomaticContent.GROUP_ID,
+                SemiAutomaticMessageConfig.AutomaticContent.GROUP_ID,
                 GroupLayoutElement.class
         ).orElseThrow();
         var manualGroup = layout.findChild(
-                PaymentRequestActionNodeV1.ManualContent.GROUP_ID,
+                SemiAutomaticMessageConfig.ManualContent.GROUP_ID,
                 GroupLayoutElement.class
         ).orElseThrow();
         assertNotNull(automaticGroup.getVisibility());
         assertNotNull(manualGroup.getVisibility());
 
         var assignment = layout.findChild(
-                PaymentRequestActionNodeV1.ManualContent.ASSIGNMENT_FIELD_ID,
+                SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
                 AssignmentContextInputElement.class
         ).orElseThrow();
         assertEquals(List.of("orgUnit", "team", "user"), assignment.getAllowedTypes());
@@ -243,7 +244,7 @@ class PaymentRequestActionNodeV1Test {
         var communicationRequest = result.getCommunicationRequest();
         assertNotNull(communicationRequest);
         assertEquals(RECIPIENT_IDENTITY_ID, communicationRequest.recipientIdentityId());
-        assertNull(communicationRequest.nodeDataOutputKey());
+        assertEquals("communicationResult", communicationRequest.nodeDataOutputKey());
         assertEquals("Zahlung für Ada", communicationRequest.message().subject());
         assertEquals("Hallo **Ada**", communicationRequest.message().body());
         assertEquals("Hallo **Ada**", communicationRequest.message().htmlBody());
@@ -274,7 +275,7 @@ class PaymentRequestActionNodeV1Test {
                 eq(TASK_ID),
                 isNull(),
                 isNull(),
-                same(configuration.manualContent.assignmentContext),
+                same(configuration.messageConfig.manualContent.assignmentContext),
                 eq(List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK))
         )).thenReturn(Optional.of("staff-1"));
 
@@ -677,7 +678,7 @@ class PaymentRequestActionNodeV1Test {
                 RECIPIENT_IDENTITY_ID,
                 PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.PAYMENT_FIELD_ID,
                 Map.of("provider", "secret"),
-                PaymentRequestActionNodeV1.ManualContent.ASSIGNMENT_FIELD_ID,
+                SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
                 Map.of("user", "staff-1")
         );
 
@@ -687,7 +688,7 @@ class PaymentRequestActionNodeV1Test {
                 PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID
         ));
         assertFalse(cleaned.containsKey(PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.PAYMENT_FIELD_ID));
-        assertFalse(cleaned.containsKey(PaymentRequestActionNodeV1.ManualContent.ASSIGNMENT_FIELD_ID));
+        assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID));
     }
 
     private static ProcessNodeExecutionInitContext<PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig> context(
@@ -732,16 +733,17 @@ class PaymentRequestActionNodeV1Test {
         var configuration = new PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig();
         configuration.recipientIdentityId = RECIPIENT_IDENTITY_ID;
         configuration.payment = paymentConfig;
-        configuration.executionType = executionType;
+        configuration.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
+        configuration.messageConfig.executionType = executionType;
 
-        configuration.automaticContent = new PaymentRequestActionNodeV1.AutomaticContent();
-        configuration.automaticContent.subject = "Zahlung für {{ $.name }}";
-        configuration.automaticContent.content = "Hallo **{{ $.name }}**";
+        configuration.messageConfig.automaticContent = new SemiAutomaticMessageConfig.AutomaticContent();
+        configuration.messageConfig.automaticContent.subject = "Zahlung für {{ $.name }}";
+        configuration.messageConfig.automaticContent.content = "Hallo **{{ $.name }}**";
 
-        configuration.manualContent = new PaymentRequestActionNodeV1.ManualContent();
-        configuration.manualContent.subject = "Entwurf für {{ $.name }}";
-        configuration.manualContent.content = "Bitte {{ $.name }} prüfen";
-        configuration.manualContent.assignmentContext = new AssignmentContextInputElementValue();
+        configuration.messageConfig.manualContent = new SemiAutomaticMessageConfig.ManualContent();
+        configuration.messageConfig.manualContent.subject = "Entwurf für {{ $.name }}";
+        configuration.messageConfig.manualContent.content = "Bitte {{ $.name }} prüfen";
+        configuration.messageConfig.manualContent.assignmentContext = new AssignmentContextInputElementValue();
         return configuration;
     }
 

@@ -8,26 +8,42 @@ import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.ComputedElementState;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
+import de.aivot.prosuna.backend.process.models.TaskViewEvent;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
+import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
@@ -42,8 +58,9 @@ import java.net.URLConnection;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 /**
  * Sends one synchronous message through the communication provider selected for an identity.
@@ -60,19 +77,29 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     private static final String OUTPUT_SENT_AT = "sentAt";
     private static final String OUTPUT_SEND_RESULT = "sendResult";
 
+    private static final String STAFF_TASK_ROOT_ID = "root";
+    private static final String STAFF_TASK_SUBJECT_FIELD_ID = "subject";
+    private static final String STAFF_TASK_CONTENT_FIELD_ID = "body";
+    private static final String STAFF_TASK_SEND_EVENT = "send";
+
     private final TemplateRenderService templateRenderService;
     private final ProcessInstanceAttachmentSetService attachmentSetService;
     private final ProcessInstanceAttachmentService attachmentService;
     private final StorageService storageService;
+    private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
 
-    public CommunicationMessageActionNodeV1(TemplateRenderService templateRenderService,
-                                            ProcessInstanceAttachmentSetService attachmentSetService,
-                                            ProcessInstanceAttachmentService attachmentService,
-                                            StorageService storageService) {
+    public CommunicationMessageActionNodeV1(
+            TemplateRenderService templateRenderService,
+            ProcessInstanceAttachmentSetService attachmentSetService,
+            ProcessInstanceAttachmentService attachmentService,
+            StorageService storageService,
+            AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService
+    ) {
         this.templateRenderService = templateRenderService;
         this.attachmentSetService = attachmentSetService;
         this.attachmentService = attachmentService;
         this.storageService = storageService;
+        this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
     }
 
     @Nonnull
@@ -102,7 +129,10 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     @Nonnull
     @Override
     public ProcessNodeExecutionType[] getExecutionTypes() {
-        return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+        return new ProcessNodeExecutionType[]{
+                ProcessNodeExecutionType.Automatic,
+                ProcessNodeExecutionType.SemiAutomatic
+        };
     }
 
     @Nonnull
@@ -123,7 +153,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         return """
                 Sendet eine Nachricht über den Kommunikationsweg, den die Kund:in für eine Identität ausgewählt hat.
 
-                Betreff und Inhalt werden aus Vorlagen erzeugt. Optional können vollständige Anlagensätze angehängt werden. Nach dem synchronen Versand stehen die verwendete Identität, die Kommunikationsanbindung, die Nachrichtendaten und das Ergebnis des Kommunikationsanbieters als Ausgänge bereit.
+                Betreff und Inhalt werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand durch eine Mitarbeiter:in bearbeitet. Optional können vollständige Anlagensätze angehängt werden. Nach dem synchronen Versand stehen die verwendete Identität, die Kommunikationsanbindung, die Nachrichtendaten und das Ergebnis des Kommunikationsanbieters als Ausgänge bereit.
                 """;
     }
 
@@ -136,12 +166,28 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
+    public ConfigLayoutElement getConfigurationLayout(
+            @Nonnull ProcessNodeDefinitionConfigurationLayoutContext context
+    ) throws ResponseException {
+        final ConfigLayoutElement layout;
         try {
-            return ElementPOJOMapper.createFromPOJO(Configuration.class);
+            layout = ElementPOJOMapper.createFromPOJO(Configuration.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Das Konfigurationslayout für den Nachrichtenversand konnte nicht erstellt werden: %s", e.getMessage());
+            throw ResponseException.internalServerError(
+                    e,
+                    "Das Konfigurationslayout für den Nachrichtenversand konnte nicht erstellt werden: %s",
+                    e.getMessage()
+            );
         }
+
+        layout.findChild(SemiAutomaticMessageConfig.GROUP_ID, GroupLayoutElement.class)
+                .ifPresent(group -> SemiAutomaticMessageConfig.initConfigurationLayout(
+                        group,
+                        context.thisNode().getProcessId(),
+                        context.thisNode().getProcessVersion()
+                ));
+
+        return layout;
     }
 
     @Nonnull
@@ -160,8 +206,8 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         return List.of(
                 new ProcessNodeOutput(OUTPUT_IDENTITY_ID, "Identität", "ID der adressierten Prozessidentität.", "string"),
                 new ProcessNodeOutput(OUTPUT_BINDING_ID, "Kommunikationsanbindung", "ID der verwendeten Kommunikationsanbindung.", "number | null"),
-                new ProcessNodeOutput(OUTPUT_SUBJECT, "Betreff", "Gerenderter Betreff der Nachricht.", "string"),
-                new ProcessNodeOutput(OUTPUT_BODY, "Inhalt", "Gerenderter Inhalt der Nachricht.", "string"),
+                new ProcessNodeOutput(OUTPUT_SUBJECT, "Betreff", "Betreff der versendeten Nachricht.", "string"),
+                new ProcessNodeOutput(OUTPUT_BODY, "Inhalt", "Inhalt der versendeten Nachricht.", "string"),
                 new ProcessNodeOutput(OUTPUT_ATTACHMENT_SET_DATA_KEYS, "Anlagensätze", "Datenschlüssel der angehängten Anlagensätze.", "Array<string>"),
                 new ProcessNodeOutput(OUTPUT_SENT_AT, "Versandzeitpunkt", "Zeitpunkt des erfolgreichen Versands.", "string"),
                 new ProcessNodeOutput(OUTPUT_SEND_RESULT, "Versandresultat", "Resultat des Versandvorgangs, wie es vom Kommunikationsanbieter zurückgegeben wurde.", "Record<string, unknown>")
@@ -169,16 +215,185 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<Configuration> context) throws ProcessNodeExecutionException {
+    public ProcessNodeExecutionResult init(
+            @Nonnull ProcessNodeExecutionInitContext<Configuration> context
+    ) throws ProcessNodeExecutionException {
         var configuration = context.getConfigurationOfExecutingNode();
-        var identityId = StringUtils.toNullableTrimmedString(configuration.identityId);
-        if (identityId == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Es wurde keine Prozessidentität ausgewählt.");
+
+        if (SemiAutomaticMessageConfig.isAutomatic(configuration.messageConfig)) {
+            return initAutomatic(context, configuration);
+        }
+        if (SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
+            return initManual(context, configuration);
         }
 
-        var identity = context.getThisProcessInstance()
-                .getIdentities()
-                .get(identityId);
+        var executionType = configuration.messageConfig == null
+                ? null
+                : StringUtils.toNullableTrimmedString(configuration.messageConfig.executionType);
+        throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                "Ungültige Ausführungsart für den Nachrichtenversand. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
+                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC),
+                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL),
+                StringUtils.quote(executionType)
+        );
+    }
+
+    @Nonnull
+    private ProcessNodeExecutionResult initAutomatic(
+            @Nonnull ProcessNodeExecutionInitContext<Configuration> context,
+            @Nonnull Configuration configuration
+    ) throws ProcessNodeExecutionException {
+        var automaticContent = requireAutomaticContent(configuration);
+        var subject = renderRequiredTemplate(
+                context.getCurrentProcessExecutionData(),
+                automaticContent.subject,
+                "Betreff"
+        );
+        var content = renderRequiredTemplate(
+                context.getCurrentProcessExecutionData(),
+                automaticContent.content,
+                "Nachrichtentext"
+        );
+
+        return createCommunicationResult(
+                configuration,
+                context.getCurrentProcessExecutionData(),
+                context.getThisProcessInstance(),
+                subject,
+                content
+        );
+    }
+
+    @Nonnull
+    private ProcessNodeExecutionResult initManual(
+            @Nonnull ProcessNodeExecutionInitContext<Configuration> context,
+            @Nonnull Configuration configuration
+    ) throws ProcessNodeExecutionException {
+        var manualContent = requireManualContent(configuration);
+        var assigneeUserId = assignmentContextAssigneeResolverService
+                .resolveAssignee(
+                        context.getThisNode().getProcessId(),
+                        context.getThisNode().getProcessVersion(),
+                        context.getThisProcessInstance().getId(),
+                        context.getThisNode().getId(),
+                        context.getThisTask().getId(),
+                        context.getThisTask().getPreviousProcessNodeId(),
+                        context.getThisProcessInstance().getAssignedUserId(),
+                        manualContent.assignmentContext,
+                        List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
+                )
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
+                        "Für das Prozesselement %s konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        StringUtils.quote(context.getThisNode().resolveName(this))
+                ));
+
+        return ProcessNodeExecutionResultTaskAssigned
+                .of(assigneeUserId)
+                .setRuntimeData(new LinkedHashMap<>(context.getThisTask().getRuntimeData()))
+                .setProcessData(context.getCurrentProcessExecutionData().getProcessData());
+    }
+
+    @Nonnull
+    @Override
+    public LayoutElement<?> getStaffTaskView(
+            @Nonnull ProcessNodeExecutionContextUIStaff<Configuration> context
+    ) {
+        var subjectField = new TextInputElement();
+        subjectField.setId(STAFF_TASK_SUBJECT_FIELD_ID);
+        subjectField.setLabel("Betreff der Nachricht");
+        subjectField.setRequired(true);
+
+        var contentField = new RichTextInputElement();
+        contentField.setId(STAFF_TASK_CONTENT_FIELD_ID);
+        contentField.setLabel("Inhalt der Nachricht");
+        contentField.setRequired(true);
+
+        var root = new GroupLayoutElement();
+        root.setId(STAFF_TASK_ROOT_ID);
+        root.setChildren(new LinkedList<>(List.of(subjectField, contentField)));
+        return root;
+    }
+
+    @Nonnull
+    @Override
+    public AuthoredElementValues createDefaultStaffTaskViewData(
+            @Nonnull ProcessNodeExecutionContextUIStaff<Configuration> context
+    ) throws ResponseException {
+        var manualContent = requireManualContentForStaffView(context.getConfigurationOfExecutingNode());
+        var taskViewData = new AuthoredElementValues();
+
+        try {
+            taskViewData.put(
+                    STAFF_TASK_SUBJECT_FIELD_ID,
+                    templateRenderService.interpolate(context.getCurrentProcessExecutionData(), manualContent.subject)
+            );
+            taskViewData.put(
+                    STAFF_TASK_CONTENT_FIELD_ID,
+                    templateRenderService.interpolate(context.getCurrentProcessExecutionData(), manualContent.content)
+            );
+        } catch (RuntimeException e) {
+            throw ResponseException.internalServerError(
+                    e,
+                    "Die Nachrichtenvorlage konnte nicht gerendert werden: %s",
+                    e.getMessage()
+            );
+        }
+
+        return taskViewData;
+    }
+
+    @Nonnull
+    @Override
+    public List<TaskViewEvent> getStaffTaskViewEvents(
+            @Nonnull ProcessNodeExecutionContextUIStaff<Configuration> context
+    ) {
+        return List.of(new TaskViewEvent("Nachricht versenden", STAFF_TASK_SEND_EVENT));
+    }
+
+    @Nonnull
+    @Override
+    public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(
+            @Nonnull ProcessNodeExecutionContextUIStaff<Configuration> context,
+            @Nonnull AuthoredElementValues update,
+            @Nonnull String event
+    ) throws ResponseException, ProcessNodeExecutionException {
+        if (!STAFF_TASK_SEND_EVENT.equals(event)) {
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    "Das Event %s wird von diesem Prozesselement nicht unterstützt.",
+                    StringUtils.quote(event)
+            );
+        }
+
+        var configuration = context.getConfigurationOfExecutingNode();
+        if (!SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die Nachricht kann nur im manuellen Ausführungsmodus über eine Aufgabe versendet werden."
+            );
+        }
+
+        var subject = StringUtils.toNullableTrimmedString(update.get(STAFF_TASK_SUBJECT_FIELD_ID));
+        var content = StringUtils.toNullableTrimmedString(update.get(STAFF_TASK_CONTENT_FIELD_ID));
+        validateStaffMessage(subject, content);
+
+        return Optional.of(createCommunicationResult(
+                configuration,
+                context.getCurrentProcessExecutionData(),
+                context.getThisProcessInstance(),
+                subject,
+                content
+        ));
+    }
+
+    @Nonnull
+    private ProcessNodeExecutionResult createCommunicationResult(
+            @Nonnull Configuration configuration,
+            @Nonnull ProcessExecutionData processExecutionData,
+            @Nonnull ProcessInstanceEntity processInstance,
+            @Nonnull String subject,
+            @Nonnull String content
+    ) throws ProcessNodeExecutionException {
+        var identityId = requireIdentityId(configuration.identityId);
+        var identity = processInstance.getIdentities().get(identityId);
         if (identity == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
                     "Die konfigurierte Identität %s ist in der Prozessinstanz nicht vorhanden.",
@@ -186,64 +401,148 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
             );
         }
 
-        final String subject;
-        final String body;
-        try {
-            subject = StringUtils.toNullableTrimmedString(templateRenderService.interpolate(
-                    context.getCurrentProcessExecutionData(), configuration.subject));
-            body = StringUtils.toNullableTrimmedString(templateRenderService.interpolate(
-                    context.getCurrentProcessExecutionData(), configuration.body));
-        } catch (RuntimeException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Nachrichtenvorlage konnte nicht verarbeitet werden: %s",
-                    e.getMessage()
-            );
-        }
-        if (subject == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Der gerenderte Betreff der Nachricht ist leer.");
-        }
-        if (body == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Der gerenderte Inhalt der Nachricht ist leer.");
-        }
-
         var attachmentSetDataKeys = configuration.attachmentSetDataKeys == null
                 ? List.<String>of()
                 : configuration.attachmentSetDataKeys;
-        var attachments = resolveAttachments(context, attachmentSetDataKeys);
+        var attachments = resolveAttachments(processInstance, attachmentSetDataKeys);
         var sentAt = Instant.now();
 
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(OUTPUT_IDENTITY_ID, identityId);
         nodeData.put(OUTPUT_BINDING_ID, identity.communicationProviderBindingId());
         nodeData.put(OUTPUT_SUBJECT, subject);
-        nodeData.put(OUTPUT_BODY, body);
+        nodeData.put(OUTPUT_BODY, content);
         nodeData.put(OUTPUT_ATTACHMENT_SET_DATA_KEYS, attachmentSetDataKeys);
         nodeData.put(OUTPUT_SENT_AT, sentAt);
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_OUTPUT)
-                .setProcessData(context.getCurrentProcessExecutionData().getProcessData())
+                .setProcessData(processExecutionData.getProcessData())
                 .setNodeData(nodeData)
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
                         identityId,
-                        new CommunicationMessage(subject, body, body, sentAt, attachments),
+                        new CommunicationMessage(subject, content, content, sentAt, attachments),
                         OUTPUT_SEND_RESULT
                 ));
     }
 
     @Nonnull
+    private String requireIdentityId(@Nullable String rawIdentityId)
+            throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var identityId = StringUtils.toNullableTrimmedString(rawIdentityId);
+        if (identityId == null) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Für den Nachrichtenversand muss eine Prozessidentität konfiguriert sein."
+            );
+        }
+        return identityId;
+    }
+
+    @Nonnull
+    private SemiAutomaticMessageConfig.AutomaticContent requireAutomaticContent(
+            @Nonnull Configuration configuration
+    ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var content = configuration.messageConfig == null ? null : configuration.messageConfig.automaticContent;
+        if (content == null
+                || StringUtils.toNullableTrimmedString(content.subject) == null
+                || StringUtils.toNullableTrimmedString(content.content) == null) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Für den automatischen Versand müssen Betreff und Nachrichtentext konfiguriert sein."
+            );
+        }
+        return content;
+    }
+
+    @Nonnull
+    private SemiAutomaticMessageConfig.ManualContent requireManualContent(
+            @Nonnull Configuration configuration
+    ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var content = configuration.messageConfig == null ? null : configuration.messageConfig.manualContent;
+        if (content == null
+                || StringUtils.toNullableTrimmedString(content.subject) == null
+                || StringUtils.toNullableTrimmedString(content.content) == null) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Für den manuellen Versand müssen Vorlagen für Betreff und Nachrichtentext konfiguriert sein."
+            );
+        }
+        return content;
+    }
+
+    @Nonnull
+    private SemiAutomaticMessageConfig.ManualContent requireManualContentForStaffView(
+            @Nonnull Configuration configuration
+    ) throws ResponseException {
+        try {
+            return requireManualContent(configuration);
+        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
+            throw ResponseException.internalServerError(e, e.getMessage());
+        }
+    }
+
+    @Nonnull
+    private String renderRequiredTemplate(
+            @Nonnull ProcessExecutionData processExecutionData,
+            @Nonnull String template,
+            @Nonnull String fieldName
+    ) throws ProcessNodeExecutionException {
+        final String rendered;
+        try {
+            rendered = StringUtils.toNullableTrimmedString(
+                    templateRenderService.interpolate(processExecutionData, template)
+            );
+        } catch (RuntimeException e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Die Vorlage für %s konnte nicht gerendert werden: %s",
+                    fieldName,
+                    e.getMessage()
+            );
+        }
+
+        if (rendered == null) {
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Der gerenderte Wert für %s ist leer.",
+                    fieldName
+            );
+        }
+        return rendered;
+    }
+
+    private static void validateStaffMessage(
+            @Nullable String subject,
+            @Nullable String content
+    ) throws ResponseException {
+        var derivedRuntimeData = new DerivedRuntimeElementData();
+        if (subject == null) {
+            derivedRuntimeData.getElementStates().put(
+                    STAFF_TASK_SUBJECT_FIELD_ID,
+                    new ComputedElementState().setError("Der Betreff der Nachricht darf nicht leer sein.")
+            );
+        }
+        if (content == null) {
+            derivedRuntimeData.getElementStates().put(
+                    STAFF_TASK_CONTENT_FIELD_ID,
+                    new ComputedElementState().setError("Der Inhalt der Nachricht darf nicht leer sein.")
+            );
+        }
+        if (derivedRuntimeData.hasAnyError()) {
+            throw ResponseException.badRequest(derivedRuntimeData);
+        }
+    }
+
+    @Nonnull
     private List<CommunicationMessageAttachment> resolveAttachments(
-            @Nonnull ProcessNodeExecutionInitContext<Configuration> context,
+            @Nonnull ProcessInstanceEntity processInstance,
             @Nonnull List<String> attachmentSetDataKeys
     ) throws ProcessNodeExecutionException {
         var resolved = new ArrayList<CommunicationMessageAttachment>();
         for (var rawDataKey : attachmentSetDataKeys) {
             var dataKey = StringUtils.toNullableTrimmedString(rawDataKey);
-            if (dataKey == null) continue;
+            if (dataKey == null) {
+                continue;
+            }
 
-            var sets = attachmentSetService.findAllByProcessInstanceIdAndDataKey(
-                    context.getThisProcessInstance().getId(), dataKey);
+            var sets = attachmentSetService.findAllByProcessInstanceIdAndDataKey(processInstance.getId(), dataKey);
             if (sets.isEmpty()) {
                 throw new ProcessNodeExecutionExceptionMissingValue(
                         "Der konfigurierte Anlagensatz %s wurde nicht gefunden.",
@@ -263,12 +562,14 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
             }
 
             for (var entity : entities) {
-                try (var content = storageService.getDocumentContent(
-                        entity.getStorageProviderId(), entity.getStoragePathFromRoot())) {
+                try (var attachmentContent = storageService.getDocumentContent(
+                        entity.getStorageProviderId(),
+                        entity.getStoragePathFromRoot()
+                )) {
                     resolved.add(new ByteArrayCommunicationMessageAttachment(
                             entity.getFileName(),
                             URLConnection.guessContentTypeFromName(entity.getFileName()),
-                            content.readAllBytes()
+                            attachmentContent.readAllBytes()
                     ));
                 } catch (IOException | ResponseException e) {
                     throw new ProcessNodeExecutionExceptionUnknown(
@@ -283,14 +584,19 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         return resolved;
     }
 
+    @Nonnull
+    @Override
+    public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
+        configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
+        return configuration;
+    }
+
     /**
      * Configuration shown in the process-node editor.
      */
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class Configuration {
         public static final String IDENTITY_ID_FIELD_ID = "identityId";
-        public static final String SUBJECT_FIELD_ID = "subject";
-        public static final String BODY_FIELD_ID = "body";
         public static final String ATTACHMENTS_FIELD_ID = "attachmentSetDataKeys";
 
         /**
@@ -306,30 +612,6 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         public String identityId;
 
         /**
-         * Template for the subject. Process-data expressions are rendered immediately before dispatch;
-         * a null, blank, or blank-rendering value prevents dispatch.
-         */
-        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Betreff"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für den Betreff der Nachricht."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        @Nullable
-        public String subject;
-
-        /**
-         * Markdown-capable message template rendered against the current process data. A null, blank,
-         * or blank-rendering value prevents dispatch.
-         */
-        @InputElementPOJOBinding(id = BODY_FIELD_ID, type = ElementType.RichTextInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichteninhalt"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für den Inhalt der Nachricht."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        @Nullable
-        public String body;
-
-        /**
          * Optional process attachment sets whose files are included in the outgoing message. A null list
          * is normalized to an empty list; configured missing or empty sets fail execution.
          */
@@ -340,5 +622,11 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         })
         @Nullable
         public List<String> attachmentSetDataKeys;
+
+        /**
+         * Dispatch mode, message templates and optional staff assignment.
+         */
+        @Nullable
+        public SemiAutomaticMessageConfig.LayoutConfig messageConfig;
     }
 }

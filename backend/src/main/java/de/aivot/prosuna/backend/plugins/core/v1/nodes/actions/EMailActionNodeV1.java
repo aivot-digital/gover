@@ -8,20 +8,17 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
-import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
-import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
-import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
-import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
@@ -42,7 +39,6 @@ import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.mail.MessagingException;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
@@ -55,7 +51,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.List;
 
 @Component
 public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV1.EMailActionNodeConfig> {
@@ -143,7 +138,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         return """
                 Versendet E-Mails innerhalb eines Prozesses entweder automatisch oder nach manueller Bearbeitung durch eine Mitarbeiter:in.
 
-                Empfänger:innen, Betreff und Inhalt werden abhängig vom gewählten Ausführungsmodus vorkonfiguriert oder in einer Aufgabe ergänzt. Nach dem Versand stellt das Element die verwendeten Nachrichten- und Bearbeitungsinformationen als Ausgänge bereit.
+                Empfänger:innen und Anhänge werden am Prozesselement konfiguriert. Betreff und Inhalt werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand in einer Aufgabe bearbeitet. Nach dem Versand stellt das Element die verwendeten Nachrichtendaten als Ausgänge bereit.
                 """;
     }
 
@@ -162,56 +157,12 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
             );
         }
 
-        layout
-                .findChild(EMailActionNodeConfig.EXECUTION_TYPE_FIELD_ID, RadioInputElement.class)
-                .ifPresent(select -> {
-                    select.setOptions(List.of(
-                            RadioInputElementOption.of(EMailActionNodeConfig.EXECUTION_TYPE_AUTOMATIC, "Automatisch versenden"),
-                            RadioInputElementOption.of(EMailActionNodeConfig.EXECUTION_TYPE_MANUAL, "Vor dem Versand bearbeiten")
-                    ));
-                });
-
-        layout
-                .findChild(MANUAL_CONTENT_GROUP_ID, GroupLayoutElement.class)
-                .ifPresent(group -> {
-                    var visibilityFunc = ElementVisibilityFunctions
-                            .of(NoCodeExpression.of(
-                                    NoCodeEqualsOperator.OPERATOR_ID,
-                                    new NoCodeReference(EMailActionNodeConfig.EXECUTION_TYPE_FIELD_ID),
-                                    new NoCodeStaticValue(EMailActionNodeConfig.EXECUTION_TYPE_MANUAL)
-                            ))
-                            .recalculateReferencedIds();
-                    group.setVisibility(visibilityFunc);
-                });
-
-        layout
-                .findChild(AUTOMATIC_CONTENT_GROUP_ID, GroupLayoutElement.class)
-                .ifPresent(group -> {
-                    var visibilityFunc = ElementVisibilityFunctions
-                            .of(NoCodeExpression.of(
-                                    NoCodeEqualsOperator.OPERATOR_ID,
-                                    new NoCodeReference(EMailActionNodeConfig.EXECUTION_TYPE_FIELD_ID),
-                                    new NoCodeStaticValue(EMailActionNodeConfig.EXECUTION_TYPE_AUTOMATIC)
-                            ))
-                            .recalculateReferencedIds();
-                    group.setVisibility(visibilityFunc);
-                });
-
-        layout
-                .findChild(EMailActionNodeConfigManualContent.ASSIGNMENT_FIELD_ID, AssignmentContextInputElement.class)
-                .ifPresent(assignment -> {
-                    assignment.setAllowedTypes(List.of(
-                            AssignmentContextInputElement.ALLOWED_TYPE_ORG_UNIT,
-                            AssignmentContextInputElement.ALLOWED_TYPE_TEAM,
-                            AssignmentContextInputElement.ALLOWED_TYPE_USER
-                    ));
-
-                    var accessConstraints = new DomainAndUserSelectProcessAccessConstraint()
-                            .setProcessId(context.processDefinition().getId())
-                            .setProcessVersion(context.processDefinitionVersion().getProcessVersion())
-                            .setRequiredPermissions(List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK));
-                    assignment.setProcessAccessConstraint(accessConstraints);
-                });
+        layout.findChild(SemiAutomaticMessageConfig.GROUP_ID, GroupLayoutElement.class)
+                .ifPresent(group -> SemiAutomaticMessageConfig.initConfigurationLayout(
+                        group,
+                        context.thisNode().getProcessId(),
+                        context.thisNode().getProcessVersion()
+                ));
 
 
         // TODO: Add signature select and attachment select
@@ -272,64 +223,34 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<EMailActionNodeConfig> context) throws ProcessNodeExecutionException {
         var configuration = context.getConfigurationOfExecutingNode();
 
-        ProcessNodeExecutionResult result;
-        switch (configuration.executionType) {
-            case EMailActionNodeConfig.EXECUTION_TYPE_AUTOMATIC -> {
-                result = initAutomatic(context, configuration);
-            }
-            case EMailActionNodeConfig.EXECUTION_TYPE_MANUAL -> {
-                result = initManual(context, configuration);
-            }
-            default -> throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Ungültige Ausführungsart für den E-Mail-Versand. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
-                    StringUtils.quote(EMailActionNodeConfig.EXECUTION_TYPE_AUTOMATIC),
-                    StringUtils.quote(EMailActionNodeConfig.EXECUTION_TYPE_MANUAL),
-                    StringUtils.quote(configuration.executionType)
-            );
+        if (SemiAutomaticMessageConfig.isAutomatic(configuration.messageConfig)) {
+            return initAutomatic(context, configuration);
+        }
+        if (SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
+            return initManual(context, configuration);
         }
 
-        //result.setProcessData(context.getProcessExecutionData().getProcessData());
-
-        return result;
+        var executionType = configuration.messageConfig == null
+                ? null
+                : StringUtils.toNullableTrimmedString(configuration.messageConfig.executionType);
+        throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                "Ungültige Ausführungsart für den E-Mail-Versand. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
+                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC),
+                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL),
+                StringUtils.quote(executionType)
+        );
     }
 
     private ProcessNodeExecutionResult initAutomatic(@Nonnull ProcessNodeExecutionInitContext<EMailActionNodeConfig> context,
                                                      @Nonnull EMailActionNodeConfig config) throws ProcessNodeExecutionException {
         var processData = context.getCurrentProcessExecutionData();
-
-        var subject = templateRenderService
-                .interpolate(
-                        processData,
-                        config.automaticContent.subject
-                );
-
-        if (StringUtils.isNullOrEmpty(subject)) {
-            throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Betreff für die E-Mail wurde nicht angegeben."
-            );
-        }
-
-        var contentMarkdown = config.automaticContent.content;
-
-        if (StringUtils.isNullOrEmpty(contentMarkdown)) {
-            throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Inhalt für die E-Mail wurde nicht angegeben."
-            );
-        }
-
-        var interpolatedContentMarkdown =
-                templateRenderService
-                        .interpolate(
-                                processData,
-                                contentMarkdown
-                        );
-
-        if (StringUtils.isNullOrEmpty(interpolatedContentMarkdown)) {
-            throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Inhalt für die E-Mail ist nach der Verarbeitung leer. Bitte überprüfen Sie die Vorlage und die Prozessdaten.",
-                    StringUtils.quote(contentMarkdown)
-            );
-        }
+        var automaticContent = requireAutomaticContent(config);
+        var subject = renderRequiredTemplate(processData, automaticContent.subject, "Betreff");
+        var interpolatedContentMarkdown = renderRequiredTemplate(
+                processData,
+                automaticContent.content,
+                "Nachrichtentext"
+        );
 
         return sendMail(subject,
                 interpolatedContentMarkdown,
@@ -340,6 +261,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
     private ProcessNodeExecutionResult initManual(@Nonnull ProcessNodeExecutionInitContext<EMailActionNodeConfig> context,
                                                   @Nonnull EMailActionNodeConfig config) throws ProcessNodeExecutionException {
+        var manualContent = requireManualContent(config);
         var assigneeUserId = assignmentContextAssigneeResolverService
                 .resolveAssignee(
                         context.getThisNode().getProcessId(),
@@ -349,7 +271,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                         context.getThisTask().getId(),
                         context.getThisTask().getPreviousProcessNodeId(),
                         context.getThisProcessInstance().getAssignedUserId(),
-                        config.manualContent.assignmentContext,
+                        manualContent.assignmentContext,
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
@@ -358,7 +280,9 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 ));
 
         return ProcessNodeExecutionResultTaskAssigned
-                .of(assigneeUserId);
+                .of(assigneeUserId)
+                .setRuntimeData(new LinkedHashMap<>(context.getThisTask().getRuntimeData()))
+                .setProcessData(context.getCurrentProcessExecutionData().getProcessData());
     }
 
     private static final String STAFF_TASK_SUBJECT_FIELD_ID = "subject";
@@ -389,49 +313,27 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     @Nonnull
     @Override
     public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) throws ResponseException {
-        var config = context.getConfigurationOfExecutingNode();
-
+        var manualContent = requireManualContentForStaffView(context.getConfigurationOfExecutingNode());
         var taskViewData = new AuthoredElementValues();
 
-        var subject = templateRenderService
-                .interpolate(
-                        context.getCurrentProcessExecutionData(),
-                        config.manualContent.subject
-                );
-        taskViewData.put(STAFF_TASK_SUBJECT_FIELD_ID, subject);
-
-        var content = templateRenderService
-                .interpolate(
-                        context.getCurrentProcessExecutionData(),
-                        config.manualContent.content
-                );
-        taskViewData.put(STAFF_TASK_CONTENT_FIELD_ID, content);
+        try {
+            taskViewData.put(
+                    STAFF_TASK_SUBJECT_FIELD_ID,
+                    templateRenderService.interpolate(context.getCurrentProcessExecutionData(), manualContent.subject)
+            );
+            taskViewData.put(
+                    STAFF_TASK_CONTENT_FIELD_ID,
+                    templateRenderService.interpolate(context.getCurrentProcessExecutionData(), manualContent.content)
+            );
+        } catch (RuntimeException e) {
+            throw ResponseException.internalServerError(
+                    e,
+                    "Die E-Mail-Vorlage konnte nicht gerendert werden: %s",
+                    e.getMessage()
+            );
+        }
 
         return taskViewData;
-    }
-
-    @Nullable
-    @Override
-    public AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) {
-        var savedData = ProcessNodeDefinition.super.getAutoSavedStaffTaskViewData(context);
-        if (savedData != null) {
-            return savedData;
-        }
-
-        var runtimeData = context.getThisTask().getRuntimeData();
-        var legacySavedData = new AuthoredElementValues();
-
-        var subject = runtimeData.get(STAFF_TASK_SUBJECT_FIELD_ID);
-        if (subject != null) {
-            legacySavedData.put(STAFF_TASK_SUBJECT_FIELD_ID, subject);
-        }
-
-        var content = runtimeData.get(STAFF_TASK_CONTENT_FIELD_ID);
-        if (content != null) {
-            legacySavedData.put(STAFF_TASK_CONTENT_FIELD_ID, content);
-        }
-
-        return legacySavedData.isEmpty() ? null : legacySavedData;
     }
 
     private static final String STAFF_TASK_SEND_EVENT = "send";
@@ -452,7 +354,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context,
                                                                          @Nonnull AuthoredElementValues update,
                                                                          @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
-        if (!event.equals(STAFF_TASK_SEND_EVENT)) {
+        if (!STAFF_TASK_SEND_EVENT.equals(event)) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     "Das Event %s wird von diesem Prozesselement nicht unterstützt.",
                     StringUtils.quote(event)
@@ -460,18 +362,23 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         }
 
         var config = context.getConfigurationOfExecutingNode();
+        if (!SemiAutomaticMessageConfig.isManual(config.messageConfig)) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die E-Mail kann nur im manuellen Ausführungsmodus über eine Aufgabe versendet werden."
+            );
+        }
 
         var derivedRuntimeData = new DerivedRuntimeElementData();
 
-        var subject = (String) update.getOrDefault(STAFF_TASK_SUBJECT_FIELD_ID, null);
-        if (StringUtils.isNullOrEmpty(subject)) {
+        var subject = StringUtils.toNullableTrimmedString(update.get(STAFF_TASK_SUBJECT_FIELD_ID));
+        if (subject == null) {
             derivedRuntimeData.getElementStates().put(STAFF_TASK_SUBJECT_FIELD_ID, new ComputedElementState()
                     .setError("Der Betreff der E-Mail darf nicht leer sein.")
             );
         }
 
-        var content =  (String) update.getOrDefault(STAFF_TASK_CONTENT_FIELD_ID, null);
-        if (StringUtils.isNullOrEmpty(content)) {
+        var content = StringUtils.toNullableTrimmedString(update.get(STAFF_TASK_CONTENT_FIELD_ID));
+        if (content == null) {
             derivedRuntimeData.getElementStates().put(STAFF_TASK_CONTENT_FIELD_ID, new ComputedElementState()
                     .setError("Der Inhalt der E-Mail darf nicht leer sein.")
             );
@@ -490,24 +397,96 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         return Optional.of(res);
     }
 
+    @Nonnull
+    private SemiAutomaticMessageConfig.AutomaticContent requireAutomaticContent(
+            @Nonnull EMailActionNodeConfig configuration
+    ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var content = configuration.messageConfig == null ? null : configuration.messageConfig.automaticContent;
+        if (content == null
+                || StringUtils.toNullableTrimmedString(content.subject) == null
+                || StringUtils.toNullableTrimmedString(content.content) == null) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Für den automatischen E-Mail-Versand müssen Betreff und Nachrichtentext konfiguriert sein."
+            );
+        }
+        return content;
+    }
+
+    @Nonnull
+    private SemiAutomaticMessageConfig.ManualContent requireManualContent(
+            @Nonnull EMailActionNodeConfig configuration
+    ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var content = configuration.messageConfig == null ? null : configuration.messageConfig.manualContent;
+        if (content == null
+                || StringUtils.toNullableTrimmedString(content.subject) == null
+                || StringUtils.toNullableTrimmedString(content.content) == null) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Für den manuellen E-Mail-Versand müssen Vorlagen für Betreff und Nachrichtentext konfiguriert sein."
+            );
+        }
+        return content;
+    }
+
+    @Nonnull
+    private SemiAutomaticMessageConfig.ManualContent requireManualContentForStaffView(
+            @Nonnull EMailActionNodeConfig configuration
+    ) throws ResponseException {
+        try {
+            return requireManualContent(configuration);
+        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
+            throw ResponseException.internalServerError(e, e.getMessage());
+        }
+    }
+
+    @Nonnull
+    private String renderRequiredTemplate(
+            @Nonnull ProcessExecutionData processExecutionData,
+            @Nonnull String template,
+            @Nonnull String fieldName
+    ) throws ProcessNodeExecutionException {
+        final String rendered;
+        try {
+            rendered = StringUtils.toNullableTrimmedString(
+                    templateRenderService.interpolate(processExecutionData, template)
+            );
+        } catch (RuntimeException e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Die Vorlage für %s konnte nicht gerendert werden: %s",
+                    fieldName,
+                    e.getMessage()
+            );
+        }
+
+        if (rendered == null) {
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Der gerenderte Wert für %s ist leer.",
+                    fieldName
+            );
+        }
+        return rendered;
+    }
+
     private ProcessNodeExecutionResult sendMail(@Nonnull String subject,
                                                 @Nonnull String interpolatedContentMarkdown,
                                                 @Nonnull EMailActionNodeConfig config,
                                                 @Nonnull ProcessExecutionData processData,
                                                 @Nonnull ProcessInstanceEntity processInstance) throws ProcessNodeExecutionException {
-        var recipientsStr = templateRenderService
-                .interpolate(processData, config.to);
+        var recipientsStr = StringUtils.toNullableTrimmedString(
+                templateRenderService.interpolate(processData, config.to)
+        );
 
-        if (StringUtils.isNullOrEmpty(recipientsStr)) {
+        if (recipientsStr == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
                     "Die Empfänger:in für die E-Mail wurde nicht angegeben."
             );
         }
         var recipients = recipientsStr.split(",");
 
-        var recipientsBccStr = templateRenderService
-                .interpolate(processData, config.bcc);
-        var recipientsBCC = StringUtils.isNullOrEmpty(recipientsBccStr) ? null : recipientsBccStr.split(",");
+        var recipientsBccStr = StringUtils.toNullableTrimmedString(
+                templateRenderService.interpolate(processData, config.bcc)
+        );
+        var recipientsBCC = recipientsBccStr == null ? null : recipientsBccStr.split(",");
 
         var attachmentSetDataKeys = config.attachmentSetDataKeys;
         if (attachmentSetDataKeys == null) {
@@ -592,7 +571,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     @Nonnull
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
-        configuration.remove(EMailActionNodeConfigManualContent.ASSIGNMENT_FIELD_ID);
+        configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
         return configuration;
     }
 
@@ -642,10 +621,6 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         public static final String BCC_RECIPIENT_FIELD_ID = "bcc";
         public static final String ATTACHMENT_SET_DATA_KEYS_FIELD_ID = "attachment_file_names";
 
-        public static final String EXECUTION_TYPE_FIELD_ID = "execution_type";
-        public static final String EXECUTION_TYPE_MANUAL = "manual";
-        public static final String EXECUTION_TYPE_AUTOMATIC = "automatic";
-
         @InputElementPOJOBinding(id = RECIPIENT_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Empfänger:innen"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Kommaseparierte Angabe der Empfänger:innen"),
@@ -667,67 +642,9 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         })
         public List<String> attachmentSetDataKeys;
 
-        @InputElementPOJOBinding(id = EXECUTION_TYPE_FIELD_ID, type = ElementType.Radio, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Auswahl, ob Nachricht automatisch versendet oder vorher durch eine Sachbearbeiter:in editiert werden soll"),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        public String executionType;
-
-        public EMailActionNodeConfigManualContent manualContent;
-        public EMailActionNodeConfigAutomaticContent automaticContent;
-    }
-
-    public static final String MANUAL_CONTENT_GROUP_ID = "manual_group";
-
-    @LayoutElementPOJOBinding(id = MANUAL_CONTENT_GROUP_ID, type = ElementType.GroupLayout)
-    public static class EMailActionNodeConfigManualContent {
-        public static final String SUBJECT_FIELD_ID = "manual_subject";
-        public static final String CONTENT_FIELD_ID = "manual_content";
-        public static final String ASSIGNMENT_FIELD_ID = "manual_assignment";
-
-        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage Betreff der E-Mail"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Betreff der E-Mail ein."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        public String subject;
-
-        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage Nachrichtentext"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Inhalt der E-Mail ein."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true),
-        })
-        public String content;
-
-        @InputElementPOJOBinding(id = ASSIGNMENT_FIELD_ID, type = ElementType.AssignmentContext, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Verantwortlicher Personenkreis"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, der für diese Aufgabe herangezogen werden kann."),
-                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Organisationseinheit, Team oder Mitarbeiter:in suchen"),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        public AssignmentContextInputElementValue assignmentContext;
-    }
-
-    public static final String AUTOMATIC_CONTENT_GROUP_ID = "automatic_group";
-
-    @LayoutElementPOJOBinding(id = AUTOMATIC_CONTENT_GROUP_ID, type = ElementType.GroupLayout)
-    public static class EMailActionNodeConfigAutomaticContent {
-        public static final String SUBJECT_FIELD_ID = "automatic_subject";
-        public static final String CONTENT_FIELD_ID = "automatic_content";
-
-        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Betreff der E-Mail"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Betreff der E-Mail ein."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        public String subject;
-
-        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtentext"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Inhalt der E-Mail ein."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true),
-        })
-        public String content;
+        /**
+         * Dispatch mode, message templates and optional staff assignment.
+         */
+        public SemiAutomaticMessageConfig.LayoutConfig messageConfig;
     }
 }

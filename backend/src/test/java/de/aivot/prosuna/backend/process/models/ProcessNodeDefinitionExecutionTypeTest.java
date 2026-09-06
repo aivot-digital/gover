@@ -78,6 +78,7 @@ class ProcessNodeDefinitionExecutionTypeTest {
                 automatic(AiCompletionActionNodeV1.class),
                 automatic(AiProcessDataTransformationActionNodeV1.class),
                 manual(ApprovalActionNodeV1.class),
+                mixedAutomatic(CommunicationMessageActionNodeV1.class),
                 automatic(CounterActionNodeV1.class),
                 manual(DataChangeActionNodeV1.class),
                 automatic(DataMappingActionNodeV1.class),

@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOpe
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 import java.util.List;
 
@@ -55,13 +56,20 @@ public class SemiAutomaticMessageConfig {
                 });
     }
 
-    public static boolean isAutomatic(@Nonnull final LayoutConfig config) {
+    public static boolean isAutomatic(@Nullable final LayoutConfig config) {
+        if (config == null) {
+            return false;
+        }
         var executionType = StringUtils.toNullableTrimmedString(config.executionType);
         return LayoutConfig.EXECUTION_TYPE_AUTOMATIC.equals(executionType);
     }
 
-    public static boolean isManual(@Nonnull final LayoutConfig config) {
-        return !isAutomatic(config);
+    public static boolean isManual(@Nullable final LayoutConfig config) {
+        if (config == null) {
+            return false;
+        }
+        var executionType = StringUtils.toNullableTrimmedString(config.executionType);
+        return LayoutConfig.EXECUTION_TYPE_MANUAL.equals(executionType);
     }
 
     @Nonnull
@@ -90,7 +98,7 @@ public class SemiAutomaticMessageConfig {
          */
         @InputElementPOJOBinding(id = EXECUTION_TYPE_FIELD_ID, type = ElementType.Radio, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Auswahl, ob die Anforderung automatisch versendet oder vorher durch eine Mitarbeiter:in bearbeitet wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Auswahl, ob die Nachricht automatisch versendet oder vorher durch eine Mitarbeiter:in bearbeitet wird."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String executionType;
@@ -129,7 +137,7 @@ public class SemiAutomaticMessageConfig {
          * Rich-text template rendered against the process data immediately before dispatch.
          */
         @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Nachricht der Aufforderung"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Nachricht"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für die Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
@@ -171,7 +179,7 @@ public class SemiAutomaticMessageConfig {
          */
         @InputElementPOJOBinding(id = ASSIGNMENT_FIELD_ID, type = ElementType.AssignmentContext, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Verantwortlicher Personenkreis"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, der die Aufforderung bearbeiten und versenden darf."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, der die Nachricht bearbeiten und versenden darf."),
                 @ElementPOJOBindingProperty(key = "placeholder", strValue = "Organisationseinheit, Team oder Mitarbeiter:in suchen"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })

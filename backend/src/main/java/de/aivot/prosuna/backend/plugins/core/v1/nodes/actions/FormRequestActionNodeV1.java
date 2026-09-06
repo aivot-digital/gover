@@ -196,9 +196,20 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
         if (SemiAutomaticMessageConfig.isAutomatic(configuration.messageConfig)) {
             return initAutomatic(context, configuration);
-        } else {
+        }
+        if (SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
             return initManual(context, configuration);
         }
+
+        var executionType = configuration.messageConfig == null
+                ? null
+                : StringUtils.toNullableTrimmedString(configuration.messageConfig.executionType);
+        throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                "Ungültige Ausführungsart für die Formularanforderung. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
+                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC),
+                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL),
+                StringUtils.quote(executionType)
+        );
     }
 
     @Nonnull
@@ -330,9 +341,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         }
 
         var configuration = context.getConfigurationOfExecutingNode();
-        if (!SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL.equals(
-                StringUtils.toNullableTrimmedString(configuration.messageConfig.executionType)
-        )) {
+        if (!SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Die Aufforderung kann nur im manuellen Ausführungsmodus über eine Aufgabe versendet werden."
             );
@@ -409,7 +418,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private String requireRecipientIdentity(@Nullable String recipientIdentity) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var normalizedIdentity = StringUtils.toNullableTrimmedString(recipientIdentity);
         if (normalizedIdentity == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Für die Zahlungsanforderung muss eine Empfängeridentität konfiguriert sein.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Für die Formularanforderung muss eine Empfängeridentität konfiguriert sein.");
         }
         return normalizedIdentity;
     }
@@ -418,7 +427,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private SemiAutomaticMessageConfig.AutomaticContent requireAutomaticContent(
             @Nonnull NodeConfig configuration
     ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var content = configuration.messageConfig.automaticContent;
+        var content = configuration.messageConfig == null ? null : configuration.messageConfig.automaticContent;
         if (content == null || StringUtils.isNullOrEmpty(content.subject) || StringUtils.isNullOrEmpty(content.content)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Für den automatischen Versand müssen Betreff und Nachrichtentext konfiguriert sein."
@@ -431,7 +440,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private SemiAutomaticMessageConfig.ManualContent requireManualContent(
             @Nonnull NodeConfig configuration
     ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var content = configuration.messageConfig.manualContent;
+        var content = configuration.messageConfig == null ? null : configuration.messageConfig.manualContent;
         if (content == null || StringUtils.isNullOrEmpty(content.subject) || StringUtils.isNullOrEmpty(content.content)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Für den manuellen Versand müssen Vorlagen für Betreff und Nachrichtentext konfiguriert sein."

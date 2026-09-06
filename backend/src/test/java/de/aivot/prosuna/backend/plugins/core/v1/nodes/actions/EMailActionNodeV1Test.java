@@ -1,29 +1,22 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
-import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
-import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
-import de.aivot.prosuna.backend.identity.enums.IdentityType;
-import de.aivot.prosuna.backend.identity.models.IdentityData;
-import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
-import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -36,14 +29,18 @@ import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentServic
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
+import jakarta.mail.Message;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.Properties;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -58,46 +55,39 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class CommunicationMessageActionNodeV1Test {
+class EMailActionNodeV1Test {
     private static final Integer PROCESS_ID = 42;
     private static final Integer PROCESS_VERSION = 3;
     private static final Integer NODE_ID = 17;
     private static final Long PROCESS_INSTANCE_ID = 99L;
     private static final Long TASK_ID = 123L;
 
-    @Test
-    void metadataExposesAutomaticAndSemiAutomaticExecutionAndTypedOutputs() {
-        var node = createNode(mock(TemplateRenderService.class), mock(AssignmentContextAssigneeResolverService.class));
+    private ProsunaConfig prosunaConfig;
+    private TemplateRenderService templateRenderService;
+    private JavaMailSenderImpl mailSender;
+    private AssignmentContextAssigneeResolverService assignmentResolver;
+    private EMailActionNodeV1 node;
 
-        assertArrayEquals(
-                new ProcessNodeExecutionType[]{
-                        ProcessNodeExecutionType.Automatic,
-                        ProcessNodeExecutionType.SemiAutomatic
-                },
-                node.getExecutionTypes()
-        );
-        assertFalse(node.getAbstract().isBlank());
-        assertEquals(
-                List.of(
-                        "string",
-                        "number | null",
-                        "string",
-                        "string",
-                        "Array<string>",
-                        "string",
-                        "Record<string, unknown>"
-                ),
-                node.getOutputs().stream().map(output -> output.typeDefinition()).toList()
+    @BeforeEach
+    void setUp() {
+        prosunaConfig = mock(ProsunaConfig.class);
+        templateRenderService = mock(TemplateRenderService.class);
+        mailSender = mock(JavaMailSenderImpl.class);
+        assignmentResolver = mock(AssignmentContextAssigneeResolverService.class);
+        node = new EMailActionNodeV1(
+                prosunaConfig,
+                templateRenderService,
+                mock(ProcessInstanceAttachmentService.class),
+                mock(ProcessInstanceAttachmentSetService.class),
+                mock(StorageService.class),
+                mailSender,
+                assignmentResolver
         );
     }
 
     @Test
     void configurationUsesSharedSemiAutomaticMessageLayout() throws Exception {
-        var node = createNode(mock(TemplateRenderService.class), mock(AssignmentContextAssigneeResolverService.class));
-        var processNode = mock(ProcessNodeEntity.class);
-        when(processNode.getProcessId()).thenReturn(PROCESS_ID);
-        when(processNode.getProcessVersion()).thenReturn(PROCESS_VERSION);
-
+        var processNode = processNode();
         var layout = node.getConfigurationLayout(new ProcessNodeDefinitionConfigurationLayoutContext(
                 null,
                 mock(ProcessEntity.class),
@@ -106,14 +96,9 @@ class CommunicationMessageActionNodeV1Test {
         ));
 
         assertTrue(layout.findChild(
-                CommunicationMessageActionNodeV1.Configuration.IDENTITY_ID_FIELD_ID,
-                ProcessIdentityIdInputElement.class
-        ).isPresent());
-        assertTrue(layout.findChild(
                 SemiAutomaticMessageConfig.GROUP_ID,
                 GroupLayoutElement.class
         ).isPresent());
-
         var executionType = layout.findChild(
                 SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_FIELD_ID,
                 RadioInputElement.class
@@ -146,70 +131,44 @@ class CommunicationMessageActionNodeV1Test {
     }
 
     @Test
-    void effectiveValuesMapIntoSharedNestedConfiguration() throws Exception {
-        var values = new EffectiveElementValues();
-        values.put(CommunicationMessageActionNodeV1.Configuration.IDENTITY_ID_FIELD_ID, "applicant");
-        values.put(
-                SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_FIELD_ID,
-                SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC
-        );
-        values.put(SemiAutomaticMessageConfig.AutomaticContent.SUBJECT_FIELD_ID, "Subject");
-        values.put(SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID, "Content");
-
-        var configuration = ElementPOJOMapper.mapToPOJO(
-                values,
-                CommunicationMessageActionNodeV1.Configuration.class
-        );
-
-        assertEquals("applicant", configuration.identityId);
-        assertNotNull(configuration.messageConfig);
-        assertEquals("automatic", configuration.messageConfig.executionType);
-        assertNotNull(configuration.messageConfig.automaticContent);
-        assertEquals("Subject", configuration.messageConfig.automaticContent.subject);
-        assertEquals("Content", configuration.messageConfig.automaticContent.content);
-    }
-
-    @Test
-    void initAutomaticReturnsCommunicationRequestForConfiguredIdentity() throws Exception {
-        var templateRenderService = mock(TemplateRenderService.class);
-        var node = createNode(templateRenderService, mock(AssignmentContextAssigneeResolverService.class));
+    void automaticModeRendersAndSendsSharedMessageContent() throws Exception {
         var configuration = configuration("automatic");
-        var processInstance = processInstance();
-        var executionData = new ProcessExecutionData().addProcessData(Map.of("caseNumber", "123"));
-        var context = initContext(configuration, executionData, processInstance, mock(ProcessInstanceTaskEntity.class));
-
+        var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
+        var mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
+        when(prosunaConfig.getFromMail()).thenReturn("service@example.test");
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
         when(templateRenderService.interpolate(
-                same(executionData),
+                same(processData),
                 eq(configuration.messageConfig.automaticContent.subject)
-        )).thenReturn("  Subject 123  ");
+        )).thenReturn("  Nachricht für Ada  ");
         when(templateRenderService.interpolate(
-                same(executionData),
+                same(processData),
                 eq(configuration.messageConfig.automaticContent.content)
-        )).thenReturn("  Hello  ");
+        )).thenReturn("  Hallo **Ada**  ");
+        when(templateRenderService.interpolate(same(processData), eq(configuration.to)))
+                .thenReturn("customer@example.test");
 
-        var result = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, node.init(context));
+        var result = assertInstanceOf(
+                ProcessNodeExecutionResultTaskCompleted.class,
+                node.init(initContext(configuration, processData, processInstance(), task()))
+        );
 
-        var communicationRequest = result.getCommunicationRequest();
-        assertNotNull(communicationRequest);
-        assertEquals("applicant", communicationRequest.recipientIdentityId());
-        assertEquals("sendResult", communicationRequest.nodeDataOutputKey());
-        assertEquals("Subject 123", communicationRequest.message().subject());
-        assertEquals("Hello", communicationRequest.message().body());
-        assertEquals("Hello", communicationRequest.message().htmlBody());
-        assertEquals(result.getNodeData().get("sentAt"), communicationRequest.message().timestamp());
-        assertEquals(5, result.getNodeData().get("communicationProviderBindingId"));
+        verify(mailSender).send(same(mimeMessage));
+        assertEquals("Nachricht für Ada", mimeMessage.getSubject());
+        assertEquals(
+                "customer@example.test",
+                mimeMessage.getRecipients(Message.RecipientType.TO)[0].toString()
+        );
+        assertEquals("Nachricht für Ada", result.getNodeData().get("subject"));
     }
 
     @Test
-    void initManualAssignsStaffWithoutSending() throws Exception {
-        var assignmentResolver = mock(AssignmentContextAssigneeResolverService.class);
-        var node = createNode(mock(TemplateRenderService.class), assignmentResolver);
+    void manualModeAssignsStaffWithoutSending() throws Exception {
         var configuration = configuration("manual");
+        var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
         var processInstance = processInstance();
         var processNode = processNode();
         var task = task();
-        var executionData = new ProcessExecutionData().addProcessData(Map.of("caseNumber", "123"));
-        var context = initContext(configuration, executionData, processInstance, task, processNode);
 
         when(assignmentResolver.resolveAssignee(
                 eq(PROCESS_ID),
@@ -223,32 +182,34 @@ class CommunicationMessageActionNodeV1Test {
                 eq(List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK))
         )).thenReturn(Optional.of("staff-1"));
 
-        var result = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, node.init(context));
+        var result = assertInstanceOf(
+                ProcessNodeExecutionResultTaskAssigned.class,
+                node.init(initContext(configuration, processData, processInstance, task, processNode))
+        );
 
         assertEquals("staff-1", result.getAssignedUserId());
-        assertEquals(Map.of("caseNumber", "123"), result.getProcessData());
+        assertEquals(Map.of("name", "Ada"), result.getProcessData());
         assertEquals(Map.of(), result.getRuntimeData());
-        verify(assignmentResolver).resolveAssignee(
-                any(), any(), any(), any(), any(), any(), any(), any(), any()
-        );
     }
 
     @Test
-    void staffTaskProvidesRenderedDefaultsAndSendsEditedValues() throws Exception {
-        var templateRenderService = mock(TemplateRenderService.class);
-        var node = createNode(templateRenderService, mock(AssignmentContextAssigneeResolverService.class));
+    void staffTaskUsesRenderedDefaultsAndSendsEditedValues() throws Exception {
         var configuration = configuration("manual");
-        var executionData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
-        var context = staffContext(configuration, executionData, processInstance(), task());
-
+        var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
+        var context = staffContext(configuration, processData, processInstance(), task());
+        var mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
+        when(prosunaConfig.getFromMail()).thenReturn("service@example.test");
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
         when(templateRenderService.interpolate(
-                same(executionData),
+                same(processData),
                 eq(configuration.messageConfig.manualContent.subject)
         )).thenReturn("Entwurf für Ada");
         when(templateRenderService.interpolate(
-                same(executionData),
+                same(processData),
                 eq(configuration.messageConfig.manualContent.content)
         )).thenReturn("Hallo Ada");
+        when(templateRenderService.interpolate(same(processData), eq(configuration.to)))
+                .thenReturn("customer@example.test");
 
         var layout = node.getStaffTaskView(context);
         assertTrue(Boolean.TRUE.equals(layout.findChild("subject", TextInputElement.class).orElseThrow().getRequired()));
@@ -259,39 +220,37 @@ class CommunicationMessageActionNodeV1Test {
         assertEquals("Entwurf für Ada", defaults.get("subject"));
         assertEquals("Hallo Ada", defaults.get("body"));
 
-        var update = authored("subject", "  Bearbeitet  ", "body", "  Finaler Inhalt  ");
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
-                node.onEventFromStaffTaskView(context, update, "send").orElseThrow()
+                node.onEventFromStaffTaskView(
+                        context,
+                        authored("subject", "  Finaler Betreff  ", "body", "  Finaler Inhalt  "),
+                        "send"
+                ).orElseThrow()
         );
-        assertEquals("Bearbeitet", result.getCommunicationRequest().message().subject());
-        assertEquals("Finaler Inhalt", result.getCommunicationRequest().message().body());
+        verify(mailSender).send(same(mimeMessage));
+        assertEquals("Finaler Betreff", mimeMessage.getSubject());
+        assertEquals("Finaler Betreff", result.getNodeData().get("subject"));
     }
 
     @Test
-    void staffTaskRejectsBlankValuesAndUnknownEvents() {
-        var node = createNode(mock(TemplateRenderService.class), mock(AssignmentContextAssigneeResolverService.class));
-        var context = staffContext(configuration("manual"), new ProcessExecutionData(), processInstance(), task());
-
+    void blankStaffMessageAndInvalidExecutionTypeAreRejected() {
+        var manualContext = staffContext(
+                configuration("manual"),
+                new ProcessExecutionData(),
+                processInstance(),
+                task()
+        );
         assertThrows(
                 ResponseException.class,
                 () -> node.onEventFromStaffTaskView(
-                        context,
+                        manualContext,
                         authored("subject", " ", "body", ""),
                         "send"
                 )
         );
-        assertThrows(
-                ProcessNodeExecutionExceptionUnknown.class,
-                () -> node.onEventFromStaffTaskView(context, authored(), "unknown")
-        );
-    }
 
-    @Test
-    void invalidExecutionTypeFailsAndExportRemovesAssignment() {
-        var node = createNode(mock(TemplateRenderService.class), mock(AssignmentContextAssigneeResolverService.class));
         var invalidConfiguration = configuration("unexpected");
-
         assertThrows(
                 ProcessNodeExecutionExceptionInvalidConfiguration.class,
                 () -> node.init(initContext(
@@ -301,26 +260,34 @@ class CommunicationMessageActionNodeV1Test {
                         task()
                 ))
         );
+    }
 
-        var exported = authored(
-                CommunicationMessageActionNodeV1.Configuration.IDENTITY_ID_FIELD_ID,
-                "applicant",
+    @Test
+    void exportRemovesSharedAssignment() {
+        var configuration = authored(
+                EMailActionNodeV1.EMailActionNodeConfig.RECIPIENT_FIELD_ID,
+                "customer@example.test",
                 SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
                 Map.of("user", "staff-1")
         );
-        var cleaned = node.cleanConfigurationForExport(exported);
-        assertEquals("applicant", cleaned.get(CommunicationMessageActionNodeV1.Configuration.IDENTITY_ID_FIELD_ID));
+
+        var cleaned = node.cleanConfigurationForExport(configuration);
+
+        assertEquals(
+                "customer@example.test",
+                cleaned.get(EMailActionNodeV1.EMailActionNodeConfig.RECIPIENT_FIELD_ID)
+        );
         assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID));
     }
 
-    private static CommunicationMessageActionNodeV1.Configuration configuration(String executionType) {
-        var configuration = new CommunicationMessageActionNodeV1.Configuration();
-        configuration.identityId = "applicant";
+    private static EMailActionNodeV1.EMailActionNodeConfig configuration(String executionType) {
+        var configuration = new EMailActionNodeV1.EMailActionNodeConfig();
+        configuration.to = "{{ $.recipient }}";
         configuration.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
         configuration.messageConfig.executionType = executionType;
         configuration.messageConfig.automaticContent = new SemiAutomaticMessageConfig.AutomaticContent();
-        configuration.messageConfig.automaticContent.subject = "Subject {{ $.caseNumber }}";
-        configuration.messageConfig.automaticContent.content = "Hello";
+        configuration.messageConfig.automaticContent.subject = "Nachricht für {{ $.name }}";
+        configuration.messageConfig.automaticContent.content = "Hallo **{{ $.name }}**";
         configuration.messageConfig.manualContent = new SemiAutomaticMessageConfig.ManualContent();
         configuration.messageConfig.manualContent.subject = "Entwurf für {{ $.name }}";
         configuration.messageConfig.manualContent.content = "Hallo {{ $.name }}";
@@ -329,23 +296,8 @@ class CommunicationMessageActionNodeV1Test {
     }
 
     private static ProcessInstanceEntity processInstance() {
-        var identity = new IdentityData(
-                "session",
-                "applicant",
-                IdentityType.IdentityProvider,
-                UUID.randomUUID(),
-                "metadata",
-                null,
-                Map.of(),
-                5,
-                Map.of()
-        );
-        var identities = new IdentityDataMap();
-        identities.put("applicant", identity);
-
         var processInstance = mock(ProcessInstanceEntity.class);
         when(processInstance.getId()).thenReturn(PROCESS_INSTANCE_ID);
-        when(processInstance.getIdentities()).thenReturn(identities);
         return processInstance;
     }
 
@@ -364,27 +316,27 @@ class CommunicationMessageActionNodeV1Test {
         return task;
     }
 
-    private static ProcessNodeExecutionInitContext<CommunicationMessageActionNodeV1.Configuration> initContext(
-            CommunicationMessageActionNodeV1.Configuration configuration,
-            ProcessExecutionData executionData,
+    private static ProcessNodeExecutionInitContext<EMailActionNodeV1.EMailActionNodeConfig> initContext(
+            EMailActionNodeV1.EMailActionNodeConfig configuration,
+            ProcessExecutionData processData,
             ProcessInstanceEntity processInstance,
             ProcessInstanceTaskEntity task
     ) {
-        return initContext(configuration, executionData, processInstance, task, processNode());
+        return initContext(configuration, processData, processInstance, task, processNode());
     }
 
     @SuppressWarnings("unchecked")
-    private static ProcessNodeExecutionInitContext<CommunicationMessageActionNodeV1.Configuration> initContext(
-            CommunicationMessageActionNodeV1.Configuration configuration,
-            ProcessExecutionData executionData,
+    private static ProcessNodeExecutionInitContext<EMailActionNodeV1.EMailActionNodeConfig> initContext(
+            EMailActionNodeV1.EMailActionNodeConfig configuration,
+            ProcessExecutionData processData,
             ProcessInstanceEntity processInstance,
             ProcessInstanceTaskEntity task,
             ProcessNodeEntity processNode
     ) {
-        var context = (ProcessNodeExecutionInitContext<CommunicationMessageActionNodeV1.Configuration>)
+        var context = (ProcessNodeExecutionInitContext<EMailActionNodeV1.EMailActionNodeConfig>)
                 mock(ProcessNodeExecutionInitContext.class);
         when(context.getConfigurationOfExecutingNode()).thenReturn(configuration);
-        when(context.getCurrentProcessExecutionData()).thenReturn(executionData);
+        when(context.getCurrentProcessExecutionData()).thenReturn(processData);
         when(context.getThisProcessInstance()).thenReturn(processInstance);
         when(context.getThisTask()).thenReturn(task);
         when(context.getThisNode()).thenReturn(processNode);
@@ -392,16 +344,16 @@ class CommunicationMessageActionNodeV1Test {
     }
 
     @SuppressWarnings("unchecked")
-    private static ProcessNodeExecutionContextUIStaff<CommunicationMessageActionNodeV1.Configuration> staffContext(
-            CommunicationMessageActionNodeV1.Configuration configuration,
-            ProcessExecutionData executionData,
+    private static ProcessNodeExecutionContextUIStaff<EMailActionNodeV1.EMailActionNodeConfig> staffContext(
+            EMailActionNodeV1.EMailActionNodeConfig configuration,
+            ProcessExecutionData processData,
             ProcessInstanceEntity processInstance,
             ProcessInstanceTaskEntity task
     ) {
-        var context = (ProcessNodeExecutionContextUIStaff<CommunicationMessageActionNodeV1.Configuration>)
+        var context = (ProcessNodeExecutionContextUIStaff<EMailActionNodeV1.EMailActionNodeConfig>)
                 mock(ProcessNodeExecutionContextUIStaff.class);
         when(context.getConfigurationOfExecutingNode()).thenReturn(configuration);
-        when(context.getCurrentProcessExecutionData()).thenReturn(executionData);
+        when(context.getCurrentProcessExecutionData()).thenReturn(processData);
         when(context.getThisProcessInstance()).thenReturn(processInstance);
         when(context.getThisTask()).thenReturn(task);
         return context;
@@ -413,18 +365,5 @@ class CommunicationMessageActionNodeV1Test {
             values.put((String) entries[index], entries[index + 1]);
         }
         return values;
-    }
-
-    private static CommunicationMessageActionNodeV1 createNode(
-            TemplateRenderService templateRenderService,
-            AssignmentContextAssigneeResolverService assignmentResolver
-    ) {
-        return new CommunicationMessageActionNodeV1(
-                templateRenderService,
-                mock(ProcessInstanceAttachmentSetService.class),
-                mock(ProcessInstanceAttachmentService.class),
-                mock(StorageService.class),
-                assignmentResolver
-        );
     }
 }
