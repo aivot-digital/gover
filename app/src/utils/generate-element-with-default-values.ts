@@ -391,7 +391,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.CodeInput, id),
         label: 'Codeeingabe',
         language: CodeInputFieldLanguage.Javascript,
-        editorHeight: 320,
+        editorHeight: 240,
         wordWrap: false,
     }),
     [ElementType.RichTextInput]: (id) => ({

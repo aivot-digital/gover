@@ -12,6 +12,7 @@ vi.mock('../code-editor/code-editor', () => ({
         disabled?: boolean;
         readOnly?: boolean;
         busy?: boolean;
+        height?: string;
     }) => (
         <textarea
             id={props.id}
@@ -22,6 +23,7 @@ vi.mock('../code-editor/code-editor', () => ({
             data-disabled={props.disabled || undefined}
             data-read-only={props.readOnly || undefined}
             data-busy={props.busy || undefined}
+            data-height={props.height}
             readOnly
         />
     ),
@@ -46,6 +48,7 @@ describe('CodeInputFieldComponent', () => {
         expect(editor).toHaveAccessibleName('Validierungslogik – optional');
         expect(editor).toHaveAccessibleDescription('Die Funktion muss einen Wahrheitswert zurückgeben.');
         expect(editor).toHaveValue('return true;');
+        expect(editor).toHaveAttribute('data-height', '240px');
         expect(expand).toHaveAttribute('aria-haspopup', 'dialog');
         expect(expand).toHaveAttribute('aria-expanded', 'false');
         expect(expand).not.toHaveAttribute('aria-controls');
@@ -58,6 +61,19 @@ describe('CodeInputFieldComponent', () => {
         expect(expand).toHaveAttribute('aria-controls');
         expect(document.querySelector('textarea[aria-label="Validierungslogik im großen Editor"]'))
             .toHaveAccessibleDescription('Die Funktion muss einen Wahrheitswert zurückgeben.');
+    });
+
+    it('keeps an explicitly configured editor height', () => {
+        render(
+            <CodeInputFieldComponent
+                label="Validierungslogik"
+                value="return true;"
+                onChange={vi.fn()}
+                height="360px"
+            />,
+        );
+
+        expect(document.querySelector('textarea')).toHaveAttribute('data-height', '360px');
     });
 
     it('opens the large read-only view when editing is disabled', () => {
