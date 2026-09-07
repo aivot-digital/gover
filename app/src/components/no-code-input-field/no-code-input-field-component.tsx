@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
-import Function from '@aivot/mui-material-symbols-400-n25-outlined/Function';
+import {NoCodeIcon} from '../../modules/nocode/data/no-code-icon';
 import {alpha} from '@mui/material/styles';
 import {NoCodeEditorWrapper} from '../element-editor-code-tab/components/no-code-editor-wrapper/no-code-editor-wrapper';
 import {type NoCodeInputFieldElementItem} from '../../models/elements/form/input/no-code-input-field-element';
@@ -234,7 +234,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                         ]}
                     >
                         {!hasExpression && (
-                            <Function
+                            <NoCodeIcon
                                 aria-hidden="true"
                                 sx={{
                                     flexShrink: 0,
