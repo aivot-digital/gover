@@ -1,4 +1,5 @@
 import {ConfigLayoutElement} from '../../models/elements/form/layout/config-layout-element';
+import {GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {IdentityProviderType} from '../identity/enums/identity-provider-type';
 
 export interface CommunicationProvider {
@@ -34,3 +35,4 @@ export interface CommunicationProviderBinding {
 export type CommunicationProviderRequest = Omit<CommunicationProvider, 'id'>;
 export type CommunicationProviderBindingRequest = Omit<CommunicationProviderBinding, 'id'>;
 export type CommunicationConfigurationLayout = ConfigLayoutElement;
+export type CommunicationTestingLayout = GroupLayout;

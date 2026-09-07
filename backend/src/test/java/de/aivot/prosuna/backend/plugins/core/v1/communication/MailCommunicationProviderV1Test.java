@@ -2,10 +2,12 @@ package de.aivot.prosuna.backend.plugins.core.v1.communication;
 
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEntity;
+import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
 import de.aivot.prosuna.backend.communication.models.MailCommunicationSendOptions;
 import de.aivot.prosuna.backend.communication.services.DefaultMailCommunicationService;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
@@ -21,6 +23,7 @@ import de.aivot.prosuna.backend.mail.dtos.MailConfigurationResponseDTO;
 import de.aivot.prosuna.backend.mail.services.MailConfigurationService;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.List;
@@ -39,6 +42,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class MailCommunicationProviderV1Test {
@@ -133,6 +137,24 @@ class MailCommunicationProviderV1Test {
     }
 
     @Test
+    void testingLayoutRequestsAValidEmailRecipient() throws Exception {
+        var layout = definition.getTestingLayout();
+        var recipient = layout
+                .findChild(MailCommunicationProviderV1.TEST_RECIPIENT_FIELD_ID, TextInputElement.class)
+                .orElseThrow();
+
+        assertEquals(List.of(MailCommunicationProviderV1.TEST_RECIPIENT_FIELD_ID),
+                layout.getChildren().stream().map(element -> element.getId()).toList());
+        assertEquals("Testempfänger", recipient.getLabel());
+        assertEquals("email", recipient.getAutocomplete());
+        assertTrue(recipient.getRequired());
+        assertNotNull(recipient.getPattern());
+        assertDoesNotThrow(() -> recipient.validate("customer@example.test"));
+        assertThrows(ValidationException.class, () -> recipient.validate(""));
+        assertThrows(ValidationException.class, () -> recipient.validate("invalid"));
+    }
+
+    @Test
     void mapsAnnotatedCustomSenderConfiguration() throws Exception {
         var values = new EffectiveElementValues();
         values.put(MailCommunicationProviderV1.SENDER_MODE_FIELD_ID, MailCommunicationProviderV1.SENDER_MODE_CUSTOM);
@@ -220,6 +242,73 @@ class MailCommunicationProviderV1Test {
         );
     }
 
+    @Test
+    void testSendUsesTheRealSendPathWithDefaultSender() throws Exception {
+        var config = new MailCommunicationProviderV1.Config();
+        config.senderMode = MailCommunicationProviderV1.SENDER_MODE_DEFAULT;
+        var messageCaptor = ArgumentCaptor.forClass(CommunicationMessage.class);
+
+        definition.handleTest(provider(), config, testInputs("  customer@example.test  "));
+
+        verify(mailService).sendMessage(
+                eq("customer@example.test"),
+                messageCaptor.capture(),
+                eq(MailCommunicationSendOptions.defaults())
+        );
+        var message = messageCaptor.getValue();
+        assertEquals("Testnachricht", message.subject());
+        assertEquals("Dies ist eine Testnachricht.", message.body());
+        assertEquals("<p>Dies ist eine Testnachricht.</p>", message.htmlBody());
+        assertNotNull(message.timestamp());
+        assertEquals(List.of(), message.attachments());
+    }
+
+    @Test
+    void testSendUsesTheRealSendPathWithCustomSenderAndReplyTo() throws Exception {
+        var config = new MailCommunicationProviderV1.Config();
+        config.senderMode = MailCommunicationProviderV1.SENDER_MODE_CUSTOM;
+        config.customSender = new MailCommunicationProviderV1.CustomSenderConfig();
+        config.customSender.name = "Custom Service";
+        config.customSender.address = "custom@example.test";
+        config.customSender.replyToAddress = "replies@example.test";
+
+        definition.handleTest(provider(), config, testInputs("customer@example.test"));
+
+        verify(mailService).sendMessage(
+                eq("customer@example.test"),
+                argThat(message -> "Testnachricht".equals(message.subject())),
+                eq(MailCommunicationSendOptions.customSender(
+                        "Custom Service",
+                        "custom@example.test",
+                        "replies@example.test"
+                ))
+        );
+    }
+
+    @Test
+    void testSendRejectsMissingInvalidAndNonStringRecipients() {
+        var config = new MailCommunicationProviderV1.Config();
+        config.senderMode = MailCommunicationProviderV1.SENDER_MODE_DEFAULT;
+
+        var missing = assertThrows(
+                CommunicationException.class,
+                () -> definition.handleTest(provider(), config, new AuthoredElementValues())
+        );
+        var invalid = assertThrows(
+                CommunicationException.class,
+                () -> definition.handleTest(provider(), config, testInputs("invalid"))
+        );
+        var wrongType = assertThrows(
+                CommunicationException.class,
+                () -> definition.handleTest(provider(), config, testInputs(42))
+        );
+
+        assertEquals("Die Testempfängeradresse ist erforderlich.", missing.getMessage());
+        assertEquals("Die Testempfängeradresse ist ungültig.", invalid.getMessage());
+        assertEquals("Die Testempfängeradresse ist erforderlich.", wrongType.getMessage());
+        verifyNoInteractions(mailService);
+    }
+
     private static CommunicationProviderContext<MailCommunicationProviderV1.Config, MailCommunicationProviderV1.IdentityBinding> context(
             MailCommunicationProviderV1.IdentityBinding bindingConfig
     ) {
@@ -241,6 +330,25 @@ class MailCommunicationProviderV1Test {
 
     private static CommunicationMessage message() {
         return new CommunicationMessage("Subject", "Body", "Body", Instant.now(), List.of());
+    }
+
+    private static CommunicationProviderEntity provider() {
+        var provider = new CommunicationProviderEntity();
+        provider.setId(7);
+        provider.setCommunicationProviderDefinitionKey("de.aivot.core.mail_communication_provider");
+        provider.setCommunicationProviderDefinitionVersion(1);
+        provider.setName("Mail");
+        provider.setDescription("Mail");
+        provider.setConfiguration(new AuthoredElementValues());
+        provider.setEnabled(true);
+        provider.setTestProvider(true);
+        return provider;
+    }
+
+    private static AuthoredElementValues testInputs(Object recipient) {
+        var inputs = new AuthoredElementValues();
+        inputs.put(MailCommunicationProviderV1.TEST_RECIPIENT_FIELD_ID, recipient);
+        return inputs;
     }
 
     private static Object staticValue(de.aivot.prosuna.backend.elements.models.elements.BaseInputElement<?> input) {

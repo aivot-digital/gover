@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.communication;
 
+import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
+import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEntity;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
@@ -9,6 +11,7 @@ import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.enums.StoragePathSelectorMode;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -55,6 +58,11 @@ import java.util.UUID;
 @Component
 public class FitConnectZbpCommunicationProviderV1 implements CommunicationProviderDefinition<FitConnectZbpCommunicationProviderV1.Config, FitConnectZbpCommunicationProviderV1.IdentityBinding> {
     public static final String COMPONENT_KEY = "fit_connect_zbp_communication_provider";
+    public static final String TEST_POSTFACH_ID_FIELD_ID = "postfachId";
+    private static final String TESTING_LAYOUT_ID = "fit-connect-zbp-testing-config";
+    private static final String TEST_CONTEXT_ID = "communication-provider-test";
+    private static final int TEST_BINDING_ID = -1;
+    private static final String UUID_REGEX = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
     private static final String MESSAGE_SENDING_IDENTIFIER = "urn:schema-fitko-de:fit-connect:id.bund.de:message_v6";
     private static final URI ZBP_MESSAGE_SCHEMA_URI = URI.create(
             "https://schema.fitko.de/fit-connect/id.bund.de/message_v6/1.0.0/zbp-message.schema.json"
@@ -196,16 +204,96 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     @Nullable
     @Override
     public GroupLayoutElement getTestingLayout() throws ResponseException {
-        var group = new GroupLayoutElement();
-
         var postfachId = new TextInputElement();
-        postfachId.setId("postfachId");
+        postfachId.setId(TEST_POSTFACH_ID_FIELD_ID);
         postfachId.setLabel("Postfach-ID");
         postfachId.setHint("Postfach-ID des Testnutzers, an den die Testnachricht gesendet wird.");
         postfachId.setRequired(true);
-        group.addChild(postfachId);
+        postfachId.setPattern(TextInputElementPattern.of(
+                UUID_REGEX,
+                "Bitte geben Sie eine gültige UUID ein."
+        ));
 
-        return group;
+        var layout = new GroupLayoutElement();
+        layout.setId(TESTING_LAYOUT_ID);
+        layout.setChildren(List.of(postfachId));
+        return layout;
+    }
+
+    @Override
+    public void handleTest(@Nonnull CommunicationProviderEntity providerEntity,
+                           @Nonnull Config config,
+                           @Nonnull AuthoredElementValues inputs) throws CommunicationException {
+        var input = inputs.get(TEST_POSTFACH_ID_FIELD_ID);
+        if (!(input instanceof String rawPostfachId) || rawPostfachId.isBlank()) {
+            throw new CommunicationException("Die Postfach-ID des Testnutzers ist erforderlich.");
+        }
+
+        var normalizedPostfachId = rawPostfachId.trim();
+        final UUID postfachId;
+        try {
+            postfachId = UUID.fromString(normalizedPostfachId);
+        } catch (IllegalArgumentException e) {
+            throw new CommunicationException("Die Postfach-ID des Testnutzers muss eine gültige UUID sein.", e);
+        }
+        if (!postfachId.toString().equalsIgnoreCase(normalizedPostfachId)) {
+            throw new CommunicationException("Die Postfach-ID des Testnutzers muss eine gültige UUID sein.");
+        }
+
+        var identityProviderKey = UUID.randomUUID();
+        var testIdentityProvider = new IdentityProviderEntity()
+                .setKey(identityProviderKey)
+                .setMetadataIdentifier(TEST_CONTEXT_ID)
+                .setUniqueIdAttribute("id")
+                .setType(IdentityProviderType.Custom)
+                .setName("Kommunikationsanbieter-Test")
+                .setDescription("Temporärer Nutzerkontenanbieter für einen Kommunikationstest.")
+                .setAuthorizationEndpoint("")
+                .setTokenEndpoint("")
+                .setClientId(TEST_CONTEXT_ID)
+                .setAttributes(List.of())
+                .setDefaultScopes(List.of())
+                .setAdditionalParams(List.of())
+                .setIsEnabled(true)
+                .setIsTestProvider(providerEntity.getTestProvider());
+        var testBinding = new CommunicationProviderBindingEntity()
+                .setId(TEST_BINDING_ID)
+                .setIdentityProviderKey(identityProviderKey)
+                .setCommunicationProviderId(providerEntity.getId())
+                .setName("Kommunikationsanbieter-Test")
+                .setDescription("Temporäre Anbindung für einen Kommunikationstest.")
+                .setEnabled(true)
+                .setPosition(0)
+                .setConfiguration(new AuthoredElementValues());
+        var testIdentityBinding = new IdentityBinding();
+        testIdentityBinding.bpk2Attribute = TEST_POSTFACH_ID_FIELD_ID;
+
+        var testContext = new CommunicationProviderContext<>(
+                providerEntity,
+                testIdentityProvider,
+                testBinding,
+                config,
+                testIdentityBinding
+        );
+        var testIdentity = new IdentityData(
+                TEST_CONTEXT_ID,
+                TEST_CONTEXT_ID,
+                IdentityType.IdentityProvider,
+                identityProviderKey,
+                TEST_CONTEXT_ID,
+                TEST_CONTEXT_ID,
+                null,
+                Map.of(TEST_POSTFACH_ID_FIELD_ID, postfachId.toString()),
+                TEST_BINDING_ID,
+                Map.of()
+        );
+        var testMessage = CommunicationMessage.of(
+                "Testnachricht",
+                "Dies ist eine Testnachricht.",
+                "<p>Dies ist eine Testnachricht.</p>"
+        );
+
+        sendMessage(testContext, testIdentity, testMessage);
     }
 
     @Override

@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.communication.services.CommunicationProviderDefi
 import de.aivot.prosuna.backend.communication.services.CommunicationProviderManagementService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
@@ -63,6 +64,22 @@ public class CommunicationProviderController {
                                      @Nonnull @PathVariable Integer id) throws ResponseException {
         permissionService.requireSystemPermission(jwt, CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ);
         return ProviderResponse.from(managementService.getProvider(id));
+    }
+
+    @Nullable
+    @GetMapping("{id}/test/")
+    public GroupLayoutElement getTestingLayout(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                               @Nonnull @PathVariable Integer id) throws ResponseException {
+        permissionService.requireSystemPermission(jwt, CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ);
+        return managementService.getProviderTestingLayout(id);
+    }
+
+    @PostMapping("{id}/test/")
+    public void test(@Nullable @AuthenticationPrincipal Jwt jwt,
+                     @Nonnull @PathVariable Integer id,
+                     @Nonnull @Valid @RequestBody AuthoredElementValues inputs) throws ResponseException {
+        permissionService.requireSystemPermission(jwt, CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_UPDATE);
+        managementService.testProvider(id, inputs);
     }
 
     @PostMapping("")

@@ -1,6 +1,7 @@
 import {BaseApiService} from '../../services/base-api-service';
 import {type SortOrder} from '../../components/generic-list/generic-list-props';
 import {type Page} from '../../models/dtos/page';
+import {type AuthoredElementValues} from '../../models/element-data';
 import {
     CommunicationConfigurationLayout,
     CommunicationProvider,
@@ -8,6 +9,7 @@ import {
     CommunicationProviderBindingRequest,
     CommunicationProviderDefinition,
     CommunicationProviderRequest,
+    CommunicationTestingLayout,
 } from './models';
 
 export class CommunicationProvidersApiService extends BaseApiService {
@@ -88,6 +90,21 @@ export class CommunicationProvidersApiService extends BaseApiService {
         return this.get(`${this.path}definitions/configuration/`, {
             query: {definitionKey, version},
         });
+    }
+
+    public async getProviderTestingLayout(id: number): Promise<CommunicationTestingLayout | null> {
+        const response = await this.fetch('GET', `${this.path}${id}/test/`);
+        const body = await response.text();
+
+        if (body.trim().length === 0) {
+            return null;
+        }
+
+        return JSON.parse(body) as CommunicationTestingLayout | null;
+    }
+
+    public async testProvider(id: number, inputs: AuthoredElementValues): Promise<void> {
+        await this.fetch('POST', `${this.path}${id}/test/`, JSON.stringify(inputs));
     }
 
     public listBindings(identityProviderKey: string): Promise<CommunicationProviderBinding[]> {
