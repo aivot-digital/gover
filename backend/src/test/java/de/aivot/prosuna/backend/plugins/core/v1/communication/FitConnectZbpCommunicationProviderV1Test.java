@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBind
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEntity;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
@@ -12,8 +13,7 @@ import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
-import dev.fitko.fitconnect.api.config.ApplicationConfig;
-import dev.fitko.fitconnect.api.domain.zbp.message.AuthenticationLevel;
+import dev.fitko.fitconnect.zbp.model.AuthenticationLevel;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -45,49 +45,52 @@ class FitConnectZbpCommunicationProviderV1Test {
                 FitConnectZbpCommunicationProviderV1.Config.SENDER_CLIENT_SECRET_KEY_FIELD_ID,
                 SecretSelectInputElement.class
         ).isPresent());
+        assertTrue(layout.findChild(
+                FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_ID_FIELD_ID,
+                TextInputElement.class
+        ).orElseThrow().getRequired());
         verifyNoInteractions(secretService);
     }
 
     @Test
-    void applicationConfigUsesConfiguredClientIdAndDecryptedSecret() throws Exception {
+    void resolvesConfiguredClientSecret() throws Exception {
         var secretKey = UUID.randomUUID();
         var secretEntity = mock(SecretEntity.class);
         var config = config("sender-client", secretKey.toString());
         when(secretService.retrieve(secretKey)).thenReturn(Optional.of(secretEntity));
         when(secretService.decrypt(secretEntity)).thenReturn("decrypted-secret");
 
-        var applicationConfig = getApplicationConfig(config);
+        var clientSecret = resolveSenderClientSecret(config);
 
-        assertEquals("sender-client", applicationConfig.getSenderConfig().getClientId());
-        assertEquals("decrypted-secret", applicationConfig.getSenderConfig().getClientSecret());
+        assertEquals("decrypted-secret", clientSecret);
         verify(secretService).retrieve(secretKey);
         verify(secretService).decrypt(secretEntity);
     }
 
     @Test
-    void applicationConfigRejectsInvalidSecretKey() {
+    void secretResolutionRejectsInvalidSecretKey() {
         var config = config("sender-client", "not-a-uuid");
 
-        var exception = assertThrows(CommunicationException.class, () -> getApplicationConfig(config));
+        var exception = assertThrows(CommunicationException.class, () -> resolveSenderClientSecret(config));
 
         assertEquals("Failed to parse sender client secret key as UUID: not-a-uuid", exception.getMessage());
         verifyNoInteractions(secretService);
     }
 
     @Test
-    void applicationConfigRejectsMissingSecret() {
+    void secretResolutionRejectsMissingSecret() {
         var secretKey = UUID.randomUUID();
         var config = config("sender-client", secretKey.toString());
         when(secretService.retrieve(secretKey)).thenReturn(Optional.empty());
 
-        var exception = assertThrows(CommunicationException.class, () -> getApplicationConfig(config));
+        var exception = assertThrows(CommunicationException.class, () -> resolveSenderClientSecret(config));
 
         assertEquals("Sender client secret not found: " + secretKey, exception.getMessage());
         verify(secretService).retrieve(secretKey);
     }
 
     @Test
-    void applicationConfigWrapsSecretDecryptionFailure() throws Exception {
+    void secretResolutionWrapsDecryptionFailure() throws Exception {
         var secretKey = UUID.randomUUID();
         var secretEntity = mock(SecretEntity.class);
         var config = config("sender-client", secretKey.toString());
@@ -95,7 +98,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         when(secretService.retrieve(secretKey)).thenReturn(Optional.of(secretEntity));
         when(secretService.decrypt(secretEntity)).thenThrow(cause);
 
-        var exception = assertThrows(CommunicationException.class, () -> getApplicationConfig(config));
+        var exception = assertThrows(CommunicationException.class, () -> resolveSenderClientSecret(config));
 
         assertEquals("Failed to decrypt sender client secret: " + secretKey, exception.getMessage());
         assertEquals(cause, exception.getCause());
@@ -137,9 +140,9 @@ class FitConnectZbpCommunicationProviderV1Test {
         assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel("qaa", Map.of()));
     }
 
-    private ApplicationConfig getApplicationConfig(FitConnectZbpCommunicationProviderV1.Config config) throws CommunicationException {
+    private String resolveSenderClientSecret(FitConnectZbpCommunicationProviderV1.Config config) throws CommunicationException {
         try {
-            return ReflectionTestUtils.invokeMethod(definition, "getApplicationConfig", config);
+            return ReflectionTestUtils.invokeMethod(definition, "resolveSenderClientSecret", config);
         } catch (UndeclaredThrowableException e) {
             if (e.getUndeclaredThrowable() instanceof CommunicationException communicationException) {
                 throw communicationException;

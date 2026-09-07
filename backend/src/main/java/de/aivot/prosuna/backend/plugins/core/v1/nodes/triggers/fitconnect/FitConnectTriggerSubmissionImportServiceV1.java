@@ -12,10 +12,14 @@ import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceService;
-import dev.fitko.fitconnect.api.domain.model.attachment.Attachment;
-import dev.fitko.fitconnect.api.domain.model.event.problems.data.DataJsonSyntaxViolation;
-import dev.fitko.fitconnect.api.domain.model.event.problems.metadata.UnsupportedDataSchema;
-import dev.fitko.fitconnect.api.domain.subscriber.ReceivedSubmission;
+import dev.fitko.fitconnect.rest.model.event.Event;
+import dev.fitko.fitconnect.rest.model.event.problems.Problem;
+import dev.fitko.fitconnect.rest.model.event.problems.data.DataJsonSyntaxViolation;
+import dev.fitko.fitconnect.rest.model.event.problems.metadata.UnsupportedDataSchema;
+import dev.fitko.fitconnect.rest.model.submission.SubmissionForPickup;
+import dev.fitko.fitconnect.sdk.api.Attachment;
+import dev.fitko.fitconnect.sdk.api.ReceivedSubmission;
+import dev.fitko.fitconnect.sdk.clients.Organisation;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
@@ -26,6 +30,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,19 +44,19 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
-    private final FitConnectTriggerSubscriberClientFactoryV1 subscriberClientFactory;
+    private final FitConnectTriggerOrganisationFactoryV1 organisationFactory;
     private final JsonMapper jsonMapper;
 
     public FitConnectTriggerSubmissionImportServiceV1(
             ProcessInstanceService processInstanceService,
             ProcessInstanceAttachmentService processInstanceAttachmentService,
             ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
-            FitConnectTriggerSubscriberClientFactoryV1 subscriberClientFactory,
+            FitConnectTriggerOrganisationFactoryV1 organisationFactory,
             JsonMapper jsonMapper) {
         this.processInstanceService = processInstanceService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
-        this.subscriberClientFactory = subscriberClientFactory;
+        this.organisationFactory = organisationFactory;
         this.jsonMapper = jsonMapper;
     }
 
@@ -72,16 +77,31 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
 
         var terminalAtFitConnect = false;
         try {
-            var subscriberClient = subscriberClientFactory.create(config);
-            var receivedSubmission = subscriberClient.requestSubmission(reference.submissionId());
+            var organisation = organisationFactory.create(config);
+            var submissionForPickup = new SubmissionForPickup(reference.submissionId(), reference.caseId());
+            var receivedSubmission = organisation.receive(submissionForPickup);
             validateReceivedSubmission(receivedSubmission, reference);
 
-            var payload = parsePayload(receivedSubmission);
+            if (!receivedSubmission.acceptable()) {
+                var report = receivedSubmission.report();
+                throw rejectSubmission(
+                        organisation,
+                        receivedSubmission,
+                        report.asProblems(),
+                        "Die FIT-Connect-Einreichung konnte nicht akzeptiert werden: " + report.describe(),
+                        null
+                );
+            }
+
+            var submittedAt = resolveSubmittedAt(organisation, submissionForPickup);
+            var payload = parsePayload(organisation, receivedSubmission);
             if (Boolean.TRUE.equals(config.copyToProcessData) && !(payload instanceof Map<?, ?>)) {
-                receivedSubmission.rejectSubmission(List.of(new UnsupportedDataSchema()));
-                terminalAtFitConnect = true;
-                throw ResponseException.badRequest(
-                        "Die FIT-Connect-Einreichung enthält kein JSON-Objekt und kann deshalb nicht in die Vorgangsdaten kopiert werden."
+                throw rejectSubmission(
+                        organisation,
+                        receivedSubmission,
+                        List.of(new UnsupportedDataSchema(receivedSubmission.getDataSchemaUri().toString())),
+                        "Die FIT-Connect-Einreichung enthält kein JSON-Objekt und kann deshalb nicht in die Vorgangsdaten kopiert werden.",
+                        null
                 );
             }
 
@@ -91,13 +111,14 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
                     receivedSubmission,
                     payload,
                     attachmentImport,
+                    submittedAt,
                     startedAt
             );
 
             instance.setInitialPayload(nodeData);
             processInstanceService.save(instance);
 
-            receivedSubmission.acceptSubmission();
+            organisation.accept(receivedSubmission);
             terminalAtFitConnect = true;
 
             instance.setStatus(ProcessInstanceStatus.Created);
@@ -158,28 +179,65 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
     }
 
     @Nonnull
-    private Object parsePayload(@Nonnull ReceivedSubmission submission) throws ResponseException, TerminalSubmissionException {
+    private Object parsePayload(@Nonnull Organisation organisation,
+                                @Nonnull ReceivedSubmission submission) throws ResponseException, TerminalSubmissionException {
         try {
             return jsonMapper.readValue(submission.getDataAsBytes(), Object.class);
         } catch (RuntimeException e) {
-            try {
-                submission.rejectSubmission(List.of(new DataJsonSyntaxViolation()));
-            } catch (Exception rejectionException) {
-                e.addSuppressed(rejectionException);
-                throw ResponseException.badRequest("Die FIT-Connect-Einreichung enthält kein gültiges JSON.", e);
-            }
-            throw new TerminalSubmissionException(
-                    ResponseException.badRequest("Die FIT-Connect-Einreichung enthält kein gültiges JSON.", e)
+            throw rejectSubmission(
+                    organisation,
+                    submission,
+                    List.of(new DataJsonSyntaxViolation(resolveExceptionMessage(e))),
+                    "Die FIT-Connect-Einreichung enthält kein gültiges JSON.",
+                    e
             );
         }
+    }
+
+    @Nonnull
+    private TerminalSubmissionException rejectSubmission(
+            @Nonnull Organisation organisation,
+            @Nonnull ReceivedSubmission submission,
+            @Nonnull List<Problem> problems,
+            @Nonnull String message,
+            @Nullable Throwable cause) throws ResponseException {
+        try {
+            organisation.reject(submission, problems);
+        } catch (Exception rejectionException) {
+            if (cause != null) {
+                cause.addSuppressed(rejectionException);
+                throw ResponseException.badRequest(message, cause);
+            }
+            throw ResponseException.badRequest(message, rejectionException);
+        }
+
+        return new TerminalSubmissionException(
+                cause == null ? ResponseException.badRequest(message) : ResponseException.badRequest(message, cause)
+        );
+    }
+
+    @Nullable
+    private Instant resolveSubmittedAt(@Nonnull Organisation organisation,
+                                       @Nonnull SubmissionForPickup submission) {
+        return organisation
+                .cases()
+                .logOf(submission)
+                .entries()
+                .stream()
+                .filter(event -> event.event() == Event.SUBMIT_SUBMISSION)
+                .map(event -> event.issueTime())
+                .filter(java.util.Objects::nonNull)
+                .max(Date::compareTo)
+                .map(Date::toInstant)
+                .orElse(null);
     }
 
     private void validateReceivedSubmission(
             @Nonnull ReceivedSubmission submission,
             @Nonnull FitConnectTriggerCallbackPayloadV1.SubmissionReference reference) throws ResponseException {
         if (!reference.destinationId().equals(submission.getDestinationId()) ||
-                !reference.submissionId().equals(submission.getSubmissionId()) ||
-                !reference.caseId().equals(submission.getCaseId())) {
+                !reference.submissionId().equals(submission.submissionId()) ||
+                !reference.caseId().equals(submission.caseId())) {
             throw ResponseException.internalServerError(
                     "Die abgerufene FIT-Connect-Einreichung stimmt nicht mit dem Callback überein."
             );
@@ -205,7 +263,7 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
         for (var fitConnectAttachment : attachments) {
             var fileName = normalizeFileName(fitConnectAttachment.getFileName(), fitConnectAttachment.getAttachmentId());
             final byte[] content;
-            try (var inputStream = fitConnectAttachment.getDataAsInputStream()) {
+            try (var inputStream = fitConnectAttachment.openStream()) {
                 content = inputStream.readAllBytes();
             }
 
@@ -243,10 +301,11 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
             @Nonnull ReceivedSubmission receivedSubmission,
             @Nonnull Object payload,
             @Nonnull AttachmentImport attachmentImport,
+            @Nullable Instant submittedAt,
             @Nonnull Instant startedAt) throws ResponseException {
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_PAYLOAD, payload);
-        nodeData.put(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_SUBMISSION, createSubmissionData(reference, receivedSubmission));
+        nodeData.put(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_SUBMISSION, createSubmissionData(reference, receivedSubmission, submittedAt));
         nodeData.put(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_METADATA, normalizeMetadata(receivedSubmission));
         nodeData.put(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_ATTACHMENTS, attachmentImport.attachments());
         nodeData.put(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_FILES, attachmentImport.files());
@@ -260,7 +319,7 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
             @Nonnull Instant startedAt) {
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_PAYLOAD, null);
-        nodeData.put(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_SUBMISSION, createSubmissionData(reference, null));
+        nodeData.put(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_SUBMISSION, createSubmissionData(reference, null, null));
         nodeData.put(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_METADATA, Map.of());
         nodeData.put(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_ATTACHMENTS, List.of());
         nodeData.put(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_FILES, List.of());
@@ -271,18 +330,18 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
     @Nonnull
     private Map<String, Object> createSubmissionData(
             @Nonnull FitConnectTriggerCallbackPayloadV1.SubmissionReference reference,
-            @Nullable ReceivedSubmission receivedSubmission) {
+            @Nullable ReceivedSubmission receivedSubmission,
+            @Nullable Instant submittedAt) {
         var data = new LinkedHashMap<String, Object>();
         data.put("destinationId", reference.destinationId().toString());
         data.put("submissionId", reference.submissionId().toString());
         data.put("caseId", reference.caseId().toString());
-        data.put("submittedAt", receivedSubmission == null || receivedSubmission.getSubmittedAt() == null ?
-                null : receivedSubmission.getSubmittedAt().toInstant());
+        data.put("submittedAt", submittedAt);
 
         var service = new LinkedHashMap<String, Object>();
         var serviceType = receivedSubmission == null ? null : receivedSubmission.getServiceType();
-        service.put("identifier", serviceType == null ? null : serviceType.getIdentifier());
-        service.put("name", serviceType == null ? null : serviceType.getName());
+        service.put("identifier", serviceType == null ? null : serviceType.identifier());
+        service.put("name", serviceType == null ? null : serviceType.name());
         data.put("service", service);
 
         data.put("region", receivedSubmission == null ? null : receivedSubmission.getRegion().orElse(null));
@@ -334,6 +393,12 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
                     .addKeyValue("processInstanceId", instance.getId())
                     .log();
         }
+    }
+
+    @Nonnull
+    private static String resolveExceptionMessage(@Nonnull Throwable throwable) {
+        var message = throwable.getMessage();
+        return message == null || message.isBlank() ? throwable.getClass().getSimpleName() : message;
     }
 
     @Nonnull

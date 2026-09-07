@@ -23,41 +23,42 @@ import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.enums.StorageProviderType;
 import de.aivot.prosuna.backend.storage.services.StorageService;
-import dev.fitko.fitconnect.api.config.ApplicationConfig;
-import dev.fitko.fitconnect.api.config.EnvironmentName;
-import dev.fitko.fitconnect.api.config.SenderConfig;
-import dev.fitko.fitconnect.api.config.SubscriberConfig;
-import dev.fitko.fitconnect.api.domain.model.attachment.Attachment;
-import dev.fitko.fitconnect.api.domain.model.event.EventState;
-import dev.fitko.fitconnect.api.domain.model.event.Status;
-import dev.fitko.fitconnect.api.domain.model.submission.SentSubmission;
-import dev.fitko.fitconnect.api.domain.sender.SendableSubmission;
-import dev.fitko.fitconnect.api.domain.zbp.AuthorKeyPair;
-import dev.fitko.fitconnect.api.domain.zbp.attachment.ZBPAttachmentMetadata;
-import dev.fitko.fitconnect.api.domain.zbp.message.AuthenticationLevel;
-import dev.fitko.fitconnect.api.domain.zbp.message.CreateMessage;
-import dev.fitko.fitconnect.client.SenderClient;
-import dev.fitko.fitconnect.client.bootstrap.ClientFactory;
-import dev.fitko.fitconnect.client.zbp.ZBPAttachmentMetadataBuilder;
+import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
+import dev.fitko.fitconnect.rest.model.event.EventState;
+import dev.fitko.fitconnect.rest.model.submission.SentSubmission;
+import dev.fitko.fitconnect.sdk.FitConnectSdk;
+import dev.fitko.fitconnect.sdk.api.Addressing;
+import dev.fitko.fitconnect.sdk.api.Attachment;
+import dev.fitko.fitconnect.sdk.api.OutgoingSubmission;
+import dev.fitko.fitconnect.sdk.api.Participant;
+import dev.fitko.fitconnect.sdk.api.SubmissionData;
+import dev.fitko.fitconnect.sdk.api.event.CaseEvent;
+import dev.fitko.fitconnect.sdk.clients.Organisation;
+import dev.fitko.fitconnect.zbp.internal.ZBPEnvelopeBuilder;
+import dev.fitko.fitconnect.zbp.model.AuthenticationLevel;
+import dev.fitko.fitconnect.zbp.model.AuthorKeyPair;
+import dev.fitko.fitconnect.zbp.model.CreateMessage;
+import dev.fitko.fitconnect.zbp.model.ZBPAttachmentMetadata;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Reserved v1 definition. It intentionally supports no identity-provider type so it cannot be
- * enabled in a binding before transport and addressing have been implemented.
- */
+/** Sends identity-bound messages and attachments to ZBP through the FIT-Connect bridge service. */
 @Component
 public class FitConnectZbpCommunicationProviderV1 implements CommunicationProviderDefinition<FitConnectZbpCommunicationProviderV1.Config, FitConnectZbpCommunicationProviderV1.IdentityBinding> {
     public static final String COMPONENT_KEY = "fit_connect_zbp_communication_provider";
-    private static final String MessageSendingIdentifier = "urn:schema-fitko-de:fit-connect:id.bund.de:message_v6"; // constant
+    private static final String MESSAGE_SENDING_IDENTIFIER = "urn:schema-fitko-de:fit-connect:id.bund.de:message_v6";
+    private static final URI ZBP_MESSAGE_SCHEMA_URI = URI.create(
+            "https://schema.fitko.de/fit-connect/id.bund.de/message_v6/1.0.0/zbp-message.schema.json"
+    );
 
     private final StorageService storageService;
     private final SecretService secretService;
@@ -213,31 +214,43 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                                            @Nonnull CommunicationMessage message) throws CommunicationException {
         final Config config = context.communicationProviderConfiguration();
         final UUID destinationId = getDestinationId(config);
+        final UUID senderDestinationId = getSenderDestinationId(config);
         final AuthorKeyPair authorKeyPair = getAuthorKeyPair(context.communicationProviderConfiguration());
         final UUID postfachId = getPostfachId(context, identity);
 
-        final List<ZBPAttachmentMetadata> attachments = new LinkedList<>();
+        final List<Attachment> fitConnectAttachments = new ArrayList<>();
+        final List<ZBPAttachmentMetadata> attachmentMetadata = new ArrayList<>();
         if (message.attachments() != null) {
+            var attachmentIndex = 1;
             for (var att : message.attachments()) {
-                if (att.getContent() == null) {
+                var attachmentContent = att.getContent();
+                if (attachmentContent == null) {
                     throw new CommunicationException("Attachment content is null for attachment: " + att.getName());
                 }
 
                 final byte[] attachmentData;
-                try {
-                    attachmentData = att.getContent().readAllBytes();
+                try (attachmentContent) {
+                    attachmentData = attachmentContent.readAllBytes();
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new CommunicationException("Failed to read attachment: " + att.getName(), e);
                 }
 
                 final String contentType = att.getContentType() != null ? att.getContentType() : "application/octet-stream";
+                final String fileName = att.getName() == null || att.getName().isBlank()
+                        ? "attachment-" + attachmentIndex
+                        : att.getName();
 
                 final Attachment fitConnectAttachment = Attachment
-                        .fromByteArray(attachmentData, contentType, att.getName(), att.getName());
+                        .builder()
+                        .fromBytes(attachmentData)
+                        .mimeType(contentType)
+                        .fileName(fileName)
+                        .description(fileName)
+                        .build();
 
-                final ZBPAttachmentMetadata attachmentMetadata = ZBPAttachmentMetadataBuilder.from(fitConnectAttachment);
-
-                attachments.add(attachmentMetadata);
+                fitConnectAttachments.add(fitConnectAttachment);
+                attachmentMetadata.add(ZBPAttachmentMetadata.from(fileName, attachmentData));
+                attachmentIndex++;
             }
         }
 
@@ -253,33 +266,51 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                 //.replyAddress("reply@mail.net")
                 .mailboxUuid(postfachId)
                 .stork_qaa_level(mappedAuthenticationLevel)
-                .attachmentMetadata(attachments)
+                .attachmentMetadata(attachmentMetadata)
                 .build();
 
-        final SendableSubmission submission = SendableSubmission
-                .Builder()
-                .setDestination(destinationId)
-                .setServiceType(MessageSendingIdentifier, "ZBP Message Forwarding")
-                .setZBPMessage(zbpMessage, authorKeyPair)
+        final OutgoingSubmission submission = OutgoingSubmission
+                .to(Participant.of(
+                        destinationId,
+                        Addressing.toService(MESSAGE_SENDING_IDENTIFIER, "ZBP Message Forwarding")
+                ))
+                .setData(SubmissionData.json(
+                        ZBPEnvelopeBuilder.fromAuthorPayload(zbpMessage, authorKeyPair),
+                        ZBP_MESSAGE_SCHEMA_URI
+                ))
+                .addAttachments(fitConnectAttachments)
                 .build();
 
-        final ApplicationConfig applicationConfig = getApplicationConfig(config);
+        final Organisation organisation;
+        try {
+            organisation = createOrganisation(
+                    config.senderClientId,
+                    resolveSenderClientSecret(config),
+                    senderDestinationId
+            );
+        } catch (CommunicationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new CommunicationException("Failed to initialize FIT-Connect organisation client.", e);
+        }
 
-        final SenderClient senderClient = ClientFactory
-                .createSenderClient(applicationConfig);
+        final SentSubmission sentSubmission;
+        final CaseEvent status;
+        try {
+            sentSubmission = organisation.send(submission);
+            status = organisation.cases().logOf(sentSubmission).latest();
+        } catch (Exception e) {
+            throw new CommunicationException("Failed to send message via FIT-Connect.", e);
+        }
 
-        final SentSubmission sentSubmission = senderClient.send(submission);
-
-        final Status status = senderClient.getSubmissionStatus(sentSubmission);
-
-        if (status.getState() != EventState.ACCEPTED && status.getState() != EventState.SUBMITTED) {
+        if (status.state() != EventState.ACCEPTED && status.state() != EventState.SUBMITTED) {
             throw new CommunicationException("Failed to send message via FIT-Connect. Status: " + status);
         }
 
         return Map.of(
                 "postfachId", postfachId.toString(),
-                "submissionId", sentSubmission.getSubmissionId().toString(),
-                "status", status.getState().name()
+                "submissionId", sentSubmission.submissionId().toString(),
+                "status", status.state().name()
         );
     }
 
@@ -331,9 +362,17 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         return destinationId;
     }
 
-    private ApplicationConfig getApplicationConfig(Config config) throws CommunicationException {
-        final EnvironmentName environmentName = new EnvironmentName("TEST");
+    @Nonnull
+    private static UUID getSenderDestinationId(Config config) throws CommunicationException {
+        try {
+            return UUID.fromString(config.senderDestinationId);
+        } catch (Exception e) {
+            throw new CommunicationException("Failed to parse sender destination ID as UUID: " + config.senderDestinationId, e);
+        }
+    }
 
+    @Nonnull
+    private String resolveSenderClientSecret(Config config) throws CommunicationException {
         final UUID senderClientSecretKey;
         try {
             senderClientSecretKey = UUID.fromString(config.senderClientSecret);
@@ -352,22 +391,19 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
             throw new CommunicationException("Failed to decrypt sender client secret: " + senderClientSecretKey, e);
         }
 
-        final SenderConfig senderConfig = SenderConfig
-                .builder()
-                .clientId(config.senderClientId)
-                .clientSecret(senderClientSecret)
-                .build();
+        return senderClientSecret;
+    }
 
-        final SubscriberConfig subscriberConfig = SubscriberConfig
-                .builder()
-                .build();
-
-        return ApplicationConfig
-                .builder()
-                .activeEnvironment(environmentName)
-                .senderConfig(senderConfig)
-                .subscriberConfig(subscriberConfig)
-                .build();
+    @Nonnull
+    Organisation createOrganisation(@Nonnull String clientId,
+                                    @Nonnull String clientSecret,
+                                    @Nonnull UUID senderDestinationId) {
+        return FitConnectSdk
+                .fromConfigBuilder()
+                .credentials(clientId, clientSecret)
+                .environment(FitConnectEnvironment.TEST)
+                .build()
+                .organisation(senderDestinationId);
     }
 
     private AuthorKeyPair getAuthorKeyPair(Config config) throws CommunicationException {
@@ -385,11 +421,15 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
             throw new CommunicationException("Failed to resolve client certificate for FIT-Connect communication provider.", e);
         }
 
-        return AuthorKeyPair
-                .builder()
-                .authorPrivateKeyAsPem(privateKeyPem)
-                .authorCertificateAsPem(clientCertPem)
-                .build();
+        try {
+            return AuthorKeyPair
+                    .builder()
+                    .authorPrivateKeyAsPem(privateKeyPem)
+                    .authorCertificateAsPem(clientCertPem)
+                    .build();
+        } catch (RuntimeException e) {
+            throw new CommunicationException("Failed to parse the ZBP author certificate or private key.", e);
+        }
     }
 
     private String resolveFile(StoragePathSelectorInputElementValue p) throws ResponseException, IOException {
@@ -397,15 +437,20 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
             throw new IOException("Die Datei ist nicht konfiguriert.");
         }
 
-        var is = storageService
-                .getDocumentContent(p.getStorageProviderId(), p.getPath());
-
-        return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        try (var content = storageService.getDocumentContent(p.getStorageProviderId(), p.getPath())) {
+            return new String(content.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 
     @LayoutElementPOJOBinding(id = "fit-connect-provider-config", type = ElementType.ConfigLayout)
     public static class Config {
         public static final String ZBP_CERTIFICATE_PRIVATE_KEY_PATH_FIELD_ID = "zbpCertificatePrivateKeyPath";
+        public static final String ZBP_CERTIFICATE_CLIENT_CERT_PATH_FIELD_ID = "zbpCertificateClientCertPath";
+        public static final String DESTINATION_ID_FIELD_ID = "destinationId";
+        public static final String SENDER_DESTINATION_ID_FIELD_ID = "senderDestinationId";
+        public static final String SENDER_CLIENT_ID_FIELD_ID = "senderClientId";
+        public static final String SENDER_CLIENT_SECRET_KEY_FIELD_ID = "senderClientSecret";
+
         @InputElementPOJOBinding(id = ZBP_CERTIFICATE_PRIVATE_KEY_PATH_FIELD_ID, type = ElementType.StoragePathSelector, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Privater Schlüssel"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Pfad zum privaten Schlüssel des FIT-Connect-Zertifikats."),
@@ -415,7 +460,6 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         })
         public StoragePathSelectorInputElementValue zbpCertificatePrivateKeyPath;
 
-        public static final String ZBP_CERTIFICATE_CLIENT_CERT_PATH_FIELD_ID = "zbpCertificateClientCertPath";
         @InputElementPOJOBinding(id = ZBP_CERTIFICATE_CLIENT_CERT_PATH_FIELD_ID, type = ElementType.StoragePathSelector, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Client-Zertifikat"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Pfad zum Client-Zertifikat des FIT-Connect-Zertifikats."),
@@ -425,16 +469,22 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         })
         public StoragePathSelectorInputElementValue zbpCertificateClientCertPath;
 
-        public static final String DESTINATION_ID_FIELD_ID = "destinationId";
         @InputElementPOJOBinding(id = DESTINATION_ID_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Zustellpunkt-ID"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Zustellpunkt-ID für die Nachrichtenübermittlung."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Empfänger-Zustellpunkt-ID"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Zustellpunkt-ID des ZBP-Brückendienstes, der die Nachricht empfängt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public String destinationId;
 
-        public static final String SENDER_CLIENT_ID_FIELD_ID = "senderClientId";
+        @InputElementPOJOBinding(id = SENDER_DESTINATION_ID_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Absender-Zustellpunkt-ID"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Zustellpunkt-ID der Organisation, die die ZBP-Nachricht versendet."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String senderDestinationId;
+
         @InputElementPOJOBinding(id = SENDER_CLIENT_ID_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Sender Client ID"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Client ID für den Sender."),
@@ -443,7 +493,6 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         })
         public String senderClientId;
 
-        public static final String SENDER_CLIENT_SECRET_KEY_FIELD_ID = "senderClientSecret";
         @InputElementPOJOBinding(id = SENDER_CLIENT_SECRET_KEY_FIELD_ID, type = ElementType.SecretSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Sender Client Secret"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Client Secret für den Sender."),

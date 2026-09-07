@@ -16,14 +16,17 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinit
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
-import dev.fitko.fitconnect.api.config.ApplicationConfig;
-import dev.fitko.fitconnect.api.domain.model.event.EventState;
-import dev.fitko.fitconnect.api.domain.model.event.Status;
-import dev.fitko.fitconnect.api.domain.model.submission.SentSubmission;
-import dev.fitko.fitconnect.api.domain.sender.SendableSubmission;
-import dev.fitko.fitconnect.api.exceptions.client.FitConnectSenderException;
-import dev.fitko.fitconnect.api.exceptions.internal.RestApiException;
-import dev.fitko.fitconnect.client.SenderClient;
+import dev.fitko.fitconnect.core.http.api.RestApiException;
+import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
+import dev.fitko.fitconnect.rest.model.event.Event;
+import dev.fitko.fitconnect.rest.model.submission.PublicService;
+import dev.fitko.fitconnect.rest.model.submission.SentSubmission;
+import dev.fitko.fitconnect.sdk.api.OutgoingSubmission;
+import dev.fitko.fitconnect.sdk.api.event.CaseEvent;
+import dev.fitko.fitconnect.sdk.api.event.TransferLog;
+import dev.fitko.fitconnect.sdk.clients.OnlineService;
+import dev.fitko.fitconnect.sdk.clients.OnlineServiceCases;
+import dev.fitko.fitconnect.sdk.exceptions.FitConnectSenderException;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -41,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -50,6 +54,7 @@ import static org.mockito.Mockito.when;
 
 class FitConnectSendJsonActionNodeV1Test {
     private static final UUID DESTINATION_ID = UUID.fromString("22cc92dc-6145-4d29-ab18-4e8b4baaf3a8");
+    private static final UUID SENDER_DESTINATION_ID = UUID.fromString("6396c078-0ab0-4aa6-ac78-386fd8e21dd7");
     private static final UUID SECRET_ID = UUID.fromString("114b3dcc-a8e4-43cc-a7d7-017bfe13b432");
 
     @Test
@@ -82,35 +87,41 @@ class FitConnectSendJsonActionNodeV1Test {
     }
 
     @Test
-    void configurationValidationAcceptsOnlySupportedEnvironments() throws Exception {
+    void configurationValidationAcceptsOnlySupportedEnvironmentsAndValidDestinationIds() {
         var node = new FitConnectSendJsonActionNodeV1(mock(SecretService.class), mock(JsonMapper.class));
         var processNode = mock(ProcessNodeEntity.class);
 
         for (var value : List.of("TEST", "STAGE", "PROD", " stage ")) {
-            var config = new FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config();
-            config.environment = value;
-            assertNull(node.validateConfiguration(processNode, config));
+            assertNull(node.validateConfiguration(processNode, validConfig(value)));
         }
 
         for (var value : new String[]{null, "", "STAGING", "unknown"}) {
-            var config = new FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config();
-            config.environment = value;
-            var errors = node.validateConfiguration(processNode, config);
+            var errors = node.validateConfiguration(processNode, validConfig(value));
             assertEquals(
                     List.of("Wählen Sie eine unterstützte FIT-Connect-Umgebung aus."),
                     errors.get(FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config.ENVIRONMENT_FIELD_ID)
             );
         }
+
+        var config = validConfig("TEST");
+        config.destinationId = "invalid";
+        config.senderDestinationId = "invalid";
+        var errors = node.validateConfiguration(processNode, config);
+        assertTrue(errors.containsKey(FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config.DESTINATION_ID_FIELD_ID));
+        assertTrue(errors.containsKey(FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config.SENDER_DESTINATION_ID_FIELD_ID));
     }
 
     @Test
     void usesConfiguredEnvironmentAndCompletesViaSuccessPort() throws Exception {
         var fixture = fixture();
-        var createdConfigurations = new ArrayList<ApplicationConfig>();
+        var createdEnvironments = new ArrayList<FitConnectEnvironment>();
         doAnswer(invocation -> {
-            createdConfigurations.add(invocation.getArgument(0));
-            return fixture.senderClient();
-        }).when(fixture.node()).createSenderClient(any(ApplicationConfig.class));
+            createdEnvironments.add(invocation.getArgument(2));
+            assertEquals(SENDER_DESTINATION_ID, invocation.getArgument(3));
+            return fixture.onlineService();
+        }).when(fixture.node()).createOnlineService(
+                anyString(), anyString(), any(FitConnectEnvironment.class), any(UUID.class)
+        );
 
         for (var environment : List.of("TEST", "STAGE", "PROD")) {
             var processData = new ProcessExecutionData().addProcessData("payload", Map.of("name", "Ada"));
@@ -125,17 +136,15 @@ class FitConnectSendJsonActionNodeV1Test {
         }
 
         assertEquals(
-                List.of("TEST", "STAGE", "PROD"),
-                createdConfigurations.stream()
-                        .map(config -> config.getActiveEnvironment().getName())
-                        .toList()
+                List.of(FitConnectEnvironment.TEST, FitConnectEnvironment.STAGE, FitConnectEnvironment.PROD),
+                createdEnvironments
         );
     }
 
     @Test
     void mapsMissingDestinationToInvalidConfiguration() throws Exception {
         var fixture = fixture();
-        when(fixture.senderClient().send(any(SendableSubmission.class))).thenThrow(
+        when(fixture.onlineService().send(any(OutgoingSubmission.class))).thenThrow(
                 new FitConnectSenderException(
                         "Could not get destination for id " + DESTINATION_ID,
                         new RestApiException("Destination does not exist.", 404)
@@ -154,7 +163,7 @@ class FitConnectSendJsonActionNodeV1Test {
     @Test
     void mapsGeneralSendingFailureToUnknownExecutionError() throws Exception {
         var fixture = fixture();
-        when(fixture.senderClient().send(any(SendableSubmission.class)))
+        when(fixture.onlineService().send(any(OutgoingSubmission.class)))
                 .thenThrow(new FitConnectSenderException("Authentifizierung fehlgeschlagen"));
 
         var exception = assertThrows(
@@ -169,11 +178,10 @@ class FitConnectSendJsonActionNodeV1Test {
     @Test
     void rejectsMissingEnvironmentDuringExecution() throws Exception {
         var fixture = fixture();
-        var config = validConfig(null);
 
         var exception = assertThrows(
                 ProcessNodeExecutionExceptionInvalidConfiguration.class,
-                () -> fixture.node().init(context(config, new ProcessExecutionData()))
+                () -> fixture.node().init(context(validConfig(null), new ProcessExecutionData()))
         );
 
         assertTrue(exception.getMessage().contains("TEST, STAGE oder PROD"));
@@ -184,7 +192,7 @@ class FitConnectSendJsonActionNodeV1Test {
         var fixture = fixture();
         doThrow(new IllegalStateException("SDK-Konfiguration ungültig"))
                 .when(fixture.node())
-                .createSenderClient(any(ApplicationConfig.class));
+                .createOnlineService(anyString(), anyString(), any(FitConnectEnvironment.class), any(UUID.class));
 
         var exception = assertThrows(
                 ProcessNodeExecutionExceptionUnknown.class,
@@ -198,7 +206,7 @@ class FitConnectSendJsonActionNodeV1Test {
     @Test
     void mapsStatusRetrievalFailureToUnknownExecutionError() throws Exception {
         var fixture = fixture();
-        when(fixture.senderClient().getSubmissionStatus(fixture.sentSubmission()))
+        when(fixture.cases().logOf(fixture.sentSubmission()))
                 .thenThrow(new FitConnectSenderException("Statusdienst nicht erreichbar"));
 
         var exception = assertThrows(
@@ -213,8 +221,8 @@ class FitConnectSendJsonActionNodeV1Test {
     @Test
     void rejectsNonSuccessfulSubmissionStatusWithDetails() throws Exception {
         var fixture = fixture();
-        when(fixture.senderClient().getSubmissionStatus(fixture.sentSubmission()))
-                .thenReturn(new Status(EventState.REJECTED, "destination", new Date(), List.of()));
+        when(fixture.cases().logOf(fixture.sentSubmission()))
+                .thenReturn(transferLog(Event.REJECT_SUBMISSION));
 
         var exception = assertThrows(
                 ProcessNodeExecutionExceptionUnknown.class,
@@ -234,16 +242,39 @@ class FitConnectSendJsonActionNodeV1Test {
         var jsonMapper = mock(JsonMapper.class);
         when(jsonMapper.writeValueAsString(any())).thenReturn("{\"name\":\"Ada\"}");
 
-        var senderClient = mock(SenderClient.class);
-        var sentSubmission = mock(SentSubmission.class);
-        when(senderClient.send(any(SendableSubmission.class))).thenReturn(sentSubmission);
-        when(senderClient.getSubmissionStatus(sentSubmission))
-                .thenReturn(new Status(EventState.ACCEPTED, "destination", new Date(), List.of()));
+        var onlineService = mock(OnlineService.class);
+        var cases = mock(OnlineServiceCases.class);
+        var sentSubmission = new SentSubmission(
+                DESTINATION_ID,
+                SENDER_DESTINATION_ID,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                List.of(),
+                new PublicService("Test service", "urn:de:service:test"),
+                null,
+                null,
+                null
+        );
+        when(onlineService.send(any(OutgoingSubmission.class))).thenReturn(sentSubmission);
+        when(onlineService.cases()).thenReturn(cases);
+        when(cases.logOf(sentSubmission)).thenReturn(transferLog(Event.ACCEPT_SUBMISSION));
 
         var node = spy(new FitConnectSendJsonActionNodeV1(secretService, jsonMapper));
-        doReturn(senderClient).when(node).createSenderClient(any(ApplicationConfig.class));
+        doReturn(onlineService).when(node).createOnlineService(
+                anyString(), anyString(), any(FitConnectEnvironment.class), any(UUID.class)
+        );
 
-        return new Fixture(node, senderClient, sentSubmission);
+        return new Fixture(node, onlineService, cases, sentSubmission);
+    }
+
+    private static TransferLog transferLog(Event event) {
+        return new TransferLog(List.of(
+                CaseEvent.builder()
+                        .event(event)
+                        .issueTime(new Date())
+                        .problems(List.of())
+                        .build()
+        ));
     }
 
     private static FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config validConfig(String environment) {
@@ -252,6 +283,7 @@ class FitConnectSendJsonActionNodeV1Test {
         config.serviceIdentifier = "urn:de:service:test";
         config.serviceName = "Test service";
         config.destinationId = DESTINATION_ID.toString();
+        config.senderDestinationId = SENDER_DESTINATION_ID.toString();
         config.senderClientId = "sender-client";
         config.senderClientSecret = SECRET_ID.toString();
         config.jsonDatasetProcessKey = "payload";
@@ -276,7 +308,8 @@ class FitConnectSendJsonActionNodeV1Test {
 
     private record Fixture(
             FitConnectSendJsonActionNodeV1 node,
-            SenderClient senderClient,
+            OnlineService onlineService,
+            OnlineServiceCases cases,
             SentSubmission sentSubmission
     ) {
     }
