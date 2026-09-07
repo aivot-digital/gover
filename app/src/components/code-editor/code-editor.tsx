@@ -21,26 +21,32 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
     const monacoRef = useRef<Monaco>(undefined);
     const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
     const onBlurRef = useRef<CodeEditorProps['onBlur']>(props.onBlur);
+    const globalTypeHintsRef = useRef<string>(undefined);
 
     useEffect(() => {
         onBlurRef.current = props.onBlur;
     }, [props.onBlur]);
 
     useEffect(() => {
+        let isActive = true;
+
         new JavascriptApiService()
             .getTypes()
             .then((globalTypeHints) => {
-                if (monacoRef.current == null) {
+                if (!isActive) {
                     return;
                 }
 
-                monacoRef
-                    .current
-                    .languages
-                    .typescript
-                    .javascriptDefaults
-                    .addExtraLib(globalTypeHints, `@types/global.d.ts`,)
+                globalTypeHintsRef.current = globalTypeHints;
+                monacoAddExtraLib(monacoRef.current, globalTypeHints, '@types/global.d.ts');
+            })
+            .catch(() => {
+                // Type declarations improve IntelliSense but must not make the editor unusable.
             });
+
+        return () => {
+            isActive = false;
+        };
     }, []);
 
     const hasTopContent = props.label != null || props.actions.length > 0;
@@ -57,6 +63,7 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
             onBlurRef.current?.(editor.getValue());
         });
 
+        monacoAddExtraLib(monaco, globalTypeHintsRef.current, '@types/global.d.ts');
         monacoApplyTypeHints(monaco, typeHints);
 
         return () => {
@@ -150,7 +157,9 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
                     },
                 }}
             >
+                {/* React Flow treats descendants of `.nokey` as editors and leaves their keyboard input untouched. */}
                 <Editor
+                    className="nokey"
                     height={props.height ?? 'max(100vh - 768px, 320px)'}
                     language={props.language ?? 'javascript'}
                     theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'light'}
@@ -171,15 +180,20 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
     );
 }
 
-function monacoApplyTypeHints(monaco: any, typeHints: CodeEditorProps['typeHints']) {
+function monacoApplyTypeHints(monaco: Monaco | undefined, typeHints: CodeEditorProps['typeHints']) {
     if (monaco == null || typeHints == null || typeHints.length === 0) {
         return;
     }
 
     for (const typeHint of typeHints) {
-        monaco.languages.typescript.javascriptDefaults.addExtraLib(
-            typeHint.content,
-            `@types/${typeHint.name}.d.ts`,
-        );
+        monacoAddExtraLib(monaco, typeHint.content, `@types/${typeHint.name}.d.ts`);
     }
+}
+
+function monacoAddExtraLib(monaco: Monaco | undefined, content: string | undefined, path: string) {
+    if (monaco?.typescript?.javascriptDefaults == null || content == null) {
+        return;
+    }
+
+    monaco.typescript.javascriptDefaults.addExtraLib(content, path);
 }

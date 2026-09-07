@@ -387,6 +387,13 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
             nodesFocusable={false}
             edgesFocusable={false}
             edgesReconnectable={false}
+            // This read-only canvas uses direct pointer controls. Its global key bindings must not affect
+            // inputs elsewhere on the page while the chart remains mounted.
+            deleteKeyCode={null}
+            selectionKeyCode={null}
+            multiSelectionKeyCode={null}
+            panActivationKeyCode={null}
+            zoomActivationKeyCode={null}
             minZoom={FLOW_MIN_ZOOM}
             maxZoom={FLOW_MAX_ZOOM}
             panOnDrag={true}

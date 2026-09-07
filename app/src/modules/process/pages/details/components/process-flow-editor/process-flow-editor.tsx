@@ -798,6 +798,13 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     nodesFocusable={false}
                     edgesFocusable={false}
                     edgesReconnectable={false}
+                    // The canvas uses direct pointer controls and no keyboard selection. Disabling React Flow's
+                    // global key bindings prevents them from intercepting input in the adjacent node editor.
+                    deleteKeyCode={null}
+                    selectionKeyCode={null}
+                    multiSelectionKeyCode={null}
+                    panActivationKeyCode={null}
+                    zoomActivationKeyCode={null}
                     nodeTypes={NodeTypes}
                     edgeTypes={EdgeTypes}
                     minZoom={FLOW_MIN_ZOOM}
