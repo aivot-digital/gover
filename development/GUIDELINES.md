@@ -100,8 +100,10 @@ Repositories should only be used in the module they are defined in.
 Services contain the business logic of the module.
 Services can and should be used to interact with the module from other modules.
 Services always operator with entities or models but never with DTOs.
-Services should check the permissions of the user before executing any action.
-Services should log to the audit log before executing any action.
+Prefer permission checks in services before protected operations, so all entry paths enforce the same authorization rules.
+Prefer audit logging in services as part of the auditable operation; see Audit Logs below.
+Permission checks or audit logging in controllers are exceptions when necessary or appropriate for the operation. Keep service entry paths protected and avoid duplicate audit events.
+Apply this policy to the requested change without relocating unrelated existing checks or logging. See [AGENTS.md](../AGENTS.md) for permission scopes and verification rules.
 
 ## package-info.java
 
@@ -109,4 +111,6 @@ The package-info.java file should contain the module name and description.
 
 # Audit Logs
 
-All actions should be logged in the audit log.
+Preserve existing auditable actions, including staff-side mutations, and add the relevant `ScopedAuditService` events when extending them.
+Record the actual outcome: do not log an operation as successful before it succeeds. Failure or denied-access events, where applicable, are distinct from success events.
+Prefer services for these events, with justified controller exceptions. Cover changed audit behavior with focused tests.
