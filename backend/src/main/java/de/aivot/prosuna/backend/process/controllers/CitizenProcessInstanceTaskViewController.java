@@ -29,6 +29,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceTaskFilter;
+import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.TaskViewEvent;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
@@ -453,13 +454,6 @@ public class CitizenProcessInstanceTaskViewController {
         var logger = processNodeExecutionLoggerFactory
                 .create(taskViewData.instance().getId(), taskViewData.task().getId(), null, identitySessionId);
 
-        var incomingProcessExecutionData = processDataService
-                .foldProcessInstanceData(
-                        taskViewData.instance(),
-                        taskViewData.task().getPreviousProcessNodeId(),
-                        taskViewData.task()
-                );
-
         var context = new ProcessNodeExecutionContextUICustomer<NodeConfig>(
                 logger,
                 taskViewData.node,
@@ -480,7 +474,7 @@ public class CitizenProcessInstanceTaskViewController {
                 authoredElementValues,
                 new ElementDerivationOptions()
                         .setSkipErrorsForElementIds(skipErrorsFor),
-                incomingProcessExecutionData
+                taskViewData.processExecutionData()
         );
 
         return elementDerivationService
@@ -516,18 +510,28 @@ public class CitizenProcessInstanceTaskViewController {
                 .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::notFound);
 
-        var cfgRes = processDefinitionNodeService.deriveConfiguration(
+        var processExecutionData = processDataService.foldProcessInstanceData(
+                instance,
+                task.getPreviousProcessNodeId(),
+                task
+        );
+        var cfgRes = processDefinitionNodeService.deriveRuntimeConfiguration(
                 node,
                 provider,
                 null,
-                true
+                false, // Task views consume runtime values and must enforce the same validation as the worker.
+                processExecutionData
         );
+        if (cfgRes.derivedRuntimeElementData().hasAnyError()) {
+            throw ResponseException.internalServerError("Die dynamische Knotenkonfiguration konnte nicht aufgelöst werden.");
+        }
 
         return new TaskViewData<>(
                 instance,
                 task,
                 node,
                 provider,
+                processExecutionData,
                 cfgRes.configuration()
         );
     }
@@ -583,6 +587,8 @@ public class CitizenProcessInstanceTaskViewController {
             ProcessNodeEntity node,
             @Nonnull
             ProcessNodeDefinition<NodeConfig> provider,
+            @Nonnull
+            ProcessExecutionData processExecutionData,
             @Nonnull
             NodeConfig nodeConfig
     ) {

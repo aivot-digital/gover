@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.webhook;
 
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -188,9 +189,21 @@ public class WebhookTriggerControllerV1 {
         var specBuilder = SpecificationBuilder
                 .create(ProcessNodeEntity.class)
                 .withEquals("processId", process.getId())
-                .withJsonEquals("configuration", List.of(WebhookTriggerConfigV1.SLUG_CONFIG_KEY), slug)
-                .withJsonEquals("configuration", List.of(WebhookTriggerConfigV1.REQUEST_METHOD_CONFIG_KEY), method.toUpperCase())
-                .withJsonEquals("configuration", List.of(WebhookTriggerConfigV1.REQUEST_BODY_TYPE_CONFIG_KEY), bodyType);
+                .withJsonEquals(
+                        "configuration",
+                        AuthoredElementValues.literalValueJsonPath(WebhookTriggerConfigV1.SLUG_CONFIG_KEY),
+                        slug
+                )
+                .withJsonEquals(
+                        "configuration",
+                        AuthoredElementValues.literalValueJsonPath(WebhookTriggerConfigV1.REQUEST_METHOD_CONFIG_KEY),
+                        method.toUpperCase()
+                )
+                .withJsonEquals(
+                        "configuration",
+                        AuthoredElementValues.literalValueJsonPath(WebhookTriggerConfigV1.REQUEST_BODY_TYPE_CONFIG_KEY),
+                        bodyType
+                );
 
         if (testClaim != null) {
             specBuilder = specBuilder

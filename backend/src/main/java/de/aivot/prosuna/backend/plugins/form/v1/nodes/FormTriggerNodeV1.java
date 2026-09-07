@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinition
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.uiPresets.PaymentGroupPreset;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
@@ -117,6 +118,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final JsonMapper jsonMapper;
+    private final AuthoredInputValueService authoredInputValueService;
 
     public FormTriggerNodeV1(PublicUrlService publicUrlService,
                              ProcessNodeRepository processNodeRepository,
@@ -129,7 +131,9 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                              ProsunaConfig prosunaConfig,
                              PdfService pdfService,
                              ProcessInstanceAttachmentService processInstanceAttachmentService,
-                             ProcessInstanceAttachmentSetService processInstanceAttachmentSetService, JsonMapper jsonMapper) {
+                             ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
+                             JsonMapper jsonMapper,
+                             AuthoredInputValueService authoredInputValueService) {
         this.publicUrlService = publicUrlService;
         this.processNodeRepository = processNodeRepository;
         this.pdfService = pdfService;
@@ -143,6 +147,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         this.processService = processService;
         this.prosunaConfig = prosunaConfig;
         this.jsonMapper = jsonMapper;
+        this.authoredInputValueService = authoredInputValueService;
     }
 
     @Nonnull
@@ -430,12 +435,12 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         // Clean the form layout because it has references to system specific resources like department ids.
-        var rawLayout = configuration.get(FormTriggerConfigV1.FORM_LAYOUT);
+        var rawLayout = configuration.getLiteral(FormTriggerConfigV1.FORM_LAYOUT);
         var layout = JsonMapperFactory
                 .getInstance()
                 .convertValue(rawLayout, FormLayoutElement.class);
         var cleanedLayout = FormLayoutCleanerService.clean(layout);
-        configuration.put(FormTriggerConfigV1.FORM_LAYOUT, cleanedLayout);
+        configuration.putLiteral(FormTriggerConfigV1.FORM_LAYOUT, cleanedLayout);
 
         // Clean the identities for they are not the same on every system.
         configuration.remove(FormTriggerConfigV1.IDENTITIES);
@@ -641,7 +646,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     private List<?> createCustomerSummaryFiles(@Nonnull ProcessNodeExecutionInitContext<FormTriggerConfigV1> context,
                                                @Nonnull FormTriggerConfigV1 configuration,
                                                @Nonnull Map<String, Object> initialPayload) throws ProcessNodeExecutionException {
-        var submission = readSubmission(initialPayload);
+        var submission = readSubmission(initialPayload, configuration.formLayout);
 
         byte[] pdfBytes;
         try {
@@ -698,7 +703,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     }
 
     @Nonnull
-    private AuthoredElementValues readSubmission(@Nonnull Map<String, Object> initialPayload) throws ProcessNodeExecutionException {
+    private AuthoredElementValues readSubmission(@Nonnull Map<String, Object> initialPayload,
+                                                 @Nonnull FormLayoutElement formLayout) throws ProcessNodeExecutionException {
         var rawSubmission = initialPayload.get(DATA_KEY_UNMAPPED);
         if (rawSubmission == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -707,9 +713,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         }
 
         try {
-            return JsonMapperFactory
-                    .getNullPreservingInstance()
-                    .convertValue(rawSubmission, AuthoredElementValues.class);
+            return authoredInputValueService.toLiteralAuthoredElementValues(formLayout, rawSubmission);
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     e,

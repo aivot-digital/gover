@@ -309,7 +309,7 @@ public class PdfService {
                     rows.add(new ReplicatingContainerLayoutElementValue()
                             .setValues(createBlankPrintableElementValues(replicatingContainer.getChildren())));
                 }
-                values.put(replicatingContainer.getId(), rows);
+                values.putLiteral(replicatingContainer.getId(), rows);
             }
             return;
         }

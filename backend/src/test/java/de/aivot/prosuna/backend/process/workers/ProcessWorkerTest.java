@@ -13,6 +13,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
@@ -376,10 +377,13 @@ class ProcessWorkerTest {
 
         @Nonnull
         @Override
-        public <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveConfiguration(@Nonnull ProcessNodeEntity entity,
-                                                                                        @Nonnull ProcessNodeDefinition<NodeConfig> provider,
-                                                                                        UserEntity user,
-                                                                                        @Nonnull Boolean skipErrors) {
+        public <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveRuntimeConfiguration(
+                @Nonnull ProcessNodeEntity entity,
+                @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                UserEntity user,
+                @Nonnull Boolean skipErrors,
+                @Nonnull ProcessExecutionData processExecutionData
+        ) {
             @SuppressWarnings("unchecked")
             var configuration = (NodeConfig) new AuthoredElementValues();
             return new ProcessConfigurationDetails<>(configuration, new DerivedRuntimeElementData());

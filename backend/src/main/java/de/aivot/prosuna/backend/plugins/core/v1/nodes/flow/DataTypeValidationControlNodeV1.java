@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.enums.ValueFunctionType;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
@@ -681,7 +682,10 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         public List<DataTypeValidationRuleConfig> rules;
     }
 
-    @ReplicatingContainerLayoutElementElementPOJOBinding(id = RULES_FIELD_ID, properties = {
+    @ReplicatingContainerLayoutElementElementPOJOBinding(
+            id = RULES_FIELD_ID,
+            allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode},
+            properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "Validierungsregeln"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Beispiele: person.name, person.address.street, tags.*, items.*.name"),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
@@ -690,7 +694,8 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
             @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Regel entfernen")
     })
     public static class DataTypeValidationRuleConfig {
-        @InputElementPOJOBinding(id = RULE_PATH_FIELD_ID, type = ElementType.Text, properties = {
+        @InputElementPOJOBinding(id = RULE_PATH_FIELD_ID, type = ElementType.Text,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Pfad"),
                 @ElementPOJOBindingProperty(key = "prefix", strValue = "$."),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Dot-Notation mit * für Arrays, z. B. addresses.*.street"),
@@ -699,7 +704,8 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         })
         public String path;
 
-        @InputElementPOJOBinding(id = RULE_TYPE_FIELD_ID, type = ElementType.Select, properties = {
+        @InputElementPOJOBinding(id = RULE_TYPE_FIELD_ID, type = ElementType.Select,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Datentyp"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Der Datentyp, den der Wert am Pfad haben muss."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),

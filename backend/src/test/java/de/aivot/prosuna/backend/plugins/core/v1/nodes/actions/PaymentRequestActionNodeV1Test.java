@@ -182,7 +182,7 @@ class PaymentRequestActionNodeV1Test {
     void init_CreatesTransactionSendsMailAndRequestsPayment() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
         var paymentConfig = paymentConfig(paymentProviderKey);
-        var nodeConfig = nodeConfiguration(paymentConfig, "{{ $.email }}");
+        var nodeConfig = nodeConfiguration(paymentConfig, "ada@example.test");
         var paymentProvider = paymentProvider(paymentProviderKey);
         var paymentPayload = paymentPayload();
         var transaction = paymentTransaction(paymentProviderKey, XBezahldienstStatus.INITIAL)

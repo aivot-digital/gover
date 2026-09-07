@@ -1,9 +1,12 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
+import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
+import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
@@ -17,11 +20,16 @@ import de.aivot.prosuna.backend.plugins.form.FormPlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeProblems;
+import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
+import de.aivot.prosuna.backend.process.models.InputVariableSuggestion;
+import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
@@ -99,6 +107,13 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         if (entity.getName() == null || StringUtils.isNullOrEmpty(entity.getName())) {
             entity.setName(provider.getName());
         }
+
+        // Provider defaults only fill missing entries. Configuration supplied for copies, imports or explicit
+        // user input must remain authoritative even when the supplied value is an explicit null literal.
+        var initialConfiguration = new AuthoredElementValues();
+        initialConfiguration.putAll(provider.getInitialConfiguration());
+        initialConfiguration.putAll(entity.getConfiguration());
+        entity.setConfiguration(initialConfiguration);
 
         // Save the process node.
         return processNodeRepository.save(entity);
@@ -187,6 +202,56 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                                                                                     @Nonnull ProcessNodeDefinition<NodeConfig> provider,
                                                                                     @Nullable UserEntity user,
                                                                                     @Nonnull Boolean skipErrors) throws ResponseException {
+        return deriveConfiguration(
+                entity,
+                provider,
+                user,
+                skipErrors,
+                new ProcessExecutionData(),
+                InputModeEvaluationContext.Authoring
+        );
+    }
+
+    @Nonnull
+    public <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveRuntimeConfiguration(
+            @Nonnull ProcessNodeEntity entity,
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nullable UserEntity user,
+            @Nonnull Boolean skipErrors,
+            @Nonnull ProcessExecutionData processExecutionData
+    ) throws ResponseException {
+        return deriveConfiguration(
+                entity,
+                provider,
+                user,
+                skipErrors,
+                processExecutionData,
+                InputModeEvaluationContext.Runtime
+        );
+    }
+
+    @Nonnull
+    public <NodeConfig> DerivedRuntimeElementData deriveConfigurationForAuthoring(
+            @Nonnull ProcessNodeEntity entity,
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nullable UserEntity user,
+            @Nonnull AuthoredElementValues authoredElementValues,
+            @Nonnull ElementDerivationOptions derivationOptions
+    ) throws ResponseException {
+        var layout = getConfigLayoutElement(entity, provider, user);
+        var request = new ElementDerivationRequest(layout, authoredElementValues, derivationOptions);
+        return elementDerivationService.derive(request, InputModeEvaluationContext.Authoring);
+    }
+
+    @Nonnull
+    private <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveConfiguration(
+            @Nonnull ProcessNodeEntity entity,
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nullable UserEntity user,
+            @Nonnull Boolean skipErrors,
+            @Nonnull ProcessExecutionData processExecutionData,
+            @Nonnull InputModeEvaluationContext inputModeContext
+    ) throws ResponseException {
         var layout = getConfigLayoutElement(entity, provider, user);
 
         var edo = new ElementDerivationOptions();
@@ -198,9 +263,10 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         var edr = new ElementDerivationRequest(
                 layout,
                 entity.getConfiguration(),
-                edo
+                edo,
+                processExecutionData
         );
-        var derivedData = elementDerivationService.derive(edr);
+        var derivedData = elementDerivationService.derive(edr, inputModeContext);
 
         NodeConfig config;
         try {
@@ -209,10 +275,24 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             throw ResponseException.internalServerError(e, "Die Ableitung der Knotenkonfiguration ist fehlgeschlagen: %s", e.getMessage());
         }
 
-        return new ProcessConfigurationDetails<NodeConfig>(
+        var details = new ProcessConfigurationDetails<NodeConfig>(
                 config,
                 derivedData
         );
+
+        // Legacy providers remain authoring-only. Providers that override the context-based validation hook can
+        // validate the concrete result here after every dynamic value has been resolved and type-checked.
+        if (inputModeContext == InputModeEvaluationContext.Runtime && !skipErrors && !derivedData.hasAnyError()) {
+            var validationErrors = provider.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                    entity,
+                    config,
+                    derivedData,
+                    ProcessNodeConfigurationValidationPhase.Runtime
+            ));
+            applyProviderValidationErrors(layout, derivedData, validationErrors, null);
+        }
+
+        return details;
     }
 
     @Nonnull
@@ -312,7 +392,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     .getProcessNodeDefinition(node)
                     .orElseThrow(ResponseException::badRequest);
             if (provider.getType() == ProcessNodeType.Trigger) {
-                return calculateProcessDataKeyHintsForNode(node, provider, previousMetadata);
+                return finalizeInputVariableSuggestions(calculateProcessDataKeyHintsForNode(node, provider, previousMetadata));
             }
         }
 
@@ -320,7 +400,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             previousMetadata = calculateProcessDataKeyHintsForNode(previousNode, previousMetadata);
         }
 
-        return previousMetadata;
+        return finalizeInputVariableSuggestions(previousMetadata);
     }
 
     @Nonnull
@@ -419,6 +499,15 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         );
 
         for (var output : provider.getOutputs()) {
+            currentMetadata.addInputVariable(new InputVariableSuggestion(
+                    InputVariableSource.ElementData,
+                    output.key(),
+                    node.getDataKey(),
+                    output.label(),
+                    output.description(),
+                    node
+            ));
+
             var mappedProcessDataKey = StringUtils.toNullableTrimmedString(node.getOutputMappings().get(output.key()));
             if (mappedProcessDataKey == null) {
                 continue;
@@ -432,7 +521,78 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             );
         }
 
+        addElementMetadataSuggestions(currentMetadata, node);
+
         return currentMetadata;
+    }
+
+    @Nonnull
+    private ProcessNodeDefinitionMetadata finalizeInputVariableSuggestions(@Nonnull ProcessNodeDefinitionMetadata metadata) {
+        for (var forwardedKey : metadata.forwardedProcessDataKeys()) {
+            // Wildcard paths need a concrete row binding or an explicit collection result. Neither is part of the
+            // scalar Variable mode in V1, so exposing them as selectable suggestions would create invalid mappings.
+            if (ProcessDataValueUtils.hasWildcardSegment(forwardedKey.processDataKey())) {
+                continue;
+            }
+            metadata.addInputVariable(new InputVariableSuggestion(
+                    InputVariableSource.ProcessData,
+                    forwardedKey.processDataKey(),
+                    null,
+                    forwardedKey.label(),
+                    forwardedKey.subLabel(),
+                    forwardedKey.origin()
+            ));
+        }
+
+        addProtectedProcessDataSuggestion(metadata, "processInstanceId", "Vorgangs-ID");
+        addProtectedProcessDataSuggestion(metadata, "accessKey", "Zugriffsschlüssel");
+        addProtectedProcessDataSuggestion(metadata, "caseNumber", "Aktenzeichen");
+        addProtectedProcessDataSuggestion(metadata, "started", "Startzeitpunkt");
+        addProtectedProcessDataSuggestion(metadata, "initialPayload", "Initiale Vorgangsdaten");
+        addProtectedProcessDataSuggestion(metadata, "assignedFileNumbers", "Zugeordnete Aktenzeichen");
+        addProtectedProcessDataSuggestion(metadata, "identities", "Identitäten");
+        addProtectedProcessDataSuggestion(metadata, "assignedUserId", "Zugeordnete Person");
+        addProtectedProcessDataSuggestion(metadata, "initialNodeDataKey", "Datenschlüssel des Startelements");
+        addProtectedProcessDataSuggestion(metadata, "previousNodeDataKey", "Datenschlüssel des vorherigen Elements");
+        addProtectedProcessDataSuggestion(metadata, "attachmentSets", "Anlagensätze");
+        addProtectedProcessDataSuggestion(metadata, "currentTaskId", "Aktuelle Aufgaben-ID");
+        return metadata;
+    }
+
+    private void addProtectedProcessDataSuggestion(@Nonnull ProcessNodeDefinitionMetadata metadata,
+                                                   @Nonnull String path,
+                                                   @Nonnull String label) {
+        metadata.addInputVariable(new InputVariableSuggestion(
+                InputVariableSource.ProtectedProcessData,
+                path,
+                null,
+                label,
+                null,
+                null
+        ));
+    }
+
+    private void addElementMetadataSuggestions(@Nonnull ProcessNodeDefinitionMetadata metadata,
+                                               @Nonnull ProcessNodeEntity node) {
+        var suggestions = new LinkedHashMap<String, String>();
+        suggestions.put("nodeId", "Element-ID");
+        suggestions.put("taskId", "Aufgaben-ID");
+        suggestions.put("assignedUserId", "Zugeordnete Person");
+        suggestions.put("started", "Startzeitpunkt");
+        suggestions.put("updated", "Änderungszeitpunkt");
+        suggestions.put("finished", "Abschlusszeitpunkt");
+        suggestions.put("runtime", "Laufzeit");
+        suggestions.put("previousProcessNodeId", "Vorherige Element-ID");
+        suggestions.put("previousProcessNodePortKey", "Vorheriger Ausgang");
+        suggestions.put("previousProcessInstanceTaskId", "Vorherige Aufgaben-ID");
+        suggestions.forEach((path, label) -> metadata.addInputVariable(new InputVariableSuggestion(
+                InputVariableSource.ElementMetadata,
+                path,
+                node.getDataKey(),
+                label,
+                null,
+                node
+        )));
     }
 
     @Nonnull
@@ -497,28 +657,13 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     }
             );
 
-            var validationErrors = provider
-                    .validateConfiguration(node, derivedConfiguration.configuration);
-
-            if (validationErrors != null) {
-                for (var err : validationErrors.entrySet()) {
-                    // Mirror provider validation errors into element states so the editor can mark the field itself.
-                    var combinedValidationError = combineValidationErrors(err.getValue());
-                    if (StringUtils.isNotNullOrEmpty(combinedValidationError)) {
-                        derivedConfiguration.derivedRuntimeElementData.putError(
-                                err.getKey(),
-                                combinedValidationError
-                        );
-                    }
-
-                    for (var validationError : err.getValue()) {
-                        layout.findChild(err.getKey(), BaseInputElement.class).ifPresentOrElse(
-                                element -> problems.add(element.getLabel() + ": " + validationError),
-                                () -> problems.add("Element mit ID " + err.getKey() + ": " + validationError)
-                        );
-                    }
-                }
-            }
+            var validationErrors = provider.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                    node,
+                    derivedConfiguration.configuration,
+                    derivedConfiguration.derivedRuntimeElementData,
+                    ProcessNodeConfigurationValidationPhase.Authoring
+            ));
+            applyProviderValidationErrors(layout, derivedConfiguration.derivedRuntimeElementData, validationErrors, problems);
         }
 
         if (checkPorts) {
@@ -554,6 +699,35 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 .toList();
 
         return String.join(" ", cleanedErrors);
+    }
+
+    private static void applyProviderValidationErrors(
+            @Nonnull ConfigLayoutElement layout,
+            @Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nullable Map<String, List<String>> validationErrors,
+            @Nullable List<String> problems
+    ) {
+        if (validationErrors == null) {
+            return;
+        }
+
+        for (var error : validationErrors.entrySet()) {
+            var combinedValidationError = combineValidationErrors(error.getValue());
+            if (StringUtils.isNotNullOrEmpty(combinedValidationError)) {
+                // Provider errors use element IDs so the editor and runtime worker share the same failure channel.
+                derivedRuntimeElementData.putError(error.getKey(), combinedValidationError);
+            }
+
+            if (problems == null) {
+                continue;
+            }
+            for (var validationError : error.getValue()) {
+                layout.findChild(error.getKey(), BaseInputElement.class).ifPresentOrElse(
+                        element -> problems.add(element.getLabel() + ": " + validationError),
+                        () -> problems.add("Element mit ID " + error.getKey() + ": " + validationError)
+                );
+            }
+        }
     }
 
     private void collectProcessNodePolicyProblems(@Nonnull ProcessNodeEntity node,

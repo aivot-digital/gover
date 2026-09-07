@@ -1,10 +1,13 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
+import de.aivot.prosuna.backend.elements.services.InputVariableResolver;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
@@ -32,7 +35,6 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEvent
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.repositories.VPotentialProcessInstanceAccessRepository;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,8 +70,8 @@ class ApprovalActionNodeV1Test {
         node = new ApprovalActionNodeV1(
                 assigneeResolverService,
                 new ElementDataTransformService(),
-                new PassthroughTemplateRenderService(),
-                derivationService()
+                derivationService(),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper())
         );
     }
 
@@ -146,8 +148,8 @@ class ApprovalActionNodeV1Test {
         assertTrue(layout.findChild("approval-actions-spacer").isPresent());
 
         var data = node.getStaffTaskViewData(context);
-        assertEquals("Freizugebender Inhalt", data.get("approvalValue"));
-        assertNull(data.get("approvalRemark"));
+        assertEquals("Freizugebender Inhalt", data.getLiteral("approvalValue"));
+        assertNull(data.getLiteral("approvalRemark"));
         assertEquals(
                 List.of(
                         new TaskViewEvent("Freigeben", "approve"),
@@ -184,8 +186,8 @@ class ApprovalActionNodeV1Test {
         );
 
         var data = node.getStaffTaskViewData(context);
-        assertEquals("Freizugebender Inhalt", data.get("approvalValue"));
-        assertEquals("<p>Schon geprüft</p>", data.get("approvalRemark"));
+        assertEquals("Freizugebender Inhalt", data.getLiteral("approvalValue"));
+        assertEquals("<p>Schon geprüft</p>", data.getLiteral("approvalRemark"));
     }
 
     @Test
@@ -245,7 +247,9 @@ class ApprovalActionNodeV1Test {
                 new JavascriptEngineFactoryService(List.of()),
                 new NoCodeEvaluationService(List.of()),
                 new ElementDataTransformService(),
-                new CodeListElementOptionsService(null, null)
+                new CodeListElementOptionsService(null, null),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
+                new InputVariableResolver()
         );
     }
 
@@ -263,7 +267,7 @@ class ApprovalActionNodeV1Test {
     private static ApprovalActionNodeV1.ApprovalConfiguration nodeConfiguration(AuthoredElementValues configuration)
             throws ElementDataConversionException {
         var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(configuration);
+        effectiveValues.putAll(configuration.toLiteralValues());
         return ElementPOJOMapper.mapToPOJO(effectiveValues, ApprovalActionNodeV1.ApprovalConfiguration.class);
     }
 
@@ -397,17 +401,6 @@ class ApprovalActionNodeV1Test {
             this.assignmentContext = assignmentContext;
             this.requiredPermissions = requiredPermissions;
             return result;
-        }
-    }
-
-    private static class PassthroughTemplateRenderService extends TemplateRenderService {
-        private PassthroughTemplateRenderService() {
-            super(null);
-        }
-
-        @Override
-        public String interpolate(ProcessExecutionData foldedProcessData, String template) {
-            return template;
         }
     }
 

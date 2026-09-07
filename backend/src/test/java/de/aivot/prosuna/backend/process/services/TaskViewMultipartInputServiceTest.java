@@ -34,7 +34,7 @@ class FileUploadMultipartInputServiceTest {
         var layout = createLayout("documents", "report");
 
         var inputs = new AuthoredElementValues();
-        inputs.put("documents", List.of(
+        inputs.putLiteral("documents", List.of(
                 Map.of(
                         "name", "report.pdf",
                         "uri", "blob:report",
@@ -67,7 +67,7 @@ class FileUploadMultipartInputServiceTest {
         var normalized = normalizationResult.inputs();
 
         @SuppressWarnings("unchecked")
-        var documents = (List<Map<String, Object>>) normalized.get("documents");
+        var documents = (List<Map<String, Object>>) normalized.getLiteral("documents");
         assertEquals(2, documents.size());
         assertEquals("report.pdf", documents.get(0).get("name"));
         assertEquals("report.pdf", documents.get(0).get("originalFileName"));
@@ -110,7 +110,7 @@ class FileUploadMultipartInputServiceTest {
         var layout = createLayout("documents", "report");
 
         var inputs = new AuthoredElementValues();
-        inputs.put("documents", List.of(Map.of(
+        inputs.putLiteral("documents", List.of(Map.of(
                 "name", "report.pdf",
                 "uri", "blob:report",
                 "size", 3
@@ -143,7 +143,7 @@ class FileUploadMultipartInputServiceTest {
         uploadElement.setIsMultifile(true);
 
         var inputs = new AuthoredElementValues();
-        inputs.put("documents", List.of(
+        inputs.putLiteral("documents", List.of(
                 Map.of(
                         "name", "report.pdf",
                         "uri", "blob:report",
@@ -170,7 +170,7 @@ class FileUploadMultipartInputServiceTest {
         ).inputs();
 
         @SuppressWarnings("unchecked")
-        var documents = (List<Map<String, Object>>) normalized.get("documents");
+        var documents = (List<Map<String, Object>>) normalized.getLiteral("documents");
         assertEquals("evidence-1.pdf", documents.get(0).get("name"));
         assertEquals("evidence-2.pdf", documents.get(1).get("name"));
         assertEquals("report.pdf", documents.get(0).get("originalFileName"));
@@ -200,7 +200,7 @@ class FileUploadMultipartInputServiceTest {
         var layout = createLayout("documents", "evidence.png");
 
         var inputs = new AuthoredElementValues();
-        inputs.put("documents", List.of(Map.of(
+        inputs.putLiteral("documents", List.of(Map.of(
                 "name", "report.pdf",
                 "uri", "blob:report",
                 "size", 3
@@ -219,7 +219,7 @@ class FileUploadMultipartInputServiceTest {
         ).inputs();
 
         @SuppressWarnings("unchecked")
-        var documents = (List<Map<String, Object>>) normalized.get("documents");
+        var documents = (List<Map<String, Object>>) normalized.getLiteral("documents");
         assertEquals("evidence.pdf", documents.getFirst().get("name"));
         assertEquals("evidence.pdf", attachmentService.createdAttachments().getFirst().getFileName());
     }
@@ -236,7 +236,7 @@ class FileUploadMultipartInputServiceTest {
         var layout = createLayout("documents", "# evidence");
 
         var inputs = new AuthoredElementValues();
-        inputs.put("documents", List.of(Map.of(
+        inputs.putLiteral("documents", List.of(Map.of(
                 "name", "report.pdf",
                 "uri", "blob:report",
                 "size", 3
@@ -255,7 +255,7 @@ class FileUploadMultipartInputServiceTest {
         ).inputs();
 
         @SuppressWarnings("unchecked")
-        var documents = (List<Map<String, Object>>) normalized.get("documents");
+        var documents = (List<Map<String, Object>>) normalized.getLiteral("documents");
         assertEquals("# evidence.pdf", documents.getFirst().get("name"));
         assertEquals("# evidence.pdf", attachmentService.createdAttachments().getFirst().getFileName());
     }
@@ -274,7 +274,7 @@ class FileUploadMultipartInputServiceTest {
         uploadElement.setIsMultifile(true);
 
         var inputs = new AuthoredElementValues();
-        inputs.put("documents", List.of(
+        inputs.putLiteral("documents", List.of(
                 createFileItem("report.pdf", "blob:report", 3),
                 createFileItem("invoice.pdf", "blob:invoice", 7)
         ));
@@ -293,7 +293,7 @@ class FileUploadMultipartInputServiceTest {
         ).inputs();
 
         @SuppressWarnings("unchecked")
-        var documents = (List<Map<String, Object>>) normalized.get("documents");
+        var documents = (List<Map<String, Object>>) normalized.getLiteral("documents");
         assertEquals("1 evidence.pdf", documents.get(0).get("name"));
         assertEquals("2 evidence.pdf", documents.get(1).get("name"));
         assertEquals("1 evidence.pdf", attachmentService.createdAttachments().get(0).getFileName());
@@ -321,7 +321,7 @@ class FileUploadMultipartInputServiceTest {
         layout.setChildren(List.of(persons));
 
         var inputs = new AuthoredElementValues();
-        inputs.put("persons", List.of(
+        inputs.putLiteral("persons", List.of(
                 createReplicatingRow("person-1", Map.of("dogs", List.of(createReplicatingRow("dog-1", Map.of()), createReplicatingRow("dog-2", Map.of())))),
                 createReplicatingRow("person-2", Map.of("dogs", List.of(createReplicatingRow("dog-1", Map.of())))),
                 createReplicatingRow("person-3", Map.of("dogs", List.of(
@@ -343,11 +343,11 @@ class FileUploadMultipartInputServiceTest {
         ).inputs();
 
         @SuppressWarnings("unchecked")
-        var personsValue = (List<?>) normalized.get("persons");
+        var personsValue = (List<?>) normalized.getLiteral("persons");
         @SuppressWarnings("unchecked")
-        var dogsValue = (List<?>) getReplicatingRowValues(personsValue.get(2)).get("dogs");
+        var dogsValue = (List<?>) getReplicatingRowValues(personsValue.get(2)).getLiteral("dogs");
         @SuppressWarnings("unchecked")
-        var files = (List<Map<String, Object>>) getReplicatingRowValues(dogsValue.get(1)).get("birthCertificate");
+        var files = (List<Map<String, Object>>) getReplicatingRowValues(dogsValue.get(1)).getLiteral("birthCertificate");
         assertEquals("Geburtsurkunde.pdf", files.getFirst().get("name"));
         assertEquals("Geburtsurkunde.pdf", attachmentService.createdAttachments().getFirst().getFileName());
         assertEquals("person-3/dog-2", attachmentService.createdAttachments().getFirst().getGroup());
@@ -375,7 +375,7 @@ class FileUploadMultipartInputServiceTest {
         layout.setChildren(List.of(persons));
 
         var inputs = new AuthoredElementValues();
-        inputs.put("persons", List.of(
+        inputs.putLiteral("persons", List.of(
                 createReplicatingRow("person-1", Map.of("dogs", List.of(
                         createReplicatingRow("dog-1", Map.of()),
                         createReplicatingRow("dog-2", Map.of()),
@@ -400,11 +400,11 @@ class FileUploadMultipartInputServiceTest {
         ).inputs();
 
         @SuppressWarnings("unchecked")
-        var personsValue = (List<?>) normalized.get("persons");
+        var personsValue = (List<?>) normalized.getLiteral("persons");
         @SuppressWarnings("unchecked")
-        var dogsValue = (List<?>) getReplicatingRowValues(personsValue.getFirst()).get("dogs");
+        var dogsValue = (List<?>) getReplicatingRowValues(personsValue.getFirst()).getLiteral("dogs");
         @SuppressWarnings("unchecked")
-        var files = (List<Map<String, Object>>) getReplicatingRowValues(dogsValue.get(2)).get("xray");
+        var files = (List<Map<String, Object>>) getReplicatingRowValues(dogsValue.get(2)).getLiteral("xray");
         assertEquals("1 Röntgenbild.pdf", files.get(0).get("name"));
         assertEquals("2 Röntgenbild.pdf", files.get(1).get("name"));
         assertEquals("1 Röntgenbild.pdf", attachmentService.createdAttachments().get(0).getFileName());
@@ -431,7 +431,7 @@ class FileUploadMultipartInputServiceTest {
         layout.setChildren(List.of(repeating));
 
         var inputs = new AuthoredElementValues();
-        inputs.put("rows", List.of(
+        inputs.putLiteral("rows", List.of(
                 createReplicatingRow(Map.of("documents", List.of(createFileItem("first.pdf", "blob:first", 1))))
         ));
 
@@ -460,7 +460,7 @@ class FileUploadMultipartInputServiceTest {
         var layout = createLayout("documents", null);
 
         var inputs = new AuthoredElementValues();
-        inputs.put("documents", List.of(createFileItem("report.pdf", "blob:report", 3)));
+        inputs.putLiteral("documents", List.of(createFileItem("report.pdf", "blob:report", 3)));
 
         var exception = assertThrows(ResponseException.class, () -> service.normalizeInputs(
                 layout,
@@ -501,9 +501,9 @@ class FileUploadMultipartInputServiceTest {
         layout.setChildren(List.of(firstUpload, secondUpload, fallbackUpload));
 
         var inputs = new AuthoredElementValues();
-        inputs.put("firstDocuments", List.of(createFileItem("first.pdf", "blob:first", 1)));
-        inputs.put("secondDocuments", List.of(createFileItem("second.pdf", "blob:second", 1)));
-        inputs.put("fallback.documents", List.of(createFileItem("fallback.pdf", "blob:fallback", 1)));
+        inputs.putLiteral("firstDocuments", List.of(createFileItem("first.pdf", "blob:first", 1)));
+        inputs.putLiteral("secondDocuments", List.of(createFileItem("second.pdf", "blob:second", 1)));
+        inputs.putLiteral("fallback.documents", List.of(createFileItem("fallback.pdf", "blob:fallback", 1)));
 
         service.normalizeInputs(
                 layout,
@@ -556,7 +556,7 @@ class FileUploadMultipartInputServiceTest {
         layout.setChildren(List.of(repeating));
 
         var inputs = new AuthoredElementValues();
-        inputs.put("rows", List.of(
+        inputs.putLiteral("rows", List.of(
                 createReplicatingRow("row-1", Map.of("documents", List.of(createFileItem("first.pdf", "blob:first", 1)))),
                 createReplicatingRow("row-2", Map.of("documents", List.of(createFileItem("second.pdf", "blob:second", 1)))),
                 createReplicatingRow("row-3", Map.of("documents", List.of(createFileItem("third.pdf", "blob:third", 1))))
@@ -624,7 +624,7 @@ class FileUploadMultipartInputServiceTest {
         var authoredValues = new AuthoredElementValues();
         for (var entry : values.entrySet()) {
             if (entry.getKey() instanceof String key) {
-                authoredValues.put(key, entry.getValue());
+                authoredValues.putLiteral(key, entry.getValue());
             }
         }
         return new ReplicatingContainerLayoutElementValue()

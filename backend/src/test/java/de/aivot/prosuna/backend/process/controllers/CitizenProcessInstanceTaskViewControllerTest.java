@@ -26,6 +26,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
@@ -57,6 +58,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -134,8 +136,8 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 .setOutputMappings(Map.of());
 
         var normalizedInputs = new AuthoredElementValues();
-        normalizedInputs.put("field", "normalized");
-        normalizedInputs.put("extra", "saved");
+        normalizedInputs.putLiteral("field", "normalized");
+        normalizedInputs.putLiteral("extra", "saved");
 
         var controller = new CitizenProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
@@ -159,7 +161,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         var response = controller.update(
                 procAccess,
                 taskAccess,
-                "{\"field\":\"submitted\"}",
+                "{\"field\":{\"type\":\"Literal\",\"value\":\"submitted\"}}",
                 null,
                 null,
                 null,
@@ -167,9 +169,9 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 null
         );
 
-        assertEquals("initial", response.data().get("defaultField"));
-        assertEquals("normalized", response.data().get("field"));
-        assertEquals("saved", response.data().get("extra"));
+        assertEquals("initial", response.data().getLiteral("defaultField"));
+        assertEquals("normalized", response.data().getLiteral("field"));
+        assertEquals("saved", response.data().getLiteral("extra"));
         assertEquals(List.of(new TaskViewEvent("Submit", "submit")), response.events());
         assertEquals("value", task.getRuntimeData().get("keep"));
     }
@@ -240,8 +242,8 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 .setOutputMappings(Map.of());
 
         var normalizedInputs = new AuthoredElementValues();
-        normalizedInputs.put("field", "normalized");
-        normalizedInputs.put("attachment", "process-instance-attachment:abc");
+        normalizedInputs.putLiteral("field", "normalized");
+        normalizedInputs.putLiteral("attachment", "process-instance-attachment:abc");
 
         var controller = new CitizenProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
@@ -265,7 +267,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         var response = controller.update(
                 procAccess,
                 taskAccess,
-                "{\"field\":\"submitted\"}",
+                "{\"field\":{\"type\":\"Literal\",\"value\":\"submitted\"}}",
                 null,
                 null,
                 "submit",
@@ -282,7 +284,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
     @Test
     void update_WithInlineCustomerTaskEventIsAccepted() throws ResponseException {
         var normalizedInputs = new AuthoredElementValues();
-        normalizedInputs.put("field", "normalized");
+        normalizedInputs.putLiteral("field", "normalized");
 
         var provider = new InlineCustomerTaskProcessNodeDefinition(null);
         var fixture = createFixture(provider, normalizedInputs);
@@ -290,7 +292,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         var response = fixture.controller().update(
                 fixture.procAccess(),
                 fixture.taskAccess(),
-                "{\"field\":\"submitted\"}",
+                "{\"field\":{\"type\":\"Literal\",\"value\":\"submitted\"}}",
                 null,
                 null,
                 "inline-submit",
@@ -300,13 +302,13 @@ class CitizenProcessInstanceTaskViewControllerTest {
 
         assertEquals("inline-submit", provider.eventInvokedWith);
         assertEquals("inline-submit", fixture.task().getRuntimeData().get("event"));
-        assertEquals("normalized", response.data().get("field"));
+        assertEquals("normalized", response.data().getLiteral("field"));
     }
 
     @Test
     void update_WithHrefLinkButtonCustomerTaskEventIsRejected() {
         var normalizedInputs = new AuthoredElementValues();
-        normalizedInputs.put("field", "normalized");
+        normalizedInputs.putLiteral("field", "normalized");
 
         var provider = new InlineCustomerTaskProcessNodeDefinition("https://example.org");
         var fixture = createFixture(provider, normalizedInputs);
@@ -316,7 +318,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 () -> fixture.controller().update(
                         fixture.procAccess(),
                         fixture.taskAccess(),
-                        "{\"field\":\"submitted\"}",
+                        "{\"field\":{\"type\":\"Literal\",\"value\":\"submitted\"}}",
                         null,
                         null,
                         "inline-submit",
@@ -707,10 +709,14 @@ class CitizenProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveConfiguration(@Nonnull ProcessNodeEntity entity,
-                                                                                        @Nonnull ProcessNodeDefinition<NodeConfig> provider,
-                                                                                        UserEntity user,
-                                                                                        @Nonnull Boolean skipErrors) {
+        public <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveRuntimeConfiguration(
+                @Nonnull ProcessNodeEntity entity,
+                @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                UserEntity user,
+                @Nonnull Boolean skipErrors,
+                @Nonnull ProcessExecutionData processExecutionData
+        ) {
+            assertFalse(skipErrors, "Task views must validate their resolved runtime configuration.");
             return new ProcessConfigurationDetails<>(
                     provider.getNodeConfigurationClass().cast(node.getConfiguration()),
                     new DerivedRuntimeElementData()
@@ -742,14 +748,14 @@ class CitizenProcessInstanceTaskViewControllerTest {
         private final AuthoredElementValues normalizedInputs;
 
         private TestElementDerivationService(AuthoredElementValues normalizedInputs) {
-            super(null, null, null, null);
+            super(null, null, null, null, null, null);
             this.normalizedInputs = normalizedInputs;
         }
 
         @Override
         public DerivedRuntimeElementData derive(ElementDerivationRequest request) {
             var effectiveValues = new EffectiveElementValues();
-            effectiveValues.putAll(normalizedInputs);
+            effectiveValues.putAll(normalizedInputs.toLiteralValues());
             return new DerivedRuntimeElementData(effectiveValues, new ComputedElementStates());
         }
     }
@@ -917,7 +923,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         @Override
         public AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             var persistedData = new AuthoredElementValues();
-            persistedData.put("field", "persisted");
+            persistedData.putLiteral("field", "persisted");
             return persistedData;
         }
 
@@ -1015,7 +1021,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         @Override
         public AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             var data = new AuthoredElementValues();
-            data.put("field", context.getThisTask().getRuntimeData().get("field"));
+            data.putLiteral("field", context.getThisTask().getRuntimeData().get("field"));
             return data;
         }
 
@@ -1029,7 +1035,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
             return new ProcessNodeExecutionResultTaskUpdated()
                     .setRuntimeData(Map.of(
                             "event", event,
-                            "field", update.get("field")
+                            "field", update.getLiteral("field")
                     ))
                     .setNodeData(Map.of())
                     .setProcessData(context.getThisTask().getProcessData())
@@ -1115,7 +1121,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         @Override
         public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             var initialData = new AuthoredElementValues();
-            initialData.put("defaultField", "initial");
+            initialData.putLiteral("defaultField", "initial");
             return initialData;
         }
 

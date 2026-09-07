@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.plugins.ai.v1.nodes;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
@@ -13,11 +14,12 @@ import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
+import de.aivot.prosuna.backend.process.models.InputVariableSuggestion;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
@@ -60,7 +62,6 @@ class AiProcessDataTransformationActionNodeV1Test {
     private HttpService httpService;
     private SecretRepository secretRepository;
     private SecretService secretService;
-    private RecordingTemplateRenderService templateRenderService;
     private AiProcessDataTransformationActionNodeV1 node;
 
     @BeforeEach
@@ -68,11 +69,8 @@ class AiProcessDataTransformationActionNodeV1Test {
         httpService = mock(HttpService.class);
         secretRepository = mock(SecretRepository.class);
         secretService = mock(SecretService.class);
-        templateRenderService = new RecordingTemplateRenderService();
-
         node = new AiProcessDataTransformationActionNodeV1(
                 httpService,
-                templateRenderService,
                 secretRepository,
                 secretService,
                 createAiPluginProperties(1000, 1337, CONFIGURED_TRANSFORMATION_MAX_TOKENS)
@@ -80,7 +78,7 @@ class AiProcessDataTransformationActionNodeV1Test {
     }
 
     @Test
-    void init_ShouldRenderPromptSendFullExecutionDataAndReplaceProcessData() throws Exception {
+    void init_ShouldUseDerivedPromptSendFullExecutionDataAndReplaceProcessData() throws Exception {
         var secretId = UUID.randomUUID();
         when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
         when(secretService.decrypt(any(SecretEntity.class))).thenReturn("secret-token");
@@ -109,15 +107,13 @@ class AiProcessDataTransformationActionNodeV1Test {
                         }
                         """.getBytes(StandardCharsets.UTF_8)));
 
-        templateRenderService.nextInterpolationResult = "Use formalized applicant data.";
-
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
                 node.init(context(configuration(
                         "https://aihub.example/api/completions",
                         secretId,
                         "meta-llama/Llama-3.3-70B-Instruct",
-                        "Transform {{ $.person.name }}"
+                        "Use formalized applicant data."
                 )))
         );
 
@@ -148,8 +144,6 @@ class AiProcessDataTransformationActionNodeV1Test {
         verify(httpService).request(eq(HttpMethod.POST), uriCaptor.capture(), bodyCaptor.capture(), headersCaptor.capture());
 
         assertEquals(URI.create("https://aihub.example/api/completions/chat/completions"), uriCaptor.getValue());
-        assertEquals("Transform {{ $.person.name }}", templateRenderService.lastTemplate);
-
         var requestBody = JsonMapperFactory.getInstance().readValue(bodyCaptor.getValue(), Map.class);
         assertEquals("meta-llama/Llama-3.3-70B-Instruct", requestBody.get("model"));
         assertEquals(CONFIGURED_TRANSFORMATION_MAX_TOKENS, ((Number) requestBody.get("max_tokens")).intValue());
@@ -248,7 +242,6 @@ class AiProcessDataTransformationActionNodeV1Test {
 
         var defaultOnlyNode = new AiProcessDataTransformationActionNodeV1(
                 httpService,
-                templateRenderService,
                 secretRepository,
                 secretService,
                 createAiPluginProperties(2222, 1337, null)
@@ -332,16 +325,42 @@ class AiProcessDataTransformationActionNodeV1Test {
     @Test
     void cleanConfigurationForExport_ShouldRemoveSecretReference() {
         var configuration = new AuthoredElementValues();
-        configuration.put(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, "https://aihub.example/api/completions");
-        configuration.put(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, UUID.randomUUID().toString());
+        configuration.putLiteral(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, "https://aihub.example/api/completions");
+        configuration.putLiteral(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, UUID.randomUUID().toString());
 
         var cleaned = node.cleanConfigurationForExport(configuration);
 
         assertEquals(
                 "https://aihub.example/api/completions",
-                cleaned.get(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID)
+                cleaned.getLiteral(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID)
         );
         assertTrue(!cleaned.containsKey(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID));
+    }
+
+    @Test
+    void getMetadata_ShouldForwardAllPreviousMetadata() {
+        var origin = processNode(Map.of());
+        var previousMetadata = ProcessNodeDefinitionMetadata.empty()
+                .addInputVariable(new InputVariableSuggestion(
+                        InputVariableSource.ProcessData,
+                        "person.name",
+                        null,
+                        "Name",
+                        null,
+                        origin
+                ))
+                .addInputVariable(new InputVariableSuggestion(
+                        InputVariableSource.ElementData,
+                        "result",
+                        "previousNode",
+                        "Ergebnis",
+                        null,
+                        origin
+                ));
+
+        var metadata = node.getMetadata(origin, new AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig(), previousMetadata);
+
+        assertEquals(previousMetadata, metadata);
     }
 
     private static AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig configuration(String endpointUrl,
@@ -469,21 +488,6 @@ class AiProcessDataTransformationActionNodeV1Test {
         properties.setProcessDataTransformation(processDataTransformation);
 
         return properties;
-    }
-
-    private static class RecordingTemplateRenderService extends TemplateRenderService {
-        private String nextInterpolationResult = "";
-        private String lastTemplate;
-
-        private RecordingTemplateRenderService() {
-            super(null);
-        }
-
-        @Override
-        public String interpolate(ProcessExecutionData foldedProcessData, String template) {
-            lastTemplate = template;
-            return nextInterpolationResult.isEmpty() ? template : nextInterpolationResult;
-        }
     }
 
     @SuppressWarnings("unchecked")

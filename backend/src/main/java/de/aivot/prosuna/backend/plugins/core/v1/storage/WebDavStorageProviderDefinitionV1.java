@@ -882,8 +882,8 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
 
     @Nonnull
     private Optional<URI> getConfiguredRootUri(@Nonnull StorageProviderEntity provider) {
-        var rawBaseUrl = provider.getConfiguration().get("base_url");
-        var rawBasePath = provider.getConfiguration().get("base_path");
+        var rawBaseUrl = provider.getConfiguration().getLiteral("base_url");
+        var rawBasePath = provider.getConfiguration().getLiteral("base_path");
         if (!(rawBaseUrl instanceof String baseUrl)) {
             return Optional.empty();
         }

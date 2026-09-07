@@ -16,7 +16,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.TimeRangeInp
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
@@ -554,8 +554,8 @@ class DestinationKeyPayloadServiceTest {
         ));
     }
 
-    private static ReplicatingContainerLayoutElementValue assertReplicatingRowValues(Object row, Map<?, ?> expectedValues) {
-        var rowValue = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, row);
+    private static EffectiveReplicatingContainerLayoutElementValue assertReplicatingRowValues(Object row, Map<?, ?> expectedValues) {
+        var rowValue = assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, row);
         assertNotNull(rowValue.getId());
         assertEquals(expectedValues, rowValue.getValues());
         return rowValue;

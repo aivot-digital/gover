@@ -2,13 +2,6 @@ package de.aivot.prosuna.backend.elements.models;
 
 import java.util.HashMap;
 
-/**
- * The effective values for an element structure. They are derived from the element structure and the authored values of the elements.
- */
+/** Resolved domain values for an element structure. Effective values never contain authored input-mode envelopes. */
 public class EffectiveElementValues extends HashMap<String, Object> {
-    public AuthoredElementValues toAuthoredElementValues() {
-        var authoredElementValues = new AuthoredElementValues();
-        authoredElementValues.putAll(this);
-        return authoredElementValues;
-    }
 }

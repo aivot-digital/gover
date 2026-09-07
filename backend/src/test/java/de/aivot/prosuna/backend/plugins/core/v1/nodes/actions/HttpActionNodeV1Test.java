@@ -1,7 +1,10 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.prosuna.backend.core.services.HttpService;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
+import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
@@ -30,11 +33,13 @@ import de.aivot.prosuna.backend.utils.MultipartUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
@@ -114,6 +119,37 @@ class HttpActionNodeV1Test {
                 "Array<{ name: string; originalFileName: string; uri: string; size: number; }>",
                 filesOutput.typeDefinition()
         );
+    }
+
+    @Test
+    void getConfigurationLayout_ShouldEnableDynamicRuntimeValuesOnly() throws Exception {
+        ReflectionTestUtils.setField(
+                node,
+                "configResource",
+                new ClassPathResource("nodes/configs/HttpActionNodeV1Config.json")
+        );
+
+        var layout = node.getConfigurationLayout(null);
+        for (var fieldId : List.of("url", "username", "bearerToken")) {
+            var input = assertInstanceOf(BaseInputElement.class, layout.findChild(fieldId).orElseThrow());
+            assertEquals(List.of(InputMode.values()), input.getInputModePolicy().allowedModes(), fieldId);
+            assertEquals(List.of(InputVariableSource.values()), input.getInputModePolicy().allowedVariableSources(), fieldId);
+        }
+        for (var fieldId : List.of("url", "username", "bearerToken", "responseFileName")) {
+            var input = assertInstanceOf(BaseInputElement.class, layout.findChild(fieldId).orElseThrow());
+            assertEquals(
+                    List.of(InputVariableSource.values()),
+                    input.getDynamicTextPolicy().variableSuggestionSources(),
+                    fieldId
+            );
+        }
+
+        var passwordSecret = assertInstanceOf(
+                BaseInputElement.class,
+                layout.findChild("passwordSecretKey").orElseThrow()
+        );
+        assertNull(passwordSecret.getInputModePolicy());
+        assertNull(passwordSecret.getDynamicTextPolicy());
     }
 
     @Test

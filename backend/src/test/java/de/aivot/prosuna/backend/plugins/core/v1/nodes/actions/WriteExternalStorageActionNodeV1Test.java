@@ -1,12 +1,21 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.ComputedElementState;
+import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
+import de.aivot.prosuna.backend.elements.models.ComputedElementSubState;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessInstanceAttachmentSetSelectElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.StoragePathSelectorInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.StoragePathSelectorInputElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
@@ -15,6 +24,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -22,6 +32,7 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
@@ -40,6 +51,8 @@ import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayInputStream;
@@ -174,6 +187,10 @@ class WriteExternalStorageActionNodeV1Test {
                 .findChild(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.FILE_NAME_FIELD_ID, TextInputElement.class)
                 .orElseThrow();
         assertNotNull(fileNameField.getVisibility());
+        assertEquals(
+                List.of(InputVariableSource.values()),
+                fileNameField.getDynamicTextPolicy().variableSuggestionSources()
+        );
     }
 
     @Test
@@ -192,9 +209,13 @@ class WriteExternalStorageActionNodeV1Test {
 
         var layout = node.getConfigurationLayout(null);
 
-        assertTrue(layout
+        var metadataField = layout
                 .findChild(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), TextInputElement.class)
-                .isPresent());
+                .orElseThrow();
+        assertEquals(
+                List.of(InputVariableSource.values()),
+                metadataField.getDynamicTextPolicy().variableSuggestionSources()
+        );
         assertTrue(layout
                 .findChild(metadataFieldId(SECOND_TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-ignored"), TextInputElement.class)
                 .isEmpty());
@@ -262,10 +283,10 @@ class WriteExternalStorageActionNodeV1Test {
                 attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/documents")
         );
         var authoredAttachmentSet = new AuthoredElementValues();
-        authoredAttachmentSet.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), "case-{{caseId}}");
-        authoredAttachmentSet.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-static"), " static value ");
-        authoredAttachmentSet.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-empty"), " ");
-        authoredAttachmentSet.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-unregistered"), "ignored");
+        authoredAttachmentSet.putLiteral(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), "case-{{caseId}}");
+        authoredAttachmentSet.putLiteral(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-static"), " static value ");
+        authoredAttachmentSet.putLiteral(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-empty"), " ");
+        authoredAttachmentSet.putLiteral(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-unregistered"), "ignored");
 
         node.init(context(configuration, authoredConfiguration(authoredAttachmentSet)));
 
@@ -274,6 +295,32 @@ class WriteExternalStorageActionNodeV1Test {
         assertEquals("case-123", metadata.get("x-amz-meta-case-id"));
         assertEquals("static value", metadata.get("x-amz-meta-static"));
         assertEquals(2, metadata.size());
+    }
+
+    @Test
+    void init_UsesEffectiveMetadataFromADynamicallyDerivedContainer() throws Exception {
+        when(storageProviderRepository.findById(TARGET_STORAGE_PROVIDER_ID))
+                .thenReturn(Optional.of(storageProviderWithMetadata(
+                        TARGET_STORAGE_PROVIDER_ID,
+                        "Metadaten-Ziel",
+                        false,
+                        metadataAttribute("x-amz-meta-case-id", "Vorgangs-ID")
+                )));
+        arrangeAttachmentSet(
+                "documents",
+                321,
+                attachment("alpha.PDF", 1, 11, "/source/alpha.pdf")
+        );
+
+        var configuration = configuration(
+                attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/documents")
+        );
+        var effectiveRow = new EffectiveElementValues();
+        effectiveRow.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), "case-{{caseId}}");
+
+        node.init(context(configuration, new AuthoredElementValues(), effectiveConfiguration(effectiveRow)));
+
+        assertEquals("case-{{caseId}}", storedDocumentMetadata.getFirst().get("x-amz-meta-case-id"));
     }
 
     @Test
@@ -288,7 +335,7 @@ class WriteExternalStorageActionNodeV1Test {
                 attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/documents")
         );
         var authoredAttachmentSet = new AuthoredElementValues();
-        authoredAttachmentSet.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), "case-{{caseId}}");
+        authoredAttachmentSet.putLiteral(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), "case-{{caseId}}");
 
         node.init(context(configuration, authoredConfiguration(authoredAttachmentSet)));
 
@@ -306,7 +353,7 @@ class WriteExternalStorageActionNodeV1Test {
         );
 
         var configuration = configuration(
-                attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/#", true, "stored-{{caseId}}.ignored")
+                attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/#", true, "stored-123.ignored")
         );
         node.init(context(configuration));
 
@@ -447,65 +494,102 @@ class WriteExternalStorageActionNodeV1Test {
     }
 
     @Test
-    void validateConfiguration_ValidatesTemplateSyntaxInFileName() {
-        var configuration = configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/", true, "{{"));
+    void validateConfiguration_ShouldDeferChecksForADynamicAttachmentSetContainerDuringAuthoring() {
+        var derivedData = new DerivedRuntimeElementData();
+        derivedData.getElementStates().put(
+                WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID,
+                new ComputedElementState().setInputValueDeferred(true)
+        );
 
-        var errors = node.validateConfiguration(processNode(), configuration);
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(),
+                configuration(),
+                derivedData,
+                ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
-        assertNotNull(errors);
-        assertTrue(errors.get(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.FILE_NAME_FIELD_ID).getFirst().contains("Zeile"));
+        assertNull(errors);
     }
 
     @Test
-    void validateConfiguration_ValidatesTemplateSyntaxInMetadataValuesForMetadataProviders() {
-        when(storageProviderRepository.findById(TARGET_STORAGE_PROVIDER_ID))
-                .thenReturn(Optional.of(storageProviderWithMetadata(
-                        TARGET_STORAGE_PROVIDER_ID,
-                        "Metadaten-Ziel",
-                        false,
-                        metadataAttribute("x-amz-meta-case-id", "Vorgangs-ID")
-        )));
-        var configuration = configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/"));
-        var authoredAttachmentSet = new AuthoredElementValues();
-        var fieldId = metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id");
-        authoredAttachmentSet.put(fieldId, "{{");
+    void validateConfiguration_ShouldDeferNestedFileNameChecksOnlyDuringAuthoring() {
+        var configuration = configuration(attachmentSetConfig(
+                "documents",
+                TARGET_STORAGE_PROVIDER_ID,
+                "/case/{{caseId}}/",
+                true,
+                null
+        ));
+        var rowStates = new ComputedElementStates();
+        rowStates.put(
+                WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.FILE_NAME_FIELD_ID,
+                new ComputedElementState().setInputValueDeferred(true)
+        );
+        var containerState = new ComputedElementState().setSubStates(List.of(
+                ComputedElementSubState.of("row-1", rowStates)
+        ));
+        var derivedData = new DerivedRuntimeElementData();
+        derivedData.getElementStates().put(
+                WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID,
+                containerState
+        );
 
-        var errors = node.validateConfiguration(processNode(authoredConfiguration(authoredAttachmentSet)), configuration);
+        var authoringErrors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(),
+                configuration,
+                derivedData,
+                ProcessNodeConfigurationValidationPhase.Authoring
+        ));
+        var runtimeErrors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(),
+                configuration,
+                derivedData,
+                ProcessNodeConfigurationValidationPhase.Runtime
+        ));
 
-        assertNotNull(errors);
-        assertTrue(errors.get(fieldId).getFirst().contains("Metadatenfeld"));
+        assertNull(authoringErrors);
+        assertNotNull(runtimeErrors);
+        assertTrue(runtimeErrors.containsKey(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.FILE_NAME_FIELD_ID));
     }
 
     @Test
     void validateConfiguration_IgnoresMetadataTemplatesForUnsupportedProviders() {
         var configuration = configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/"));
         var authoredAttachmentSet = new AuthoredElementValues();
-        authoredAttachmentSet.put(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), "{{");
+        authoredAttachmentSet.putLiteral(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), "{{");
 
         var errors = node.validateConfiguration(processNode(authoredConfiguration(authoredAttachmentSet)), configuration);
 
         assertNull(errors);
     }
 
-    @Test
-    void cleanConfigurationForExport_RemovesNestedStorageProviderId() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void cleanConfigurationForExport_RemovesNestedStorageProviderId(boolean deserializeRows) {
         var storagePath = new LinkedHashMap<String, Object>();
         storagePath.put("storageProviderId", TARGET_STORAGE_PROVIDER_ID);
         storagePath.put("path", "/case/{{caseId}}/");
 
-        var attachmentSet = new LinkedHashMap<String, Object>();
-        attachmentSet.put(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, storagePath);
-        attachmentSet.put(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, List.of("documents"));
+        var attachmentSetValues = new AuthoredElementValues();
+        attachmentSetValues.putLiteral(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, storagePath);
+        attachmentSetValues.putLiteral(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, List.of("documents"));
+        var attachmentSet = new ReplicatingContainerLayoutElementValue().setValues(attachmentSetValues);
 
         var configuration = new AuthoredElementValues();
-        configuration.put(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, List.of(attachmentSet));
+        configuration.putLiteral(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, List.of(attachmentSet));
+
+        if (deserializeRows) {
+            var mapper = JsonMapperFactory.getInstance();
+            configuration = mapper.readValue(mapper.writeValueAsString(configuration), AuthoredElementValues.class);
+        }
 
         var cleaned = node.cleanConfigurationForExport(configuration);
 
+        var cleanedAttachmentSets = ReplicatingContainerLayoutElement._formatValue(
+                cleaned.getLiteral(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID)
+        );
         @SuppressWarnings("unchecked")
-        var cleanedAttachmentSets = (List<Map<String, Object>>) cleaned.get(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID);
-        @SuppressWarnings("unchecked")
-        var cleanedStoragePath = (Map<String, Object>) cleanedAttachmentSets.getFirst().get(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID);
+        var cleanedStoragePath = (Map<String, Object>) cleanedAttachmentSets.getFirst().getValues().getLiteral(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID);
         assertNull(cleanedStoragePath.get("storageProviderId"));
         assertEquals("/case/{{caseId}}/", cleanedStoragePath.get("path"));
     }
@@ -585,20 +669,39 @@ class WriteExternalStorageActionNodeV1Test {
             WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig configuration,
             AuthoredElementValues nodeConfiguration
     ) {
-        return context(configuration, mock(ProcessInstanceHistoryEventRepository.class), nodeConfiguration);
+        return context(
+                configuration,
+                mock(ProcessInstanceHistoryEventRepository.class),
+                nodeConfiguration,
+                new EffectiveElementValues()
+        );
+    }
+
+    private static ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig> context(
+            WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig configuration,
+            AuthoredElementValues nodeConfiguration,
+            EffectiveElementValues effectiveConfiguration
+    ) {
+        return context(
+                configuration,
+                mock(ProcessInstanceHistoryEventRepository.class),
+                nodeConfiguration,
+                effectiveConfiguration
+        );
     }
 
     private static ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig> context(
             WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig configuration,
             ProcessInstanceHistoryEventRepository eventRepository
     ) {
-        return context(configuration, eventRepository, new AuthoredElementValues());
+        return context(configuration, eventRepository, new AuthoredElementValues(), new EffectiveElementValues());
     }
 
     private static ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig> context(
             WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig configuration,
             ProcessInstanceHistoryEventRepository eventRepository,
-            AuthoredElementValues nodeConfiguration
+            AuthoredElementValues nodeConfiguration,
+            EffectiveElementValues effectiveConfiguration
     ) {
         return new ProcessNodeExecutionInitContext<>(
                 logger(eventRepository),
@@ -607,7 +710,8 @@ class WriteExternalStorageActionNodeV1Test {
                 task(),
                 null,
                 new ProcessExecutionData(),
-                configuration
+                configuration,
+                effectiveConfiguration
         );
     }
 
@@ -713,7 +817,18 @@ class WriteExternalStorageActionNodeV1Test {
 
     private static AuthoredElementValues authoredConfiguration(AuthoredElementValues... attachmentSets) {
         var configuration = new AuthoredElementValues();
-        configuration.put(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, List.of(attachmentSets));
+        configuration.putLiteral(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, List.of(attachmentSets));
+        return configuration;
+    }
+
+    private static EffectiveElementValues effectiveConfiguration(EffectiveElementValues... attachmentSets) {
+        var configuration = new EffectiveElementValues();
+        configuration.put(
+                WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID,
+                java.util.Arrays.stream(attachmentSets)
+                        .map(values -> new EffectiveReplicatingContainerLayoutElementValue().setValues(values))
+                        .toList()
+        );
         return configuration;
     }
 

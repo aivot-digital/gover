@@ -15,6 +15,8 @@ import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
+import de.aivot.prosuna.backend.process.models.ProcessNodeConfigurationDerivationRequest;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
@@ -276,7 +278,11 @@ public class ProcessNodeController {
             var conf = new AuthoredElementValues();
             conf.putAll(existing.getConfiguration());
             for (String key : onlyConfigSave) {
-                conf.put(key, updateDTO.getConfiguration().get(key));
+                if (updateDTO.getConfiguration().containsKey(key)) {
+                    conf.put(key, updateDTO.getConfiguration().get(key));
+                } else {
+                    conf.remove(key);
+                }
             }
             updateDTO = existing;
             updateDTO.setConfiguration(conf);
@@ -284,7 +290,11 @@ public class ProcessNodeController {
 
         if (omitConfigSave != null) {
             for (var key : omitConfigSave) {
-                updateDTO.getConfiguration().put(key, existing.getConfiguration().get(key));
+                if (existing.getConfiguration().containsKey(key)) {
+                    updateDTO.getConfiguration().put(key, existing.getConfiguration().get(key));
+                } else {
+                    updateDTO.getConfiguration().remove(key);
+                }
             }
         }
 
@@ -517,6 +527,42 @@ public class ProcessNodeController {
 
         return provider
                 .getConfigurationLayout(context);
+    }
+
+    @PostMapping("{id}/derive-configuration/")
+    @Operation(
+            summary = "Derive Process Definition Node Configuration",
+            description = "Derives unsaved configuration values against the trusted backend-defined node layout."
+    )
+    public DerivedRuntimeElementData deriveConfiguration(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id,
+            @Nonnull @RequestBody @Valid ProcessNodeConfigurationDerivationRequest request
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+        var node = processDefinitionNodeService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireProcessPermission(
+                user.getId(),
+                node.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
+
+        var provider = processNodeProviderService
+                .getProcessNodeDefinition(node)
+                .orElseThrow(ResponseException::badRequest);
+
+        return processDefinitionNodeService.deriveConfigurationForAuthoring(
+                node,
+                provider,
+                user,
+                request.authoredElementValues(),
+                request.derivationOptions()
+        );
     }
 
     @GetMapping("{id}/incoming-metadata/")

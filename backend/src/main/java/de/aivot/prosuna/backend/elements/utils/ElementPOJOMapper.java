@@ -5,18 +5,24 @@ import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
+import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.models.input.InputModePolicy;
+import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.utils.ReflectionUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 
 import java.lang.reflect.*;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -125,7 +131,7 @@ public class ElementPOJOMapper {
 
         List<Object> results = new LinkedList<>();
         for (Object childElementDataObject : childElementData) {
-            if (!(childElementDataObject instanceof ReplicatingContainerLayoutElementValue) && !(childElementDataObject instanceof Map<?, ?>)) {
+            if (!(childElementDataObject instanceof EffectiveReplicatingContainerLayoutElementValue) && !(childElementDataObject instanceof Map<?, ?>)) {
                 throw new ElementDataConversionException(
                         "Type mismatch for field %s of class %s: expected effective element values but got %s",
                         StringUtils.quote(field.getName()),
@@ -134,21 +140,29 @@ public class ElementPOJOMapper {
                 );
             }
 
-            var rowValues = ReplicatingContainerLayoutElement._formatValue(List.of(childElementDataObject));
-            if (rowValues == null || rowValues.isEmpty()) {
-                continue;
-            }
-
-            var ef = new EffectiveElementValues();
-            var authoredValues = rowValues.getFirst().getValues();
-            if (authoredValues != null) {
-                ef.putAll(authoredValues);
-            }
+            var ef = childElementDataObject instanceof EffectiveReplicatingContainerLayoutElementValue row
+                    ? row.getValues()
+                    : extractEffectiveRowValues((Map<?, ?>) childElementDataObject);
+            if (ef == null) continue;
             var converted = mapToPOJO(ef, itemClass);
             results.add(converted);
         }
 
         return results;
+    }
+
+    @Nonnull
+    private static EffectiveElementValues extractEffectiveRowValues(@Nonnull Map<?, ?> row) {
+        var rawValues = row.containsKey("values") ? row.get("values") : row;
+        var result = new EffectiveElementValues();
+        if (rawValues instanceof Map<?, ?> values) {
+            for (var entry : values.entrySet()) {
+                if (entry.getKey() instanceof String key) {
+                    result.put(key, entry.getValue());
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -270,6 +284,19 @@ public class ElementPOJOMapper {
                         .setType(annotation.type())
                         .setId(annotation.id());
 
+                if (field.getType().isPrimitive() && Arrays.stream(annotation.allowedInputModes())
+                        .anyMatch(mode -> mode != InputMode.Literal)) {
+                    throw new ElementDataConversionException(
+                            "Field %s of class %s must use a nullable type when dynamic input modes are enabled.",
+                            StringUtils.quote(field.getName()),
+                            StringUtils.quote(pojoClass.getCanonicalName())
+                    );
+                }
+                applyInputModePolicy(fieldElement, annotation.allowedInputModes(), annotation.defaultInputMode(),
+                        annotation.allowedVariableSources(), field, pojoClass);
+                applyDynamicTextPolicy(fieldElement, annotation.dynamicText(),
+                        annotation.dynamicTextVariableSuggestionSources(), field, pojoClass);
+
                 try {
                     applyPropertiesToElement(fieldElement, annotation.properties());
                 } catch (NoSuchFieldException | InvocationTargetException | IllegalAccessException e) {
@@ -293,6 +320,8 @@ public class ElementPOJOMapper {
                         .getAnnotation(ReplicatingContainerLayoutElementElementPOJOBinding.class);
 
                 fieldElement = createFromPOJO(genericTypeClass);
+                applyInputModePolicy(fieldElement, annotation.allowedInputModes(), annotation.defaultInputMode(),
+                        annotation.allowedVariableSources(), field, pojoClass);
 
                 try {
                     applyPropertiesToElement(fieldElement, annotation.properties());
@@ -333,6 +362,83 @@ public class ElementPOJOMapper {
         }
 
         return target;
+    }
+
+    private static void applyInputModePolicy(
+            @Nonnull BaseElement element,
+            @Nonnull InputMode[] allowedModes,
+            @Nonnull InputMode defaultMode,
+            @Nonnull InputVariableSource[] allowedVariableSources,
+            @Nonnull Field field,
+            @Nonnull Class<?> pojoClass
+    ) throws ElementDataConversionException {
+        if (allowedModes.length == 0) {
+            return;
+        }
+        if (!(element instanceof BaseInputElement<?> inputElement)) {
+            throw new ElementDataConversionException(
+                    "Element %s must be an input element when dynamic input modes are enabled.",
+                    StringUtils.quote(element.getId())
+            );
+        }
+
+        try {
+            var allowedModeList = Arrays.asList(allowedModes);
+            // Annotation defaults describe Variable mode. Policies without that mode must expose no variable
+            // sources, even though the annotation uses "all sources" as its ergonomic default.
+            var effectiveVariableSources = allowedModeList.contains(InputMode.Variable)
+                    ? Arrays.asList(allowedVariableSources)
+                    : List.<InputVariableSource>of();
+            inputElement.setInputModePolicy(new InputModePolicy(
+                    allowedModeList,
+                    defaultMode,
+                    effectiveVariableSources
+            ));
+        } catch (IllegalArgumentException exception) {
+            throw new ElementDataConversionException(
+                    "Invalid input mode policy for field %s of class %s: %s",
+                    StringUtils.quote(field.getName()),
+                    StringUtils.quote(pojoClass.getCanonicalName()),
+                    exception.getMessage()
+            );
+        }
+    }
+
+    private static void applyDynamicTextPolicy(
+            @Nonnull BaseElement element,
+            boolean enabled,
+            @Nonnull InputVariableSource[] variableSuggestionSources,
+            @Nonnull Field field,
+            @Nonnull Class<?> pojoClass
+    ) throws ElementDataConversionException {
+        if (!enabled) {
+            return;
+        }
+        if (element.getType() != ElementType.Text && element.getType() != ElementType.RichTextInput) {
+            throw new ElementDataConversionException(
+                    "Dynamic text is only supported for Text and RichTextInput fields, but field %s of class %s uses %s.",
+                    StringUtils.quote(field.getName()),
+                    StringUtils.quote(pojoClass.getCanonicalName()),
+                    StringUtils.quote(element.getType().name())
+            );
+        }
+        if (!(element instanceof BaseInputElement<?> inputElement)) {
+            throw new ElementDataConversionException(
+                    "Element %s must be an input element when dynamic text is enabled.",
+                    StringUtils.quote(element.getId())
+            );
+        }
+
+        try {
+            inputElement.setDynamicTextPolicy(new DynamicTextPolicy(Arrays.asList(variableSuggestionSources)));
+        } catch (IllegalArgumentException exception) {
+            throw new ElementDataConversionException(
+                    "Invalid dynamic text policy for field %s of class %s: %s",
+                    StringUtils.quote(field.getName()),
+                    StringUtils.quote(pojoClass.getCanonicalName()),
+                    exception.getMessage()
+            );
+        }
     }
 
     private static void applyPropertiesToElement(@Nonnull Object target,

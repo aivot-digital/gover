@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.elements.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.elements.enums.EffectiveValueSource;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import jakarta.annotation.Nonnull;
@@ -28,6 +29,12 @@ public class ComputedElementState implements Serializable {
     @Nonnull
     private EffectiveValueSource valueSource = EffectiveValueSource.Authored;
 
+    /**
+     * Indicates that an authored dynamic value was structurally valid but could not be evaluated without runtime
+     * process data. This server-side state lets configuration validators distinguish it from a missing literal.
+     */
+    private boolean inputValueDeferred = false;
+
     @Nullable
     private List<ComputedElementSubState> subStates = null;
 
@@ -51,12 +58,12 @@ public class ComputedElementState implements Serializable {
         ComputedElementState that = (ComputedElementState) o;
         return Objects.equals(visible, that.visible) && Objects.equals(disabled, that.disabled) && Objects.equals(error, that.error) &&
                 Objects.equals(errorDetails, that.errorDetails) && Objects.equals(override, that.override) &&
-                valueSource == that.valueSource && Objects.equals(subStates, that.subStates);
+                valueSource == that.valueSource && inputValueDeferred == that.inputValueDeferred && Objects.equals(subStates, that.subStates);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(visible, disabled, error, errorDetails, override, valueSource, subStates);
+        return Objects.hash(visible, disabled, error, errorDetails, override, valueSource, inputValueDeferred, subStates);
     }
 
 
@@ -111,6 +118,17 @@ public class ComputedElementState implements Serializable {
 
     public ComputedElementState setValueSource(@Nonnull EffectiveValueSource valueSource) {
         this.valueSource = valueSource;
+        return this;
+    }
+
+    /** The flag is an internal derivation detail and is not part of the element-state API consumed by clients. */
+    @JsonIgnore
+    public boolean isInputValueDeferred() {
+        return inputValueDeferred;
+    }
+
+    public ComputedElementState setInputValueDeferred(boolean inputValueDeferred) {
+        this.inputValueDeferred = inputValueDeferred;
         return this;
     }
 

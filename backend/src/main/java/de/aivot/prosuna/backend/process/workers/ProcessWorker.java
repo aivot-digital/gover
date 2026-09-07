@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
@@ -343,7 +344,7 @@ public class ProcessWorker {
                                                                                        @Nonnull ProcessInstanceEntity processInstance,
                                                                                        @Nonnull ProcessInstanceTaskEntity taskEntity,
                                                                                        @Nonnull ProcessNodeEntity currentNode,
-                                                                                       @Nonnull ProcessNodeDefinition<NodeConfig> currentNodeProvider) throws ProcessNodeExecutionExceptionUnknown {
+                                                                                       @Nonnull ProcessNodeDefinition<NodeConfig> currentNodeProvider) throws ProcessNodeExecutionException {
         var processData = processDataService
                 .foldProcessInstanceData(
                         processInstance,
@@ -354,11 +355,20 @@ public class ProcessWorker {
         ProcessNodeService.ProcessConfigurationDetails<NodeConfig> configuration;
         try {
             configuration = processNodeService
-                    .deriveConfiguration(currentNode, currentNodeProvider, null, false);
+                    .deriveRuntimeConfiguration(currentNode, currentNodeProvider, null, false, processData);
         } catch (ResponseException e) {
             var ex = new ProcessNodeExecutionExceptionUnknown(
                     e,
                     "Die Konfiguration des Prozessknotens %s konnte nicht abgeleitet werden.",
+                    StringUtils.quote(currentNode.resolveName(currentNodeProvider))
+            );
+            logger.logException(ex);
+            throw ex;
+        }
+
+        if (configuration.derivedRuntimeElementData().hasAnyError()) {
+            var ex = new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die dynamische Konfiguration des Prozessknotens %s konnte nicht aufgelöst werden.",
                     StringUtils.quote(currentNode.resolveName(currentNodeProvider))
             );
             logger.logException(ex);
@@ -372,7 +382,8 @@ public class ProcessWorker {
                 taskEntity,
                 null,
                 processData,
-                configuration.configuration()
+                configuration.configuration(),
+                configuration.derivedRuntimeElementData().getEffectiveValues()
         );
     }
 
