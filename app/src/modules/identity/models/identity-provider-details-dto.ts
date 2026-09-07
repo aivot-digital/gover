@@ -2,6 +2,7 @@ import {IdentityAdditionalParameter} from './identity-additional-parameter';
 import {IdentityProviderListDTO} from './identity-provider-list-dto';
 
 export interface IdentityProviderDetailsDTO extends IdentityProviderListDTO {
+    uniqueIdAttribute: string;
     authorizationEndpoint: string;
     tokenEndpoint: string;
     userinfoEndpoint?: string | null;

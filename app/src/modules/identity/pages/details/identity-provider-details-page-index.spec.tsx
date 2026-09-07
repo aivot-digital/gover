@@ -7,7 +7,7 @@ import {
 } from '../../../../components/generic-details-page/generic-details-page-context';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
 import {type IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
-import {IdentityProviderDetailsPageIndex} from './identity-provider-details-page-index';
+import {formSchema, IdentityProviderDetailsPageIndex} from './identity-provider-details-page-index';
 
 const testState = vi.hoisted(() => ({
     canReadSecrets: true,
@@ -85,6 +85,24 @@ vi.mock('../../../../components/table-field/table-field-component-2', () => ({
     TableFieldComponent2: () => null,
 }));
 
+vi.mock('../../../../components/select-field/select-field-component', () => ({
+    SelectFieldComponent: (props: {
+        disabled?: boolean;
+        onChange: (value: string | null) => void;
+        options: Array<{label: string; subLabel?: string; value: string}>;
+        value?: string | null;
+    }) => (
+        <div
+            data-testid="unique-id-attribute-select"
+            data-disabled={String(Boolean(props.disabled))}
+            data-options={JSON.stringify(props.options)}
+            data-value={props.value}
+        >
+            <button type="button" onClick={() => props.onChange('preferred_username')}>Attribut auswählen</button>
+        </div>
+    ),
+}));
+
 vi.mock('../../../../dialogs/confirm-dialog/confirm-dialog', () => ({
     ConfirmDialog: () => null,
 }));
@@ -137,6 +155,51 @@ describe('IdentityProviderDetailsPageIndex', () => {
         renderPage();
 
         expect(screen.getByTestId('secret-select')).toHaveAttribute('data-disabled', 'true');
+        expect(screen.getByTestId('unique-id-attribute-select')).toHaveAttribute('data-disabled', 'true');
+    });
+
+    it('selects the unique ID from the configured attribute mappings', () => {
+        testState.provider = {
+            ...createProvider(),
+            attributes: [
+                {
+                    label: 'Subject Identifier',
+                    description: 'Unique provider identity',
+                    keyInData: 'sub',
+                    displayAttribute: false,
+                },
+                {
+                    label: 'Benutzername',
+                    description: 'Unique account name',
+                    keyInData: 'preferred_username',
+                    displayAttribute: false,
+                },
+            ],
+        };
+
+        renderPage();
+
+        const select = screen.getByTestId('unique-id-attribute-select');
+        expect(select).toHaveAttribute('data-value', 'sub');
+        expect(JSON.parse(select.getAttribute('data-options') ?? '[]')).toEqual([
+            {label: 'Subject Identifier', subLabel: 'sub', value: 'sub'},
+            {label: 'Benutzername', subLabel: 'preferred_username', value: 'preferred_username'},
+        ]);
+
+        fireEvent.click(screen.getByRole('button', {name: 'Attribut auswählen'}));
+        expect(testState.handleFieldChange).toHaveBeenCalledWith('uniqueIdAttribute', 'preferred_username');
+    });
+
+    it('validates that the unique ID references an attribute mapping', async () => {
+        const provider = {...createProvider(), iconAssetKey: 'asset-key'};
+
+        await expect(formSchema.validate(provider)).resolves.toBeDefined();
+        await expect(formSchema.validate({...provider, uniqueIdAttribute: ''})).rejects.toThrow(
+            'Das Attribut für die eindeutige ID ist ein Pflichtfeld.',
+        );
+        await expect(formSchema.validate({...provider, uniqueIdAttribute: 'email'})).rejects.toThrow(
+            'Das Attribut für die eindeutige ID muss in den Attributszuweisungen enthalten sein.',
+        );
     });
 });
 
@@ -166,11 +229,17 @@ function createProvider(type: IdentityProviderType = IdentityProviderType.Custom
     return {
         key: 'provider-key',
         metadataIdentifier: 'provider',
+        uniqueIdAttribute: 'sub',
         type,
         name: 'Test Provider',
         description: 'Identity provider used in this test.',
         iconAssetKey: null,
-        attributes: [],
+        attributes: [{
+            label: 'Subject Identifier',
+            description: 'Unique provider identity',
+            keyInData: 'sub',
+            displayAttribute: false,
+        }],
         isEnabled: false,
         isTestProvider: false,
         authorizationEndpoint: 'https://example.com/authorize',

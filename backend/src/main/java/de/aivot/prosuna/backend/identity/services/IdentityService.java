@@ -344,6 +344,17 @@ public class IdentityService {
                 authToken
         );
 
+        var uniqueIdFromIdentityProvider = userInfo.get(provider.getUniqueIdAttribute());
+        if (uniqueIdFromIdentityProvider == null || uniqueIdFromIdentityProvider.isBlank()) {
+            throw ResponseException.internalServerError(
+                    "Die Nutzerinformationen des Nutzerkontenanbieters %s (%s) enthalten für das konfigurierte eindeutige Attribut %s keinen Wert.",
+                    provider.getName(),
+                    provider.getKey(),
+                    provider.getUniqueIdAttribute()
+            );
+        }
+
+        identity.setUniqueIdFromIdentityProvider(uniqueIdFromIdentityProvider);
         identity.setIdentityData(userInfo);
         deleteOtherIdentitiesForSlot(identity, false);
         identityCacheRepository
@@ -777,7 +788,7 @@ public class IdentityService {
         }
 
         for (var entry : rawData.entrySet()) {
-            map.put(entry.getKey(), entry.getValue().toString());
+            map.put(entry.getKey(), entry.getValue() == null ? null : entry.getValue().toString());
         }
 
         return map;

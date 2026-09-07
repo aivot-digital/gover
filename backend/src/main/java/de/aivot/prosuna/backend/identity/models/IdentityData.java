@@ -19,6 +19,7 @@ import java.util.UUID;
  * @param type                           The type of the identity, which can be either an email identity or a provider identity.
  * @param providerKey                    The unique identifier of the identity provider this identity originates from, if the identity is a provider identity. This is null for email identities.
  * @param metadataIdentifier             The identifier by which ui elements can reference attributes of this identity, e.g. __meta__.first_name. This is null for email identities.
+ * @param uniqueIdFromIdentityProvider   The unique identifier supplied by the configured identity provider attribute. This is null for email identities.
  * @param emailAddress                   The email address of the identity, if the identity is an email identity. This is null for provider identities.
  * @param attributes                     A map of attributes associated with the identity, provides by the identity provider after a successful authentication. For email identities, this map contains only the email address under the key "email".
  * @param communicationProviderBindingId The unique identifier of the communication provider binding associated with this identity, if applicable. This is null for email identities.
@@ -36,6 +37,8 @@ public record IdentityData(
         @Nullable
         String metadataIdentifier,
         @Nullable
+        String uniqueIdFromIdentityProvider,
+        @Nullable
         String emailAddress,
         @Nonnull
         Map<String, String> attributes,
@@ -52,14 +55,15 @@ public record IdentityData(
             if (emailAddress == null || emailAddress.isBlank()) {
                 throw new IllegalArgumentException("Eine E-Mail-Identität benötigt eine E-Mail-Adresse.");
             }
-            if (providerKey != null || metadataIdentifier != null || communicationProviderBindingId != null) {
+            if (providerKey != null || metadataIdentifier != null || uniqueIdFromIdentityProvider != null || communicationProviderBindingId != null) {
                 throw new IllegalArgumentException("Eine E-Mail-Identität darf keine Anbieterdaten enthalten.");
             }
             emailAddress = emailAddress.trim();
             attributes = Map.of("email", emailAddress);
             communicationProviderData = Map.of();
         } else {
-            if (providerKey == null || metadataIdentifier == null || metadataIdentifier.isBlank()) {
+            if (providerKey == null || metadataIdentifier == null || metadataIdentifier.isBlank()
+                    || uniqueIdFromIdentityProvider == null || uniqueIdFromIdentityProvider.isBlank()) {
                 throw new IllegalArgumentException("Eine Anbieteridentität benötigt Anbieter- und Metadaten.");
             }
             if (emailAddress != null) {
@@ -75,6 +79,7 @@ public record IdentityData(
                 entity.getType(),
                 entity.getProviderKey(),
                 entity.getMetadataIdentifier(),
+                entity.getUniqueIdFromIdentityProvider(),
                 entity.getEmailAddress(),
                 entity.getIdentityData() != null ? entity.getIdentityData() : Map.of(),
                 entity.getCommunicationProviderBindingId(),

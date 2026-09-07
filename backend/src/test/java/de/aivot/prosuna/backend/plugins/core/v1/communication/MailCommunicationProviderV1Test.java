@@ -264,7 +264,7 @@ class MailCommunicationProviderV1Test {
 
     private static IdentityData identity(Map<String, String> attributes) {
         return new IdentityData(
-                "session", "applicant", IdentityType.IdentityProvider, UUID.randomUUID(), "metadata", null,
+                "session", "applicant", IdentityType.IdentityProvider, UUID.randomUUID(), "metadata", "provider-user-123", null,
                 attributes, 1, Map.of()
         );
     }

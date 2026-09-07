@@ -336,6 +336,7 @@ class CommunicationMessageActionNodeV1Test {
                 IdentityType.IdentityProvider,
                 UUID.randomUUID(),
                 "metadata",
+                "provider-user-123",
                 null,
                 Map.of(),
                 5,

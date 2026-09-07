@@ -4,6 +4,7 @@ export interface IdentityData {
     type: 'IdentityProvider' | 'Email';
     providerKey: string | null;
     metadataIdentifier: string | null;
+    uniqueIdFromIdentityProvider: string | null;
     emailAddress: string | null;
     attributes: Record<string, string>;
     communicationProviderBindingId: number | null;

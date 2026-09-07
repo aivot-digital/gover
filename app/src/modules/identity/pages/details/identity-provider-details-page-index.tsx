@@ -38,6 +38,7 @@ import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 
 // allows absolute and relative URLs
 const urlRegex = /^(https?:\/\/[^\s]+|\/[^\s]*)$/;
@@ -59,6 +60,20 @@ export const formSchema = yup.object({
         .min(1, 'Der Metadaten-Identifikator ist ein Pflichtfeld.')
         .max(64, 'Der Metadaten-Identifikator darf maximal 64 Zeichen lang sein.')
         .required('Der Metadaten-Identifikator ist ein Pflichtfeld.'),
+    uniqueIdAttribute: yup.string()
+        .trim()
+        .max(255, 'Das Attribut für die eindeutige ID darf maximal 255 Zeichen lang sein.')
+        .required('Das Attribut für die eindeutige ID ist ein Pflichtfeld.')
+        .test(
+            'mapped-attribute',
+            'Das Attribut für die eindeutige ID muss in den Attributszuweisungen enthalten sein.',
+            function (value) {
+                if (value == null || value.length === 0) return true;
+
+                const attributes = this.parent.attributes as IdentityAttributeMapping[] | undefined;
+                return attributes?.some(attribute => attribute?.keyInData === value) === true;
+            },
+        ),
     authorizationEndpoint: yup.string()
         .trim()
         .min(1, 'Der Autorisierungsendpunkt ist ein Pflichtfeld.')
@@ -221,6 +236,16 @@ export function IdentityProviderDetailsPageIndex() {
     const inputsDisabled = useMemo(() => (
         isBusy || identityProvider == null || !isEditable
     ), [isBusy, identityProvider, isEditable]);
+
+    const uniqueIdAttributeOptions = useMemo(() => (
+        (identityProvider?.attributes ?? [])
+            .filter(attribute => isStringNotNullOrEmpty(attribute.keyInData))
+            .map(attribute => ({
+                label: isStringNotNullOrEmpty(attribute.label) ? attribute.label : attribute.keyInData,
+                subLabel: attribute.keyInData,
+                value: attribute.keyInData,
+            }))
+    ), [identityProvider?.attributes]);
 
     if (identityProvider == null) {
         return (
@@ -929,6 +954,20 @@ export function IdentityProviderDetailsPageIndex() {
                     ),
                 }}
                 error={attributesError}
+                sx={{my: 4}}
+            />
+            <SelectFieldComponent
+                label="Attribut für die eindeutige ID"
+                required
+                value={identityProvider.uniqueIdAttribute || null}
+                onChange={(value) => {
+                    handleInputChange('uniqueIdAttribute')(value ?? '');
+                }}
+                options={uniqueIdAttributeOptions}
+                disabled={inputsDisabled || isSystemProvider}
+                error={errors.uniqueIdAttribute}
+                emptyStatePlaceholder="Keine Attributszuweisungen vorhanden"
+                hint="Wählen Sie das Attribut aus, dessen Wert eine Identität bei diesem Nutzerkontenanbieter eindeutig kennzeichnet."
                 sx={{my: 4}}
             />
             <Box

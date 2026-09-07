@@ -167,6 +167,7 @@ class FitConnectZbpCommunicationProviderV1Test {
                 IdentityType.IdentityProvider,
                 UUID.randomUUID(),
                 "custom",
+                "provider-user-123",
                 null,
                 attributes,
                 null,

@@ -40,7 +40,7 @@ class IdentityCommunicationServiceTest {
         cacheEntity = new IdentityCacheEntity(
                 "cache", "session", 11, null, IdentityType.IdentityProvider, providerKey, "applicant", "metadata", null,
                 "https://example.test", "state", Map.of("sub", "123"), null, null
-        );
+        ).setUniqueIdFromIdentityProvider("123");
         mail = binding(1, providerKey, "E-Mail");
         inbox = binding(2, providerKey, "Postfach");
         when(cacheRepository.findAllBySessionIdAndRelatedProcessNodeId("session", 11))
@@ -112,6 +112,7 @@ class IdentityCommunicationServiceTest {
             var identity = invocation.<de.aivot.prosuna.backend.identity.models.IdentityData>getArgument(0);
             assertEquals(mail.getId(), identity.communicationProviderBindingId());
             assertEquals("customer@example.test", identity.communicationProviderData().get("email"));
+            assertEquals("123", identity.uniqueIdFromIdentityProvider());
             return new CommunicationService.CustomerConfiguration(null, DerivedRuntimeElementData.empty(), true);
         });
         var customerData = new AuthoredElementValues();
