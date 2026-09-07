@@ -29,14 +29,14 @@ import java.util.List;
         name = OpenApiConstants.Tags.ProcessesDefinitionsName,
         description = "Operations for managing process instance tasks."
 )
-public class CitizenProcessInstanceViewController {
+public class CustomerProcessInstanceViewController {
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceTaskService processInstanceTaskService;
     private final ProcessVersionService processVersionService;
 
-    public CitizenProcessInstanceViewController(ProcessInstanceService processInstanceService,
-                                                ProcessInstanceTaskService processInstanceTaskService,
-                                                ProcessVersionService processVersionService) {
+    public CustomerProcessInstanceViewController(ProcessInstanceService processInstanceService,
+                                                 ProcessInstanceTaskService processInstanceTaskService,
+                                                 ProcessVersionService processVersionService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processVersionService = processVersionService;

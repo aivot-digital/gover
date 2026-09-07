@@ -15,7 +15,7 @@ import {EmptySearchDataListPlaceholder} from '../../components/empty-search-data
 import {PrivacyDialog, PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialog, ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {AccessibilityDialog, AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
-import {FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
+import {FormCustomerListResponseDTO} from '../../modules/forms/dtos/form-customer-list-response-d-t-o';
 import {setIdentityId} from '../../slices/identity-slice';
 import {PublicFormListItem} from '../../components/public-form-list-item/public-form-list-item';
 import {CustomerListPageHeader} from './customer-list-page-header';
@@ -25,7 +25,7 @@ import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {FormTriggerApiService, FormTriggerListItem} from '../../modules/forms/services/form-trigger-api-service';
 import {resolveFormNodeName} from '../../models/elements/form-layout-element';
 
-function mapPublicFormListItem(form: FormTriggerListItem): FormCitizenListResponseDTO | null {
+function mapPublicFormListItem(form: FormTriggerListItem): FormCustomerListResponseDTO | null {
     const formLayout = form.node.configuration.formLayout;
     if (formLayout?.showOnFormIndexPage === false) {
         return null;
@@ -48,7 +48,7 @@ export function CustomerListPage() {
     const dispatch = useAppDispatch();
 
     const [failedToLoad, setFailedToLoad] = useState(false);
-    const [forms, setForms] = useState<FormCitizenListResponseDTO[]>();
+    const [forms, setForms] = useState<FormCustomerListResponseDTO[]>();
     const [search, setSearch] = useState('');
 
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
@@ -60,7 +60,7 @@ export function CustomerListPage() {
             .listPublicAll()
             .then((page) => page.content
                 .map(mapPublicFormListItem)
-                .filter((form): form is FormCitizenListResponseDTO => form != null)
+                .filter((form): form is FormCustomerListResponseDTO => form != null)
                 .sort((a, b) => a.title.localeCompare(b.title, 'de')))
             .then(setForms)
             .catch((err) => {

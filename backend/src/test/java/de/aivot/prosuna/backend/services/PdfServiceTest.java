@@ -117,7 +117,7 @@ class PdfServiceTest {
         var result = assertThrows(ResponseException.class, () -> pdfService.generateCustomerSummary(
                 form,
                 new AuthoredElementValues(),
-                FormPdfScope.Citizen,
+                FormPdfScope.Customer,
                 processInstance,
                 config,
                 processNode

@@ -1,4 +1,4 @@
-export interface FormCitizenListResponseDTO {
+export interface FormCustomerListResponseDTO {
     slug: string;
     version: number;
     title: string;

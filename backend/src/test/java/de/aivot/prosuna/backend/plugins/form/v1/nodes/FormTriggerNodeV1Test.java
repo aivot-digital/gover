@@ -317,7 +317,7 @@ class FormTriggerNodeV1Test {
         when(pdfService.generateCustomerSummary(
                 same(formLayout),
                 any(AuthoredElementValues.class),
-                eq(FormPdfScope.Citizen),
+                eq(FormPdfScope.Customer),
                 any(ProcessInstanceEntity.class),
                 same(configuration),
                 any(ProcessNodeEntity.class)
@@ -357,7 +357,7 @@ class FormTriggerNodeV1Test {
         verify(pdfService).generateCustomerSummary(
                 same(formLayout),
                 submissionCaptor.capture(),
-                eq(FormPdfScope.Citizen),
+                eq(FormPdfScope.Customer),
                 processInstanceCaptor.capture(),
                 same(configuration),
                 processNodeCaptor.capture()

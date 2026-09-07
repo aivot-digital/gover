@@ -201,6 +201,7 @@ class ProcessWorkerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 

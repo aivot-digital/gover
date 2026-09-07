@@ -27,11 +27,11 @@ import jakarta.annotation.Nonnull;
         description = "System configurations are key-value pairs that define various settings and parameters of the application. " +
                       "These configurations can be used to customize the behavior of the system and should be used if you need to provide configuration values to citizens publicly."
 )
-public class CitizenSystemConfigController {
+public class CustomerSystemConfigController {
     private final SystemConfigService systemConfigService;
 
     @Autowired
-    public CitizenSystemConfigController(SystemConfigService systemConfigService) {
+    public CustomerSystemConfigController(SystemConfigService systemConfigService) {
         this.systemConfigService = systemConfigService;
     }
 

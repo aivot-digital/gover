@@ -315,7 +315,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 .findChild(FormTriggerConfigV1.FORM_LAYOUT, UiDefinitionInputElement.class)
                 .ifPresent(uid -> {
                     uid.setElementType(ElementType.FormLayout);
-                    uid.setDisplayContext(ElementDisplayContext.CitizenFacing);
+                    uid.setDisplayContext(ElementDisplayContext.CustomerFacing);
                 });
 
 
@@ -648,7 +648,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             pdfBytes = pdfService.generateCustomerSummary(
                     configuration.formLayout,
                     submission,
-                    FormPdfScope.Citizen,
+                    FormPdfScope.Customer,
                     context.getThisProcessInstance(),
                     context.getConfigurationOfExecutingNode(),
                     context.getThisNode()

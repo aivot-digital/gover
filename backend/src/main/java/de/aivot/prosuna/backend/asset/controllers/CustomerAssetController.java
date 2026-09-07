@@ -29,13 +29,13 @@ import java.util.UUID;
         name = OpenApiConstants.Tags.AssetsName,
         description = OpenApiConstants.Tags.AssetsDescription
 )
-public class CitizenAssetController {
+public class CustomerAssetController {
     private final StorageService storageService;
     private final VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository;
 
     @Autowired
-    public CitizenAssetController(StorageService storageService,
-                                  VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository) {
+    public CustomerAssetController(StorageService storageService,
+                                   VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository) {
         this.storageService = storageService;
         this.vStorageIndexItemWithAssetRepository = vStorageIndexItemWithAssetRepository;
     }

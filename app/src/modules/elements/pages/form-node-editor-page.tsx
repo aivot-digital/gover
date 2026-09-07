@@ -1450,7 +1450,7 @@ export function FormNodeEditorPage() {
                                                 value={formLayout}
                                                 onChange={handlePatch}
                                                 editable={isEditable}
-                                                displayContext={ElementDisplayContext.CitizenFacing}
+                                                displayContext={ElementDisplayContext.CustomerFacing}
                                                 allowElementIdEditing={false}
                                                 highlightElementId={highlightElementId}
                                                 highlightElementSignal={highlightElementSignal}
@@ -1561,7 +1561,7 @@ export function FormNodeEditorPage() {
                 onClose={() => {
                     setShowRootAddElementDialog(false);
                 }}
-                displayContext={ElementDisplayContext.CitizenFacing}
+                displayContext={ElementDisplayContext.CustomerFacing}
             />
 
             <Dialog

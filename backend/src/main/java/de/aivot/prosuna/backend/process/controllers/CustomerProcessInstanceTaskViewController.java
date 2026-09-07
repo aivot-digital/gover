@@ -25,7 +25,6 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessTestClaimEntity;
-import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceTaskFilter;
@@ -69,7 +68,7 @@ import java.util.UUID;
         name = OpenApiConstants.Tags.ProcessesDefinitionsName,
         description = "Operations for managing process instance tasks."
 )
-public class CitizenProcessInstanceTaskViewController {
+public class CustomerProcessInstanceTaskViewController {
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceTaskService processInstanceTaskService;
     private final ProcessNodeDefinitionService processNodeProviderService;
@@ -87,22 +86,22 @@ public class CitizenProcessInstanceTaskViewController {
     private final ThemeService themeService;
     private final AssetService assetService;
 
-    public CitizenProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
-                                                    ProcessInstanceTaskService processInstanceTaskService,
-                                                    ProcessNodeDefinitionService processNodeProviderService,
-                                                    ProcessNodeService processDefinitionNodeService,
-                                                    ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
-                                                    ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
-                                                    ElementDerivationService elementDerivationService,
-                                                    FileUploadMultipartInputService fileUploadMultipartInputService,
-                                                    ProcessDataService processDataService,
-                                                    ProcessService processService,
-                                                    VDepartmentShadowedService vDepartmentShadowedService,
-                                                    PaymentTransactionService paymentTransactionService,
-                                                    PdfService pdfService,
-                                                    ProsunaConfig prosunaConfig,
-                                                    ThemeService themeService,
-                                                    AssetService assetService) {
+    public CustomerProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
+                                                     ProcessInstanceTaskService processInstanceTaskService,
+                                                     ProcessNodeDefinitionService processNodeProviderService,
+                                                     ProcessNodeService processDefinitionNodeService,
+                                                     ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
+                                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
+                                                     ElementDerivationService elementDerivationService,
+                                                     FileUploadMultipartInputService fileUploadMultipartInputService,
+                                                     ProcessDataService processDataService,
+                                                     ProcessService processService,
+                                                     VDepartmentShadowedService vDepartmentShadowedService,
+                                                     PaymentTransactionService paymentTransactionService,
+                                                     PdfService pdfService,
+                                                     ProsunaConfig prosunaConfig,
+                                                     ThemeService themeService,
+                                                     AssetService assetService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;

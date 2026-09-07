@@ -161,6 +161,7 @@ class StaffProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -449,6 +450,7 @@ class StaffProcessInstanceTaskViewControllerTest {
                 Map.of(),
                 Map.of(),
                 Map.of(),
+                null,
                 null,
                 null,
                 null,

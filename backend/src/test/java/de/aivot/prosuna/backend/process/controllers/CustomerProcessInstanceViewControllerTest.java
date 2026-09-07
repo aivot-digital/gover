@@ -28,7 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class CitizenProcessInstanceViewControllerTest {
+class CustomerProcessInstanceViewControllerTest {
     @Test
     void retrieveShouldSupportNonUuidProcessAccessKeys() throws ResponseException {
         var instanceAccessKey = "instance-access-key";
@@ -73,6 +73,7 @@ class CitizenProcessInstanceViewControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -88,7 +89,7 @@ class CitizenProcessInstanceViewControllerTest {
         when(processInstanceTaskService.list(any(Pageable.class), any(ProcessInstanceTaskFilter.class)))
                 .thenReturn(new PageImpl<>(List.of(task)));
 
-        var controller = new CitizenProcessInstanceViewController(
+        var controller = new CustomerProcessInstanceViewController(
                 processInstanceService,
                 processInstanceTaskService,
                 processVersionService

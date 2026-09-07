@@ -572,6 +572,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }

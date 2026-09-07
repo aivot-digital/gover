@@ -66,7 +66,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class CitizenProcessInstanceTaskViewControllerTest {
+class CustomerProcessInstanceTaskViewControllerTest {
     @Test
     void update_AutoSavePersistsNormalizedInputsAndReturnsMergedCustomerTaskViewData() throws ResponseException {
         var procAccess = UUID.randomUUID().toString();
@@ -118,6 +118,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -137,7 +138,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         normalizedInputs.put("field", "normalized");
         normalizedInputs.put("extra", "saved");
 
-        var controller = new CitizenProcessInstanceTaskViewController(
+        var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
                 new ProcessNodeDefinitionService(List.of(provider)),
@@ -224,6 +225,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -243,7 +245,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         normalizedInputs.put("field", "normalized");
         normalizedInputs.put("attachment", "process-instance-attachment:abc");
 
-        var controller = new CitizenProcessInstanceTaskViewController(
+        var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
                 new ProcessNodeDefinitionService(List.of(provider)),
@@ -423,8 +425,8 @@ class CitizenProcessInstanceTaskViewControllerTest {
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
     }
 
-    private static CitizenTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
-                                                              AuthoredElementValues normalizedInputs) {
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+                                                               AuthoredElementValues normalizedInputs) {
         var procAccess = UUID.randomUUID().toString();
         var taskAccess = UUID.randomUUID().toString();
         var now = Instant.now();
@@ -474,6 +476,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -488,7 +491,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 .setConfiguration(new AuthoredElementValues())
                 .setOutputMappings(Map.of());
 
-        var controller = new CitizenProcessInstanceTaskViewController(
+        var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
                 new ProcessNodeDefinitionService(List.of(provider)),
@@ -507,7 +510,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 mock(AssetService.class)
         );
 
-        return new CitizenTaskControllerFixture(procAccess, taskAccess, task, controller);
+        return new CustomerTaskControllerFixture(procAccess, taskAccess, task, controller);
     }
 
     private static PaymentConfirmationControllerFixture createPaymentConfirmationFixture(Map<String, Object> runtimeData) {
@@ -560,6 +563,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -584,7 +588,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         var themeService = mock(ThemeService.class);
         var assetService = mock(AssetService.class);
 
-        var controller = new CitizenProcessInstanceTaskViewController(
+        var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
                 new ProcessNodeDefinitionService(List.of(provider)),
@@ -642,18 +646,18 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 .setDraftedVersion(1);
     }
 
-    private record CitizenTaskControllerFixture(
+    private record CustomerTaskControllerFixture(
             String procAccess,
             String taskAccess,
             ProcessInstanceTaskEntity task,
-            CitizenProcessInstanceTaskViewController controller
+            CustomerProcessInstanceTaskViewController controller
     ) {
     }
 
     private record PaymentConfirmationControllerFixture(
             String procAccess,
             String taskAccess,
-            CitizenProcessInstanceTaskViewController controller,
+            CustomerProcessInstanceTaskViewController controller,
             PaymentTransactionService paymentTransactionService,
             ProcessService processService,
             VDepartmentShadowedService vDepartmentShadowedService,

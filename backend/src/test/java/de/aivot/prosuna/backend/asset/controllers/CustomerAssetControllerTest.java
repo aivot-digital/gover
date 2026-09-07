@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class CitizenAssetControllerTest {
+class CustomerAssetControllerTest {
     @Mock
     private StorageService storageService;
 
@@ -26,13 +26,13 @@ class CitizenAssetControllerTest {
     @Mock
     private HttpServletRequest request;
 
-    private CitizenAssetController controller;
+    private CustomerAssetController controller;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        controller = new CitizenAssetController(
+        controller = new CustomerAssetController(
                 storageService,
                 vStorageIndexItemWithAssetRepository
         );

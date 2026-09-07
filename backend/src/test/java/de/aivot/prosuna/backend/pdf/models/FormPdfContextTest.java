@@ -2,7 +2,6 @@ package de.aivot.prosuna.backend.pdf.models;
 
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.pdf.enums.FormPdfScope;
-import de.aivot.prosuna.backend.pdf.models.FormPdfContext;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,7 +16,7 @@ class FormPdfContextTest {
                 "123e4567-e89b-12d3-a456-426614174000",
                 "Logo - Stadt.png",
                 config,
-                FormPdfScope.Citizen
+                FormPdfScope.Customer
         );
 
         var result = context.createAssetUrl(context.logoAssetKey(), context.logoAssetName());
@@ -54,7 +53,7 @@ class FormPdfContextTest {
                 "123e4567-e89b-12d3-a456-426614174000",
                 "Logo - Stadt.png",
                 config,
-                FormPdfScope.Citizen
+                FormPdfScope.Customer
         );
     }
 }

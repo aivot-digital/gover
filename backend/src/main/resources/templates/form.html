@@ -33,7 +33,7 @@
         *********************************************************************** */-->
         <header
                 th:insert="./form-parts/briefkopf.html"
-                th:if="${ base.isBlankPrint || base.isCitizenPrint }"
+                th:if="${ base.isBlankPrint || base.customerPrint }"
         ></header>
 
         <!--/* ***********************************************************************
@@ -54,7 +54,7 @@
         *********************************************************************** */-->
         <section
                 th:insert="./form-parts/zahlungsinformationen.html"
-                th:class="${ base.isCitizenPrint ? '' : '' }"
+                th:class="${ base.customerPrint ? '' : '' }"
                 th:if="${ base.isNotBlankPrint && paymentTransaction != null }"
         ></section>
 
@@ -127,7 +127,7 @@
 
         <section
                 th:if="${
-                    (base.isBlankPrint || base.isCitizenPrint) &&
+                    (base.isBlankPrint || base.customerPrint) &&
                     (
                         (
                             form.rootElement.offlineSignatureNeeded != null &&

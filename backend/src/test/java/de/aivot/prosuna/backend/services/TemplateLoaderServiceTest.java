@@ -68,7 +68,7 @@ class TemplateLoaderServiceTest {
         var html = new TemplateLoaderService().processTemplate(
                 "form-parts/elements/rich-text-field.html",
                 Map.of(
-                        "base", createBaseContext(FormPdfScope.Citizen),
+                        "base", createBaseContext(FormPdfScope.Customer),
                         "element", element,
                         "value", "~~Durchgestrichen~~\n\n- [ ] Offen\n- [x] Erledigt\n\n**Fett** und [Link](https://example.org)"
                 ),
