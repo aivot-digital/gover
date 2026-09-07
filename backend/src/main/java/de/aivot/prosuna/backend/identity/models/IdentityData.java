@@ -9,6 +9,21 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Represents the data of an identity, which can be either an email identity or a provider identity.
+ * This record is used to encapsulate all relevant information about an identity, including its type,
+ * associated provider details, email address (if applicable), and any additional attributes or communication data.
+ *
+ * @param sessionId                      The session ID associated with the identity, used identifying an identity after a successful authentication and before the identity is stored in the database.
+ * @param identityId                     The unique identifier by which the identity is known in the process instance. This id is not unique in the system, but only in the context of a process instance. It is used to identify the identity in the process instance and to retrieve the identity data. This is NOT the id by which the identity is unique in the originating identity provider system.
+ * @param type                           The type of the identity, which can be either an email identity or a provider identity.
+ * @param providerKey                    The unique identifier of the identity provider this identity originates from, if the identity is a provider identity. This is null for email identities.
+ * @param metadataIdentifier             The identifier by which ui elements can reference attributes of this identity, e.g. __meta__.first_name. This is null for email identities.
+ * @param emailAddress                   The email address of the identity, if the identity is an email identity. This is null for provider identities.
+ * @param attributes                     A map of attributes associated with the identity, provides by the identity provider after a successful authentication. For email identities, this map contains only the email address under the key "email".
+ * @param communicationProviderBindingId The unique identifier of the communication provider binding associated with this identity, if applicable. This is null for email identities.
+ * @param communicationProviderData      A map of data associated with the communication provider for this identity, if applicable. This is null for email identities.
+ */
 public record IdentityData(
         @Nonnull
         String sessionId,
