@@ -125,7 +125,10 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
     }
 
     public getCustomerTaskView(instanceAccessKey: string, taskAccessKey: string): Promise<TaskView> {
-        return this.get(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`);
+        return this.get(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`, {
+            skipAuthCheck: true,
+            doNotHandleStatusCodes: true,
+        });
     }
 
     public async putStaffTaskView(instanceId: number, taskId: number, payload: AuthoredElementValues, event?: string): Promise<TaskView> {
@@ -150,6 +153,7 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
                 event: event,
             },
             skipAuthCheck: true,
+            doNotHandleStatusCodes: true,
         });
     }
 

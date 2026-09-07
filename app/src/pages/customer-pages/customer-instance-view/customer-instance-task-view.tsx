@@ -1,8 +1,10 @@
-import {Box} from '@mui/material';
+import {Alert, Box, Button, Stack, Typography} from '@mui/material';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {
     buildCustomerInstancePath,
     CustomerTaskViewApiService,
+    isRequiredIdentityAuthenticationError,
+    removeIdentityCallbackParameters,
     TaskViewResponse,
 } from './customer-task-view-api-service';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -12,6 +14,7 @@ import {isApiError} from '../../../models/api-error';
 import {ElementDerivationContext} from '../../../modules/elements/components/element-derivation-context';
 import {
     AuthoredElementValues,
+    createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
     isDerivedRuntimeElementData,
 } from '../../../models/element-data';
@@ -24,6 +27,8 @@ import {TaskViewEventButtons} from '../../../modules/process/components/task-vie
 import {showApiErrorSnackbar, showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {withDelay} from '../../../utils/with-delay';
 import type {CustomerInstanceViewOutletContext} from './customer-instance-view';
+import {IdentityStateQueryParam} from '../../../modules/identity/constants/identity-state-query-param';
+import {IdentityResultState} from '../../../modules/identity/enums/identity-result-state';
 
 export function CustomerInstanceTaskView() {
     const {
@@ -41,11 +46,32 @@ export function CustomerInstanceTaskView() {
         invalidateInstanceTasks,
     } = useOutletContext<CustomerInstanceViewOutletContext>();
 
-    const [taskView, setTaskView] = useState<TaskViewResponse | null | 'failed'>(null);
+    const [identityAuthenticationSucceeded, setIdentityAuthenticationSucceeded] = useState(() => {
+        const currentUrl = new URL(window.location.href);
+        const succeeded = currentUrl.searchParams.get(IdentityStateQueryParam) === String(IdentityResultState.Success);
+        const cleanedUrl = removeIdentityCallbackParameters(currentUrl.toString());
+        if (cleanedUrl !== currentUrl.toString()) {
+            window.history.replaceState(window.history.state, '', cleanedUrl);
+        }
+        return succeeded;
+    });
+    const [taskView, setTaskView] = useState<TaskViewResponse | null | 'failed' | 'identity-required'>(null);
     const [editedAuthoredValues, setEditedAuthoredValues] = useState<AuthoredElementValues | null>(null);
     const [derivedErrors, setDerivedErrors] = useState<DerivedRuntimeElementData | null>(null);
     const latestAuthoredValuesRef = useRef<AuthoredElementValues>({});
     const taskViewLoadGenerationRef = useRef(0);
+
+    const handleRequiredIdentityAuthentication = useCallback((error: unknown): boolean => {
+        if (!isRequiredIdentityAuthenticationError(error)) {
+            return false;
+        }
+
+        setTaskView('identity-required');
+        setEditedAuthoredValues(null);
+        setDerivedErrors(null);
+        latestAuthoredValuesRef.current = {};
+        return true;
+    }, []);
 
     useEffect(() => {
         const loadGeneration = ++taskViewLoadGenerationRef.current;
@@ -68,11 +94,16 @@ export function CustomerInstanceTaskView() {
                     return;
                 }
 
+                setIdentityAuthenticationSucceeded(false);
                 setTaskView(view);
                 latestAuthoredValuesRef.current = view.data;
             })
             .catch((error) => {
                 if (loadGeneration !== taskViewLoadGenerationRef.current) {
+                    return;
+                }
+
+                if (handleRequiredIdentityAuthentication(error)) {
                     return;
                 }
 
@@ -108,12 +139,18 @@ export function CustomerInstanceTaskView() {
                 dispatch(clearLoadingMessage());
             }
         };
-    }, [dispatch, instanceAccessKey, taskAccessKey]);
+    }, [dispatch, handleRequiredIdentityAuthentication, instanceAccessKey, taskAccessKey]);
 
     const handleDerive = useCallback((values: AuthoredElementValues, skipErrorsForElements: string[]) => {
         return new CustomerTaskViewApiService()
-            .deriveTaskView(instanceAccessKey, taskAccessKey, values, skipErrorsForElements);
-    }, [instanceAccessKey, taskAccessKey]);
+            .deriveTaskView(instanceAccessKey, taskAccessKey, values, skipErrorsForElements)
+            .catch((error) => {
+                if (handleRequiredIdentityAuthentication(error)) {
+                    return createDerivedRuntimeElementData();
+                }
+                throw error;
+            });
+    }, [handleRequiredIdentityAuthentication, instanceAccessKey, taskAccessKey]);
 
     const handleTaskViewEvent = useCallback(async (event: TaskViewEvent, values: AuthoredElementValues): Promise<void> => {
         dispatch(setLoadingMessage({
@@ -147,6 +184,9 @@ export function CustomerInstanceTaskView() {
                 navigate(buildCustomerInstancePath(instanceAccessKey), {replace: true});
             }
         } catch (error) {
+            if (handleRequiredIdentityAuthentication(error)) {
+                return;
+            }
             if (isApiError(error) && isDerivedRuntimeElementData(error.details)) {
                 dispatch(showErrorSnackbar(error.message));
                 setDerivedErrors(error.details);
@@ -158,6 +198,7 @@ export function CustomerInstanceTaskView() {
         }
     }, [
         dispatch,
+        handleRequiredIdentityAuthentication,
         instanceAccessKey,
         invalidateInstanceTasks,
         navigate,
@@ -170,7 +211,9 @@ export function CustomerInstanceTaskView() {
     }, [handleTaskViewEvent]);
 
     const handleInlineEvent = useCallback(async (values: AuthoredElementValues, event: string): Promise<void> => {
-        const taskViewEvent = taskView !== 'failed' ? taskView?.events.find((candidate) => candidate.event === event) : undefined;
+        const taskViewEvent = typeof taskView !== 'string'
+            ? taskView?.events.find((candidate) => candidate.event === event)
+            : undefined;
 
         await handleTaskViewEvent(taskViewEvent ?? {
             label: event,
@@ -191,6 +234,41 @@ export function CustomerInstanceTaskView() {
 
     if (taskView == 'failed') {
         return null;
+    }
+
+    if (taskView === 'identity-required') {
+        const authenticationStartLink = new CustomerTaskViewApiService()
+            .createRequiredIdentityAuthenticationStartLink(instanceAccessKey, taskAccessKey);
+
+        return (
+            <Box sx={{maxWidth: 720, mx: 'auto'}}>
+                <Alert severity="info">
+                    <Stack spacing={2}>
+                        <Box>
+                            <Typography variant="h6" component="h2" gutterBottom>
+                                Anmeldung erforderlich
+                            </Typography>
+                            <Typography>
+                                {
+                                    identityAuthenticationSucceeded
+                                        ? 'Das verwendete Nutzerkonto gehört nicht zur Empfängeridentität dieser Aufgabe. Melden Sie sich mit dem richtigen Nutzerkonto an.'
+                                        : 'Für diese Aufgabe ist eine erneute Anmeldung erforderlich. Melden Sie sich mit dem Nutzerkonto an, an das diese Aufgabe gesendet wurde.'
+                                }
+                            </Typography>
+                        </Box>
+                        <Box>
+                            <Button
+                                component="a"
+                                href={authenticationStartLink}
+                                variant="contained"
+                            >
+                                Mit Nutzerkonto anmelden
+                            </Button>
+                        </Box>
+                    </Stack>
+                </Alert>
+            </Box>
+        );
     }
 
     const authoredValues = editedAuthoredValues ?? taskView.data;

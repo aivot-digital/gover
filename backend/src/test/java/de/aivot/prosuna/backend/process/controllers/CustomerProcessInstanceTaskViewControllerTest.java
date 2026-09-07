@@ -42,10 +42,12 @@ import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
@@ -62,11 +64,119 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class CustomerProcessInstanceTaskViewControllerTest {
+    @Test
+    void retrieve_ReadsIdentitySessionFromCookie() throws Exception {
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(),
+                new AuthoredElementValues()
+        );
+        var mockMvc = MockMvcBuilders
+                .standaloneSetup(fixture.controller())
+                .build();
+
+        mockMvc.perform(get(
+                        "/api/public/processes/{procAccess}/tasks/{taskAccess}/",
+                        fixture.procAccess(),
+                        fixture.taskAccess()
+                )
+                .cookie(new Cookie("identity_session", "identity-session")))
+                .andExpect(status().isOk());
+
+        verify(fixture.customerTaskIdentityService()).requireAuthenticatedIdentity(
+                any(ProcessInstanceEntity.class),
+                any(ProcessNodeEntity.class),
+                any(ProcessNodeDefinition.CustomerView.class),
+                eq("identity-session")
+        );
+    }
+
+    @Test
+    void update_DoesNotInvokeCustomerEventWhenRequiredIdentityIsMissing() throws ResponseException {
+        var provider = new InlineCustomerTaskProcessNodeDefinition("");
+        var fixture = createFixture(provider, new AuthoredElementValues());
+        doThrow(ResponseException.unauthorized())
+                .when(fixture.customerTaskIdentityService())
+                .requireAuthenticatedIdentity(any(), any(), any(), any());
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                "{}",
+                null,
+                null,
+                "inline-submit",
+                Map.of(),
+                "identity-session"
+        ));
+
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        assertNull(provider.eventInvokedWith);
+    }
+
+    @Test
+    void startRequiredIdentityAuthentication_RedirectsToResolvedProviderLogin() throws Exception {
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(),
+                new AuthoredElementValues()
+        );
+        var providerLogin = URI.create("https://identity.example.test/authorize");
+        when(fixture.customerTaskIdentityService().createAuthenticationRedirect(
+                any(),
+                any(),
+                any(),
+                eq("identity-session"),
+                eq("https://prosuna.example.test/process/instance/tasks/task")
+        )).thenReturn(providerLogin);
+        var response = new MockHttpServletResponse();
+
+        fixture.controller().startRequiredIdentityAuthentication(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                "https://prosuna.example.test/process/instance/tasks/task",
+                Map.of(),
+                "identity-session",
+                response
+        );
+
+        assertEquals(302, response.getStatus());
+        assertEquals(providerLogin.toString(), response.getRedirectedUrl());
+    }
+
+    @Test
+    void derive_ValidatesRequiredIdentityBeforeDerivingElements() throws ResponseException {
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(),
+                new AuthoredElementValues()
+        );
+
+        fixture.controller().derive(
+                null,
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                new AuthoredElementValues(),
+                List.of(),
+                Map.of(),
+                "identity-session"
+        );
+
+        verify(fixture.customerTaskIdentityService()).requireAuthenticatedIdentity(
+                any(ProcessInstanceEntity.class),
+                any(ProcessNodeEntity.class),
+                any(ProcessNodeDefinition.CustomerView.class),
+                eq("identity-session")
+        );
+    }
+
     @Test
     void update_AutoSavePersistsNormalizedInputsAndReturnsMergedCustomerTaskViewData() throws ResponseException {
         var procAccess = UUID.randomUUID().toString();
@@ -138,6 +248,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         normalizedInputs.put("field", "normalized");
         normalizedInputs.put("extra", "saved");
 
+        var customerTaskIdentityService = mock(CustomerTaskIdentityService.class);
         var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
@@ -154,7 +265,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(PdfService.class),
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
-                mock(AssetService.class)
+                mock(AssetService.class),
+                customerTaskIdentityService
         );
 
         var response = controller.update(
@@ -262,7 +374,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(PdfService.class),
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
-                mock(AssetService.class)
+                mock(AssetService.class),
+                mock(CustomerTaskIdentityService.class)
         );
 
         var response = controller.update(
@@ -367,11 +480,17 @@ class CustomerProcessInstanceTaskViewControllerTest {
         )).thenReturn(pdfBytes);
 
         var response = new MockHttpServletResponse();
-        fixture.controller().getPaymentConfirmation(fixture.procAccess(), fixture.taskAccess(), response);
+        fixture.controller().getPaymentConfirmation(fixture.procAccess(), fixture.taskAccess(), null, null, response);
 
         assertEquals("application/pdf", response.getContentType());
         assertArrayEquals(pdfBytes, response.getContentAsByteArray());
         assertNotNull(response.getHeader("Content-Disposition"));
+        verify(fixture.customerTaskIdentityService()).requireAuthenticatedIdentity(
+                any(ProcessInstanceEntity.class),
+                any(ProcessNodeEntity.class),
+                any(ProcessNodeDefinition.CustomerView.class),
+                eq(null)
+        );
         verify(fixture.pdfService()).generatePaymentConfirmation(
                 same(transaction),
                 eq("AZ-123"),
@@ -387,7 +506,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         var ex = assertThrows(
                 ResponseException.class,
-                () -> fixture.controller().getPaymentConfirmation(fixture.procAccess(), fixture.taskAccess(), response)
+                () -> fixture.controller().getPaymentConfirmation(fixture.procAccess(), fixture.taskAccess(), null, null, response)
         );
 
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
@@ -404,7 +523,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         var response = new MockHttpServletResponse();
         var ex = assertThrows(
                 ResponseException.class,
-                () -> fixture.controller().getPaymentConfirmation(fixture.procAccess(), fixture.taskAccess(), response)
+                () -> fixture.controller().getPaymentConfirmation(fixture.procAccess(), fixture.taskAccess(), null, null, response)
         );
 
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
@@ -421,7 +540,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         var response = new MockHttpServletResponse();
         var ex = assertThrows(
                 ResponseException.class,
-                () -> fixture.controller().getPaymentConfirmation(fixture.procAccess(), fixture.taskAccess(), response)
+                () -> fixture.controller().getPaymentConfirmation(fixture.procAccess(), fixture.taskAccess(), null, null, response)
         );
 
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
@@ -493,6 +612,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 .setConfiguration(new AuthoredElementValues())
                 .setOutputMappings(Map.of());
 
+        var customerTaskIdentityService = mock(CustomerTaskIdentityService.class);
         var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
@@ -509,10 +629,17 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(PdfService.class),
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
-                mock(AssetService.class)
+                mock(AssetService.class),
+                customerTaskIdentityService
         );
 
-        return new CustomerTaskControllerFixture(procAccess, taskAccess, task, controller);
+        return new CustomerTaskControllerFixture(
+                procAccess,
+                taskAccess,
+                task,
+                controller,
+                customerTaskIdentityService
+        );
     }
 
     private static PaymentConfirmationControllerFixture createPaymentConfirmationFixture(Map<String, Object> runtimeData) {
@@ -589,6 +716,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         prosunaConfig.setProsunaHostname("https://example.test/");
         var themeService = mock(ThemeService.class);
         var assetService = mock(AssetService.class);
+        var customerTaskIdentityService = mock(CustomerTaskIdentityService.class);
 
         var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
@@ -606,7 +734,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 pdfService,
                 prosunaConfig,
                 themeService,
-                assetService
+                assetService,
+                customerTaskIdentityService
         );
 
         return new PaymentConfirmationControllerFixture(
@@ -618,7 +747,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 vDepartmentShadowedService,
                 pdfService,
                 themeService,
-                assetService
+                assetService,
+                customerTaskIdentityService
         );
     }
 
@@ -652,7 +782,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
             String procAccess,
             String taskAccess,
             ProcessInstanceTaskEntity task,
-            CustomerProcessInstanceTaskViewController controller
+            CustomerProcessInstanceTaskViewController controller,
+            CustomerTaskIdentityService customerTaskIdentityService
     ) {
     }
 
@@ -665,7 +796,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
             VDepartmentShadowedService vDepartmentShadowedService,
             PdfService pdfService,
             ThemeService themeService,
-            AssetService assetService
+            AssetService assetService,
+            CustomerTaskIdentityService customerTaskIdentityService
     ) {
     }
 
@@ -918,7 +1050,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
             return new CustomerView(
                     layout,
                     List.of(new TaskViewEvent("Submit", "submit")),
-                    persistedData
+                    persistedData,
+                    null
             );
         }
 
@@ -1005,7 +1138,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
             layout.setChildren(List.of(linkButton));
             var data = new AuthoredElementValues();
             data.put("field", context.getThisTask().getRuntimeData().get("field"));
-            return new CustomerView(layout, List.of(), data);
+            return new CustomerView(layout, List.of(), data, null);
         }
 
         @Nonnull

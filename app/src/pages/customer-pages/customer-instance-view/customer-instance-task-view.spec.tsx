@@ -54,6 +54,12 @@ vi.mock('../../../modules/elements/components/element-derivation-context', () =>
                 >
                     Inline-Event
                 </button>
+                <button
+                    type="button"
+                    onClick={() => void props.onDeriveOverride({field: 'derived'}, [])}
+                >
+                    Ableiten
+                </button>
                 <output data-testid="computed-errors">
                     {JSON.stringify(props.computedErrors ?? {})}
                 </output>
@@ -64,6 +70,7 @@ vi.mock('../../../modules/elements/components/element-derivation-context', () =>
 
 describe('CustomerInstanceTaskView', () => {
     beforeEach(() => {
+        window.history.replaceState({}, '', '/process/instance-key/tasks/task-key');
         mocks.dispatch.mockReset();
         mocks.elementDerivationProps = undefined;
         mocks.invalidateInstanceTasks.mockReset();
@@ -77,6 +84,34 @@ describe('CustomerInstanceTaskView', () => {
                 data: {field: 'saved'},
                 events: [createEvent('continue', 'Weiter')],
             }));
+    });
+
+    it('shows a blocking login prompt when the required identity is not authenticated', async () => {
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockRejectedValue(requiredIdentityAuthenticationError());
+
+        render(<CustomerInstanceTaskView/>);
+
+        expect(await screen.findByRole('heading', {name: 'Anmeldung erforderlich'})).toBeInTheDocument();
+        expect(screen.getByText(/Für diese Aufgabe ist eine erneute Anmeldung erforderlich/)).toBeInTheDocument();
+        const loginLink = screen.getByRole('link', {name: 'Mit Nutzerkonto anmelden'});
+        expect(loginLink).toHaveAttribute(
+            'href',
+            expect.stringContaining('/api/public/processes/instance-key/tasks/task-key/identity/start/'),
+        );
+        expect(loginLink.getAttribute('href')).toContain('origin=');
+        expectActionTypeNotDispatched('shell/setErrorMessage');
+    });
+
+    it('explains a wrong account after a successful identity-provider callback', async () => {
+        window.history.replaceState({}, '', '/process/instance-key/tasks/task-key?identity-state=0');
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockRejectedValue(requiredIdentityAuthenticationError());
+
+        render(<CustomerInstanceTaskView/>);
+
+        expect(await screen.findByText(/gehört nicht zur Empfängeridentität/)).toBeInTheDocument();
+        expect(window.location.search).toBe('');
     });
 
     it('renders backend events and submits the latest authored values on click', async () => {
@@ -156,6 +191,30 @@ describe('CustomerInstanceTaskView', () => {
         expect(screen.getByRole('button', {name: 'Daten einreichen'})).toBeInTheDocument();
     });
 
+    it('replaces the task view with the login prompt when an event loses its identity session', async () => {
+        vi.mocked(ProcessInstanceTaskApiService.prototype.putCustomerTaskView)
+            .mockRejectedValue(requiredIdentityAuthenticationError());
+        const user = userEvent.setup();
+
+        render(<CustomerInstanceTaskView/>);
+        await user.click(await screen.findByRole('button', {name: 'Daten einreichen'}));
+
+        expect(await screen.findByRole('link', {name: 'Mit Nutzerkonto anmelden'})).toBeInTheDocument();
+        expectActionTypeNotDispatched('shell/addSnackbarMessage');
+    });
+
+    it('replaces the task view with the login prompt when derivation loses its identity session', async () => {
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'deriveTaskView')
+            .mockRejectedValue(requiredIdentityAuthenticationError());
+        const user = userEvent.setup();
+
+        render(<CustomerInstanceTaskView/>);
+        await user.click(await screen.findByRole('button', {name: 'Ableiten'}));
+
+        expect(await screen.findByRole('link', {name: 'Mit Nutzerkonto anmelden'})).toBeInTheDocument();
+        expectActionTypeNotDispatched('shell/addSnackbarMessage');
+    });
+
     it('returns to the instance page when the status refresh fails after a successful event', async () => {
         mocks.refreshInstanceStatus.mockRejectedValue(new Error('status unavailable'));
         const user = userEvent.setup();
@@ -191,6 +250,17 @@ function createInstanceStatus() {
         status: 'Running',
         statusOverride: '',
         tasks: [],
+    };
+}
+
+function requiredIdentityAuthenticationError() {
+    return {
+        status: 401,
+        message: 'Erneute Anmeldung erforderlich.',
+        displayableToUser: true,
+        details: {
+            reason: 'required_identity_authentication',
+        },
     };
 }
 

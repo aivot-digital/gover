@@ -389,6 +389,31 @@ class ProcessNodeDefinitionTest {
     }
 
     @Test
+    void customerViewOf_PreservesRequiredIdentityWhenMergingSavedData() {
+        var context = customerContext(
+                Map.of(
+                        ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY,
+                        Map.of("field", "saved")
+                ),
+                Map.of(),
+                Map.of()
+        );
+        var initialData = new AuthoredElementValues();
+        initialData.put("field", "initial");
+
+        var view = ProcessNodeDefinition.CustomerView.of(
+                context,
+                new GroupLayoutElement(),
+                List.of(),
+                initialData,
+                "applicant"
+        );
+
+        assertEquals("saved", view.data().get("field"));
+        assertEquals("applicant", view.requiredIdentityId());
+    }
+
+    @Test
     void getCustomerTaskView_TreatsSavedNullAsExplicitDeletion() throws Exception {
         ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
             @Override

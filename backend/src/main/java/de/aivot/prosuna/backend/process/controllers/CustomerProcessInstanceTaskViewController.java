@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutEleme
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
@@ -54,6 +55,7 @@ import tools.jackson.core.JacksonException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +87,7 @@ public class CustomerProcessInstanceTaskViewController {
     private final ProsunaConfig prosunaConfig;
     private final ThemeService themeService;
     private final AssetService assetService;
+    private final CustomerTaskIdentityService customerTaskIdentityService;
 
     public CustomerProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                      ProcessInstanceTaskService processInstanceTaskService,
@@ -101,7 +104,8 @@ public class CustomerProcessInstanceTaskViewController {
                                                      PdfService pdfService,
                                                      ProsunaConfig prosunaConfig,
                                                      ThemeService themeService,
-                                                     AssetService assetService) {
+                                                     AssetService assetService,
+                                                     CustomerTaskIdentityService customerTaskIdentityService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -118,6 +122,7 @@ public class CustomerProcessInstanceTaskViewController {
         this.prosunaConfig = prosunaConfig;
         this.themeService = themeService;
         this.assetService = assetService;
+        this.customerTaskIdentityService = customerTaskIdentityService;
     }
 
     @GetMapping("")
@@ -130,41 +135,63 @@ public class CustomerProcessInstanceTaskViewController {
             @Nonnull @PathVariable String procAccess,
             @Nonnull @PathVariable String taskAccess,
             @RequestParam(required = false) Map<String, List<String>> queryParameters,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
+            @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
     ) throws ResponseException {
         TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
                 procAccess,
                 taskAccess
         );
 
-        var logger = processNodeExecutionLoggerFactory
-                .create(
-                        taskViewData.instance.getId(),
-                        taskViewData.task.getId(),
-                        null,
-                        identitySessionId
-                );
-
-        var context = new ProcessNodeExecutionContextUICustomer<NodeConfig>(
-                logger,
-                taskViewData.node,
-                taskViewData.instance,
-                taskViewData.task,
-                new ProcessTestClaimEntity(), // TODO: Get Test Claim
-                identitySessionId,
-                taskViewData.nodeConfig,
-                queryParameters
-        );
+        var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
 
         var customerView = taskViewData
                 .provider
                 .getCustomerTaskView(context);
+        customerTaskIdentityService.requireAuthenticatedIdentity(
+                taskViewData.instance(),
+                taskViewData.node(),
+                customerView,
+                identitySessionId
+        );
 
         return new TaskViewResponse(
                 customerView.layout(),
                 customerView.data(),
                 customerView.events()
         );
+    }
+
+    @GetMapping("identity/start/")
+    @Operation(
+            summary = "Start required customer identity authentication",
+            description = "Redirects the customer to the identity provider required by the customer task view."
+    )
+    public <NodeConfig> void startRequiredIdentityAuthentication(
+            @Nonnull @PathVariable String procAccess,
+            @Nonnull @PathVariable String taskAccess,
+            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.ORIGIN) String origin,
+            @RequestParam(required = false) Map<String, List<String>> queryParameters,
+            @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+            @Nonnull HttpServletResponse response
+    ) throws ResponseException, IOException {
+        TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(procAccess, taskAccess);
+        var customerQueryParameters = queryParameters == null
+                ? new LinkedHashMap<String, List<String>>()
+                : new LinkedHashMap<>(queryParameters);
+        customerQueryParameters.remove(IdentityQueryParameterConstants.ORIGIN);
+        var context = createCustomerContext(taskViewData, identitySessionId, customerQueryParameters);
+        var customerView = taskViewData
+                .provider()
+                .getCustomerTaskView(context);
+        var redirectUri = customerTaskIdentityService.createAuthenticationRedirect(
+                taskViewData.instance(),
+                taskViewData.node(),
+                customerView,
+                identitySessionId,
+                origin
+        );
+
+        response.sendRedirect(redirectUri.toString());
     }
 
     @GetMapping("payment-confirmation/")
@@ -174,8 +201,20 @@ public class CustomerProcessInstanceTaskViewController {
     )
     public void getPaymentConfirmation(@Nonnull @PathVariable String procAccess,
                                        @Nonnull @PathVariable String taskAccess,
+                                       @RequestParam(required = false) Map<String, List<String>> queryParameters,
+                                       @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
                                        @Nonnull HttpServletResponse response) throws ResponseException, IOException {
         var taskViewData = fetchTaskViewData(procAccess, taskAccess);
+        var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
+        var customerView = taskViewData
+                .provider()
+                .getCustomerTaskView(context);
+        customerTaskIdentityService.requireAuthenticatedIdentity(
+                taskViewData.instance(),
+                taskViewData.node(),
+                customerView,
+                identitySessionId
+        );
         var transaction = resolvePaymentConfirmationTransaction(taskViewData);
 
         if (transaction.getStatus() != XBezahldienstStatus.PAYED) {
@@ -232,31 +271,15 @@ public class CustomerProcessInstanceTaskViewController {
             @RequestParam(value = "fileUris", required = false) List<String> fileUris,
             @Nullable @RequestParam(value = "event", required = false) String rawEvent,
             @RequestParam(required = false) Map<String, List<String>> queryParameters,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
+            @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
     ) throws ResponseException {
         TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
                 procAccess,
                 taskAccess
         );
 
-        var logger = processNodeExecutionLoggerFactory
-                .create(
-                        taskViewData.instance.getId(),
-                        taskViewData.task.getId(),
-                        null,
-                        identitySessionId
-                );
-
-        var context = new ProcessNodeExecutionContextUICustomer<NodeConfig>(
-                logger,
-                taskViewData.node,
-                taskViewData.instance,
-                taskViewData.task,
-                new ProcessTestClaimEntity(), // TODO: Get Test Claim
-                identitySessionId,
-                taskViewData.nodeConfig,
-                queryParameters
-        );
+        var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
+        var logger = context.getLogger();
 
         ProcessInstanceTaskEntity previousTask;
         if (taskViewData.task.getPreviousProcessNodeId() != null) {
@@ -276,6 +299,12 @@ public class CustomerProcessInstanceTaskViewController {
         var customerView = taskViewData
                 .provider
                 .getCustomerTaskView(context);
+        customerTaskIdentityService.requireAuthenticatedIdentity(
+                taskViewData.instance(),
+                taskViewData.node(),
+                customerView,
+                identitySessionId
+        );
         var layout = customerView.layout();
 
         var cleanEvent = resolveValidCustomerEvent(layout, customerView.events(), rawEvent);
@@ -368,6 +397,12 @@ public class CustomerProcessInstanceTaskViewController {
         var updatedView = taskViewData
                 .provider
                 .getCustomerTaskView(context);
+        customerTaskIdentityService.requireAuthenticatedIdentity(
+                taskViewData.instance(),
+                taskViewData.node(),
+                updatedView,
+                identitySessionId
+        );
 
         return new TaskViewResponse(
                 updatedView.layout(),
@@ -423,15 +458,12 @@ public class CustomerProcessInstanceTaskViewController {
             @Nonnull @RequestBody AuthoredElementValues authoredElementValues,
             @Nullable @RequestParam(value = "skipErrorsFor", required = false) List<String> skipErrorsFor,
             @RequestParam(required = false) Map<String, List<String>> queryParameters,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
+            @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
     ) throws ResponseException {
         TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
                 procAccess,
                 taskAccess
         );
-
-        var logger = processNodeExecutionLoggerFactory
-                .create(taskViewData.instance().getId(), taskViewData.task().getId(), null, identitySessionId);
 
         var incomingProcessExecutionData = processDataService
                 .foldProcessInstanceData(
@@ -440,20 +472,17 @@ public class CustomerProcessInstanceTaskViewController {
                         taskViewData.task()
                 );
 
-        var context = new ProcessNodeExecutionContextUICustomer<NodeConfig>(
-                logger,
-                taskViewData.node,
-                taskViewData.instance,
-                taskViewData.task,
-                new ProcessTestClaimEntity(), // TODO: Get Test Claim
-                identitySessionId,
-                taskViewData.nodeConfig,
-                queryParameters
-        );
+        var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
 
         var customerTaskView = taskViewData
                 .provider
                 .getCustomerTaskView(context);
+        customerTaskIdentityService.requireAuthenticatedIdentity(
+                taskViewData.instance(),
+                taskViewData.node(),
+                customerTaskView,
+                identitySessionId
+        );
 
         var elementDerivationRequest = new ElementDerivationRequest(
                 customerTaskView.layout(),
@@ -465,6 +494,32 @@ public class CustomerProcessInstanceTaskViewController {
 
         return elementDerivationService
                 .derive(elementDerivationRequest);
+    }
+
+    @Nonnull
+    private <NodeConfig> ProcessNodeExecutionContextUICustomer<NodeConfig> createCustomerContext(
+            @Nonnull TaskViewData<NodeConfig> taskViewData,
+            @Nullable String identitySessionId,
+            @Nullable Map<String, List<String>> queryParameters
+    ) {
+        var logger = processNodeExecutionLoggerFactory
+                .create(
+                        taskViewData.instance().getId(),
+                        taskViewData.task().getId(),
+                        null,
+                        identitySessionId
+                );
+
+        return new ProcessNodeExecutionContextUICustomer<>(
+                logger,
+                taskViewData.node(),
+                taskViewData.instance(),
+                taskViewData.task(),
+                new ProcessTestClaimEntity(), // TODO: Get Test Claim
+                identitySessionId,
+                taskViewData.nodeConfig(),
+                queryParameters
+        );
     }
 
     private <NodeConfig> TaskViewData<NodeConfig> fetchTaskViewData(

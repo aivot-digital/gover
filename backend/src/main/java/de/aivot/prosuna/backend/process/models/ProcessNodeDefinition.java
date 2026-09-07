@@ -399,11 +399,15 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
 
     /**
      * Complete customer task view returned by a process node definition.
+     *
+     * @param requiredIdentityId The process identity whose provider account must be authenticated before the view
+     *                           can be used. {@code null} disables the additional identity check.
      */
     record CustomerView(
             @Nonnull GroupLayoutElement layout,
             @Nonnull List<TaskViewEvent> events,
-            @Nonnull AuthoredElementValues data
+            @Nonnull AuthoredElementValues data,
+            @Nullable String requiredIdentityId
     ) {
         /**
          * Create a customer task view and merge saved values onto its initial data when present.
@@ -419,18 +423,38 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
                                       @Nonnull GroupLayoutElement layout,
                                       @Nonnull List<TaskViewEvent> events,
                                       @Nonnull AuthoredElementValues initialData) {
+            return of(context, layout, events, initialData, null);
+        }
+
+        /**
+         * Create a customer task view with an optional identity requirement and merge saved values onto its initial
+         * data when present.
+         *
+         * @param context            The context containing the task runtime data.
+         * @param layout             The customer task view layout.
+         * @param events             The events offered by the customer task view.
+         * @param initialData        The data generated from stable sources such as configuration and process data.
+         * @param requiredIdentityId The process identity that must be authenticated before the view can be used.
+         * @return The complete customer task view with effective data.
+         */
+        @Nonnull
+        public static CustomerView of(@Nonnull ProcessNodeExecutionContextUICustomer<?> context,
+                                      @Nonnull GroupLayoutElement layout,
+                                      @Nonnull List<TaskViewEvent> events,
+                                      @Nonnull AuthoredElementValues initialData,
+                                      @Nullable String requiredIdentityId) {
             var savedData = getAutoSavedTaskViewData(
                     context.getThisTask().getRuntimeData(),
                     CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY
             );
             if (savedData == null || savedData.isEmpty()) {
-                return new CustomerView(layout, events, initialData);
+                return new CustomerView(layout, events, initialData, requiredIdentityId);
             }
 
             var mergedData = new AuthoredElementValues();
             mergedData.putAll(initialData);
             mergedData.putAll(savedData);
-            return new CustomerView(layout, events, mergedData);
+            return new CustomerView(layout, events, mergedData, requiredIdentityId);
         }
     }
 
