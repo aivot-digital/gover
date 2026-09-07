@@ -1,7 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.zxing.WriterException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
@@ -10,34 +9,25 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.prosuna.backend.elements.uiPresets.PaymentGroupPreset;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
-import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
-import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
-import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
-import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
-import de.aivot.prosuna.backend.payment.models.PaymentPayload;
-import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
-import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
-import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
-import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
-import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
+import de.aivot.prosuna.backend.process.filters.ProcessInstanceAttachmentFilter;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
@@ -46,17 +36,17 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
+import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
-import de.aivot.prosuna.backend.utils.NumberUtils;
+import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormRequestActionNodeV1.NodeConfig> {
@@ -65,6 +55,13 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private static final String PORT_SUBMITTED = "submitted";
 
     private static final String OUTPUT_RECIPIENT_IDENTITY_ID = "recipientIdentityId";
+    private static final String OUTPUT_PAYLOAD = "payload";
+    private static final String OUTPUT_UNMAPPED = "unmapped";
+    private static final String OUTPUT_ATTACHMENTS = "attachments";
+    private static final String OUTPUT_STARTED = "started";
+    private static final String OUTPUT_ATTACHMENTS_TYPE_DEFINITION =
+            "Array<{ key: string; fileName: string; originalFileName: string; group: string | null; " +
+                    "storageProviderId: number; storagePathFromRoot: string; }>";
 
     private static final String STAFF_TASK_ROOT_ID = "root";
     private static final String STAFF_TASK_SUBJECT_FIELD_ID = "subject";
@@ -74,11 +71,20 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
     private final TemplateRenderService templateRenderService;
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
+    private final ProsunaConfig prosunaConfig;
+    private final ElementDataTransformService elementDataTransformService;
+    private final ProcessInstanceAttachmentService processInstanceAttachmentService;
 
     public FormRequestActionNodeV1(TemplateRenderService templateRenderService,
-                                   AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService) {
+                                   AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService,
+                                   ProsunaConfig prosunaConfig,
+                                   ElementDataTransformService elementDataTransformService,
+                                   ProcessInstanceAttachmentService processInstanceAttachmentService) {
         this.templateRenderService = templateRenderService;
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
+        this.prosunaConfig = prosunaConfig;
+        this.elementDataTransformService = elementDataTransformService;
+        this.processInstanceAttachmentService = processInstanceAttachmentService;
     }
 
     @Nonnull
@@ -130,7 +136,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     @Override
     public String getDescription() {
         return """
-                
+
                 """;
     }
 
@@ -183,7 +189,31 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 new ProcessNodeOutput(
                         OUTPUT_RECIPIENT_IDENTITY_ID,
                         "Identität",
-                        "Die ID der Prozessidentität, an die die Zahlungsaufforderung gesendet wurde.",
+                        "Die ID der Prozessidentität, an die die Formularanforderung gesendet wurde.",
+                        "string"
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_PAYLOAD,
+                        "Zugeordnete Formulardaten",
+                        "Enthält alle Formulardaten welche über einen Datenschlüssel zugeordnet wurden.",
+                        "Record<string, unknown>"
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_UNMAPPED,
+                        "Formular-Rohdaten",
+                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Record<string, unknown>"
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_ATTACHMENTS,
+                        "Anlagen",
+                        "Eine Liste aller Anlagen, die über dieses Formular hochgeladen wurden.",
+                        OUTPUT_ATTACHMENTS_TYPE_DEFINITION
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_STARTED,
+                        "Eingangszeitstempel",
+                        "Der Zeitstempel des Dateneingangs an den Auslöser",
                         "string"
                 )
         );
@@ -230,7 +260,13 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 "Nachrichtentext"
         );
 
-        return createCustomerAssignmentResult(configuration, subject, content);
+        return createCustomerAssignmentResult(
+                context.getThisProcessInstance(),
+                context.getThisTask(),
+                configuration,
+                subject,
+                content
+        );
     }
 
     @Nonnull
@@ -337,14 +373,36 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var content = StringUtils.toNullableTrimmedString(update.get(STAFF_TASK_CONTENT_FIELD_ID));
         validateStaffMessage(subject, content);
 
-        var result = createCustomerAssignmentResult(configuration, subject, content);
+        var result = createCustomerAssignmentResult(
+                context.getThisProcessInstance(),
+                context.getThisTask(),
+                configuration,
+                subject,
+                content
+        );
 
         return Optional.of(result);
     }
 
-    private ProcessNodeExecutionResult createCustomerAssignmentResult(NodeConfig configuration, String subject, String content) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+    private ProcessNodeExecutionResult createCustomerAssignmentResult(ProcessInstanceEntity processInstance,
+                                                                      ProcessInstanceTaskEntity task,
+                                                                      NodeConfig configuration,
+                                                                      String subject,
+                                                                      String content) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var recipientId = requireRecipientIdentity(configuration.recipientIdentityId);
-        var message = CommunicationMessage.of(subject, content, content);
+
+        var customerLink = prosunaConfig
+                .createUrl("/process/", processInstance.getAccessKey(), "tasks", task.getAccessKey());
+
+        var body = """
+                %s
+
+                <p>
+                    <a href="%s">%s</a>
+                </p>
+                """.formatted(content, customerLink, customerLink);
+
+        var message = CommunicationMessage.of(subject, body, body);
 
         var communicationRequest = new ProcessNodeExecutionResultCommunicationRequest(
                 recipientId,
@@ -363,7 +421,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 context,
                 context.getConfigurationOfExecutingNode().uiDefinition,
                 List.of(new TaskViewEvent("Daten einreichen", CUSTOMER_TASK_SUBMIT_EVENT)),
-                new AuthoredElementValues()
+                new AuthoredElementValues(),
+                context.getConfigurationOfExecutingNode().recipientIdentityId
         );
     }
 
@@ -380,13 +439,121 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
             );
         }
 
-        var nodeData = new HashMap<String, Object>();
+        var effectiveValues = derived.getEffectiveValues();
+        var configuration = context.getConfigurationOfExecutingNode();
+        var nodeData = new LinkedHashMap<String, Object>();
+        nodeData.put(
+                OUTPUT_RECIPIENT_IDENTITY_ID,
+                requireRecipientIdentity(configuration.recipientIdentityId)
+        );
+        nodeData.put(
+                OUTPUT_PAYLOAD,
+                elementDataTransformService.buildPayload(
+                        configuration.uiDefinition,
+                        effectiveValues,
+                        derived.getElementStates()
+                )
+        );
+        nodeData.put(OUTPUT_UNMAPPED, effectiveValues);
+        nodeData.put(OUTPUT_ATTACHMENTS, resolveSubmittedAttachments(context, effectiveValues));
+        nodeData.put(OUTPUT_STARTED, Instant.now());
 
         var result = new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_SUBMITTED)
                 .setNodeData(nodeData);
 
         return Optional.of(result);
+    }
+
+    @Nonnull
+    private List<Map<String, Object>> resolveSubmittedAttachments(
+            @Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context,
+            @Nonnull Map<String, Object> effectiveValues
+    ) throws ResponseException {
+        var referencedAttachmentKeys = new LinkedHashSet<UUID>();
+        collectReferencedAttachmentKeys(effectiveValues, referencedAttachmentKeys);
+        if (referencedAttachmentKeys.isEmpty()) {
+            return List.of();
+        }
+
+        var processInstanceId = context.getThisProcessInstance().getId();
+        var processInstanceTaskId = context.getThisTask().getId();
+        var attachmentsByKey = new HashMap<UUID, ProcessInstanceAttachmentEntity>();
+        processInstanceAttachmentService
+                .list(ProcessInstanceAttachmentFilter
+                        .create()
+                        .setProcessInstanceTaskId(processInstanceTaskId))
+                .forEach(attachment -> {
+                    if (Objects.equals(attachment.getProcessInstanceId(), processInstanceId)
+                            && Objects.equals(attachment.getProcessInstanceTaskId(), processInstanceTaskId)) {
+                        attachmentsByKey.put(attachment.getKey(), attachment);
+                    }
+                });
+
+        return referencedAttachmentKeys
+                .stream()
+                .map(attachmentsByKey::get)
+                .filter(Objects::nonNull)
+                .map(FormRequestActionNodeV1::createAttachmentOutput)
+                .toList();
+    }
+
+    private static void collectReferencedAttachmentKeys(
+            @Nullable Object value,
+            @Nonnull Set<UUID> attachmentKeys
+    ) {
+        if (value instanceof FileUploadInputElementItem fileItem) {
+            addReferencedAttachmentKey(fileItem.getUri(), attachmentKeys);
+            return;
+        }
+
+        if (value instanceof ReplicatingContainerLayoutElementValue replicatedValue) {
+            collectReferencedAttachmentKeys(replicatedValue.getValues(), attachmentKeys);
+            return;
+        }
+
+        if (value instanceof Map<?, ?> map) {
+            var uri = map.get("uri");
+            if (uri instanceof String stringUri) {
+                addReferencedAttachmentKey(stringUri, attachmentKeys);
+            }
+            map.values().forEach(child -> collectReferencedAttachmentKeys(child, attachmentKeys));
+            return;
+        }
+
+        if (value instanceof Iterable<?> iterable) {
+            iterable.forEach(child -> collectReferencedAttachmentKeys(child, attachmentKeys));
+        }
+    }
+
+    private static void addReferencedAttachmentKey(
+            @Nullable String uri,
+            @Nonnull Set<UUID> attachmentKeys
+    ) {
+        if (uri == null || !uri.startsWith(FileUploadMultipartInputService.PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX)) {
+            return;
+        }
+
+        var rawAttachmentKey = uri
+                .substring(FileUploadMultipartInputService.PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX.length())
+                .trim();
+        try {
+            attachmentKeys.add(UUID.fromString(rawAttachmentKey));
+        } catch (IllegalArgumentException ignored) {
+            // Invalid or stale attachment references are not exposed as task outputs.
+        }
+    }
+
+    @Nonnull
+    private static Map<String, Object> createAttachmentOutput(@Nonnull ProcessInstanceAttachmentEntity attachment) {
+        var attachmentOutput = new LinkedHashMap<String, Object>();
+        attachmentOutput.put("key", attachment.getKey());
+        attachmentOutput.put("fileName", attachment.getFileName());
+        attachmentOutput.put("originalFileName", attachment.getOriginalFileName());
+        attachmentOutput.put("group", attachment.getGroup());
+        attachmentOutput.put("storageProviderId", attachment.getStorageProviderId());
+        attachmentOutput.put("storagePathFromRoot", attachment.getStoragePathFromRoot());
+        return attachmentOutput;
     }
 
     @Nonnull

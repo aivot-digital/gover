@@ -94,6 +94,7 @@ describe('CustomerInstanceTaskView', () => {
 
         expect(await screen.findByRole('heading', {name: 'Anmeldung erforderlich'})).toBeInTheDocument();
         expect(screen.getByText(/Für diese Aufgabe ist eine erneute Anmeldung erforderlich/)).toBeInTheDocument();
+        expect(screen.getByRole('alert')).toHaveClass('MuiAlert-colorInfo');
         const loginLink = screen.getByRole('link', {name: 'Mit Nutzerkonto anmelden'});
         expect(loginLink).toHaveAttribute(
             'href',
@@ -110,7 +111,10 @@ describe('CustomerInstanceTaskView', () => {
 
         render(<CustomerInstanceTaskView/>);
 
-        expect(await screen.findByText(/gehört nicht zur Empfängeridentität/)).toBeInTheDocument();
+        expect(await screen.findByRole('heading', {name: 'Falsches Nutzerkonto'})).toBeInTheDocument();
+        expect(screen.getByText(/gehört nicht zur Empfängeridentität/)).toBeInTheDocument();
+        expect(screen.getByRole('alert')).toHaveClass('MuiAlert-colorError');
+        expect(screen.getByRole('link', {name: 'Mit Nutzerkonto anmelden'})).toBeInTheDocument();
         expect(window.location.search).toBe('');
     });
 

@@ -237,20 +237,21 @@ export function CustomerInstanceTaskView() {
     }
 
     if (taskView === 'identity-required') {
+        const wrongAccountAuthenticated = identityAuthenticationSucceeded;
         const authenticationStartLink = new CustomerTaskViewApiService()
             .createRequiredIdentityAuthenticationStartLink(instanceAccessKey, taskAccessKey);
 
         return (
             <Box sx={{maxWidth: 720, mx: 'auto'}}>
-                <Alert severity="info">
+                <Alert severity={wrongAccountAuthenticated ? 'error' : 'info'}>
                     <Stack spacing={2}>
                         <Box>
                             <Typography variant="h6" component="h2" gutterBottom>
-                                Anmeldung erforderlich
+                                {wrongAccountAuthenticated ? 'Falsches Nutzerkonto' : 'Anmeldung erforderlich'}
                             </Typography>
                             <Typography>
                                 {
-                                    identityAuthenticationSucceeded
+                                    wrongAccountAuthenticated
                                         ? 'Das verwendete Nutzerkonto gehört nicht zur Empfängeridentität dieser Aufgabe. Melden Sie sich mit dem richtigen Nutzerkonto an.'
                                         : 'Für diese Aufgabe ist eine erneute Anmeldung erforderlich. Melden Sie sich mit dem Nutzerkonto an, an das diese Aufgabe gesendet wurde.'
                                 }
