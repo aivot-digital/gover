@@ -35,6 +35,7 @@ import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-a
 import {downloadBlobFile} from '../../utils/download-utils';
 import {ProcessTaskStatus} from '../../modules/process/enums/process-task-status';
 import {ProcessInstanceStatus} from '../../modules/process/enums/process-instance-status';
+import {getLiteralElementValue} from '../../models/element-data';
 
 interface SubmittedProps {
     startedProcessAccessKey: string;
@@ -199,7 +200,7 @@ export function Submitted(props: SubmittedProps) {
         `/process/${encodeURIComponent(startedProcessAccessKey.trim())}/tasks/${encodeURIComponent(formTaskAccessKey)}`;
 
     const downloadSubmittedPrint = (): void => {
-        const formSlug = node.configuration.formSlug;
+        const formSlug = getLiteralElementValue<string>(node.configuration, 'formSlug');
         if (processFailed || typeof formSlug !== 'string' || formSlug.trim().length === 0 || formTaskAccessKey == null) {
             return;
         }

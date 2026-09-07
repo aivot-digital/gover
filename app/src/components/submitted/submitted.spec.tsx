@@ -12,6 +12,7 @@ import type {FormLayoutElement} from '../../models/elements/form-layout-element'
 import type {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
 import type {ProcessEntity} from '../../modules/process/entities/process-entity';
 import type {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
+import {literalAuthoredValue} from '../../models/element-data';
 
 const dispatchMock = vi.hoisted(() => vi.fn());
 const confettiPlayKeyMock = vi.hoisted(() => vi.fn());
@@ -57,7 +58,7 @@ describe('Submitted', () => {
                 startedProcessAccessKey="completed-process-access-key"
                 paymentRequired={false}
                 formElement={{children: []} as unknown as FormLayoutElement}
-                node={{configuration: {formSlug: 'form'}} as unknown as ProcessNodeEntity}
+                node={{configuration: {formSlug: literalAuthoredValue('form')}} as unknown as ProcessNodeEntity}
                 process={{slug: 'process'} as unknown as ProcessEntity}
                 version={{processVersion: 1} as unknown as ProcessVersionEntity}
             />,
@@ -100,7 +101,7 @@ describe('Submitted', () => {
                 startedProcessAccessKey="process-access-key"
                 paymentRequired
                 formElement={{children: []} as unknown as FormLayoutElement}
-                node={{configuration: {formSlug: 'form'}} as unknown as ProcessNodeEntity}
+                node={{configuration: {formSlug: literalAuthoredValue('form')}} as unknown as ProcessNodeEntity}
                 process={{slug: 'process'} as unknown as ProcessEntity}
                 version={{processVersion: 1} as unknown as ProcessVersionEntity}
             />,

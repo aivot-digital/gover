@@ -1,5 +1,10 @@
-import {describe, expect, it} from 'vitest';
-import {createProcessDataKeySuggestions} from './process-data-key-input-field-view';
+import {describe, expect, it, vi} from 'vitest';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {
+    createProcessDataKeySuggestions,
+    ProcessDataKeyInputComponent,
+} from './process-data-key-input-field-view';
 import {type ProcessNodeDefinitionMetadataForwardedProcessDataKey} from '../modules/process/entities/process-node-definition-metadata';
 
 describe('createProcessDataKeySuggestions', () => {
@@ -76,6 +81,73 @@ describe('createProcessDataKeySuggestions', () => {
             'einzelnachweisOhneDateinameReplList',
             'nachweisOhneWildcard',
         ]);
+    });
+});
+
+describe('ProcessDataKeyInputComponent', () => {
+    const suggestions = [{
+        id: 'person.name',
+        label: 'Name',
+        subLabel: 'Antrag eingereicht',
+    }];
+
+    it('selects a suggested process-data path', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(
+            <ProcessDataKeyInputComponent
+                label="Vorgangsdatenvariable"
+                value={null}
+                onChange={onChange}
+                suggestions={suggestions}
+            />,
+        );
+
+        await user.click(screen.getByLabelText('Vorgangsdatenpfad auswählen'));
+        await user.click(screen.getByRole('radio', {name: /\$\.person\.name/}));
+        await user.click(screen.getByRole('button', {name: 'Pfad übernehmen'}));
+
+        expect(onChange).toHaveBeenCalledWith('person.name');
+    });
+
+    it.each(['counter.currentValue', 'person.Name'])('accepts the custom path %s without persisting the display prefix', async (path) => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(
+            <ProcessDataKeyInputComponent
+                label="Vorgangsdatenvariable"
+                value={null}
+                onChange={onChange}
+                suggestions={suggestions}
+            />,
+        );
+
+        await user.click(screen.getByLabelText('Vorgangsdatenpfad auswählen'));
+        await user.type(
+            screen.getByRole('textbox', {name: /Vorgangsdatenpfade durchsuchen oder eigenen Pfad eingeben/}),
+            `$.${path}`,
+        );
+        await user.click(screen.getByRole('radio', {name: /Eigenen Pfad verwenden/}));
+        await user.click(screen.getByRole('button', {name: 'Pfad übernehmen'}));
+
+        expect(onChange).toHaveBeenCalledWith(path);
+    });
+
+    it('keeps a populated process-data path clearable', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(
+            <ProcessDataKeyInputComponent
+                label="Vorgangsdatenvariable"
+                value="person.name"
+                onChange={onChange}
+                suggestions={suggestions}
+            />,
+        );
+
+        await user.click(screen.getByLabelText('Vorgangsdatenpfad leeren'));
+
+        expect(onChange).toHaveBeenCalledWith(null);
     });
 });
 

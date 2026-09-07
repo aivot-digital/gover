@@ -34,6 +34,8 @@ import {
     AuthoredElementValues,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
+    getLiteralElementValue,
+    literalAuthoredValue,
 } from '../../../models/element-data';
 import {RootState} from '../../../store.staff';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
@@ -209,6 +211,7 @@ export function FormNodeEditorPage() {
 
     const [node, setNode] = useState<ProcessNodeEntity | null>(null);
     const [formLayout, setFormLayout] = useState<FormLayoutElement | null>(null);
+    const configuredFormSlug = node == null ? undefined : getLiteralElementValue<string>(node.configuration, 'formSlug');
 
     const [process, setProcess] = useState<ProcessEntity | null>(null);
     const [processVersion, setProcessVersion] = useState<ProcessVersionEntity | null>(null);
@@ -238,7 +241,9 @@ export function FormNodeEditorPage() {
         dialog: changeBlockerDialog,
         hasChanged,
     } = useChangeBlocker({
-        original: normalizeUiDefinitionForStorage(node?.configuration[FormLayoutFieldKey] as FormLayoutElement | null | undefined),
+        original: normalizeUiDefinitionForStorage(node == null
+            ? null
+            : getLiteralElementValue<FormLayoutElement>(node.configuration, FormLayoutFieldKey)),
         edited: normalizeUiDefinitionForStorage(formLayout),
     });
 
@@ -263,7 +268,7 @@ export function FormNodeEditorPage() {
         new IdentityProvidersApiService()
             .listAll()
             .then((page) => {
-                const mappedIdentities = node.configuration[IdentitiesFieldKey] as IdentityConfigElementSlot[] | null | undefined;
+                const mappedIdentities = getLiteralElementValue<IdentityConfigElementSlot[]>(node.configuration, IdentitiesFieldKey);
 
                 if (mappedIdentities == null || mappedIdentities.length === 0) {
                     return [];
@@ -300,7 +305,7 @@ export function FormNodeEditorPage() {
         new ProcessNodeApiService()
             .retrieve(nodeIdInt)
             .then((node) => {
-                let uiElement = node.configuration[FormLayoutFieldKey];
+                let uiElement = getLiteralElementValue<FormLayoutElement>(node.configuration, FormLayoutFieldKey);
                 if (uiElement == null) {
                     uiElement = generateElementWithDefaultValues(ElementType.FormLayout);
                 }
@@ -355,7 +360,7 @@ export function FormNodeEditorPage() {
     }, [node]);
 
     useEffect(() => {
-        if (process == null || processVersion == null || node?.configuration.formSlug == null) {
+        if (process == null || processVersion == null || configuredFormSlug == null) {
             setFormTheme(undefined);
             return;
         }
@@ -365,7 +370,7 @@ export function FormNodeEditorPage() {
         new FormTriggerApiService()
             .getFormTheme(
                 process.slug,
-                node.configuration.formSlug,
+                configuredFormSlug,
                 processVersion.processVersion,
                 testClaim?.accessKey,
             )
@@ -384,7 +389,7 @@ export function FormNodeEditorPage() {
         return () => {
             isCancelled = true;
         };
-    }, [node, process, processVersion, testClaim]);
+    }, [configuredFormSlug, node, process, processVersion, testClaim]);
 
     const hasFormLayout = formLayout != null;
     const selectedProcessVersionThemeId = processVersion?.themeId ?? null;
@@ -560,7 +565,7 @@ export function FormNodeEditorPage() {
                 ...node,
                 configuration: {
                     ...node.configuration,
-                    [FormLayoutFieldKey]: formLayoutForStorage,
+                    [FormLayoutFieldKey]: literalAuthoredValue(formLayoutForStorage),
                 },
             }, {
                 query: {
@@ -570,7 +575,7 @@ export function FormNodeEditorPage() {
 
         setNode(updated);
         setFormLayout(
-            updated.configuration[FormLayoutFieldKey] ??
+            getLiteralElementValue<FormLayoutElement>(updated.configuration, FormLayoutFieldKey) ??
             generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement,
         );
     };
@@ -593,7 +598,7 @@ export function FormNodeEditorPage() {
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    const publicFormLink = createCustomerPath(`/form/${process?.slug}/${node?.configuration.formSlug}${testClaim != null ? `?test-claim=${testClaim.accessKey}` : ''}`);
+    const publicFormLink = createCustomerPath(`/form/${process?.slug}/${configuredFormSlug}${testClaim != null ? `?test-claim=${testClaim.accessKey}` : ''}`);
 
     const handleImportFromXDF = async () => {
         if (!isEditable) {
@@ -1008,7 +1013,7 @@ export function FormNodeEditorPage() {
             if (colorScheme === 'dark') {
                 queryParams.set('color-scheme', 'dark');
             }
-            return `/api/public/form/${process.slug}/${node.configuration.formSlug}/logo/?${queryParams.toString()}`;
+            return `/api/public/form/${process.slug}/${configuredFormSlug}/logo/?${queryParams.toString()}`;
         }
 
         if (draftPreviewThemeChain.length === 0) {
@@ -1061,7 +1066,7 @@ export function FormNodeEditorPage() {
             }
 
             // Check if a slug is configured and break if no slug is present because we cannot submit data without a slug
-            if (node.configuration.formSlug == null || node.configuration.formSlug === '') {
+            if (configuredFormSlug == null || configuredFormSlug === '') {
                 await confirm({
                     title: 'Keine Formular-URL vergeben',
                     children: (
@@ -1142,7 +1147,7 @@ export function FormNodeEditorPage() {
 
             errorMessage = 'Beim Berechnen der Kosten ist ein unbekannter Fehler aufgetreten.';
             const costs = await new FormTriggerApiService()
-                .calculateCosts(process.slug, node.configuration.formSlug, values, {
+                .calculateCosts(process.slug, configuredFormSlug, values, {
                     testClaim: testClaim.accessKey,
                 });
             const paymentRequired = costs.totalCost > 0;
@@ -1194,7 +1199,7 @@ export function FormNodeEditorPage() {
             errorMessage = 'Beim Absenden des Formulars ist ein Fehler aufgetreten';
 
             const startRes = await new FormTriggerApiService()
-                .submitForm(process.slug, node.configuration.formSlug, formData, {
+                .submitForm(process.slug, configuredFormSlug, formData, {
                     testClaim: testClaim.accessKey,
                 });
 

@@ -6,6 +6,27 @@ import {DynamicTextField, type DynamicTextFieldMethods} from './dynamic-text-fie
 import {getDynamicTextTokenStyles} from './dynamic-text-lexical';
 
 describe('DynamicTextField', () => {
+    it('matches the shared one-line input dimensions', () => {
+        const {container} = render(
+            <DynamicTextField
+                id="template"
+                ariaLabelledBy="template-label"
+                value="Text"
+                onChange={vi.fn()}
+            />,
+        );
+
+        const control = container.firstElementChild as HTMLElement;
+        const editor = container.querySelector<HTMLElement>('[contenteditable="true"]');
+
+        expect(getComputedStyle(control).boxSizing).toBe('border-box');
+        expect(getComputedStyle(control).minHeight).toBe('44px');
+        expect(getComputedStyle(control).height).toBe('44px');
+        expect(editor?.style.height).toBe('42px');
+        expect(editor?.style.padding).toBe('9.5px 14px');
+        expect(editor?.style.lineHeight).toBe('23px');
+    });
+
     it('renders complete expressions and directives as editable tokens', async () => {
         const {container} = render(
             <DynamicTextField

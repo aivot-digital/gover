@@ -4,6 +4,7 @@ import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
 import {
     createDerivedRuntimeElementData,
+    literalAuthoredValue,
     type ReplicatingContainerElementValues,
 } from '../../models/element-data';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
@@ -50,7 +51,7 @@ const element = {
 function renderView(overrides: Partial<BaseViewProps<ReplicatingContainerLayout, ReplicatingContainerElementValues>> = {}) {
     const props: BaseViewProps<ReplicatingContainerLayout, ReplicatingContainerElementValues> = {
         element,
-        value: [{id: 'address-1', values: {street: 'Musterstraße 1'}}],
+        value: [{id: 'address-1', values: {street: literalAuthoredValue('Musterstraße 1')}}],
         setValue: vi.fn(),
         onBlur: vi.fn(),
         isBusy: false,

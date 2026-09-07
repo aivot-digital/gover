@@ -37,7 +37,11 @@ import {
     getDynamicTextTokenStyles,
     useDynamicTextSyntaxHighlights,
 } from '../dynamic-text/dynamic-text-lexical';
-import {type DynamicTextVariableMetadata, useDynamicTextTokenTitles} from '../dynamic-text/dynamic-text-metadata';
+import {
+    type DynamicTextInputMethods,
+    type DynamicTextVariableMetadata,
+    useDynamicTextTokenTitles,
+} from '../dynamic-text/dynamic-text-metadata';
 import {dynamicTextPlugin} from './rich-text-input-component-dynamic-text-plugin';
 import {placeholderPlugin} from './rich-text-input-component-placeholder-plugin';
 import '@mdxeditor/editor/style.css';
@@ -112,7 +116,7 @@ export interface RichTextInputComponentProps extends FormFieldLayoutProps {
     controlSx?: SxProps<Theme> | null | undefined;
 }
 
-export interface RichTextInputComponentMethods {
+export interface RichTextInputComponentMethods extends DynamicTextInputMethods {
     insertMarkdown: (value: string) => void;
     focus: () => void;
 }
@@ -249,6 +253,19 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
 
             savedSelection.editor.setEditorState(savedSelection.editorState);
             savedSelection.editor.focus(() => editorRef.current?.insertMarkdown(markdown));
+        },
+        insertVariableReference: (reference) => {
+            const placeholder = `{{ ${reference} }}`;
+            const savedSelection = savedSelectionRef.current;
+            savedSelectionRef.current = null;
+
+            if (savedSelection == null) {
+                editorRef.current?.focus(() => editorRef.current?.insertMarkdown(placeholder), {preventScroll: true});
+                return;
+            }
+
+            savedSelection.editor.setEditorState(savedSelection.editorState);
+            savedSelection.editor.focus(() => editorRef.current?.insertMarkdown(placeholder));
         },
         focus: () => editorRef.current?.focus(undefined, {preventScroll: true}),
     }), []);

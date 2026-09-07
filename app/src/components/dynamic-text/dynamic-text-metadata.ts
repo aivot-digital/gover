@@ -9,6 +9,11 @@ export interface DynamicTextVariableMetadata {
     reference: string;
 }
 
+export interface DynamicTextInputMethods {
+    focus: () => void;
+    insertVariableReference: (reference: string) => void;
+}
+
 export function getDynamicTextVariableReferences(value: string): string[] {
     return Array.from(new Set(
         getDynamicTextSyntaxSegments(value)

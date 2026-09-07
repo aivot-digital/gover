@@ -69,13 +69,13 @@ export function canPrefillElement(e: AnyElement): boolean {
     );
 }
 
-function buildPrefillValues(elementData: AuthoredElementValues): AuthoredElementValues {
-    const inputs: AuthoredElementValues = {};
+function buildPrefillValues(elementData: AuthoredElementValues): Record<string, unknown> {
+    const inputs: Record<string, unknown> = {};
 
     for (const key of Object.keys(elementData)) {
         const dataObject = elementData[key];
-        if (dataObject != null) {
-            inputs[key] = dataObject;
+        if (dataObject?.type === 'Literal' && dataObject.value != null) {
+            inputs[key] = dataObject.value;
         }
     }
 

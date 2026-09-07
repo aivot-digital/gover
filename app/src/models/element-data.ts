@@ -1,8 +1,12 @@
 import type {AnyElement} from './elements/any-element';
 import {isAnyElementWithChildren} from './elements/any-element-with-children';
 import {isReplicatingContainerLayout} from './elements/form/layout/replicating-container-layout';
+import {
+    type AuthoredInputValue,
+    isAuthoredInputValue,
+} from './input-mode';
 
-export type AuthoredElementValues = Partial<Record<string, any>>;
+export type AuthoredElementValues = Partial<Record<string, AuthoredInputValue<unknown>>>;
 
 export type EffectiveElementValues = Partial<Record<string, any>>;
 
@@ -12,6 +16,35 @@ export interface ReplicatingContainerElementValue {
 }
 
 export type ReplicatingContainerElementValues = ReplicatingContainerElementValue[];
+
+export function literalAuthoredValue<T>(value: T | null): Extract<AuthoredInputValue<T>, {type: 'Literal'}> {
+    return {type: 'Literal', value};
+}
+
+export function getLiteralAuthoredValue<T = unknown>(value: AuthoredInputValue<unknown> | null | undefined): T | null | undefined {
+    return value?.type === 'Literal' ? value.value as T | null : undefined;
+}
+
+export function getLiteralElementValue<T = unknown>(values: AuthoredElementValues, key: string): T | null | undefined {
+    return getLiteralAuthoredValue<T>(values[key]);
+}
+
+export function toLiteralAuthoredElementValues(values: Record<string, unknown>): AuthoredElementValues {
+    return Object.fromEntries(
+        Object.entries(values).map(([key, value]) => [key, literalAuthoredValue(value)]),
+    );
+}
+
+export function toLiteralElementValues(values: AuthoredElementValues): Record<string, unknown> {
+    return Object.fromEntries(
+        Object.entries(values).map(([key, value]) => {
+            if (value?.type !== 'Literal') {
+                throw new Error(`Cannot read dynamic authored value '${key}' without derivation.`);
+            }
+            return [key, value.value];
+        }),
+    );
+}
 
 export enum ComputedElementValueSource {
     Authored = 'Authored',
@@ -54,18 +87,21 @@ export function createDerivedRuntimeElementData(data?: Partial<DerivedRuntimeEle
 }
 
 export function isAuthoredElementValues(obj: any): obj is AuthoredElementValues {
-    return obj != null && typeof obj === 'object' && !Array.isArray(obj);
+    return obj != null &&
+        typeof obj === 'object' &&
+        !Array.isArray(obj) &&
+        Object.values(obj).every(value => value === undefined || isAuthoredInputValue(value));
 }
 
 export function isReplicatingContainerElementValue(obj: any): obj is ReplicatingContainerElementValue {
-    if (!isAuthoredElementValues(obj)) {
+    if (obj == null || typeof obj !== 'object' || Array.isArray(obj)) {
         return false;
     }
 
     const keys = Object.keys(obj);
     return keys.length > 0 &&
         keys.every((key) => key === 'id' || key === 'values') &&
-        (obj.values == null || isAuthoredElementValues(obj.values));
+        (obj.values == null || typeof obj.values === 'object' && !Array.isArray(obj.values));
 }
 
 export function resolveReplicatingContainerElementValues(row: any): AuthoredElementValues | null {
@@ -74,6 +110,18 @@ export function resolveReplicatingContainerElementValues(row: any): AuthoredElem
     }
 
     return isAuthoredElementValues(row) ? row : null;
+}
+
+/**
+ * Converts effective row values to literal authored values before an editable row is rendered. This keeps rows that
+ * originate from a derived default from mixing raw values with authored envelopes after the first child edit.
+ */
+export function resolveAuthoredReplicatingContainerElementValues(row: any): AuthoredElementValues | null {
+    const values = isReplicatingContainerElementValue(row) ? row.values : row;
+    if (values == null || typeof values !== 'object' || Array.isArray(values)) {
+        return null;
+    }
+    return isAuthoredElementValues(values) ? values : toLiteralAuthoredElementValues(values);
 }
 
 export function updateReplicatingContainerElementValues(row: any, values: AuthoredElementValues): ReplicatingContainerElementValue {

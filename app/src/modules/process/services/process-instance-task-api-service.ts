@@ -2,7 +2,7 @@ import {BaseReadApiService} from '../../../services/base-read-api-service';
 import {ProcessInstanceTaskEntity} from "../entities/process-instance-task-entity";
 import {ProcessTaskStatus} from "../enums/process-task-status";
 import {GroupLayout} from "../../../models/elements/form/layout/group-layout";
-import {AuthoredElementValues, DerivedRuntimeElementData, isAuthoredElementValues} from '../../../models/element-data';
+import {AuthoredElementValues, DerivedRuntimeElementData} from '../../../models/element-data';
 import {FileUploadElementItem, isFileUploadElementItem} from '../../../models/elements/form/input/file-upload-element';
 
 interface ProcessInstanceTaskFilter {
@@ -59,9 +59,11 @@ async function appendTaskViewFiles(formData: FormData, value: unknown): Promise<
         return;
     }
 
-    if (isAuthoredElementValues(value)) {
-        for (const key of Object.keys(value)) {
-            await appendTaskViewFiles(formData, value[key]);
+    // Authored wrappers and replicating-container rows are both ordinary object envelopes. Walking their values
+    // keeps file discovery independent of the number of structural layers around a literal file item.
+    if (value != null && typeof value === 'object') {
+        for (const nestedValue of Object.values(value)) {
+            await appendTaskViewFiles(formData, nestedValue);
         }
     }
 }

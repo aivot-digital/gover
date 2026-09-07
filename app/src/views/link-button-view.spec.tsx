@@ -2,7 +2,7 @@ import {describe, expect, it, vi} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {ElementType} from '../data/element-type/element-type';
-import {createDerivedRuntimeElementData, type AuthoredElementValues} from '../models/element-data';
+import {createDerivedRuntimeElementData, type AuthoredElementValues, literalAuthoredValue} from '../models/element-data';
 import type {BaseViewProps} from './base-view';
 import type {LinkButtonElement} from '../models/elements/form/content/link-button-element';
 import {LinkButtonView} from './link-button-view';
@@ -32,7 +32,7 @@ describe('LinkButtonView', () => {
     it('should trigger staff task events in staff task views', () => {
         const onEvent = vi.fn().mockResolvedValue(undefined);
         const authoredElementValues = {
-            requiredField: 'value',
+            requiredField: literalAuthoredValue('value'),
         };
 
         renderLinkButton(

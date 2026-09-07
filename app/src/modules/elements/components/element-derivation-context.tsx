@@ -8,6 +8,7 @@ import {
     createComputedElementSubState,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
+    EffectiveElementValues,
     hasAnyErrorRecursively,
     isReplicatingContainerElementValue,
     resolveComputedElementSubState,
@@ -38,6 +39,7 @@ import {
     ViewDispatcherMode,
 } from '../../../components/view-dispatcher/view-dispatcher.context';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
+import {type InputVariableSuggestion} from '../../../models/input-mode';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
@@ -57,6 +59,8 @@ interface ElementDerivationContextProps {
     disableVisibilities?: boolean;
     highlightedElementId?: string | null;
     taskViewMode?: TaskViewMode | null;
+    inputModesEnabled?: boolean;
+    inputModeVariables?: InputVariableSuggestion[];
 }
 
 interface ElementDerivationContextType {
@@ -121,6 +125,8 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         disableVisibilities = false,
         highlightedElementId,
         taskViewMode = null,
+        inputModesEnabled = false,
+        inputModeVariables = [],
     } = props;
 
     const dispatch = useAppDispatch();
@@ -363,6 +369,8 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                     showInvisibleElements: disableVisibilities && renderMode === ViewDispatcherMode.Editor,
                     highlightedElementId: highlightedElementId,
                     taskViewMode,
+                    inputModesEnabled,
+                    inputModeVariables,
                 }}
             >
                 <ViewDispatcherComponent
@@ -447,7 +455,7 @@ function patchComputedElementStatesWithAuthoredValues(
     currentElement: AnyElement,
     authoredElementValues: AuthoredElementValues,
     currentElementStates: ComputedElementStates,
-    effectiveValues: AuthoredElementValues,
+    effectiveValues: EffectiveElementValues,
 ): ComputedElementStates {
     const hasAuthoredValue = Object.prototype.hasOwnProperty.call(authoredElementValues, currentElement.id);
     const authoredValue = authoredElementValues[currentElement.id];
@@ -469,13 +477,14 @@ function patchComputedElementStatesWithAuthoredValues(
                 valueSource: ComputedElementValueSource.Authored,
             },
         };
-        effectiveValues[currentElement.id] = authoredValue;
+        const optimisticEffectiveValue = authoredValue?.type === 'Literal' ? authoredValue.value : null;
+        effectiveValues[currentElement.id] = optimisticEffectiveValue;
 
         if (isReplicatingContainerLayout(currentElement)) {
             nextElementStates[currentElement.id] = {
                 ...nextElementStates[currentElement.id],
-                subStates: Array.isArray(authoredValue) ?
-                    authoredValue.map((row, index) => {
+                subStates: Array.isArray(optimisticEffectiveValue) ?
+                    optimisticEffectiveValue.map((row, index) => {
                         const rowId = isReplicatingContainerElementValue(row) ? row.id : null;
                         const previousSubState = resolveComputedElementSubState(currentElementState?.subStates, rowId, index);
                         return createComputedElementSubState(rowId, resolveComputedElementSubStateStates(previousSubState));

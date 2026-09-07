@@ -7,6 +7,7 @@ import {CustomerInputService} from '../../services/customer-input-service';
 import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-api-service';
 import {ElementType} from '../../data/element-type/element-type';
 import {ProcessStatus} from '../../modules/process/enums/process-status';
+import {literalAuthoredValue} from '../../models/element-data';
 
 const mocks = vi.hoisted(() => ({
     confirm: vi.fn(),
@@ -304,11 +305,11 @@ function prepareAttachmentForm(): void {
         },
     ])));
     mocks.submitValues = {
-        attachment: [{
+        attachment: literalAuthoredValue([{
             name: 'attachment.pdf',
             size: 100,
             uri: 'blob:attachment',
-        }],
+        }]),
     };
 }
 
@@ -337,7 +338,7 @@ function createRetrieveResponse(layoutElement = createFormLayout()): any {
         layoutElement,
         node: {
             configuration: {
-                formSlug: 'test-form',
+                formSlug: literalAuthoredValue('test-form'),
             },
             id: 1,
             name: 'Formulareingang',

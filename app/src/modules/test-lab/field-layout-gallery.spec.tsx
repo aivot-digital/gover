@@ -2,6 +2,7 @@ import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {FieldLayoutGallery} from './field-layout-gallery';
 import {DynamicTextIndicatorLabel} from '../../components/input-mode-selector';
+import {getLiteralAuthoredValue, type AuthoredElementValues} from '../../models/element-data';
 
 vi.mock('../../hooks/use-app-dispatch', () => ({
     useAppDispatch: () => vi.fn(),
@@ -72,12 +73,12 @@ vi.mock('../../components/view-dispatcher/view-dispatcher.component', () => ({
             label?: string | null;
             required?: boolean | null;
         };
-        authoredElementValues: Record<string, unknown>;
+        authoredElementValues: AuthoredElementValues;
         isBusy: boolean;
     }) => (
         <input
             aria-label={`${props.element.label ?? 'Unterfeld'}${props.element.required ? '' : ' – optional'}`}
-            value={String(props.authoredElementValues[props.element.id] ?? '')}
+            value={String(getLiteralAuthoredValue(props.authoredElementValues[props.element.id]) ?? '')}
             disabled={props.isBusy}
             readOnly
         />

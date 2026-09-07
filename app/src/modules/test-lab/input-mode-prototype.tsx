@@ -18,9 +18,9 @@ import {
 import {NumberFieldComponent} from '../../components/number-field/number-field-component';
 import {SelectFieldComponent} from '../../components/select-field/select-field-component';
 import {
-    ProcessDataVariableField,
-    type ProcessDataVariableOption,
-} from '../../components/process-data-variable-field/process-data-variable-field';
+    ProcessDataKeyInputComponent,
+    type ProcessDataKeySuggestion,
+} from '../../views/process-data-key-input-field-view';
 import {
     RichTextInputComponent,
     type RichTextInputComponentMethods,
@@ -30,6 +30,8 @@ import {
     type DynamicTextFieldMethods,
 } from '../../components/dynamic-text/dynamic-text-field';
 import {RadioFieldComponent} from '../../components/radio-field/radio-field-component';
+import {InputModeComparison} from './input-mode-comparison';
+import {InputModeIconComparison} from './input-mode-icon-comparison';
 
 const VARIABLES: InputModeVariable[] = [
     {
@@ -37,7 +39,7 @@ const VARIABLES: InputModeVariable[] = [
         label: 'Vorname der antragstellenden Person',
         path: 'antragsteller.vorname',
         origin: 'Antrag eingereicht',
-        category: 'processData',
+        source: 'ProcessData',
         description: 'Aus dem Antragsformular',
     },
     {
@@ -45,7 +47,7 @@ const VARIABLES: InputModeVariable[] = [
         label: 'Nachname der antragstellenden Person',
         path: 'antragsteller.nachname',
         origin: 'Antrag eingereicht',
-        category: 'processData',
+        source: 'ProcessData',
         description: 'Aus dem Antragsformular',
     },
     {
@@ -53,14 +55,14 @@ const VARIABLES: InputModeVariable[] = [
         label: 'Eingangsdatum',
         path: 'antrag.eingangsdatum',
         origin: 'Antrag eingereicht',
-        category: 'processData',
+        source: 'ProcessData',
     },
     {
         id: 'cart-item-count',
         label: 'Anzahl der Positionen',
         path: 'warenkorb.positionen.anzahl',
         origin: 'Warenkorb laden',
-        category: 'processData',
+        source: 'ProcessData',
         description: 'Anzahl aller geladenen Warenkorbpositionen',
     },
     {
@@ -68,104 +70,108 @@ const VARIABLES: InputModeVariable[] = [
         label: 'Gesamtbetrag',
         path: 'warenkorb.gesamtbetrag',
         origin: 'Warenkorb laden',
-        category: 'processData',
+        source: 'ProcessData',
     },
     {
         id: 'default-increment',
         label: 'Standardinkrement',
         path: 'konfiguration.standardInkrement',
         origin: 'Grenzwerte bestimmen',
-        category: 'processData',
+        source: 'ProcessData',
     },
     {
         id: 'missing-value-behavior',
         label: 'Verhalten bei fehlendem Wert',
         path: 'konfiguration.fehlerbehandlung',
         origin: 'Grenzwerte bestimmen',
-        category: 'processData',
+        source: 'ProcessData',
     },
     {
         id: 'element-cart-item-count',
         label: 'Erzeugte Anzahl der Positionen',
-        path: 'warenkorbLaden.anzahlPositionen',
+        path: 'anzahlPositionen',
+        nodeDataKey: 'warenkorbLaden',
         origin: 'Warenkorb laden',
-        category: 'elementData',
+        source: 'ElementData',
         description: 'Ausgangsdaten des Prozesselements',
     },
     {
         id: 'element-check-result',
         label: 'Ergebnis der Antragsprüfung',
-        path: 'antragPruefen.ergebnis',
+        path: 'ergebnis',
+        nodeDataKey: 'antragPruefen',
         origin: 'Antrag prüfen',
-        category: 'elementData',
+        source: 'ElementData',
     },
     {
         id: 'element-finished',
         label: 'Abschlusszeit von Warenkorb laden',
-        path: 'warenkorbLaden.finished',
+        path: 'finished',
+        nodeDataKey: 'warenkorbLaden',
         origin: 'Warenkorb laden',
-        category: 'elementMetadata',
+        source: 'ElementMetadata',
     },
     {
         id: 'element-runtime',
         label: 'Laufzeit der Antragsprüfung',
-        path: 'antragPruefen.runtime',
+        path: 'runtime',
+        nodeDataKey: 'antragPruefen',
         origin: 'Antrag prüfen',
-        category: 'elementMetadata',
+        source: 'ElementMetadata',
     },
     {
         id: 'protected-case-number',
         label: 'Aktenzeichen des Vorgangs',
         path: 'caseNumber',
         origin: 'Vorgang',
-        category: 'protectedProcessData',
+        source: 'ProtectedProcessData',
     },
     {
         id: 'protected-assigned-file-numbers',
         label: 'Zugewiesene Geschäftszeichen',
         path: 'assignedFileNumbers',
         origin: 'Vorgang',
-        category: 'protectedProcessData',
+        source: 'ProtectedProcessData',
     },
     {
         id: 'protected-current-task',
         label: 'ID der aktuellen Aufgabe',
         path: 'currentTaskId',
         origin: 'Aktuelle Aufgabe',
-        category: 'protectedProcessData',
+        source: 'ProtectedProcessData',
     },
 ];
 
 const DYNAMIC_TEXT_VARIABLE_METADATA = VARIABLES.map((variable) => ({
     reference: getInputModeVariableReference(variable),
     label: variable.label,
-    category: getInputModeVariableCategoryLabel(variable.category),
-    origin: variable.origin,
-    description: variable.description,
+    category: getInputModeVariableCategoryLabel(variable.source),
+    origin: typeof variable.origin === 'string' ? variable.origin : variable.origin?.name ?? undefined,
+    description: variable.description ?? undefined,
 }));
 
-const DESTINATION_SUGGESTIONS: ProcessDataVariableOption[] = [
+const DESTINATION_SUGGESTIONS: ProcessDataKeySuggestion[] = [
     {
-        path: 'zaehler.aktuellerStand',
+        id: 'zaehler.aktuellerStand',
         label: 'Aktueller Zählerstand',
-        origin: 'Bestehende Zählervariable',
+        subLabel: 'Bestehende Zählervariable',
     },
     {
-        path: 'warenkorb.verarbeitetePositionen',
+        id: 'warenkorb.verarbeitetePositionen',
         label: 'Verarbeitete Positionen',
-        origin: 'Warenkorb laden',
+        subLabel: 'Warenkorb laden',
     },
     {
-        path: 'antrag.pruefschritte',
+        id: 'antrag.pruefschritte',
         label: 'Prüfschritte',
-        origin: 'Antrag eingereicht',
+        subLabel: 'Antrag eingereicht',
     },
     ...VARIABLES
-        .filter((variable) => variable.category === 'processData')
+        .filter((variable) => variable.source === 'ProcessData')
         .map((variable) => ({
-            path: variable.path,
+            id: variable.path,
             label: variable.label,
-            origin: variable.origin,
+            subLabel: typeof variable.origin === 'string' ? variable.origin : variable.origin?.name ?? '',
         })),
 ];
 
@@ -182,94 +188,40 @@ const LOGGING_SCOPE_OPTIONS = [
 ];
 
 function createInitialIncrementValue(): InputModeValue<number> {
-    return {
-        mode: 'literal',
-        literal: 1,
-        variableId: 'default-increment',
-        noCode: {
-            sourceVariableId: 'cart-item-count',
-            operator: 'multiply',
-            operand: '2',
-        },
-        lowCode: 'return $.warenkorb.positionen.anzahl ?? 1;',
-    };
+    return {type: 'Literal', value: 1};
 }
 
 function createInitialLogMessageValue(): InputModeValue<string> {
     return {
-        mode: 'literal',
-        literal: [
+        type: 'Literal',
+        value: [
             '{% if $.warenkorb.positionen.anzahl > 0 %}',
             'Der Zähler wurde um {{ $.warenkorb.positionen.anzahl }} erhöht.',
             '{% else %}',
             'Der Zähler wurde nicht verändert.',
             '{% endif %}',
         ].join('\n'),
-        variableId: 'applicant-first-name',
-        noCode: {
-            sourceVariableId: 'applicant-first-name',
-            operator: 'add',
-            operand: ' - Zähler aktualisiert',
-        },
-        lowCode: 'return `${$.antragsteller.vorname} ${$.antragsteller.nachname}: Zähler aktualisiert`;',
     };
 }
 
 function createInitialLogTitleValue(): InputModeValue<string> {
-    return {
-        mode: 'literal',
-        literal: 'Zähler für {{ $.antragsteller.nachname }} aktualisiert',
-        variableId: 'protected-case-number',
-        noCode: {
-            sourceVariableId: 'protected-case-number',
-            operator: 'add',
-            operand: ' - Zähler aktualisiert',
-        },
-        lowCode: 'return `Zähler für ${$.antragsteller.nachname} aktualisiert`;',
-    };
+    return {type: 'Literal', value: 'Zähler für {{ $.antragsteller.nachname }} aktualisiert'};
 }
 
 function createInitialMissingValueBehavior(): InputModeValue<string> {
-    return {
-        mode: 'literal',
-        literal: 'zero',
-        variableId: 'missing-value-behavior',
-        noCode: {
-            sourceVariableId: 'cart-item-count',
-            operator: 'fallback',
-            operand: 'zero',
-        },
-        lowCode: "return $.warenkorb.positionen.anzahl == null ? 'error' : 'zero';",
-    };
+    return {type: 'Literal', value: 'zero'};
 }
 
 function createInitialRichTextValue(): InputModeValue<string> {
     return {
-        mode: 'literal',
-        literal: '**Zähler aktualisiert**\n\nDer Zähler für {{ $.antragsteller.nachname }} wurde auf ' +
+        type: 'Literal',
+        value: '**Zähler aktualisiert**\n\nDer Zähler für {{ $.antragsteller.nachname }} wurde auf ' +
             '{{ $.warenkorb.positionen.anzahl }} gesetzt.',
-        variableId: 'applicant-first-name',
-        noCode: {
-            sourceVariableId: 'applicant-first-name',
-            operator: 'add',
-            operand: ' - Zähler aktualisiert',
-        },
-        lowCode: 'return `**Zähler aktualisiert**\\n\\nNeuer Wert: ${$.zaehler.aktuellerStand}`;',
     };
 }
 
 function createInitialLoggingScope(): InputModeValue<string> {
-    return {
-        mode: 'literal',
-        literal: 'changed',
-        variableId: 'missing-value-behavior',
-        noCode: {
-            sourceVariableId: 'cart-item-count',
-            operator: 'fallback',
-            operand: 'changed',
-        },
-        lowCode: "return $.warenkorb.positionen.anzahl > 0 ? 'changed' : 'never';",
-    };
+    return {type: 'Literal', value: 'changed'};
 }
 
 export function InputModePrototype() {
@@ -284,12 +236,12 @@ export function InputModePrototype() {
     const [loggingScope, setLoggingScope] = useState(createInitialLoggingScope);
     const [emptyRequiredTitle, setEmptyRequiredTitle] = useState<InputModeValue<string>>(() => ({
         ...createInitialLogTitleValue(),
-        literal: null,
+        value: null,
     }));
     const [readOnlyTitle, setReadOnlyTitle] = useState(createInitialLogTitleValue);
     const [longExpression, setLongExpression] = useState<InputModeValue<string>>(() => ({
         ...createInitialLogMessageValue(),
-        literal: '{% if $.warenkorb.positionen.anzahl > 0 and $.antragsteller.nachname != empty and $.antrag.eingangsdatum != null %}',
+        value: '{% if $.warenkorb.positionen.anzahl > 0 and $.antragsteller.nachname != empty and $.antrag.eingangsdatum != null %}',
     }));
 
     const logTitleInputRef = useRef<DynamicTextFieldMethods | null>(null);
@@ -301,6 +253,8 @@ export function InputModePrototype() {
             <Typography id="input-mode-prototype-title" component="h2" variant="h5">
                 Dynamische Eingabemodi
             </Typography>
+            <InputModeComparison variables={VARIABLES}/>
+            <InputModeIconComparison/>
             <Box
                 sx={{
                     mt: 3,
@@ -423,12 +377,12 @@ export function InputModePrototype() {
                                 gap: 2.5,
                             }}
                         >
-                            <ProcessDataVariableField
+                            <ProcessDataKeyInputComponent
                                 label="Vorgangsdatenvariable"
                                 hint="Pfad, unter dem der Zählerstand gespeichert wird."
                                 value={destination}
                                 onChange={setDestination}
-                                options={DESTINATION_SUGGESTIONS}
+                                suggestions={DESTINATION_SUGGESTIONS}
                             />
 
                             <InputModeField

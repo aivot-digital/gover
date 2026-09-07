@@ -1,6 +1,16 @@
 import type {AnyElement} from '../models/elements/any-element';
-import type {FunctionComponent} from 'react';
+import type {FunctionComponent, RefCallback} from 'react';
 import type {AuthoredElementValues, DerivedRuntimeElementData} from '../models/element-data';
+import {type InputModeLiteralRenderContext} from '../components/input-mode-field/input-mode-field';
+import type {
+    DynamicTextInputMethods,
+    DynamicTextVariableMetadata,
+} from '../components/dynamic-text/dynamic-text-metadata';
+
+export interface DynamicTextLiteralRenderContext {
+    inputRef: RefCallback<DynamicTextInputMethods>;
+    variableMetadata: readonly DynamicTextVariableMetadata[];
+}
 
 export interface BaseViewProps<M extends AnyElement, V> {
     element: M;
@@ -26,6 +36,10 @@ export interface BaseViewProps<M extends AnyElement, V> {
     suppressErrors: boolean;
 
     derivationTriggerIdQueue: string[];
+
+    inputModeLiteralContext?: Omit<InputModeLiteralRenderContext<V>, 'value' | 'onChange'> & {
+        dynamicText?: DynamicTextLiteralRenderContext;
+    };
 }
 
 export type BaseView<M extends AnyElement, V> = FunctionComponent<BaseViewProps<M, V>>;

@@ -76,6 +76,7 @@ import {ElementDisplayContext} from '../../data/element-type/element-child-optio
 import type {StoragePathSelectorInputElementValue} from '../../models/elements/form/input/storage-path-selector-input-element';
 import {
     createDerivedRuntimeElementData,
+    literalAuthoredValue,
     type ReplicatingContainerElementValues,
 } from '../../models/element-data';
 import {
@@ -129,18 +130,18 @@ const domainAndUserOptions: DomainAndUserSelectOption[] = [
     },
 ];
 
-const inputModeSummaries: Record<Exclude<InputMode, 'literal'>, {primary: string; secondary: string}> = {
-    variable: {
+const inputModeSummaries: Record<Exclude<InputMode, 'Literal'>, {primary: string; secondary: string}> = {
+    Variable: {
         primary: 'Nachname der antragstellenden Person',
         secondary: 'Vorgangsdaten - $.applicant.lastName',
     },
-    noCode: {
+    NoCode: {
         primary: 'Vorname + " " + Nachname',
         secondary: 'Ausdruck (No-Code)',
     },
-    lowCode: {
+    LowCode: {
         primary: 'Benutzerdefiniertes Skript',
-        secondary: 'return `${$.applicant.firstName} ${$.applicant.lastName}`;',
+        secondary: '`${$.applicant.firstName} ${$.applicant.lastName}`',
     },
 };
 
@@ -234,14 +235,14 @@ interface InputModeGalleryFieldProps {
 
 function InputModeGalleryField(props: InputModeGalleryFieldProps) {
     const label = 'Bezeichnung';
-    const [mode, setMode] = useState<InputMode>('literal');
+    const [mode, setMode] = useState<InputMode>('Literal');
 
     return (
         <FormField
             label={label}
             labelAction={(field) => (
                 <Stack direction="row" spacing={0.5} sx={{height: '100%', alignItems: 'center'}}>
-                    {mode === 'literal' && <DynamicTextIndicator decorative/>}
+                    {mode === 'Literal' && <DynamicTextIndicator decorative/>}
                     <InputModeSelector
                         fieldLabel={label}
                         controlledFieldId={field.controlId}
@@ -251,11 +252,11 @@ function InputModeGalleryField(props: InputModeGalleryFieldProps) {
                 </Stack>
             )}
             hint="Eine eindeutige Bezeichnung hilft bei der späteren Zuordnung."
-            assistiveText={mode === 'literal' ? DynamicTextIndicatorLabel : undefined}
+            assistiveText={mode === 'Literal' ? DynamicTextIndicatorLabel : undefined}
             required
             margin="none"
         >
-            {(field) => mode === 'literal' ? (
+            {(field) => mode === 'Literal' ? (
                 <TextField
                     id={field.controlId}
                     value={props.value ?? ''}
@@ -279,7 +280,7 @@ function InputModeGalleryField(props: InputModeGalleryFieldProps) {
 }
 
 function InputModeSummary(props: {
-    mode: Exclude<InputMode, 'literal'>;
+    mode: Exclude<InputMode, 'Literal'>;
     field: FormFieldControlContext;
 }) {
     const summary = inputModeSummaries[props.mode];
@@ -410,8 +411,8 @@ export function FieldLayoutGallery() {
         {
             id: 'field-layout-gallery-address-1',
             values: {
-                [addressStreetElement.id]: 'Musterstraße 1',
-                [addressCityElement.id]: 'Musterstadt',
+                [addressStreetElement.id]: literalAuthoredValue('Musterstraße 1'),
+                [addressCityElement.id]: literalAuthoredValue('Musterstadt'),
             },
         },
     ]);
@@ -1048,7 +1049,7 @@ export function FieldLayoutGallery() {
                     rootElement: addressListElement,
                     allElements: [addressListElement, addressStreetElement, addressCityElement],
                     rootAuthoredElementValues: {
-                        [addressListElement.id]: additionalAddresses,
+                        [addressListElement.id]: literalAuthoredValue(additionalAddresses),
                     },
                     rootDerivedData: fieldLayoutGalleryDerivedData,
                 }}

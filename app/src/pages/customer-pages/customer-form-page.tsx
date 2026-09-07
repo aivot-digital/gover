@@ -27,6 +27,7 @@ import {
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
     ElementDerivationResponse,
+    getLiteralElementValue,
 } from '../../models/element-data';
 import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../slices/shell-slice';
 import {isApiError} from '../../models/api-error';
@@ -205,9 +206,12 @@ export function CustomerFormPage() {
         process,
         version,
     } = data ?? {};
+    const configuredFormSlug = node == null
+        ? undefined
+        : getLiteralElementValue<string>(node.configuration, 'formSlug');
 
     useEffect(() => {
-        if (process == null || node == null || version == null || node.configuration.formSlug == null) {
+        if (process == null || node == null || version == null || configuredFormSlug == null) {
             setTheme(undefined);
             return;
         }
@@ -217,7 +221,7 @@ export function CustomerFormPage() {
         new FormTriggerApiService()
             .getFormTheme(
                 process.slug,
-                node.configuration.formSlug,
+                configuredFormSlug,
                 undefined,
                 testClaimKey ?? undefined,
             )
@@ -236,7 +240,7 @@ export function CustomerFormPage() {
         return () => {
             isCancelled = true;
         };
-    }, [node, process, testClaimKey, version]);
+    }, [configuredFormSlug, node, process, testClaimKey, version]);
 
     const resolvedTheme = useMemo(() => {
         if (theme == null) {
@@ -251,7 +255,7 @@ export function CustomerFormPage() {
             return;
         }
 
-        const resolvedFormSlug = node.configuration.formSlug ?? formSlug;
+        const resolvedFormSlug = configuredFormSlug ?? formSlug;
         if (resolvedFormSlug == null) {
             return;
         }
@@ -339,7 +343,7 @@ export function CustomerFormPage() {
 
     const handleDerive = (values: AuthoredElementValues, skipErrorsForElements: string[]) => {
         const resolvedProcessSlug = process?.slug ?? processSlug;
-        const resolvedFormSlug = node?.configuration.formSlug ?? formSlug;
+        const resolvedFormSlug = configuredFormSlug ?? formSlug;
         if (resolvedProcessSlug == null || resolvedFormSlug == null) {
             return Promise.resolve(createDerivedRuntimeElementData());
         }
@@ -366,7 +370,7 @@ export function CustomerFormPage() {
             return;
         }
 
-        const resolvedFormSlug = node.configuration.formSlug ?? formSlug;
+        const resolvedFormSlug = configuredFormSlug ?? formSlug;
         if (resolvedFormSlug == null) {
             return;
         }
@@ -384,7 +388,7 @@ export function CustomerFormPage() {
         return null;
     }
 
-    const resolvedFormSlug = node.configuration.formSlug ?? formSlug;
+    const resolvedFormSlug = configuredFormSlug ?? formSlug;
     if (resolvedFormSlug == null) {
         return null;
     }

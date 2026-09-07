@@ -136,18 +136,20 @@ export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>
 
         return 'Für die aktuelle Auswahl sind keine Optionen verfügbar';
     }, [dependencyElement, dependencyValue, dependsOnSelectFieldId, options.length]);
+    const inputModeFieldProps = props.inputModeLiteralContext?.fieldProps;
 
     return (
         <SelectFieldComponent
-            label={element.label ?? ''}
+            {...inputModeFieldProps}
+            label={inputModeFieldProps?.label ?? element.label ?? ''}
             autocomplete={element.autocomplete ?? undefined}
-            error={errors != null ? errors.join(' ') : undefined}
-            hint={element.hint ?? undefined}
+            error={inputModeFieldProps?.error ?? (errors != null ? errors.join(' ') : undefined)}
+            hint={inputModeFieldProps?.hint ?? element.hint ?? undefined}
             placeholder={element.placeholder ?? undefined}
             value={value}
             onChange={setValue}
-            disabled={isDisabled}
-            required={element.required ?? undefined}
+            disabled={inputModeFieldProps?.disabled ?? isDisabled}
+            required={inputModeFieldProps?.required ?? element.required ?? undefined}
             options={options}
             presentation={element.presentation ?? SelectFieldPresentation.Dropdown}
             emptyStatePlaceholder={emptyStatePlaceholder}
@@ -155,7 +157,7 @@ export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>
                 backgroundColor: isBusy ? getDisabledFieldBackground : undefined,
                 cursor: isBusy ? 'not-allowed' : undefined,
             }}
-            readOnly={isBusy}
+            readOnly={inputModeFieldProps?.readOnly ?? isBusy}
         />
     );
 }

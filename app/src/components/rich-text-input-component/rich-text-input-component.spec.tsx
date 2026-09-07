@@ -1,6 +1,7 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
+import {createRef} from 'react';
 import {describe, expect, it, vi} from 'vitest';
-import {RichTextInputComponent} from './rich-text-input-component';
+import {RichTextInputComponent, type RichTextInputComponentMethods} from './rich-text-input-component';
 
 describe('RichTextInputComponent', () => {
     it('associates the generated contenteditable with label and helper text', async () => {
@@ -70,5 +71,25 @@ describe('RichTextInputComponent', () => {
 
         screen.getByRole('button', {name: 'Variablenreferenz einfügen'}).click();
         expect(onInsertVariable).toHaveBeenCalledOnce();
+    });
+
+    it('inserts a variable reference through the shared dynamic-text contract', async () => {
+        const ref = createRef<RichTextInputComponentMethods>();
+        const {container} = render(
+            <RichTextInputComponent
+                ref={ref}
+                label="Protokollnachricht"
+                value="Hallo "
+                onChange={vi.fn()}
+                dynamicText
+                reducedMode
+            />,
+        );
+
+        act(() => ref.current?.insertVariableReference('$.name'));
+
+        await waitFor(() => {
+            expect(container.querySelector('.dynamic-text-token')).toHaveTextContent('{{ $.name }}');
+        });
     });
 });

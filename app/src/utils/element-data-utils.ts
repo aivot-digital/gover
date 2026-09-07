@@ -11,6 +11,7 @@ import {
     isAuthoredElementValues,
     isComputedElementSubState,
     isReplicatingContainerElementValue,
+    resolveAuthoredReplicatingContainerElementValues,
     resolveReplicatingContainerElementValues,
     resolveComputedElementSubState,
     resolveComputedElementSubStateStates,
@@ -24,6 +25,7 @@ import {isReplicatingContainerLayout} from '../models/elements/form/layout/repli
 import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
 import {ElementType} from '../data/element-type/element-type';
 import {deepEquals} from './equality-utils';
+import {getLiteralAuthoredValue} from '../models/element-data';
 
 export function resolveElementState(element: AnyElement, derivedData: DerivedRuntimeElementData): ComputedElementState | undefined {
     return derivedData.elementStates[element.id];
@@ -61,14 +63,16 @@ export function resolveValueForResolvedOverride(
     }
 
     if (hasAuthoredValue) {
-        return authoredValue;
+        return authoredValue?.type === 'Literal'
+            ? getLiteralAuthoredValue(authoredValue)
+            : effectiveValue;
     }
 
     if (elementState?.valueSource === ComputedElementValueSource.Derived) {
         return effectiveValue;
     }
 
-    return authoredValue;
+    return effectiveValue;
 }
 
 export function resolveDisabled(element: AnyElement, derivedData: DerivedRuntimeElementData): boolean {
@@ -248,8 +252,10 @@ function collectChangedElementErrorSuppressionTargetsRecursively(
     }
 
     if (isReplicatingContainerLayout(currentElement)) {
-        const previousRows = Array.isArray(previousValue) ? previousValue : [];
-        const nextRows = Array.isArray(nextValue) ? nextValue : [];
+        const previousLiteralValue = getLiteralAuthoredValue<unknown[]>(previousValue);
+        const nextLiteralValue = getLiteralAuthoredValue<unknown[]>(nextValue);
+        const previousRows = Array.isArray(previousLiteralValue) ? previousLiteralValue : [];
+        const nextRows = Array.isArray(nextLiteralValue) ? nextLiteralValue : [];
 
         for (let nextRowIndex = 0; nextRowIndex < nextRows.length; nextRowIndex++) {
             const nextRow = nextRows[nextRowIndex];
@@ -414,7 +420,8 @@ export function walkAuthoredElementValues(
     currentElementValues: AuthoredElementValues,
     callback: (element: AnyElement, value: any | null | undefined) => void,
 ): void {
-    const value = currentElementValues[currentElement.id];
+    const authoredValue = currentElementValues[currentElement.id];
+    const value = getLiteralAuthoredValue(authoredValue);
     callback(currentElement, value);
 
     if (isReplicatingContainerLayout(currentElement)) {
@@ -447,8 +454,15 @@ export function mapAuthoredElementValues(
     callback: (element: AnyElement, value: any | null | undefined, path: Array<AnyElement | number>) => any | undefined,
     parents: Array<AnyElement | number> = [],
 ): AuthoredElementValues {
-    const currentValue = currentElementValues[currentElement.id];
+    const currentAuthoredValue = currentElementValues[currentElement.id];
+    const currentValue = getLiteralAuthoredValue(currentAuthoredValue);
     const mappedValue = callback(currentElement, currentValue, parents);
+
+    // Structural mappers operate on literal payloads. Dynamic values have no editable payload at authoring time and
+    // must remain untouched instead of being mistaken for an absent value.
+    if (currentAuthoredValue != null && currentAuthoredValue.type !== 'Literal') {
+        return currentElementValues;
+    }
 
     let mappedElementValues: AuthoredElementValues = {
         ...currentElementValues,
@@ -457,7 +471,7 @@ export function mapAuthoredElementValues(
     if (mappedValue === undefined) {
         delete mappedElementValues[currentElement.id];
     } else {
-        mappedElementValues[currentElement.id] = mappedValue;
+        mappedElementValues[currentElement.id] = {type: 'Literal', value: mappedValue};
     }
 
     const nextCurrentValue = mappedValue === undefined ? currentValue : mappedValue;
@@ -465,8 +479,8 @@ export function mapAuthoredElementValues(
     if (isReplicatingContainerLayout(currentElement)) {
         if (Array.isArray(nextCurrentValue)) {
             const mappedChildValues = nextCurrentValue.map((row, index) => {
-                const childValues = resolveReplicatingContainerElementValues(row);
-                if (!isAuthoredElementValues(childValues)) {
+                const childValues = resolveAuthoredReplicatingContainerElementValues(row);
+                if (childValues == null) {
                     return row;
                 }
 
@@ -483,7 +497,7 @@ export function mapAuthoredElementValues(
 
             mappedElementValues = {
                 ...mappedElementValues,
-                [currentElement.id]: mappedChildValues,
+                [currentElement.id]: {type: 'Literal', value: mappedChildValues},
             };
         }
 
@@ -505,13 +519,14 @@ export function filterAuthoredElementValues(
     callback: (element: AnyElement, value: any | null | undefined, path: Array<AnyElement | number>) => boolean,
     parents: Array<AnyElement | number> = [],
 ): AuthoredElementValues {
-    const currentValue = currentElementValues[currentElement.id];
+    const currentAuthoredValue = currentElementValues[currentElement.id];
+    const currentValue = getLiteralAuthoredValue(currentAuthoredValue);
     const shouldKeepCurrentValue = callback(currentElement, currentValue, parents);
 
     let filteredValues: AuthoredElementValues = {};
 
-    if (shouldKeepCurrentValue && currentValue !== undefined) {
-        filteredValues[currentElement.id] = currentValue;
+    if (shouldKeepCurrentValue && currentAuthoredValue !== undefined) {
+        filteredValues[currentElement.id] = currentAuthoredValue;
     }
 
     if (isReplicatingContainerLayout(currentElement)) {
@@ -538,7 +553,7 @@ export function filterAuthoredElementValues(
                 .filter((childValues): childValues is ReplicatingContainerElementValue => childValues != null);
 
             if (filteredChildValues.length > 0) {
-                filteredValues[currentElement.id] = filteredChildValues;
+                filteredValues[currentElement.id] = {type: 'Literal', value: filteredChildValues};
             } else {
                 delete filteredValues[currentElement.id];
             }
@@ -556,6 +571,49 @@ export function filterAuthoredElementValues(
         }
     }
 
+    return filteredValues;
+}
+
+export function filterEffectiveElementValues(
+    currentElement: AnyElement,
+    currentElementValues: EffectiveElementValues,
+    callback: (element: AnyElement, value: unknown, path: Array<AnyElement | number>) => boolean,
+    parents: Array<AnyElement | number> = [],
+): EffectiveElementValues {
+    const currentValue = currentElementValues[currentElement.id];
+    const filteredValues: EffectiveElementValues = {};
+
+    if (callback(currentElement, currentValue, parents) && currentValue !== undefined) {
+        filteredValues[currentElement.id] = currentValue;
+    }
+
+    if (isReplicatingContainerLayout(currentElement) && Array.isArray(currentValue)) {
+        const rows = currentValue.map((row, index) => {
+            const childValues = resolveReplicatingContainerElementValues(row) as EffectiveElementValues | null;
+            if (childValues == null) return undefined;
+
+            let filteredRow: EffectiveElementValues = {};
+            for (const child of currentElement.children ?? []) {
+                filteredRow = {
+                    ...filteredRow,
+                    ...filterEffectiveElementValues(child, childValues, callback, [...parents, currentElement, index]),
+                };
+            }
+            return Object.keys(filteredRow).length === 0 ? undefined : {
+                ...(isReplicatingContainerElementValue(row) ? row : {}),
+                values: filteredRow,
+            };
+        }).filter(row => row != null);
+
+        if (rows.length > 0) filteredValues[currentElement.id] = rows;
+        return filteredValues;
+    }
+
+    if (isAnyElementWithChildren(currentElement)) {
+        for (const child of currentElement.children ?? []) {
+            Object.assign(filteredValues, filterEffectiveElementValues(child, currentElementValues, callback, [...parents, currentElement]));
+        }
+    }
     return filteredValues;
 }
 

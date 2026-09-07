@@ -10,6 +10,8 @@ import type {
 import {
     ComputedElementValueSource,
     createDerivedRuntimeElementData,
+    getLiteralElementValue,
+    literalAuthoredValue,
 } from '../../../models/element-data';
 import {ElementDerivationContext} from './element-derivation-context';
 
@@ -22,9 +24,20 @@ vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => (
         <>
             <button
                 type="button"
-                onClick={() => props.onAuthoredElementValuesChange({field: 'valid'}, ['field'])}
+                onClick={() => props.onAuthoredElementValuesChange({field: literalAuthoredValue('valid')}, ['field'])}
             >
                 Wert setzen
+            </button>
+            <button
+                type="button"
+                onClick={() => props.onAuthoredElementValuesChange({
+                    field: {
+                        type: 'Variable',
+                        reference: {source: 'ProcessData', path: 'person.name'},
+                    },
+                }, ['field'])}
+            >
+                Dynamischen Wert setzen
             </button>
             <button
                 type="button"
@@ -35,16 +48,16 @@ vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => (
             <button
                 type="button"
                 onClick={() => {
-                    const currentRows = Array.isArray(props.authoredElementValues.rows) ? props.authoredElementValues.rows : [];
+                    const currentRows = getLiteralElementValue<unknown[]>(props.authoredElementValues, 'rows') ?? [];
                     props.onAuthoredElementValuesChange({
                         ...props.authoredElementValues,
-                        rows: [
+                        rows: literalAuthoredValue([
                             ...currentRows,
                             {
                                 id: `row-${currentRows.length + 1}`,
                                 values: {},
                             },
-                        ],
+                        ]),
                     }, ['rows', 'rowField']);
                 }}
             >
@@ -53,16 +66,16 @@ vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => (
             <button
                 type="button"
                 onClick={() => {
-                    const currentRows = Array.isArray(props.authoredElementValues.rows) ? props.authoredElementValues.rows : [];
+                    const currentRows = getLiteralElementValue<any[]>(props.authoredElementValues, 'rows') ?? [];
                     props.onAuthoredElementValuesChange({
                         ...props.authoredElementValues,
-                        rows: currentRows.map((row: any, index: number) => index === 0 ? {
+                        rows: literalAuthoredValue(currentRows.map((row: any, index: number) => index === 0 ? {
                             ...row,
                             values: {
                                 ...(row.values ?? {}),
-                                rowField: 'valid',
+                                rowField: literalAuthoredValue('valid'),
                             },
-                        } : row),
+                        } : row)),
                     }, ['rows', 'rowField']);
                 }}
             >
@@ -70,6 +83,9 @@ vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => (
             </button>
             <output data-testid="field-error">
                 {props.derivedData.elementStates.field?.error ?? ''}
+            </output>
+            <output data-testid="field-effective-value">
+                {JSON.stringify(props.derivedData.effectiveValues.field) ?? ''}
             </output>
             <output data-testid="row-1-error">
                 {
@@ -131,7 +147,7 @@ describe('ElementDerivationContext', () => {
         render(
             <ElementDerivationContext
                 element={createRootElement()}
-                authoredElementValues={{field: null}}
+                authoredElementValues={{field: literalAuthoredValue(null)}}
                 onAuthoredElementValuesChange={onAuthoredElementValuesChange}
                 onDerivedDataChange={onDerivedDataChange}
                 computedErrors={computedErrors}
@@ -145,10 +161,42 @@ describe('ElementDerivationContext', () => {
 
         fireEvent.click(screen.getByRole('button', {name: 'Wert setzen'}));
 
-        expect(onAuthoredElementValuesChange).toHaveBeenCalledWith({field: 'valid'});
+        expect(onAuthoredElementValuesChange).toHaveBeenCalledWith({field: literalAuthoredValue('valid')});
         const patchedDerivedData = onDerivedDataChange.mock.calls[0][0] as DerivedRuntimeElementData;
         expect(patchedDerivedData.elementStates.field?.error).toBeUndefined();
         await waitFor(() => expect(screen.getByTestId('field-error')).toBeEmptyDOMElement());
+    });
+
+    it('should not project authored input-mode wrappers into optimistic effective values', async () => {
+        const onAuthoredElementValuesChange = vi.fn();
+        const onDerivedDataChange = vi.fn();
+        const rootElement = createRootElement();
+        rootElement.children[0].inputModePolicy = {
+            allowedModes: ['Literal', 'Variable'],
+            allowedVariableSources: ['ProcessData'],
+        };
+
+        render(
+            <ElementDerivationContext
+                element={rootElement}
+                authoredElementValues={{field: literalAuthoredValue(null)}}
+                onAuthoredElementValuesChange={onAuthoredElementValuesChange}
+                onDerivedDataChange={onDerivedDataChange}
+                onDeriveOverride={() => Promise.resolve(createDerivedRuntimeElementData())}
+                inputModesEnabled
+            />,
+        );
+
+        await waitFor(() => expect(onDerivedDataChange).toHaveBeenCalled());
+        fireEvent.click(screen.getByRole('button', {name: 'Dynamischen Wert setzen'}));
+
+        expect(onAuthoredElementValuesChange).toHaveBeenCalledWith({
+            field: {
+                type: 'Variable',
+                reference: {source: 'ProcessData', path: 'person.name'},
+            },
+        });
+        expect(screen.getByTestId('field-effective-value')).toHaveTextContent('null');
     });
 
     it('should retain newly derived row states when external errors only contain older rows', async () => {
@@ -169,10 +217,10 @@ describe('ElementDerivationContext', () => {
             },
         };
         const onDeriveOverride = vi.fn((authoredElementValues: AuthoredElementValues) => {
-            const rows = Array.isArray(authoredElementValues.rows) ? authoredElementValues.rows : [];
+            const rows = getLiteralElementValue<Array<{id?: string | null}>>(authoredElementValues, 'rows') ?? [];
 
             return Promise.resolve(createDerivedRuntimeElementData({
-                effectiveValues: authoredElementValues,
+                effectiveValues: {},
                 elementStates: {
                     rows: {
                         subStates: rows.map((row: {id?: string | null}) => ({
@@ -219,11 +267,11 @@ describe('ElementDerivationContext', () => {
         const validationError = 'Dieses Feld ist ein Pflichtfeld und darf nicht leer sein.';
         let shouldReturnValidationErrors = true;
         const onDeriveOverride = vi.fn((authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[]) => {
-            const rows = Array.isArray(authoredElementValues.rows) ? authoredElementValues.rows : [];
+            const rows = getLiteralElementValue<Array<{id?: string | null}>>(authoredElementValues, 'rows') ?? [];
             const shouldIncludeErrors = !skipErrorsForElements.includes('ALL') && shouldReturnValidationErrors;
 
             return Promise.resolve(createDerivedRuntimeElementData({
-                effectiveValues: authoredElementValues,
+                effectiveValues: {},
                 elementStates: {
                     field: {
                         error: shouldIncludeErrors ? validationError : null,
@@ -262,18 +310,18 @@ describe('ElementDerivationContext', () => {
         await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(3));
         expect(onDeriveOverride).toHaveBeenLastCalledWith(
             expect.objectContaining({
-                rows: [
+                rows: literalAuthoredValue([
                     {
                         id: 'row-1',
                         values: {
-                            rowField: null,
+                            rowField: literalAuthoredValue(null),
                         },
                     },
                     {
                         id: 'row-2',
                         values: {},
                     },
-                ],
+                ]),
             }),
             ['ALL'],
         );
@@ -314,15 +362,15 @@ function ReplicatingContainerDerivationHarness(props: ReplicatingContainerDeriva
     } = props;
     const element = React.useMemo(() => createRootElementWithReplicatingContainer(), []);
     const [authoredElementValues, setAuthoredElementValues] = React.useState<AuthoredElementValues>({
-        field: null,
-        rows: [
+        field: literalAuthoredValue(null),
+        rows: literalAuthoredValue([
             {
                 id: 'row-1',
                 values: {
-                    rowField: null,
+                    rowField: literalAuthoredValue(null),
                 },
             },
-        ],
+        ]),
     });
 
     return (

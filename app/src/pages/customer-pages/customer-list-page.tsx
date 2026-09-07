@@ -24,14 +24,16 @@ import {isApiError} from '../../models/api-error';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {FormTriggerApiService, FormTriggerListItem} from '../../modules/forms/services/form-trigger-api-service';
 import {resolveFormNodeName} from '../../models/elements/form-layout-element';
+import {getLiteralElementValue} from '../../models/element-data';
+import type {FormLayoutElement} from '../../models/elements/form-layout-element';
 
 function mapPublicFormListItem(form: FormTriggerListItem): FormCitizenListResponseDTO | null {
-    const formLayout = form.node.configuration.formLayout;
+    const formLayout = getLiteralElementValue<FormLayoutElement>(form.node.configuration, 'formLayout');
     if (formLayout?.showOnFormIndexPage === false) {
         return null;
     }
 
-    const formSlug = form.node.configuration.formSlug;
+    const formSlug = getLiteralElementValue<string>(form.node.configuration, 'formSlug');
     if (formSlug == null || formSlug.length === 0) {
         return null;
     }

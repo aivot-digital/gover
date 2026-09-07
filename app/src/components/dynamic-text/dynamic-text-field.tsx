@@ -1,4 +1,4 @@
-import {forwardRef, useEffect, useImperativeHandle, useRef, useState} from 'react';
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState} from 'react';
 import {Box, IconButton, Tooltip, Typography} from '@mui/material';
 import {alpha, useTheme} from '@mui/material/styles';
 import {LexicalComposer, type InitialConfigType} from '@lexical/react/LexicalComposer';
@@ -32,14 +32,23 @@ import {
 } from './dynamic-text-lexical';
 import {
     type DynamicTextVariableMetadata,
+    type DynamicTextInputMethods,
     useDynamicTextTokenTitles,
 } from './dynamic-text-metadata';
 import {FormField, type FormFieldLayoutProps} from '../form-field';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
 
-export interface DynamicTextFieldMethods {
-    focus: () => void;
-    insertVariableReference: (reference: string) => void;
+export type DynamicTextFieldMethods = DynamicTextInputMethods;
+
+const OUTLINED_CONTROL_BORDER_WIDTH = 1;
+const INPUT_LINE_HEIGHT_PX = 23;
+const SINGLE_LINE_VERTICAL_PADDING_PX = 9.5;
+const MULTILINE_VERTICAL_PADDING_PX = 12.5;
+const DEFAULT_MULTILINE_MIN_ROWS = 4;
+const DEFAULT_MULTILINE_MAX_ROWS = 12;
+
+function getMultilineEditorHeight(rows: number): number {
+    return rows * INPUT_LINE_HEIGHT_PX + 2 * MULTILINE_VERTICAL_PADDING_PX;
 }
 
 export interface DynamicTextFieldProps {
@@ -55,6 +64,7 @@ export interface DynamicTextFieldProps {
     endAction?: EndAction;
     multiline?: boolean;
     onChange: (value: string | null) => void;
+    onBlur?: (value: string | null) => void;
     placeholder?: string;
     rows?: number;
     variableMetadata?: readonly DynamicTextVariableMetadata[];
@@ -192,26 +202,38 @@ DynamicTextFieldProps
         });
     };
 
+    // Keep the Lexical surface on the same sizing baseline as a small MUI outlined input.
+    const editorMinHeight = props.multiline
+        ? getMultilineEditorHeight(Math.max(props.rows ?? DEFAULT_MULTILINE_MIN_ROWS, 2))
+        : FormFieldTokens.controlMinHeight - 2 * OUTLINED_CONTROL_BORDER_WIDTH;
+    const editorMaxHeight = props.multiline && props.rows == null
+        ? getMultilineEditorHeight(DEFAULT_MULTILINE_MAX_ROWS)
+        : editorMinHeight;
+    const hasFixedHeight = !props.multiline || props.rows != null;
+    const controlMinHeight = editorMinHeight + 2 * OUTLINED_CONTROL_BORDER_WIDTH;
+    const verticalPadding = props.multiline
+        ? MULTILINE_VERTICAL_PADDING_PX
+        : SINGLE_LINE_VERTICAL_PADDING_PX;
     const placeholder = props.placeholder == null ? null : (
         <Typography
             component="span"
             sx={{
                 position: 'absolute',
-                top: 12,
+                top: `${verticalPadding}px`,
                 left: 14,
                 color: 'text.disabled',
+                font: 'inherit',
+                lineHeight: `${INPUT_LINE_HEIGHT_PX}px`,
                 pointerEvents: 'none',
             }}
         >
             {props.placeholder}
         </Typography>
     );
-    const minHeight = props.multiline
-        ? Math.max(props.rows ?? 3, 2) * 24 + 24
-        : FormFieldTokens.controlMinHeight;
     const outlinedBorderColor = theme.palette.mode === 'light'
         ? 'rgba(0, 0, 0, 0.23)'
         : 'rgba(255, 255, 255, 0.23)';
+    const hasDisabledAppearance = Boolean(props.disabled || props.busy);
 
     useDynamicTextTokenTitles(container, props.variableMetadata);
     useDynamicTextSyntaxHighlights(container);
@@ -220,16 +242,24 @@ DynamicTextFieldProps
         <Box
             ref={setContainer}
             data-dynamic-text-multiline={props.multiline || undefined}
+            data-disabled={props.disabled || undefined}
             sx={{
                 position: 'relative',
                 containerType: 'inline-size',
                 display: 'grid',
                 gridTemplateColumns: props.endAction == null ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) 44px',
-                minHeight,
+                boxSizing: 'border-box',
+                minHeight: controlMinHeight,
+                height: hasFixedHeight ? controlMinHeight : undefined,
                 border: '1px solid',
                 borderRadius: 1,
-                bgcolor: isReadOnly ? getDisabledFieldBackground(theme) : 'transparent',
-                borderColor: props.invalid ? 'error.main' : outlinedBorderColor,
+                bgcolor: hasDisabledAppearance ? getDisabledFieldBackground(theme) : 'transparent',
+                cursor: hasDisabledAppearance ? 'not-allowed' : undefined,
+                borderColor: props.invalid
+                    ? 'error.main'
+                    : props.disabled
+                        ? 'action.disabled'
+                        : outlinedBorderColor,
                 transition: theme.transitions.create(['border-color', 'box-shadow']),
                 '&:hover': isReadOnly ? undefined : {
                     borderColor: props.invalid ? 'error.main' : 'text.primary',
@@ -241,7 +271,7 @@ DynamicTextFieldProps
                 '& [contenteditable="true"] p': {
                     m: 0,
                 },
-                '& [contenteditable="false"]': {
+                '&[data-disabled="true"] [contenteditable="false"]': {
                     color: 'text.secondary',
                     cursor: 'default',
                 },
@@ -264,11 +294,22 @@ DynamicTextFieldProps
                                 aria-invalid={props.invalid || undefined}
                                 aria-multiline={props.multiline || undefined}
                                 spellCheck={enableSpellCheck}
+                                onBlur={() => {
+                                    editorRef.current?.getEditorState().read(() => {
+                                        const value = getEditorValue();
+                                        props.onBlur?.(value.length === 0 ? null : value);
+                                    });
+                                }}
                                 style={{
                                     boxSizing: 'border-box',
                                     caretColor: theme.palette.text.primary,
-                                    minHeight,
-                                    padding: '12px 14px',
+                                    font: 'inherit',
+                                    letterSpacing: 'inherit',
+                                    lineHeight: `${INPUT_LINE_HEIGHT_PX}px`,
+                                    minHeight: editorMinHeight,
+                                    maxHeight: editorMaxHeight,
+                                    height: hasFixedHeight ? editorMinHeight : undefined,
+                                    padding: `${verticalPadding}px 14px`,
                                     outline: 'none',
                                     overflowX: props.multiline ? 'hidden' : 'auto',
                                     overflowY: props.multiline ? 'auto' : 'hidden',
@@ -344,14 +385,56 @@ export interface DynamicTextInputFieldProps extends FormFieldLayoutProps {
     endAction?: EndAction;
     multiline?: boolean;
     onChange: (value: string | null) => void;
+    onBlur?: (value: string | null) => void;
+    debounce?: number;
     placeholder?: string;
     rows?: number;
     variableMetadata?: readonly DynamicTextVariableMetadata[];
     value: string | null;
 }
 
-export const DynamicTextInputField = forwardRef<DynamicTextFieldMethods, DynamicTextInputFieldProps>((props, ref) => (
-    <FormField
+export const DynamicTextInputField = forwardRef<DynamicTextFieldMethods, DynamicTextInputFieldProps>((props, ref) => {
+    const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const clearPendingChange = useCallback(() => {
+        if (debounceTimeoutRef.current != null) {
+            clearTimeout(debounceTimeoutRef.current);
+            debounceTimeoutRef.current = null;
+        }
+    }, []);
+
+    useEffect(() => clearPendingChange, [clearPendingChange]);
+
+    // An authoritative value refresh supersedes locally queued input, matching the regular text field behavior.
+    useEffect(() => {
+        clearPendingChange();
+    }, [clearPendingChange, props.value]);
+
+    const handleChange = useCallback((value: string | null) => {
+        if (props.debounce == null || props.debounce <= 0) {
+            props.onChange(value);
+            return;
+        }
+
+        clearPendingChange();
+        debounceTimeoutRef.current = setTimeout(() => {
+            debounceTimeoutRef.current = null;
+            props.onChange(value);
+        }, props.debounce);
+    }, [clearPendingChange, props.debounce, props.onChange]);
+
+    const handleBlur = useCallback((value: string | null) => {
+        const cleanedValue = value?.trim() || null;
+        if (debounceTimeoutRef.current != null) {
+            clearPendingChange();
+            props.onChange(cleanedValue);
+        } else if (cleanedValue !== value) {
+            props.onChange(cleanedValue);
+        }
+        props.onBlur?.(cleanedValue);
+    }, [clearPendingChange, props.onBlur, props.onChange]);
+
+    return <FormField
         id={props.id}
         label={props.label}
         hint={props.hint}
@@ -381,14 +464,15 @@ export const DynamicTextInputField = forwardRef<DynamicTextFieldMethods, Dynamic
                 invalid={control.invalid}
                 endAction={props.endAction}
                 multiline={props.multiline}
-                onChange={props.onChange}
+                onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder={props.placeholder}
                 rows={props.rows}
                 variableMetadata={props.variableMetadata}
                 value={props.value}
             />
         )}
-    </FormField>
-));
+    </FormField>;
+});
 
 DynamicTextInputField.displayName = 'DynamicTextInputField';
