@@ -173,6 +173,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertEquals("saved", response.data().get("extra"));
         assertEquals(List.of(new TaskViewEvent("Submit", "submit")), response.events());
         assertEquals("value", task.getRuntimeData().get("keep"));
+        assertEquals(2, provider.taskViewInvocationCount);
     }
 
     @Test
@@ -279,6 +280,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertEquals(normalizedInputs, response.data());
         assertEquals("customer-root", response.layout().getId());
         assertEquals(List.of(new TaskViewEvent("Submit", "submit")), response.events());
+        assertEquals(1, provider.taskViewInvocationCount);
     }
 
     @Test
@@ -850,6 +852,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
     }
 
     private static final class NoOpCustomerProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
+        private int taskViewInvocationCount;
+
         @Override
         public String getParentPluginKey() {
             return "test";
@@ -905,24 +909,17 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+        public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+            taskViewInvocationCount++;
             var layout = new GroupLayoutElement();
             layout.setId("customer-root");
-            return layout;
-        }
-
-        @Nonnull
-        @Override
-        public List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
-            return List.of(new TaskViewEvent("Submit", "submit"));
-        }
-
-        @Nonnull
-        @Override
-        public AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             var persistedData = new AuthoredElementValues();
             persistedData.put("field", "persisted");
-            return persistedData;
+            return new CustomerView(
+                    layout,
+                    List.of(new TaskViewEvent("Submit", "submit")),
+                    persistedData
+            );
         }
 
         @Nonnull
@@ -996,7 +993,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+        public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             var linkButton = new LinkButtonContentElement()
                     .setLabel("Submit inline")
                     .setHref(href)
@@ -1006,21 +1003,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
             var layout = new GroupLayoutElement();
             layout.setId("customer-root");
             layout.setChildren(List.of(linkButton));
-            return layout;
-        }
-
-        @Nonnull
-        @Override
-        public List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
-            return List.of();
-        }
-
-        @Nonnull
-        @Override
-        public AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             var data = new AuthoredElementValues();
             data.put("field", context.getThisTask().getRuntimeData().get("field"));
-            return data;
+            return new CustomerView(layout, List.of(), data);
         }
 
         @Nonnull
@@ -1048,6 +1033,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
     }
 
     private static final class AutoSaveCustomerProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
+        private int taskViewInvocationCount;
+
         @Override
         public String getParentPluginKey() {
             return "test";
@@ -1103,24 +1090,18 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+        public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+            taskViewInvocationCount++;
             var layout = new GroupLayoutElement();
             layout.setId("customer-root");
-            return layout;
-        }
-
-        @Nonnull
-        @Override
-        public List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
-            return List.of(new TaskViewEvent("Submit", "submit"));
-        }
-
-        @Nonnull
-        @Override
-        public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             var initialData = new AuthoredElementValues();
             initialData.put("defaultField", "initial");
-            return initialData;
+            return CustomerView.of(
+                    context,
+                    layout,
+                    List.of(new TaskViewEvent("Submit", "submit")),
+                    initialData
+            );
         }
 
         @Nonnull

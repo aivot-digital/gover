@@ -296,7 +296,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
     @Nonnull
     @Override
-    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) throws ResponseException {
+    public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) throws ResponseException {
         var config = context.getConfigurationOfExecutingNode();
 
         var layout = new GroupLayoutElement();
@@ -344,45 +344,29 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         children.add(actionsSpacer);
 
         layout.setChildren(children);
-        return layout;
-    }
 
-    @Nonnull
-    @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) {
-        return List.of(
+        var events = List.of(
                 new TaskViewEvent("Freigeben", EVENT_APPROVE),
                 new TaskViewEvent("Ablehnen", EVENT_REJECT)
         );
-    }
-
-    @Nonnull
-    @Override
-    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) throws ResponseException {
-        return elementDataTransformService
+        var initialData = elementDataTransformService
                 .buildEffectiveValues(
-                        getStaffTaskView(context),
+                        layout,
                         context.getThisTask().getProcessData()
                 )
                 .toAuthoredElementValues();
-    }
-
-    @Nullable
-    @Override
-    public AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) {
-        var savedData = ProcessNodeDefinition.super.getAutoSavedStaffTaskViewData(context);
-        if (savedData != null) {
-            return savedData;
-        }
 
         var runtimeData = context.getThisTask().getRuntimeData();
-        if (runtimeData.isEmpty()) {
-            return null;
+        if (runtimeData.get(STAFF_TASK_VIEW_DATA_RUNTIME_KEY) == null && !runtimeData.isEmpty()) {
+            var legacyData = JsonMapperFactory
+                    .getNullPreservingInstance()
+                    .convertValue(runtimeData, AuthoredElementValues.class);
+            if (!legacyData.isEmpty()) {
+                return new StaffView(layout, events, legacyData);
+            }
         }
 
-        return JsonMapperFactory
-                .getNullPreservingInstance()
-                .convertValue(runtimeData, AuthoredElementValues.class);
+        return StaffView.of(context, layout, events, initialData);
     }
 
     @Nonnull
@@ -408,7 +392,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         // Derive the effective values based on the staff task view and the saved staff task view data to store the unmapped field values in the unmapped output field
         var staffTaskView = getStaffTaskView(context);
         var effectiveValues = elementDerivationService
-                .derive(staffTaskView, update)
+                .derive((GroupLayoutElement) staffTaskView.layout(), update)
                 .getEffectiveValues();
 
         var nodeData = new HashMap<String, Object>();

@@ -292,6 +292,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertNull(elementDerivationService.lastRequest);
         var savedDraft = (Map<?, ?>) fixture.task().getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY);
         assertEquals("", savedDraft.get("requiredField"));
+        assertEquals(2, provider.taskViewInvocationCount);
     }
 
     @Test
@@ -319,6 +320,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertFalse(provider.eventInvoked);
         assertNull(elementDerivationService.lastRequest);
         assertFalse(fixture.task().getRuntimeData().containsKey(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
+        assertEquals(1, provider.taskViewInvocationCount);
     }
 
     @Test
@@ -722,6 +724,7 @@ class StaffProcessInstanceTaskViewControllerTest {
     }
 
     private static final class EventValidatedStaffProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
+        private int taskViewInvocationCount;
         private boolean eventInvoked;
 
         @Override
@@ -779,7 +782,8 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+        public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+            taskViewInvocationCount++;
             var requiredField = new TextInputElement();
             requiredField.setId("requiredField");
             requiredField.setLabel("Required field");
@@ -788,13 +792,12 @@ class StaffProcessInstanceTaskViewControllerTest {
             var layout = new GroupLayoutElement();
             layout.setId("staff-root");
             layout.setChildren(List.of(requiredField));
-            return layout;
-        }
-
-        @Nonnull
-        @Override
-        public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
-            return List.of(new TaskViewEvent("Complete", "complete"));
+            return StaffView.of(
+                    context,
+                    layout,
+                    List.of(new TaskViewEvent("Complete", "complete")),
+                    new AuthoredElementValues()
+            );
         }
 
         @Nonnull
@@ -880,7 +883,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+        public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
             var linkButton = new LinkButtonContentElement()
                     .setLabel("Complete inline")
                     .setHref(href)
@@ -890,13 +893,7 @@ class StaffProcessInstanceTaskViewControllerTest {
             var layout = new GroupLayoutElement();
             layout.setId("staff-root");
             layout.setChildren(List.of(linkButton));
-            return layout;
-        }
-
-        @Nonnull
-        @Override
-        public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
-            return List.of();
+            return StaffView.of(context, layout, List.of(), new AuthoredElementValues());
         }
 
         @Nonnull
@@ -975,18 +972,12 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+        public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
             var layout = new GroupLayoutElement();
             layout.setId("staff-root");
-            return layout;
-        }
-
-        @Nonnull
-        @Override
-        public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
             var initialData = new AuthoredElementValues();
             initialData.put("defaultField", "initial");
-            return initialData;
+            return StaffView.of(context, layout, List.of(), initialData);
         }
 
         @Nonnull

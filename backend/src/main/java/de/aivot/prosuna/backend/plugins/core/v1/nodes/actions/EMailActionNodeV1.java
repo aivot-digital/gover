@@ -8,7 +8,6 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
@@ -290,7 +289,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
     @Nonnull
     @Override
-    public LayoutElement<?> getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) throws ResponseException {
+    public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) throws ResponseException {
         var root = new GroupLayoutElement();
         root.setId("root");
         root.setChildren(new LinkedList<>());
@@ -307,12 +306,6 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         contentField.setRequired(true);
         root.getChildren().add(contentField);
 
-        return root;
-    }
-
-    @Nonnull
-    @Override
-    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) throws ResponseException {
         var manualContent = requireManualContentForStaffView(context.getConfigurationOfExecutingNode());
         var taskViewData = new AuthoredElementValues();
 
@@ -333,21 +326,15 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
             );
         }
 
-        return taskViewData;
+        return StaffView.of(
+                context,
+                root,
+                List.of(new TaskViewEvent("Absenden", STAFF_TASK_SEND_EVENT)),
+                taskViewData
+        );
     }
 
     private static final String STAFF_TASK_SEND_EVENT = "send";
-
-    @Nonnull
-    @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) throws ResponseException {
-        return List.of(
-                new TaskViewEvent(
-                        "Absenden",
-                        STAFF_TASK_SEND_EVENT
-                )
-        );
-    }
 
     @Nonnull
     @Override

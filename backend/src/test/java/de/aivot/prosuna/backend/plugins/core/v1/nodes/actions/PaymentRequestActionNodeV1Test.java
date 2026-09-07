@@ -309,8 +309,9 @@ class PaymentRequestActionNodeV1Test {
                 task(Map.of(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD, persistedPaymentPayload), Map.of(), Map.of())
         );
 
-        var layout = node.getStaffTaskView(context);
-        var root = assertInstanceOf(GroupLayoutElement.class, layout);
+        var view = node.getStaffTaskView(context);
+        var layout = assertInstanceOf(GroupLayoutElement.class, view.layout());
+        var root = layout;
         assertEquals(
                 List.of("payment-information", "subject", "body"),
                 root.getChildren().stream().map(element -> element.getId()).toList()
@@ -339,10 +340,10 @@ class PaymentRequestActionNodeV1Test {
         assertTrue(Boolean.TRUE.equals(layout.findChild("body", RichTextInputElement.class).orElseThrow().getRequired()));
         assertEquals(
                 List.of(new TaskViewEvent("Zahlungsaufforderung versenden", "send")),
-                node.getStaffTaskViewEvents(context)
+                view.events()
         );
 
-        var defaults = node.createDefaultStaffTaskViewData(context);
+        var defaults = view.data();
         assertEquals("Entwurf für Ada", defaults.get("subject"));
         assertEquals("Bitte Ada prüfen", defaults.get("body"));
         verify(paymentPayloadCreationService, never()).createRequest(any(), any(), any());
@@ -662,7 +663,7 @@ class PaymentRequestActionNodeV1Test {
                 null,
                 nodeConfiguration(paymentConfig, "automatic"),
                 null
-        ));
+        )).layout();
 
         var downloadButton = layout.findChild("download", LinkButtonContentElement.class).orElseThrow();
         assertEquals(

@@ -11,7 +11,6 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
@@ -295,9 +294,9 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
 
     @Nonnull
     @Override
-    public LayoutElement<?> getStaffTaskView(
+    public StaffView getStaffTaskView(
             @Nonnull ProcessNodeExecutionContextUIStaff<Configuration> context
-    ) {
+    ) throws ResponseException {
         var subjectField = new TextInputElement();
         subjectField.setId(STAFF_TASK_SUBJECT_FIELD_ID);
         subjectField.setLabel("Betreff der Nachricht");
@@ -311,14 +310,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var root = new GroupLayoutElement();
         root.setId(STAFF_TASK_ROOT_ID);
         root.setChildren(new LinkedList<>(List.of(subjectField, contentField)));
-        return root;
-    }
 
-    @Nonnull
-    @Override
-    public AuthoredElementValues createDefaultStaffTaskViewData(
-            @Nonnull ProcessNodeExecutionContextUIStaff<Configuration> context
-    ) throws ResponseException {
         var manualContent = requireManualContentForStaffView(context.getConfigurationOfExecutingNode());
         var taskViewData = new AuthoredElementValues();
 
@@ -339,15 +331,12 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
             );
         }
 
-        return taskViewData;
-    }
-
-    @Nonnull
-    @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(
-            @Nonnull ProcessNodeExecutionContextUIStaff<Configuration> context
-    ) {
-        return List.of(new TaskViewEvent("Nachricht versenden", STAFF_TASK_SEND_EVENT));
+        return StaffView.of(
+                context,
+                root,
+                List.of(new TaskViewEvent("Nachricht versenden", STAFF_TASK_SEND_EVENT)),
+                taskViewData
+        );
     }
 
     @Nonnull

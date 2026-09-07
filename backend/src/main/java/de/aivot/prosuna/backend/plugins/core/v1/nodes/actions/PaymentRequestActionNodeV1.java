@@ -10,7 +10,6 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
@@ -385,7 +384,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     @Override
-    public LayoutElement<?> getStaffTaskView(
+    public StaffView getStaffTaskView(
             @Nonnull ProcessNodeExecutionContextUIStaff<PaymentRequestActionNodeConfig> context
     ) throws ResponseException {
         var paymentPayload = resolveRuntimePaymentPayloadForStaffView(context);
@@ -407,14 +406,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         var root = new GroupLayoutElement();
         root.setId(STAFF_TASK_ROOT_ID);
         root.setChildren(new LinkedList<>(List.of(paymentInformation, subjectField, contentField)));
-        return root;
-    }
 
-    @Nonnull
-    @Override
-    public AuthoredElementValues createDefaultStaffTaskViewData(
-            @Nonnull ProcessNodeExecutionContextUIStaff<PaymentRequestActionNodeConfig> context
-    ) throws ResponseException {
         var manualContent = requireManualContentForStaffView(context.getConfigurationOfExecutingNode());
         var taskViewData = new AuthoredElementValues();
 
@@ -435,18 +427,12 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             );
         }
 
-        return taskViewData;
-    }
-
-    @Nonnull
-    @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(
-            @Nonnull ProcessNodeExecutionContextUIStaff<PaymentRequestActionNodeConfig> context
-    ) {
-        return List.of(new TaskViewEvent(
-                "Zahlungsaufforderung versenden",
-                STAFF_TASK_SEND_EVENT
-        ));
+        return StaffView.of(
+                context,
+                root,
+                List.of(new TaskViewEvent("Zahlungsaufforderung versenden", STAFF_TASK_SEND_EVENT)),
+                taskViewData
+        );
     }
 
     @Nonnull
@@ -524,7 +510,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     @Override
-    public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<PaymentRequestActionNodeConfig> context) throws ResponseException {
+    public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<PaymentRequestActionNodeConfig> context) throws ResponseException {
         var paymentTransactionKey = context
                 .getThisTask()
                 .getRuntimeData()
@@ -578,7 +564,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         var downloadUrl = createPaymentConfirmationUrl(context);
 
         try {
-            return new PaymentGroupPreset(
+            var layout = new PaymentGroupPreset(
                     paymentProvider,
                     paymentProviderDefinition,
                     paymentPayload,
@@ -587,6 +573,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                     failureMessage,
                     downloadUrl
             );
+            return CustomerView.of(context, layout, List.of(), new AuthoredElementValues());
         } catch (IOException | WriterException e) {
             throw ResponseException.internalServerError(e);
         }

@@ -448,7 +448,7 @@ class FormTriggerNodeV1Test {
                 null,
                 nodeConfiguration,
                 null
-        ));
+        )).layout();
 
         var richText = layout.findChild("rtx", RichTextContentElement.class).orElseThrow();
         assertTrue(richText.getContent().contains("# Zahlung erfolgreich\n# Zahlung erhalten\nDanke **Ada**."));
@@ -501,7 +501,7 @@ class FormTriggerNodeV1Test {
                 null,
                 nodeConfiguration,
                 null
-        ));
+        )).layout();
 
         var downloadButton = layout.findChild("download", LinkButtonContentElement.class).orElseThrow();
         assertEquals(

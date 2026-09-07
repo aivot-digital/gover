@@ -250,12 +250,13 @@ class CommunicationMessageActionNodeV1Test {
                 eq(configuration.messageConfig.manualContent.content)
         )).thenReturn("Hallo Ada");
 
-        var layout = node.getStaffTaskView(context);
+        var view = node.getStaffTaskView(context);
+        var layout = (GroupLayoutElement) view.layout();
         assertTrue(Boolean.TRUE.equals(layout.findChild("subject", TextInputElement.class).orElseThrow().getRequired()));
         assertTrue(Boolean.TRUE.equals(layout.findChild("body", RichTextInputElement.class).orElseThrow().getRequired()));
-        assertEquals("send", node.getStaffTaskViewEvents(context).getFirst().event());
+        assertEquals("send", view.events().getFirst().event());
 
-        var defaults = node.createDefaultStaffTaskViewData(context);
+        var defaults = view.data();
         assertEquals("Entwurf für Ada", defaults.get("subject"));
         assertEquals("Hallo Ada", defaults.get("body"));
 

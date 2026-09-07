@@ -720,12 +720,12 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     @Nonnull
     @Override
-    public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
+    public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
         return createPaymentView(context);
     }
 
     @Nonnull
-    private GroupLayoutElement createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
+    private CustomerView createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
         var paymentTransactionKey = context
                 .getThisTask()
                 .getRuntimeData()
@@ -796,7 +796,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         );
 
         try {
-            return new PaymentGroupPreset(
+            var layout = new PaymentGroupPreset(
                     paymentProvider,
                     paymentProviderDefinition,
                     paymentPayload,
@@ -805,6 +805,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                     failureMessage,
                     downloadUrl
             );
+            return CustomerView.of(context, layout, List.of(), new AuthoredElementValues());
         } catch (IOException | WriterException e) {
             throw ResponseException.internalServerError(e);
         }

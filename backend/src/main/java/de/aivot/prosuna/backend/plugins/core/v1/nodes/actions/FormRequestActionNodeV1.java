@@ -10,7 +10,6 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
@@ -268,7 +267,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
     @Nonnull
     @Override
-    public LayoutElement<?> getStaffTaskView(
+    public StaffView getStaffTaskView(
             @Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context
     ) throws ResponseException {
         var subjectField = new TextInputElement();
@@ -284,14 +283,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var root = new GroupLayoutElement();
         root.setId(STAFF_TASK_ROOT_ID);
         root.setChildren(new LinkedList<>(List.of(subjectField, contentField)));
-        return root;
-    }
 
-    @Nonnull
-    @Override
-    public AuthoredElementValues createDefaultStaffTaskViewData(
-            @Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context
-    ) throws ResponseException {
         var manualContent = requireManualContentForStaffView(context.getConfigurationOfExecutingNode());
         var taskViewData = new AuthoredElementValues();
 
@@ -312,18 +304,12 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
             );
         }
 
-        return taskViewData;
-    }
-
-    @Nonnull
-    @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(
-            @Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context
-    ) {
-        return List.of(new TaskViewEvent(
-                "Aufforderung versenden",
-                STAFF_TASK_SEND_EVENT
-        ));
+        return StaffView.of(
+                context,
+                root,
+                List.of(new TaskViewEvent("Aufforderung versenden", STAFF_TASK_SEND_EVENT)),
+                taskViewData
+        );
     }
 
     @Nonnull
@@ -372,17 +358,13 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
     @Nonnull
     @Override
-    public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
-        return context.getConfigurationOfExecutingNode().uiDefinition;
-    }
-
-    @Nonnull
-    @Override
-    public List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
-        return List.of(new TaskViewEvent(
-                "Daten einreichen",
-                CUSTOMER_TASK_SUBMIT_EVENT
-        ));
+    public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
+        return CustomerView.of(
+                context,
+                context.getConfigurationOfExecutingNode().uiDefinition,
+                List.of(new TaskViewEvent("Daten einreichen", CUSTOMER_TASK_SUBMIT_EVENT)),
+                new AuthoredElementValues()
+        );
     }
 
     @Nonnull

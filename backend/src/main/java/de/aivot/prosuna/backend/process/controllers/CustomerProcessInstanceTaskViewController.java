@@ -156,22 +156,14 @@ public class CustomerProcessInstanceTaskViewController {
                 queryParameters
         );
 
-        var layout = taskViewData
+        var customerView = taskViewData
                 .provider
                 .getCustomerTaskView(context);
 
-        var events = taskViewData
-                .provider
-                .getCustomerTaskViewEvents(context);
-
-        var elementData = taskViewData
-                .provider
-                .getCustomerTaskViewData(context);
-
         return new TaskViewResponse(
-                layout,
-                elementData,
-                events
+                customerView.layout(),
+                customerView.data(),
+                customerView.events()
         );
     }
 
@@ -281,15 +273,12 @@ public class CustomerProcessInstanceTaskViewController {
             previousTask = null;
         }
 
-        var layout = taskViewData
+        var customerView = taskViewData
                 .provider
                 .getCustomerTaskView(context);
+        var layout = customerView.layout();
 
-        var events = taskViewData
-                .provider
-                .getCustomerTaskViewEvents(context);
-
-        var cleanEvent = resolveValidCustomerEvent(layout, events, rawEvent);
+        var cleanEvent = resolveValidCustomerEvent(layout, customerView.events(), rawEvent);
 
         if (rawEvent != null && cleanEvent == null) {
             throw ResponseException.badRequest("Invalid event: " + rawEvent);
@@ -354,7 +343,7 @@ public class CustomerProcessInstanceTaskViewController {
             return new TaskViewResponse(
                     layout,
                     inputs,
-                    events
+                    customerView.events()
             );
         }
 
@@ -376,22 +365,14 @@ public class CustomerProcessInstanceTaskViewController {
         }
 
 
-        var updatedLayout = taskViewData
+        var updatedView = taskViewData
                 .provider
                 .getCustomerTaskView(context);
 
-        var updatedEvents = taskViewData
-                .provider
-                .getCustomerTaskViewEvents(context);
-
-        var updatedElementData = taskViewData
-                .provider
-                .getCustomerTaskViewData(context);
-
         return new TaskViewResponse(
-                updatedLayout,
-                updatedElementData,
-                updatedEvents
+                updatedView.layout(),
+                updatedView.data(),
+                updatedView.events()
         );
     }
 
@@ -475,7 +456,7 @@ public class CustomerProcessInstanceTaskViewController {
                 .getCustomerTaskView(context);
 
         var elementDerivationRequest = new ElementDerivationRequest(
-                (BaseElement) customerTaskView,
+                customerTaskView.layout(),
                 authoredElementValues,
                 new ElementDerivationOptions()
                         .setSkipErrorsForElementIds(skipErrorsFor),
