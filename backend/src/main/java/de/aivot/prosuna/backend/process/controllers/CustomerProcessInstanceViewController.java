@@ -74,7 +74,12 @@ public class CustomerProcessInstanceViewController {
                 processVersion.getPublicTitle(),
                 instance.getStatus(),
                 instance.getStatusOverride(),
-                tasks
+                tasks,
+                processVersion.getAccessibilityDepartmentId(),
+                processVersion.getPrivacyDepartmentId(),
+                processVersion.getImprintDepartmentId(),
+                processVersion.getLegalSupportDepartmentId(),
+                processVersion.getTechnicalSupportDepartmentId()
         );
     }
 
@@ -86,7 +91,17 @@ public class CustomerProcessInstanceViewController {
             @Nullable
             String statusOverride,
             @Nullable
-            List<ProcessInstanceTaskStatusResponse> tasks
+            List<ProcessInstanceTaskStatusResponse> tasks,
+            @Nullable
+            Integer accessibilityDepartmentId,
+            @Nullable
+            Integer privacyDepartmentId,
+            @Nullable
+            Integer imprintDepartmentId,
+            @Nullable
+            Integer legalSupportDepartmentId,
+            @Nullable
+            Integer technicalSupportDepartmentId
     ) {
     }
 

@@ -193,7 +193,6 @@ export function CustomerListPage() {
                 </main>
 
                 <PrivacyDialog
-                    form={{} as any}
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === PrivacyDialogId}
                     isListingPage
@@ -203,14 +202,12 @@ export function CustomerListPage() {
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === ImprintDialogId}
                     isListingPage
-                    form={{} as any}
                 />
 
                 <AccessibilityDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === AccessibilityDialogId}
                     isListingPage
-                    form={{} as any}
                 />
             </Box>
         );

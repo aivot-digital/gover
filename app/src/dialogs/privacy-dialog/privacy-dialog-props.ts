@@ -3,8 +3,9 @@ import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
 
 export interface PrivacyDialogProps extends DialogProps {
-    form: FormLayoutElement;
+    form?: FormLayoutElement;
     version?: ProcessVersionEntity;
+    departmentId?: number | null;
     onHide: () => void;
     isListingPage?: boolean;
 }

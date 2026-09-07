@@ -13,6 +13,11 @@ export interface ProcessInstanceStatusResponse {
     status: ProcessInstanceStatus;
     statusOverride: string;
     tasks: ProcessInstanceTaskStatusResponse[] | null;
+    accessibilityDepartmentId: number | null;
+    privacyDepartmentId: number | null;
+    imprintDepartmentId: number | null;
+    legalSupportDepartmentId: number | null;
+    technicalSupportDepartmentId: number | null;
 }
 
 export interface ProcessInstanceTaskStatusResponse {

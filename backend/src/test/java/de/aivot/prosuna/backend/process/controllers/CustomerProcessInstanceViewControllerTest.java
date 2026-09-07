@@ -47,7 +47,10 @@ class CustomerProcessInstanceViewControllerTest {
                 .setProcessId(instance.getProcessId())
                 .setProcessVersion(instance.getInitialProcessVersion())
                 .setStatus(ProcessVersionStatus.Published)
-                .setPublicTitle("Public title");
+                .setPublicTitle("Public title")
+                .setAccessibilityDepartmentId(11)
+                .setPrivacyDepartmentId(12)
+                .setImprintDepartmentId(13);
 
         var task = new ProcessInstanceTaskEntity(
                 9L,
@@ -100,6 +103,9 @@ class CustomerProcessInstanceViewControllerTest {
         assertEquals(processVersion.getPublicTitle(), response.title());
         assertEquals(ProcessInstanceStatus.Running, response.status());
         assertEquals(taskAccessKey, response.tasks().getFirst().accessKey());
+        assertEquals(processVersion.getAccessibilityDepartmentId(), response.accessibilityDepartmentId());
+        assertEquals(processVersion.getPrivacyDepartmentId(), response.privacyDepartmentId());
+        assertEquals(processVersion.getImprintDepartmentId(), response.imprintDepartmentId());
         verify(processInstanceService).retrieveByAccessKey(instanceAccessKey);
         verify(processInstanceTaskService).list(any(Pageable.class), argThat((ProcessInstanceTaskFilter filter) ->
                 instance.getId().equals(filter.getProcessInstanceId())

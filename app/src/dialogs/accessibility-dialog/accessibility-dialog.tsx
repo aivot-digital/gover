@@ -17,9 +17,11 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
     const parsedAccessibilityDepartmentId = accessibilityDepartmentId != null && accessibilityDepartmentId !== '' && !Number.isNaN(parseInt(accessibilityDepartmentId)) ?
         parseInt(accessibilityDepartmentId) :
         null;
-    const selectedAccessibilityDepartmentId = props.isListingPage ?
-        parsedAccessibilityDepartmentId :
-        props.version?.accessibilityDepartmentId ?? null;
+    const selectedAccessibilityDepartmentId = props.departmentId ?? (
+        props.isListingPage ?
+            parsedAccessibilityDepartmentId :
+            props.version?.accessibilityDepartmentId ?? null
+    );
 
     useEffect(() => {
         if (selectedAccessibilityDepartmentId == null) {

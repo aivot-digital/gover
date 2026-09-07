@@ -17,9 +17,11 @@ export function ImprintDialog(props: ImprintDialogProps) {
     const parsedImprintDepartmentId = imprintDepartmentId != null && imprintDepartmentId !== '' && !Number.isNaN(parseInt(imprintDepartmentId)) ?
         parseInt(imprintDepartmentId) :
         null;
-    const selectedImprintDepartmentId = props.isListingPage ?
-        parsedImprintDepartmentId :
-        props.version?.imprintDepartmentId ?? null;
+    const selectedImprintDepartmentId = props.departmentId ?? (
+        props.isListingPage ?
+            parsedImprintDepartmentId :
+            props.version?.imprintDepartmentId ?? null
+    );
 
     useEffect(() => {
         if (selectedImprintDepartmentId == null) {

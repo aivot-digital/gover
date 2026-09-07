@@ -18,6 +18,10 @@ const mocks = vi.hoisted(() => ({
     },
 }));
 
+vi.mock('../../../hooks/use-app-selector', () => ({
+    useAppSelector: () => undefined,
+}));
+
 vi.mock('react-router-dom', async (importOriginal) => ({
     ...await importOriginal<typeof import('react-router-dom')>(),
     Outlet: () => <div>Aktive Aufgabenansicht</div>,
@@ -27,6 +31,39 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 vi.mock('../../../hooks/use-app-dispatch', () => ({
     useAppDispatch: () => mocks.dispatch,
+}));
+
+vi.mock('../../../providers/snackbar-provider', () => ({
+    SnackbarProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
+}));
+
+vi.mock('./customer-instance-view-header', () => ({
+    CustomerInstanceViewHeader: () => null,
+}));
+
+vi.mock('./customer-instance-view-footer', () => ({
+    CustomerInstanceViewFooter: () => null,
+}));
+
+vi.mock('../../../dialogs/privacy-dialog/privacy-dialog', () => ({
+    PrivacyDialogId: 'privacy',
+    PrivacyDialog: ({departmentId}: {departmentId?: number | null}) => (
+        <div data-testid="privacy-dialog-department-id">{departmentId}</div>
+    ),
+}));
+
+vi.mock('../../../dialogs/imprint-dialog/imprint-dialog', () => ({
+    ImprintDialogId: 'imprint',
+    ImprintDialog: ({departmentId}: {departmentId?: number | null}) => (
+        <div data-testid="imprint-dialog-department-id">{departmentId}</div>
+    ),
+}));
+
+vi.mock('../../../dialogs/accessibility-dialog/accessibility-dialog', () => ({
+    AccessibilityDialogId: 'accessibility',
+    AccessibilityDialog: ({departmentId}: {departmentId?: number | null}) => (
+        <div data-testid="accessibility-dialog-department-id">{departmentId}</div>
+    ),
 }));
 
 vi.mock('../../../components/page-wrapper/page-wrapper', () => ({
@@ -90,6 +127,21 @@ describe('CustomerInstanceView', () => {
         expect(screen.getByText('Freuen Sie sich. Es gibt für Sie nichts zu tun!')).toBeInTheDocument();
         expect(screen.queryByText('Aktive Aufgabenansicht')).not.toBeInTheDocument();
     });
+
+    it('passes the process version department IDs to the dialogs', async () => {
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus').mockResolvedValue({
+            ...createStatus([]),
+            privacyDepartmentId: 71,
+            imprintDepartmentId: 72,
+            accessibilityDepartmentId: 73,
+        });
+
+        render(<CustomerInstanceView/>);
+
+        expect(await screen.findByTestId('privacy-dialog-department-id')).toHaveTextContent('71');
+        expect(screen.getByTestId('imprint-dialog-department-id')).toHaveTextContent('72');
+        expect(screen.getByTestId('accessibility-dialog-department-id')).toHaveTextContent('73');
+    });
 });
 
 function createStatus(tasks: ProcessInstanceStatusResponse['tasks']): ProcessInstanceStatusResponse {
@@ -98,6 +150,11 @@ function createStatus(tasks: ProcessInstanceStatusResponse['tasks']): ProcessIns
         status: ProcessInstanceStatus.Running,
         statusOverride: '',
         tasks,
+        privacyDepartmentId: null,
+        imprintDepartmentId: null,
+        accessibilityDepartmentId: null,
+        legalSupportDepartmentId: null,
+        technicalSupportDepartmentId: null,
     };
 }
 
