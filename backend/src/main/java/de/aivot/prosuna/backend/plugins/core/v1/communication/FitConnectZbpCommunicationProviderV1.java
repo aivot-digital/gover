@@ -623,7 +623,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     public static class IdentityBinding {
         public static final String BPK2_ATTRIBUTE_FIELD_ID = "bpk2Attribute";
         @InputElementPOJOBinding(id = BPK2_ATTRIBUTE_FIELD_ID, type = ElementType.Select, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "BPK2-Attribut"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Postfach-ID-Attribut"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Attribut des Nutzerkontenanbieters."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
@@ -631,7 +631,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
 
         public static final String STORK_QAA_LEVEL_FIELD_ID = "storkQaaLevel";
         @InputElementPOJOBinding(id = STORK_QAA_LEVEL_FIELD_ID, type = ElementType.Select, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Attribut für das Stork QAA Level"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Attribut für das Vertrauensniveau"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Attribut des Nutzerkontenanbieters."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
