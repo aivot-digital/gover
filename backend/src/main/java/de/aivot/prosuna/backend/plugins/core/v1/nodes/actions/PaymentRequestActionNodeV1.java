@@ -38,11 +38,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
-import de.aivot.prosuna.backend.process.models.ProcessNodePort;
-import de.aivot.prosuna.backend.process.models.TaskViewEvent;
+import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultNoop;
@@ -384,7 +380,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     @Override
-    public StaffView getStaffTaskView(
+    public ProcessNodeStaffView getStaffTaskView(
             @Nonnull ProcessNodeExecutionContextUIStaff<PaymentRequestActionNodeConfig> context
     ) throws ResponseException {
         var paymentPayload = resolveRuntimePaymentPayloadForStaffView(context);
@@ -427,7 +423,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             );
         }
 
-        return StaffView.of(
+        return ProcessNodeStaffView.of(
                 context,
                 root,
                 List.of(new TaskViewEvent("Zahlungsaufforderung versenden", STAFF_TASK_SEND_EVENT)),
@@ -510,7 +506,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     @Override
-    public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<PaymentRequestActionNodeConfig> context) throws ResponseException {
+    public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<PaymentRequestActionNodeConfig> context) throws ResponseException {
         var paymentTransactionKey = context
                 .getThisTask()
                 .getRuntimeData()
@@ -573,7 +569,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                     failureMessage,
                     downloadUrl
             );
-            return CustomerView.of(context, layout, List.of(), new AuthoredElementValues());
+            return ProcessNodeCustomerView.of(context, layout, List.of(), new AuthoredElementValues());
         } catch (IOException | WriterException e) {
             throw ResponseException.internalServerError(e);
         }

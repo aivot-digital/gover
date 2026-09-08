@@ -303,7 +303,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
     @Nonnull
     @Override
-    public StaffView getStaffTaskView(
+    public ProcessNodeStaffView getStaffTaskView(
             @Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context
     ) throws ResponseException {
         var subjectField = new TextInputElement();
@@ -340,7 +340,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
             );
         }
 
-        return StaffView.of(
+        return ProcessNodeStaffView.of(
                 context,
                 root,
                 List.of(new TaskViewEvent("Aufforderung versenden", STAFF_TASK_SEND_EVENT)),
@@ -416,8 +416,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
     @Nonnull
     @Override
-    public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
-        return CustomerView.of(
+    public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
+        return ProcessNodeCustomerView.of(
                 context,
                 context.getConfigurationOfExecutingNode().uiDefinition,
                 List.of(new TaskViewEvent("Daten einreichen", CUSTOMER_TASK_SUBMIT_EVENT)),

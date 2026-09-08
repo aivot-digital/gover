@@ -17,7 +17,6 @@ import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
-import de.aivot.prosuna.backend.process.controllers.StaffProcessInstanceTaskViewController;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -30,11 +29,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.prosuna.backend.process.models.ProcessNodePort;
-import de.aivot.prosuna.backend.process.models.TaskViewEvent;
+import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
@@ -782,7 +777,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+        public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
             taskViewInvocationCount++;
             var requiredField = new TextInputElement();
             requiredField.setId("requiredField");
@@ -792,7 +787,7 @@ class StaffProcessInstanceTaskViewControllerTest {
             var layout = new GroupLayoutElement();
             layout.setId("staff-root");
             layout.setChildren(List.of(requiredField));
-            return StaffView.of(
+            return ProcessNodeStaffView.of(
                     context,
                     layout,
                     List.of(new TaskViewEvent("Complete", "complete")),
@@ -883,7 +878,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+        public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
             var linkButton = new LinkButtonContentElement()
                     .setLabel("Complete inline")
                     .setHref(href)
@@ -893,7 +888,7 @@ class StaffProcessInstanceTaskViewControllerTest {
             var layout = new GroupLayoutElement();
             layout.setId("staff-root");
             layout.setChildren(List.of(linkButton));
-            return StaffView.of(context, layout, List.of(), new AuthoredElementValues());
+            return ProcessNodeStaffView.of(context, layout, List.of(), new AuthoredElementValues());
         }
 
         @Nonnull
@@ -972,12 +967,12 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+        public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
             var layout = new GroupLayoutElement();
             layout.setId("staff-root");
             var initialData = new AuthoredElementValues();
             initialData.put("defaultField", "initial");
-            return StaffView.of(context, layout, List.of(), initialData);
+            return ProcessNodeStaffView.of(context, layout, List.of(), initialData);
         }
 
         @Nonnull

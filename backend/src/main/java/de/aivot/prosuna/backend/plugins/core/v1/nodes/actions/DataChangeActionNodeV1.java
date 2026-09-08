@@ -268,7 +268,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
     @Nonnull
     @Override
-    public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) throws ResponseException {
+    public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) throws ResponseException {
         var config = context.getConfigurationOfExecutingNode();
 
         var layout = new GroupLayoutElement();
@@ -300,7 +300,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 .buildEffectiveValues(config.dataDefinition, context.getThisTask().getProcessData())
                 .toAuthoredElementValues();
 
-        return StaffView.of(
+        return ProcessNodeStaffView.of(
                 context,
                 layout,
                 List.of(new TaskViewEvent("Aufgabe abschließen", EVENT_COMPLETE)),

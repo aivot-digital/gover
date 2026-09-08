@@ -9,7 +9,7 @@ import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition.CustomerView;
+import de.aivot.prosuna.backend.process.models.ProcessNodeCustomerView;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -191,8 +191,8 @@ class CustomerTaskIdentityServiceTest {
         );
     }
 
-    private static CustomerView customerView(String requiredIdentityId) {
-        return new CustomerView(
+    private static ProcessNodeCustomerView customerView(String requiredIdentityId) {
+        return new ProcessNodeCustomerView(
                 new GroupLayoutElement(),
                 List.of(),
                 new AuthoredElementValues(),

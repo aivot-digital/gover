@@ -6,7 +6,7 @@ import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition.CustomerView;
+import de.aivot.prosuna.backend.process.models.ProcessNodeCustomerView;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
@@ -28,9 +28,9 @@ public class CustomerTaskIdentityService {
 
     public void requireAuthenticatedIdentity(@Nonnull ProcessInstanceEntity processInstance,
                                              @Nonnull ProcessNodeEntity processNode,
-                                             @Nonnull CustomerView customerView,
+                                             @Nonnull ProcessNodeCustomerView processNodeCustomerView,
                                              @Nullable String identitySessionId) throws ResponseException {
-        var requiredIdentity = resolveRequiredProviderIdentity(processInstance, customerView);
+        var requiredIdentity = resolveRequiredProviderIdentity(processInstance, processNodeCustomerView);
         if (requiredIdentity == null) {
             return;
         }
@@ -54,10 +54,10 @@ public class CustomerTaskIdentityService {
     @Nonnull
     public URI createAuthenticationRedirect(@Nonnull ProcessInstanceEntity processInstance,
                                             @Nonnull ProcessNodeEntity processNode,
-                                            @Nonnull CustomerView customerView,
+                                            @Nonnull ProcessNodeCustomerView processNodeCustomerView,
                                             @Nullable String identitySessionId,
                                             @Nonnull String origin) throws ResponseException {
-        var requiredIdentity = resolveRequiredProviderIdentity(processInstance, customerView);
+        var requiredIdentity = resolveRequiredProviderIdentity(processInstance, processNodeCustomerView);
         if (requiredIdentity == null) {
             throw ResponseException.badRequest("Für diese Aufgabe ist keine Anmeldung mit einem Nutzerkonto erforderlich.");
         }
@@ -74,8 +74,8 @@ public class CustomerTaskIdentityService {
 
     @Nullable
     private RequiredIdentity resolveRequiredProviderIdentity(@Nonnull ProcessInstanceEntity processInstance,
-                                                             @Nonnull CustomerView customerView) throws ResponseException {
-        var requiredIdentityId = normalizeRequiredIdentityId(customerView.requiredIdentityId());
+                                                             @Nonnull ProcessNodeCustomerView processNodeCustomerView) throws ResponseException {
+        var requiredIdentityId = normalizeRequiredIdentityId(processNodeCustomerView.requiredIdentityId());
         if (requiredIdentityId == null) {
             return null;
         }

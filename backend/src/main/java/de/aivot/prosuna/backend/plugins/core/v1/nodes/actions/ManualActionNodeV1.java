@@ -285,7 +285,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
     @Nonnull
     @Override
-    public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context) throws ResponseException {
+    public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context) throws ResponseException {
         var config = loadConfigurationForUi(context);
         var layout = buildStaffTaskView(config, context);
         var initialData = config.uiDefinition() != null
@@ -294,7 +294,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 .toAuthoredElementValues()
                 : new AuthoredElementValues();
 
-        return StaffView.of(
+        return ProcessNodeStaffView.of(
                 context,
                 layout,
                 List.of(new TaskViewEvent("Aufgabe abschließen", EVENT_COMPLETE)),

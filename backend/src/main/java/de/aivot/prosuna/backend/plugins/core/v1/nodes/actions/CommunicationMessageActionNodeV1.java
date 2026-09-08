@@ -29,11 +29,7 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
-import de.aivot.prosuna.backend.process.models.ProcessNodePort;
-import de.aivot.prosuna.backend.process.models.TaskViewEvent;
+import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
@@ -294,7 +290,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
 
     @Nonnull
     @Override
-    public StaffView getStaffTaskView(
+    public ProcessNodeStaffView getStaffTaskView(
             @Nonnull ProcessNodeExecutionContextUIStaff<Configuration> context
     ) throws ResponseException {
         var subjectField = new TextInputElement();
@@ -331,7 +327,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
             );
         }
 
-        return StaffView.of(
+        return ProcessNodeStaffView.of(
                 context,
                 root,
                 List.of(new TaskViewEvent("Nachricht versenden", STAFF_TASK_SEND_EVENT)),

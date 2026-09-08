@@ -26,10 +26,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.prosuna.backend.process.models.ProcessNodePort;
-import de.aivot.prosuna.backend.process.models.TaskViewEvent;
+import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
@@ -67,7 +64,6 @@ import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -95,7 +91,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         verify(fixture.customerTaskIdentityService()).requireAuthenticatedIdentity(
                 any(ProcessInstanceEntity.class),
                 any(ProcessNodeEntity.class),
-                any(ProcessNodeDefinition.CustomerView.class),
+                any(ProcessNodeCustomerView.class),
                 eq("identity-session")
         );
     }
@@ -172,7 +168,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         verify(fixture.customerTaskIdentityService()).requireAuthenticatedIdentity(
                 any(ProcessInstanceEntity.class),
                 any(ProcessNodeEntity.class),
-                any(ProcessNodeDefinition.CustomerView.class),
+                any(ProcessNodeCustomerView.class),
                 eq("identity-session")
         );
     }
@@ -488,7 +484,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         verify(fixture.customerTaskIdentityService()).requireAuthenticatedIdentity(
                 any(ProcessInstanceEntity.class),
                 any(ProcessNodeEntity.class),
-                any(ProcessNodeDefinition.CustomerView.class),
+                any(ProcessNodeCustomerView.class),
                 eq(null)
         );
         verify(fixture.pdfService()).generatePaymentConfirmation(
@@ -1041,13 +1037,13 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+        public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             taskViewInvocationCount++;
             var layout = new GroupLayoutElement();
             layout.setId("customer-root");
             var persistedData = new AuthoredElementValues();
             persistedData.put("field", "persisted");
-            return new CustomerView(
+            return new ProcessNodeCustomerView(
                     layout,
                     List.of(new TaskViewEvent("Submit", "submit")),
                     persistedData,
@@ -1126,7 +1122,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+        public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             var linkButton = new LinkButtonContentElement()
                     .setLabel("Submit inline")
                     .setHref(href)
@@ -1138,7 +1134,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
             layout.setChildren(List.of(linkButton));
             var data = new AuthoredElementValues();
             data.put("field", context.getThisTask().getRuntimeData().get("field"));
-            return new CustomerView(layout, List.of(), data, null);
+            return new ProcessNodeCustomerView(layout, List.of(), data, null);
         }
 
         @Nonnull
@@ -1223,13 +1219,13 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+        public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             taskViewInvocationCount++;
             var layout = new GroupLayoutElement();
             layout.setId("customer-root");
             var initialData = new AuthoredElementValues();
             initialData.put("defaultField", "initial");
-            return CustomerView.of(
+            return ProcessNodeCustomerView.of(
                     context,
                     layout,
                     List.of(new TaskViewEvent("Submit", "submit")),

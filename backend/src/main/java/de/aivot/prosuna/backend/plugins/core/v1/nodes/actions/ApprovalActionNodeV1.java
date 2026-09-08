@@ -46,7 +46,6 @@ import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -296,7 +295,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
     @Nonnull
     @Override
-    public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) throws ResponseException {
+    public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) throws ResponseException {
         var config = context.getConfigurationOfExecutingNode();
 
         var layout = new GroupLayoutElement();
@@ -362,11 +361,11 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                     .getNullPreservingInstance()
                     .convertValue(runtimeData, AuthoredElementValues.class);
             if (!legacyData.isEmpty()) {
-                return new StaffView(layout, events, legacyData);
+                return new ProcessNodeStaffView(layout, events, legacyData);
             }
         }
 
-        return StaffView.of(context, layout, events, initialData);
+        return ProcessNodeStaffView.of(context, layout, events, initialData);
     }
 
     @Nonnull

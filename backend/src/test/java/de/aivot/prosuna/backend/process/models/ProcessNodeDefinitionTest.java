@@ -8,10 +8,6 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
@@ -91,11 +87,11 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+            public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
                 var initialData = new AuthoredElementValues();
                 initialData.put("defaultField", "initial");
                 initialData.put("sharedField", "initial");
-                return StaffView.of(context, new GroupLayoutElement(), List.of(), initialData);
+                return ProcessNodeStaffView.of(context, new GroupLayoutElement(), List.of(), initialData);
             }
 
             @Nonnull
@@ -183,10 +179,10 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+            public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
                 var initialData = new AuthoredElementValues();
                 initialData.put("defaultField", "initial");
-                return StaffView.of(context, new GroupLayoutElement(), List.of(), initialData);
+                return ProcessNodeStaffView.of(context, new GroupLayoutElement(), List.of(), initialData);
             }
 
             @Nonnull
@@ -355,11 +351,11 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+            public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
                 var initialData = new AuthoredElementValues();
                 initialData.put("defaultField", "initial");
                 initialData.put("sharedField", "initial");
-                return CustomerView.of(context, new GroupLayoutElement(), List.of(), initialData);
+                return ProcessNodeCustomerView.of(context, new GroupLayoutElement(), List.of(), initialData);
             }
 
             @Nonnull
@@ -401,7 +397,7 @@ class ProcessNodeDefinitionTest {
         var initialData = new AuthoredElementValues();
         initialData.put("field", "initial");
 
-        var view = ProcessNodeDefinition.CustomerView.of(
+        var view = ProcessNodeCustomerView.of(
                 context,
                 new GroupLayoutElement(),
                 List.of(),
@@ -471,10 +467,10 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+            public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
                 var initialData = new AuthoredElementValues();
                 initialData.put("defaultField", "initial");
-                return CustomerView.of(context, new GroupLayoutElement(), List.of(), initialData);
+                return ProcessNodeCustomerView.of(context, new GroupLayoutElement(), List.of(), initialData);
             }
 
             @Nonnull

@@ -238,10 +238,10 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the view.
      */
     @Nonnull
-    default StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
+    default ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
         var layout = new GroupLayoutElement();
         layout.setId(getKey() + "-staff-task-view");
-        return StaffView.of(context, layout, List.of(), new AuthoredElementValues());
+        return ProcessNodeStaffView.of(context, layout, List.of(), new AuthoredElementValues());
     }
 
     /**
@@ -292,10 +292,10 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the view.
      */
     @Nonnull
-    default CustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
+    default ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
         var layout = new GroupLayoutElement();
         layout.setId(getKey() + "-customer-task-view");
-        return CustomerView.of(context, layout, List.of(), new AuthoredElementValues());
+        return ProcessNodeCustomerView.of(context, layout, List.of(), new AuthoredElementValues());
     }
 
     /**
@@ -363,103 +363,8 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
         return getName();
     }
 
-    /**
-     * Complete staff task view returned by a process node definition.
-     */
-    record StaffView(
-            @Nonnull LayoutElement<?> layout,
-            @Nonnull List<TaskViewEvent> events,
-            @Nonnull AuthoredElementValues data
-    ) {
-        /**
-         * Create a staff task view and replace the initial data with a non-empty saved snapshot when present.
-         *
-         * @param context     The context containing the task runtime data.
-         * @param layout      The staff task view layout.
-         * @param events      The events offered by the staff task view.
-         * @param initialData The data generated from stable sources such as configuration and process data.
-         * @return The complete staff task view with effective data.
-         */
-        @Nonnull
-        public static StaffView of(@Nonnull ProcessNodeExecutionContextUIStaff<?> context,
-                                   @Nonnull LayoutElement<?> layout,
-                                   @Nonnull List<TaskViewEvent> events,
-                                   @Nonnull AuthoredElementValues initialData) {
-            var savedData = getAutoSavedTaskViewData(
-                    context.getThisTask().getRuntimeData(),
-                    STAFF_TASK_VIEW_DATA_RUNTIME_KEY
-            );
-            return new StaffView(
-                    layout,
-                    events,
-                    savedData == null || savedData.isEmpty() ? initialData : savedData
-            );
-        }
-    }
-
-    /**
-     * Complete customer task view returned by a process node definition.
-     *
-     * @param requiredIdentityId The process identity whose provider account must be authenticated before the view
-     *                           can be used. {@code null} disables the additional identity check.
-     */
-    record CustomerView(
-            @Nonnull GroupLayoutElement layout,
-            @Nonnull List<TaskViewEvent> events,
-            @Nonnull AuthoredElementValues data,
-            @Nullable String requiredIdentityId
-    ) {
-        /**
-         * Create a customer task view and merge saved values onto its initial data when present.
-         *
-         * @param context     The context containing the task runtime data.
-         * @param layout      The customer task view layout.
-         * @param events      The events offered by the customer task view.
-         * @param initialData The data generated from stable sources such as configuration and process data.
-         * @return The complete customer task view with effective data.
-         */
-        @Nonnull
-        public static CustomerView of(@Nonnull ProcessNodeExecutionContextUICustomer<?> context,
-                                      @Nonnull GroupLayoutElement layout,
-                                      @Nonnull List<TaskViewEvent> events,
-                                      @Nonnull AuthoredElementValues initialData) {
-            return of(context, layout, events, initialData, null);
-        }
-
-        /**
-         * Create a customer task view with an optional identity requirement and merge saved values onto its initial
-         * data when present.
-         *
-         * @param context            The context containing the task runtime data.
-         * @param layout             The customer task view layout.
-         * @param events             The events offered by the customer task view.
-         * @param initialData        The data generated from stable sources such as configuration and process data.
-         * @param requiredIdentityId The process identity that must be authenticated before the view can be used.
-         * @return The complete customer task view with effective data.
-         */
-        @Nonnull
-        public static CustomerView of(@Nonnull ProcessNodeExecutionContextUICustomer<?> context,
-                                      @Nonnull GroupLayoutElement layout,
-                                      @Nonnull List<TaskViewEvent> events,
-                                      @Nonnull AuthoredElementValues initialData,
-                                      @Nullable String requiredIdentityId) {
-            var savedData = getAutoSavedTaskViewData(
-                    context.getThisTask().getRuntimeData(),
-                    CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY
-            );
-            if (savedData == null || savedData.isEmpty()) {
-                return new CustomerView(layout, events, initialData, requiredIdentityId);
-            }
-
-            var mergedData = new AuthoredElementValues();
-            mergedData.putAll(initialData);
-            mergedData.putAll(savedData);
-            return new CustomerView(layout, events, mergedData, requiredIdentityId);
-        }
-    }
-
     @Nullable
-    private static AuthoredElementValues getAutoSavedTaskViewData(@Nonnull Map<String, Object> runtimeData,
+    static AuthoredElementValues getAutoSavedTaskViewData(@Nonnull Map<String, Object> runtimeData,
                                                                   @Nonnull String runtimeDataKey) {
         var rawSavedData = runtimeData.get(runtimeDataKey);
         if (rawSavedData == null) {
@@ -470,5 +375,4 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
                 .getNullPreservingInstance()
                 .convertValue(rawSavedData, AuthoredElementValues.class);
     }
-
 }

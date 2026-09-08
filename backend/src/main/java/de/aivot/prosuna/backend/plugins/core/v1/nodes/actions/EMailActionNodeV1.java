@@ -289,7 +289,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
     @Nonnull
     @Override
-    public StaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) throws ResponseException {
+    public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) throws ResponseException {
         var root = new GroupLayoutElement();
         root.setId("root");
         root.setChildren(new LinkedList<>());
@@ -326,7 +326,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
             );
         }
 
-        return StaffView.of(
+        return ProcessNodeStaffView.of(
                 context,
                 root,
                 List.of(new TaskViewEvent("Absenden", STAFF_TASK_SEND_EVENT)),
