@@ -36,7 +36,7 @@ import dev.fitko.fitconnect.sdk.api.OutgoingSubmission;
 import dev.fitko.fitconnect.sdk.api.Participant;
 import dev.fitko.fitconnect.sdk.api.SubmissionData;
 import dev.fitko.fitconnect.sdk.api.event.CaseEvent;
-import dev.fitko.fitconnect.sdk.clients.Organisation;
+import dev.fitko.fitconnect.sdk.clients.OnlineService;
 import dev.fitko.fitconnect.zbp.internal.ZBPEnvelopeBuilder;
 import dev.fitko.fitconnect.zbp.model.AuthenticationLevel;
 import dev.fitko.fitconnect.zbp.model.AuthorKeyPair;
@@ -370,9 +370,9 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                 .addAttachments(fitConnectAttachments)
                 .build();
 
-        final Organisation organisation;
+        final OnlineService onlineService;
         try {
-            organisation = createOrganisation(
+            onlineService = createOnlineService(
                     config.senderClientId,
                     resolveSenderClientSecret(config),
                     senderDestinationId
@@ -386,8 +386,8 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         final SentSubmission sentSubmission;
         final CaseEvent status;
         try {
-            sentSubmission = organisation.send(submission);
-            status = organisation.cases().logOf(sentSubmission).latest();
+            sentSubmission = onlineService.send(submission);
+            status = onlineService.cases().logOf(sentSubmission).latest();
         } catch (Exception e) {
             throw new CommunicationException("Failed to send message via FIT-Connect.", e);
         }
@@ -512,15 +512,15 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     }
 
     @Nonnull
-    Organisation createOrganisation(@Nonnull String clientId,
-                                    @Nonnull String clientSecret,
-                                    @Nonnull UUID senderDestinationId) {
+    OnlineService createOnlineService(@Nonnull String clientId,
+                                      @Nonnull String clientSecret,
+                                      @Nonnull UUID senderDestinationId) {
         return FitConnectSdk
                 .fromConfigBuilder()
                 .credentials(clientId, clientSecret)
                 .environment(FitConnectEnvironment.TEST)
                 .build()
-                .organisation(senderDestinationId);
+                .onlineService(senderDestinationId);
     }
 
     private AuthorKeyPair getAuthorKeyPair(Config config) throws CommunicationException {
