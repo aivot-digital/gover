@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.workers;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
+import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.services.ProcessTaskMailService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -78,6 +79,54 @@ public class ProcessNodeExecutionResultHandler {
                              @Nonnull ProcessInstanceTaskEntity processInstanceTask,
                              @Nullable ProcessInstanceTaskEntity previousTask,
                              @Nullable ProcessNodeExecutionResult executionResult) throws ProcessNodeExecutionException {
+        handleResultInternal(
+                logger,
+                triggeringUser,
+                provider,
+                currentNode,
+                processInstance,
+                processInstanceTask,
+                previousTask,
+                executionResult,
+                Map.of()
+        );
+    }
+
+    public void handleResultWithAdditionalIdentities(
+            @Nonnull ProcessNodeExecutionLogger logger,
+            @Nullable UserEntity triggeringUser,
+            @Nonnull ProcessNodeDefinition<?> provider,
+            @Nonnull ProcessNodeEntity currentNode,
+            @Nonnull ProcessInstanceEntity processInstance,
+            @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+            @Nullable ProcessInstanceTaskEntity previousTask,
+            @Nullable ProcessNodeExecutionResult executionResult,
+            @Nonnull Map<String, IdentityData> additionalIdentities
+    ) throws ProcessNodeExecutionException {
+        handleResultInternal(
+                logger,
+                triggeringUser,
+                provider,
+                currentNode,
+                processInstance,
+                processInstanceTask,
+                previousTask,
+                executionResult,
+                additionalIdentities
+        );
+    }
+
+    private void handleResultInternal(
+            @Nonnull ProcessNodeExecutionLogger logger,
+            @Nullable UserEntity triggeringUser,
+            @Nonnull ProcessNodeDefinition<?> provider,
+            @Nonnull ProcessNodeEntity currentNode,
+            @Nonnull ProcessInstanceEntity processInstance,
+            @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+            @Nullable ProcessInstanceTaskEntity previousTask,
+            @Nullable ProcessNodeExecutionResult executionResult,
+            @Nonnull Map<String, IdentityData> additionalIdentities
+    ) throws ProcessNodeExecutionException {
         if (executionResult == null) {
             var err = String.format(
                     """
@@ -99,6 +148,12 @@ public class ProcessNodeExecutionResultHandler {
                     .setAlreadyLogged(true);
         }
 
+        validateAdditionalIdentities(
+                processInstance,
+                executionResult,
+                additionalIdentities
+        );
+
         var context = new HandlerContext<>(
                 logger,
                 triggeringUser,
@@ -107,7 +162,8 @@ public class ProcessNodeExecutionResultHandler {
                 processInstance,
                 processInstanceTask,
                 previousTask,
-                executionResult
+                executionResult,
+                additionalIdentities
         );
 
         handleCommunicationRequest(context);
@@ -139,15 +195,65 @@ public class ProcessNodeExecutionResultHandler {
         }
     }
 
+    private void validateAdditionalIdentities(@Nonnull ProcessInstanceEntity processInstance,
+                                              @Nonnull ProcessNodeExecutionResult executionResult,
+                                              @Nonnull Map<String, IdentityData> additionalIdentities)
+            throws ProcessNodeExecutionExceptionBrokenImplementation {
+        if (additionalIdentities.isEmpty()) {
+            return;
+        }
+        if (!(executionResult instanceof ProcessNodeExecutionResultTaskCompleted)
+                && !(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    "Neue Prozessidentitäten dürfen nur beim Abschluss einer Aufgabe oder eines Vorgangs übernommen werden."
+            );
+        }
+
+        var processIdentities = processInstance.getIdentities();
+
+        for (var entry : additionalIdentities.entrySet()) {
+            var identity = entry.getValue();
+            if (identity == null || !Objects.equals(entry.getKey(), identity.identityId())) {
+                throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                        "Eine neue Prozessidentität besitzt keine konsistente Identitäts-ID."
+                );
+            }
+            if (processIdentities != null && processIdentities.containsKey(entry.getKey())) {
+                throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                        "Die neue Prozessidentität %s existiert bereits in der Prozessinstanz.",
+                        StringUtils.quote(entry.getKey())
+                );
+            }
+        }
+    }
+
+    private void applyAdditionalIdentities(@Nonnull ProcessInstanceEntity processInstance,
+                                           @Nonnull Map<String, IdentityData> additionalIdentities) {
+        if (additionalIdentities.isEmpty()) {
+            return;
+        }
+
+        var processIdentities = processInstance.getIdentities();
+        if (processIdentities == null) {
+            processIdentities = new IdentityDataMap();
+            processInstance.setIdentities(processIdentities);
+        }
+        processIdentities.putAll(additionalIdentities);
+    }
+
     private void handleCommunicationRequest(@Nonnull HandlerContext<?> context) throws ProcessNodeExecutionException {
         var communicationRequest = context.result.getCommunicationRequest();
         if (communicationRequest == null) {
             return;
         }
 
-        var recipientIdentity = context.processInstance
-                .getIdentities()
-                .get(communicationRequest.recipientIdentityId());
+        var processIdentities = context.processInstance.getIdentities();
+        var recipientIdentity = processIdentities == null
+                ? null
+                : processIdentities.get(communicationRequest.recipientIdentityId());
+        if (recipientIdentity == null) {
+            recipientIdentity = context.additionalIdentities.get(communicationRequest.recipientIdentityId());
+        }
         if (recipientIdentity == null) {
             markTaskFailed(context.processInstanceTask);
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -462,7 +568,9 @@ public class ProcessNodeExecutionResultHandler {
         context.processInstanceTask.setFinished(Instant.now());
         assignAndSaveDataLayersAndStatusOverride(context, true);
 
-        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+        applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
+        if (!context.additionalIdentities.isEmpty()
+                || context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
             context.processInstance.setStatus(ProcessInstanceStatus.Running);
             processInstanceRepository.save(context.processInstance);
         }
@@ -526,6 +634,7 @@ public class ProcessNodeExecutionResultHandler {
         context.processInstanceTask.setFinished(completionTime);
         assignAndSaveDataLayersAndStatusOverride(context, true);
 
+        applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
         context.processInstance.setStatus(ProcessInstanceStatus.Completed);
         context.processInstance.setFinished(completionTime);
         context.processInstance.setKeepUntil(context.result.getRetentionDate());
@@ -640,7 +749,8 @@ public class ProcessNodeExecutionResultHandler {
             @Nonnull ProcessInstanceEntity processInstance,
             @Nonnull ProcessInstanceTaskEntity processInstanceTask,
             @Nullable ProcessInstanceTaskEntity previousTask,
-            @Nonnull T result
+            @Nonnull T result,
+            @Nonnull Map<String, IdentityData> additionalIdentities
     ) {
         public <S extends ProcessNodeExecutionResult> HandlerContext<S> withResult(@Nonnull S newResult) {
             return new HandlerContext<>(
@@ -651,7 +761,8 @@ public class ProcessNodeExecutionResultHandler {
                     processInstance,
                     processInstanceTask,
                     previousTask,
-                    newResult
+                    newResult,
+                    additionalIdentities
             );
         }
     }

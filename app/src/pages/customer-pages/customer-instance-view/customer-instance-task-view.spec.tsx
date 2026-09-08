@@ -2,10 +2,17 @@ import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {createDerivedRuntimeElementData} from '../../../models/element-data';
 import type {GroupLayout} from '../../../models/elements/form/layout/group-layout';
-import {ProcessInstanceTaskApiService, type TaskViewEvent} from '../../../modules/process/services/process-instance-task-api-service';
-import {CustomerTaskViewApiService, type TaskViewResponse} from './customer-task-view-api-service';
+import {IdentityProviderType} from '../../../modules/identity/enums/identity-provider-type';
+import type {IdentitySlot} from '../../../modules/identity/models/identity-slot';
+import type {ReadyCustomerTaskView} from '../../../modules/process/models/customer-task-view';
+import {
+    ProcessInstanceTaskApiService,
+    type TaskViewEvent,
+} from '../../../modules/process/services/process-instance-task-api-service';
 import {CustomerInstanceTaskView} from './customer-instance-task-view';
+import {CustomerTaskViewApiService, type TaskViewResponse} from './customer-task-view-api-service';
 
 const mocks = vi.hoisted(() => ({
     dispatch: vi.fn(),
@@ -70,6 +77,7 @@ vi.mock('../../../modules/elements/components/element-derivation-context', () =>
 
 describe('CustomerInstanceTaskView', () => {
     beforeEach(() => {
+        vi.restoreAllMocks();
         window.history.replaceState({}, '', '/process/instance-key/tasks/task-key');
         mocks.dispatch.mockReset();
         mocks.elementDerivationProps = undefined;
@@ -86,36 +94,192 @@ describe('CustomerInstanceTaskView', () => {
             }));
     });
 
-    it('shows a blocking login prompt when the required identity is not authenticated', async () => {
+    it('shows the configured provider login for an existing identity', async () => {
         vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
-            .mockRejectedValue(requiredIdentityAuthenticationError());
+            .mockResolvedValue(createBlockedTaskView({
+                existingIdentitySlot: createExistingIdentitySlot(),
+            }));
 
         render(<CustomerInstanceTaskView/>);
 
-        expect(await screen.findByRole('heading', {name: 'Anmeldung erforderlich'})).toBeInTheDocument();
-        expect(screen.getByText(/Für diese Aufgabe ist eine erneute Anmeldung erforderlich/)).toBeInTheDocument();
-        expect(screen.getByRole('alert')).toHaveClass('MuiAlert-colorInfo');
-        const loginLink = screen.getByRole('link', {name: 'Mit Nutzerkonto anmelden'});
+        expect(await screen.findByText('Empfängeridentität')).toBeInTheDocument();
+        expect(screen.getByText(/erneute Anmeldung erforderlich/)).toBeInTheDocument();
+        const loginLink = screen.getByRole('link', {name: /Mit „BundID“ anmelden/});
         expect(loginLink).toHaveAttribute(
             'href',
             expect.stringContaining('/api/public/processes/instance-key/tasks/task-key/identity/start/'),
         );
-        expect(loginLink.getAttribute('href')).toContain('origin=');
+        expect(screen.getByRole('button', {name: 'Mit Aufgabe fortfahren'})).toBeDisabled();
         expectActionTypeNotDispatched('shell/setErrorMessage');
     });
 
-    it('explains a wrong account after a successful identity-provider callback', async () => {
+    it('keeps reauthentication available and explains a wrong provider account', async () => {
         window.history.replaceState({}, '', '/process/instance-key/tasks/task-key?identity-state=0');
         vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
-            .mockRejectedValue(requiredIdentityAuthenticationError());
+            .mockResolvedValue(createBlockedTaskView({
+                existingIdentitySlot: createExistingIdentitySlot({
+                    identityProvider: createIdentityProvider(true),
+                }),
+            }));
 
         render(<CustomerInstanceTaskView/>);
 
-        expect(await screen.findByRole('heading', {name: 'Falsches Nutzerkonto'})).toBeInTheDocument();
+        expect(await screen.findByText('Falsches Nutzerkonto')).toBeInTheDocument();
         expect(screen.getByText(/gehört nicht zur Empfängeridentität/)).toBeInTheDocument();
-        expect(screen.getByRole('alert')).toHaveClass('MuiAlert-colorError');
-        expect(screen.getByRole('link', {name: 'Mit Nutzerkonto anmelden'})).toBeInTheDocument();
-        expect(window.location.search).toBe('');
+        expect(screen.getByRole('link', {name: /Mit „BundID“ anmelden/})).toBeInTheDocument();
+        await waitFor(() => expect(window.location.search).toBe(''));
+    });
+
+    it('shows an authenticated existing identity until the customer explicitly continues', async () => {
+        const existingIdentitySlot = createExistingIdentitySlot({
+            isReady: true,
+            identityProvider: createIdentityProvider(true),
+        });
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockResolvedValueOnce(createTaskView({existingIdentitySlot}))
+            .mockResolvedValueOnce(createTaskView({existingIdentitySlot}));
+        const user = userEvent.setup();
+
+        render(<CustomerInstanceTaskView/>);
+
+        expect(await screen.findByRole('status')).toHaveTextContent('Mit „BundID“ angemeldet');
+        expect(screen.queryByRole('button', {name: 'Daten einreichen'})).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: 'Mit Aufgabe fortfahren'}));
+
+        expect(await screen.findByRole('button', {name: 'Daten einreichen'})).toBeInTheDocument();
+        expect(CustomerTaskViewApiService.prototype.getTaskView).toHaveBeenCalledTimes(2);
+    });
+
+    it('stores a new email identity through the task endpoint before opening the task', async () => {
+        const initialSlot = createIdentitySlot();
+        const savedSlot = createIdentitySlot({
+            identityType: 'Email',
+            emailAddress: 'customer@example.test',
+            isReady: true,
+        });
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockResolvedValueOnce(createBlockedTaskView({newIdentitySlot: initialSlot}))
+            .mockResolvedValueOnce(createTaskView({newIdentitySlot: savedSlot}));
+        const setEmail = vi.spyOn(CustomerTaskViewApiService.prototype, 'setNewIdentityEmail')
+            .mockResolvedValue(savedSlot);
+        const user = userEvent.setup();
+
+        render(<CustomerInstanceTaskView/>);
+
+        expect(await screen.findByText('Antragsteller:in')).toBeInTheDocument();
+        const continueButton = screen.getByRole('button', {name: 'Mit Aufgabe fortfahren'});
+        expect(continueButton).toBeDisabled();
+        await user.type(screen.getByRole('textbox', {name: /E-Mail-Adresse/}), 'customer@example.test');
+        await waitFor(() => expect(continueButton).toBeEnabled());
+        await user.click(continueButton);
+
+        await waitFor(() => expect(setEmail).toHaveBeenCalledWith(
+            'instance-key',
+            'task-key',
+            'applicant',
+            'customer@example.test',
+        ));
+        expect(await screen.findByRole('button', {name: 'Daten einreichen'})).toBeInTheDocument();
+    });
+
+    it('lets the customer skip an untouched optional new identity', async () => {
+        const optionalSlot = createIdentitySlot({isOptional: true, isRequired: false});
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockResolvedValue(createTaskView({newIdentitySlot: optionalSlot}));
+        const setEmail = vi.spyOn(CustomerTaskViewApiService.prototype, 'setNewIdentityEmail');
+        const user = userEvent.setup();
+
+        render(<CustomerInstanceTaskView/>);
+
+        await user.click(await screen.findByRole('button', {name: 'Ohne Anmeldung fortfahren'}));
+
+        expect(setEmail).not.toHaveBeenCalled();
+        expect(await screen.findByRole('button', {name: 'Daten einreichen'})).toBeInTheDocument();
+    });
+
+    it('stores a new provider communication choice through the task endpoints', async () => {
+        const initialCommunication = {
+            required: true,
+            ready: false,
+            selectedBindingId: null,
+            choices: [
+                {id: 10, name: 'E-Mail', description: 'Versand per E-Mail'},
+                {id: 20, name: 'Postfach', description: 'Digitales Postfach'},
+            ],
+            customerLayout: null,
+            customerData: {},
+            derivedData: createDerivedRuntimeElementData(),
+        };
+        const previewCommunication = {...initialCommunication, selectedBindingId: 20};
+        const savedCommunication = {...previewCommunication, ready: true};
+        const initialSlot = createIdentitySlot({
+            allowsEmail: false,
+            identityType: 'IdentityProvider',
+            availableIdentityProviders: [createIdentityProvider(true)],
+            communication: initialCommunication,
+        });
+        const savedSlot = createIdentitySlot({
+            allowsEmail: false,
+            identityType: 'IdentityProvider',
+            isReady: true,
+            availableIdentityProviders: [createIdentityProvider(true)],
+            communication: savedCommunication,
+        });
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockResolvedValueOnce(createBlockedTaskView({newIdentitySlot: initialSlot}))
+            .mockResolvedValueOnce(createTaskView({newIdentitySlot: savedSlot}));
+        const deriveCommunication = vi.spyOn(
+            CustomerTaskViewApiService.prototype,
+            'deriveNewIdentityCommunication',
+        ).mockResolvedValue(previewCommunication);
+        const selectCommunication = vi.spyOn(
+            CustomerTaskViewApiService.prototype,
+            'selectNewIdentityCommunication',
+        ).mockResolvedValue(savedCommunication);
+        const user = userEvent.setup();
+
+        render(<CustomerInstanceTaskView/>);
+
+        const continueButton = await screen.findByRole('button', {name: 'Mit Aufgabe fortfahren'});
+        expect(continueButton).toBeDisabled();
+        await user.click(screen.getByRole('radio', {name: /Postfach/}));
+        await waitFor(() => expect(deriveCommunication).toHaveBeenCalledWith(
+            'instance-key',
+            'task-key',
+            'applicant',
+            20,
+            {},
+        ));
+        await waitFor(() => expect(continueButton).toBeEnabled());
+        await user.click(continueButton);
+
+        await waitFor(() => expect(selectCommunication).toHaveBeenCalledWith(
+            'instance-key',
+            'task-key',
+            'applicant',
+            20,
+            {},
+        ));
+        expect(await screen.findByRole('button', {name: 'Daten einreichen'})).toBeInTheDocument();
+    });
+
+    it('shows existing and new identity requirements together', async () => {
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockResolvedValue(createBlockedTaskView({
+                existingIdentitySlot: createExistingIdentitySlot(),
+                newIdentitySlot: createIdentitySlot({title: 'Vertretung'}),
+            }));
+
+        render(<CustomerInstanceTaskView/>);
+
+        expect(await screen.findByText('Empfängeridentität')).toBeInTheDocument();
+        expect(screen.getByText('Vertretung')).toBeInTheDocument();
+        const loginLinks = screen.getAllByRole('link', {name: /Mit „BundID“ anmelden/});
+        expect(loginLinks).toHaveLength(2);
+        expect(loginLinks.some((link) => link.getAttribute('href')?.includes(
+            '/identities/applicant/providers/36a9a19d-f9fb-4225-a9a0-07a223820b4b/start/',
+        ))).toBe(true);
+        expect(screen.getByRole('button', {name: 'Mit Aufgabe fortfahren'})).toBeDisabled();
     });
 
     it('renders backend events and submits the latest authored values on click', async () => {
@@ -195,7 +359,12 @@ describe('CustomerInstanceTaskView', () => {
         expect(screen.getByRole('button', {name: 'Daten einreichen'})).toBeInTheDocument();
     });
 
-    it('replaces the task view with the login prompt when an event loses its identity session', async () => {
+    it('reloads identity requirements when an event loses its identity session', async () => {
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockResolvedValueOnce(createTaskView())
+            .mockResolvedValueOnce(createBlockedTaskView({
+                existingIdentitySlot: createExistingIdentitySlot(),
+            }));
         vi.mocked(ProcessInstanceTaskApiService.prototype.putCustomerTaskView)
             .mockRejectedValue(requiredIdentityAuthenticationError());
         const user = userEvent.setup();
@@ -203,11 +372,16 @@ describe('CustomerInstanceTaskView', () => {
         render(<CustomerInstanceTaskView/>);
         await user.click(await screen.findByRole('button', {name: 'Daten einreichen'}));
 
-        expect(await screen.findByRole('link', {name: 'Mit Nutzerkonto anmelden'})).toBeInTheDocument();
+        expect(await screen.findByRole('link', {name: /Mit „BundID“ anmelden/})).toBeInTheDocument();
         expectActionTypeNotDispatched('shell/addSnackbarMessage');
     });
 
-    it('replaces the task view with the login prompt when derivation loses its identity session', async () => {
+    it('reloads identity requirements when derivation loses its identity session', async () => {
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockResolvedValueOnce(createTaskView())
+            .mockResolvedValueOnce(createBlockedTaskView({
+                existingIdentitySlot: createExistingIdentitySlot(),
+            }));
         vi.spyOn(CustomerTaskViewApiService.prototype, 'deriveTaskView')
             .mockRejectedValue(requiredIdentityAuthenticationError());
         const user = userEvent.setup();
@@ -215,7 +389,7 @@ describe('CustomerInstanceTaskView', () => {
         render(<CustomerInstanceTaskView/>);
         await user.click(await screen.findByRole('button', {name: 'Ableiten'}));
 
-        expect(await screen.findByRole('link', {name: 'Mit Nutzerkonto anmelden'})).toBeInTheDocument();
+        expect(await screen.findByRole('link', {name: /Mit „BundID“ anmelden/})).toBeInTheDocument();
         expectActionTypeNotDispatched('shell/addSnackbarMessage');
     });
 
@@ -232,20 +406,69 @@ describe('CustomerInstanceTaskView', () => {
     });
 });
 
-function createTaskView(overrides?: Partial<TaskViewResponse>): TaskViewResponse {
+function createTaskView(overrides?: Partial<ReadyCustomerTaskView>): ReadyCustomerTaskView {
     return {
         layout: {} as GroupLayout,
         data: {field: 'initial'},
         events: [createEvent('submit', 'Daten einreichen')],
+        newIdentitySlot: null,
+        existingIdentitySlot: null,
+        ...overrides,
+    };
+}
+
+function createBlockedTaskView(overrides?: Partial<TaskViewResponse>): TaskViewResponse {
+    return {
+        layout: null,
+        data: null,
+        events: null,
+        newIdentitySlot: null,
+        existingIdentitySlot: null,
+        ...overrides,
+    } as TaskViewResponse;
+}
+
+function createIdentitySlot(overrides?: Partial<IdentitySlot>): IdentitySlot {
+    return {
+        id: 'applicant',
+        title: 'Antragsteller:in',
+        description: null,
+        isOptional: false,
+        isRequired: true,
+        allowsEmail: true,
+        identityType: null,
+        emailAddress: null,
+        isReady: false,
+        availableIdentityProviders: [createIdentityProvider()],
+        communication: null,
+        ...overrides,
+    };
+}
+
+function createIdentityProvider(isAuthenticatedWithThis = false): IdentitySlot['availableIdentityProviders'][number] {
+    return {
+        identityProviderKey: '36a9a19d-f9fb-4225-a9a0-07a223820b4b',
+        identityProviderName: 'BundID',
+        identityProviderAssetKey: null,
+        identityProviderType: IdentityProviderType.BundID,
+        isAuthenticatedWithThis,
+        additionalScopes: [],
+    };
+}
+
+function createExistingIdentitySlot(
+    overrides?: Partial<NonNullable<TaskViewResponse['existingIdentitySlot']>>,
+): NonNullable<TaskViewResponse['existingIdentitySlot']> {
+    return {
+        id: 'applicant',
+        isReady: false,
+        identityProvider: createIdentityProvider(),
         ...overrides,
     };
 }
 
 function createEvent(event: string, label: string): TaskViewEvent {
-    return {
-        event,
-        label,
-    };
+    return {event, label};
 }
 
 function createInstanceStatus() {
@@ -277,8 +500,5 @@ function expectActionTypeNotDispatched(type: string): void {
 }
 
 function expectDispatchedAction(type: string, payload: unknown): void {
-    expect(mocks.dispatch).toHaveBeenCalledWith(expect.objectContaining({
-        payload,
-        type,
-    }));
+    expect(mocks.dispatch).toHaveBeenCalledWith(expect.objectContaining({payload, type}));
 }

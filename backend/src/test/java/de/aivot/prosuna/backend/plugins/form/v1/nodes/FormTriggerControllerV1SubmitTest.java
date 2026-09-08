@@ -16,8 +16,8 @@ import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
-import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
+import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
@@ -237,7 +237,6 @@ class FormTriggerControllerV1SubmitTest {
 
         var controller = new FormTriggerControllerV1(
                 mock(ProsunaConfig.class),
-                mock(IdentityProviderService.class),
                 elementDerivationService,
                 mock(AssetService.class),
                 mock(ThemeService.class),
@@ -267,8 +266,7 @@ class FormTriggerControllerV1SubmitTest {
                 mock(PaymentProviderRepository.class),
                 mock(PdfService.class),
                 mock(PaymentProviderDefinitionsService.class),
-                mock(de.aivot.prosuna.backend.communication.services.IdentityCommunicationService.class),
-                mock(de.aivot.prosuna.backend.communication.services.CommunicationService.class)
+                mock(IdentitySlotService.class)
         );
 
         return new SubmitFixture(

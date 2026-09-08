@@ -99,7 +99,7 @@ import {useNotImplemented} from '../../../hooks/use-not-implemented';
 import {ViewDispatcherMode} from '../../../components/view-dispatcher/view-dispatcher.context';
 import {ProcessStatus} from '../../process/enums/process-status';
 import type {Theme as AppTheme} from '../../themes/models/theme';
-import {FormTriggerApiService, type FormIdentitySlot} from '../../forms/services/form-trigger-api-service';
+import {FormTriggerApiService} from '../../forms/services/form-trigger-api-service';
 import {createAppTheme} from '../../../theming/themes';
 import {BaseTheme} from '../../../theming/base-theme';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
@@ -117,6 +117,7 @@ import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/
 import {
     FormIdentitySelectionControls,
 } from '../../identity/components/form-identity-selection-controls/form-identity-selection-controls';
+import type {IdentitySlot} from '../../identity/models/identity-slot';
 import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';
 import {useApi} from '../../../hooks/use-api';
 import {ThemesApiService} from '../../themes/themes-api-service';
@@ -222,7 +223,7 @@ export function FormNodeEditorPage() {
 
     const [identityMappingInformation, setIdentityMappingInformation] = useState<IdentityConfigElementSlotWithProviders[]>([]);
     const [showIdentityDialog, setShowIdentityDialog] = useState(false);
-    const [identitySlots, setIdentitySlots] = useState<FormIdentitySlot[]>([]);
+    const [identitySlots, setIdentitySlots] = useState<IdentitySlot[]>([]);
     const [isLoadingIdentitySlots, setIsLoadingIdentitySlots] = useState(false);
     const [identitySlotsLoadFailed, setIdentitySlotsLoadFailed] = useState(false);
     const configuredIdentitySlots = useMemo(() => (
@@ -237,6 +238,19 @@ export function FormNodeEditorPage() {
             .sort((a, b) => Number(a.slot.isOptional) - Number(b.slot.isOptional) || a.index - b.index)
             .map(({slot}) => slot);
     }, [identitySlots]);
+    const identitySelectionApi = useMemo(() => {
+        const formSlug = node?.configuration.formSlug;
+        if (process == null || node == null || formSlug == null) {
+            return null;
+        }
+
+        return new FormTriggerApiService().createIdentitySelectionApi(
+            process.slug,
+            formSlug,
+            node.id,
+            testClaim?.accessKey,
+        );
+    }, [node, process, testClaim]);
 
     const [startedProcessAccessInfo, setStartedProcessAccessInfo] = useState<{
         processInstanceAccessKey: string;
@@ -1654,18 +1668,18 @@ export function FormNodeEditorPage() {
                                     sx={{mt: 2}}
                                 />}
 
-                            <FormIdentitySelectionControls
-                                slot={slot}
-                                processSlug={process.slug}
-                                formSlug={node.configuration.formSlug}
-                                relatedProcessNodeId={node.id}
-                                testClaim={testClaim?.accessKey}
-                                onChange={(nextSlot) => {
-                                    setIdentitySlots(currentSlots => currentSlots.map(currentSlot => (
-                                        currentSlot.id === nextSlot.id ? nextSlot : currentSlot
-                                    )));
-                                }}
-                            />
+                            {
+                                identitySelectionApi != null &&
+                                <FormIdentitySelectionControls
+                                    slot={slot}
+                                    api={identitySelectionApi}
+                                    onChange={(nextSlot) => {
+                                        setIdentitySlots(currentSlots => currentSlots.map(currentSlot => (
+                                            currentSlot.id === nextSlot.id ? nextSlot : currentSlot
+                                        )));
+                                    }}
+                                />
+                            }
                         </Box>
                     ))}
                 </DialogContent>

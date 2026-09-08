@@ -5,15 +5,15 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {CustomerFormPage} from './customer-form-page';
 import {BaseApiService} from '../../services/base-api-service';
 import {CustomerInputService} from '../../services/customer-input-service';
-import {
-    FormTriggerApiService,
-    type FormIdentityCommunicationState,
-    type FormIdentitySlot,
-} from '../../modules/forms/services/form-trigger-api-service';
+import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-api-service';
 import {ElementType} from '../../data/element-type/element-type';
 import {ProcessStatus} from '../../modules/process/enums/process-status';
 import {createDerivedRuntimeElementData} from '../../models/element-data';
 import {IdentityProviderType} from '../../modules/identity/enums/identity-provider-type';
+import type {
+    IdentityCommunicationState,
+    IdentitySlot,
+} from '../../modules/identity/models/identity-slot';
 
 const mocks = vi.hoisted(() => ({
     confirm: vi.fn(),
@@ -603,7 +603,7 @@ function expectDispatchedAction(type: string, payload: unknown): void {
 
 function createRetrieveResponse(
     layoutElement = createFormLayout(),
-    identitySlots: FormIdentitySlot[] = [],
+    identitySlots: IdentitySlot[] = [],
 ): any {
     return {
         identitySlots,
@@ -631,7 +631,7 @@ function createRetrieveResponse(
     };
 }
 
-function createIdentitySlot(overrides?: Partial<FormIdentitySlot>): FormIdentitySlot {
+function createIdentitySlot(overrides?: Partial<IdentitySlot>): IdentitySlot {
     return {
         id: 'applicant',
         title: 'Antragsteller:in',
@@ -648,7 +648,7 @@ function createIdentitySlot(overrides?: Partial<FormIdentitySlot>): FormIdentity
     };
 }
 
-function createIdentityProvider(isAuthenticatedWithThis = false): FormIdentitySlot['availableIdentityProviders'][number] {
+function createIdentityProvider(isAuthenticatedWithThis = false): IdentitySlot['availableIdentityProviders'][number] {
     return {
         identityProviderKey: '36a9a19d-f9fb-4225-a9a0-07a223820b4b',
         identityProviderName: 'BundID',
@@ -659,7 +659,7 @@ function createIdentityProvider(isAuthenticatedWithThis = false): FormIdentitySl
     };
 }
 
-function createCommunicationState(): FormIdentityCommunicationState {
+function createCommunicationState(): IdentityCommunicationState {
     return {
         required: true,
         ready: false,

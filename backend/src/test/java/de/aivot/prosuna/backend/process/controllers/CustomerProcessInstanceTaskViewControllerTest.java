@@ -6,10 +6,18 @@ import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.*;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.identity.dtos.EmailIdentityRequestDTO;
+import de.aivot.prosuna.backend.identity.dtos.IdentityProviderOptionResponseDTO;
+import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
+import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
+import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
@@ -29,6 +37,7 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
@@ -58,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
@@ -88,12 +98,154 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 .cookie(new Cookie("identity_session", "identity-session")))
                 .andExpect(status().isOk());
 
-        verify(fixture.customerTaskIdentityService()).requireAuthenticatedIdentity(
+        verify(fixture.customerTaskIdentityService()).resolveIdentityState(
                 any(ProcessInstanceEntity.class),
                 any(ProcessNodeEntity.class),
                 any(ProcessNodeCustomerView.class),
                 eq("identity-session")
         );
+    }
+
+    @Test
+    void retrieve_ReturnsIdentityRequirementsAndHidesTaskContentUntilTheyAreReady() throws Exception {
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(),
+                new AuthoredElementValues()
+        );
+        var providerKey = UUID.randomUUID();
+        var provider = new IdentityProviderOptionResponseDTO(
+                providerKey,
+                "BundID",
+                null,
+                IdentityProviderType.BundId,
+                true,
+                List.of()
+        );
+        var newIdentitySlot = identitySlotResponse("representative", false, null, false);
+        var identityState = new CustomerTaskIdentityService.CustomerTaskIdentityState(
+                new CustomerTaskIdentityService.ExistingIdentityState("applicant", false, provider),
+                newIdentitySlot,
+                null,
+                false
+        );
+        when(fixture.customerTaskIdentityService().resolveIdentityState(any(), any(), any(), eq("identity-session")))
+                .thenReturn(identityState);
+
+        var response = fixture.controller().retrieve(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                Map.of(),
+                "identity-session"
+        );
+
+        assertNull(response.layout());
+        assertNull(response.data());
+        assertNull(response.events());
+        assertSame(newIdentitySlot, response.newIdentitySlot());
+        assertEquals("applicant", response.existingIdentitySlot().id());
+        assertEquals(providerKey, response.existingIdentitySlot().identityProvider().identityProviderKey());
+        assertNull(response.existingIdentitySlot().identityProvider().identityProviderAssetKey());
+    }
+
+    @Test
+    void setNewIdentityEmail_UsesTaskSlotAndSetsIdentityCookie() throws Exception {
+        var slot = new IdentityConfigElementSlot()
+                .setId("representative")
+                .setAllowsMail(true);
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(slot),
+                new AuthoredElementValues()
+        );
+        var slotResponse = identitySlotResponse("representative", false, IdentityType.Email, true);
+        when(fixture.customerTaskIdentityService().requireNewIdentitySlot(any(), any(), eq("representative")))
+                .thenReturn(slot);
+        when(fixture.identitySlotService().setEmailIdentity(
+                slot,
+                "representative",
+                null,
+                11,
+                "person@example.test"
+        )).thenReturn(new IdentitySlotService.IdentitySlotMutationResult(slotResponse, "new-session"));
+        var servletResponse = new MockHttpServletResponse();
+
+        var result = fixture.controller().setNewIdentityEmail(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                "representative",
+                Map.of(),
+                null,
+                new EmailIdentityRequestDTO("person@example.test"),
+                servletResponse
+        );
+
+        assertSame(slotResponse, result);
+        assertEquals(1, servletResponse.getCookies().length);
+        assertEquals("identity_session", servletResponse.getCookies()[0].getName());
+        assertEquals("new-session", servletResponse.getCookies()[0].getValue());
+    }
+
+    @Test
+    void update_PassesNewIdentityToCompletionHandlerAndClearsTaskIdentitySession() throws Exception {
+        var completionResult = new ProcessNodeExecutionResultInstanceCompleted();
+        var provider = new InlineCustomerTaskProcessNodeDefinition(null, completionResult);
+        var resultHandler = mock(ProcessNodeExecutionResultHandler.class);
+        var fixture = createFixture(provider, new AuthoredElementValues(), resultHandler);
+        var identity = new IdentityData(
+                "identity-session",
+                "representative",
+                IdentityType.Email,
+                null,
+                null,
+                null,
+                "person@example.test",
+                Map.of(),
+                null,
+                Map.of()
+        );
+        var identityState = new CustomerTaskIdentityService.CustomerTaskIdentityState(
+                null,
+                identitySlotResponse(identity.identityId(), false, IdentityType.Email, true),
+                identity,
+                true
+        );
+        var additionalIdentities = Map.of(identity.identityId(), identity);
+        when(fixture.customerTaskIdentityService().requireAuthenticatedIdentity(any(), any(), any(), eq("identity-session")))
+                .thenReturn(identityState);
+        when(fixture.customerTaskIdentityService().isCompletingResult(completionResult)).thenReturn(true);
+        when(fixture.customerTaskIdentityService().getAdditionalIdentitiesForCompletion(identityState, completionResult))
+                .thenReturn(additionalIdentities);
+        when(fixture.customerTaskIdentityService().clearTaskIdentitySession("identity-session", fixture.node()))
+                .thenReturn(false);
+        var servletResponse = new MockHttpServletResponse();
+
+        fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                "{}",
+                null,
+                null,
+                "inline-submit",
+                Map.of(),
+                "identity-session",
+                servletResponse
+        );
+
+        verify(resultHandler).handleResultWithAdditionalIdentities(
+                any(),
+                eq(null),
+                same(provider),
+                same(fixture.node()),
+                any(ProcessInstanceEntity.class),
+                same(fixture.task()),
+                eq(null),
+                same(completionResult),
+                same(additionalIdentities)
+        );
+        verify(fixture.customerTaskIdentityService()).clearTaskIdentitySession(
+                "identity-session",
+                fixture.node()
+        );
+        assertEquals(0, servletResponse.getCookies()[0].getMaxAge());
     }
 
     @Test
@@ -112,7 +264,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 null,
                 "inline-submit",
                 Map.of(),
-                "identity-session"
+                "identity-session",
+                new MockHttpServletResponse()
         ));
 
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
@@ -244,7 +397,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         normalizedInputs.put("field", "normalized");
         normalizedInputs.put("extra", "saved");
 
-        var customerTaskIdentityService = mock(CustomerTaskIdentityService.class);
+        var customerTaskIdentityService = mockCustomerTaskIdentityService();
         var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
@@ -262,7 +415,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
                 mock(AssetService.class),
-                customerTaskIdentityService
+                customerTaskIdentityService,
+                mock(IdentitySlotService.class)
         );
 
         var response = controller.update(
@@ -273,7 +427,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 null,
-                null
+                null,
+                new MockHttpServletResponse()
         );
 
         assertEquals("initial", response.data().get("defaultField"));
@@ -371,7 +526,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
                 mock(AssetService.class),
-                mock(CustomerTaskIdentityService.class)
+                mockCustomerTaskIdentityService(),
+                mock(IdentitySlotService.class)
         );
 
         var response = controller.update(
@@ -382,7 +538,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 null,
                 "submit",
                 null,
-                null
+                null,
+                new MockHttpServletResponse()
         );
 
         assertNotNull(response.data());
@@ -408,7 +565,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 null,
                 "inline-submit",
                 null,
-                null
+                null,
+                new MockHttpServletResponse()
         );
 
         assertEquals("inline-submit", provider.eventInvokedWith);
@@ -434,7 +592,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                         null,
                         "inline-submit",
                         null,
-                        null
+                        null,
+                        new MockHttpServletResponse()
                 )
         );
 
@@ -544,6 +703,16 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
                                                                AuthoredElementValues normalizedInputs) {
+        return createFixture(
+                provider,
+                normalizedInputs,
+                new ApplyingProcessNodeExecutionResultHandler()
+        );
+    }
+
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+                                                               AuthoredElementValues normalizedInputs,
+                                                               ProcessNodeExecutionResultHandler resultHandler) {
         var procAccess = UUID.randomUUID().toString();
         var taskAccess = UUID.randomUUID().toString();
         var now = Instant.now();
@@ -608,13 +777,14 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 .setConfiguration(new AuthoredElementValues())
                 .setOutputMappings(Map.of());
 
-        var customerTaskIdentityService = mock(CustomerTaskIdentityService.class);
+        var customerTaskIdentityService = mockCustomerTaskIdentityService();
+        var identitySlotService = mock(IdentitySlotService.class);
         var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
                 new ProcessNodeDefinitionService(List.of(provider)),
                 new TestProcessNodeService(node),
-                new ApplyingProcessNodeExecutionResultHandler(),
+                resultHandler,
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestElementDerivationService(normalizedInputs),
                 new TestTaskViewMultipartInputService(normalizedInputs),
@@ -626,15 +796,18 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
                 mock(AssetService.class),
-                customerTaskIdentityService
+                customerTaskIdentityService,
+                identitySlotService
         );
 
         return new CustomerTaskControllerFixture(
                 procAccess,
                 taskAccess,
                 task,
+                node,
                 controller,
-                customerTaskIdentityService
+                customerTaskIdentityService,
+                identitySlotService
         );
     }
 
@@ -712,7 +885,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         prosunaConfig.setProsunaHostname("https://example.test/");
         var themeService = mock(ThemeService.class);
         var assetService = mock(AssetService.class);
-        var customerTaskIdentityService = mock(CustomerTaskIdentityService.class);
+        var customerTaskIdentityService = mockCustomerTaskIdentityService();
 
         var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
@@ -731,7 +904,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 prosunaConfig,
                 themeService,
                 assetService,
-                customerTaskIdentityService
+                customerTaskIdentityService,
+                mock(IdentitySlotService.class)
         );
 
         return new PaymentConfirmationControllerFixture(
@@ -750,6 +924,33 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static String expectedPaymentRedirectUrl(PaymentConfirmationControllerFixture fixture) {
         return "https://example.test/process/" + fixture.procAccess() + "/tasks/" + fixture.taskAccess();
+    }
+
+    private static CustomerTaskIdentityService mockCustomerTaskIdentityService() {
+        var readyState = CustomerTaskIdentityService.CustomerTaskIdentityState.readyWithoutRequirements();
+        return mock(CustomerTaskIdentityService.class, invocation -> switch (invocation.getMethod().getName()) {
+            case "resolveIdentityState", "requireAuthenticatedIdentity" -> readyState;
+            case "getAdditionalIdentitiesForCompletion" -> Map.of();
+            default -> org.mockito.Answers.RETURNS_DEFAULTS.answer(invocation);
+        });
+    }
+
+    private static IdentitySlotResponseDTO identitySlotResponse(String identityId,
+                                                                boolean optional,
+                                                                IdentityType identityType,
+                                                                boolean ready) {
+        return new IdentitySlotResponseDTO(
+                identityId,
+                null,
+                null,
+                optional,
+                true,
+                identityType,
+                identityType == IdentityType.Email ? "person@example.test" : null,
+                ready,
+                List.of(),
+                null
+        );
     }
 
     private static PaymentTransactionEntity paymentTransaction(XBezahldienstStatus status, String redirectUrl) {
@@ -778,8 +979,10 @@ class CustomerProcessInstanceTaskViewControllerTest {
             String procAccess,
             String taskAccess,
             ProcessInstanceTaskEntity task,
+            ProcessNodeEntity node,
             CustomerProcessInstanceTaskViewController controller,
-            CustomerTaskIdentityService customerTaskIdentityService
+            CustomerTaskIdentityService customerTaskIdentityService,
+            IdentitySlotService identitySlotService
     ) {
     }
 
@@ -981,6 +1184,15 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class NoOpCustomerProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
         private int taskViewInvocationCount;
+        private final IdentityConfigElementSlot newIdentitySlot;
+
+        private NoOpCustomerProcessNodeDefinition() {
+            this(null);
+        }
+
+        private NoOpCustomerProcessNodeDefinition(IdentityConfigElementSlot newIdentitySlot) {
+            this.newIdentitySlot = newIdentitySlot;
+        }
 
         @Override
         public String getParentPluginKey() {
@@ -1047,7 +1259,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                     layout,
                     List.of(new TaskViewEvent("Submit", "submit")),
                     persistedData,
-                    null
+                    null,
+                    newIdentitySlot
             );
         }
 
@@ -1060,10 +1273,16 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class InlineCustomerTaskProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
         private final String href;
+        private final ProcessNodeExecutionResult eventResult;
         private String eventInvokedWith;
 
         private InlineCustomerTaskProcessNodeDefinition(String href) {
+            this(href, null);
+        }
+
+        private InlineCustomerTaskProcessNodeDefinition(String href, ProcessNodeExecutionResult eventResult) {
             this.href = href;
+            this.eventResult = eventResult;
         }
 
         @Override
@@ -1144,6 +1363,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
                                                                                 @Nonnull DerivedRuntimeElementData derivedData,
                                                                                 @Nonnull String event) {
             eventInvokedWith = event;
+            if (eventResult != null) {
+                return eventResult.asOptional();
+            }
             return new ProcessNodeExecutionResultTaskUpdated()
                     .setRuntimeData(Map.of(
                             "event", event,

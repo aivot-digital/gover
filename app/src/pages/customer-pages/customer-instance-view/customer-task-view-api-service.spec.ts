@@ -39,6 +39,65 @@ describe('CustomerTaskViewApiService', () => {
         expect(origin.searchParams.has('error')).toBe(false);
     });
 
+    it('creates a new-identity provider link for the task and cleans its callback origin', () => {
+        const link = new CustomerTaskViewApiService().createNewIdentityProviderStartLink(
+            'instance/key',
+            'task key',
+            'representative/id',
+            'provider key',
+            'https://prosuna.example.test/process/instance/tasks/task?identity-state=0&foo=bar',
+        );
+        const linkUrl = new URL(link);
+        const origin = new URL(linkUrl.searchParams.get('origin') ?? '');
+
+        expect(linkUrl.pathname).toBe(
+            '/api/public/processes/instance%2Fkey/tasks/task%20key/identities/representative%2Fid/providers/provider%20key/start/',
+        );
+        expect(origin.searchParams.has('identity-state')).toBe(false);
+        expect(origin.searchParams.get('foo')).toBe('bar');
+    });
+
+    it('stores and clears a new task email identity through the task-scoped endpoints', async () => {
+        const put = vi.spyOn(BaseApiService.prototype, 'put').mockResolvedValue({id: 'representative'});
+        const deleteRequest = vi.spyOn(BaseApiService.prototype, 'delete').mockResolvedValue();
+        const api = new CustomerTaskViewApiService();
+
+        await api.setNewIdentityEmail('instance/key', 'task key', 'representative/id', 'person@example.test');
+        await api.clearNewIdentity('instance/key', 'task key', 'representative/id');
+
+        expect(put).toHaveBeenCalledWith(
+            '/api/public/processes/instance%2Fkey/tasks/task%20key/identities/representative%2Fid/email/',
+            {emailAddress: 'person@example.test'},
+            {skipAuthCheck: true, doNotHandleStatusCodes: true},
+        );
+        expect(deleteRequest).toHaveBeenCalledWith(
+            '/api/public/processes/instance%2Fkey/tasks/task%20key/identities/representative%2Fid/',
+            {skipAuthCheck: true, doNotHandleStatusCodes: true},
+        );
+    });
+
+    it('selects and derives task communication without a client-provided process node id', async () => {
+        const put = vi.spyOn(BaseApiService.prototype, 'put').mockResolvedValue({ready: true});
+        const post = vi.spyOn(BaseApiService.prototype, 'post').mockResolvedValue({ready: false});
+        const api = new CustomerTaskViewApiService();
+        const customerData = {field: 'value'};
+
+        await api.selectNewIdentityCommunication('instance', 'task', 'representative', 12, customerData);
+        await api.deriveNewIdentityCommunication('instance', 'task', 'representative', 12, customerData);
+
+        const options = {skipAuthCheck: true, doNotHandleStatusCodes: true};
+        expect(put).toHaveBeenCalledWith(
+            '/api/public/processes/instance/tasks/task/identities/representative/communication/',
+            {bindingId: 12, customerData},
+            options,
+        );
+        expect(post).toHaveBeenCalledWith(
+            '/api/public/processes/instance/tasks/task/identities/representative/communication/derive/',
+            {bindingId: 12, customerData},
+            options,
+        );
+    });
+
     it('recognizes only the structured required-identity authentication error', () => {
         expect(isRequiredIdentityAuthenticationError({
             status: 401,

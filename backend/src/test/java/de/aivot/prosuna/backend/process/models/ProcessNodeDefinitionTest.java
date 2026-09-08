@@ -406,7 +406,7 @@ class ProcessNodeDefinitionTest {
         );
 
         assertEquals("saved", view.data().get("field"));
-        assertEquals("applicant", view.requiredIdentityId());
+        assertEquals("applicant", view.requiredExistingIdentityId());
     }
 
     @Test

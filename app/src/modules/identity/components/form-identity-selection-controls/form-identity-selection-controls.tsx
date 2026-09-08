@@ -15,26 +15,20 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
-import {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState} from 'react';
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useState} from 'react';
 import type {AuthoredElementValues, DerivedRuntimeElementData} from '../../../../models/element-data';
 import {createDerivedRuntimeElementData} from '../../../../models/element-data';
-import {
-    FormTriggerApiService,
-    type FormIdentityCommunicationState,
-    type FormIdentitySlot,
-} from '../../../forms/services/form-trigger-api-service';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {IdentityButton} from '../identity-button/identity-button';
+import type {IdentityCommunicationState, IdentitySlot} from '../../models/identity-slot';
+import type {IdentitySelectionApi} from '../../models/identity-selection-api';
 
 export interface FormIdentitySelectionControlsProps {
-    slot: FormIdentitySlot;
-    processSlug: string;
-    formSlug: string;
-    relatedProcessNodeId: number;
-    testClaim?: string;
-    onChange: (slot: FormIdentitySlot) => void;
+    slot: IdentitySlot;
+    api: IdentitySelectionApi;
+    onChange: (slot: IdentitySlot) => void;
     saveMode?: 'explicit' | 'deferred';
     onStatusChange?: (slotId: string, status: FormIdentitySelectionControlsStatus | null) => void;
 }
@@ -57,19 +51,15 @@ export const FormIdentitySelectionControls = forwardRef<
 >(function FormIdentitySelectionControls(props, ref) {
     const {
         slot,
-        processSlug,
-        formSlug,
-        relatedProcessNodeId,
-        testClaim,
+        api,
         onChange,
         saveMode = 'explicit',
         onStatusChange,
     } = props;
     const dispatch = useAppDispatch();
-    const api = useMemo(() => new FormTriggerApiService(), []);
     const [emailAddress, setEmailAddress] = useState(slot.emailAddress ?? '');
     const [emailError, setEmailError] = useState<string | null>(null);
-    const [communication, setCommunication] = useState<FormIdentityCommunicationState | null>(slot.communication);
+    const [communication, setCommunication] = useState<IdentityCommunicationState | null>(slot.communication);
     const [selectedBindingId, setSelectedBindingId] = useState<number | null>(
         slot.communication?.selectedBindingId ?? null,
     );
@@ -90,7 +80,7 @@ export const FormIdentitySelectionControls = forwardRef<
         setCommunicationChanged(false);
     }, [slot]);
 
-    const replaceSlot = useCallback((nextSlot: FormIdentitySlot) => {
+    const replaceSlot = useCallback((nextSlot: IdentitySlot) => {
         onChange(nextSlot);
     }, [onChange]);
 
@@ -104,13 +94,7 @@ export const FormIdentitySelectionControls = forwardRef<
         setBusy(true);
         setEmailError(null);
         try {
-            const nextSlot = await api.setEmailIdentity(
-                processSlug,
-                formSlug,
-                slot.id,
-                normalizedEmail,
-                testClaim,
-            );
+            const nextSlot = await api.setEmailIdentity(slot.id, normalizedEmail);
             replaceSlot(nextSlot);
             return nextSlot.isReady;
         } catch (error) {
@@ -119,12 +103,12 @@ export const FormIdentitySelectionControls = forwardRef<
         } finally {
             setBusy(false);
         }
-    }, [api, dispatch, emailAddress, formSlug, processSlug, replaceSlot, slot.id, testClaim]);
+    }, [api, dispatch, emailAddress, replaceSlot, slot.id]);
 
     const handleClear = async () => {
         setBusy(true);
         try {
-            await api.clearIdentity(processSlug, formSlug, slot.id, testClaim);
+            await api.clearIdentity(slot.id);
             replaceSlot({
                 ...slot,
                 identityType: null,
@@ -144,7 +128,7 @@ export const FormIdentitySelectionControls = forwardRef<
     };
 
     const previewCommunication = async (bindingId: number, values: AuthoredElementValues) => {
-        const state = await api.deriveCommunication(slot.id, relatedProcessNodeId, bindingId, values);
+        const state = await api.deriveCommunication(slot.id, bindingId, values);
         setCommunication(state);
         setDerivedData(state.derivedData);
         return state;
@@ -181,12 +165,7 @@ export const FormIdentitySelectionControls = forwardRef<
 
         setBusy(true);
         try {
-            const state = await api.selectCommunication(
-                slot.id,
-                relatedProcessNodeId,
-                selectedBindingId,
-                customerData,
-            );
+            const state = await api.selectCommunication(slot.id, selectedBindingId, customerData);
             setCommunication(state);
             setDerivedData(state.derivedData);
             setCommunicationChanged(false);
@@ -204,7 +183,7 @@ export const FormIdentitySelectionControls = forwardRef<
         } finally {
             setBusy(false);
         }
-    }, [api, customerData, dispatch, relatedProcessNodeId, replaceSlot, selectedBindingId, slot]);
+    }, [api, customerData, dispatch, replaceSlot, selectedBindingId, slot]);
 
     const normalizedEmailAddress = emailAddress.trim();
     const savedEmailAddress = slot.emailAddress?.trim() ?? '';
@@ -263,11 +242,8 @@ export const FormIdentitySelectionControls = forwardRef<
                         <IdentityButton
                             key={`${slot.id}-${provider.identityProviderKey}`}
                             startUri={api.createIdentityProviderStartLink(
-                                processSlug,
-                                formSlug,
                                 slot.id,
                                 provider.identityProviderKey,
-                                testClaim,
                                 window.location.href,
                             )}
                             identityProviderName={provider.identityProviderName}
@@ -407,6 +383,20 @@ export const FormIdentitySelectionControls = forwardRef<
                         </Button>
                     }
                 </>
+            }
+
+            {
+                slot.identityType != null &&
+                <Button
+                    variant="text"
+                    color="error"
+                    startIcon={<Delete/>}
+                    onClick={() => void handleClear()}
+                    disabled={busy}
+                    sx={{alignSelf: 'flex-start'}}
+                >
+                    Identität entfernen
+                </Button>
             }
         </Stack>
     );

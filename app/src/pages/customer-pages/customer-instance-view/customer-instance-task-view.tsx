@@ -1,34 +1,47 @@
-import {Alert, Box, Button, Stack, Typography} from '@mui/material';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
+import {Alert, Box, Button, Grid, Paper, Typography} from '@mui/material';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useNavigate, useOutletContext, useParams} from 'react-router-dom';
+import {Chip} from '../../../components/chip/chip';
+import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {isApiError} from '../../../models/api-error';
+import {
+    type AuthoredElementValues,
+    createDerivedRuntimeElementData,
+    type DerivedRuntimeElementData,
+    isDerivedRuntimeElementData,
+} from '../../../models/element-data';
+import {ElementDerivationContext} from '../../../modules/elements/components/element-derivation-context';
+import type {
+    FormIdentitySelectionControlsHandle,
+    FormIdentitySelectionControlsStatus,
+} from '../../../modules/identity/components/form-identity-selection-controls/form-identity-selection-controls';
+import {IdentityButton} from '../../../modules/identity/components/identity-button/identity-button';
+import {IdentitySlotCard} from '../../../modules/identity/components/identity-slot-card/identity-slot-card';
+import type {IdentitySelectionApi} from '../../../modules/identity/models/identity-selection-api';
+import type {IdentitySlot} from '../../../modules/identity/models/identity-slot';
+import {TaskViewEventButtons} from '../../../modules/process/components/task-view-event-buttons';
+import {
+    hasCustomerTaskIdentityRequirements,
+    hasCustomerTaskViewContent,
+    type CustomerTaskExistingIdentitySlot,
+} from '../../../modules/process/models/customer-task-view';
+import {
+    ProcessInstanceTaskApiService,
+    type TaskViewEvent,
+} from '../../../modules/process/services/process-instance-task-api-service';
+import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../../slices/shell-slice';
+import {showApiErrorSnackbar, showErrorSnackbar} from '../../../slices/snackbar-slice';
+import {withDelay} from '../../../utils/with-delay';
+import type {CustomerInstanceViewOutletContext} from './customer-instance-view';
 import {
     buildCustomerInstancePath,
     CustomerTaskViewApiService,
     isRequiredIdentityAuthenticationError,
     removeIdentityCallbackParameters,
-    TaskViewResponse,
+    type TaskViewResponse,
 } from './customer-task-view-api-service';
-import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
-import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../../slices/shell-slice';
-import {isApiError} from '../../../models/api-error';
-import {ElementDerivationContext} from '../../../modules/elements/components/element-derivation-context';
-import {
-    AuthoredElementValues,
-    createDerivedRuntimeElementData,
-    DerivedRuntimeElementData,
-    isDerivedRuntimeElementData,
-} from '../../../models/element-data';
-import {useNavigate, useOutletContext, useParams} from 'react-router-dom';
-import {
-    ProcessInstanceTaskApiService,
-    TaskViewEvent,
-} from '../../../modules/process/services/process-instance-task-api-service';
-import {TaskViewEventButtons} from '../../../modules/process/components/task-view-event-buttons';
-import {showApiErrorSnackbar, showErrorSnackbar} from '../../../slices/snackbar-slice';
-import {withDelay} from '../../../utils/with-delay';
-import type {CustomerInstanceViewOutletContext} from './customer-instance-view';
-import {IdentityStateQueryParam} from '../../../modules/identity/constants/identity-state-query-param';
-import {IdentityResultState} from '../../../modules/identity/enums/identity-result-state';
 
 export function CustomerInstanceTaskView() {
     const {
@@ -45,36 +58,59 @@ export function CustomerInstanceTaskView() {
         refreshInstanceStatus,
         invalidateInstanceTasks,
     } = useOutletContext<CustomerInstanceViewOutletContext>();
+    const taskApi = useMemo(() => new CustomerTaskViewApiService(), []);
 
-    const [identityAuthenticationSucceeded, setIdentityAuthenticationSucceeded] = useState(() => {
-        const currentUrl = new URL(window.location.href);
-        const succeeded = currentUrl.searchParams.get(IdentityStateQueryParam) === String(IdentityResultState.Success);
-        const cleanedUrl = removeIdentityCallbackParameters(currentUrl.toString());
-        if (cleanedUrl !== currentUrl.toString()) {
-            window.history.replaceState(window.history.state, '', cleanedUrl);
-        }
-        return succeeded;
-    });
-    const [taskView, setTaskView] = useState<TaskViewResponse | null | 'failed' | 'identity-required'>(null);
+    const [taskView, setTaskView] = useState<TaskViewResponse | null | 'failed'>(null);
+    const [identityStepDismissed, setIdentityStepDismissed] = useState(false);
     const [editedAuthoredValues, setEditedAuthoredValues] = useState<AuthoredElementValues | null>(null);
     const [derivedErrors, setDerivedErrors] = useState<DerivedRuntimeElementData | null>(null);
     const latestAuthoredValuesRef = useRef<AuthoredElementValues>({});
     const taskViewLoadGenerationRef = useRef(0);
 
-    const handleRequiredIdentityAuthentication = useCallback((error: unknown): boolean => {
-        if (!isRequiredIdentityAuthenticationError(error)) {
-            return false;
+    useEffect(() => {
+        const currentUrl = window.location.href;
+        const cleanedUrl = removeIdentityCallbackParameters(currentUrl);
+        if (cleanedUrl !== currentUrl) {
+            window.history.replaceState(window.history.state, '', cleanedUrl);
         }
+    }, [instanceAccessKey, taskAccessKey]);
 
-        setTaskView('identity-required');
-        setEditedAuthoredValues(null);
-        setDerivedErrors(null);
-        latestAuthoredValuesRef.current = {};
-        return true;
-    }, []);
+    const retrieveTaskView = useCallback(async (): Promise<TaskViewResponse | null> => {
+        const loadGeneration = ++taskViewLoadGenerationRef.current;
+        try {
+            const view = await taskApi.getTaskView(instanceAccessKey, taskAccessKey);
+            if (loadGeneration !== taskViewLoadGenerationRef.current) {
+                return null;
+            }
+
+            setTaskView(view);
+            setEditedAuthoredValues(null);
+            setDerivedErrors(null);
+            latestAuthoredValuesRef.current = view.data ?? {};
+            return view;
+        } catch (error) {
+            if (loadGeneration !== taskViewLoadGenerationRef.current) {
+                return null;
+            }
+
+            if (isApiError(error) && error.displayableToUser) {
+                dispatch(setErrorMessage({
+                    message: error.message,
+                    status: error.status,
+                }));
+            } else {
+                dispatch(setErrorMessage({
+                    message: 'Fehler beim Abrufen des Status des Vorgangs.',
+                    status: isApiError(error) ? error.status : 500,
+                }));
+            }
+            setTaskView('failed');
+            return null;
+        }
+    }, [dispatch, instanceAccessKey, taskAccessKey, taskApi]);
 
     useEffect(() => {
-        const loadGeneration = ++taskViewLoadGenerationRef.current;
+        let active = true;
         let loadPending = true;
 
         dispatch(setLoadingMessage({
@@ -84,65 +120,72 @@ export function CustomerInstanceTaskView() {
         }));
 
         setTaskView(null);
+        setIdentityStepDismissed(false);
         setEditedAuthoredValues(null);
         setDerivedErrors(null);
         latestAuthoredValuesRef.current = {};
-        new CustomerTaskViewApiService()
-            .getTaskView(instanceAccessKey, taskAccessKey)
-            .then((view) => {
-                if (loadGeneration !== taskViewLoadGenerationRef.current) {
-                    return;
-                }
 
-                setIdentityAuthenticationSucceeded(false);
-                setTaskView(view);
-                latestAuthoredValuesRef.current = view.data;
-            })
-            .catch((error) => {
-                if (loadGeneration !== taskViewLoadGenerationRef.current) {
-                    return;
-                }
-
-                if (handleRequiredIdentityAuthentication(error)) {
-                    return;
-                }
-
-                if (isApiError(error) && error.displayableToUser) {
-                    dispatch(setErrorMessage({
-                        message: error.message,
-                        status: error.status,
-                    }));
-                } else {
-                    dispatch(setErrorMessage({
-                        message: 'Fehler beim Abrufen des Status des Vorgangs.',
-                        status: isApiError(error) ? error.status : 500,
-                    }));
-                }
-                setTaskView('failed');
-            })
+        void retrieveTaskView()
             .finally(() => {
-                loadPending = false;
-                if (loadGeneration !== taskViewLoadGenerationRef.current) {
+                if (!active) {
                     return;
                 }
-
+                loadPending = false;
                 dispatch(clearLoadingMessage());
             });
 
         return () => {
-            if (loadGeneration !== taskViewLoadGenerationRef.current) {
-                return;
-            }
-
+            active = false;
             taskViewLoadGenerationRef.current += 1;
             if (loadPending) {
                 dispatch(clearLoadingMessage());
             }
         };
-    }, [dispatch, handleRequiredIdentityAuthentication, instanceAccessKey, taskAccessKey]);
+    }, [dispatch, retrieveTaskView]);
+
+    const handleRequiredIdentityAuthentication = useCallback((error: unknown): boolean => {
+        if (!isRequiredIdentityAuthenticationError(error)) {
+            return false;
+        }
+
+        setTaskView(null);
+        setIdentityStepDismissed(false);
+        setEditedAuthoredValues(null);
+        setDerivedErrors(null);
+        latestAuthoredValuesRef.current = {};
+        void retrieveTaskView();
+        return true;
+    }, [retrieveTaskView]);
+
+    const identitySelectionApi = useMemo(() => (
+        taskApi.createIdentitySelectionApi(instanceAccessKey, taskAccessKey)
+    ), [instanceAccessKey, taskAccessKey, taskApi]);
+
+    const handleIdentitySlotChange = useCallback((nextSlot: IdentitySlot): void => {
+        setTaskView((currentView) => {
+            if (currentView == null || currentView === 'failed') {
+                return currentView;
+            }
+            if (hasCustomerTaskViewContent(currentView)) {
+                return {...currentView, newIdentitySlot: nextSlot};
+            }
+            return {...currentView, newIdentitySlot: nextSlot};
+        });
+    }, []);
+
+    const handleIdentityContinue = useCallback(async (): Promise<boolean> => {
+        const refreshedView = await retrieveTaskView();
+        if (refreshedView == null || !hasCustomerTaskViewContent(refreshedView)) {
+            setIdentityStepDismissed(false);
+            return false;
+        }
+
+        setIdentityStepDismissed(true);
+        return true;
+    }, [retrieveTaskView]);
 
     const handleDerive = useCallback((values: AuthoredElementValues, skipErrorsForElements: string[]) => {
-        return new CustomerTaskViewApiService()
+        return taskApi
             .deriveTaskView(instanceAccessKey, taskAccessKey, values, skipErrorsForElements)
             .catch((error) => {
                 if (handleRequiredIdentityAuthentication(error)) {
@@ -150,7 +193,7 @@ export function CustomerInstanceTaskView() {
                 }
                 throw error;
             });
-    }, [handleRequiredIdentityAuthentication, instanceAccessKey, taskAccessKey]);
+    }, [handleRequiredIdentityAuthentication, instanceAccessKey, taskAccessKey, taskApi]);
 
     const handleTaskViewEvent = useCallback(async (event: TaskViewEvent, values: AuthoredElementValues): Promise<void> => {
         dispatch(setLoadingMessage({
@@ -169,9 +212,15 @@ export function CustomerInstanceTaskView() {
             );
 
             setTaskView(updatedTaskView);
-            setEditedAuthoredValues(updatedTaskView.data);
             setDerivedErrors(null);
-            latestAuthoredValuesRef.current = updatedTaskView.data;
+            if (hasCustomerTaskViewContent(updatedTaskView)) {
+                setEditedAuthoredValues(updatedTaskView.data);
+                latestAuthoredValuesRef.current = updatedTaskView.data;
+            } else {
+                setIdentityStepDismissed(false);
+                setEditedAuthoredValues(null);
+                latestAuthoredValuesRef.current = {};
+            }
 
             try {
                 await refreshInstanceStatus();
@@ -211,8 +260,8 @@ export function CustomerInstanceTaskView() {
     }, [handleTaskViewEvent]);
 
     const handleInlineEvent = useCallback(async (values: AuthoredElementValues, event: string): Promise<void> => {
-        const taskViewEvent = typeof taskView !== 'string'
-            ? taskView?.events.find((candidate) => candidate.event === event)
+        const taskViewEvent = taskView != null && taskView !== 'failed'
+            ? taskView.events?.find((candidate) => candidate.event === event)
             : undefined;
 
         await handleTaskViewEvent(taskViewEvent ?? {
@@ -227,48 +276,35 @@ export function CustomerInstanceTaskView() {
     }, []);
 
     if (taskView == null) {
-        return (
-            <LoadingPlaceholder/>
-        );
+        return <LoadingPlaceholder/>;
     }
 
-    if (taskView == 'failed') {
+    if (taskView === 'failed') {
         return null;
     }
 
-    if (taskView === 'identity-required') {
-        const wrongAccountAuthenticated = identityAuthenticationSucceeded;
-        const authenticationStartLink = new CustomerTaskViewApiService()
-            .createRequiredIdentityAuthenticationStartLink(instanceAccessKey, taskAccessKey);
-
+    const hasIdentityRequirements = hasCustomerTaskIdentityRequirements(taskView);
+    if (hasIdentityRequirements && (!identityStepDismissed || !hasCustomerTaskViewContent(taskView))) {
         return (
-            <Box sx={{maxWidth: 720, mx: 'auto'}}>
-                <Alert severity={wrongAccountAuthenticated ? 'error' : 'info'}>
-                    <Stack spacing={2}>
-                        <Box>
-                            <Typography variant="h6" component="h2" gutterBottom>
-                                {wrongAccountAuthenticated ? 'Falsches Nutzerkonto' : 'Anmeldung erforderlich'}
-                            </Typography>
-                            <Typography>
-                                {
-                                    wrongAccountAuthenticated
-                                        ? 'Das verwendete Nutzerkonto gehört nicht zur Empfängeridentität dieser Aufgabe. Melden Sie sich mit dem richtigen Nutzerkonto an.'
-                                        : 'Für diese Aufgabe ist eine erneute Anmeldung erforderlich. Melden Sie sich mit dem Nutzerkonto an, an das diese Aufgabe gesendet wurde.'
-                                }
-                            </Typography>
-                        </Box>
-                        <Box>
-                            <Button
-                                component="a"
-                                href={authenticationStartLink}
-                                variant="contained"
-                            >
-                                Mit Nutzerkonto anmelden
-                            </Button>
-                        </Box>
-                    </Stack>
-                </Alert>
-            </Box>
+            <TaskIdentityPlaceholder
+                existingIdentitySlot={taskView.existingIdentitySlot}
+                existingIdentityStartUri={taskApi.createRequiredIdentityAuthenticationStartLink(
+                    instanceAccessKey,
+                    taskAccessKey,
+                )}
+                newIdentitySlot={taskView.newIdentitySlot}
+                identitySelectionApi={identitySelectionApi}
+                onIdentitySlotChange={handleIdentitySlotChange}
+                onContinue={handleIdentityContinue}
+            />
+        );
+    }
+
+    if (!hasCustomerTaskViewContent(taskView)) {
+        return (
+            <Alert severity="error">
+                Die Aufgabenansicht konnte nicht vollständig geladen werden.
+            </Alert>
         );
     }
 
@@ -290,6 +326,214 @@ export function CustomerInstanceTaskView() {
                 events={taskView.events}
                 onEvent={handleEventClick}
             />
+        </Box>
+    );
+}
+
+interface TaskIdentityPlaceholderProps {
+    existingIdentitySlot: CustomerTaskExistingIdentitySlot | null;
+    existingIdentityStartUri: string;
+    newIdentitySlot: IdentitySlot | null;
+    identitySelectionApi: IdentitySelectionApi;
+    onIdentitySlotChange: (slot: IdentitySlot) => void;
+    onContinue: () => Promise<boolean>;
+}
+
+function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
+    const {
+        existingIdentitySlot,
+        existingIdentityStartUri,
+        identitySelectionApi,
+        newIdentitySlot,
+        onContinue,
+        onIdentitySlotChange,
+    } = props;
+    const controlsRef = useRef<FormIdentitySelectionControlsHandle | null>(null);
+    const [controlStatus, setControlStatus] = useState<FormIdentitySelectionControlsStatus | null>(null);
+    const [isContinuing, setIsContinuing] = useState(false);
+    const handleControlStatusChange = useCallback((
+        _slotId: string,
+        status: FormIdentitySelectionControlsStatus | null,
+    ) => {
+        setControlStatus((currentStatus) => {
+            if (
+                currentStatus?.hasSelection === status?.hasSelection &&
+                currentStatus?.canCommit === status?.canCommit &&
+                currentStatus?.isBusy === status?.isBusy
+            ) {
+                return currentStatus;
+            }
+            return status;
+        });
+    }, []);
+
+    const newIdentitySelected = newIdentitySlot != null && (
+        controlStatus?.hasSelection ?? newIdentitySlot.identityType != null
+    );
+    const newIdentityCanCommit = newIdentitySlot == null || (
+        !newIdentitySelected
+            ? newIdentitySlot.isOptional
+            : controlStatus?.canCommit ?? newIdentitySlot.isReady
+    );
+    const existingIdentityReady = existingIdentitySlot?.isReady ?? true;
+    const identityControlBusy = controlStatus?.isBusy ?? false;
+    const continueDisabled = isContinuing || identityControlBusy || !existingIdentityReady || !newIdentityCanCommit;
+    const canContinueWithoutAuthentication = existingIdentitySlot == null &&
+        newIdentitySlot?.isOptional === true &&
+        !newIdentitySelected;
+    const wrongExistingAccount = existingIdentitySlot != null &&
+        !existingIdentitySlot.isReady &&
+        existingIdentitySlot.identityProvider.isAuthenticatedWithThis;
+
+    const handleContinue = async () => {
+        if (continueDisabled) {
+            return;
+        }
+
+        setIsContinuing(true);
+        try {
+            if (newIdentitySlot != null && newIdentitySelected) {
+                const controls = controlsRef.current;
+                if (controls == null || !await controls.commitPendingSelection()) {
+                    return;
+                }
+            }
+
+            await onContinue();
+        } finally {
+            setIsContinuing(false);
+        }
+    };
+
+    let introduction: string;
+    if (existingIdentitySlot != null && newIdentitySlot != null) {
+        introduction = 'Bestätigen Sie die Empfängeridentität dieser Aufgabe und vervollständigen Sie die weitere Identitätsangabe.';
+    } else if (existingIdentitySlot != null) {
+        introduction = 'Für diese Aufgabe ist eine erneute Anmeldung erforderlich. Melden Sie sich mit dem Nutzerkonto an, an das diese Aufgabe gesendet wurde.';
+    } else if (newIdentitySlot?.isRequired) {
+        introduction = 'Für diese Aufgabe ist eine Identität erforderlich. Wählen Sie ein Nutzerkonto oder, sofern angeboten, eine E-Mail-Adresse aus.';
+    } else {
+        introduction = 'Sie können ein Nutzerkonto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können Sie die Aufgabe ohne Identitätsangabe bearbeiten.';
+    }
+
+    return (
+        <Box
+            sx={{
+                maxWidth: 1200,
+                mx: 'auto',
+                py: {
+                    xs: 3,
+                    md: 5,
+                },
+            }}
+        >
+            <Grid container spacing={3}>
+                <Grid size={{xs: 12, md: 10, lg: 8}} sx={{mb: 2}}>
+                    <Typography variant="h2" component="div">
+                        Identität auswählen
+                    </Typography>
+                    <Typography sx={{mt: 1, maxWidth: 680}}>
+                        {introduction}
+                    </Typography>
+                </Grid>
+
+                {
+                    existingIdentitySlot != null &&
+                    <Grid size={{xs: 12, md: 6}}>
+                        <Paper
+                            variant="outlined"
+                            sx={{
+                                height: '100%',
+                                p: {
+                                    xs: 2,
+                                    md: 2.5,
+                                },
+                                borderColor: 'divider',
+                                backgroundColor: 'background.paper',
+                            }}
+                        >
+                            <Typography variant="caption">
+                                Identität
+                            </Typography>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    flexWrap: 'wrap',
+                                    columnGap: 1.25,
+                                    rowGap: 0.5,
+                                    mt: 0.25,
+                                }}
+                            >
+                                <Typography variant="h4" component="h2">
+                                    Empfängeridentität
+                                </Typography>
+                                <Chip
+                                    mode="soft"
+                                    label="Verpflichtend"
+                                    color="warning"
+                                    size="small"
+                                />
+                            </Box>
+
+                            {
+                                wrongExistingAccount &&
+                                <Alert severity="error" sx={{mt: 2}}>
+                                    <Typography variant="subtitle2" component="div">
+                                        Falsches Nutzerkonto
+                                    </Typography>
+                                    Das verwendete Nutzerkonto gehört nicht zur Empfängeridentität dieser Aufgabe.
+                                    Melden Sie sich mit dem richtigen Nutzerkonto an.
+                                </Alert>
+                            }
+
+                            <IdentityButton
+                                startUri={existingIdentityStartUri}
+                                identityProviderName={existingIdentitySlot.identityProvider.identityProviderName}
+                                identityProviderType={existingIdentitySlot.identityProvider.identityProviderType}
+                                identityProviderAssetKey={existingIdentitySlot.identityProvider.identityProviderAssetKey}
+                                isAuthenticated={existingIdentitySlot.isReady}
+                            />
+                        </Paper>
+                    </Grid>
+                }
+
+                {
+                    newIdentitySlot != null &&
+                    <Grid size={{xs: 12, md: 6}}>
+                        <IdentitySlotCard
+                            ref={controlsRef}
+                            slot={newIdentitySlot}
+                            api={identitySelectionApi}
+                            saveMode="deferred"
+                            onChange={onIdentitySlotChange}
+                            onStatusChange={handleControlStatusChange}
+                        />
+                    </Grid>
+                }
+
+                <Grid size={{xs: 12}}>
+                    <Button
+                        variant="contained"
+                        endIcon={<ArrowForward/>}
+                        onClick={() => void handleContinue()}
+                        disabled={continueDisabled}
+                        sx={{
+                            mt: 1,
+                            width: {
+                                xs: '100%',
+                                sm: 'auto',
+                            },
+                        }}
+                    >
+                        {
+                            canContinueWithoutAuthentication
+                                ? 'Ohne Anmeldung fortfahren'
+                                : 'Mit Aufgabe fortfahren'
+                        }
+                    </Button>
+                </Grid>
+            </Grid>
         </Box>
     );
 }

@@ -1,10 +1,10 @@
 package de.aivot.prosuna.backend.identity.controllers;
 
 import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
+import de.aivot.prosuna.backend.identity.dtos.IdentityCommunicationSelectionRequestDTO;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationService;
-import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,7 +13,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -144,7 +143,7 @@ public class IdentityController {
             @Nonnull @PathVariable String identityId,
             @Nonnull @RequestParam(name = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID) Integer relatedProcessNodeId,
             @Nonnull @CookieValue(name = IDENTITY_COOKIE_NAME) String identitySessionId,
-            @Nonnull @Valid @RequestBody CommunicationSelectionRequest request
+            @Nonnull @Valid @RequestBody IdentityCommunicationSelectionRequestDTO request
     ) throws ResponseException {
         return identityCommunicationService.select(
                 identitySessionId,
@@ -161,7 +160,7 @@ public class IdentityController {
             @Nonnull @PathVariable String identityId,
             @Nonnull @RequestParam(name = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID) Integer relatedProcessNodeId,
             @Nonnull @CookieValue(name = IDENTITY_COOKIE_NAME) String identitySessionId,
-            @Nonnull @Valid @RequestBody CommunicationSelectionRequest request
+            @Nonnull @Valid @RequestBody IdentityCommunicationSelectionRequestDTO request
     ) throws ResponseException {
         return identityCommunicationService.preview(
                 identitySessionId,
@@ -172,9 +171,4 @@ public class IdentityController {
         );
     }
 
-    public record CommunicationSelectionRequest(
-            @Nonnull @NotNull Integer bindingId,
-            @Nonnull @NotNull AuthoredElementValues customerData
-    ) {
-    }
 }

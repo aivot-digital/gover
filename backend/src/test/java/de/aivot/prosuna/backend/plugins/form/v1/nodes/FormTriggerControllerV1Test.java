@@ -16,8 +16,8 @@ import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
-import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
+import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
@@ -634,7 +634,6 @@ class FormTriggerControllerV1Test {
 
         var controller = new FormTriggerControllerV1(
                 prosunaConfig,
-                mock(IdentityProviderService.class),
                 mock(ElementDerivationService.class),
                 assetService,
                 mock(ThemeService.class),
@@ -664,8 +663,7 @@ class FormTriggerControllerV1Test {
                 mock(PaymentProviderRepository.class),
                 pdfService,
                 mock(PaymentProviderDefinitionsService.class),
-                mock(de.aivot.prosuna.backend.communication.services.IdentityCommunicationService.class),
-                mock(de.aivot.prosuna.backend.communication.services.CommunicationService.class)
+                mock(IdentitySlotService.class)
         );
 
         return new PrintFixture(
@@ -828,7 +826,6 @@ class FormTriggerControllerV1Test {
 
         var controller = new FormTriggerControllerV1(
                 prosunaConfig,
-                mock(IdentityProviderService.class),
                 elementDerivationService,
                 assetService,
                 themeService,
@@ -858,8 +855,7 @@ class FormTriggerControllerV1Test {
                 paymentProviderRepository,
                 mock(PdfService.class),
                 paymentProviderDefinitionsService,
-                mock(de.aivot.prosuna.backend.communication.services.IdentityCommunicationService.class),
-                mock(de.aivot.prosuna.backend.communication.services.CommunicationService.class)
+                mock(IdentitySlotService.class)
         );
 
         return new TestFixture(

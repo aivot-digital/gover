@@ -54,21 +54,16 @@ import {Submitted} from '../../components/submitted/submitted';
 import {DialogSearchParam, TestClaimSearchParam} from '../../modules/forms/constants/form-trigger-search-params';
 import {
     FormTriggerApiService,
-    type FormIdentitySlot,
 } from '../../modules/forms/services/form-trigger-api-service';
 import {createAppTheme} from '../../theming/themes';
 import {BaseTheme} from '../../theming/base-theme';
 import {IdentityProvidersApiService} from '../../modules/identity/identity-providers-api-service';
-import {RichtextComponent} from '../../components/richtext/richtext.component';
 import {
-    FormIdentitySelectionControls,
     type FormIdentitySelectionControlsHandle,
     type FormIdentitySelectionControlsStatus,
 } from '../../modules/identity/components/form-identity-selection-controls/form-identity-selection-controls';
 import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
-import {isStringNotNullOrEmpty} from '../../utils/string-utils';
-import {Chip} from '../../components/chip/chip';
 import RestorePageIcon from '@aivot/mui-material-symbols-400-n25-outlined/RestorePage';
 import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
@@ -78,13 +73,15 @@ import {showApiErrorSnackbar, showWarningSnackbar} from '../../slices/snackbar-s
 import {useConfirm} from '../../providers/confirm-provider';
 import {InstantIso} from '../../utils/temporal-types';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
+import type {IdentitySlot} from '../../modules/identity/models/identity-slot';
+import {IdentitySlotCard} from '../../modules/identity/components/identity-slot-card/identity-slot-card';
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
     node: ProcessNodeEntity;
     process: ProcessEntity;
     version: ProcessVersionEntity;
-    identitySlots: FormIdentitySlot[];
+    identitySlots: IdentitySlot[];
 }
 
 const CustomerFormLoadErrorMessage = 'Das Formular konnte nicht geladen werden.';
@@ -576,14 +573,8 @@ interface AuthPlaceholderProps {
     testClaim?: string;
     identitySlots: RetrieveResponse['identitySlots'];
     customerInputDraftDate: InstantIso | null;
-    onIdentitySlotChange: (slot: FormIdentitySlot) => void;
+    onIdentitySlotChange: (slot: IdentitySlot) => void;
     onDismiss: () => void;
-}
-
-function getIdentityDisplayName(identity: { title: string | null }): string {
-    const title = identity.title?.trim();
-
-    return title != null && title.length > 0 ? title : 'Unbenannte Identität';
 }
 
 function AuthPlaceholder(props: AuthPlaceholderProps) {
@@ -600,6 +591,14 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
     const controlsBySlotId = useRef<Map<string, FormIdentitySelectionControlsHandle>>(new Map());
     const [controlStatuses, setControlStatuses] = useState<Map<string, FormIdentitySelectionControlsStatus>>(new Map());
     const [isContinuing, setIsContinuing] = useState(false);
+    const identitySelectionApi = useMemo(() => (
+        new FormTriggerApiService().createIdentitySelectionApi(
+            processSlug,
+            formSlug,
+            relatedProcessNodeId,
+            testClaim,
+        )
+    ), [formSlug, processSlug, relatedProcessNodeId, testClaim]);
 
     const handleControlStatusChange = useCallback((
         slotId: string,
@@ -631,7 +630,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
 
     const authRequired = identitySlots
         .some(slot => slot.isRequired);
-    const isIdentitySelected = (slot: FormIdentitySlot) => (
+    const isIdentitySelected = (slot: IdentitySlot) => (
         controlStatuses.get(slot.id)?.hasSelection ?? slot.identityType != null
     );
     const allSelectedIdentitiesCanCommit = identitySlots.every(slot => {
@@ -740,108 +739,20 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                     md: 6,
                                 }}
                             >
-                                <Paper
-                                    variant="outlined"
-                                    sx={{
-                                        height: '100%',
-                                        p: {
-                                            xs: 2,
-                                            md: 2.5,
-                                        },
-                                        borderColor: 'divider',
-                                        backgroundColor: 'background.paper',
+                                <IdentitySlotCard
+                                    ref={(controls) => {
+                                        if (controls == null) {
+                                            controlsBySlotId.current.delete(slot.id);
+                                        } else {
+                                            controlsBySlotId.current.set(slot.id, controls);
+                                        }
                                     }}
-                                >
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            height: '100%',
-                                        }}
-                                    >
-                                        <Box>
-                                            <Typography variant="caption">
-                                                Identität
-                                            </Typography>
-                                            <Box
-                                                sx={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    flexWrap: 'wrap',
-                                                    columnGap: 1.25,
-                                                    rowGap: 0.5,
-                                                    mt: 0.25,
-                                                }}
-                                            >
-                                                <Typography
-                                                    variant="h4"
-                                                    component="h2"
-                                                >
-                                                    {getIdentityDisplayName(slot)}
-                                                </Typography>
-
-                                                <Chip
-                                                    mode="soft"
-                                                    label={slot.isRequired ? 'Verpflichtend' : 'Optional'}
-                                                    color={slot.isRequired ? 'warning' : 'info'}
-                                                    size="small"
-                                                />
-                                            </Box>
-                                        </Box>
-
-                                        {
-                                            isStringNotNullOrEmpty(slot.description) &&
-                                            <RichtextComponent
-                                                content={slot.description}
-                                                sx={{
-                                                    mt: 2,
-                                                }}
-                                            />
-                                        }
-
-                                        {
-                                            slot.isRequired &&
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    color: "text.secondary",
-                                                    mt: 2
-                                                }}>
-                                                Eine der nachfolgenden Möglichkeiten ist zwingend erforderlich.
-                                            </Typography>
-                                        }
-
-                                        {
-                                            slot.isOptional &&
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    color: "text.secondary",
-                                                    mt: 2
-                                                }}>
-                                                Eine der nachfolgenden Möglichkeiten kann optional verwendet werden.
-                                            </Typography>
-                                        }
-
-                                        <FormIdentitySelectionControls
-                                            ref={(controls) => {
-                                                if (controls == null) {
-                                                    controlsBySlotId.current.delete(slot.id);
-                                                } else {
-                                                    controlsBySlotId.current.set(slot.id, controls);
-                                                }
-                                            }}
-                                            slot={slot}
-                                            processSlug={processSlug}
-                                            formSlug={formSlug}
-                                            relatedProcessNodeId={relatedProcessNodeId}
-                                            testClaim={testClaim}
-                                            saveMode="deferred"
-                                            onChange={onIdentitySlotChange}
-                                            onStatusChange={handleControlStatusChange}
-                                        />
-                                    </Box>
-                                </Paper>
+                                    slot={slot}
+                                    api={identitySelectionApi}
+                                    saveMode="deferred"
+                                    onChange={onIdentitySlotChange}
+                                    onStatusChange={handleControlStatusChange}
+                                />
                             </Grid>
                         ))
                 }
