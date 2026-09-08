@@ -1,4 +1,5 @@
-import ELK, {type ElkEdgeSection, type ElkExtendedEdge, type ElkNode, type ElkPoint, type ElkPort} from 'elkjs/lib/elk.bundled.js';
+import {type ElkEdgeSection, type ElkExtendedEdge, type ElkNode, type ElkPoint, type ElkPort} from 'elkjs/lib/elk.bundled.js';
+import {createElkLoader} from '../../../../../../../utils/elk-loader';
 import {type Edge as ReactFlowEdge, MarkerType, type Node as ReactFlowNode} from '@xyflow/react';
 import {type ProcessDefinitionEdgeEntity} from '../../../../../entities/process-definition-edge-entity';
 import {type ProcessNodeEntity} from '../../../../../entities/process-node-entity';
@@ -20,7 +21,7 @@ import {
     type ProcessFlowGraphNode,
 } from './process-flow-graph-utils';
 
-const elk = new ELK();
+const getElk = createElkLoader();
 
 const ELK_TARGET_PORT_KEY = '__target__';
 const INCLUDED_PORTS_IN_MIN_WIDTH = 2;
@@ -122,6 +123,7 @@ export async function layoutElements(
     validateProcessFlowGraph(graph);
     const layoutMetaByNodeId = createLayoutMeta(graph, nodeMeasurements);
     const elkGraph = createElkGraph(graph, layoutMetaByNodeId);
+    const elk = await getElk();
     const laidOutGraph = await elk.layout(elkGraph);
     const resolvedLayoutNodes = createResolvedLayoutNodeMap(laidOutGraph, layoutMetaByNodeId);
 

@@ -37,7 +37,8 @@ import {
     layoutElements,
     ProcessFlowLayoutError,
 } from './utils/layout-utils';
-import {Box, Tooltip, useTheme} from '@mui/material';
+import {Box, Button, Tooltip, useTheme} from '@mui/material';
+import {ElkLoadError} from '../../../../../../utils/elk-loader';
 import {alpha} from '@mui/material/styles';
 import {type ProcessInstanceEntity} from '../../../../entities/process-instance-entity';
 import {type ProcessInstanceTaskEntity} from '../../../../entities/process-instance-task-entity';
@@ -278,6 +279,7 @@ interface FlowViewport {
 }
 
 interface ProcessFlowEditorLayoutError {
+    retryable?: boolean;
     message: string;
     details: string[];
     causeHint: string;
@@ -321,7 +323,7 @@ function ProcessFlowEditorCanvasTriggerLaneHeader(props: ProcessFlowEditorCanvas
     );
 }
 
-function ProcessFlowEditorLayoutErrorPanel(props: {layoutError: ProcessFlowEditorLayoutError}): ReactNode {
+function ProcessFlowEditorLayoutErrorPanel(props: {layoutError: ProcessFlowEditorLayoutError; onRetry: () => void}): ReactNode {
     const visibleDetails = props.layoutError.details.slice(0, 4);
     const hiddenDetailsCount = props.layoutError.details.length - visibleDetails.length;
 
@@ -384,12 +386,27 @@ function ProcessFlowEditorLayoutErrorPanel(props: {layoutError: ProcessFlowEdito
                     <strong>Wiederherstellung:</strong><br/>
                     {props.layoutError.recoveryHint}
                 </Box>
+                {props.layoutError.retryable && (
+                    <Button onClick={props.onRetry} sx={{mt: 1}}>
+                        Erneut versuchen
+                    </Button>
+                )}
             </AlertComponent>
         </Panel>
     );
 }
 
 function createLayoutErrorState(error: unknown): ProcessFlowEditorLayoutError {
+    if (error instanceof ElkLoadError) {
+        return {
+            message: 'Die Darstellung des Prozessflusses konnte nicht geladen werden.',
+            details: [],
+            causeHint: 'Ein benötigter Bestandteil der Anwendung ist derzeit nicht verfügbar.',
+            recoveryHint: 'Bitte versuchen Sie es erneut. Falls der Fehler bestehen bleibt, sichern Sie Ihre Eingaben, bevor Sie die Seite neu laden.',
+            retryable: true,
+        };
+    }
+
     if (error instanceof ProcessFlowLayoutError) {
         return {
             message: error.message,
@@ -470,6 +487,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const [isInitialViewportReady, setIsInitialViewportReady] = useState<boolean>(processFlow.nodes.length === 0);
     const [canvasTriggerLaneHeaderPosition, setCanvasTriggerLaneHeaderPosition] = useState<CanvasTriggerLaneHeaderPosition | null>(null);
     const [layoutError, setLayoutError] = useState<ProcessFlowEditorLayoutError | null>(null);
+    const [layoutAttempt, setLayoutAttempt] = useState(0);
     const [providerDetailsDialogProvider, setProviderDetailsDialogProvider] = useState<ProcessNodeProvider | null>(null);
     const [eventDialogTarget, setEventDialogTarget] = useState<ProcessFlowEditorEventDialogTarget | null>(null);
 
@@ -709,7 +727,13 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         setNeedsMeasuredLayout(!hasMeasurementsForAllNodes);
 
         resolveInitialViewportDecision();
-    }, [getNodes, hasAllNodeProviders, layoutNodes, processFlow.nodes, resolveInitialViewportDecision]);
+
+        return () => {
+            // A pending runtime download must not restore an obsolete graph after a
+            // switch to a process with missing providers, or after the editor closes.
+            layoutRequestIdRef.current += 1;
+        };
+    }, [getNodes, hasAllNodeProviders, layoutNodes, processFlow.nodes, resolveInitialViewportDecision, layoutAttempt]);
 
     useEffect(() => {
         if (!hasAllNodeProviders || !needsMeasuredLayout || !nodesInitialized) {
@@ -878,6 +902,12 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                         layoutError != null &&
                         <ProcessFlowEditorLayoutErrorPanel
                             layoutError={layoutError}
+                            onRetry={() => {
+                                setLayoutError(null);
+                                // Re-enter measurement and centering, not only the ELK layout call.
+                                resetInitialViewportState(!hasProcessNodes);
+                                setLayoutAttempt((value) => value + 1);
+                            }}
                         />
                     }
                     {
