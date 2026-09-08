@@ -1,0 +1,7 @@
+FROM alpine:3.23
+
+# Use the same Nginx packages as the application image; Node generates test assets.
+RUN apk add --no-cache nginx nginx-mod-http-brotli nodejs curl
+COPY container/nginx.conf container/test-nginx.sh /tests/
+COPY app/scripts/compress-assets.mjs /tests/compress-assets.mjs
+CMD ["sh", "/tests/test-nginx.sh"]
