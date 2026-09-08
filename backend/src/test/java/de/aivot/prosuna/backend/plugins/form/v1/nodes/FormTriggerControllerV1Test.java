@@ -9,12 +9,18 @@ import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
+import de.aivot.prosuna.backend.identity.dtos.IdentityProviderOptionResponseDTO;
+import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
+import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
@@ -71,6 +77,54 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class FormTriggerControllerV1Test {
+    @Test
+    void retrieveShouldObfuscateStepChildrenWhileRequiredIdentityIsMissing() throws Exception {
+        var fixture = createFixture(formLayoutWithGenericStep());
+        when(fixture.identitySlotService().resolveSlots(isNull(), eq("identity-session"), eq(500)))
+                .thenReturn(List.of(requiredIdentitySlot(null, false, List.of())));
+
+        var result = fixture.controller().retrieve(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session"
+        );
+
+        var step = (GenericStepElement) result.layoutElement().getChildren().getFirst();
+        assertTrue(step.getChildren().isEmpty());
+    }
+
+    @Test
+    void retrieveShouldKeepStepChildrenForAuthenticatedIdentityWithIncompleteCommunication() throws Exception {
+        var fixture = createFixture(formLayoutWithGenericStep());
+        var authenticatedProvider = new IdentityProviderOptionResponseDTO(
+                UUID.randomUUID(),
+                "BundID",
+                null,
+                IdentityProviderType.BundId,
+                true,
+                List.of()
+        );
+        when(fixture.identitySlotService().resolveSlots(isNull(), eq("identity-session"), eq(500)))
+                .thenReturn(List.of(requiredIdentitySlot(
+                        IdentityType.IdentityProvider,
+                        false,
+                        List.of(authenticatedProvider)
+                )));
+
+        var result = fixture.controller().retrieve(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session"
+        );
+
+        var step = (GenericStepElement) result.layoutElement().getChildren().getFirst();
+        assertEquals(1, step.getChildren().size());
+    }
+
     @Test
     void calculateCostsShouldReturnEmptyResponseWithoutPaymentConfiguration() throws Exception {
         var fixture = createFixture(baseFormLayout());
@@ -823,6 +877,7 @@ class FormTriggerControllerV1Test {
         var paymentRequestCreationService = mock(PaymentPayloadCreationService.class);
         var paymentProviderRepository = mock(PaymentProviderRepository.class);
         var paymentProviderDefinitionsService = mock(PaymentProviderDefinitionsService.class);
+        var identitySlotService = mock(IdentitySlotService.class);
 
         var controller = new FormTriggerControllerV1(
                 prosunaConfig,
@@ -855,7 +910,7 @@ class FormTriggerControllerV1Test {
                 paymentProviderRepository,
                 mock(PdfService.class),
                 paymentProviderDefinitionsService,
-                mock(IdentitySlotService.class)
+                identitySlotService
         );
 
         return new TestFixture(
@@ -873,13 +928,41 @@ class FormTriggerControllerV1Test {
                 elementDataTransformService,
                 paymentRequestCreationService,
                 paymentProviderRepository,
-                paymentProviderDefinitionsService
+                paymentProviderDefinitionsService,
+                identitySlotService
         );
     }
 
     private FormLayoutElement baseFormLayout() {
         return new FormLayoutElement()
                 .setPublicTitle("Example form");
+    }
+
+    private FormLayoutElement formLayoutWithGenericStep() {
+        return baseFormLayout().setChildren(List.of(
+                new GenericStepElement().setChildren(List.of(
+                        new HeadlineContentElement().setContent("Protected form content")
+                ))
+        ));
+    }
+
+    private IdentitySlotResponseDTO requiredIdentitySlot(
+            IdentityType identityType,
+            boolean isReady,
+            List<IdentityProviderOptionResponseDTO> providers
+    ) {
+        return new IdentitySlotResponseDTO(
+                "applicant",
+                null,
+                null,
+                false,
+                false,
+                identityType,
+                null,
+                isReady,
+                providers,
+                null
+        );
     }
 
     private ThemeEntity createTheme(Integer id,
@@ -932,7 +1015,8 @@ class FormTriggerControllerV1Test {
             ElementDataTransformService elementDataTransformService,
             PaymentPayloadCreationService paymentRequestCreationService,
             PaymentProviderRepository paymentProviderRepository,
-            PaymentProviderDefinitionsService paymentProviderDefinitionsService
+            PaymentProviderDefinitionsService paymentProviderDefinitionsService,
+            IdentitySlotService identitySlotService
     ) {
     }
 

@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.identity.dtos;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationService;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import jakarta.annotation.Nonnull;
@@ -33,5 +34,22 @@ public record IdentitySlotResponseDTO(
 ) {
     public Boolean getIsRequired() {
         return !isOptional;
+    }
+
+    /**
+     * Whether this slot contains an identity that is still valid for its current configuration.
+     * Communication provider selection and customer configuration are deliberately excluded.
+     */
+    @JsonIgnore
+    public boolean hasValidIdentity() {
+        if (identityType == IdentityType.Email) {
+            return Boolean.TRUE.equals(allowsEmail) && emailAddress != null;
+        }
+        if (identityType == IdentityType.IdentityProvider) {
+            return availableIdentityProviders
+                    .stream()
+                    .anyMatch(provider -> Boolean.TRUE.equals(provider.isAuthenticatedWithThis()));
+        }
+        return false;
     }
 }
