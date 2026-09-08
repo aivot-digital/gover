@@ -1,4 +1,5 @@
-import Editor from '@monaco-editor/react';
+import {MonacoEditor} from '../code-editor/monaco-editor';
+import {type editor} from 'monaco-editor';
 import {Box, Button, FormControlLabel, Switch, useTheme} from '@mui/material';
 import React, {type ChangeEvent, useCallback, useRef, useState} from 'react';
 import {type StructureTabProps} from './structure-tab-props';
@@ -20,12 +21,15 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
-    const editorRef = useRef<any>(undefined);
+    const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
+    // Editing actions need a mounted editor; downloading the runtime alone is not enough.
+    const [isEditorReady, setIsEditorReady] = useState(false);
     const [editable, setEditable] = useState(false);
 
-    const handleEditorDidMount = useCallback((editor: any, _: any) => {
+    const handleEditorDidMount = useCallback((editor: editor.IStandaloneCodeEditor) => {
         editorRef.current = editor;
-    }, [editorRef]);
+        setIsEditorReady(true);
+    }, []);
 
     const handleToggleEditable = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
         if (event.target.checked) {
@@ -111,6 +115,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
                 >
                     <FormControlLabel
                         control={<Switch
+                            disabled={!isEditorReady}
                             checked={editable}
                             onChange={handleToggleEditable}
                         />}
@@ -175,7 +180,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
                     borderRadius: 1,
                 }}
             >
-                <Editor
+                <MonacoEditor
                     height="calc(100vh - 400px)"
                     defaultLanguage="json"
                     theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'light'}

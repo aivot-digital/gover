@@ -1,4 +1,5 @@
-import Editor, {type Monaco} from '@monaco-editor/react';
+import {type Monaco} from '@monaco-editor/react';
+import {MonacoEditor} from './monaco-editor';
 import {type editor} from 'monaco-editor';
 import {Box, useTheme} from '@mui/material';
 import React, {useCallback, useEffect, useRef} from 'react';
@@ -158,7 +159,7 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
                 }}
             >
                 {/* React Flow treats descendants of `.nokey` as editors and leaves their keyboard input untouched. */}
-                <Editor
+                <MonacoEditor
                     className="nokey"
                     height={props.height ?? 'max(100vh - 768px, 320px)'}
                     language={props.language ?? 'javascript'}
