@@ -10,15 +10,11 @@ import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
-import de.aivot.prosuna.backend.elements.enums.OverrideFunctionType;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
-import de.aivot.prosuna.backend.elements.models.elements.ElementOverrideFunctions;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
-import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.ai.AiPlugin;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
@@ -77,7 +73,6 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     private static final int DEFAULT_N = 1;
     private static final boolean DEFAULT_STREAM = false;
 
-    private static final String apiModelsPathSuffix = "/models";
     private static final String apiChatCompletionsPathSuffix = "/chat/completions";
 
     private final HttpService httpService;
@@ -157,9 +152,8 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Override
     @JsonIgnore
     public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
-        ConfigLayoutElement layout;
         try {
-            layout = ElementPOJOMapper.createFromPOJO(AiCompletionActionNodeConfig.class);
+            return ElementPOJOMapper.createFromPOJO(AiCompletionActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
                     e,
@@ -167,55 +161,6 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                     e.getMessage()
             );
         }
-
-        var modelSelectOverride = new ElementOverrideFunctions();
-        modelSelectOverride.setType(OverrideFunctionType.Javascript);
-        modelSelectOverride.setJavascriptCode(JavascriptCode.of("""
-                (function() {
-                    const endpointUrl = ctx.effectiveValues.%s;
-                    if (endpointUrl == null) {
-                        return element;
-                    }
-                
-                    const secretKey = ctx.effectiveValues.%s;
-                    if (secretKey == null) {
-                        return element;
-                    }
-
-                    const apiToken = _secrets_v1.get(secretKey);
-
-                    const fullUrl = endpointUrl + '%s';
-
-                    const response = _http_v1.get(fullUrl, {
-                        Authorization: 'Bearer ' + apiToken,
-                    });
-
-                    availableModels = JSON.parse(response.body);
-
-                    const options = availableModels.data.map(d => ({
-                        label: d.id,
-                        value: d.id,
-                    }));
-
-                    return {
-                        ...element,
-                        options: options,
-                    };
-                })()
-                """,
-                AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID,
-                AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID,
-                apiModelsPathSuffix
-        ));
-        modelSelectOverride.setReferencedIds(List.of(
-                AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID,
-                AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID
-        ));
-
-        layout.findChild(AiCompletionActionNodeConfig.MODEL_FIELD_ID, SelectInputElement.class)
-                .ifPresent(field -> field.setOverride(modelSelectOverride));
-
-        return layout;
     }
 
     @Nonnull
@@ -585,7 +530,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         /**
          * Identifier of the AI model that should generate the completion.
          */
-        @InputElementPOJOBinding(id = MODEL_FIELD_ID, type = ElementType.Select, properties = {
+        @InputElementPOJOBinding(id = MODEL_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Modellname"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
