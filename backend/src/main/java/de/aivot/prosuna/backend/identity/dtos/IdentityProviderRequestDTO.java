@@ -1,15 +1,19 @@
 package de.aivot.prosuna.backend.identity.dtos;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.models.IdentityAdditionalParameter;
 import de.aivot.prosuna.backend.identity.models.IdentityAttributeMapping;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public record IdentityProviderRequestDTO(
@@ -17,6 +21,10 @@ public record IdentityProviderRequestDTO(
         @NotNull(message = "Der Identifikator für die Metadaten des Nutzerkontenanbieters ist erforderlich.")
         @Size(min = 1, max = 64, message = "Der Identifikator für die Metadaten des Nutzerkontenanbieters muss zwischen 1 und 64 Zeichen lang sein.")
         String metadataIdentifier,
+        @Nonnull
+        @NotBlank(message = "Das Attribut für die eindeutige ID des Nutzerkontenanbieters ist erforderlich.")
+        @Size(max = 255, message = "Das Attribut für die eindeutige ID des Nutzerkontenanbieters darf maximal 255 Zeichen lang sein.")
+        String uniqueIdAttribute,
         @Nonnull
         @NotNull(message = "Der Name des Nutzerkontenanbieters ist erforderlich.")
         @Size(min = 1, max = 64, message = "Der Name des Nutzerkontenanbieters muss zwischen 1 und 64 Zeichen lang sein.")
@@ -74,6 +82,7 @@ public record IdentityProviderRequestDTO(
                 .setDescription(description)
                 .setIconAssetKey(iconAssetKey)
                 .setMetadataIdentifier(metadataIdentifier)
+                .setUniqueIdAttribute(uniqueIdAttribute)
                 .setAuthorizationEndpoint(authorizationEndpoint)
                 .setTokenEndpoint(tokenEndpoint)
                 .setUserinfoEndpoint(userinfoEndpoint)
@@ -86,5 +95,17 @@ public record IdentityProviderRequestDTO(
                 .setIsEnabled(isEnabled)
                 .setIsTestProvider(isTestProvider)
                 .setPkceMethod(pkceMethod);
+    }
+
+    @JsonIgnore
+    @AssertTrue(message = "Das Attribut für die eindeutige ID muss in den Attributszuweisungen enthalten sein.")
+    public boolean isUniqueIdAttributeMapped() {
+        if (uniqueIdAttribute == null || uniqueIdAttribute.isBlank() || attributes == null) {
+            return true;
+        }
+
+        return attributes.stream()
+                .filter(Objects::nonNull)
+                .anyMatch(attribute -> Objects.equals(attribute.getKeyInData(), uniqueIdAttribute));
     }
 }

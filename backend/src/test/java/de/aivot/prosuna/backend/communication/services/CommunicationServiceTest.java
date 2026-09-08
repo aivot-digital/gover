@@ -61,7 +61,7 @@ class CommunicationServiceTest {
 
         var identityProviderKey = UUID.randomUUID();
         identity = new IdentityData(
-                "session", "applicant", IdentityType.IdentityProvider, identityProviderKey, "metadata", null,
+                "session", "applicant", IdentityType.IdentityProvider, identityProviderKey, "metadata", "provider-user-123", null,
                 Map.of(), 12, Map.of()
         );
         binding = new CommunicationProviderBindingEntity()
@@ -131,7 +131,7 @@ class CommunicationServiceTest {
     void sendMessageRequiresASelectedBinding() throws Exception {
         var identityWithoutSelection = new IdentityData(
                 identity.sessionId(), identity.identityId(), IdentityType.IdentityProvider, identity.providerKey(),
-                identity.metadataIdentifier(), null, identity.attributes(), null, Map.of()
+                identity.metadataIdentifier(), identity.uniqueIdFromIdentityProvider(), null, identity.attributes(), null, Map.of()
         );
 
         assertThrows(CommunicationException.class, () -> communicationService.sendMessage(
@@ -162,7 +162,7 @@ class CommunicationServiceTest {
     @Test
     void emailIdentityUsesDefaultMailWithoutResolvingAProvider() throws Exception {
         var emailIdentity = new IdentityData(
-                "session", "applicant", IdentityType.Email, null, null, "customer@example.test",
+                "session", "applicant", IdentityType.Email, null, null, null, "customer@example.test",
                 Map.of(), null, Map.of()
         );
         var message = new CommunicationMessage("Subject", "Body", "Body", Instant.now(), null);

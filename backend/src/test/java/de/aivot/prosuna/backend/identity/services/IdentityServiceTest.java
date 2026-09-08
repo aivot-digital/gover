@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -204,6 +205,7 @@ class IdentityServiceTest {
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setMetadataIdentifier("meta");
+        provider.setUniqueIdAttribute("sub");
         provider.setIsEnabled(true);
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
@@ -300,6 +302,7 @@ class IdentityServiceTest {
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setMetadataIdentifier("meta");
+        provider.setUniqueIdAttribute("sub");
         provider.setIsEnabled(true);
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
@@ -321,6 +324,7 @@ class IdentityServiceTest {
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setMetadataIdentifier("meta");
+        provider.setUniqueIdAttribute("sub");
         provider.setIsEnabled(true);
         provider.setTokenEndpoint("https://auth.example.com/token");
         provider.setUserinfoEndpoint("https://auth.example.com/userinfo");
@@ -337,7 +341,7 @@ class IdentityServiceTest {
         when(httpService.postFormUrlEncoded(any(URI.class), anyMap())).thenReturn(mockTokenResponse);
 
         var mockUserInfoResponse = mockHttpResponse(200, """
-                {"name": "John Doe", "email": "john.doe@example.com"}
+                {"sub": "provider-user-123", "name": "John Doe", "email": "john.doe@example.com"}
                 """);
         when(httpService.get(any(URI.class), any(HttpServiceHeaders.class))).thenReturn(mockUserInfoResponse);
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(identity);
@@ -347,6 +351,50 @@ class IdentityServiceTest {
         assertNotNull(result);
         assertTrue(result.contains("identity-state=0"));
         assertTrue(result.startsWith(VALID_ORIGIN));
+        assertEquals("provider-user-123", identity.getUniqueIdFromIdentityProvider());
+    }
+
+    @Test
+    void handleCallback_ShouldRejectMissingOrBlankUniqueIdAttribute() throws Exception {
+        UUID providerKey = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
+        var provider = new IdentityProviderEntity()
+                .setKey(providerKey)
+                .setName("Testkonto")
+                .setMetadataIdentifier("meta")
+                .setUniqueIdAttribute("sub")
+                .setIsEnabled(true)
+                .setTokenEndpoint("https://auth.example.com/token")
+                .setUserinfoEndpoint("https://auth.example.com/userinfo")
+                .setAttributes(List.of());
+        var identity = createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE);
+        var tokenResponse = mockHttpResponse(200, """
+                {"access_token": "access-token", "refresh_token": "refresh-token", "expires_in": 3600}
+                """);
+        var missingIdResponse = mockHttpResponse(200, "{\"name\":\"John Doe\"}");
+        var nullIdResponse = mockHttpResponse(200, "{\"sub\":null}");
+        var blankIdResponse = mockHttpResponse(200, "{\"sub\":\"   \"}");
+
+        when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
+        when(identityCacheRepository.findById(cacheEntityId)).thenReturn(Optional.of(identity));
+        when(httpService.postFormUrlEncoded(any(URI.class), anyMap())).thenReturn(tokenResponse);
+        when(httpService.get(any(URI.class), any(HttpServiceHeaders.class))).thenReturn(
+                missingIdResponse,
+                nullIdResponse,
+                blankIdResponse
+        );
+
+        for (int attempt = 0; attempt < 3; attempt++) {
+            var exception = assertThrows(ResponseException.class, () ->
+                    identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
+            );
+            assertTrue(exception.getMessage().contains("eindeutige Attribut sub keinen Wert"));
+        }
+
+        assertNull(identity.getUniqueIdFromIdentityProvider());
+        assertNull(identity.getIdentityData());
+        verify(identityCacheRepository, never()).save(any());
     }
 
     @Test
@@ -358,6 +406,7 @@ class IdentityServiceTest {
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setMetadataIdentifier("meta");
+        provider.setUniqueIdAttribute("sub");
         provider.setIsEnabled(true);
         provider.setTokenEndpoint("https://auth.example.com/token");
         provider.setAttributes(List.of());
@@ -388,6 +437,7 @@ class IdentityServiceTest {
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setMetadataIdentifier("meta");
+        provider.setUniqueIdAttribute("sub");
         provider.setIsEnabled(true);
         provider.setTokenEndpoint("https://auth.example.com/token");
         provider.setUserinfoEndpoint("https://auth.example.com/userinfo");
@@ -408,7 +458,7 @@ class IdentityServiceTest {
         )).thenReturn(mockTokenResponse);
 
         var mockUserInfoResponse = mockHttpResponse(200, """
-                {"name": "John Doe", "email": "john.doe@example.com"}
+                {"sub": "provider-user-123", "name": "John Doe", "email": "john.doe@example.com"}
                 """);
         when(httpService.get(
                 eq(URI.create("https://auth.example.com/userinfo")),
@@ -449,6 +499,7 @@ class IdentityServiceTest {
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setMetadataIdentifier("meta");
+        provider.setUniqueIdAttribute("sub");
         provider.setIsEnabled(true);
         provider.setTokenEndpoint("https://auth.example.com/token");
         provider.setUserinfoEndpoint("https://auth.example.com/userinfo");
@@ -474,7 +525,7 @@ class IdentityServiceTest {
         )).thenReturn(mockTokenResponse);
 
         var mockUserInfoResponse = mockHttpResponse(200, """
-                {"name": "John Doe", "email": "john.doe@example.com"}
+                {"sub": "provider-user-123", "name": "John Doe", "email": "john.doe@example.com"}
                 """);
         when(httpService.get(
                 eq(URI.create("https://auth.example.com/userinfo")),

@@ -145,5 +145,10 @@ function createStatusResponse(
             status: taskStatus,
             statusOverride: '',
         }],
+        accessibilityDepartmentId: null,
+        imprintDepartmentId: null,
+        privacyDepartmentId: null,
+        legalSupportDepartmentId: null,
+        technicalSupportDepartmentId: null,
     };
 }

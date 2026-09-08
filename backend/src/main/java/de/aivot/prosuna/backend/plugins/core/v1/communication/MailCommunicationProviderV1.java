@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.communication;
 
+import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
+import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEntity;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
@@ -11,6 +13,7 @@ import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
@@ -27,6 +30,7 @@ import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.services.MailConfigurationService;
@@ -35,12 +39,15 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class MailCommunicationProviderV1 implements CommunicationProviderDefinition<MailCommunicationProviderV1.Config, MailCommunicationProviderV1.IdentityBinding> {
@@ -59,7 +66,11 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
     public static final String CUSTOM_SENDER_ADDRESS_FIELD_ID = "customSenderAddress";
     public static final String REPLY_TO_ADDRESS_FIELD_ID = "replyToAddress";
     public static final String CUSTOM_SENDER_ALERT_ID = "customSenderAlert";
+    public static final String TEST_RECIPIENT_FIELD_ID = "test-recipient";
     private static final String CONFIG_LAYOUT_ID = "mail-provider-config";
+    private static final String TESTING_LAYOUT_ID = "mail-testing-config";
+    private static final String TEST_CONTEXT_ID = "communication-provider-test";
+    private static final int TEST_BINDING_ID = -1;
 
     private final DefaultMailCommunicationService defaultMailCommunicationService;
     private final MailConfigurationService mailConfigurationService;
@@ -233,6 +244,96 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         layout.setId("mail-customer-config");
         layout.setChildren(List.of(email));
         return layout;
+    }
+
+    @Nullable
+    @Override
+    public GroupLayoutElement getTestingLayout() throws ResponseException {
+        var recipient = new TextInputElement();
+        recipient.setId(TEST_RECIPIENT_FIELD_ID);
+        recipient.setLabel("Testempfänger");
+        recipient.setHint("E-Mail-Adresse, an die eine Testnachricht gesendet wird.");
+        recipient.setAutocomplete("email");
+        recipient.setRequired(true);
+        recipient.setPattern(TextInputElementPattern.of(
+                EmailAddressUtils.EMAIL_PATTERN_VALUE,
+                "Bitte geben Sie eine gültige E-Mail-Adresse ein."
+        ));
+
+        var layout = new GroupLayoutElement();
+        layout.setId(TESTING_LAYOUT_ID);
+        layout.setChildren(List.of(recipient));
+        return layout;
+    }
+
+    @Override
+    public void handleTest(@Nonnull CommunicationProviderEntity providerEntity,
+                           @Nonnull Config config,
+                           @Nonnull AuthoredElementValues inputs) throws CommunicationException {
+        var input = inputs.get(TEST_RECIPIENT_FIELD_ID);
+        if (!(input instanceof String rawRecipient) || StringUtils.isNullOrEmpty(rawRecipient)) {
+            throw new CommunicationException("Die Testempfängeradresse ist erforderlich.");
+        }
+        var recipient = rawRecipient.trim();
+        if (!EmailAddressUtils.isValidSingleAddress(recipient)) {
+            throw new CommunicationException("Die Testempfängeradresse ist ungültig.");
+        }
+
+        var identityProviderKey = UUID.randomUUID();
+        var testIdentityProvider = new IdentityProviderEntity()
+                .setKey(identityProviderKey)
+                .setMetadataIdentifier(TEST_CONTEXT_ID)
+                .setUniqueIdAttribute("id")
+                .setType(IdentityProviderType.Custom)
+                .setName("Kommunikationsanbieter-Test")
+                .setDescription("Temporärer Nutzerkontenanbieter für einen Kommunikationstest.")
+                .setAuthorizationEndpoint("")
+                .setTokenEndpoint("")
+                .setClientId(TEST_CONTEXT_ID)
+                .setAttributes(List.of())
+                .setDefaultScopes(List.of())
+                .setAdditionalParams(List.of())
+                .setIsEnabled(true)
+                .setIsTestProvider(providerEntity.getTestProvider());
+        var testBinding = new CommunicationProviderBindingEntity()
+                .setId(TEST_BINDING_ID)
+                .setIdentityProviderKey(identityProviderKey)
+                .setCommunicationProviderId(providerEntity.getId())
+                .setName("Kommunikationsanbieter-Test")
+                .setDescription("Temporäre Anbindung für einen Kommunikationstest.")
+                .setEnabled(true)
+                .setPosition(0)
+                .setConfiguration(new AuthoredElementValues());
+        var testIdentityBinding = new IdentityBinding();
+
+        var testContext = new CommunicationProviderContext<>(
+                providerEntity,
+                testIdentityProvider,
+                testBinding,
+                config,
+                testIdentityBinding
+        );
+
+        var testIdentity = new IdentityData(
+                TEST_CONTEXT_ID,
+                TEST_CONTEXT_ID,
+                IdentityType.IdentityProvider,
+                identityProviderKey,
+                TEST_CONTEXT_ID,
+                TEST_CONTEXT_ID,
+                null,
+                Map.of(),
+                TEST_BINDING_ID,
+                Map.of(CUSTOMER_EMAIL_FIELD_ID, recipient)
+        );
+
+        var testMessage = CommunicationMessage.of(
+                "Testnachricht",
+                "Dies ist eine Testnachricht.",
+                "<p>Dies ist eine Testnachricht.</p>"
+        );
+
+        sendMessage(testContext, testIdentity, testMessage);
     }
 
     @Override

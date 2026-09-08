@@ -1,5 +1,5 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Box, Button, Skeleton, Stack, Typography} from '@mui/material';
+import {Box, Skeleton, Stack, Typography} from '@mui/material';
 import {Blocker, useBeforeUnload, useBlocker, useNavigate} from 'react-router-dom';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../components/status-table/status-table-props';
@@ -9,9 +9,6 @@ import {
     ProcessInstanceTaskApiService,
     type TaskView,
     type TaskViewEvent,
-    type TaskViewEventAlignment,
-    type TaskViewEventColor,
-    type TaskViewEventVariant,
 } from '../../services/process-instance-task-api-service';
 import {
     AuthoredElementValues,
@@ -45,6 +42,7 @@ import {ProcessInstanceAttachmentApiService} from '../../services/process-instan
 import {ProcessInstanceAttachmentSetApiService} from '../../services/process-instance-attachment-set-api-service';
 import {ProcessTaskViewAttachmentProvider} from './process-task-view-attachment-context';
 import {BaseApiService} from '../../../../services/base-api-service';
+import {TaskViewEventButtons} from '../../components/task-view-event-buttons';
 
 const TASK_INPUT_DATA_PUSH_DELAY_MS = 2000;
 const TASK_INPUT_DATA_MIN_SAVE_DURATION_MS = 800;
@@ -374,14 +372,6 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             },
         ];
     }, [item]);
-
-    const leftAlignedTaskViewEvents = useMemo(() => {
-        return (taskView?.events ?? []).filter((evt) => getTaskViewEventAlignment(evt) === 'left');
-    }, [taskView?.events]);
-
-    const rightAlignedTaskViewEvents = useMemo(() => {
-        return (taskView?.events ?? []).filter((evt) => getTaskViewEventAlignment(evt) === 'right');
-    }, [taskView?.events]);
 
     const handleDownloadAttachment = useCallback(async (attachment: ProcessInstanceAttachmentEntity): Promise<void> => {
         try {
@@ -726,103 +716,10 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                 alignItems: "flex-end"
                             }}
                         >
-                            {
-                                taskView.events.length > 0 &&
-                                <Box
-                                    sx={{
-                                        mt: 4,
-                                        display: 'flex',
-                                        flexDirection: {
-                                            xs: 'column',
-                                            sm: 'row',
-                                        },
-                                        gap: 2,
-                                        justifyContent: 'space-between',
-                                        alignItems: {
-                                            sm: 'center',
-                                        },
-                                    }}
-                                >
-                                    {
-                                        leftAlignedTaskViewEvents.length > 0 &&
-                                        <Stack
-                                            direction={{
-                                                xs: 'column',
-                                                sm: 'row',
-                                            }}
-                                            spacing={2}
-                                            sx={{
-                                                width: {
-                                                    xs: '100%',
-                                                    sm: 'auto',
-                                                },
-                                            }}
-                                        >
-                                            {
-                                                leftAlignedTaskViewEvents.map((evt) => (
-                                                    <Button
-                                                        key={evt.event}
-                                                        variant={getTaskViewEventVariant(evt)}
-                                                        color={getTaskViewEventColor(evt)}
-                                                        onClick={() => {
-                                                            handleEventClick(evt);
-                                                        }}
-                                                        sx={{
-                                                            width: {
-                                                                xs: '100%',
-                                                                sm: 'auto',
-                                                            },
-                                                        }}
-                                                    >
-                                                        {evt.label}
-                                                    </Button>
-                                                ))
-                                            }
-                                        </Stack>
-                                    }
-
-                                    {
-                                        rightAlignedTaskViewEvents.length > 0 &&
-                                        <Stack
-                                            direction={{
-                                                xs: 'column',
-                                                sm: 'row',
-                                            }}
-                                            spacing={2}
-                                            sx={{
-                                                width: {
-                                                    xs: '100%',
-                                                    sm: 'auto',
-                                                },
-                                                marginLeft: {
-                                                    sm: 'auto',
-                                                },
-                                            }}
-                                        >
-                                            {
-                                                rightAlignedTaskViewEvents.map((evt) => (
-                                                    <Button
-                                                        key={evt.event}
-                                                        variant={getTaskViewEventVariant(evt)}
-                                                        color={getTaskViewEventColor(evt)}
-                                                        onClick={() => {
-                                                            handleEventClick(evt);
-                                                        }}
-                                                        sx={{
-                                                            width: {
-                                                                xs: '100%',
-                                                                sm: 'auto',
-                                                            },
-                                                        }}
-                                                    >
-                                                        {evt.label}
-                                                    </Button>
-                                                ))
-                                            }
-                                        </Stack>
-                                    }
-                                </Box>
-                            }
+                            <TaskViewEventButtons
+                                events={taskView.events}
+                                onEvent={handleEventClick}
+                            />
 
                             <ProcessTaskInputSaveStateChip
                                 state={taskInputDataSaveState}
@@ -846,28 +743,4 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             }
         </Box>
     );
-}
-
-function getTaskViewEventVariant(evt: TaskViewEvent): TaskViewEventVariant {
-    if (evt.variant === 'outlined' || evt.variant === 'text') {
-        return evt.variant;
-    }
-
-    return 'contained';
-}
-
-function getTaskViewEventColor(evt: TaskViewEvent): TaskViewEventColor {
-    if (evt.color === 'secondary' || evt.color === 'error' || evt.color === 'success') {
-        return evt.color;
-    }
-
-    return 'primary';
-}
-
-function getTaskViewEventAlignment(evt: TaskViewEvent): TaskViewEventAlignment {
-    if (evt.alignment === 'right') {
-        return evt.alignment;
-    }
-
-    return 'left';
 }

@@ -8,7 +8,7 @@
 
 <section
         th:fragment="payment-information"
-        th:class="${ base.isCitizenPrint ? '' : '' }"
+        th:class="${ base.customerPrint ? '' : '' }"
         th:if="${ base.isNotBlankPrint && paymentTransaction != null }"
 >
     <h2>Zahlungsinformationen</h2>
@@ -18,7 +18,7 @@
             th:if="${ paymentTransaction.paymentInformation?.status?.name == 'INITIAL' }"
     >
         <div style="flex: 1">
-            <p th:if="${ base.isCitizenPrint }">
+            <p th:if="${ base.customerPrint }">
                 Um Ihren Antrag bearbeiten zu können, ist die Bezahlung der Gebühren erforderlich.
                 <br />
                 Bitte achten Sie darauf, dass Sie die Zahlungsinformationen korrekt eingeben und den Bezahlvorgang vollständig abschließen.
@@ -26,7 +26,7 @@
                 <strong>Wichtig:</strong>
                 Ihr Antrag wird erst nach erfolgter Zahlung bearbeitet. Sollten Sie die Gebühren bereits entrichtet haben, sind keine weiteren Schritte Ihrerseits erforderlich.
             </p>
-            <p th:unless="${ base.isCitizenPrint }">
+            <p th:unless="${ base.customerPrint }">
                 Die Gebühr wurde noch nicht bezahlt.
             </p>
 
@@ -143,7 +143,7 @@
     </div>
 
     <div th:if="${ paymentTransaction.paymentInformation.getStatus().name() == 'FAILED' or  paymentTransaction.paymentInformation.getStatus().name() == 'CANCELED' }">
-        <p th:if="${ base.isCitizenPrint() }">
+        <p th:if="${ base.isCustomerPrint() }">
             Die Bezahlung der Gebühren ist fehlgeschlagen.
             Bitte wenden Sie sich an die zuständige Dienststelle.
             Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an:

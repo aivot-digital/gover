@@ -15,6 +15,7 @@ const providerIdentity: IdentityData = {
     type: 'IdentityProvider',
     providerKey: identityProviderKey,
     metadataIdentifier: 'urn:bundid:metadata',
+    uniqueIdFromIdentityProvider: 'provider-user-123',
     emailAddress: null,
     attributes: {
         family_name: 'Muster',
@@ -32,6 +33,7 @@ const emailIdentity: IdentityData = {
     type: 'Email',
     providerKey: null,
     metadataIdentifier: null,
+    uniqueIdFromIdentityProvider: null,
     emailAddress: 'person@example.org',
     attributes: {
         email: 'person@example.org',

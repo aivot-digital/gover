@@ -37,6 +37,7 @@ export class IdentityProvidersApiService extends BaseCrudApiService<
             key: '',
             type: IdentityProviderType.Custom,
             metadataIdentifier: '',
+            uniqueIdAttribute: '',
             additionalParams: [],
             attributes: [],
             clientId: '',

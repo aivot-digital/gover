@@ -4,11 +4,8 @@ import userEvent from '@testing-library/user-event';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {createDerivedRuntimeElementData} from '../../../../models/element-data';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
-import {
-    FormTriggerApiService,
-    type FormIdentityCommunicationState,
-    type FormIdentitySlot,
-} from '../../../forms/services/form-trigger-api-service';
+import type {IdentitySelectionApi} from '../../models/identity-selection-api';
+import type {IdentityCommunicationState, IdentitySlot} from '../../models/identity-slot';
 import {FormIdentitySelectionControls} from './form-identity-selection-controls';
 
 const dispatch = vi.fn();
@@ -30,7 +27,7 @@ const provider = {
     additionalScopes: [],
 };
 
-function slot(overrides?: Partial<FormIdentitySlot>): FormIdentitySlot {
+function slot(overrides?: Partial<IdentitySlot>): IdentitySlot {
     return {
         id: 'applicant',
         title: 'Antragsteller:in',
@@ -47,26 +44,35 @@ function slot(overrides?: Partial<FormIdentitySlot>): FormIdentitySlot {
     };
 }
 
-function renderControls(identitySlot: FormIdentitySlot) {
+function createIdentityApi(overrides?: Partial<IdentitySelectionApi>): IdentitySelectionApi {
+    return {
+        createIdentityProviderStartLink: vi.fn(() => '/identity/start/'),
+        setEmailIdentity: vi.fn(),
+        clearIdentity: vi.fn(),
+        selectCommunication: vi.fn(),
+        deriveCommunication: vi.fn(),
+        ...overrides,
+    };
+}
+
+function renderControls(identitySlot: IdentitySlot, apiOverrides?: Partial<IdentitySelectionApi>) {
     const onChange = vi.fn();
+    const identityApi = createIdentityApi(apiOverrides);
     render(
         <ThemeProvider theme={createTheme()}>
             <FormIdentitySelectionControls
                 slot={identitySlot}
-                processSlug="example-process"
-                formSlug="example-form"
-                relatedProcessNodeId={42}
+                api={identityApi}
                 onChange={onChange}
             />
         </ThemeProvider>,
     );
-    return {onChange};
+    return {identityApi, onChange};
 }
 
 describe('FormIdentitySelectionControls', () => {
     beforeEach(() => {
         dispatch.mockReset();
-        vi.restoreAllMocks();
     });
 
     it('stores a direct email identity without selecting a communication provider', async () => {
@@ -76,27 +82,24 @@ describe('FormIdentitySelectionControls', () => {
             isReady: true,
             availableIdentityProviders: [{...provider, isAuthenticatedWithThis: false}],
         });
-        const setEmail = vi.spyOn(FormTriggerApiService.prototype, 'setEmailIdentity').mockResolvedValue(emailSlot);
-        const selectCommunication = vi.spyOn(FormTriggerApiService.prototype, 'selectCommunication');
-        const {onChange} = renderControls(slot());
+        const setEmailIdentity = vi.fn().mockResolvedValue(emailSlot);
+        const selectCommunication = vi.fn();
+        const {onChange} = renderControls(slot(), {setEmailIdentity, selectCommunication});
         const user = userEvent.setup();
 
         await user.type(screen.getByRole('textbox', {name: /E-Mail-Adresse/}), 'customer@example.test');
         await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
 
-        await waitFor(() => expect(setEmail).toHaveBeenCalledWith(
-            'example-process',
-            'example-form',
+        await waitFor(() => expect(setEmailIdentity).toHaveBeenCalledWith(
             'applicant',
             'customer@example.test',
-            undefined,
         ));
         expect(selectCommunication).not.toHaveBeenCalled();
         expect(onChange).toHaveBeenCalledWith(emailSlot);
     });
 
     it('previews a provider choice and persists it only when explicitly confirmed', async () => {
-        const initialCommunication: FormIdentityCommunicationState = {
+        const initialCommunication: IdentityCommunicationState = {
             required: true,
             ready: false,
             selectedBindingId: null,
@@ -109,29 +112,49 @@ describe('FormIdentitySelectionControls', () => {
             derivedData: createDerivedRuntimeElementData(),
         };
         const selectedCommunication = {...initialCommunication, ready: true, selectedBindingId: 20};
-        const derive = vi.spyOn(FormTriggerApiService.prototype, 'deriveCommunication')
-            .mockResolvedValue(selectedCommunication);
-        const select = vi.spyOn(FormTriggerApiService.prototype, 'selectCommunication')
-            .mockResolvedValue(selectedCommunication);
+        const deriveCommunication = vi.fn().mockResolvedValue(selectedCommunication);
+        const selectCommunication = vi.fn().mockResolvedValue(selectedCommunication);
         const {onChange} = renderControls(slot({
             allowsEmail: false,
             identityType: 'IdentityProvider',
             availableIdentityProviders: [{...provider, isAuthenticatedWithThis: true}],
             communication: initialCommunication,
-        }));
+        }), {deriveCommunication, selectCommunication});
         const user = userEvent.setup();
 
         await user.click(screen.getByRole('radio', {name: /Postfach/}));
-        await waitFor(() => expect(derive).toHaveBeenCalledWith('applicant', 42, 20, {}));
-        expect(select).not.toHaveBeenCalled();
+        await waitFor(() => expect(deriveCommunication).toHaveBeenCalledWith('applicant', 20, {}));
+        expect(selectCommunication).not.toHaveBeenCalled();
 
         await user.click(screen.getByRole('button', {name: 'Angaben zum Kommunikationsweg übernehmen'}));
 
-        await waitFor(() => expect(select).toHaveBeenCalledWith('applicant', 42, 20, {}));
+        await waitFor(() => expect(selectCommunication).toHaveBeenCalledWith('applicant', 20, {}));
         expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
             identityType: 'IdentityProvider',
             isReady: true,
             communication: selectedCommunication,
+        }));
+    });
+
+    it('clears a selected identity so another authentication can be started', async () => {
+        const clearIdentity = vi.fn().mockResolvedValue(undefined);
+        const {onChange} = renderControls(slot({
+            allowsEmail: false,
+            identityType: 'IdentityProvider',
+            isReady: true,
+            availableIdentityProviders: [{...provider, isAuthenticatedWithThis: true}],
+        }), {clearIdentity});
+        const user = userEvent.setup();
+
+        await user.click(screen.getByRole('button', {name: 'Identität entfernen'}));
+
+        await waitFor(() => expect(clearIdentity).toHaveBeenCalledWith('applicant'));
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            identityType: null,
+            emailAddress: null,
+            isReady: false,
+            communication: null,
+            availableIdentityProviders: [expect.objectContaining({isAuthenticatedWithThis: false})],
         }));
     });
 });

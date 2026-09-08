@@ -45,7 +45,8 @@ export function CommunicationProviderDetailsPage() {
                     {
                         path: '/communication-providers/:id/test',
                         label: 'Testen',
-                        isDisabled: () => true,
+                        onlyExisting: true,
+                        requiredPermission: Permission.COMMUNICATION_PROVIDER_UPDATE,
                     },
                 ]}
                 initializeItem={() => new CommunicationProvidersApiService().initializeProvider()}

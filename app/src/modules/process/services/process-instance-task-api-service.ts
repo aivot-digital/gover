@@ -4,6 +4,7 @@ import {ProcessTaskStatus} from "../enums/process-task-status";
 import {GroupLayout} from "../../../models/elements/form/layout/group-layout";
 import {AuthoredElementValues, DerivedRuntimeElementData, isAuthoredElementValues} from '../../../models/element-data';
 import {FileUploadElementItem, isFileUploadElementItem} from '../../../models/elements/form/input/file-upload-element';
+import type {CustomerTaskViewResponse} from '../models/customer-task-view';
 
 interface ProcessInstanceTaskFilter {
     id: number;
@@ -80,6 +81,7 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
         return {
             accessKey: "",
             assignedUserId: null,
+            assignedCustomerIdentityId: null,
             finished: null,
             id: 0,
             previousProcessInstanceTaskId: null,
@@ -123,8 +125,11 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
         );
     }
 
-    public getCustomerTaskView(instanceAccessKey: string, taskAccessKey: string): Promise<TaskView> {
-        return this.get(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`);
+    public getCustomerTaskView(instanceAccessKey: string, taskAccessKey: string): Promise<CustomerTaskViewResponse> {
+        return this.get(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`, {
+            skipAuthCheck: true,
+            doNotHandleStatusCodes: true,
+        });
     }
 
     public async putStaffTaskView(instanceId: number, taskId: number, payload: AuthoredElementValues, event?: string): Promise<TaskView> {
@@ -139,16 +144,17 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
         });
     }
 
-    public async putCustomerTaskView(instanceAccessKey: string, taskAccessKey: string, payload: AuthoredElementValues, event: string): Promise<TaskView> {
+    public async putCustomerTaskView(instanceAccessKey: string, taskAccessKey: string, payload: AuthoredElementValues, event: string): Promise<CustomerTaskViewResponse> {
         const formData = new FormData();
         formData.set('inputs', JSON.stringify(payload));
         await appendTaskViewFiles(formData, payload);
 
-        return this.putFormData<TaskView>(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`, formData, {
+        return this.putFormData<CustomerTaskViewResponse>(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`, formData, {
             query: {
                 event: event,
             },
             skipAuthCheck: true,
+            doNotHandleStatusCodes: true,
         });
     }
 

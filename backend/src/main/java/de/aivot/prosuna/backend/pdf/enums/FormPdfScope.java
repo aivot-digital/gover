@@ -5,6 +5,6 @@ package de.aivot.prosuna.backend.pdf.enums;
  */
 public enum FormPdfScope {
     Staff,
-    Citizen,
+    Customer,
     Blank,
 }

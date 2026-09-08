@@ -42,11 +42,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
-import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
-import de.aivot.prosuna.backend.process.models.ProcessNodePort;
+import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultNoop;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
@@ -315,7 +311,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 .findChild(FormTriggerConfigV1.FORM_LAYOUT, UiDefinitionInputElement.class)
                 .ifPresent(uid -> {
                     uid.setElementType(ElementType.FormLayout);
-                    uid.setDisplayContext(ElementDisplayContext.CitizenFacing);
+                    uid.setDisplayContext(ElementDisplayContext.CustomerFacing);
                 });
 
 
@@ -648,7 +644,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             pdfBytes = pdfService.generateCustomerSummary(
                     configuration.formLayout,
                     submission,
-                    FormPdfScope.Citizen,
+                    FormPdfScope.Customer,
                     context.getThisProcessInstance(),
                     context.getConfigurationOfExecutingNode(),
                     context.getThisNode()
@@ -720,12 +716,12 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     @Nonnull
     @Override
-    public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
+    public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
         return createPaymentView(context);
     }
 
     @Nonnull
-    private GroupLayoutElement createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
+    private ProcessNodeCustomerView createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
         var paymentTransactionKey = context
                 .getThisTask()
                 .getRuntimeData()
@@ -796,7 +792,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         );
 
         try {
-            return new PaymentGroupPreset(
+            var layout = new PaymentGroupPreset(
                     paymentProvider,
                     paymentProviderDefinition,
                     paymentPayload,
@@ -805,6 +801,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                     failureMessage,
                     downloadUrl
             );
+            return ProcessNodeCustomerView.of(context, layout, List.of(), new AuthoredElementValues());
         } catch (IOException | WriterException e) {
             throw ResponseException.internalServerError(e);
         }

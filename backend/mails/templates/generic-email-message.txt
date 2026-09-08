@@ -1,0 +1,13 @@
+[(${messageText})]
+
+[# th:each="cta : ${callToActions}"]
+[(${cta.title})]:
+[(${cta.link})]
+
+[/]
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

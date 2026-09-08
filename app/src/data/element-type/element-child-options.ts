@@ -1,13 +1,13 @@
 import {ElementType} from './element-type';
 
 export enum ElementDisplayContext {
-    CitizenFacing = 'CitizenFacing',
+    CustomerFacing = 'CustomerFacing',
     StaffFacing = 'StaffFacing',
     DataObjectSchema = 'DataObjectSchema',
 }
 
 export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<ElementType, ElementType[]>>> = {
-    [ElementDisplayContext.CitizenFacing]: {
+    [ElementDisplayContext.CustomerFacing]: {
         [ElementType.FormLayout]: [
             ElementType.Step,
             ElementType.IntroductionStep,

@@ -1,7 +1,6 @@
 import type {Page} from '../../../models/dtos/page';
-import type {AuthoredElementValues, DerivedRuntimeElementData} from '../../../models/element-data';
+import type {AuthoredElementValues} from '../../../models/element-data';
 import type {FormLayoutElement} from '../../../models/elements/form-layout-element';
-import type {GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import type {SortOrder} from '../../../components/generic-list/generic-list-props';
 import type {QueryParams} from '../../../services/base-api-service';
 import {BaseApiService} from '../../../services/base-api-service';
@@ -11,7 +10,8 @@ import type {ProcessVersionEntity} from '../../process/entities/process-version-
 import type {Theme} from '../../themes/models/theme';
 import type {FormTriggerIdentityDetailsDTO} from '../dtos/form-trigger-identity-details-dto';
 import type {PaymentConfigElementValue} from '../../../models/elements/form/input/payment-config-element';
-import type {IdentityProviderType} from '../../identity/enums/identity-provider-type';
+import type {IdentityCommunicationState, IdentitySlot} from '../../identity/models/identity-slot';
+import type {IdentitySelectionApi} from '../../identity/models/identity-selection-api';
 
 export interface FormTriggerFilter {
     id: number;
@@ -83,56 +83,49 @@ export interface FormOverviewItem {
     published: string | null;
 }
 
-export type FormIdentityType = 'IdentityProvider' | 'Email';
-
-export interface FormIdentityCommunicationChoice {
-    id: number;
-    name: string;
-    description: string;
-}
-
-export interface FormIdentityCommunicationState {
-    required: boolean;
-    ready: boolean;
-    selectedBindingId: number | null;
-    choices: FormIdentityCommunicationChoice[];
-    customerLayout: GroupLayout | null;
-    customerData: AuthoredElementValues;
-    derivedData: DerivedRuntimeElementData;
-}
-
-export interface FormIdentitySlot {
-    id: string;
-    title: string | null;
-    description: string | null;
-    isOptional: boolean;
-    isRequired: boolean;
-    allowsEmail: boolean;
-    identityType: FormIdentityType | null;
-    emailAddress: string | null;
-    isReady: boolean;
-    availableIdentityProviders: {
-        identityProviderKey: string;
-        identityProviderName: string;
-        identityProviderAssetKey: string | null;
-        identityProviderType: IdentityProviderType;
-        isAuthenticatedWithThis: boolean;
-        additionalScopes: string[];
-    }[];
-    communication: FormIdentityCommunicationState | null;
-}
-
-interface FormIdentitySlotsResponse {
-    identitySlots: FormIdentitySlot[];
+interface IdentitySlotsResponse {
+    identitySlots: IdentitySlot[];
 }
 
 export class FormTriggerApiService extends BaseApiService {
+    public createIdentitySelectionApi(
+        processSlug: string,
+        formSlug: string,
+        relatedProcessNodeId: number,
+        testClaim?: string,
+    ): IdentitySelectionApi {
+        return {
+            createIdentityProviderStartLink: (identityId, providerKey, origin) => (
+                this.createIdentityProviderStartLink(
+                    processSlug,
+                    formSlug,
+                    identityId,
+                    providerKey,
+                    testClaim,
+                    origin,
+                )
+            ),
+            setEmailIdentity: (identityId, emailAddress) => (
+                this.setEmailIdentity(processSlug, formSlug, identityId, emailAddress, testClaim)
+            ),
+            clearIdentity: (identityId) => (
+                this.clearIdentity(processSlug, formSlug, identityId, testClaim)
+            ),
+            selectCommunication: (identityId, bindingId, customerData) => (
+                this.selectCommunication(identityId, relatedProcessNodeId, bindingId, customerData)
+            ),
+            deriveCommunication: (identityId, bindingId, customerData) => (
+                this.deriveCommunication(identityId, relatedProcessNodeId, bindingId, customerData)
+            ),
+        };
+    }
+
     public async getIdentitySlots(
         processSlug: string,
         formSlug: string,
         testClaim?: string,
-    ): Promise<FormIdentitySlot[]> {
-        const response = await this.get<FormIdentitySlotsResponse>(
+    ): Promise<IdentitySlot[]> {
+        const response = await this.get<IdentitySlotsResponse>(
             `/api/public/form/${encodeURIComponent(processSlug)}/${encodeURIComponent(formSlug)}/`,
             {
                 query: {'test-claim': testClaim},
@@ -166,7 +159,7 @@ export class FormTriggerApiService extends BaseApiService {
         identityId: string,
         emailAddress: string,
         testClaim?: string,
-    ): Promise<FormIdentitySlot> {
+    ): Promise<IdentitySlot> {
         return this.put(
             `/api/public/form/${encodeURIComponent(processSlug)}/${encodeURIComponent(formSlug)}/identities/${encodeURIComponent(identityId)}/email/`,
             {emailAddress},
@@ -191,7 +184,7 @@ export class FormTriggerApiService extends BaseApiService {
         relatedProcessNodeId: number,
         bindingId: number,
         customerData: AuthoredElementValues,
-    ): Promise<FormIdentityCommunicationState> {
+    ): Promise<IdentityCommunicationState> {
         return this.put(
             `/api/public/identity/${encodeURIComponent(identityId)}/communication/`,
             {bindingId, customerData},
@@ -204,7 +197,7 @@ export class FormTriggerApiService extends BaseApiService {
         relatedProcessNodeId: number,
         bindingId: number,
         customerData: AuthoredElementValues,
-    ): Promise<FormIdentityCommunicationState> {
+    ): Promise<IdentityCommunicationState> {
         return this.post(
             `/api/public/identity/${encodeURIComponent(identityId)}/communication/derive/`,
             {bindingId, customerData},

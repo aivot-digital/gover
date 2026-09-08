@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.zxing.WriterException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
+import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -10,28 +11,19 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
-import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.DomainAndUserSelectProcessAccessConstraint;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.uiPresets.PaymentGroupPreset;
+import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
-import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
-import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
-import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
@@ -42,17 +34,12 @@ import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
-import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
-import de.aivot.prosuna.backend.process.models.ProcessNodePort;
-import de.aivot.prosuna.backend.process.models.TaskViewEvent;
+import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultNoop;
@@ -212,51 +199,14 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
         }
 
-        layout
-                .findChild(PaymentRequestActionNodeConfig.EXECUTION_TYPE_FIELD_ID, RadioInputElement.class)
-                .ifPresent(executionType -> executionType.setOptions(List.of(
-                        RadioInputElementOption.of(PaymentRequestActionNodeConfig.EXECUTION_TYPE_AUTOMATIC, "Automatisch versenden"),
-                        RadioInputElementOption.of(PaymentRequestActionNodeConfig.EXECUTION_TYPE_MANUAL, "Vor dem Versand bearbeiten")
-                )));
-
-        layout
-                .findChild(AutomaticContent.GROUP_ID, GroupLayoutElement.class)
-                .ifPresent(group -> group.setVisibility(createExecutionTypeVisibility(
-                        PaymentRequestActionNodeConfig.EXECUTION_TYPE_AUTOMATIC
-                )));
-
-        layout
-                .findChild(ManualContent.GROUP_ID, GroupLayoutElement.class)
-                .ifPresent(group -> group.setVisibility(createExecutionTypeVisibility(
-                        PaymentRequestActionNodeConfig.EXECUTION_TYPE_MANUAL
-                )));
-
-        layout
-                .findChild(ManualContent.ASSIGNMENT_FIELD_ID, AssignmentContextInputElement.class)
-                .ifPresent(assignment -> {
-                    assignment.setAllowedTypes(List.of(
-                            AssignmentContextInputElement.ALLOWED_TYPE_ORG_UNIT,
-                            AssignmentContextInputElement.ALLOWED_TYPE_TEAM,
-                            AssignmentContextInputElement.ALLOWED_TYPE_USER
-                    ));
-                    assignment.setProcessAccessConstraint(new DomainAndUserSelectProcessAccessConstraint()
-                            .setProcessId(context.processDefinition().getId())
-                            .setProcessVersion(context.processDefinitionVersion().getProcessVersion())
-                            .setRequiredPermissions(List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)));
-                });
+        layout.findChild(SemiAutomaticMessageConfig.GROUP_ID, GroupLayoutElement.class)
+                .ifPresent(group -> SemiAutomaticMessageConfig.initConfigurationLayout(
+                        group,
+                        context.thisNode().getProcessId(),
+                        context.thisNode().getProcessVersion()
+                ));
 
         return layout;
-    }
-
-    @Nonnull
-    private static ElementVisibilityFunctions createExecutionTypeVisibility(@Nonnull String executionType) {
-        return ElementVisibilityFunctions
-                .of(NoCodeExpression.of(
-                        NoCodeEqualsOperator.OPERATOR_ID,
-                        new NoCodeReference(PaymentRequestActionNodeConfig.EXECUTION_TYPE_FIELD_ID),
-                        new NoCodeStaticValue(executionType)
-                ))
-                .recalculateReferencedIds();
     }
 
     @Nonnull
@@ -335,19 +285,21 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<PaymentRequestActionNodeConfig> context) throws ProcessNodeExecutionException {
         var configuration = context.getConfigurationOfExecutingNode();
-        var executionType = StringUtils.toNullableTrimmedString(configuration.executionType);
 
-        if (PaymentRequestActionNodeConfig.EXECUTION_TYPE_AUTOMATIC.equals(executionType)) {
+        if (SemiAutomaticMessageConfig.isAutomatic(configuration.messageConfig)) {
             return initAutomatic(context, configuration);
         }
-        if (PaymentRequestActionNodeConfig.EXECUTION_TYPE_MANUAL.equals(executionType)) {
+        if (SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
             return initManual(context, configuration);
         }
 
+        var executionType = configuration.messageConfig == null
+                ? null
+                : StringUtils.toNullableTrimmedString(configuration.messageConfig.executionType);
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                 "Ungültige Ausführungsart für die Zahlungsaufforderung. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
-                StringUtils.quote(PaymentRequestActionNodeConfig.EXECUTION_TYPE_AUTOMATIC),
-                StringUtils.quote(PaymentRequestActionNodeConfig.EXECUTION_TYPE_MANUAL),
+                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC),
+                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL),
                 StringUtils.quote(executionType)
         );
     }
@@ -429,7 +381,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     @Override
-    public LayoutElement<?> getStaffTaskView(
+    public ProcessNodeStaffView getStaffTaskView(
             @Nonnull ProcessNodeExecutionContextUIStaff<PaymentRequestActionNodeConfig> context
     ) throws ResponseException {
         var paymentPayload = resolveRuntimePaymentPayloadForStaffView(context);
@@ -451,14 +403,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         var root = new GroupLayoutElement();
         root.setId(STAFF_TASK_ROOT_ID);
         root.setChildren(new LinkedList<>(List.of(paymentInformation, subjectField, contentField)));
-        return root;
-    }
 
-    @Nonnull
-    @Override
-    public AuthoredElementValues createDefaultStaffTaskViewData(
-            @Nonnull ProcessNodeExecutionContextUIStaff<PaymentRequestActionNodeConfig> context
-    ) throws ResponseException {
         var manualContent = requireManualContentForStaffView(context.getConfigurationOfExecutingNode());
         var taskViewData = new AuthoredElementValues();
 
@@ -479,18 +424,12 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             );
         }
 
-        return taskViewData;
-    }
-
-    @Nonnull
-    @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(
-            @Nonnull ProcessNodeExecutionContextUIStaff<PaymentRequestActionNodeConfig> context
-    ) {
-        return List.of(new TaskViewEvent(
-                "Zahlungsaufforderung versenden",
-                STAFF_TASK_SEND_EVENT
-        ));
+        return ProcessNodeStaffView.of(
+                context,
+                root,
+                List.of(new TaskViewEvent("Zahlungsaufforderung versenden", STAFF_TASK_SEND_EVENT)),
+                taskViewData
+        );
     }
 
     @Nonnull
@@ -508,9 +447,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         }
 
         var configuration = context.getConfigurationOfExecutingNode();
-        if (!PaymentRequestActionNodeConfig.EXECUTION_TYPE_MANUAL.equals(
-                StringUtils.toNullableTrimmedString(configuration.executionType)
-        )) {
+        if (!SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Die Zahlungsaufforderung kann nur im manuellen Ausführungsmodus über eine Aufgabe versendet werden."
             );
@@ -570,7 +507,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     @Override
-    public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<PaymentRequestActionNodeConfig> context) throws ResponseException {
+    public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<PaymentRequestActionNodeConfig> context) throws ResponseException {
         var paymentTransactionKey = context
                 .getThisTask()
                 .getRuntimeData()
@@ -624,7 +561,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         var downloadUrl = createPaymentConfirmationUrl(context);
 
         try {
-            return new PaymentGroupPreset(
+            var layout = new PaymentGroupPreset(
                     paymentProvider,
                     paymentProviderDefinition,
                     paymentPayload,
@@ -633,6 +570,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                     failureMessage,
                     downloadUrl
             );
+            return ProcessNodeCustomerView.of(context, layout, List.of(), new AuthoredElementValues());
         } catch (IOException | WriterException e) {
             throw ResponseException.internalServerError(e);
         }
@@ -642,7 +580,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         configuration.remove(PaymentRequestActionNodeConfig.PAYMENT_FIELD_ID);
-        configuration.remove(ManualContent.ASSIGNMENT_FIELD_ID);
+        configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
         return configuration;
     }
 
@@ -686,11 +624,13 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     }
 
     @Nonnull
-    private AutomaticContent requireAutomaticContent(
+    private SemiAutomaticMessageConfig.AutomaticContent requireAutomaticContent(
             @Nonnull PaymentRequestActionNodeConfig configuration
     ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var content = configuration.automaticContent;
-        if (content == null || StringUtils.isNullOrEmpty(content.subject) || StringUtils.isNullOrEmpty(content.content)) {
+        var content = configuration.messageConfig == null ? null : configuration.messageConfig.automaticContent;
+        if (content == null
+                || StringUtils.toNullableTrimmedString(content.subject) == null
+                || StringUtils.toNullableTrimmedString(content.content) == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Für den automatischen Versand müssen Betreff und Nachrichtentext konfiguriert sein."
             );
@@ -699,11 +639,13 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     }
 
     @Nonnull
-    private ManualContent requireManualContent(
+    private SemiAutomaticMessageConfig.ManualContent requireManualContent(
             @Nonnull PaymentRequestActionNodeConfig configuration
     ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var content = configuration.manualContent;
-        if (content == null || StringUtils.isNullOrEmpty(content.subject) || StringUtils.isNullOrEmpty(content.content)) {
+        var content = configuration.messageConfig == null ? null : configuration.messageConfig.manualContent;
+        if (content == null
+                || StringUtils.toNullableTrimmedString(content.subject) == null
+                || StringUtils.toNullableTrimmedString(content.content) == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Für den manuellen Versand müssen Vorlagen für Betreff und Nachrichtentext konfiguriert sein."
             );
@@ -712,7 +654,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     }
 
     @Nonnull
-    private ManualContent requireManualContentForStaffView(
+    private SemiAutomaticMessageConfig.ManualContent requireManualContentForStaffView(
             @Nonnull PaymentRequestActionNodeConfig configuration
     ) throws ResponseException {
         try {
@@ -852,7 +794,16 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 .setProcessData(processExecutionData.getProcessData())
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
                         resolvedConfiguration.recipientIdentityId(),
-                        CommunicationMessage.of(subject, content, content),
+                        CommunicationMessage.of(
+                                subject,
+                                content,
+                                content,
+                                List.of(new CommunicationMessageCallToAction(
+                                        "Zahlung durchführen",
+                                        paymentUrl
+                                )),
+                                List.of()
+                        ),
                         null
                 ));
     }
@@ -1034,9 +985,6 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     public static class PaymentRequestActionNodeConfig {
         public static final String RECIPIENT_IDENTITY_ID_FIELD_ID = "recipientIdentityId";
         public static final String PAYMENT_FIELD_ID = "payment";
-        public static final String EXECUTION_TYPE_FIELD_ID = "execution_type";
-        public static final String EXECUTION_TYPE_AUTOMATIC = "automatic";
-        public static final String EXECUTION_TYPE_MANUAL = "manual";
 
         /**
          * Logical process identity receiving the payment request. A missing identity or an identity that is not
@@ -1060,78 +1008,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         public PaymentConfigElementValue payment;
 
         /**
-         * Dispatch mode. Only {@link #EXECUTION_TYPE_AUTOMATIC} and {@link #EXECUTION_TYPE_MANUAL} are accepted;
-         * missing or unknown values fail execution.
+         * Dispatch mode, message templates and optional staff assignment.
          */
-        @InputElementPOJOBinding(id = EXECUTION_TYPE_FIELD_ID, type = ElementType.Radio, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Auswahl, ob die Zahlungsaufforderung automatisch versendet oder vorher durch eine Mitarbeiter:in bearbeitet wird."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        public String executionType;
-
-        /** Configuration used only for automatic dispatch. */
-        public AutomaticContent automaticContent;
-
-        /** Configuration used only when a staff member edits and dispatches the message. */
-        public ManualContent manualContent;
-    }
-
-    /** Message templates used for automatic dispatch. */
-    @LayoutElementPOJOBinding(id = AutomaticContent.GROUP_ID, type = ElementType.GroupLayout)
-    public static class AutomaticContent {
-        public static final String GROUP_ID = "automatic_group";
-        public static final String SUBJECT_FIELD_ID = "automatic_subject";
-        public static final String CONTENT_FIELD_ID = "automatic_content";
-
-        /** Subject template rendered against the process data immediately before dispatch. */
-        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Betreff der Zahlungsaufforderung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für den Betreff. Unterstützt Template-Tags mit Vorgangsdaten."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        public String subject;
-
-        /** Rich-text template rendered against the process data immediately before dispatch. */
-        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Nachricht der Zahlungsaufforderung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für die Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        public String content;
-    }
-
-    /** Message templates and assignment used for staff-assisted dispatch. */
-    @LayoutElementPOJOBinding(id = ManualContent.GROUP_ID, type = ElementType.GroupLayout)
-    public static class ManualContent {
-        public static final String GROUP_ID = "manual_group";
-        public static final String SUBJECT_FIELD_ID = "manual_subject";
-        public static final String CONTENT_FIELD_ID = "manual_content";
-        public static final String ASSIGNMENT_FIELD_ID = "manual_assignment";
-
-        /** Required subject template rendered once to initialize the editable staff task. */
-        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage für den Betreff"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung des bearbeitbaren Betreffs. Unterstützt Template-Tags mit Vorgangsdaten."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        public String subject;
-
-        /** Required rich-text template rendered once to initialize the editable staff task. */
-        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage für die Nachricht"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung der bearbeitbaren Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        public String content;
-
-        /** Staff assignment context used when the node enters manual mode; null or unresolved values fail assignment. */
-        @InputElementPOJOBinding(id = ASSIGNMENT_FIELD_ID, type = ElementType.AssignmentContext, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Verantwortlicher Personenkreis"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, der die Zahlungsaufforderung bearbeiten und versenden darf."),
-                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Organisationseinheit, Team oder Mitarbeiter:in suchen"),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        public AssignmentContextInputElementValue assignmentContext;
+        public SemiAutomaticMessageConfig.LayoutConfig messageConfig;
     }
 }

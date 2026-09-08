@@ -6,11 +6,14 @@ import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefinition;
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderBindingRepository;
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderRepository;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -146,6 +149,35 @@ public class CommunicationProviderManagementService {
         return getDefinition(definitionKey, version).getConfigLayout();
     }
 
+    @Nullable
+    public GroupLayoutElement getProviderTestingLayout(@Nonnull Integer providerId) throws ResponseException {
+        var provider = getProvider(providerId);
+        var definition = getDefinition(
+                provider.getCommunicationProviderDefinitionKey(),
+                provider.getCommunicationProviderDefinitionVersion()
+        );
+        return definition.getTestingLayout();
+    }
+
+    public void testProvider(@Nonnull Integer providerId,
+                             @Nonnull AuthoredElementValues inputs) throws ResponseException {
+        var provider = getProvider(providerId);
+        var definition = getDefinition(
+                provider.getCommunicationProviderDefinitionKey(),
+                provider.getCommunicationProviderDefinitionVersion()
+        );
+        try {
+            testProviderTyped(provider, definition, inputs);
+        } catch (CommunicationException e) {
+            throw ResponseException.badRequest(e.getMessage());
+        } catch (RuntimeException e) {
+            throw ResponseException.internalServerError(
+                    "Der Kommunikationsanbieter %s konnte nicht getestet werden.".formatted(provider.getName()),
+                    e
+            );
+        }
+    }
+
     @Nonnull
     public ConfigLayoutElement getBindingConfigurationLayout(@Nonnull Integer providerId,
                                                              @Nonnull UUID identityProviderKey) throws ResponseException {
@@ -220,6 +252,15 @@ public class CommunicationProviderManagementService {
             @Nonnull CommunicationProviderDefinition<C, ?> definition
     ) throws CommunicationException {
         configurationService.mapProviderConfiguration(provider, definition);
+    }
+
+    private <C> void testProviderTyped(
+            @Nonnull CommunicationProviderEntity provider,
+            @Nonnull CommunicationProviderDefinition<C, ?> definition,
+            @Nonnull AuthoredElementValues inputs
+    ) throws CommunicationException {
+        var configuration = configurationService.mapProviderConfiguration(provider, definition);
+        definition.handleTest(provider, configuration, inputs);
     }
 
     private <I> void validateBindingConfigurationTyped(

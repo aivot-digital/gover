@@ -34,6 +34,8 @@ public class IdentityCacheEntity implements Serializable {
     @Nullable
     private String metadataIdentifier;
     @Nullable
+    private String uniqueIdFromIdentityProvider;
+    @Nullable
     private String emailAddress;
     @Nonnull
     private String origin = "";
@@ -88,12 +90,12 @@ public class IdentityCacheEntity implements Serializable {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         IdentityCacheEntity that = (IdentityCacheEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(sessionId, that.sessionId) && Objects.equals(relatedProcessNodeId, that.relatedProcessNodeId) && Objects.equals(codeVerifier, that.codeVerifier) && type == that.type && Objects.equals(providerKey, that.providerKey) && Objects.equals(identityId, that.identityId) && Objects.equals(metadataIdentifier, that.metadataIdentifier) && Objects.equals(emailAddress, that.emailAddress) && Objects.equals(origin, that.origin) && Objects.equals(stateNonce, that.stateNonce) && Objects.equals(identityData, that.identityData) && Objects.equals(communicationProviderBindingId, that.communicationProviderBindingId) && Objects.equals(communicationProviderData, that.communicationProviderData);
+        return Objects.equals(id, that.id) && Objects.equals(sessionId, that.sessionId) && Objects.equals(relatedProcessNodeId, that.relatedProcessNodeId) && Objects.equals(codeVerifier, that.codeVerifier) && type == that.type && Objects.equals(providerKey, that.providerKey) && Objects.equals(identityId, that.identityId) && Objects.equals(metadataIdentifier, that.metadataIdentifier) && Objects.equals(uniqueIdFromIdentityProvider, that.uniqueIdFromIdentityProvider) && Objects.equals(emailAddress, that.emailAddress) && Objects.equals(origin, that.origin) && Objects.equals(stateNonce, that.stateNonce) && Objects.equals(identityData, that.identityData) && Objects.equals(communicationProviderBindingId, that.communicationProviderBindingId) && Objects.equals(communicationProviderData, that.communicationProviderData);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, sessionId, relatedProcessNodeId, codeVerifier, type, providerKey, identityId, metadataIdentifier, emailAddress, origin, stateNonce, identityData, communicationProviderBindingId, communicationProviderData);
+        return Objects.hash(id, sessionId, relatedProcessNodeId, codeVerifier, type, providerKey, identityId, metadataIdentifier, uniqueIdFromIdentityProvider, emailAddress, origin, stateNonce, identityData, communicationProviderBindingId, communicationProviderData);
     }
 
     // endregion
@@ -177,6 +179,16 @@ public class IdentityCacheEntity implements Serializable {
 
     public IdentityCacheEntity setMetadataIdentifier(@Nullable String metadataIdentifier) {
         this.metadataIdentifier = metadataIdentifier;
+        return this;
+    }
+
+    @Nullable
+    public String getUniqueIdFromIdentityProvider() {
+        return uniqueIdFromIdentityProvider;
+    }
+
+    public IdentityCacheEntity setUniqueIdFromIdentityProvider(@Nullable String uniqueIdFromIdentityProvider) {
+        this.uniqueIdFromIdentityProvider = uniqueIdFromIdentityProvider;
         return this;
     }
 

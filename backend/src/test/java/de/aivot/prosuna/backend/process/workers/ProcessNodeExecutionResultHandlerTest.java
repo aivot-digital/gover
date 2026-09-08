@@ -26,6 +26,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
@@ -58,6 +59,65 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ProcessNodeExecutionResultHandlerTest {
+    @Test
+    void handleResultWithAdditionalIdentities_PersistsIdentityOnInstanceCompletion() throws Exception {
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var savedInstances = new ArrayList<ProcessInstanceEntity>();
+        var handler = createHandler(
+                savedTasks,
+                Map.of(),
+                new RecordingProcessTaskMailService(),
+                null,
+                savedInstances
+        );
+        var processInstance = processInstance();
+        var task = processInstanceTask(null);
+        var newIdentity = identity("representative");
+
+        handler.handleResultWithAdditionalIdentities(
+                new RecordingProcessNodeExecutionLogger(),
+                null,
+                new TestProcessNodeDefinition("Complete process"),
+                processNode("Complete process"),
+                processInstance,
+                task,
+                null,
+                new ProcessNodeExecutionResultInstanceCompleted(),
+                Map.of(newIdentity.identityId(), newIdentity)
+        );
+
+        assertEquals(newIdentity, processInstance.getIdentities().get(newIdentity.identityId()));
+        assertEquals(ProcessInstanceStatus.Completed, processInstance.getStatus());
+        assertEquals(ProcessTaskStatus.Completed, task.getStatus());
+        assertEquals(List.of(processInstance), savedInstances);
+        assertEquals(List.of(task), savedTasks);
+    }
+
+    @Test
+    void handleResultWithAdditionalIdentities_RejectsIdentityBeforeTaskCompletion() {
+        var handler = createHandler(
+                new ArrayList<>(),
+                Map.of(),
+                new RecordingProcessTaskMailService()
+        );
+        var processInstance = processInstance();
+        var newIdentity = identity("representative");
+
+        assertThrows(ProcessNodeExecutionException.class, () -> handler.handleResultWithAdditionalIdentities(
+                new RecordingProcessNodeExecutionLogger(),
+                null,
+                new TestProcessNodeDefinition("Update task"),
+                processNode("Update task"),
+                processInstance,
+                processInstanceTask(null),
+                null,
+                new ProcessNodeExecutionResultTaskUpdated(),
+                Map.of(newIdentity.identityId(), newIdentity)
+        ));
+
+        assertFalse(processInstance.getIdentities().containsKey(newIdentity.identityId()));
+    }
+
     @Test
     void handleResult_DispatchesCommunicationAndMapsProviderResultBeforeOutputs() throws Exception {
         var communicationService = mock(CommunicationService.class);
@@ -460,16 +520,40 @@ class ProcessNodeExecutionResultHandlerTest {
                                                                    Map<String, UserEntity> users,
                                                                    RecordingProcessTaskMailService mailService,
                                                                    CommunicationService communicationService) {
+        return createHandler(savedTasks, users, mailService, communicationService, new ArrayList<>());
+    }
+
+    private static ProcessNodeExecutionResultHandler createHandler(List<ProcessInstanceTaskEntity> savedTasks,
+                                                                   Map<String, UserEntity> users,
+                                                                   RecordingProcessTaskMailService mailService,
+                                                                   CommunicationService communicationService,
+                                                                   List<ProcessInstanceEntity> savedInstances) {
         return new ProcessNodeExecutionResultHandler(
                 null,
                 communicationService,
-                proxy(ProcessInstanceRepository.class),
+                createInstanceRepository(savedInstances),
                 createTaskRepository(savedTasks),
                 proxy(ProcessEdgeRepository.class),
                 new TestUserService(users),
                 mailService,
                 null,
                 null
+        );
+    }
+
+    private static ProcessInstanceRepository createInstanceRepository(
+            List<ProcessInstanceEntity> savedInstances
+    ) {
+        return ProcessNodeExecutionResultHandlerTest.<ProcessInstanceRepository>proxy(
+                ProcessInstanceRepository.class,
+                (methodName, args) -> switch (methodName) {
+                    case "save" -> {
+                        var entity = (ProcessInstanceEntity) args[0];
+                        savedInstances.add(entity);
+                        yield entity;
+                    }
+                    default -> null;
+                }
         );
     }
 
@@ -526,6 +610,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 IdentityType.Email,
                 null,
                 null,
+                null,
                 identityId + "@example.com",
                 Map.of(),
                 null,
@@ -540,6 +625,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 IdentityType.IdentityProvider,
                 UUID.fromString("00000000-0000-0000-0000-000000000001"),
                 "bund-id",
+                "provider-user-123",
                 null,
                 Map.of("name", "Sensitive Applicant"),
                 23,
@@ -569,6 +655,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 Map.of("data", true),
                 Map.of(),
                 assignedUserId,
+                null,
                 null,
                 null,
                 null,

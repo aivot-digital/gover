@@ -91,6 +91,7 @@ public class IdentityCommunicationService {
                 identity.type(),
                 identity.providerKey(),
                 identity.metadataIdentifier(),
+                identity.uniqueIdFromIdentityProvider(),
                 identity.emailAddress(),
                 identity.attributes(),
                 bindingId,

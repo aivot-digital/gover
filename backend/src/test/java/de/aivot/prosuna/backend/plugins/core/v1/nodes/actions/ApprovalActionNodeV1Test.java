@@ -124,7 +124,7 @@ class ApprovalActionNodeV1Test {
     }
 
     @Test
-    void getStaffTaskViewData_RendersConfiguredDataSummaryUi() throws Exception {
+    void getStaffTaskView_RendersConfiguredDataSummaryUi() throws Exception {
         var processData = Map.<String, Object>of("approvalValue", "Freizugebender Inhalt");
 
         var context = new ProcessNodeExecutionContextUIStaff(
@@ -138,14 +138,15 @@ class ApprovalActionNodeV1Test {
                 currentProcessData(processData)
         );
 
-        var layout = node.getStaffTaskView(context);
+        var view = node.getStaffTaskView(context);
+        var layout = (GroupLayoutElement) view.layout();
         var dataSummary = layout.findChild("approval-data-root", GroupLayoutElement.class).orElseThrow();
         var remarkField = layout.findChild("approvalRemark", RichTextInputElement.class).orElseThrow();
         assertTrue(dataSummary.findChild("approvalValue", TextInputElement.class).isPresent());
         assertEquals(6.0, remarkField.getWeight());
         assertTrue(layout.findChild("approval-actions-spacer").isPresent());
 
-        var data = node.getStaffTaskViewData(context);
+        var data = view.data();
         assertEquals("Freizugebender Inhalt", data.get("approvalValue"));
         assertNull(data.get("approvalRemark"));
         assertEquals(
@@ -153,12 +154,12 @@ class ApprovalActionNodeV1Test {
                         new TaskViewEvent("Freigeben", "approve"),
                         new TaskViewEvent("Ablehnen", "reject")
                 ),
-                node.getStaffTaskViewEvents(context)
+                view.events()
         );
     }
 
     @Test
-    void getStaffTaskViewData_LoadsSavedDraftSnapshotFromRuntimeData() throws Exception {
+    void getStaffTaskView_LoadsSavedDraftSnapshotFromRuntimeData() throws Exception {
         var processData = Map.<String, Object>of("approvalValue", "Freizugebender Inhalt");
 
         var context = new ProcessNodeExecutionContextUIStaff(
@@ -183,9 +184,34 @@ class ApprovalActionNodeV1Test {
                 currentProcessData(processData)
         );
 
-        var data = node.getStaffTaskViewData(context);
+        var data = node.getStaffTaskView(context).data();
         assertEquals("Freizugebender Inhalt", data.get("approvalValue"));
         assertEquals("<p>Schon geprüft</p>", data.get("approvalRemark"));
+    }
+
+    @Test
+    void getStaffTaskView_LoadsLegacyDraftFromRuntimeData() throws Exception {
+        var processData = Map.<String, Object>of("approvalValue", "Freizugebender Inhalt");
+        var legacyDraft = authored(
+                "approvalValue", "Freizugebender Inhalt",
+                "approvalRemark", "<p>Altdaten</p>"
+        );
+
+        var context = new ProcessNodeExecutionContextUIStaff(
+                logger(),
+                processNode(dataModeConfiguration()),
+                processInstance("process-owner"),
+                task(77, legacyDraft, Map.of(), processData),
+                null,
+                user("staff-1"),
+                nodeConfiguration(dataModeConfiguration()),
+                currentProcessData(processData)
+        );
+
+        var data = node.getStaffTaskView(context).data();
+
+        assertEquals("Freizugebender Inhalt", data.get("approvalValue"));
+        assertEquals("<p>Altdaten</p>", data.get("approvalRemark"));
     }
 
     @Test

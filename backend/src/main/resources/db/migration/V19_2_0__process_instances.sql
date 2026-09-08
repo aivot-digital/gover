@@ -118,6 +118,9 @@ create table process_instance_tasks
     -- The user assigned to this task, if any
     assigned_user_id                  varchar(36)  null,
 
+    -- The customer identity assigned to this task, if any
+    assigned_customer_identity_id     varchar(36)  null,
+
     -- The deadline for this task, if any, determined by the time limit of the node
     deadline                          timestamptz  null,
 
