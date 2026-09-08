@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.zxing.WriterException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
+import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -793,7 +794,16 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 .setProcessData(processExecutionData.getProcessData())
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
                         resolvedConfiguration.recipientIdentityId(),
-                        CommunicationMessage.of(subject, content, content),
+                        CommunicationMessage.of(
+                                subject,
+                                content,
+                                content,
+                                List.of(new CommunicationMessageCallToAction(
+                                        "Zahlung durchführen",
+                                        paymentUrl
+                                )),
+                                List.of()
+                        ),
                         null
                 ));
     }

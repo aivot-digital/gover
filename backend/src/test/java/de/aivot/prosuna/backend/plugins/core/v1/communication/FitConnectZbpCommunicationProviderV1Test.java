@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEntity;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
+import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
@@ -50,6 +51,49 @@ class FitConnectZbpCommunicationProviderV1Test {
             mock(StorageService.class),
             secretService
     );
+
+    @Test
+    void rendersCallToActionsAsEscapedHtmlLinks() throws Exception {
+        var message = CommunicationMessage.of(
+                "Subject",
+                "Body",
+                "<p>Body</p>",
+                List.of(
+                        new CommunicationMessageCallToAction(
+                                "Open <portal>",
+                                "https://example.test/action?x=1&y=2"
+                        ),
+                        new CommunicationMessageCallToAction("Show status", "https://example.test/status")
+                ),
+                List.of()
+        );
+
+        var html = FitConnectZbpCommunicationProviderV1.renderMessageHtml(message);
+
+        assertEquals(
+                """
+                        <p>Body</p>
+                        <p><a href="https://example.test/action?x=1&amp;y=2">Open &lt;portal&gt;</a></p>
+                        <p><a href="https://example.test/status">Show status</a></p>""",
+                html
+        );
+    }
+
+    @Test
+    void rejectsIncompleteCallToActions() {
+        var message = CommunicationMessage.of(
+                "Subject",
+                "Body",
+                "<p>Body</p>",
+                List.of(new CommunicationMessageCallToAction("Open", " ")),
+                List.of()
+        );
+
+        assertThrows(
+                CommunicationException.class,
+                () -> FitConnectZbpCommunicationProviderV1.renderMessageHtml(message)
+        );
+    }
 
     @Test
     void configLayoutUsesSecretSelectionWithoutLoadingSecretOptions() throws Exception {

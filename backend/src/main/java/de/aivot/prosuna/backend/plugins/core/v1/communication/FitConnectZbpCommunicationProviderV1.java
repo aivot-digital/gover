@@ -45,6 +45,7 @@ import dev.fitko.fitconnect.zbp.model.ZBPAttachmentMetadata;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.HtmlUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -346,7 +347,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
 
         final CreateMessage zbpMessage = CreateMessage
                 .builder()
-                .content(message.htmlBody())
+                .content(renderMessageHtml(message))
                 .sender("FIT-Connect")
                 .service("FIT-Connect Test")
                 .title(message.subject())
@@ -400,6 +401,34 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                 "submissionId", sentSubmission.submissionId().toString(),
                 "status", status.state().name()
         );
+    }
+
+    @Nonnull
+    static String renderMessageHtml(@Nonnull CommunicationMessage message) throws CommunicationException {
+        var content = new StringBuilder(message.htmlBody());
+        for (var callToAction : message.callToActions()) {
+            if (callToAction == null) {
+                throw new CommunicationException("Eine Aktion der Nachricht darf nicht leer sein.");
+            }
+            var title = callToAction.title() == null ? null : callToAction.title().trim();
+            if (title == null || title.isEmpty()) {
+                throw new CommunicationException("Der Titel einer Aktion darf nicht leer sein.");
+            }
+            var link = callToAction.link() == null ? null : callToAction.link().trim();
+            if (link == null || link.isEmpty()) {
+                throw new CommunicationException("Der Link einer Aktion darf nicht leer sein.");
+            }
+
+            if (content.length() > 0) {
+                content.append('\n');
+            }
+            content.append("<p><a href=\"")
+                    .append(HtmlUtils.htmlEscape(link))
+                    .append("\">")
+                    .append(HtmlUtils.htmlEscape(title))
+                    .append("</a></p>");
+        }
+        return content.toString();
     }
 
     private AuthenticationLevel mapAuthenticationLevel(CommunicationProviderContext<Config, IdentityBinding> context,

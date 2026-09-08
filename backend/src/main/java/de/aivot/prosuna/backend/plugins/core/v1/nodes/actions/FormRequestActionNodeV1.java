@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
+import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -394,15 +395,13 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var customerLink = prosunaConfig
                 .createUrl("/process/", processInstance.getAccessKey(), "tasks", task.getAccessKey());
 
-        var body = """
-                %s
-
-                <p>
-                    <a href="%s">%s</a>
-                </p>
-                """.formatted(content, customerLink, customerLink);
-
-        var message = CommunicationMessage.of(subject, body, body);
+        var message = CommunicationMessage.of(
+                subject,
+                content,
+                content,
+                List.of(new CommunicationMessageCallToAction("Daten einreichen", customerLink)),
+                List.of()
+        );
 
         var communicationRequest = new ProcessNodeExecutionResultCommunicationRequest(
                 recipientId,

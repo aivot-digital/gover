@@ -39,6 +39,7 @@ import org.springframework.stereotype.Component;
 import org.thymeleaf.templatemode.TemplateMode;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
@@ -404,13 +405,13 @@ public class MailService {
         String textMessage = loadTemplate(template.getKey() + ".txt", context, TemplateMode.TEXT);
         String htmlMessage = loadTemplate(template.getKey() + ".html", context, TemplateMode.HTML);
 
-        message.setFrom(prosunaConfig.getFromMail());
         message.setSubject(subject.replaceAll("\\r?\\n", " "), "utf-8");
         var messageHelper = new MimeMessageHelper(
                 message,
                 MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
                 StandardCharsets.UTF_8.name()
         );
+        applyEnvelopeHeaders(messageHelper, options);
         messageHelper.setText(textMessage, htmlMessage);
 
         if (senderLogo.isPresent()) {
@@ -469,6 +470,29 @@ public class MailService {
 
     public boolean isSendingConfigured() {
         return !mailHost.isBlank();
+    }
+
+    private void applyEnvelopeHeaders(MimeMessageHelper messageHelper, MailSendOptions options)
+            throws MessagingException {
+        var senderAddress = options.senderAddress();
+        if (senderAddress == null) {
+            messageHelper.setFrom(prosunaConfig.getFromMail());
+        } else {
+            var senderName = options.senderName();
+            if (senderName == null) {
+                messageHelper.setFrom(senderAddress);
+            } else {
+                try {
+                    messageHelper.setFrom(senderAddress, senderName);
+                } catch (UnsupportedEncodingException exception) {
+                    throw new MessagingException("Der Absendername konnte nicht kodiert werden.", exception);
+                }
+            }
+        }
+
+        if (options.replyToAddress() != null) {
+            messageHelper.setReplyTo(options.replyToAddress());
+        }
     }
 
     private String loadTemplate(String template, Map<String, Object> data, TemplateMode mode) {

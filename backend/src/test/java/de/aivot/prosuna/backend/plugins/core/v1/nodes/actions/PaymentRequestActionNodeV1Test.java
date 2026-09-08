@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -248,6 +249,13 @@ class PaymentRequestActionNodeV1Test {
         assertEquals("Zahlung für Ada", communicationRequest.message().subject());
         assertEquals("Hallo **Ada**", communicationRequest.message().body());
         assertEquals("Hallo **Ada**", communicationRequest.message().htmlBody());
+        assertEquals(
+                List.of(new CommunicationMessageCallToAction(
+                        "Zahlung durchführen",
+                        "https://example.test/process/instance-access/tasks/task-access"
+                )),
+                communicationRequest.message().callToActions()
+        );
         verify(assignmentContextAssigneeResolverService, never()).resolveAssignee(
                 any(), any(), any(), any(), any(), any(), any(), any(), any()
         );
@@ -391,6 +399,13 @@ class PaymentRequestActionNodeV1Test {
         assertEquals(RECIPIENT_IDENTITY_ID, communicationRequest.recipientIdentityId());
         assertEquals("Bearbeitet {{ $.name }}", communicationRequest.message().subject());
         assertEquals("Manuell **{{ $.name }}**", communicationRequest.message().body());
+        assertEquals(
+                List.of(new CommunicationMessageCallToAction(
+                        "Zahlung durchführen",
+                        "https://example.test/process/instance-access/tasks/task-access"
+                )),
+                communicationRequest.message().callToActions()
+        );
         assertEquals("runtime", result.getRuntimeData().get("existing"));
         var savedStaffData = assertInstanceOf(
                 AuthoredElementValues.class,

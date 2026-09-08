@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
@@ -15,6 +16,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceAttachmentFilter;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssignedCustomer;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
@@ -26,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.util.List;
@@ -49,17 +52,52 @@ class FormRequestActionNodeV1Test {
     private static final String RECIPIENT_IDENTITY_ID = "applicant";
 
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private ProsunaConfig prosunaConfig;
     private FormRequestActionNodeV1 node;
 
     @BeforeEach
     void setUp() {
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
+        prosunaConfig = new ProsunaConfig();
+        prosunaConfig.setProsunaHostname("https://example.test");
         node = new FormRequestActionNodeV1(
                 mock(TemplateRenderService.class),
                 mock(AssignmentContextAssigneeResolverService.class),
-                mock(ProsunaConfig.class),
+                prosunaConfig,
                 new ElementDataTransformService(),
                 processInstanceAttachmentService
+        );
+    }
+
+    @Test
+    void customerAssignmentMessageContainsAFormCallToAction() {
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientIdentityId = RECIPIENT_IDENTITY_ID;
+        var processInstance = new ProcessInstanceEntity().setAccessKey("instance-access");
+        var task = new ProcessInstanceTaskEntity().setAccessKey("task-access");
+
+        var result = assertInstanceOf(
+                ProcessNodeExecutionResultTaskAssignedCustomer.class,
+                ReflectionTestUtils.invokeMethod(
+                        node,
+                        "createCustomerAssignmentResult",
+                        processInstance,
+                        task,
+                        configuration,
+                        "Bitte Daten ergänzen",
+                        "Hallo **Ada**"
+                )
+        );
+
+        var message = result.getCommunicationRequest().message();
+        assertEquals("Hallo **Ada**", message.body());
+        assertEquals("Hallo **Ada**", message.htmlBody());
+        assertEquals(
+                List.of(new CommunicationMessageCallToAction(
+                        "Daten einreichen",
+                        "https://example.test/process/instance-access/tasks/task-access"
+                )),
+                message.callToActions()
         );
     }
 

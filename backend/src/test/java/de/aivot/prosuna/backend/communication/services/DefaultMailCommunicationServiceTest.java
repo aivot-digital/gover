@@ -1,24 +1,32 @@
 package de.aivot.prosuna.backend.communication.services;
 
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
+import de.aivot.prosuna.backend.communication.models.ByteArrayCommunicationMessageAttachment;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
+import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.communication.models.MailCommunicationSendOptions;
-import de.aivot.prosuna.backend.models.config.ProsunaConfig;
-import jakarta.mail.Message;
-import jakarta.mail.Multipart;
-import jakarta.mail.Session;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
+import de.aivot.prosuna.backend.mail.enums.MailTemplate;
+import de.aivot.prosuna.backend.mail.models.MailSendOptions;
+import de.aivot.prosuna.backend.mail.services.MailService;
+import de.aivot.prosuna.backend.models.lib.MailAttachmentBytes;
+import de.aivot.prosuna.backend.system.services.SystemService;
+import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import org.junit.jupiter.api.Test;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.same;
@@ -26,36 +34,56 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class DefaultMailCommunicationServiceTest {
-    private final ProsunaConfig config = mock(ProsunaConfig.class);
-    private final JavaMailSenderImpl mailSender = mock(JavaMailSenderImpl.class);
-    private final DefaultMailCommunicationService service = new DefaultMailCommunicationService(config, mailSender);
+    private final MailService mailService = mock(MailService.class);
+    private final SystemService systemService = mock(SystemService.class);
+    private final ThemeEntity defaultTheme = new ThemeEntity();
+    private final DefaultMailCommunicationService service = new DefaultMailCommunicationService(
+            mailService,
+            systemService
+    );
 
     @Test
-    void sendsMarkdownMessageThroughTheConfiguredDefaultMailTransport() throws Exception {
-        var mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
-        when(config.getFromMail()).thenReturn("service@example.test");
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+    void delegatesGenericTemplateRenderingWithMarkdownAndCallToActions() throws Exception {
+        configureSending();
+        var callToActions = List.of(
+                new CommunicationMessageCallToAction(" Open portal ", " https://example.test/portal "),
+                new CommunicationMessageCallToAction("Show status", "https://example.test/status")
+        );
 
         service.sendMessage(" customer@example.test ", new CommunicationMessage(
                 "Status update",
+                "Hello customer",
                 "Hello **customer**",
-                "Hello **customer**",
+                callToActions,
                 Instant.now(),
                 List.of()
         ));
 
-        verify(mailSender).send(same(mimeMessage));
-        assertEquals("Status update", mimeMessage.getSubject());
-        assertEquals("customer@example.test", mimeMessage.getRecipients(Message.RecipientType.TO)[0].toString());
-        assertEquals("service@example.test", mimeMessage.getFrom()[0].toString());
-        assertEquals(null, mimeMessage.getHeader("Reply-To"));
-        assertTrue(flattenContent(mimeMessage.getContent()).contains("<strong>customer</strong>"));
+        verify(mailService).sendMail(
+                same(defaultTheme),
+                eq("customer@example.test"),
+                eq(Optional.empty()),
+                eq(Optional.empty()),
+                eq("Status update"),
+                eq(MailTemplate.GenericEmailMessage),
+                org.mockito.ArgumentMatchers.<Map<String, Object>>argThat(context ->
+                        "Status update".equals(context.get("title"))
+                                && "Hello customer".equals(context.get("messageText"))
+                                && context.get("messageHtml").toString().contains("<strong>customer</strong>")
+                                && List.of(
+                                new CommunicationMessageCallToAction("Open portal", "https://example.test/portal"),
+                                new CommunicationMessageCallToAction("Show status", "https://example.test/status")
+                        ).equals(context.get("callToActions"))
+                ),
+                eq(Optional.empty()),
+                eq(Optional.empty()),
+                eq(new MailSendOptions(false, null, null, null))
+        );
     }
 
     @Test
-    void sendsWithCustomSenderAndReplyToAddress() throws Exception {
-        var mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+    void delegatesCustomSenderAndReplyToAddress() throws Exception {
+        configureSending();
 
         service.sendMessage(
                 "customer@example.test",
@@ -67,32 +95,63 @@ class DefaultMailCommunicationServiceTest {
                 )
         );
 
-        verify(mailSender).send(same(mimeMessage));
-        var sender = (InternetAddress) mimeMessage.getFrom()[0];
-        assertEquals("Custom Service", sender.getPersonal());
-        assertEquals("custom@example.test", sender.getAddress());
-        assertEquals("replies@example.test", mimeMessage.getHeader("Reply-To")[0]);
+        verify(mailService).sendMail(
+                any(),
+                anyString(),
+                any(),
+                any(),
+                anyString(),
+                any(),
+                any(),
+                any(),
+                any(),
+                eq(new MailSendOptions(
+                        false,
+                        "Custom Service",
+                        "custom@example.test",
+                        "replies@example.test"
+                ))
+        );
     }
 
     @Test
-    void supportsReplyToWithTheDefaultSender() throws Exception {
-        var mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
-        when(config.getFromMail()).thenReturn("service@example.test");
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-
-        service.sendMessage(
-                "customer@example.test",
-                message(),
-                MailCommunicationSendOptions.defaultSender("replies@example.test")
+    @SuppressWarnings("unchecked")
+    void convertsCommunicationAttachmentsForTheCentralMailService() throws Exception {
+        configureSending();
+        var bytes = "attachment".getBytes(StandardCharsets.UTF_8);
+        var message = CommunicationMessage.of(
+                "Subject",
+                "Body",
+                "Body",
+                List.of(),
+                List.of(new ByteArrayCommunicationMessageAttachment("note.txt", "text/plain", bytes))
         );
 
-        verify(mailSender).send(same(mimeMessage));
-        assertEquals("service@example.test", mimeMessage.getFrom()[0].toString());
-        assertEquals("replies@example.test", mimeMessage.getHeader("Reply-To")[0]);
+        service.sendMessage("customer@example.test", message);
+
+        var attachmentsCaptor = org.mockito.ArgumentCaptor.forClass(Optional.class);
+        verify(mailService).sendMail(
+                any(),
+                anyString(),
+                any(),
+                any(),
+                anyString(),
+                any(),
+                any(),
+                any(),
+                attachmentsCaptor.capture(),
+                any()
+        );
+        var attachments = (Optional<Collection<MailAttachmentBytes>>) attachmentsCaptor.getValue();
+        assertTrue(attachments.isPresent());
+        var attachment = attachments.orElseThrow().iterator().next();
+        assertEquals("note.txt", attachment.filename());
+        assertEquals("text/plain", attachment.contentType().toString());
+        assertArrayEquals(bytes, attachment.bytes());
     }
 
     @Test
-    void rejectsIncompleteOrInvalidCustomSenderBeforeCreatingAMessage() {
+    void rejectsIncompleteOrInvalidCustomSenderBeforeSending() {
         assertThrows(CommunicationException.class, () -> service.sendMessage(
                 "customer@example.test",
                 message(),
@@ -109,53 +168,75 @@ class DefaultMailCommunicationServiceTest {
                 MailCommunicationSendOptions.customSender("Custom Service", "invalid", null)
         ));
 
-        verify(mailSender, never()).createMimeMessage();
+        verify(mailService, never()).isSendingConfigured();
     }
 
     @Test
-    void rejectsInvalidReplyToBeforeCreatingAMessage() {
+    void rejectsInvalidReplyToBeforeSending() {
         assertThrows(CommunicationException.class, () -> service.sendMessage(
                 "customer@example.test",
                 message(),
                 MailCommunicationSendOptions.defaultSender("first@example.test,second@example.test")
         ));
 
-        verify(mailSender, never()).createMimeMessage();
+        verify(mailService, never()).isSendingConfigured();
     }
 
     @Test
-    void rejectsMultipleRecipientsBeforeCreatingAMessage() {
+    void rejectsInvalidMessageAndCallToActionsBeforeSending() {
         assertThrows(CommunicationException.class, () -> service.sendMessage(
                 "first@example.test,second@example.test",
-                new CommunicationMessage("Subject", "Body", "Body", Instant.now(), List.of())
+                message()
         ));
-
-        verify(mailSender, never()).createMimeMessage();
-    }
-
-    @Test
-    void rejectsAnEmptySubjectBeforeSending() {
         assertThrows(CommunicationException.class, () -> service.sendMessage(
                 "customer@example.test",
                 new CommunicationMessage(" ", "Body", "Body", Instant.now(), List.of())
         ));
+        assertThrows(CommunicationException.class, () -> service.sendMessage(
+                "customer@example.test",
+                CommunicationMessage.of(
+                        "Subject",
+                        "Body",
+                        "Body",
+                        List.of(new CommunicationMessageCallToAction(" ", "https://example.test")),
+                        List.of()
+                )
+        ));
+        assertThrows(CommunicationException.class, () -> service.sendMessage(
+                "customer@example.test",
+                CommunicationMessage.of(
+                        "Subject",
+                        "Body",
+                        "Body",
+                        List.of(new CommunicationMessageCallToAction("Open", null)),
+                        List.of()
+                )
+        ));
 
-        verify(mailSender, never()).send(org.mockito.ArgumentMatchers.any(MimeMessage.class));
+        verify(mailService, never()).isSendingConfigured();
+    }
+
+    @Test
+    void rejectsSendingWhenSmtpIsNotConfigured() throws Exception {
+        when(mailService.isSendingConfigured()).thenReturn(false);
+
+        var exception = assertThrows(
+                CommunicationException.class,
+                () -> service.sendMessage("customer@example.test", message())
+        );
+
+        assertEquals("Der E-Mail-Versand ist nicht konfiguriert.", exception.getMessage());
+        verify(mailService, never()).sendMail(
+                any(), anyString(), any(), any(), anyString(), any(), any(), any(), any(), any()
+        );
+    }
+
+    private void configureSending() {
+        when(mailService.isSendingConfigured()).thenReturn(true);
+        when(systemService.retrieveDefaultTheme()).thenReturn(defaultTheme);
     }
 
     private static CommunicationMessage message() {
         return new CommunicationMessage("Subject", "Body", "Body", Instant.now(), List.of());
-    }
-
-    private static String flattenContent(Object content) throws Exception {
-        if (!(content instanceof Multipart multipart)) {
-            return String.valueOf(content);
-        }
-
-        var result = new StringBuilder();
-        for (int index = 0; index < multipart.getCount(); index++) {
-            result.append(flattenContent(multipart.getBodyPart(index).getContent()));
-        }
-        return result.toString();
     }
 }

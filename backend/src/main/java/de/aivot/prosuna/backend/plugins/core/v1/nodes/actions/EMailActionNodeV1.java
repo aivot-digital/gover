@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -16,10 +17,14 @@ import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.mail.enums.MailTemplate;
+import de.aivot.prosuna.backend.mail.models.MailSendOptions;
+import de.aivot.prosuna.backend.mail.services.MailService;
+import de.aivot.prosuna.backend.models.lib.MailAttachmentBytes;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
-import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
@@ -34,18 +39,20 @@ import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
+import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
+import de.aivot.prosuna.backend.system.services.SystemService;
+import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.mail.MessagingException;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
-import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -63,27 +70,37 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     private static final String OUTPUT_NAME_CONTENT = "content";
     private static final String OUTPUT_NAME_ATTACHMENT_SET_DATA_KEYS = "attachmentSetDataKeys";
 
-    private final ProsunaConfig prosunaConfig;
+    private final MailService mailService;
     private final TemplateRenderService templateRenderService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final StorageService storageService;
-    private final JavaMailSenderImpl mailSender;
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
+    private final ProcessService processService;
+    private final VDepartmentShadowedService vDepartmentShadowedService;
+    private final ThemeService themeService;
+    private final SystemService systemService;
 
-    public EMailActionNodeV1(ProsunaConfig prosunaConfig,
+    public EMailActionNodeV1(MailService mailService,
                              TemplateRenderService templateRenderService,
                              ProcessInstanceAttachmentService processInstanceAttachmentService,
                              ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
                              StorageService storageService,
-                             JavaMailSenderImpl mailSender, AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService) {
-        this.prosunaConfig = prosunaConfig;
+                             AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService,
+                             ProcessService processService,
+                             VDepartmentShadowedService vDepartmentShadowedService,
+                             ThemeService themeService,
+                             SystemService systemService) {
+        this.mailService = mailService;
         this.templateRenderService = templateRenderService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.storageService = storageService;
-        this.mailSender = mailSender;
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
+        this.processService = processService;
+        this.vDepartmentShadowedService = vDepartmentShadowedService;
+        this.themeService = themeService;
+        this.systemService = systemService;
     }
 
     @Nonnull
@@ -162,10 +179,6 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                         context.thisNode().getProcessId(),
                         context.thisNode().getProcessVersion()
                 ));
-
-
-        // TODO: Add signature select and attachment select
-
         return layout;
     }
 
@@ -491,54 +504,56 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
             );
         }
 
-        var mimeMessage = mailSender.createMimeMessage();
-
-        try {
-            var helper = new MimeMessageHelper(mimeMessage, true, "utf-8");
-            helper.setFrom(prosunaConfig.getFromMail());
-            helper.setTo(recipients);
-            if (recipientsBCC != null) {
-                helper.setBcc(recipientsBCC);
-            }
-            helper.setSubject(subject);
-            helper.setText(contentHtml, true);
-
-            for (var attachmentSetDataKey : attachmentSetDataKeys) {
-                for (var attachment : resolveProcessAttachmentsBySetDataKey(processInstance, attachmentSetDataKey)) {
-                    try (var attachmentContent = storageService
-                            .getDocumentContent(
-                                    attachment.getStorageProviderId(),
-                                    attachment.getStoragePathFromRoot()
-                            )) {
-                        helper.addAttachment(
-                                attachment.getFileName(),
-                                new ByteArrayResource(attachmentContent.readAllBytes())
-                        );
-                    } catch (IOException | ResponseException e) {
-                        throw new ProcessNodeExecutionExceptionUnknown(
-                                e,
-                                "Der Inhalt des Prozess-Anhangs %s konnte nicht geladen werden: %s",
-                                StringUtils.quote(attachment.getFileName()),
-                                e.getMessage()
-                        );
-                    }
-                }
-            }
-        } catch (MessagingException | ProcessNodeExecutionExceptionUnknown exception) {
+        if (!mailService.isSendingConfigured()) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    exception,
-                    "Beim Erstellen der E-Mail ist ein Fehler aufgetreten: %s",
-                    exception.getMessage()
+                    "Der E-Mail-Versand ist nicht konfiguriert."
             );
         }
 
+        final var process = retrieveProcess(processInstance);
+        final var department = vDepartmentShadowedService
+                .retrieve(process.getDepartmentId())
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
+                        "Der Fachbereich %d des Prozesses %d wurde nicht gefunden.",
+                        process.getDepartmentId(),
+                        process.getId()
+                ));
+        final var theme = department.getThemeId() == null
+                ? systemService.retrieveDefaultTheme()
+                : themeService
+                        .retrieve(department.getThemeId())
+                        .orElseGet(systemService::retrieveDefaultTheme);
+        final var mailAttachments = loadMailAttachments(processInstance, attachmentSetDataKeys);
+
+        var mailContext = new HashMap<String, Object>();
+        mailContext.put("title", subject);
+        mailContext.put("messageText", interpolatedContentMarkdown);
+        mailContext.put("messageHtml", contentHtml);
+        mailContext.put("department", department);
+
         try {
-            mailSender
-                    .send(mimeMessage);
+            mailService.sendMail(
+                    theme,
+                    recipientsStr,
+                    Optional.empty(),
+                    Optional.ofNullable(recipientsBccStr),
+                    subject,
+                    MailTemplate.ProcessEmail,
+                    mailContext,
+                    Optional.empty(),
+                    mailAttachments.isEmpty() ? Optional.empty() : Optional.of(mailAttachments),
+                    MailSendOptions.defaults()
+            );
         } catch (MailException exception) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     exception,
                     "Beim Versenden der E-Mail ist ein Fehler aufgetreten: %s",
+                    exception.getMessage()
+            );
+        } catch (MessagingException | ResponseException | RuntimeException exception) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    exception,
+                    "Beim Erstellen der E-Mail ist ein Fehler aufgetreten: %s",
                     exception.getMessage()
             );
         }
@@ -553,6 +568,60 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
                 .setNodeData(metadata);
+    }
+
+    @Nonnull
+    private ProcessEntity retrieveProcess(
+            @Nonnull ProcessInstanceEntity processInstance
+    ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        try {
+            return processService
+                    .retrieve(processInstance.getProcessId())
+                    .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
+                            "Der Prozess %d für den E-Mail-Versand wurde nicht gefunden.",
+                            processInstance.getProcessId()
+                    ));
+        } catch (ResponseException exception) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    exception,
+                    "Der Prozess %d für den E-Mail-Versand konnte nicht geladen werden: %s",
+                    processInstance.getProcessId(),
+                    exception.getMessage()
+            );
+        }
+    }
+
+    @Nonnull
+    private List<MailAttachmentBytes> loadMailAttachments(
+            @Nonnull ProcessInstanceEntity processInstance,
+            @Nonnull List<String> attachmentSetDataKeys
+    ) throws ProcessNodeExecutionException {
+        var mailAttachments = new ArrayList<MailAttachmentBytes>();
+        for (var attachmentSetDataKey : attachmentSetDataKeys) {
+            for (var attachment : resolveProcessAttachmentsBySetDataKey(processInstance, attachmentSetDataKey)) {
+                try (var attachmentContent = storageService.getDocumentContent(
+                        attachment.getStorageProviderId(),
+                        attachment.getStoragePathFromRoot()
+                )) {
+                    var contentType = MediaTypeFactory
+                            .getMediaType(attachment.getFileName())
+                            .orElse(MediaType.APPLICATION_OCTET_STREAM);
+                    mailAttachments.add(new MailAttachmentBytes(
+                            attachment.getFileName(),
+                            contentType,
+                            attachmentContent.readAllBytes()
+                    ));
+                } catch (IOException | ResponseException exception) {
+                    throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                            exception,
+                            "Der Inhalt des Prozess-Anhangs %s konnte nicht geladen werden: %s",
+                            StringUtils.quote(attachment.getFileName()),
+                            exception.getMessage()
+                    );
+                }
+            }
+        }
+        return mailAttachments;
     }
 
     @Nonnull

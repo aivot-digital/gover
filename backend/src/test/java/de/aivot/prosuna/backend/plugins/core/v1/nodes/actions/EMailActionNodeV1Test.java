@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
@@ -10,8 +12,13 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputEle
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.mail.enums.MailTemplate;
+import de.aivot.prosuna.backend.mail.models.MailSendOptions;
+import de.aivot.prosuna.backend.mail.services.MailService;
+import de.aivot.prosuna.backend.models.lib.MailAttachmentBytes;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -27,20 +34,25 @@ import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
+import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
-import jakarta.mail.Message;
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
+import de.aivot.prosuna.backend.system.services.SystemService;
+import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
+import de.aivot.prosuna.backend.theme.services.ThemeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.mockito.ArgumentCaptor;
+import org.springframework.http.MediaType;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -51,37 +63,67 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class EMailActionNodeV1Test {
     private static final Integer PROCESS_ID = 42;
     private static final Integer PROCESS_VERSION = 3;
     private static final Integer NODE_ID = 17;
+    private static final Integer DEPARTMENT_ID = 7;
+    private static final Integer THEME_ID = 8;
     private static final Long PROCESS_INSTANCE_ID = 99L;
     private static final Long TASK_ID = 123L;
 
-    private ProsunaConfig prosunaConfig;
+    private MailService mailService;
     private TemplateRenderService templateRenderService;
-    private JavaMailSenderImpl mailSender;
+    private ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
+    private StorageService storageService;
     private AssignmentContextAssigneeResolverService assignmentResolver;
+    private ProcessService processService;
+    private VDepartmentShadowedService vDepartmentShadowedService;
+    private ThemeService themeService;
+    private SystemService systemService;
+    private ThemeEntity departmentTheme;
+    private VDepartmentShadowedEntity department;
     private EMailActionNodeV1 node;
 
     @BeforeEach
-    void setUp() {
-        prosunaConfig = mock(ProsunaConfig.class);
+    void setUp() throws Exception {
+        mailService = mock(MailService.class);
         templateRenderService = mock(TemplateRenderService.class);
-        mailSender = mock(JavaMailSenderImpl.class);
+        processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
+        processInstanceAttachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
+        storageService = mock(StorageService.class);
         assignmentResolver = mock(AssignmentContextAssigneeResolverService.class);
+        processService = mock(ProcessService.class);
+        vDepartmentShadowedService = mock(VDepartmentShadowedService.class);
+        themeService = mock(ThemeService.class);
+        systemService = mock(SystemService.class);
+        departmentTheme = new ThemeEntity().setId(THEME_ID);
+        department = new VDepartmentShadowedEntity()
+                .setId(DEPARTMENT_ID)
+                .setThemeId(THEME_ID)
+                .setDefaultMailSignature("Fachbereich Muster");
+
+        when(mailService.isSendingConfigured()).thenReturn(true);
+        when(processService.retrieve(PROCESS_ID)).thenReturn(Optional.of(
+                new ProcessEntity().setId(PROCESS_ID).setDepartmentId(DEPARTMENT_ID)
+        ));
+        when(vDepartmentShadowedService.retrieve(DEPARTMENT_ID)).thenReturn(Optional.of(department));
+        when(themeService.retrieve(THEME_ID)).thenReturn(Optional.of(departmentTheme));
+
         node = new EMailActionNodeV1(
-                prosunaConfig,
+                mailService,
                 templateRenderService,
-                mock(ProcessInstanceAttachmentService.class),
-                mock(ProcessInstanceAttachmentSetService.class),
-                mock(StorageService.class),
-                mailSender,
-                assignmentResolver
+                processInstanceAttachmentService,
+                processInstanceAttachmentSetService,
+                storageService,
+                assignmentResolver,
+                processService,
+                vDepartmentShadowedService,
+                themeService,
+                systemService
         );
     }
 
@@ -134,9 +176,6 @@ class EMailActionNodeV1Test {
     void automaticModeRendersAndSendsSharedMessageContent() throws Exception {
         var configuration = configuration("automatic");
         var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
-        var mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
-        when(prosunaConfig.getFromMail()).thenReturn("service@example.test");
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
         when(templateRenderService.interpolate(
                 same(processData),
                 eq(configuration.messageConfig.automaticContent.subject)
@@ -153,13 +192,29 @@ class EMailActionNodeV1Test {
                 node.init(initContext(configuration, processData, processInstance(), task()))
         );
 
-        verify(mailSender).send(same(mimeMessage));
-        assertEquals("Nachricht für Ada", mimeMessage.getSubject());
-        assertEquals(
-                "customer@example.test",
-                mimeMessage.getRecipients(Message.RecipientType.TO)[0].toString()
+        verify(mailService).sendMail(
+                same(departmentTheme),
+                eq("customer@example.test"),
+                eq(Optional.empty()),
+                eq(Optional.empty()),
+                eq("Nachricht für Ada"),
+                eq(MailTemplate.ProcessEmail),
+                org.mockito.ArgumentMatchers.<Map<String, Object>>argThat(mailContext ->
+                        "Nachricht für Ada".equals(mailContext.get("title"))
+                                && "Hallo **Ada**".equals(mailContext.get("messageText"))
+                                && mailContext.get("messageHtml").toString().contains("<strong>Ada</strong>")
+                                && department.equals(mailContext.get("department"))
+                ),
+                eq(Optional.empty()),
+                eq(Optional.empty()),
+                eq(MailSendOptions.defaults())
         );
         assertEquals("Nachricht für Ada", result.getNodeData().get("subject"));
+        assertTrue(result.getNodeData().get("content").toString().contains("<strong>Ada</strong>"));
+        assertArrayEquals(
+                new String[]{"customer@example.test"},
+                (String[]) result.getNodeData().get("to")
+        );
     }
 
     @Test
@@ -190,6 +245,7 @@ class EMailActionNodeV1Test {
         assertEquals("staff-1", result.getAssignedUserId());
         assertEquals(Map.of("name", "Ada"), result.getProcessData());
         assertEquals(Map.of(), result.getRuntimeData());
+        verifyNoInteractions(mailService);
     }
 
     @Test
@@ -197,9 +253,6 @@ class EMailActionNodeV1Test {
         var configuration = configuration("manual");
         var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
         var context = staffContext(configuration, processData, processInstance(), task());
-        var mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
-        when(prosunaConfig.getFromMail()).thenReturn("service@example.test");
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
         when(templateRenderService.interpolate(
                 same(processData),
                 eq(configuration.messageConfig.manualContent.subject)
@@ -229,9 +282,118 @@ class EMailActionNodeV1Test {
                         "send"
                 ).orElseThrow()
         );
-        verify(mailSender).send(same(mimeMessage));
-        assertEquals("Finaler Betreff", mimeMessage.getSubject());
+        verify(mailService).sendMail(
+                same(departmentTheme),
+                eq("customer@example.test"),
+                eq(Optional.empty()),
+                eq(Optional.empty()),
+                eq("Finaler Betreff"),
+                eq(MailTemplate.ProcessEmail),
+                org.mockito.ArgumentMatchers.<Map<String, Object>>argThat(mailContext ->
+                        "Finaler Inhalt".equals(mailContext.get("messageText"))
+                                && mailContext.get("messageHtml").toString().contains("Finaler Inhalt")
+                ),
+                eq(Optional.empty()),
+                eq(Optional.empty()),
+                eq(MailSendOptions.defaults())
+        );
         assertEquals("Finaler Betreff", result.getNodeData().get("subject"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void sendsBccAndProcessAttachmentsThroughTheCentralMailService() throws Exception {
+        var configuration = configuration("automatic");
+        configuration.bcc = "{{ $.bcc }}";
+        configuration.attachmentSetDataKeys = List.of("documents");
+        var processData = new ProcessExecutionData();
+        stubAutomaticMessage(configuration, processData);
+        when(templateRenderService.interpolate(same(processData), eq(configuration.bcc)))
+                .thenReturn("audit@example.test");
+
+        var attachmentSet = new ProcessInstanceAttachmentSetEntity().setId(11);
+        var attachment = new ProcessInstanceAttachmentEntity()
+                .setFileName("notice.pdf")
+                .setStorageProviderId(12)
+                .setStoragePathFromRoot("/process/notice.pdf");
+        var bytes = "attachment".getBytes(StandardCharsets.UTF_8);
+        when(processInstanceAttachmentSetService.findAllByProcessInstanceIdAndDataKey(
+                PROCESS_INSTANCE_ID,
+                "documents"
+        )).thenReturn(List.of(attachmentSet));
+        when(processInstanceAttachmentService.findAllByAttachmentSetId(11)).thenReturn(List.of(attachment));
+        when(storageService.getDocumentContent(12, "/process/notice.pdf"))
+                .thenReturn(new ByteArrayInputStream(bytes));
+
+        var result = assertInstanceOf(
+                ProcessNodeExecutionResultTaskCompleted.class,
+                node.init(initContext(configuration, processData, processInstance(), task()))
+        );
+
+        var attachmentsCaptor = ArgumentCaptor.forClass(Optional.class);
+        verify(mailService).sendMail(
+                same(departmentTheme),
+                eq("customer@example.test"),
+                eq(Optional.empty()),
+                eq(Optional.of("audit@example.test")),
+                eq("Nachricht für Ada"),
+                eq(MailTemplate.ProcessEmail),
+                any(),
+                eq(Optional.empty()),
+                attachmentsCaptor.capture(),
+                eq(MailSendOptions.defaults())
+        );
+        var attachments = (Optional<Collection<MailAttachmentBytes>>) attachmentsCaptor.getValue();
+        var mailAttachment = attachments.orElseThrow().iterator().next();
+        assertEquals("notice.pdf", mailAttachment.filename());
+        assertEquals(MediaType.APPLICATION_PDF, mailAttachment.contentType());
+        assertArrayEquals(bytes, mailAttachment.bytes());
+        assertArrayEquals(
+                new String[]{"audit@example.test"},
+                (String[]) result.getNodeData().get("bcc")
+        );
+    }
+
+    @Test
+    void fallsBackToTheSystemThemeWhenTheDepartmentHasNoTheme() throws Exception {
+        var configuration = configuration("automatic");
+        var processData = new ProcessExecutionData();
+        stubAutomaticMessage(configuration, processData);
+        department.setThemeId(null);
+        var systemTheme = new ThemeEntity().setId(0);
+        when(systemService.retrieveDefaultTheme()).thenReturn(systemTheme);
+
+        node.init(initContext(configuration, processData, processInstance(), task()));
+
+        verify(mailService).sendMail(
+                same(systemTheme),
+                anyString(),
+                any(),
+                any(),
+                anyString(),
+                eq(MailTemplate.ProcessEmail),
+                any(),
+                any(),
+                any(),
+                eq(MailSendOptions.defaults())
+        );
+        verify(themeService, never()).retrieve(anyInt());
+    }
+
+    @Test
+    void rejectsSendingWhenSmtpIsNotConfigured() {
+        var configuration = configuration("automatic");
+        var processData = new ProcessExecutionData();
+        stubAutomaticMessage(configuration, processData);
+        when(mailService.isSendingConfigured()).thenReturn(false);
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(initContext(configuration, processData, processInstance(), task()))
+        );
+
+        assertEquals("Der E-Mail-Versand ist nicht konfiguriert.", exception.getMessage());
+        verifyNoInteractions(processService);
     }
 
     @Test
@@ -296,9 +458,26 @@ class EMailActionNodeV1Test {
         return configuration;
     }
 
+    private void stubAutomaticMessage(
+            EMailActionNodeV1.EMailActionNodeConfig configuration,
+            ProcessExecutionData processData
+    ) {
+        when(templateRenderService.interpolate(
+                same(processData),
+                eq(configuration.messageConfig.automaticContent.subject)
+        )).thenReturn("Nachricht für Ada");
+        when(templateRenderService.interpolate(
+                same(processData),
+                eq(configuration.messageConfig.automaticContent.content)
+        )).thenReturn("Hallo **Ada**");
+        when(templateRenderService.interpolate(same(processData), eq(configuration.to)))
+                .thenReturn("customer@example.test");
+    }
+
     private static ProcessInstanceEntity processInstance() {
         var processInstance = mock(ProcessInstanceEntity.class);
         when(processInstance.getId()).thenReturn(PROCESS_INSTANCE_ID);
+        when(processInstance.getProcessId()).thenReturn(PROCESS_ID);
         return processInstance;
     }
 
