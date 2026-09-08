@@ -15,18 +15,9 @@ import type {ProcessVersionEntity} from '../../modules/process/entities/process-
 import {literalAuthoredValue} from '../../models/element-data';
 
 const dispatchMock = vi.hoisted(() => vi.fn());
-const confettiPlayKeyMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../hooks/use-app-dispatch', () => ({
     useAppDispatch: () => dispatchMock,
-}));
-
-vi.mock('../confetti/canvas-confetti-overlay', () => ({
-    CanvasConfettiOverlay: (props: {playKey: number | null}) => {
-        confettiPlayKeyMock(props.playKey);
-        return null;
-    },
-    prosunaConfettiColors: [],
 }));
 
 describe('Submitted', () => {
@@ -38,10 +29,6 @@ describe('Submitted', () => {
 
     it('enables the PDF download when form processing completes without payment', async () => {
         vi.useFakeTimers();
-        Object.defineProperty(window, 'matchMedia', {
-            configurable: true,
-            value: vi.fn().mockReturnValue({matches: false}),
-        });
 
         const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
             .mockResolvedValueOnce(createStatusResponse(
@@ -84,10 +71,6 @@ describe('Submitted', () => {
 
     it('disables payment and PDF actions when process preparation fails', async () => {
         vi.useFakeTimers();
-        Object.defineProperty(window, 'matchMedia', {
-            configurable: true,
-            value: vi.fn().mockReturnValue({matches: false}),
-        });
 
         const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
             .mockResolvedValueOnce(createStatusResponse(ProcessInstanceStatus.Running))
@@ -112,7 +95,6 @@ describe('Submitted', () => {
         });
 
         expect(screen.getByRole('heading', {name: 'Angaben erfolgreich übermittelt'})).toBeVisible();
-        expect(confettiPlayKeyMock).toHaveBeenCalledWith(1);
 
         await act(async () => {
             await vi.advanceTimersByTimeAsync(1000);
@@ -124,7 +106,6 @@ describe('Submitted', () => {
         expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
         expect(screen.getByRole('button', {name: 'PDF nicht verfügbar'})).toBeDisabled();
         expect(screen.queryByRole('link', {name: 'Zur Zahlung'})).not.toBeInTheDocument();
-        expect(confettiPlayKeyMock).toHaveBeenLastCalledWith(null);
 
         await act(async () => {
             await vi.advanceTimersByTimeAsync(3000);

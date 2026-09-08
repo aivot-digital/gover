@@ -38,6 +38,7 @@
     "@xyflow/react": "^12.11.3",
     "allotment": "^1.20.5",
     "altcha": "^3.2.2",
+    "canvas-confetti": "^1.9.4",
     "diff": "^9.0.0",
     "elkjs": "^0.12.0",
     "fuse.js": "^7.5.0",
@@ -53,7 +54,6 @@
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-aria-components": "^1.20.0",
-    "react-canvas-confetti": "^2.0.7",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^19.2.8",
@@ -73,6 +73,7 @@
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/leaflet": "^1.9.22",
     "@types/luxon": "^3.7.4",
     "@types/node": "^26.2.0",

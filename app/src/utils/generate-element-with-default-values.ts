@@ -358,7 +358,6 @@ const elementConstructors: {
         textPostSubmit: 'Ihre Angaben wurden erfolgreich übermittelt. Die zuständige/bewirtschaftende Stelle kann diese nun bearbeiten. Sofern weitere Schritte erforderlich sind, erhalten Sie dazu gesonderte Hinweise.',
         textProcessingTime: undefined,
         documentsToReceive: undefined,
-    disableConfetti: false,
             }),
     [ElementType.SummaryStep]: (id) => ({
         ...makeFormBase(ElementType.SummaryStep, id),

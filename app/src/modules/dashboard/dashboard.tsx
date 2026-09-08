@@ -1,10 +1,6 @@
 import {PageWrapper} from '../../components/page-wrapper/page-wrapper';
 import {Box, Divider, Grid, Typography} from '@mui/material';
-import React, {useEffect, useMemo, useState} from 'react';
-import {
-    CanvasConfettiOverlay,
-    prosunaConfettiColors,
-} from '../../components/confetti/canvas-confetti-overlay';
+import React, {lazy, Suspense, useEffect, useMemo, useState} from 'react';
 import {DashboardGreeting} from './components/dashboard-greeting';
 import {DashboardTasksPanel} from './components/dashboard-tasks-panel';
 import {DashboardLinksPanel} from './components/dashboard-links-panel';
@@ -23,6 +19,9 @@ import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 
 const germanyFlagColors = ['#213048', '#EA312A', '#EEA53C'];
+
+const CanvasConfettiOverlay = lazy(() => import('../../components/confetti/canvas-confetti-overlay')
+    .then(({CanvasConfettiOverlay}) => ({default: CanvasConfettiOverlay})));
 
 export function Dashboard() {
     const [flagConfettiPlayKey, setFlagConfettiPlayKey] = useState<number | null>(null);
@@ -105,6 +104,9 @@ export function Dashboard() {
                             type="button"
                             aria-label="Deutschlandflagge feiern"
                             onClick={() => {
+                                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                                    return;
+                                }
                                 setFlagConfettiPlayKey((currentValue) => (currentValue ?? 0) + 1);
                             }}
                             sx={{
@@ -160,10 +162,11 @@ export function Dashboard() {
                     </Typography>
                 </Box>
             </Box>
-            <CanvasConfettiOverlay
-                playKey={flagConfettiPlayKey}
-                colors={prosunaConfettiColors}
-            />
+            {flagConfettiPlayKey != null && (
+                <Suspense fallback={null}>
+                    <CanvasConfettiOverlay playKey={flagConfettiPlayKey}/>
+                </Suspense>
+            )}
         </PageWrapper>
     );
 }
