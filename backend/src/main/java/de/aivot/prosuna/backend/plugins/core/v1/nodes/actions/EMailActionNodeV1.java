@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
@@ -38,7 +39,6 @@ import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -70,7 +70,6 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     private static final String OUTPUT_NAME_ATTACHMENT_SET_DATA_KEYS = "attachmentSetDataKeys";
 
     private final ProsunaConfig prosunaConfig;
-    private final TemplateRenderService templateRenderService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final StorageService storageService;
@@ -78,13 +77,11 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
 
     public EMailActionNodeV1(ProsunaConfig prosunaConfig,
-                             TemplateRenderService templateRenderService,
                              ProcessInstanceAttachmentService processInstanceAttachmentService,
                              ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
                              StorageService storageService,
                              JavaMailSenderImpl mailSender, AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService) {
         this.prosunaConfig = prosunaConfig;
-        this.templateRenderService = templateRenderService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.storageService = storageService;
@@ -295,13 +292,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
     private ProcessNodeExecutionResult initAutomatic(@Nonnull ProcessNodeExecutionInitContext<EMailActionNodeConfig> context,
                                                      @Nonnull EMailActionNodeConfig config) throws ProcessNodeExecutionException {
-        var processData = context.getCurrentProcessExecutionData();
-
-        var subject = templateRenderService
-                .interpolate(
-                        processData,
-                        config.automaticContent.subject
-                );
+        var subject = config.automaticContent.subject;
 
         if (StringUtils.isNullOrEmpty(subject)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -317,14 +308,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
             );
         }
 
-        var interpolatedContentMarkdown =
-                templateRenderService
-                        .interpolate(
-                                processData,
-                                contentMarkdown
-                        );
-
-        if (StringUtils.isNullOrEmpty(interpolatedContentMarkdown)) {
+        if (StringUtils.isNullOrEmpty(contentMarkdown)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
                     "Der Inhalt für die E-Mail ist nach der Verarbeitung leer. Bitte überprüfen Sie die Vorlage und die Prozessdaten.",
                     StringUtils.quote(contentMarkdown)
@@ -332,9 +316,8 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         }
 
         return sendMail(subject,
-                interpolatedContentMarkdown,
+                contentMarkdown,
                 config,
-                context.getCurrentProcessExecutionData(),
                 context.getThisProcessInstance());
     }
 
@@ -393,19 +376,11 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         var taskViewData = new AuthoredElementValues();
 
-        var subject = templateRenderService
-                .interpolate(
-                        context.getCurrentProcessExecutionData(),
-                        config.manualContent.subject
-                );
-        taskViewData.put(STAFF_TASK_SUBJECT_FIELD_ID, subject);
+        var subject = config.manualContent.subject;
+        taskViewData.putLiteral(STAFF_TASK_SUBJECT_FIELD_ID, subject);
 
-        var content = templateRenderService
-                .interpolate(
-                        context.getCurrentProcessExecutionData(),
-                        config.manualContent.content
-                );
-        taskViewData.put(STAFF_TASK_CONTENT_FIELD_ID, content);
+        var content = config.manualContent.content;
+        taskViewData.putLiteral(STAFF_TASK_CONTENT_FIELD_ID, content);
 
         return taskViewData;
     }
@@ -423,12 +398,12 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         var subject = runtimeData.get(STAFF_TASK_SUBJECT_FIELD_ID);
         if (subject != null) {
-            legacySavedData.put(STAFF_TASK_SUBJECT_FIELD_ID, subject);
+            legacySavedData.putLiteral(STAFF_TASK_SUBJECT_FIELD_ID, subject);
         }
 
         var content = runtimeData.get(STAFF_TASK_CONTENT_FIELD_ID);
         if (content != null) {
-            legacySavedData.put(STAFF_TASK_CONTENT_FIELD_ID, content);
+            legacySavedData.putLiteral(STAFF_TASK_CONTENT_FIELD_ID, content);
         }
 
         return legacySavedData.isEmpty() ? null : legacySavedData;
@@ -463,14 +438,14 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         var derivedRuntimeData = new DerivedRuntimeElementData();
 
-        var subject = (String) update.getOrDefault(STAFF_TASK_SUBJECT_FIELD_ID, null);
+        var subject = (String) update.getLiteral(STAFF_TASK_SUBJECT_FIELD_ID);
         if (StringUtils.isNullOrEmpty(subject)) {
             derivedRuntimeData.getElementStates().put(STAFF_TASK_SUBJECT_FIELD_ID, new ComputedElementState()
                     .setError("Der Betreff der E-Mail darf nicht leer sein.")
             );
         }
 
-        var content =  (String) update.getOrDefault(STAFF_TASK_CONTENT_FIELD_ID, null);
+        var content = (String) update.getLiteral(STAFF_TASK_CONTENT_FIELD_ID);
         if (StringUtils.isNullOrEmpty(content)) {
             derivedRuntimeData.getElementStates().put(STAFF_TASK_CONTENT_FIELD_ID, new ComputedElementState()
                     .setError("Der Inhalt der E-Mail darf nicht leer sein.")
@@ -484,19 +459,16 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         var res = sendMail(subject,
                 content,
                 config,
-                context.getCurrentProcessExecutionData(),
                 context.getThisProcessInstance());
 
         return Optional.of(res);
     }
 
     private ProcessNodeExecutionResult sendMail(@Nonnull String subject,
-                                                @Nonnull String interpolatedContentMarkdown,
+                                                @Nonnull String contentMarkdown,
                                                 @Nonnull EMailActionNodeConfig config,
-                                                @Nonnull ProcessExecutionData processData,
                                                 @Nonnull ProcessInstanceEntity processInstance) throws ProcessNodeExecutionException {
-        var recipientsStr = templateRenderService
-                .interpolate(processData, config.to);
+        var recipientsStr = config.to;
 
         if (StringUtils.isNullOrEmpty(recipientsStr)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -505,8 +477,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         }
         var recipients = recipientsStr.split(",");
 
-        var recipientsBccStr = templateRenderService
-                .interpolate(processData, config.bcc);
+        var recipientsBccStr = config.bcc;
         var recipientsBCC = StringUtils.isNullOrEmpty(recipientsBccStr) ? null : recipientsBccStr.split(",");
 
         var attachmentSetDataKeys = config.attachmentSetDataKeys;
@@ -515,7 +486,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         }
 
         Parser parser = Parser.builder().build();
-        Node document = parser.parse(interpolatedContentMarkdown);
+        Node document = parser.parse(contentMarkdown);
         HtmlRenderer renderer = HtmlRenderer.builder().build();
         var contentHtml = renderer.render(document);
 
@@ -646,14 +617,18 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         public static final String EXECUTION_TYPE_MANUAL = "manual";
         public static final String EXECUTION_TYPE_AUTOMATIC = "automatic";
 
-        @InputElementPOJOBinding(id = RECIPIENT_FIELD_ID, type = ElementType.Text, properties = {
+        @InputElementPOJOBinding(id = RECIPIENT_FIELD_ID, type = ElementType.Text,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Empfänger:innen"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Kommaseparierte Angabe der Empfänger:innen"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String to;
 
-        @InputElementPOJOBinding(id = BCC_RECIPIENT_FIELD_ID, type = ElementType.Text, properties = {
+        @InputElementPOJOBinding(id = BCC_RECIPIENT_FIELD_ID, type = ElementType.Text,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "BCC-Empfänger:innen"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Angabe weiterer Empfänger:innen als Blind Carbon Copy (BCC)"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
@@ -686,14 +661,18 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         public static final String CONTENT_FIELD_ID = "manual_content";
         public static final String ASSIGNMENT_FIELD_ID = "manual_assignment";
 
-        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text, properties = {
+        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage Betreff der E-Mail"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Betreff der E-Mail ein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String subject;
 
-        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput, properties = {
+        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage Nachrichtentext"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Inhalt der E-Mail ein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
@@ -716,14 +695,18 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         public static final String SUBJECT_FIELD_ID = "automatic_subject";
         public static final String CONTENT_FIELD_ID = "automatic_content";
 
-        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text, properties = {
+        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Betreff der E-Mail"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Betreff der E-Mail ein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String subject;
 
-        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput, properties = {
+        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtentext"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Inhalt der E-Mail ein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),

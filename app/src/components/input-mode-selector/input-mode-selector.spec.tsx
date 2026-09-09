@@ -11,7 +11,7 @@ describe('InputModeSelector', () => {
             <InputModeSelector
                 fieldLabel="Bezeichnung"
                 controlledFieldId="field-name"
-                value="literal"
+                value="Literal"
                 onChange={onChange}
             />,
         );
@@ -26,15 +26,15 @@ describe('InputModeSelector', () => {
         expect(variableOption).toHaveAttribute('aria-checked', 'false');
         fireEvent.click(variableOption!);
 
-        expect(onChange).toHaveBeenCalledWith('variable');
+        expect(onChange).toHaveBeenCalledWith('Variable');
     });
 
     it('disables mode selection when only one mode is allowed', () => {
         render(
             <InputModeSelector
                 fieldLabel="Bezeichnung"
-                value="literal"
-                allowedModes={['literal']}
+                value="Literal"
+                allowedModes={['Literal']}
                 onChange={vi.fn()}
             />,
         );

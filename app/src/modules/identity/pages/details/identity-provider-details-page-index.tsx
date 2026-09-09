@@ -536,33 +536,22 @@ export function IdentityProviderDetailsPageIndex() {
                         Bitte geben Sie hierfür den Link zur OpenID Endpoint Konfiguration ein und klicken Sie auf
                         "Konfiguration laden".
                     </Typography>
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            gap: '1rem',
-                            alignItems: 'start',
-                        }}
-                    >
-                        <TextFieldComponent
-                            label="Link zu OpenID Endpoint Konfiguration"
-                            placeholder="https://example.com/.well-known/openid-configuration"
-                            value={endpointConfigUrl}
-                            onChange={val => setEndpointConfigUrl(val ?? '')}
-                            error={endpointConfigUrlError}
-                            size={'small'}
-                        />
-
-                        <Button
-                            onClick={handlePrepareEntity}
-                            sx={{
-                                flexShrink: 0,
-                                mt: 2,
-                            }}
-                            variant={'contained'}
-                        >
-                            Konfiguration laden
-                        </Button>
-                    </Box>
+                    <TextFieldComponent
+                        label="Link zu OpenID Endpoint Konfiguration"
+                        placeholder="https://example.com/.well-known/openid-configuration"
+                        value={endpointConfigUrl}
+                        onChange={val => setEndpointConfigUrl(val ?? '')}
+                        error={endpointConfigUrlError}
+                        size={'small'}
+                        externalAction={
+                            <Button
+                                onClick={handlePrepareEntity}
+                                variant={'contained'}
+                            >
+                                Konfiguration laden
+                            </Button>
+                        }
+                    />
 
                     <Divider sx={{my: 4}}/>
                 </>
@@ -671,7 +660,7 @@ export function IdentityProviderDetailsPageIndex() {
                         identityProvider.type != IdentityProviderType.Custom &&
                         <AlertComponent
                             color="info"
-                            sx={{mt: 2}}
+                            sx={{mt: 4.25}}
                         >
                             <strong>Hinweis:</strong>{' '}
                             Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Prosuna

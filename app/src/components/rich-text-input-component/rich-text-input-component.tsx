@@ -1,7 +1,8 @@
-import {Box, type SxProps, type Theme} from '@mui/material';
+import {Box, IconButton, type SxProps, type Theme, Tooltip} from '@mui/material';
 import {alpha, useTheme} from '@mui/material/styles';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState} from 'react';
 import {
+    activeEditor$,
     BlockTypeSelect,
     BoldItalicUnderlineToggles,
     CodeToggle,
@@ -21,13 +22,28 @@ import {
     toolbarPlugin,
     type Translation,
     UndoRedo,
+    useCellValues,
+    currentSelection$,
 } from '@mdxeditor/editor';
+import type {EditorState, LexicalEditor} from 'lexical';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
-import {placeholderPlugin} from './rich-text-input-component-placeholder-plugin';
 import {FormField, type FormFieldLayoutProps, mergeAriaIds} from '../form-field';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
 import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
+import type {EndAction} from '../text-field/text-field-component-props';
+import {
+    DynamicTextTokenNode,
+    getDynamicTextTokenStyles,
+    useDynamicTextSyntaxHighlights,
+} from '../dynamic-text/dynamic-text-lexical';
+import {
+    type DynamicTextInputMethods,
+    type DynamicTextVariableMetadata,
+    useDynamicTextTokenTitles,
+} from '../dynamic-text/dynamic-text-metadata';
+import {dynamicTextPlugin} from './rich-text-input-component-dynamic-text-plugin';
+import {placeholderPlugin} from './rich-text-input-component-placeholder-plugin';
 import '@mdxeditor/editor/style.css';
 
 const MDX_EDITOR_DE_TRANSLATIONS: Record<string, string> = {
@@ -92,16 +108,64 @@ export interface RichTextInputComponentProps extends FormFieldLayoutProps {
     readOnly?: boolean | null | undefined;
     busy?: boolean | null | undefined;
     reducedMode?: boolean | null | undefined;
+    dynamicText?: boolean | null | undefined;
+    dynamicTextVariableMetadata?: readonly DynamicTextVariableMetadata[] | null | undefined;
     value: string | null | undefined;
     onChange: (value: string | null) => void;
+    endAction?: EndAction;
     controlSx?: SxProps<Theme> | null | undefined;
 }
 
-export function RichTextInputComponent(props: RichTextInputComponentProps) {
+export interface RichTextInputComponentMethods extends DynamicTextInputMethods {
+    insertMarkdown: (value: string) => void;
+    focus: () => void;
+}
+
+interface SavedEditorSelection {
+    editor: LexicalEditor;
+    editorState: EditorState;
+}
+
+interface RichTextToolbarActionProps {
+    action: EndAction;
+    disabled: boolean;
+    onCaptureSelection: (selection: SavedEditorSelection) => void;
+}
+
+function RichTextToolbarAction(props: RichTextToolbarActionProps) {
+    const [activeEditor, currentSelection] = useCellValues(activeEditor$, currentSelection$);
+    const label = props.action.ariaLabel ?? props.action.tooltip ?? 'Aktion ausführen';
+
+    return (
+        <Tooltip title={props.action.tooltip ?? label} arrow>
+            <IconButton
+                aria-label={label}
+                disabled={props.disabled}
+                size="small"
+                onMouseDown={(event) => {
+                    // Opening a picker moves focus away from Lexical, so retain its selection before the click.
+                    event.preventDefault();
+                    if (activeEditor != null && currentSelection != null) {
+                        props.onCaptureSelection({
+                            editor: activeEditor,
+                            editorState: activeEditor.getEditorState().clone(currentSelection.clone()),
+                        });
+                    }
+                }}
+                onClick={props.action.onClick}
+            >
+                {props.action.icon}
+            </IconButton>
+        </Tooltip>
+    );
+}
+
+export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, RichTextInputComponentProps>((props, ref) => {
     const theme = useTheme();
     const [overlayContainer, setOverlayContainer] = useState<HTMLElement | null>(null);
     const [isAutoReducedMode, setIsAutoReducedMode] = useState(false);
     const editorRef = useRef<MDXEditorMethods | null>(null);
+    const savedSelectionRef = useRef<SavedEditorSelection | null>(null);
     const generatedId = useNormalizedReactId();
     const {
         label,
@@ -112,8 +176,11 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
         readOnly,
         busy,
         reducedMode,
+        dynamicText,
+        dynamicTextVariableMetadata,
         value,
         onChange,
+        endAction,
         controlSx,
     } = props;
     const controlId = props.id ?? `rich-text-field-${generatedId}`;
@@ -136,6 +203,9 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
     const isReadOnly = Boolean(disabled) || Boolean(readOnly) || Boolean(busy);
     const isReducedMode = reducedMode === true || isAutoReducedMode;
     const controlSxArray = Array.isArray(controlSx) ? controlSx : [controlSx];
+    // Browsers otherwise mark expression tokens as misspellings. Revisit this once token-level spellchecking is
+    // reliable across the browsers supported by the authoring UI.
+    const enableSpellCheck = !dynamicText;
     const focusColor = hasError ? theme.palette.error.main : theme.palette.primary.main;
     const outlinedBorderColor = theme.palette.mode === 'light'
         ? 'rgba(0, 0, 0, 0.23)'
@@ -167,6 +237,38 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
         }
     }, [updateAutoReducedMode]);
     const normalizedValue = value ?? '';
+
+    useDynamicTextTokenTitles(dynamicText ? overlayContainer : null, dynamicTextVariableMetadata);
+    useDynamicTextSyntaxHighlights(dynamicText ? overlayContainer : null);
+
+    useImperativeHandle(ref, () => ({
+        insertMarkdown: (markdown) => {
+            const savedSelection = savedSelectionRef.current;
+            savedSelectionRef.current = null;
+
+            if (savedSelection == null) {
+                editorRef.current?.focus(() => editorRef.current?.insertMarkdown(markdown), {preventScroll: true});
+                return;
+            }
+
+            savedSelection.editor.setEditorState(savedSelection.editorState);
+            savedSelection.editor.focus(() => editorRef.current?.insertMarkdown(markdown));
+        },
+        insertVariableReference: (reference) => {
+            const placeholder = `{{ ${reference} }}`;
+            const savedSelection = savedSelectionRef.current;
+            savedSelectionRef.current = null;
+
+            if (savedSelection == null) {
+                editorRef.current?.focus(() => editorRef.current?.insertMarkdown(placeholder), {preventScroll: true});
+                return;
+            }
+
+            savedSelection.editor.setEditorState(savedSelection.editorState);
+            savedSelection.editor.focus(() => editorRef.current?.insertMarkdown(placeholder));
+        },
+        focus: () => editorRef.current?.focus(undefined, {preventScroll: true}),
+    }), []);
 
     useEffect(() => {
         const editor = editorRef.current;
@@ -249,6 +351,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
             busy={Boolean(busy)}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             margin={props.margin}
             showOptionalIndicator={props.showOptionalIndicator}
@@ -256,8 +359,10 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
         >
             <Box
                 ref={handleOverlayContainerRef}
+                data-dynamic-text-multiline={dynamicText || undefined}
                 sx={[{
                     position: 'relative',
+                    containerType: 'inline-size',
                     border: '1px solid',
                     borderColor: hasError ? 'error.main' : outlinedBorderColor,
                     borderRadius: 1,
@@ -617,6 +722,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                             ? alpha(theme.palette.text.disabled, 0.5)
                             : alpha(theme.palette.primary.main, 0.35),
                     },
+                    ...(dynamicText ? getDynamicTextTokenStyles(theme) : {}),
                     ...(disabled
                         ? {
                             '&:focus-within': {
@@ -633,10 +739,12 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                 <MDXEditor
                     ref={editorRef}
                     className="prosuna-mdx-editor"
+                    additionalLexicalNodes={dynamicText ? [DynamicTextTokenNode] : undefined}
                     overlayContainer={overlayContainer}
                     translation={mdxEditorGermanTranslation}
                     markdown={normalizedValue}
                     readOnly={isReadOnly}
+                    spellCheck={enableSpellCheck}
                     onChange={(val) => {
                         if (isStringNullOrEmpty(val)) {
                             onChange(null);
@@ -645,7 +753,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         onChange(val ?? null);
                     }}
                     plugins={[
-                        placeholderPlugin(),
+                        dynamicText ? dynamicTextPlugin({highlight: true}) : placeholderPlugin(),
                         headingsPlugin(),
                         quotePlugin(),
                         listsPlugin(),
@@ -664,6 +772,15 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                                                 <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
                                                 <CreateLink/>
                                                 <ListsToggle options={['bullet', 'number']}/>
+                                                {endAction != null && (
+                                                    <RichTextToolbarAction
+                                                        action={endAction}
+                                                        disabled={isReadOnly}
+                                                        onCaptureSelection={(selection) => {
+                                                            savedSelectionRef.current = selection;
+                                                        }}
+                                                    />
+                                                )}
                                             </> :
                                             <>
                                                 <UndoRedo/>
@@ -677,6 +794,18 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                                                 <CreateLink/>
                                                 <Separator/>
                                                 <ListsToggle/>
+                                                {endAction != null && (
+                                                    <>
+                                                        <Separator/>
+                                                        <RichTextToolbarAction
+                                                            action={endAction}
+                                                            disabled={isReadOnly}
+                                                            onCaptureSelection={(selection) => {
+                                                                savedSelectionRef.current = selection;
+                                                            }}
+                                                        />
+                                                    </>
+                                                )}
                                             </>
                                     }
                                 </DiffSourceToggleWrapper>
@@ -692,4 +821,6 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
 
         </FormField>
     );
-}
+});
+
+RichTextInputComponent.displayName = 'RichTextInputComponent';

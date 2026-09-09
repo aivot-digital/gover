@@ -111,7 +111,8 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Rep
     @Nonnull
     @Override
     public Boolean evaluate(ConditionOperator operator, Object referencedValue, Object comparedValue) {
-        Collection<ReplicatingContainerLayoutElementValue> listVal = formatValue(referencedValue);
+        // Conditions only inspect row counts. Reformatting effective rows would treat plain cells as authored wrappers.
+        Collection<?> listVal = referencedValue instanceof Collection<?> rows ? rows : null;
         int listValInt = listVal != null ? listVal.size() : 0;
 
         var comparedValueInt = switch (comparedValue) {

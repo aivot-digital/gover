@@ -9,14 +9,15 @@ import {
 import Check from '@aivot/mui-material-symbols-400-n25-outlined/Check';
 import Code from '@aivot/mui-material-symbols-400-n25-outlined/Code';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
-import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
+import {NoCodeIcon} from '../../modules/nocode/data/no-code-icon';
 import KeyboardArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import TextFields from '@aivot/mui-material-symbols-400-n25-outlined/TextFields';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
 import {mergeAriaIds} from '../form-field';
 import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
+import {type InputMode} from '../../models/input-mode';
 
-export type InputMode = 'literal' | 'variable' | 'noCode' | 'lowCode';
+export type {InputMode} from '../../models/input-mode';
 
 interface InputModeDefinition {
     label: string;
@@ -24,25 +25,25 @@ interface InputModeDefinition {
 }
 
 export const InputModeDefinitions: Record<InputMode, InputModeDefinition> = {
-    literal: {
+    Literal: {
         label: 'Wert',
         description: 'Direkten Wert eingeben',
     },
-    variable: {
+    Variable: {
         label: 'Variable',
         description: 'Eine im Prozess mögliche Variable referenzieren',
     },
-    noCode: {
+    NoCode: {
         label: 'Ausdruck (No-Code)',
-        description: 'Wert visuell ableiten',
+        description: 'Wert aus Bausteinen und Bedingungen bestimmen',
     },
-    lowCode: {
+    LowCode: {
         label: 'Skript (Low-Code)',
         description: 'Wert mit JavaScript bestimmen',
     },
 };
 
-export const InputModes: InputMode[] = ['literal', 'variable', 'noCode', 'lowCode'];
+export const InputModes: InputMode[] = ['Literal', 'Variable', 'NoCode', 'LowCode'];
 
 function renderModeIcon(mode: InputMode) {
     const iconProps = {
@@ -51,19 +52,19 @@ function renderModeIcon(mode: InputMode) {
     };
 
     switch (mode) {
-        case 'variable':
+        case 'Variable':
             return <DataObject {...iconProps}/>;
-        case 'noCode':
-            return <Functions {...iconProps}/>;
-        case 'lowCode':
+        case 'NoCode':
+            return <NoCodeIcon {...iconProps}/>;
+        case 'LowCode':
             return <Code {...iconProps}/>;
-        case 'literal':
+        case 'Literal':
         default:
             return <TextFields {...iconProps}/>;
     }
 }
 
-interface InputModeSelectorProps {
+export interface InputModeSelectorProps {
     fieldLabel: string;
     controlledFieldId?: string;
     value: InputMode;
@@ -137,6 +138,7 @@ export function InputModeSelector(props: InputModeSelectorProps) {
                 {allowedModes.map((mode) => (
                     <MenuItem
                         key={mode}
+                        data-testid={`input-mode-option-${mode}`}
                         role="menuitemradio"
                         aria-checked={mode === props.value}
                         selected={mode === props.value}

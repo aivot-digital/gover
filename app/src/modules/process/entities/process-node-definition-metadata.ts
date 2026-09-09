@@ -1,11 +1,13 @@
 import {type UiDefinitionInputFieldElementItem} from '../../../models/elements/form/input/ui-definition-input-field-element';
 import {type ProcessNodeEntity} from './process-node-entity';
+import {type InputVariableSuggestion} from '../../../models/input-mode';
 
 export interface ProcessNodeDefinitionMetadata {
     reusableUiDefinitions: ProcessNodeDefinitionMetadataReusableUiDefinition[];
     forwardedAttachmentSets: ProcessNodeDefinitionMetadataForwardedAttachmentSet[];
     forwardedProcessDataKeys: ProcessNodeDefinitionMetadataForwardedProcessDataKey[];
     forwardedIdentities: ProcessNodeDefinitionMetadataForwardedIdentity[];
+    inputVariables?: InputVariableSuggestion[];
 }
 
 export interface ProcessNodeDefinitionMetadataReusableUiDefinition {

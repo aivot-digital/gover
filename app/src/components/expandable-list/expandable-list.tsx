@@ -1,20 +1,7 @@
 import React, {ReactNode, useEffect, useState} from 'react';
-import {Box, Button, Divider, List, SxProps, Theme, Typography, useTheme} from '@mui/material';
+import {Box, Button, Divider, List, Typography, useTheme} from '@mui/material';
 import UnfoldLessOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldLess';
 import UnfoldMoreOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldMore';
-
-const srOnly: SxProps<Theme> = {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    margin: -1,
-    padding: 0,
-    border: 0,
-    overflow: 'hidden',
-    clip: 'rect(0 0 0 0)',
-    whiteSpace: 'nowrap',
-    clipPath: 'inset(50%)',
-};
 
 interface ExpandableListProps<T> {
     title?: string;
@@ -137,7 +124,7 @@ export const ExpandableList = <T,>({
             <Box
                 aria-live="polite"
                 role="status"
-                sx={srOnly}
+                className="visually-hidden"
             >
                 {announceText}
             </Box>

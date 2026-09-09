@@ -55,6 +55,7 @@ export function NumberFieldComponent({
                                          id,
                                          ariaLabel,
                                          ariaDescribedBy,
+                                         externalAction,
                                          labelAction,
                                          showOptionalIndicator,
                                      }: NumberFieldComponentProps) {
@@ -151,6 +152,7 @@ export function NumberFieldComponent({
             label={label}
             ariaLabel={ariaLabel}
             ariaDescribedBy={ariaDescribedBy}
+            externalAction={externalAction}
             labelAction={labelAction}
             hint={hint}
             error={helperError}

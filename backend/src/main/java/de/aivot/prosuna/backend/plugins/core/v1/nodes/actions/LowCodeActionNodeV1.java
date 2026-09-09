@@ -5,8 +5,11 @@ import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
+import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
@@ -36,6 +39,12 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
     private static final String PORT_NAME = "output";
 
     private static final String CODE_FIELD_KEY = "js_code";
+    private static final String DEFAULT_CODE = """
+            // Bestehende Vorgangsdaten übernehmen und ergänzen oder überschreiben.
+            ({
+                ...$,
+            });
+            """;
     private final JavascriptEngineFactoryService javascriptEngineFactoryService;
 
     public LowCodeActionNodeV1(JavascriptEngineFactoryService javascriptEngineFactoryService) {
@@ -99,10 +108,25 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
     @JsonIgnore
     public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         try {
-            return ElementPOJOMapper.createFromPOJO(LowCodeActionNodeConfig.class);
+            ConfigLayoutElement layout = ElementPOJOMapper.createFromPOJO(LowCodeActionNodeConfig.class);
+
+            var processDataNotice = new AlertContentElement();
+            processDataNotice.setId("process-data-replacement-notice");
+            processDataNotice.setText("Das zurückgegebene Objekt ersetzt die bisherigen Vorgangsdaten vollständig. Werte, die nicht zurückgegeben werden, stehen nachfolgenden Prozessschritten nicht mehr zur Verfügung.");
+            processDataNotice.setAlertType(AlertType.Info);
+            layout.insertChildAfter(processDataNotice, CODE_FIELD_KEY);
+
+            return layout;
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
         }
+    }
+
+    @Nonnull
+    @Override
+    public AuthoredElementValues getInitialConfiguration() {
+        return new AuthoredElementValues()
+                .putLiteral(CODE_FIELD_KEY, DEFAULT_CODE);
     }
 
     @Nonnull
@@ -168,8 +192,8 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
         public static final String CODE = CODE_FIELD_KEY;
 
         @InputElementPOJOBinding(id = CODE, type = ElementType.CodeInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Javascript-Code"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den benutzerdefinierten Javascript-Code ein, der zur Verarbeitung der Daten verwendet werden soll."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "JavaScript-Code"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Mit „...$“ übernehmen Sie die bisherigen Vorgangsdaten und können sie anschließend ergänzen oder überschreiben."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String code;

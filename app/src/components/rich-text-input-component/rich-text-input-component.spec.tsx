@@ -1,6 +1,7 @@
-import {render, screen} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
+import {createRef} from 'react';
 import {describe, expect, it, vi} from 'vitest';
-import {RichTextInputComponent} from './rich-text-input-component';
+import {RichTextInputComponent, type RichTextInputComponentMethods} from './rich-text-input-component';
 
 describe('RichTextInputComponent', () => {
     it('associates the generated contenteditable with label and helper text', async () => {
@@ -43,5 +44,52 @@ describe('RichTextInputComponent', () => {
         expect(editor).not.toHaveAttribute('aria-invalid');
         expect(editor).not.toHaveAttribute('aria-describedby');
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('renders editable dynamic-text tokens and exposes the insertion action', async () => {
+        const onInsertVariable = vi.fn();
+        const {container} = render(
+            <RichTextInputComponent
+                label="Protokollnachricht"
+                value="Hallo {{ $.name }}"
+                onChange={vi.fn()}
+                dynamicText
+                reducedMode
+                endAction={{
+                    icon: <span>fx</span>,
+                    tooltip: 'Variablenreferenz einfügen',
+                    onClick: onInsertVariable,
+                }}
+            />,
+        );
+
+        const editor = await screen.findByRole('textbox', {name: 'Protokollnachricht – optional'});
+        expect(editor).toHaveAttribute('spellcheck', 'false');
+        await waitFor(() => {
+            expect(container.querySelector('.dynamic-text-token')).toHaveTextContent('{{ $.name }}');
+        });
+
+        screen.getByRole('button', {name: 'Variablenreferenz einfügen'}).click();
+        expect(onInsertVariable).toHaveBeenCalledOnce();
+    });
+
+    it('inserts a variable reference through the shared dynamic-text contract', async () => {
+        const ref = createRef<RichTextInputComponentMethods>();
+        const {container} = render(
+            <RichTextInputComponent
+                ref={ref}
+                label="Protokollnachricht"
+                value="Hallo "
+                onChange={vi.fn()}
+                dynamicText
+                reducedMode
+            />,
+        );
+
+        act(() => ref.current?.insertVariableReference('$.name'));
+
+        await waitFor(() => {
+            expect(container.querySelector('.dynamic-text-token')).toHaveTextContent('{{ $.name }}');
+        });
     });
 });

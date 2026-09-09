@@ -11,10 +11,21 @@ export type CodeBlockLanguage =
     | 'markdown'
     | 'xml';
 
-export function createCodeSyntaxTheme(theme: Theme): PrismTheme {
+export interface CodeSyntaxColors {
+    comment: string;
+    constant: string;
+    function: string;
+    keyword: string;
+    number: string;
+    property: string;
+    punctuation: string;
+    string: string;
+}
+
+export function createCodeSyntaxColors(theme: Theme): CodeSyntaxColors {
     // Syntax colors stay independent of configurable brand colors, which are not guaranteed to provide sufficient
     // contrast for small tokens. Both palettes retain the familiar semantic distinction between code token roles.
-    const colors = theme.palette.mode === 'dark'
+    return theme.palette.mode === 'dark'
         ? {
             comment: '#9BA7B4',
             punctuation: '#CBD5E1',
@@ -35,6 +46,10 @@ export function createCodeSyntaxTheme(theme: Theme): PrismTheme {
             constant: '#7A5500',
             function: '#5B3FA3',
         };
+}
+
+export function createCodeSyntaxTheme(theme: Theme): PrismTheme {
+    const colors = createCodeSyntaxColors(theme);
 
     return {
         plain: {

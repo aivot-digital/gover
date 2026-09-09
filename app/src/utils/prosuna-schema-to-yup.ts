@@ -22,6 +22,7 @@ import {
     isReplicatingContainerElementValue,
     resolveComputedElementSubState,
     resolveComputedElementSubStateStates,
+    getLiteralElementValue,
     resolveReplicatingContainerElementValues,
 } from '../models/element-data';
 import {ChipInputFieldElement} from '../models/elements/form/input/chip-input-field-element';
@@ -53,6 +54,7 @@ import {
     localTimeIsoToDateTime,
 } from './temporal-utils';
 import {DateFieldComponentModelMode} from '../models/elements/form/input/date-field-element';
+import {isAuthoredInputValue} from '../models/input-mode';
 
 
 export function prosunaSchemaToYup(elem: AnyElement, states: ComputedElementStates): Record<string, Schema> {
@@ -68,7 +70,7 @@ export function prosunaSchemaToYup(elem: AnyElement, states: ComputedElementStat
         const schemaMapper = YupSchemaMap[elem.type] ?? genericFieldToYup;
 
         // Generate schema for the element
-        const elementSchema = schemaMapper(elem, states);
+        const elementSchema = authoredInputValueToYup(elem, schemaMapper(elem, states));
 
         // Extend the existing shape with the new element schema
         elementDataShape = {
@@ -90,6 +92,45 @@ export function prosunaSchemaToYup(elem: AnyElement, states: ComputedElementStat
     }
 
     return elementDataShape;
+}
+
+function authoredInputValueToYup(element: AnyInputElement, literalValueSchema: Schema): Schema {
+    const allowedModes = element.inputModePolicy?.allowedModes ?? ['Literal'];
+    const requiredMessage = `${element.label || 'Dieses Feld'} ist ein Pflichtfeld.`;
+
+    return yup.lazy((value: unknown) => {
+        if (value === undefined) {
+            return element.required ?
+                yup.mixed().required(requiredMessage) :
+                yup.mixed().notRequired();
+        }
+
+        if (!isAuthoredInputValue(value)) {
+            return yup.mixed().nullable().test(
+                'authored-input-value',
+                'Der Eingabewert ist ungültig.',
+                () => false,
+            );
+        }
+
+        if (!allowedModes.includes(value.type)) {
+            return yup.mixed().test(
+                'allowed-input-mode',
+                'Der gewählte Eingabemodus ist für dieses Feld nicht erlaubt.',
+                () => false,
+            );
+        }
+
+        if (value.type !== 'Literal') {
+            // Dynamic payloads are structurally validated by the backend against the trusted element policy.
+            return yup.mixed().defined();
+        }
+
+        return yup.object({
+            type: yup.string().oneOf(['Literal']).required(),
+            value: literalValueSchema,
+        });
+    }) as unknown as Schema;
 }
 
 const YupSchemaMap: {
@@ -724,7 +765,7 @@ export function mapFormManagerErrorsToComputedErrors(
             if (typeof parent === 'number') {
                 path += `[${parent}].values`;
             } else if (isAnyInputElement(parent)) {
-                path += `.${parent.id}`;
+                path += `.${parent.id}.value`;
             }
         }
 
@@ -738,7 +779,7 @@ export function mapFormManagerErrorsToComputedErrors(
         }
 
         if (!includeDescendants) {
-            return null;
+            return normalizedErrors.find(([errorPath]) => errorPath === `${path}.value`)?.[1] ?? null;
         }
 
         const descendantMatch = normalizedErrors.find(([errorPath]) => (
@@ -783,7 +824,7 @@ export function mapFormManagerErrorsToComputedErrors(
             const elementError = findErrorForPath(elementPath, !isReplicatingContainerLayout(element));
 
             if (isReplicatingContainerLayout(element)) {
-                const childValues = currentAuthoredElementValues[element.id];
+                const childValues = getLiteralElementValue<unknown[]>(currentAuthoredElementValues, element.id);
                 const rowErrors = Array.isArray(childValues) ?
                     childValues.map((childValue, index) => {
                         const rowValues = resolveReplicatingContainerElementValues(childValue);

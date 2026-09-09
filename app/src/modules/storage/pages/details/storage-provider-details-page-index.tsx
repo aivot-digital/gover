@@ -656,74 +656,62 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         md: 6,
                     }}
                 >
-                    <Stack
-                        direction="row"
-                        sx={{
-                            gap: 1
-                        }}
-                    >
-                        <NumberFieldComponent
-                            label="Maximale Dateigröße (in MB)"
-                            value={bytesToMegabytes(editedStorageProvider.maxFileSizeInBytes)}
-                            onChange={(mb) => handleInputChange('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
-                            onBlur={(mb) => handleInputBlur('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
-                            disabled={inputsDisabled}
-                            error={errors.maxFileSizeInBytes ?? maxFileSizeApiError ?? undefined}
-                            decimalPlaces={2}
-                            suffix="MB"
-                            hint="Die maximale Dateigröße die pro Datei an diesen Speicheranbieter übertragen werden kann."
-                        />
-
-                        <Hint
-                            sx={{
-                                mt: 3,
-                            }}
-                            summary="Die maximale Dateigröße die pro Datei an diesen Speicheranbieter übertragen werden kann."
-                            detailsTitle="Maximale Dateigröße"
-                            details={
-                                <>
-                                    <Typography
-                                        sx={{
-                                            marginBottom: 2
-                                        }}
-                                    >
-                                        Speicheranbieter können in der Übertragung verschiedene Limitierungen haben.
-                                        Um diesen Limitierungen gerecht zu werden, kann pro Speicheranbieter eine
-                                        maximale Dateigröße spezifiziert werden.
-                                        Die Angabe der maximalen Dateigröße erfolgt in Megabyte* und gilt pro Datei,
-                                        welche an den Speicheranbieter von Prosuna übertragen wird.
-                                    </Typography>
-
-                                    <Typography
-                                        sx={{
-                                            marginBottom: 2
-                                        }}
-                                    >
-                                        Die maximale Dateigröße wird unter Anderem an den folgenden Stellen
-                                        berücksichtigt:
-
-                                        <ul>
-                                            <li>Das Hochladen von Dateien &amp; Medien</li>
-                                            <li>Das Übertragen von Anlagen an einen Prozess</li>
-                                            <li>Das Erstellen von Anlagen in einem Vorgang z.B. durch eine
-                                                PDF-Generierung
-                                            </li>
-                                            <li>Das Importieren von Dateien als Anlagen in einen Vorgang</li>
-                                            <li>Das Übertragen von Anlagen aus einem Vorgang in einen Speicheranbieter
-                                            </li>
-                                        </ul>
-                                    </Typography>
-
-                                    <Typography
-                                        variant="caption"
-                                        color="textSecondary"
-                                    >
-                                        *1 Megabyte entspricht 1.000 Kilobytes oder 1.000.000 Bytes.
-                                    </Typography>
-                                </>
-                            }
-                        />
-                    </Stack>
+                    <NumberFieldComponent
+                        label="Maximale Dateigröße (in MB)"
+                        value={bytesToMegabytes(editedStorageProvider.maxFileSizeInBytes)}
+                        onChange={(mb) => handleInputChange('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
+                        onBlur={(mb) => handleInputBlur('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
+                        disabled={inputsDisabled}
+                        error={errors.maxFileSizeInBytes ?? maxFileSizeApiError ?? undefined}
+                        decimalPlaces={2}
+                        suffix="MB"
+                        hint="Die maximale Dateigröße die pro Datei an diesen Speicheranbieter übertragen werden kann."
+                        externalAction={
+                            <Hint
+                                summary="Die maximale Dateigröße die pro Datei an diesen Speicheranbieter übertragen werden kann."
+                                detailsTitle="Maximale Dateigröße"
+                                details={
+                                    <>
+                                        <Typography
+                                            sx={{
+                                                marginBottom: 2
+                                            }}
+                                        >
+                                            Speicheranbieter können in der Übertragung verschiedene Limitierungen haben.
+                                            Um diesen Limitierungen gerecht zu werden, kann pro Speicheranbieter eine
+                                            maximale Dateigröße spezifiziert werden.
+                                            Die Angabe der maximalen Dateigröße erfolgt in Megabyte* und gilt pro Datei,
+                                            welche an den Speicheranbieter von Prosuna übertragen wird.
+                                        </Typography>
+                                        <Typography
+                                            sx={{
+                                                marginBottom: 2
+                                            }}
+                                        >
+                                            Die maximale Dateigröße wird unter Anderem an den folgenden Stellen
+                                            berücksichtigt:
+                                            <ul>
+                                                <li>Das Hochladen von Dateien &amp; Medien</li>
+                                                <li>Das Übertragen von Anlagen an einen Prozess</li>
+                                                <li>Das Erstellen von Anlagen in einem Vorgang z.B. durch eine
+                                                    PDF-Generierung
+                                                </li>
+                                                <li>Das Importieren von Dateien als Anlagen in einen Vorgang</li>
+                                                <li>Das Übertragen von Anlagen aus einem Vorgang in einen Speicheranbieter
+                                                </li>
+                                            </ul>
+                                        </Typography>
+                                        <Typography
+                                            variant="caption"
+                                            color="textSecondary"
+                                        >
+                                            *1 Megabyte entspricht 1.000 Kilobytes oder 1.000.000 Bytes.
+                                        </Typography>
+                                    </>
+                                }
+                            />
+                        }
+                    />
                 </Grid>
             </Grid>
 

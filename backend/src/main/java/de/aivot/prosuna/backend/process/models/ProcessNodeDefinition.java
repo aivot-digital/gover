@@ -98,6 +98,17 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     }
 
     /**
+     * Get configuration values that should be present when a new node is created. Values supplied by the caller take precedence over these defaults, so copied, imported and
+     * explicitly authored configuration remains unchanged.
+     *
+     * @return A fresh map containing the initial configuration values.
+     */
+    @Nonnull
+    default AuthoredElementValues getInitialConfiguration() {
+        return new AuthoredElementValues();
+    }
+
+    /**
      * Loads a configuration layout from a JSON resource.
      *
      * <p>This helper is intended for process nodes that keep their editor layout in a static resource instead of
@@ -161,19 +172,42 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     }
 
     /**
-     * Validates the configuration of a process definition node entity. This used to check if the configuration of a node is valid before saving it or publishing the parent
-     * process. When errors are returned, the flag {@link ProcessNodeEntity#setSavedWithErrors(Boolean)} is set. Nodes can be saved with errors but a process cannot be published
-     * when at least one node does not validate correctly.
+     * Legacy authoring validation hook. It remains the default for providers whose configuration contains only
+     * literal values. Providers with dynamic configuration values should override the context-based overload so they
+     * can distinguish a missing literal from a deferred value and opt into runtime validation.
+     * <p>
+     * When authoring errors are returned, {@link ProcessNodeEntity#setSavedWithErrors(Boolean)} is set. Nodes can be
+     * saved with errors, but a process cannot be published while one of its nodes is invalid.
      *
      * @param processNodeEntity The process definition node entity to be validated.
      * @param configuration     The configuration to be validated.
      * @return A map of configuration field keys to error messages for that field. If the configuration is valid, null is returned.
-     * @throws ResponseException If the configuration is invalid.
+     * @throws ResponseException If validation cannot be completed.
      */
     @Nullable
     default Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
                                                             @Nonnull NodeConfig configuration) throws ResponseException {
         return null;
+    }
+
+    /**
+     * Validates a configuration with access to its derivation phase and deferred dynamic values. Existing providers
+     * remain authoring-only through the legacy overload; providers that support dynamic configuration values should
+     * override this method and explicitly decide which checks also apply at runtime.
+     *
+     * @param context The configuration and derivation state to validate.
+     * @return A map of configuration field keys to error messages, or {@code null} if the configuration is valid.
+     * @throws ResponseException If validation cannot be completed.
+     */
+    @Nullable
+    default Map<String, List<String>> validateConfiguration(
+            @Nonnull ProcessNodeConfigurationValidationContext<NodeConfig> context
+    ) throws ResponseException {
+        if (context.isRuntime()) {
+            return null;
+        }
+
+        return validateConfiguration(context.thisNode(), context.configuration());
     }
 
     /**

@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {
     Box,
+    Button,
     Stack,
     TextField,
     Typography,
@@ -76,6 +77,7 @@ import {ElementDisplayContext} from '../../data/element-type/element-child-optio
 import type {StoragePathSelectorInputElementValue} from '../../models/elements/form/input/storage-path-selector-input-element';
 import {
     createDerivedRuntimeElementData,
+    literalAuthoredValue,
     type ReplicatingContainerElementValues,
 } from '../../models/element-data';
 import {
@@ -85,6 +87,8 @@ import {
 import {getDepartmentTypeIcons} from '../departments/utils/department-utils';
 import {ModuleIcons} from '../../shells/staff/data/module-icons';
 import Person from '@aivot/mui-material-symbols-400-n25-outlined/Person';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
 import {SelectFieldPresentation} from '../../models/elements/form/input/select-field-presentation';
 
 const fieldGridSx = {
@@ -129,18 +133,18 @@ const domainAndUserOptions: DomainAndUserSelectOption[] = [
     },
 ];
 
-const inputModeSummaries: Record<Exclude<InputMode, 'literal'>, {primary: string; secondary: string}> = {
-    variable: {
+const inputModeSummaries: Record<Exclude<InputMode, 'Literal'>, {primary: string; secondary: string}> = {
+    Variable: {
         primary: 'Nachname der antragstellenden Person',
         secondary: 'Vorgangsdaten - $.applicant.lastName',
     },
-    noCode: {
+    NoCode: {
         primary: 'Vorname + " " + Nachname',
         secondary: 'Ausdruck (No-Code)',
     },
-    lowCode: {
+    LowCode: {
         primary: 'Benutzerdefiniertes Skript',
-        secondary: 'return `${$.applicant.firstName} ${$.applicant.lastName}`;',
+        secondary: '`${$.applicant.firstName} ${$.applicant.lastName}`',
     },
 };
 
@@ -232,16 +236,61 @@ interface InputModeGalleryFieldProps {
     onChange: (value: string | null) => void;
 }
 
+function ExternalActionGallery() {
+    const [title, setTitle] = useState<string | null>('Hundesteuer');
+    const [locked, setLocked] = useState(true);
+    const [delivery, setDelivery] = useState<string | null>('digital');
+    return (
+        <>
+            <Typography variant="h6" sx={{mt: 5, mb: 2}}>Externe Feldaktionen</Typography>
+            <Stack spacing={2} data-external-action-gallery>
+                {[undefined, 480, 360].map((width, index) => (
+                    <TextFieldComponent
+                        key={index}
+                        label="Öffentliche Bezeichnung des Prozesses"
+                        value={title}
+                        onChange={setTitle}
+                        required
+                        margin="none"
+                        sx={{width}}
+                        hint="Diese Bezeichnung erscheint in den zugehörigen Formularen."
+                        error={title ? undefined : 'Geben Sie eine öffentliche Bezeichnung ein.'}
+                        externalAction={(
+                            <Button variant="outlined" startIcon={<Refresh/>} onClick={() => setTitle('Hundesteuer')}>
+                                Vorschlag übernehmen
+                            </Button>
+                        )}
+                    />
+                ))}
+                <RadioFieldComponent
+                    label="Zustellung des Bescheids"
+                    value={delivery}
+                    onChange={setDelivery}
+                    options={[{value: 'digital', label: 'Digital'}, {value: 'post', label: 'Per Post'}]}
+                    disabled={locked}
+                    hint="Die Auswahl gilt für die Zustellung des Bescheids."
+                    margin="none"
+                    externalAction={(
+                        <Button startIcon={<Edit/>} onClick={() => setLocked(!locked)}>
+                            {locked ? 'Auswahl freigeben' : 'Auswahl sperren'}
+                        </Button>
+                    )}
+                />
+            </Stack>
+        </>
+    );
+}
+
 function InputModeGalleryField(props: InputModeGalleryFieldProps) {
     const label = 'Bezeichnung';
-    const [mode, setMode] = useState<InputMode>('literal');
+    const [mode, setMode] = useState<InputMode>('Literal');
 
     return (
         <FormField
             label={label}
             labelAction={(field) => (
                 <Stack direction="row" spacing={0.5} sx={{height: '100%', alignItems: 'center'}}>
-                    {mode === 'literal' && <DynamicTextIndicator decorative/>}
+                    {mode === 'Literal' && <DynamicTextIndicator decorative/>}
                     <InputModeSelector
                         fieldLabel={label}
                         controlledFieldId={field.controlId}
@@ -251,11 +300,11 @@ function InputModeGalleryField(props: InputModeGalleryFieldProps) {
                 </Stack>
             )}
             hint="Eine eindeutige Bezeichnung hilft bei der späteren Zuordnung."
-            assistiveText={mode === 'literal' ? DynamicTextIndicatorLabel : undefined}
+            assistiveText={mode === 'Literal' ? DynamicTextIndicatorLabel : undefined}
             required
             margin="none"
         >
-            {(field) => mode === 'literal' ? (
+            {(field) => mode === 'Literal' ? (
                 <TextField
                     id={field.controlId}
                     value={props.value ?? ''}
@@ -279,7 +328,7 @@ function InputModeGalleryField(props: InputModeGalleryFieldProps) {
 }
 
 function InputModeSummary(props: {
-    mode: Exclude<InputMode, 'literal'>;
+    mode: Exclude<InputMode, 'Literal'>;
     field: FormFieldControlContext;
 }) {
     const summary = inputModeSummaries[props.mode];
@@ -410,8 +459,8 @@ export function FieldLayoutGallery() {
         {
             id: 'field-layout-gallery-address-1',
             values: {
-                [addressStreetElement.id]: 'Musterstraße 1',
-                [addressCityElement.id]: 'Musterstadt',
+                [addressStreetElement.id]: literalAuthoredValue('Musterstraße 1'),
+                [addressCityElement.id]: literalAuthoredValue('Musterstadt'),
             },
         },
     ]);
@@ -1048,7 +1097,7 @@ export function FieldLayoutGallery() {
                     rootElement: addressListElement,
                     allElements: [addressListElement, addressStreetElement, addressCityElement],
                     rootAuthoredElementValues: {
-                        [addressListElement.id]: additionalAddresses,
+                        [addressListElement.id]: literalAuthoredValue(additionalAddresses),
                     },
                     rootDerivedData: fieldLayoutGalleryDerivedData,
                 }}
@@ -1071,6 +1120,7 @@ export function FieldLayoutGallery() {
                     derivationTriggerIdQueue={[]}
                 />
             </ViewDispatcherContextProvider>
+            <ExternalActionGallery/>
         </Box>
     );
 }

@@ -29,7 +29,7 @@ import AssignmentIndOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outli
 import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import CodeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code';
-import FunctionsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
+import {NoCodeIcon} from '../../modules/nocode/data/no-code-icon';
 import AttachFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
 import PaymentsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Payments';
 import FolderOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Folder';
@@ -84,7 +84,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.AssignmentContext]: AssignmentIndOutlinedIcon,
     [ElementType.DataModelSelect]: FolderData,
     [ElementType.DataObjectSelect]: DataObject,
-    [ElementType.NoCodeInput]: FunctionsOutlinedIcon,
+    [ElementType.NoCodeInput]: NoCodeIcon,
     [ElementType.SummaryLayout]: Segment,
     [ElementType.ProcessDataKeyInput]: DataObject,
     [ElementType.ProcessInstanceAttachmentSetSelect]: AttachFileOutlinedIcon,

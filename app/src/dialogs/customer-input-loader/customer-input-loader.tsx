@@ -11,7 +11,7 @@ import SettingsBackupRestoreOutlinedIcon from '@aivot/mui-material-symbols-400-n
 import {useSearchParams} from 'react-router-dom';
 import RestorePageIcon from '@aivot/mui-material-symbols-400-n25-outlined/RestorePage';
 import ArrowForwardOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
-import {type AuthoredElementValues, hasAuthoredElementValuesSomeInput} from '../../models/element-data';
+import {type AuthoredElementValues, hasAuthoredElementValuesSomeInput, literalAuthoredValue} from '../../models/element-data';
 import {prefillQueryParamKey} from '../../data/prefill-query-param-key';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {canPrefillElement} from '../prefill-form-dialog/prefill-form-dialog';
@@ -253,7 +253,7 @@ function initializeUrlPrefillData(rootElement: FormLayoutElement,
             .find(e => e.id === key);
 
         if (elem != null && canPrefillElement(elem)) {
-            cleanedPrefillData[key] = value;
+            cleanedPrefillData[key] = literalAuthoredValue(value);
         }
     }
 

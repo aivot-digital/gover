@@ -43,6 +43,7 @@ export function AutocompleteSelect(props: AutocompleteSelectProps) {
             hint={hint}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             disabled={!editable}
             margin={props.margin}

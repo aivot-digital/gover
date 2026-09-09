@@ -49,6 +49,7 @@ import {Permission} from '../../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../../../modules/permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
 import {useThemeReloadPrompt} from '../../../../../modules/themes/hooks/use-theme-reload-prompt';
+import {toLiteralAuthoredElementValues, toLiteralElementValues} from '../../../../../models/element-data';
 
 const SYSTEM_THEME_FALLBACK_OPTION_VALUE = '__prosuna_system_theme_fallback__';
 const SYSTEM_THEME_FALLBACK_OPTION: SelectFieldComponentOption = {
@@ -668,6 +669,7 @@ export function ApplicationSettings() {
     const currentGroup: GroupLayout | undefined = useMemo(() => {
         return groups[currentSettingsTab ?? availableTabs[0]];
     }, [groups, currentSettingsTab, availableTabs]);
+    const authoredConfig = useMemo(() => toLiteralAuthoredElementValues(config), [config]);
 
     if (localStorage.getItem('showNewSettings') != null) {
         return (
@@ -705,11 +707,11 @@ export function ApplicationSettings() {
                         currentGroup != null &&
                         <ElementDerivationContext
                             element={currentGroup}
-                            authoredElementValues={config}
+                            authoredElementValues={authoredConfig}
                             disabled={inputsDisabled}
                             onAuthoredElementValuesChange={(updated) => {
                                 console.log(updated);
-                                dispatch(setSystemConfigsFromMap(updated));
+                                dispatch(setSystemConfigsFromMap(toLiteralElementValues(updated) as SystemConfigMap));
                             }}
                         />
                     }

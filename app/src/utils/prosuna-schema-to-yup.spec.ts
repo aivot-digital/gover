@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {ElementType} from '../data/element-type/element-type';
-import {applyComputedErrors, type ComputedElementStates} from '../models/element-data';
+import {applyComputedErrors, type ComputedElementStates, literalAuthoredValue} from '../models/element-data';
 import * as yup from 'yup';
 import {
     applyYupErrorsToElementData,
@@ -21,18 +21,18 @@ describe('mapFormManagerErrorsToComputedErrors', () => {
         const schema = yup.object().shape(prosunaSchemaToYup(rootElement, {}));
 
         await expect(schema.validate({
-            addresses: [
+            addresses: literalAuthoredValue([
                 {
                     id: 'row-1',
                     values: {
-                        street: '',
+                        street: literalAuthoredValue(''),
                     },
                 },
-            ],
+            ]),
         }, {abortEarly: false})).rejects.toMatchObject({
             inner: [
                 expect.objectContaining({
-                    path: 'addresses[0].values.street',
+                    path: 'addresses.value[0].values.street.value',
                 }),
             ],
         });
@@ -67,7 +67,7 @@ describe('mapFormManagerErrorsToComputedErrors', () => {
             rootElement,
             {},
             {
-                'config.location.latitude': 'Latitude is invalid',
+                'config.location.value.latitude': 'Latitude is invalid',
             },
             {rootPath: 'config'},
         )).toEqual({
@@ -86,23 +86,23 @@ describe('mapFormManagerErrorsToComputedErrors', () => {
         const computedErrors = mapFormManagerErrorsToComputedErrors(
             rootElement,
             {
-                addresses: [
+                addresses: literalAuthoredValue([
                     {
                         id: 'row-1',
                         values: {
-                            street: 'A',
+                            street: literalAuthoredValue('A'),
                         },
                     },
                     {
                         id: 'row-2',
                         values: {
-                            street: '',
+                            street: literalAuthoredValue(''),
                         },
                     },
-                ],
+                ]),
             },
             {
-                'config.addresses[1].values.street': 'Street is required',
+                'config.addresses.value[1].values.street.value': 'Street is required',
             },
             {rootPath: 'config'},
         );
@@ -198,31 +198,31 @@ describe('temporal range validation', () => {
         const dateSchema = prosunaSchemaToYup(createRangeField('date', ElementType.DateRange), {}).date;
         const timeSchema = prosunaSchemaToYup(createRangeField('time', ElementType.TimeRange), {}).time;
 
-        await expect(dateSchema.validate({
+        await expect(dateSchema.validate(literalAuthoredValue({
             start: '2026-07-29',
             end: '2026-07-30',
-        })).resolves.toBeDefined();
-        await expect(dateSchema.validate({
+        }))).resolves.toBeDefined();
+        await expect(dateSchema.validate(literalAuthoredValue({
             start: '2026-07-30',
             end: '2026-07-29',
-        })).rejects.toThrow('Der Startwert darf nicht größer als der Endwert sein.');
-        await expect(timeSchema.validate({
+        }))).rejects.toThrow('Der Startwert darf nicht größer als der Endwert sein.');
+        await expect(timeSchema.validate(literalAuthoredValue({
             start: '09:30:15',
             end: '09:30:14',
-        })).rejects.toThrow('Der Startwert darf nicht größer als der Endwert sein.');
+        }))).rejects.toThrow('Der Startwert darf nicht größer als der Endwert sein.');
     });
 
     it('should compare datetime ranges as explicit instants', async () => {
         const schema = prosunaSchemaToYup(createRangeField('dateTime', ElementType.DateTimeRange), {}).dateTime;
 
-        await expect(schema.validate({
+        await expect(schema.validate(literalAuthoredValue({
             start: '2026-07-29T09:30:00+02:00',
             end: '2026-07-29T07:30:01Z',
-        })).resolves.toBeDefined();
-        await expect(schema.validate({
+        }))).resolves.toBeDefined();
+        await expect(schema.validate(literalAuthoredValue({
             start: '2026-07-29T09:30:00',
             end: '2026-07-29T09:31:00',
-        })).rejects.toThrow('Der Wert besitzt kein gültiges Datums- oder Zeitformat.');
+        }))).rejects.toThrow('Der Wert besitzt kein gültiges Datums- oder Zeitformat.');
     });
 
     it('should validate date ranges according to their configured precision', async () => {
@@ -235,31 +235,43 @@ describe('temporal range validation', () => {
             {},
         ).year;
 
-        await expect(monthSchema.validate({
+        await expect(monthSchema.validate(literalAuthoredValue({
             start: '2026-07',
             end: '2026-08',
-        })).resolves.toBeDefined();
-        await expect(monthSchema.validate({
+        }))).resolves.toBeDefined();
+        await expect(monthSchema.validate(literalAuthoredValue({
             start: '2026-08',
             end: '2026-07',
-        })).rejects.toThrow('Der Startwert darf nicht größer als der Endwert sein.');
-        await expect(yearSchema.validate({
+        }))).rejects.toThrow('Der Startwert darf nicht größer als der Endwert sein.');
+        await expect(yearSchema.validate(literalAuthoredValue({
             start: '2026',
             end: '2027',
-        })).resolves.toBeDefined();
-        await expect(yearSchema.validate({
+        }))).resolves.toBeDefined();
+        await expect(yearSchema.validate(literalAuthoredValue({
             start: '2026-01-01',
             end: '2027-01-01',
-        })).rejects.toThrow('Der Wert besitzt kein gültiges Datums- oder Zeitformat.');
+        }))).rejects.toThrow('Der Wert besitzt kein gültiges Datums- oder Zeitformat.');
     });
 
     it('should compare datetime range boundaries below millisecond precision', async () => {
         const schema = prosunaSchemaToYup(createRangeField('dateTime', ElementType.DateTimeRange), {}).dateTime;
 
-        await expect(schema.validate({
+        await expect(schema.validate(literalAuthoredValue({
             start: '2026-07-29T07:30:00.000000002Z',
             end: '2026-07-29T09:30:00.000000001+02:00',
-        })).rejects.toThrow('Der Startwert darf nicht größer als der Endwert sein.');
+        }))).rejects.toThrow('Der Startwert darf nicht größer als der Endwert sein.');
+    });
+});
+
+describe('authored input value validation', () => {
+    it('should allow an omitted optional value but reject explicit raw values', async () => {
+        const schema = prosunaSchemaToYup(createTextField('name'), {}).name;
+
+        await expect(schema.validate(undefined)).resolves.toBeUndefined();
+        await expect(schema.validate(null)).rejects.toThrow('Der Eingabewert ist ungültig.');
+        await expect(schema.validate('Ada')).rejects.toThrow('Der Eingabewert ist ungültig.');
+        await expect(schema.validate(literalAuthoredValue(null))).resolves.toEqual(literalAuthoredValue(null));
+        await expect(schema.validate(literalAuthoredValue('Ada'))).resolves.toEqual(literalAuthoredValue('Ada'));
     });
 });
 

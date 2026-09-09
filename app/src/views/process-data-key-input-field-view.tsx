@@ -1,8 +1,13 @@
-import {useEffect, useMemo} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {BaseViewProps} from './base-view';
 import {ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
-import {AutocompleteTextField} from '../components/text-field/text-field-component';
+import {TextFieldComponent} from '../components/text-field/text-field-component';
+import {type EndAction} from '../components/text-field/text-field-component-props';
+import {type FormFieldMargin} from '../components/form-field';
+import Close from '@aivot/mui-material-symbols-400-n25-outlined/Close';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
+import {ProcessDataKeyPickerDialog} from '../components/process-data-key-picker-dialog/process-data-key-picker-dialog';
 import {
     useOptionalProcessNodeEditorContext,
 } from '../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
@@ -108,6 +113,8 @@ export type ProcessDataKeySuggestion = {
 };
 
 interface ProcessDataKeyInputComponentProps {
+    endAction?: EndAction | EndAction[];
+    margin?: FormFieldMargin;
     value: string | null | undefined;
     onChange: (value: string | null) => void;
     onBlur?: (value: string | null) => void;
@@ -120,6 +127,7 @@ interface ProcessDataKeyInputComponentProps {
     disableWildCards?: boolean;
     prefix?: string;
     scopeProcessDataKey?: string | null;
+    suggestions?: ProcessDataKeySuggestion[];
 }
 
 export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponentProps) {
@@ -136,16 +144,21 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
         disableWildCards = true,
         prefix,
         scopeProcessDataKey,
+        suggestions: providedSuggestions,
     } = props;
 
     const opec = useOptionalProcessNodeEditorContext();
-    const hasProcessDataKeyMetadata = opec?.incomingMetadata != null;
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const hasProcessDataKeyMetadata = providedSuggestions != null || opec?.incomingMetadata != null;
     const hasScopeProcessDataKey = !isStringNullOrEmpty(scopeProcessDataKey);
     const effectivePrefix = hasScopeProcessDataKey
         ? normalizeProcessDataKey(scopeProcessDataKey) + '.*.'
-        : prefix;
+        : normalizeProcessDataKeyPrefix(prefix) ?? '';
 
     const suggestions = useMemo(() => {
+        if (providedSuggestions != null) {
+            return providedSuggestions;
+        }
         if (!hasProcessDataKeyMetadata) {
             return [];
         }
@@ -158,7 +171,7 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
                 scopeProcessDataKey,
             },
         );
-    }, [disableWildCards, hasProcessDataKeyMetadata, opec, prefix, scopeProcessDataKey]);
+    }, [disableWildCards, hasProcessDataKeyMetadata, opec, prefix, providedSuggestions, scopeProcessDataKey]);
 
     useEffect(() => {
         if (!hasScopeProcessDataKey || !hasProcessDataKeyMetadata || value == null) {
@@ -170,8 +183,24 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
         }
     }, [hasProcessDataKeyMetadata, hasScopeProcessDataKey, onChange, suggestions, value]);
 
-    return (
-        <AutocompleteTextField
+    const readOnly = hasScopeProcessDataKey && hasProcessDataKeyMetadata;
+    const interactionDisabled = Boolean(disabled || busy || readOnly);
+    const endActions = interactionDisabled ? undefined : [
+        ...(isStringNullOrEmpty(value) ? [] : [{
+            icon: <Close/>,
+            tooltip: 'Vorgangsdatenpfad leeren',
+            onClick: () => onChange(null),
+        }]),
+        ...(hasProcessDataKeyMetadata ? [{
+            icon: <DataObject/>,
+            tooltip: 'Vorgangsdatenpfad auswählen',
+            onClick: () => setPickerOpen(true),
+        }] : []),
+        ...(Array.isArray(props.endAction) ? props.endAction : props.endAction == null ? [] : [props.endAction]),
+    ];
+
+    return <>
+        <TextFieldComponent
             label={label}
             value={value}
             onChange={onChange}
@@ -180,14 +209,28 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
             error={error}
             hint={hint}
             disabled={disabled}
-            readonly={hasScopeProcessDataKey && hasProcessDataKeyMetadata}
+            readonly={readOnly}
             busy={busy}
-            startIcon={`$.${effectivePrefix ?? ''}`}
+            startIcon={`$.${effectivePrefix}`}
+            endAction={endActions}
+            margin={props.margin}
             debounce={1000}
             pattern={disableWildCards ? processDataKeyPattern : processDataKeyPatternWithWildcard}
-            suggestions={suggestions}
         />
-    );
+
+        <ProcessDataKeyPickerDialog
+            open={pickerOpen && !interactionDisabled && hasProcessDataKeyMetadata}
+            options={suggestions}
+            value={value}
+            displayPrefix={effectivePrefix}
+            disableWildCards={disableWildCards}
+            onClose={() => setPickerOpen(false)}
+            onApply={(path) => {
+                onChange(path);
+                setPickerOpen(false);
+            }}
+        />
+    </>;
 }
 
 interface CreateProcessDataKeySuggestionsOptions {
@@ -236,8 +279,10 @@ function createSuggestion(
 
     return {
         id: processDataKey,
-        label: processDataKey,
-        subLabel: hint.subLabel ?? hint.label ?? hint.origin.name ?? undefined,
+        label: hint.label || processDataKey,
+        subLabel: [hint.subLabel, hint.origin.name]
+            .filter((part): part is string => !isStringNullOrEmpty(part))
+            .join(' · ') || undefined,
     };
 }
 

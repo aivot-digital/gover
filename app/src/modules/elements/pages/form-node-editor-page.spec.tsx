@@ -12,6 +12,7 @@ import {FormTriggerApiService} from '../../forms/services/form-trigger-api-servi
 import {XdfApiService} from '../../xdf/v1/xdf-api-service';
 import {ElementType} from '../../../data/element-type/element-type';
 import {ProcessStatus} from '../../process/enums/process-status';
+import {literalAuthoredValue} from '../../../models/element-data';
 
 const mocks = vi.hoisted(() => ({
     confirm: vi.fn(),
@@ -326,11 +327,11 @@ describe('FormNodeEditorPage error handling', () => {
         ]);
         vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(createNode(fileLayout));
         mocks.submitValues = {
-            attachment: [{
+            attachment: literalAuthoredValue([{
                 name: 'attachment.pdf',
                 size: 100,
                 uri: 'blob:missing',
-            }],
+            }]),
         };
         vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
         await renderLoadedEditor();
@@ -405,8 +406,8 @@ function createFormLayout(children: any[] = []): any {
 function createNode(formLayout = createFormLayout()): any {
     return {
         configuration: {
-            formLayout,
-            formSlug: 'test-form',
+            formLayout: literalAuthoredValue(formLayout),
+            formSlug: literalAuthoredValue('test-form'),
         },
         id: 1,
         name: 'Formulareingang',

@@ -1,5 +1,5 @@
 import {type SvgIconComponent} from '../../../types/svg-icon-component';
-import AccountTree from '@aivot/mui-material-symbols-400-n25-outlined/AccountTree';
+import Route from '@aivot/mui-material-symbols-400-n25-outlined/Route';
 import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import Borg from '@aivot/mui-material-symbols-400-n25-outlined/Borg';
 
@@ -35,7 +35,7 @@ export function getActorTypeColor(actorType: ActorDefault | string | null | unde
 
 const actorDefaultIcons: Record<ActorDefault, SvgIconComponent> = {
     'System': Borg,
-    'Process': AccountTree,
+    'Process': Route,
     'User': AccountCircle,
 };
 

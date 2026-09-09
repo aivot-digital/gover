@@ -37,6 +37,7 @@ export function RadioFieldComponent(props: RadioFieldComponentProps) {
         id,
         ariaDescribedBy,
         label,
+        externalAction,
         labelAction,
         value,
         onChange,
@@ -61,6 +62,7 @@ export function RadioFieldComponent(props: RadioFieldComponentProps) {
             id={id}
             label={label}
             ariaDescribedBy={ariaDescribedBy}
+            externalAction={externalAction}
             labelAction={labelAction}
             hint={hint}
             error={error}

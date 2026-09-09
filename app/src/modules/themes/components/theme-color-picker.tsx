@@ -202,6 +202,7 @@ export function ThemeColorPicker(props: ThemeColorPickerProps) {
                 label={label}
                 ariaLabel={props.ariaLabel}
                 ariaDescribedBy={props.ariaDescribedBy}
+                externalAction={props.externalAction}
                 labelAction={props.labelAction}
                 hint={!hasHexError ? (
                     <Box

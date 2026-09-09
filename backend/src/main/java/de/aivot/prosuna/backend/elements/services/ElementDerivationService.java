@@ -2,6 +2,8 @@ package de.aivot.prosuna.backend.elements.services;
 
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.EffectiveValueSource;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
+import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
 import de.aivot.prosuna.backend.elements.exceptions.DerivationException;
 import de.aivot.prosuna.backend.elements.models.*;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
@@ -11,18 +13,26 @@ import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.SummaryLayoutElement;
+import de.aivot.prosuna.backend.elements.models.input.AuthoredInputValue;
+import de.aivot.prosuna.backend.elements.models.input.LiteralAuthoredInputValue;
+import de.aivot.prosuna.backend.elements.models.input.LowCodeAuthoredInputValue;
+import de.aivot.prosuna.backend.elements.models.input.NoCodeAuthoredInputValue;
+import de.aivot.prosuna.backend.elements.models.input.VariableAuthoredInputValue;
 import de.aivot.prosuna.backend.elements.utils.ElementFlattenUtils;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.javascript.exceptions.JavascriptException;
 import de.aivot.prosuna.backend.javascript.models.JavascriptResult;
+import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
+import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.ElementResolver;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -34,6 +44,7 @@ import tools.jackson.core.type.TypeReference;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
@@ -53,6 +64,9 @@ public class ElementDerivationService {
     private final NoCodeEvaluationService noCodeEvaluationService;
     private final ElementDataTransformService elementDataTransformService;
     private final CodeListElementOptionsService codeListElementOptionsService;
+    private final AuthoredInputValueService authoredInputValueService;
+    private final InputVariableResolver inputVariableResolver;
+    private final TemplateRenderService templateRenderService;
 
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull BaseElement element, @Nonnull AuthoredElementValues authoredElementValues) {
@@ -76,16 +90,49 @@ public class ElementDerivationService {
             JavascriptEngineFactoryService javascriptEngineFactoryService,
             NoCodeEvaluationService noCodeEvaluationService,
             ElementDataTransformService elementDataTransformService,
-            CodeListElementOptionsService codeListElementOptionsService) {
+            CodeListElementOptionsService codeListElementOptionsService,
+            AuthoredInputValueService authoredInputValueService,
+            InputVariableResolver inputVariableResolver,
+            TemplateRenderService templateRenderService) {
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
         this.noCodeEvaluationService = noCodeEvaluationService;
         this.elementDataTransformService = elementDataTransformService;
         this.codeListElementOptionsService = codeListElementOptionsService;
+        this.authoredInputValueService = authoredInputValueService;
+        this.inputVariableResolver = inputVariableResolver;
+        this.templateRenderService = templateRenderService;
+    }
+
+    /**
+     * Convenience constructor for isolated consumers that already construct the derivation service manually.
+     */
+    public ElementDerivationService(
+            JavascriptEngineFactoryService javascriptEngineFactoryService,
+            NoCodeEvaluationService noCodeEvaluationService,
+            ElementDataTransformService elementDataTransformService,
+            CodeListElementOptionsService codeListElementOptionsService,
+            AuthoredInputValueService authoredInputValueService,
+            InputVariableResolver inputVariableResolver) {
+        this(
+                javascriptEngineFactoryService,
+                noCodeEvaluationService,
+                elementDataTransformService,
+                codeListElementOptionsService,
+                authoredInputValueService,
+                inputVariableResolver,
+                new TemplateRenderService(javascriptEngineFactoryService)
+        );
     }
 
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull ElementDerivationRequest request) {
         return derive(request, new IdentityDataMap(), new ElementDerivationLogger());
+    }
+
+    @Nonnull
+    public DerivedRuntimeElementData derive(@Nonnull ElementDerivationRequest request,
+                                            @Nonnull InputModeEvaluationContext inputModeContext) {
+        return derive(request, new IdentityDataMap(), new ElementDerivationLogger(), inputModeContext);
     }
 
     /**
@@ -102,6 +149,14 @@ public class ElementDerivationService {
     public DerivedRuntimeElementData derive(@Nonnull ElementDerivationRequest request,
                                             @Nonnull IdentityDataMap identities,
                                             @Nonnull ElementDerivationLogger logger) {
+        return derive(request, identities, logger, InputModeEvaluationContext.LiteralOnly);
+    }
+
+    @Nonnull
+    public DerivedRuntimeElementData derive(@Nonnull ElementDerivationRequest request,
+                                            @Nonnull IdentityDataMap identities,
+                                            @Nonnull ElementDerivationLogger logger,
+                                            @Nonnull InputModeEvaluationContext inputModeContext) {
         var javascriptEngine = javascriptEngineFactoryService
                 .getEngine();
 
@@ -126,7 +181,9 @@ public class ElementDerivationService {
                 request.derivationOptions(),
                 true,
                 identities,
-                logger
+                logger,
+                inputModeContext,
+                false
         );
 
         return new DerivedRuntimeElementData(
@@ -158,7 +215,9 @@ public class ElementDerivationService {
             @Nonnull ElementDerivationOptions options,
             @Nonnull Boolean isParentVisible,
             @Nonnull IdentityDataMap identities,
-            @Nonnull ElementDerivationLogger logger
+            @Nonnull ElementDerivationLogger logger,
+            @Nonnull InputModeEvaluationContext inputModeContext,
+            boolean valuesAlreadyResolved
     ) {
         var elementState = new ComputedElementState();
         computedElementStates.put(currentElement.getId(), elementState);
@@ -185,6 +244,11 @@ public class ElementDerivationService {
             var actualElement = overrideElement != null
                     ? overrideElement
                     : currentElement;
+            // Overrides may alter presentation, but the dynamic-input policy is trusted backend configuration.
+            if (actualElement instanceof BaseInputElement<?> actualInput && currentElement instanceof BaseInputElement<?> declaredInput) {
+                actualInput.setInputModePolicy(declaredInput.getInputModePolicy());
+                actualInput.setDynamicTextPolicy(declaredInput.getDynamicTextPolicy());
+            }
             actualElement = codeListElementOptionsService.resolve(actualElement);
             if (actualElement != currentElement) {
                 elementState.setOverride(actualElement);
@@ -209,13 +273,14 @@ public class ElementDerivationService {
             );
             elementState.setVisible(isVisible);
 
+            var childRowValuesAlreadyResolved = valuesAlreadyResolved;
             if (isVisible && actualElement instanceof InputElement<?> inputElement) {
                 var hasAuthoredValue = authoredElementValues
                         .containsKey(currentElement.getId());
                 var authoredValue = authoredElementValues
                         .getOrDefault(currentElement.getId(), null);
 
-                var effectiveValue = deriveEffectiveValue(
+                var resolvedValue = deriveEffectiveValue(
                         javascriptEngine,
                         rootElement,
                         inputElement,
@@ -230,15 +295,37 @@ public class ElementDerivationService {
                         authoredValue,
                         elementState,
                         identities,
-                        logger
+                        logger,
+                        inputModeContext,
+                        valuesAlreadyResolved
                 );
-                effectiveValue = inputElement.formatValue(effectiveValue);
-                if (effectiveValue instanceof String s) {
-                    effectiveValue = s.trim();
+                var effectiveValue = resolvedValue.value();
+                // Node-specific authoring validation receives null for dynamic values. Preserve why the value is
+                // absent so it can defer only value-dependent checks instead of treating the field as empty.
+                elementState.setInputValueDeferred(resolvedValue.skipValueValidation() && resolvedValue.dynamic());
+                if (!resolvedValue.skipValueValidation()) {
+                    var hasEffectiveRows = resolvedValue.dynamic() || elementState.getValueSource() == EffectiveValueSource.Derived;
+                    childRowValuesAlreadyResolved |= hasEffectiveRows;
+                    effectiveValue = hasEffectiveRows && inputElement instanceof ReplicatingContainerLayoutElement
+                            ? formatEffectiveReplicatingContainerValue(
+                                    (ReplicatingContainerLayoutElement) inputElement,
+                                    effectiveValue
+                            )
+                            : inputElement.formatValue(effectiveValue);
+                    if (resolvedValue.dynamic() && resolvedValue.value() != null && effectiveValue == null) {
+                        effectiveElementValues.remove(currentElement.getId());
+                        throw new DerivationException(
+                                (BaseElement) inputElement,
+                                "Der dynamische Eingabewert kann nicht in den Typ des Feldes konvertiert werden."
+                        );
+                    }
+                    if (effectiveValue instanceof String s) {
+                        effectiveValue = s.trim();
+                    }
                 }
                 effectiveElementValues.put(currentElement.getId(), effectiveValue);
 
-                var err = deriveError(
+                var err = resolvedValue.skipValueValidation() ? null : deriveError(
                         javascriptEngine,
                         rootElement,
                         inputElement,
@@ -269,6 +356,7 @@ public class ElementDerivationService {
 
                 // Test if the child data is a list of child data sets.
                 if (rawEffectiveChildDataSetList instanceof List<?> effectiveChildDataSetList) {
+                    var effectiveRows = new LinkedList<EffectiveReplicatingContainerLayoutElementValue>();
                     // Iterate through the list of all child data sets.
                     for (var itemIndex = 0; itemIndex < effectiveChildDataSetList.size(); itemIndex++) {
                         var rawEffectiveChildDataSet = effectiveChildDataSetList.get(itemIndex);
@@ -300,13 +388,18 @@ public class ElementDerivationService {
                                         childOptions,
                                         isVisible,
                                         identities,
-                                        logger
+                                        logger,
+                                        inputModeContext,
+                                        childRowValuesAlreadyResolved
                                 );
                             }
 
-                            effectiveChildDataSet.setValues(childEffectiveElementValues.toAuthoredElementValues());
+                            effectiveRows.add(new EffectiveReplicatingContainerLayoutElementValue()
+                                    .setId(effectiveChildDataSet.getId())
+                                    .setValues(childEffectiveElementValues));
                         }
                     }
+                    effectiveElementValues.put(replicatingContainer.getId(), effectiveRows);
                 }
             } else if (actualElement instanceof LayoutElement<?> layoutElement) {
                 var children = layoutElement.getChildren();
@@ -324,7 +417,9 @@ public class ElementDerivationService {
                             childOptions,
                             isVisible,
                             identities,
-                            logger
+                            logger,
+                            inputModeContext,
+                            valuesAlreadyResolved
                     );
                 }
             }
@@ -605,8 +700,8 @@ public class ElementDerivationService {
      * @return the value that should be treated as authoritative for the current runtime state
      * @throws DerivationException when dynamic value logic is configured but cannot yield a usable result
      */
-    @Nullable
-    private Object deriveEffectiveValue(
+    @Nonnull
+    private ResolvedInputValue deriveEffectiveValue(
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
             @Nonnull InputElement<?> inputElement,
@@ -618,10 +713,12 @@ public class ElementDerivationService {
             @Nonnull ProcessExecutionData processExecutionData,
             @Nonnull ElementDerivationOptions options,
             boolean hasAuthoredValue,
-            @Nullable Object authoredValue,
+            @Nullable AuthoredInputValue authoredValue,
             @Nonnull ComputedElementState elementState,
             @Nonnull IdentityDataMap identities,
-            @Nonnull ElementDerivationLogger logger
+            @Nonnull ElementDerivationLogger logger,
+            @Nonnull InputModeEvaluationContext inputModeContext,
+            boolean valuesAlreadyResolved
     ) throws DerivationException {
         var baseElement = (BaseElement) inputElement;
 
@@ -653,7 +750,7 @@ public class ElementDerivationService {
                             effectiveElementValues.put(inputElement.getId(), formattedAttributeValue);
                             elementState.setValueSource(EffectiveValueSource.Identity);
                             elementState.setDisabled(true);
-                            return formattedAttributeValue;
+                            return ResolvedInputValue.resolved(formattedAttributeValue);
                         }
                     }
                 }
@@ -661,9 +758,22 @@ public class ElementDerivationService {
         }
 
         if (options.containsSkipValues(inputElement.getId())) {
-            effectiveElementValues.put(inputElement.getId(), authoredValue);
+            var resolvedAuthoredValue = hasAuthoredValue
+                    ? resolveAuthoredInputValue(
+                            javascriptEngine,
+                            inputElement,
+                            authoredValue,
+                            processExecutionData,
+                            computedElementStates,
+                            effectiveElementValues,
+                            inputModeContext,
+                            valuesAlreadyResolved
+                    )
+                    : null;
+            var skippedValue = resolvedAuthoredValue == null ? null : resolvedAuthoredValue.value();
+            effectiveElementValues.put(inputElement.getId(), skippedValue);
             elementState.setValueSource(EffectiveValueSource.Authored);
-            return authoredValue;
+            return resolvedAuthoredValue == null ? ResolvedInputValue.resolved(null) : resolvedAuthoredValue;
         }
 
         var valueFunction = inputElement.getValue();
@@ -671,10 +781,30 @@ public class ElementDerivationService {
         // Key presence represents explicit user intent. A present null value is an authored clear,
         // while an absent key allows the dynamic value function to supply the effective value.
         if (valueFunction == null || valueFunction.getType() == null || (hasAuthoredValue && !Boolean.TRUE.equals(inputElement.getDisabled()))) {
+            // Resolve only values that can win. Disabled fields with a value function deliberately ignore authored
+            // input, so evaluating a stale dynamic reference here would create an error for an unused value.
+            var resolvedAuthoredValue = hasAuthoredValue
+                    ? resolveAuthoredInputValue(
+                            javascriptEngine,
+                            inputElement,
+                            authoredValue,
+                            processExecutionData,
+                            computedElementStates,
+                            effectiveElementValues,
+                            inputModeContext,
+                            valuesAlreadyResolved
+                    )
+                    : null;
+            var authoredEffectiveValue = resolvedAuthoredValue == null ? authoredValue : resolvedAuthoredValue.value();
+            if (resolvedAuthoredValue != null && resolvedAuthoredValue.skipValueValidation()) {
+                effectiveElementValues.put(inputElement.getId(), authoredEffectiveValue);
+                elementState.setValueSource(EffectiveValueSource.Authored);
+                return resolvedAuthoredValue;
+            }
             var sanitizedValue = sanitizeSelectEffectiveValue(
                     rootElement,
                     inputElement,
-                    authoredValue,
+                    authoredEffectiveValue,
                     rootAuthoredElementValues,
                     rootEffectiveElementValues,
                     authoredElementValues,
@@ -682,7 +812,9 @@ public class ElementDerivationService {
             );
             effectiveElementValues.put(inputElement.getId(), sanitizedValue);
             elementState.setValueSource(EffectiveValueSource.Authored);
-            return sanitizedValue; // No value to derive if the element has no value setter
+            return resolvedAuthoredValue == null
+                    ? ResolvedInputValue.resolved(sanitizedValue)
+                    : resolvedAuthoredValue.withValue(sanitizedValue); // No value to derive if the element has no value setter
         }
 
         try {
@@ -717,7 +849,7 @@ public class ElementDerivationService {
                 );
                 effectiveElementValues.put(inputElement.getId(), sanitizedValue);
                 elementState.setValueSource(EffectiveValueSource.Derived);
-                return sanitizedValue; // No value to derive if the element has no value setter
+                return ResolvedInputValue.resolved(sanitizedValue); // No value to derive if the element has no value setter
             }
 
             // Determine if the value computation should be done with a value expression
@@ -745,13 +877,201 @@ public class ElementDerivationService {
                 );
                 effectiveElementValues.put(inputElement.getId(), sanitizedValue);
                 elementState.setValueSource(EffectiveValueSource.Derived);
-                return sanitizedValue;
+                return ResolvedInputValue.resolved(sanitizedValue);
             }
         } catch (Exception e) {
             throw new DerivationException(baseElement, "Bei der Erzeugung des dynamischen Wertes ist ein Fehler aufgetreten: " + e.getMessage(), e);
         }
 
         throw new DerivationException(baseElement, "Der Wert konnte nicht abgeleitet werden, da die Definition des Werteableitungsmechanismus ungültig ist.");
+    }
+
+    @Nonnull
+    private ResolvedInputValue resolveAuthoredInputValue(
+            @Nonnull JavascriptEngine javascriptEngine,
+            @Nonnull InputElement<?> inputElement,
+            @Nullable AuthoredInputValue authoredValue,
+            @Nonnull ProcessExecutionData processExecutionData,
+            @Nonnull ComputedElementStates computedElementStates,
+            @Nonnull EffectiveElementValues effectiveElementValues,
+            @Nonnull InputModeEvaluationContext inputModeContext,
+            boolean valuesAlreadyResolved
+    ) throws DerivationException {
+        var baseElement = (BaseElement) inputElement;
+        var baseInputElement = inputElement instanceof BaseInputElement<?> input ? input : null;
+        var inputModePolicy = baseInputElement == null ? null : baseInputElement.getInputModePolicy();
+        if (authoredValue == null) {
+            throw new DerivationException(baseElement, "Der Eingabewert besitzt keinen gültigen Eingabemodus.");
+        }
+
+        var mode = resolveInputMode(authoredValue);
+        if (authoredValue instanceof LiteralAuthoredInputValue literal) {
+            // Effective rows are wrapped only to reuse recursive formatting and validation. Their cells are data,
+            // not new authored definitions: neither mode policies nor template interpolation may reinterpret them.
+            if (valuesAlreadyResolved) {
+                return ResolvedInputValue.resolved(literal.value());
+            }
+            if (inputModePolicy != null && !inputModePolicy.allowedModes().contains(InputMode.Literal)) {
+                throw new DerivationException(baseElement, "Der gewählte Eingabemodus ist für dieses Feld nicht erlaubt.");
+            }
+            return ResolvedInputValue.resolved(resolveLiteralInputValue(
+                    baseElement,
+                    baseInputElement,
+                    literal.value(),
+                    processExecutionData,
+                    inputModeContext
+            ));
+        }
+
+        if (inputModePolicy == null) {
+            throw new DerivationException(baseElement, "Dieses Feld unterstützt keine dynamischen Eingabemodi.");
+        }
+        if (inputModeContext == InputModeEvaluationContext.LiteralOnly) {
+            throw new DerivationException(baseElement, "Dynamische Eingabemodi sind in diesem Kontext nicht freigegeben.");
+        }
+        if (!inputModePolicy.allowedModes().contains(mode)) {
+            throw new DerivationException(baseElement, "Der gewählte Eingabemodus ist für dieses Feld nicht erlaubt.");
+        }
+
+        try {
+            if (authoredValue instanceof VariableAuthoredInputValue variable) {
+                if (variable.reference() == null) {
+                    throw new IllegalArgumentException("Es wurde keine Variablenreferenz angegeben.");
+                }
+                if (!inputModePolicy.allowedVariableSources().contains(variable.reference().source())) {
+                    throw new IllegalArgumentException("Die gewählte Variablenquelle ist für dieses Feld nicht erlaubt.");
+                }
+                inputVariableResolver.validate(variable.reference());
+                if (inputModeContext == InputModeEvaluationContext.Authoring) {
+                    return ResolvedInputValue.deferred();
+                }
+
+                var resolution = inputVariableResolver.resolve(variable.reference(), processExecutionData);
+                if (!resolution.found()) {
+                    throw new IllegalArgumentException("Die referenzierte Variable ist zur Laufzeit nicht verfügbar.");
+                }
+                return ResolvedInputValue.dynamic(resolution.value());
+            }
+
+            if (authoredValue instanceof NoCodeAuthoredInputValue noCode) {
+                if (noCode.operand() == null) {
+                    throw new IllegalArgumentException("Es wurde kein No-Code-Ausdruck angegeben.");
+                }
+                var validationError = noCode.operand().validate();
+                if (!validationError.isValid()) {
+                    throw new IllegalArgumentException("Der No-Code-Ausdruck ist strukturell ungültig.");
+                }
+                if (inputModeContext == InputModeEvaluationContext.Authoring) {
+                    return ResolvedInputValue.deferred();
+                }
+
+                var result = noCodeEvaluationService.evaluate(
+                        noCode.operand(),
+                        createRuntimeAccumulator(computedElementStates, effectiveElementValues),
+                        processExecutionData
+                );
+                return ResolvedInputValue.dynamic(result.getValue());
+            }
+
+            if (authoredValue instanceof LowCodeAuthoredInputValue lowCode) {
+                var code = JavascriptCode.of(lowCode.code());
+                javascriptEngine.validateCode(code);
+                if (inputModeContext == InputModeEvaluationContext.Authoring) {
+                    return ResolvedInputValue.deferred();
+                }
+
+                var result = javascriptEngine
+                        .registerGlobalContextObject(createRuntimeAccumulator(computedElementStates, effectiveElementValues))
+                        .registerProcessExecutionData(processExecutionData)
+                        .registerElementObject(baseElement)
+                        .evaluateCode(code);
+                return ResolvedInputValue.dynamic(result.asObject());
+            }
+        } catch (Exception exception) {
+            throw new DerivationException(baseElement, "Der dynamische Eingabewert ist ungültig: " + exception.getMessage(), exception);
+        }
+
+        throw new DerivationException(baseElement, "Der Eingabemodus konnte nicht verarbeitet werden.");
+    }
+
+    @Nullable
+    private Object resolveLiteralInputValue(
+            @Nonnull BaseElement element,
+            @Nullable BaseInputElement<?> inputElement,
+            @Nullable Object value,
+            @Nonnull ProcessExecutionData processExecutionData,
+            @Nonnull InputModeEvaluationContext inputModeContext
+    ) throws DerivationException {
+        if (inputElement == null || inputElement.getDynamicTextPolicy() == null || !(value instanceof String text)) {
+            return value;
+        }
+
+        try {
+            if (inputModeContext == InputModeEvaluationContext.Authoring) {
+                var diagnostics = templateRenderService.validateInterpolationSyntax(text);
+                if (!diagnostics.isEmpty()) {
+                    var message = diagnostics.stream()
+                            .map(diagnostic -> "Zeile %d: %s".formatted(diagnostic.lineNumber(), diagnostic.message()))
+                            .reduce((left, right) -> left + " " + right)
+                            .orElse("Unbekannter Syntaxfehler.");
+                    throw new IllegalArgumentException(message);
+                }
+                return text;
+            }
+
+            if (inputModeContext == InputModeEvaluationContext.Runtime) {
+                return templateRenderService.interpolate(processExecutionData, text);
+            }
+
+            return text;
+        } catch (RuntimeException exception) {
+            throw new DerivationException(element, "Der dynamische Text ist ungültig: " + exception.getMessage(), exception);
+        }
+    }
+
+    @Nonnull
+    private InputMode resolveInputMode(@Nonnull AuthoredInputValue value) {
+        return switch (value) {
+            case LiteralAuthoredInputValue ignored -> InputMode.Literal;
+            case VariableAuthoredInputValue ignored -> InputMode.Variable;
+            case NoCodeAuthoredInputValue ignored -> InputMode.NoCode;
+            case LowCodeAuthoredInputValue ignored -> InputMode.LowCode;
+        };
+    }
+
+    /**
+     * Input modes and existing value functions both return effective rows, not authored wrappers. Wrapping each cell as a literal
+     * before recursive derivation prevents wrapper-shaped business data from being interpreted as executable input.
+     */
+    @Nullable
+    private List<ReplicatingContainerLayoutElementValue> formatEffectiveReplicatingContainerValue(
+            @Nonnull ReplicatingContainerLayoutElement element,
+            @Nullable Object value
+    ) {
+        if (!(value instanceof Collection<?> rows)) {
+            return null;
+        }
+
+        // An empty list is a valid conversion; required/minimum-row checks decide whether it is allowed.
+        return authoredInputValueService.toLiteralReplicatingContainerRows(element, rows);
+    }
+
+    private record ResolvedInputValue(@Nullable Object value, boolean skipValueValidation, boolean dynamic) {
+        private static ResolvedInputValue resolved(@Nullable Object value) {
+            return new ResolvedInputValue(value, false, false);
+        }
+
+        private static ResolvedInputValue dynamic(@Nullable Object value) {
+            return new ResolvedInputValue(value, false, true);
+        }
+
+        private static ResolvedInputValue deferred() {
+            return new ResolvedInputValue(null, true, true);
+        }
+
+        private ResolvedInputValue withValue(@Nullable Object updatedValue) {
+            return new ResolvedInputValue(updatedValue, skipValueValidation, dynamic);
+        }
     }
 
     /**
@@ -849,11 +1169,11 @@ public class ElementDerivationService {
         if (effectiveElementValues.containsKey(referencedElementId)) {
             rawValue = effectiveElementValues.get(referencedElementId);
         } else if (authoredElementValues.containsKey(referencedElementId)) {
-            rawValue = authoredElementValues.get(referencedElementId);
+            rawValue = authoredInputValueService.unwrapLiteral(authoredElementValues.get(referencedElementId));
         } else if (rootEffectiveElementValues.containsKey(referencedElementId)) {
             rawValue = rootEffectiveElementValues.get(referencedElementId);
         } else {
-            rawValue = rootAuthoredElementValues.get(referencedElementId);
+            rawValue = authoredInputValueService.unwrapLiteral(rootAuthoredElementValues.get(referencedElementId));
         }
 
         return referencedSelectField.formatValue(rawValue);

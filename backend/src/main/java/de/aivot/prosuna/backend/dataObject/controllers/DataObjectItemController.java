@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.dataObject.filters.DataObjectItemFilter;
 import de.aivot.prosuna.backend.dataObject.permissions.DataObjectPermissionProvider;
 import de.aivot.prosuna.backend.dataObject.services.DataObjectItemService;
 import de.aivot.prosuna.backend.dataObject.services.DataObjectSchemaService;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
@@ -47,18 +48,21 @@ public class DataObjectItemController {
     private final DataObjectSchemaService schemaService;
     private final UserService userService;
     private final PermissionService permissionService;
+    private final AuthoredInputValueService authoredInputValueService;
 
     @Autowired
     public DataObjectItemController(AuditService auditService,
                                     DataObjectItemService service,
                                     DataObjectSchemaService schemaService,
                                     UserService userService,
-                                    PermissionService permissionService) {
+                                    PermissionService permissionService,
+                                    AuthoredInputValueService authoredInputValueService) {
         this.auditService = auditService.createScopedAuditService(DataObjectItemController.class, "Datenobjekte");
         this.service = service;
         this.schemaService = schemaService;
         this.userService = userService;
         this.permissionService = permissionService;
+        this.authoredInputValueService = authoredInputValueService;
     }
 
     @GetMapping("")
@@ -84,7 +88,7 @@ public class DataObjectItemController {
 
         return service
                 .list(pageable, filter)
-                .map(i -> DataObjectItemResponseDTO.fromEntity(i, schema));
+                .map(i -> DataObjectItemResponseDTO.fromEntity(i, schema, authoredInputValueService));
     }
 
     @PostMapping("")
@@ -133,7 +137,7 @@ public class DataObjectItemController {
                 .log();
 
         return DataObjectItemResponseDTO
-                .fromEntity(created, schema);
+                .fromEntity(created, schema, authoredInputValueService);
     }
 
     @GetMapping("{itemId}/")
@@ -159,7 +163,7 @@ public class DataObjectItemController {
         return service
                 .retrieve(id)
                 .filter(entity -> entity.getDeleted() == null)
-                .map(i -> DataObjectItemResponseDTO.fromEntity(i, schema))
+                .map(i -> DataObjectItemResponseDTO.fromEntity(i, schema, authoredInputValueService))
                 .orElseThrow(ResponseException::notFound);
     }
 
@@ -213,7 +217,7 @@ public class DataObjectItemController {
                 .log(); // TODO: Add Diff
 
         return DataObjectItemResponseDTO
-                .fromEntity(updated, schema);
+                .fromEntity(updated, schema, authoredInputValueService);
     }
 
     @DeleteMapping("{itemId}/")

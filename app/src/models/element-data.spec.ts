@@ -6,13 +6,14 @@ import {
     ComputedElementValueSource,
     hasAuthoredElementValuesSomeInput,
     hasAnyErrorRecursivelyInParent,
+    literalAuthoredValue,
     resolveComputedElementSubState,
 } from './element-data';
 import {ElementType} from '../data/element-type/element-type';
 
 describe('hasAuthoredElementValuesSomeInput', () => {
     it('should treat an explicit null as authored input', () => {
-        expect(hasAuthoredElementValuesSomeInput({field: null})).toBe(true);
+        expect(hasAuthoredElementValuesSomeInput({field: literalAuthoredValue(null)})).toBe(true);
     });
 
     it('should ignore missing and undefined values', () => {

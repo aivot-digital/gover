@@ -44,6 +44,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
     return (
         <>
             <Box
+                data-no-code-selector
                 sx={{
                     display: 'flex',
                     alignItems: 'center',

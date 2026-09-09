@@ -2,7 +2,6 @@ import {
     alpha,
     Box,
     Button,
-    Chip,
     CircularProgress,
     Divider,
     List,
@@ -19,13 +18,15 @@ import {type DashboardTaskSummary} from '../models/dashboard-overview';
 import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
 import {DashboardPanel} from './dashboard-panel';
 import Balancer from 'react-wrap-balancer';
+import {Chip} from '../../../components/chip/chip';
 
 interface DashboardTasksPanelProps {
     summary?: DashboardTaskSummary;
     error?: boolean;
+    previewOnly?: boolean;
 }
 
-export function DashboardTasksPanel({summary, error = false}: DashboardTasksPanelProps) {
+export function DashboardTasksPanel({summary, error = false, previewOnly = false}: DashboardTasksPanelProps) {
     const theme = useTheme();
 
     return (
@@ -43,7 +44,15 @@ export function DashboardTasksPanel({summary, error = false}: DashboardTasksPane
                     </Typography>
                 </Box>
                 {summary != null && summary.total > 0 && (
-                    <Chip label={`${summary.total} offen`} size="small" color={summary.overdue > 0 ? 'warning' : 'default'} sx={{ml: 'auto'}}/>
+                    <Chip
+                        label={`${summary.total} offen`}
+                        size="small"
+                        mode="soft"
+                        sx={{
+                            ml: 'auto',
+                            flexShrink: 0,
+                        }}
+                    />
                 )}
             </Box>
             <Divider/>
@@ -98,8 +107,11 @@ export function DashboardTasksPanel({summary, error = false}: DashboardTasksPane
                             <Box key={task.id}>
                                 {index > 0 && <Divider component="li"/>}
                                 <ListItemButton
-                                    component={Link}
-                                    to={`/tasks/${task.processInstanceId}/${task.id}`}
+                                    component={previewOnly ? 'div' : Link}
+                                    to={previewOnly ? undefined : `/tasks/${task.processInstanceId}/${task.id}`}
+                                    role={previewOnly ? 'listitem' : undefined}
+                                    tabIndex={previewOnly ? -1 : undefined}
+                                    disableRipple={previewOnly}
                                     sx={{px: 2.5, py: 1.75, gap: 1.5}}
                                 >
                                     <Task sx={{color: 'text.secondary', flexShrink: 0}}/>
@@ -118,7 +130,18 @@ export function DashboardTasksPanel({summary, error = false}: DashboardTasksPane
                                             {task.processTitle} · {task.caseNumber}
                                         </Typography>
                                     </Box>
-                                    {deadline != null && <Chip label={isOverdue ? `Überfällig · ${deadline}` : `Frist · ${deadline}`} size="small" color={isOverdue ? 'error' : 'default'} variant={isOverdue ? 'filled' : 'outlined'}/>}
+                                    {deadline != null && (
+                                        <Chip
+                                            label={isOverdue ? `Überfällig · ${deadline}` : `Frist · ${deadline}`}
+                                            size="small"
+                                            mode="soft"
+                                            color={isOverdue ? 'error' : 'default'}
+                                            sx={{
+                                                flexShrink: 0,
+                                                ...(!isOverdue && {bgcolor: 'transparent'}),
+                                            }}
+                                        />
+                                    )}
                                 </ListItemButton>
                             </Box>
                         );

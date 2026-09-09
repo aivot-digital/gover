@@ -1,9 +1,9 @@
 package de.aivot.prosuna.backend.dataObject.dtos;
 
-import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntity;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 
 import jakarta.annotation.Nonnull;
 import java.time.Instant;
@@ -20,10 +20,15 @@ public record DataObjectItemResponseDTO(
         @Nonnull
         Instant updated
 ) {
-    public static DataObjectItemResponseDTO fromEntity(DataObjectItemEntity entity, DataObjectSchemaEntity schema) {
-        var elementData = JsonMapperFactory
-                .getInstance()
-                .convertValue(entity.getData(), AuthoredElementValues.class);
+    public static DataObjectItemResponseDTO fromEntity(
+            @Nonnull DataObjectItemEntity entity,
+            @Nonnull DataObjectSchemaEntity schema,
+            @Nonnull AuthoredInputValueService authoredInputValueService
+    ) {
+        var elementData = authoredInputValueService.toLiteralAuthoredElementValues(
+                schema.getSchema(),
+                entity.getData()
+        );
 
         return new DataObjectItemResponseDTO(
                 entity.getSchemaKey(),

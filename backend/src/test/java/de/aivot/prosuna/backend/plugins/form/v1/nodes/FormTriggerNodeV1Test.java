@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfi
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
@@ -362,7 +363,7 @@ class FormTriggerNodeV1Test {
                 same(configuration),
                 processNodeCaptor.capture()
         );
-        assertEquals("Ada", submissionCaptor.getValue().get("nameField"));
+        assertEquals("Ada", submissionCaptor.getValue().getLiteral("nameField"));
         assertEquals(PROCESS_INSTANCE_ID, processInstanceCaptor.getValue().getId());
         assertEquals(PROCESS_ID, processInstanceCaptor.getValue().getProcessId());
         assertEquals("formNode", processNodeCaptor.getValue().getDataKey());
@@ -392,9 +393,9 @@ class FormTriggerNodeV1Test {
     @Test
     void cleanConfigurationForExport_ShouldRemoveSystemLocalIdentityAndPaymentConfiguration() {
         var configuration = new AuthoredElementValues();
-        configuration.put(FormTriggerConfigV1.FORM_LAYOUT, validFormLayout());
-        configuration.put(FormTriggerConfigV1.IDENTITIES, List.of(Map.of("id", "identity")));
-        configuration.put(FormTriggerConfigV1.PAYMENT, Map.of("paymentProviderKey", UUID.randomUUID()));
+        configuration.putLiteral(FormTriggerConfigV1.FORM_LAYOUT, validFormLayout());
+        configuration.putLiteral(FormTriggerConfigV1.IDENTITIES, List.of(Map.of("id", "identity")));
+        configuration.putLiteral(FormTriggerConfigV1.PAYMENT, Map.of("paymentProviderKey", UUID.randomUUID()));
 
         var cleaned = node.cleanConfigurationForExport(configuration);
 
@@ -649,7 +650,8 @@ class FormTriggerNodeV1Test {
                 pdfService,
                 processInstanceAttachmentService,
                 processInstanceAttachmentSetService,
-                JsonMapperTestUtils.createMapper()
+                JsonMapperTestUtils.createMapper(),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper())
         );
     }
 

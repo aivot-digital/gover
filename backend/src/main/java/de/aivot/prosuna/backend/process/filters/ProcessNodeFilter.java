@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.filters;
 
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.utils.specification.SpecificationBuilder;
@@ -47,7 +48,11 @@ public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
 
         for (var entry : configEquals.entrySet()) {
             builder = builder
-                    .withJsonEquals("configuration", List.of(entry.getKey().split("\\.")), entry.getValue());
+                    .withJsonEquals(
+                            "configuration",
+                            AuthoredElementValues.literalValueJsonPath(entry.getKey().split("\\.")),
+                            entry.getValue()
+                    );
         }
 
         for (var spec : additionalSpecifications) {

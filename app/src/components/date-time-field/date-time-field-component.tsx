@@ -183,6 +183,7 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
             label={props.label}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             hint={props.hint}
             error={effectiveError}

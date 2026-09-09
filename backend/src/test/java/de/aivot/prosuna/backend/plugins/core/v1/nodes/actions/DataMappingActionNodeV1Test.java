@@ -364,15 +364,15 @@ class DataMappingActionNodeV1Test {
 
     private static AuthoredElementValues configuration(List<Map<String, Object>> rules, boolean cleanupEmptyContainers) {
         var config = new AuthoredElementValues();
-        config.put("rules", rules);
-        config.put("cleanupEmptyContainers", cleanupEmptyContainers);
+        config.putLiteral("rules", rules);
+        config.putLiteral("cleanupEmptyContainers", cleanupEmptyContainers);
         return config;
     }
 
     private static DataMappingActionNodeV1.DataMappingActionNodeV1Config nodeConfiguration(AuthoredElementValues configuration)
             throws ElementDataConversionException {
         var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(configuration);
+        effectiveValues.putAll(configuration.toLiteralValues());
         return ElementPOJOMapper.mapToPOJO(effectiveValues, DataMappingActionNodeV1.DataMappingActionNodeV1Config.class);
     }
 

@@ -1,6 +1,5 @@
 import type {Page} from '../../../models/dtos/page';
 import type {AuthoredElementValues} from '../../../models/element-data';
-import type {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import type {SortOrder} from '../../../components/generic-list/generic-list-props';
 import type {QueryParams} from '../../../services/base-api-service';
 import {BaseApiService} from '../../../services/base-api-service';
@@ -9,7 +8,6 @@ import type {ProcessNodeEntity} from '../../process/entities/process-node-entity
 import type {ProcessVersionEntity} from '../../process/entities/process-version-entity';
 import type {Theme} from '../../themes/models/theme';
 import type {FormTriggerIdentityDetailsDTO} from '../dtos/form-trigger-identity-details-dto';
-import type {PaymentConfigElementValue} from '../../../models/elements/form/input/payment-config-element';
 
 export interface FormTriggerFilter {
     id: number;
@@ -24,12 +22,7 @@ export interface FormTriggerFilter {
 export type FormTriggerSortField =
     keyof Pick<ProcessNodeEntity, 'id' | 'name' | 'processId' | 'processVersion' | 'dataKey' | 'savedWithErrors' | 'updated'>;
 
-export interface FormTriggerConfiguration extends AuthoredElementValues {
-    formSlug?: string;
-    formLayout?: FormLayoutElement;
-    identityProviders?: Array<Record<string, unknown>>;
-    payment?: PaymentConfigElementValue;
-}
+export type FormTriggerConfiguration = AuthoredElementValues;
 
 export interface FormTriggerNodeEntity extends Omit<ProcessNodeEntity, 'configuration'> {
     configuration: FormTriggerConfiguration;

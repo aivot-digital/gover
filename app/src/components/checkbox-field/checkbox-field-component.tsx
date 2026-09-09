@@ -1,4 +1,4 @@
-import {Box, Checkbox, FormControlLabel, FormHelperText, Switch, type SxProps, type Theme} from '@mui/material';
+import {Box, Checkbox, FormControlLabel, FormHelperText, Switch} from '@mui/material';
 import {type CheckboxFieldComponentProps} from './checkbox-field-component-props';
 import {
     type FormFieldControlContext,
@@ -11,26 +11,13 @@ import {
     formFieldLabelActionSx,
     formFieldLabelRowSx,
     formFieldLabelSx,
-    formFieldRootSx,
-    getFormFieldMarginSx,
 } from '../../theming/form-field-tokens';
 import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
+import {FormFieldFrame} from '../form-field/form-field-frame';
 
 function hasContent(content: unknown): boolean {
     return content !== null && content !== undefined && content !== false && content !== '';
 }
-
-const visuallyHiddenSx = {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    p: 0,
-    m: -1,
-    overflow: 'hidden',
-    clip: 'rect(0 0 0 0)',
-    whiteSpace: 'nowrap',
-    border: 0,
-} satisfies SxProps<Theme>;
 
 export function CheckboxFieldComponent(props: CheckboxFieldComponentProps) {
     const generatedId = useNormalizedReactId();
@@ -106,82 +93,82 @@ export function CheckboxFieldComponent(props: CheckboxFieldComponentProps) {
     );
 
     return (
-        <Box
-            data-form-field
-            data-disabled={disabled || undefined}
-            data-readonly={readOnly || undefined}
-            data-busy={busy || undefined}
-            data-invalid={hasError || undefined}
-            sx={[
-                formFieldRootSx,
-                getFormFieldMarginSx(margin),
-                ...(Array.isArray(props.sx) ? props.sx : [props.sx]),
-            ]}
-        >
-            <Box sx={[formFieldLabelRowSx, {mb: 0}]}>
-                {hasContent(labelAction) && (
-                    <Box
-                        data-form-field-label-action
-                        sx={[
-                            formFieldLabelActionSx,
-                            {gridColumn: 2, gridRow: 1},
-                        ]}
-                    >
-                        {labelAction}
-                    </Box>
-                )}
-
-                <FormControlLabel
-                    control={control}
-                    required={false}
-                    disabled={isInteractionDisabled}
-                    disableTypography
-                    label={(
-                        <Box
-                            component="span"
-                            id={labelId}
-                            title={props.invisibleLabel ? undefined : props.label}
-                            className={hasError ? 'Mui-error' : (isInteractionDisabled ? 'Mui-disabled' : undefined)}
-                            sx={[
-                                formFieldLabelSx,
-                                props.invisibleLabel ? visuallyHiddenSx : {},
-                            ]}
-                        >
-                            <FormFieldLabelContent
-                                required={required}
-                                showOptionalIndicator={props.showOptionalIndicator === true}
-                            >
-                                {props.label}
-                            </FormFieldLabelContent>
-                        </Box>
-                    )}
-                    sx={{
-                        gridColumn: 1,
-                        gridRow: 1,
-                        minWidth: 0,
-                        ml: -1.375,
-                        mr: 0,
-                        alignItems: 'center',
-                        cursor: isInteractionDisabled ? 'not-allowed' : undefined,
-                        '& .MuiFormControlLabel-label': {
-                            minWidth: 0,
-                        },
-                    }}
-                />
-            </Box>
-
-            {hasHelperText && (
-                <FormHelperText
-                    id={helperTextId}
-                    component="div"
-                    error={hasError}
-                    disabled={isInteractionDisabled}
-                    role={hasError ? 'alert' : undefined}
-                    sx={formFieldHelperTextSx}
+        <FormFieldFrame externalAction={props.externalAction} margin={margin} sx={props.sx}>
+            {(frameSx) => (
+                <Box
+                    data-form-field
+                    data-disabled={disabled || undefined}
+                    data-readonly={readOnly || undefined}
+                    data-busy={busy || undefined}
+                    data-invalid={hasError || undefined}
+                    sx={frameSx}
                 >
-                    {helperText}
-                </FormHelperText>
+                    <Box data-form-field-control sx={[formFieldLabelRowSx, {mb: 0}]}>
+                        {hasContent(labelAction) && (
+                            <Box
+                                data-form-field-label-action
+                                sx={[
+                                    formFieldLabelActionSx,
+                                    {gridColumn: 2, gridRow: 1},
+                                ]}
+                            >
+                                {labelAction}
+                            </Box>
+                        )}
+
+                        <FormControlLabel
+                            control={control}
+                            required={false}
+                            disabled={isInteractionDisabled}
+                            disableTypography
+                            label={(
+                                <Box
+                                    component="span"
+                                    id={labelId}
+                                    title={props.invisibleLabel ? undefined : props.label}
+                                    className={[
+                                        hasError ? 'Mui-error' : (isInteractionDisabled ? 'Mui-disabled' : ''),
+                                        props.invisibleLabel ? 'visually-hidden' : '',
+                                    ].filter(Boolean).join(' ')}
+                                    sx={formFieldLabelSx}
+                                >
+                                    <FormFieldLabelContent
+                                        required={required}
+                                        showOptionalIndicator={props.showOptionalIndicator === true}
+                                    >
+                                        {props.label}
+                                    </FormFieldLabelContent>
+                                </Box>
+                            )}
+                            sx={{
+                                gridColumn: 1,
+                                gridRow: 1,
+                                minWidth: 0,
+                                ml: -1.375,
+                                mr: 0,
+                                alignItems: 'center',
+                                cursor: isInteractionDisabled ? 'not-allowed' : undefined,
+                                '& .MuiFormControlLabel-label': {
+                                    minWidth: 0,
+                                },
+                            }}
+                        />
+                    </Box>
+
+                    {hasHelperText && (
+                        <FormHelperText
+                            id={helperTextId}
+                            component="div"
+                            error={hasError}
+                            disabled={isInteractionDisabled}
+                            role={hasError ? 'alert' : undefined}
+                            sx={formFieldHelperTextSx}
+                        >
+                            {helperText}
+                        </FormHelperText>
+                    )}
+                </Box>
             )}
-        </Box>
+        </FormFieldFrame>
     );
 }

@@ -16,6 +16,6 @@ public record DataObjectItemRequestDTO(
         return new DataObjectItemEntity()
                 .setSchemaKey(schema.getKey())
                 .setId(id)
-                .setData(data);
+                .setData(data.toLiteralValues());
     }
 }

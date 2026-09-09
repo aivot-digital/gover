@@ -283,6 +283,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
             readOnly={readOnly}
             busy={busy}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             margin={props.margin}
             showOptionalIndicator={props.showOptionalIndicator}

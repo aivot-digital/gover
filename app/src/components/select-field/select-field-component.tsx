@@ -387,6 +387,7 @@ export function SelectFieldComponent<T extends SelectFieldValue = string>(props:
         id,
         ariaLabel,
         ariaDescribedBy,
+        externalAction,
         labelAction,
         showOptionalIndicator,
     } = props;
@@ -398,6 +399,7 @@ export function SelectFieldComponent<T extends SelectFieldValue = string>(props:
             label={label}
             ariaLabel={ariaLabel}
             ariaDescribedBy={ariaDescribedBy}
+            externalAction={externalAction}
             labelAction={labelAction}
             hint={hint}
             error={error}

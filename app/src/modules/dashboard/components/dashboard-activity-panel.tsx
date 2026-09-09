@@ -211,9 +211,7 @@ export function DashboardActivityPanel({activity, error = false, initialPeriod}:
                         <Typography variant="caption" sx={{
                             color: "text.secondary"
                         }}>
-                            <Balancer>
-                                Die Auswertung berücksichtigt nur Vorgänge, auf die Sie zugreifen dürfen. Sie bildet daher möglicherweise nicht alle Vorgänge dieser Prosuna-Instanz ab.
-                            </Balancer>
+                            Die Auswertung berücksichtigt nur Vorgänge, auf die Sie zugreifen dürfen. Sie bildet daher möglicherweise nicht alle Vorgänge dieser Prosuna-Instanz ab.
                         </Typography>
                     </Box>
                 </>

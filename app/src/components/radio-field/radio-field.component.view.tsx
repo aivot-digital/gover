@@ -25,10 +25,12 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
     const isBusy = useMemo(() => {
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
+    const inputModeFieldProps = props.inputModeLiteralContext?.fieldProps;
 
     return (
         <RadioFieldComponent
-            label={element.label ?? ''}
+            {...inputModeFieldProps}
+            label={inputModeFieldProps?.label ?? element.label ?? ''}
             options={element.options}
             value={value}
             onChange={(newValue) => {
@@ -36,11 +38,11 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
                     setValue(newValue);
                 }
             }}
-            required={element.required}
-            error={errors != null ? errors.join(' ') : undefined}
-            hint={element.hint}
-            disabled={isDisabled}
-            busy={isBusy}
+            required={inputModeFieldProps?.required ?? element.required}
+            error={inputModeFieldProps?.error ?? (errors != null ? errors.join(' ') : undefined)}
+            hint={inputModeFieldProps?.hint ?? element.hint}
+            disabled={inputModeFieldProps?.disabled ?? isDisabled}
+            busy={inputModeFieldProps?.busy ?? isBusy}
             displayInline={element.displayInline}
             toggleButtons={element.toggleButtons}
         />

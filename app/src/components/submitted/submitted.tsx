@@ -22,7 +22,6 @@ import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submis
 import {ElementType} from '../../data/element-type/element-type';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {CanvasConfettiOverlay, prosunaConfettiColors} from '../confetti/canvas-confetti-overlay';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
 import {ProcessEntity} from '../../modules/process/entities/process-entity';
@@ -35,6 +34,7 @@ import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-a
 import {downloadBlobFile} from '../../utils/download-utils';
 import {ProcessTaskStatus} from '../../modules/process/enums/process-task-status';
 import {ProcessInstanceStatus} from '../../modules/process/enums/process-instance-status';
+import {getLiteralElementValue} from '../../models/element-data';
 
 interface SubmittedProps {
     startedProcessAccessKey: string;
@@ -44,8 +44,6 @@ interface SubmittedProps {
     process: ProcessEntity;
     version: ProcessVersionEntity;
 }
-
-const handledConfettiAccessKeys = new Set<string>();
 
 const useSetMailErrorWithSnackbar = (setMailError: (message: string) => void) => {
     const dispatch = useAppDispatch();
@@ -78,34 +76,14 @@ export function Submitted(props: SubmittedProps) {
     const theme = useTheme();
 
     const submitStep = formElement.children?.find(c => c.type === ElementType.SubmitStep) as SubmitStepElement;
-    const confettiDisabled = submitStep?.disableConfetti === true;
 
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
     const [qrCode, setQrCode] = useState<string>();
-    const [confettiPlayKey, setConfettiPlayKey] = useState<number | null>(null);
     const [formTaskAccessKey, setFormTaskAccessKey] = useState<string>();
     const [processFailed, setProcessFailed] = useState(false);
     const [isPrintDownloadPending, setIsPrintDownloadPending] = useState(false);
     const SubmittedStatusIcon = processFailed ? ErrorOutlineOutlinedIcon : CheckCircleTwoToneIcon;
-
-    useEffect(() => {
-        const trimmedAccessKey = startedProcessAccessKey.trim();
-
-        if (trimmedAccessKey.length === 0 || handledConfettiAccessKeys.has(trimmedAccessKey)) {
-            setConfettiPlayKey(null);
-            return;
-        }
-
-        handledConfettiAccessKeys.add(trimmedAccessKey);
-
-        if (confettiDisabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            setConfettiPlayKey(null);
-            return;
-        }
-
-        setConfettiPlayKey((currentValue) => (currentValue ?? 0) + 1);
-    }, [confettiDisabled, startedProcessAccessKey]);
 
     useEffect(() => {
         if (
@@ -199,7 +177,7 @@ export function Submitted(props: SubmittedProps) {
         `/process/${encodeURIComponent(startedProcessAccessKey.trim())}/tasks/${encodeURIComponent(formTaskAccessKey)}`;
 
     const downloadSubmittedPrint = (): void => {
-        const formSlug = node.configuration.formSlug;
+        const formSlug = getLiteralElementValue<string>(node.configuration, 'formSlug');
         if (processFailed || typeof formSlug !== 'string' || formSlug.trim().length === 0 || formTaskAccessKey == null) {
             return;
         }
@@ -690,10 +668,6 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 />
             </Box>
-            <CanvasConfettiOverlay
-                playKey={processFailed ? null : confettiPlayKey}
-                colors={prosunaConfettiColors}
-            />
 
             <InfoDialog
                 title="E-Mail versendet"

@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -417,9 +418,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             throw new ProcessNodeExecutionExceptionMissingValue("Für die Zahlungsanforderung muss eine E-Mail-Adresse angegeben werden.");
         }
 
-        var recipientEmail = templateRenderService
-                .interpolate(processExecutionData, recipientTemplate)
-                .trim();
+        var recipientEmail = recipientTemplate.trim();
 
         if (StringUtils.isNullOrEmpty(recipientEmail)) {
             throw new ProcessNodeExecutionExceptionMissingValue("Die E-Mail-Adresse für die Zahlungsanforderung ist nach der Verarbeitung leer.");
@@ -671,7 +670,9 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         /**
          * Recipient email template rendered with the current process data. Exactly one resolved email address is allowed.
          */
-        @InputElementPOJOBinding(id = RECIPIENT_EMAIL_FIELD_ID, type = ElementType.Text, properties = {
+        @InputElementPOJOBinding(id = RECIPIENT_EMAIL_FIELD_ID, type = ElementType.Text,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "E-Mail-Adresse"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Empfänger:in der Zahlungsinformationen. Unterstützt Vorlagen mit Vorgangsdaten."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)

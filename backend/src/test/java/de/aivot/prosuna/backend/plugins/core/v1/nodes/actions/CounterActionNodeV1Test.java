@@ -167,10 +167,10 @@ class CounterActionNodeV1Test {
     private static AuthoredElementValues configuration(String variablePath, Long increment) {
         var config = new AuthoredElementValues();
         if (variablePath != null) {
-            config.put("variable", variablePath);
+            config.putLiteral("variable", variablePath);
         }
         if (increment != null) {
-            config.put("increment", increment);
+            config.putLiteral("increment", increment);
         }
         return config;
     }
@@ -191,7 +191,7 @@ class CounterActionNodeV1Test {
     private static CounterActionNodeV1.CounterActionNodeV1Configuration nodeConfiguration(AuthoredElementValues configuration)
             throws ElementDataConversionException {
         var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(configuration);
+        effectiveValues.putAll(configuration.toLiteralValues());
         return ElementPOJOMapper.mapToPOJO(effectiveValues, CounterActionNodeV1.CounterActionNodeV1Configuration.class);
     }
 
@@ -201,7 +201,7 @@ class CounterActionNodeV1Test {
         states.put("increment", new ComputedElementState());
 
         var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(configuration);
+        effectiveValues.putAll(configuration.toLiteralValues());
         return new DerivedRuntimeElementData(effectiveValues, states);
     }
 

@@ -20,7 +20,7 @@ import {
     Typography,
     useTheme,
 } from '@mui/material';
-import {Link, useLocation} from 'react-router-dom';
+import {Link, useLocation, useSearchParams} from 'react-router-dom';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {
@@ -66,6 +66,7 @@ import {
 import {type PermissionSet} from '../../../modules/permissions/models/permission-set';
 import {AssetsApiService} from '../../../modules/assets/assets-api-service';
 import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
+import {SIMULATED_DASHBOARD_TASK_COUNT} from '../../../modules/dashboard/dashboard-simulation';
 import {hasModuleFlag, ModuleFlag} from '../../../utils/module-flags';
 import {alpha, type Theme as MuiTheme} from '@mui/material/styles';
 import {createAppTheme} from '../../../theming/themes';
@@ -334,6 +335,8 @@ const BaseDrawerGroups: DrawerGroup[] = [
  * Main Drawer Component
  * ----------------------------- */
 export function ShellDrawer() {
+    const [searchParams] = useSearchParams();
+    const shouldSimulate = searchParams.get('simulate') === '1';
     const baseTheme = useTheme();
     const shouldReduceMotion = useReducedMotion() === true;
     const dispatch = useAppDispatch();
@@ -385,6 +388,8 @@ export function ShellDrawer() {
     }, [canReadAssets, dispatch]);
 
     useEffect(() => {
+        if (shouldSimulate) return;
+
         if (user?.id == null) {
             setAssignedTaskCount(null);
             return;
@@ -416,7 +421,7 @@ export function ShellDrawer() {
             isMounted = false;
             unsubscribeRefreshListener();
         };
-    }, [user?.id]);
+    }, [user?.id, shouldSimulate]);
 
     const drawerGroups = useMemo(() => {
         const filterByPermission = (items: DrawerItem[]): DrawerItem[] => {
@@ -452,10 +457,14 @@ export function ShellDrawer() {
         return BaseDrawerGroups.map((group) => ({
             ...group,
             items: group.items.map((item) => {
+                if (shouldSimulate && (item.label === 'Vorlagen' || item.label === 'Marktplatz')) {
+                    return {...item, disabled: false};
+                }
+
                 if (item.label === 'Aufgaben') {
                     return {
                         ...item,
-                        chipContent: assignedTaskCount ?? undefined,
+                        chipContent: shouldSimulate ? SIMULATED_DASHBOARD_TASK_COUNT : assignedTaskCount ?? undefined,
                     };
                 }
 
@@ -489,7 +498,7 @@ export function ShellDrawer() {
                 items: filterByPermission(group.items),
             }))
             .filter((group) => group.items.length > 0);
-    }, [assetStorageProviderItems, assignedTaskCount, hasDrawerSystemPermission, isLoadingAssetStorageProviders, permissions]);
+    }, [assetStorageProviderItems, assignedTaskCount, hasDrawerSystemPermission, isLoadingAssetStorageProviders, permissions, shouldSimulate]);
 
     // responsive auto-minimize
     useEffect(() => {
@@ -732,7 +741,7 @@ export function ShellDrawer() {
                                                         borderRadius: 1,
                                                         fontSize: '0.75rem',
                                                         fontWeight: 600,
-                                                        background: 'action.selected',
+                                                        bgcolor: 'action.selected',
                                                         color: 'text.secondary',
                                                         transform: 'translateX(7px) translateY(-1px)',
                                                     }}

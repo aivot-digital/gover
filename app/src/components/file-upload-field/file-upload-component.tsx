@@ -117,6 +117,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
             label={props.label}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             required={props.required}
             disabled={props.disabled}

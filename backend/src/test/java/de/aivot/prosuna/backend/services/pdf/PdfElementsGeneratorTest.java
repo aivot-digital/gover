@@ -4,8 +4,8 @@ import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.ComputedElementSubState;
 import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
@@ -171,11 +171,11 @@ class PdfElementsGeneratorTest {
         replicatingContainer.setId("people");
         var root = createRoot(replicatingContainer);
 
-        var rowValues = new AuthoredElementValues();
+        var rowValues = new EffectiveElementValues();
         rowValues.put("name", "Ada");
         var effectiveValues = new EffectiveElementValues();
         effectiveValues.put("people", List.of(
-                new ReplicatingContainerLayoutElementValue().setValues(rowValues)
+                new EffectiveReplicatingContainerLayoutElementValue().setValues(rowValues)
         ));
 
         var step = PdfElementsGenerator

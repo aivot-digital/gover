@@ -1,6 +1,7 @@
 import {createContext, RefObject, useContext} from 'react';
 import type {AnyElement} from '../../models/elements/any-element';
 import type {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';
+import {type InputVariableSuggestion} from '../../models/input-mode';
 
 export enum ViewDispatcherMode {
     Editor,
@@ -21,6 +22,8 @@ export interface ViewDispatcherContextType {
     rootAuthoredElementValues: AuthoredElementValues;
     rootDerivedData: DerivedRuntimeElementData;
     highlightedElementId?: string | null;
+    inputModesEnabled?: boolean;
+    inputModeVariables?: InputVariableSuggestion[];
 }
 
 export const ViewDispatcherContext = createContext<ViewDispatcherContextType | null>(null);

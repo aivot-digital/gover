@@ -7,6 +7,8 @@ import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with
 import {FormField, type FormFieldLayoutProps} from '../form-field';
 import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
 
+const DEFAULT_EDITOR_HEIGHT = '240px';
+
 export interface CodeInputFieldComponentProps extends FormFieldLayoutProps {
     label: string;
     value: string | null | undefined;
@@ -80,7 +82,7 @@ export function CodeInputFieldComponent(props: CodeInputFieldComponentProps) {
             wordWrap={wordWrap ?? undefined}
             error={hasError}
             language={language ?? undefined}
-            height={editorHeight ?? undefined}
+            height={editorHeight ?? DEFAULT_EDITOR_HEIGHT}
             actions={[]}
             sx={controlSx ?? undefined}
         />
@@ -101,6 +103,7 @@ export function CodeInputFieldComponent(props: CodeInputFieldComponentProps) {
             margin={props.margin}
             showOptionalIndicator={props.showOptionalIndicator}
             sx={props.sx}
+            externalAction={props.externalAction}
             labelAction={(field) => {
                 const suppliedLabelAction = typeof props.labelAction === 'function'
                     ? props.labelAction(field)

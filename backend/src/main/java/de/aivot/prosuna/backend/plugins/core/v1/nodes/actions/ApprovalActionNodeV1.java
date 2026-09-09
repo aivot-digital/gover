@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.enums.ElementDisplayContext;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.enums.ValueFunctionType;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -18,6 +19,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.content.SpacerCont
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
@@ -42,7 +44,6 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -83,14 +84,17 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ElementDataTransformService elementDataTransformService;
-    private final TemplateRenderService templateRenderService;
     private final ElementDerivationService elementDerivationService;
+    private final AuthoredInputValueService authoredInputValueService;
 
-    public ApprovalActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService, ElementDataTransformService elementDataTransformService, TemplateRenderService templateRenderService, ElementDerivationService elementDerivationService) {
+    public ApprovalActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService,
+                                ElementDataTransformService elementDataTransformService,
+                                ElementDerivationService elementDerivationService,
+                                AuthoredInputValueService authoredInputValueService) {
         this.assigneeResolverService = assigneeResolverService;
         this.elementDataTransformService = elementDataTransformService;
-        this.templateRenderService = templateRenderService;
         this.elementDerivationService = elementDerivationService;
+        this.authoredInputValueService = authoredInputValueService;
     }
 
     @Nonnull
@@ -310,9 +314,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
         var criteriaContent = new RichTextContentElement();
         criteriaContent.setId("approval-criteria-content");
-        var renderedCriteria = templateRenderService
-                .interpolate(context.getCurrentProcessExecutionData(), config.criteria);
-        criteriaContent.setContent(renderedCriteria);
+        criteriaContent.setContent(config.criteria);
         children.add(criteriaContent);
 
         var contentHeadline = new HeadlineContentElement();
@@ -359,12 +361,12 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     @Nonnull
     @Override
     public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) throws ResponseException {
-        return elementDataTransformService
-                .buildEffectiveValues(
-                        getStaffTaskView(context),
-                        context.getThisTask().getProcessData()
-                )
-                .toAuthoredElementValues();
+        var taskView = getStaffTaskView(context);
+        var effectiveValues = elementDataTransformService.buildEffectiveValues(
+                taskView,
+                context.getThisTask().getProcessData()
+        );
+        return authoredInputValueService.toLiteralAuthoredElementValues(taskView, effectiveValues);
     }
 
     @Nullable
@@ -380,9 +382,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
             return null;
         }
 
-        return JsonMapperFactory
-                .getNullPreservingInstance()
-                .convertValue(runtimeData, AuthoredElementValues.class);
+        return AuthoredElementValues.fromLiteralValues(runtimeData);
     }
 
     @Nonnull
@@ -390,7 +390,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context,
                                                                          @Nonnull AuthoredElementValues update,
                                                                          @Nonnull String event) throws ResponseException {
-        var remark = update.get(TASK_VIEW_REMARK_FIELD_ID);
+        var remark = update.getLiteral(TASK_VIEW_REMARK_FIELD_ID);
         var remarkText = remark != null ? remark.toString() : null;
 
         final String port;
@@ -460,7 +460,9 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class ApprovalConfiguration {
         public static final String CRITERIA = CRITERIA_FIELD_ID;
-        @InputElementPOJOBinding(id = CRITERIA, type = ElementType.RichTextInput, properties = {
+        @InputElementPOJOBinding(id = CRITERIA, type = ElementType.RichTextInput,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Freigabekriterien"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die fachlichen Kriterien, auf deren Basis die Freigabe erfolgen soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
@@ -486,7 +488,9 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         public GroupLayoutElement dataContent;
 
         public static final String CUSTOM_CONTENT = CUSTOM_CONTENT_FIELD_ID;
-        @InputElementPOJOBinding(id = CUSTOM_CONTENT, type = ElementType.RichTextInput, properties = {
+        @InputElementPOJOBinding(id = CUSTOM_CONTENT, type = ElementType.RichTextInput,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zu prüfende Inhalte"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die zu prüfenden Inhalte frei, z. B. wenn diese in einem Drittsystem geprüft werden."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)

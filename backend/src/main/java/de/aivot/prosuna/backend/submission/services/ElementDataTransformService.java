@@ -1,7 +1,6 @@
 package de.aivot.prosuna.backend.submission.services;
 
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
-import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.ComputedElementSubState;
 import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
@@ -10,7 +9,7 @@ import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -316,6 +315,13 @@ public class ElementDataTransformService {
             return null;
         }
 
+        if (rawItem instanceof EffectiveReplicatingContainerLayoutElementValue row) {
+            return row.getId();
+        }
+        if (rawItem instanceof Map<?, ?> map) {
+            return StringUtils.toNullableTrimmedString(map.get("id"));
+        }
+
         var itemValues = ReplicatingContainerLayoutElement._formatValue(List.of(rawItem));
         return itemValues == null || itemValues.isEmpty() ? null : itemValues.getFirst().getId();
     }
@@ -422,32 +428,28 @@ public class ElementDataTransformService {
 
     @Nullable
     private Map<String, Object> resolveReplicatingContainerItemValues(@Nullable Object rawItem) {
-        if (!(rawItem instanceof ReplicatingContainerLayoutElementValue) && !(rawItem instanceof Map<?, ?>)) {
-            return null;
+        if (rawItem instanceof EffectiveReplicatingContainerLayoutElementValue row) {
+            return row.getValues() == null ? Map.of() : row.getValues();
         }
-
-        var itemValues = ReplicatingContainerLayoutElement._formatValue(List.of(rawItem));
-        if (itemValues == null || itemValues.isEmpty()) {
-            return null;
+        if (rawItem instanceof Map<?, ?> map) {
+            var values = map.containsKey("values") ? map.get("values") : map;
+            return values instanceof Map<?, ?> valueMap ? toStringObjectMap(valueMap) : null;
         }
-
-        var rowValues = itemValues.getFirst().getValues();
-        return rowValues == null ? Map.of() : rowValues;
+        return null;
     }
 
     @Nonnull
-    private ReplicatingContainerLayoutElementValue createReplicatingContainerItemValue(@Nonnull EffectiveElementValues itemEffectiveValues) {
+    private EffectiveReplicatingContainerLayoutElementValue createReplicatingContainerItemValue(@Nonnull EffectiveElementValues itemEffectiveValues) {
         return createReplicatingContainerItemValue(itemEffectiveValues, null);
     }
 
     @Nonnull
-    private ReplicatingContainerLayoutElementValue createReplicatingContainerItemValue(@Nonnull EffectiveElementValues itemEffectiveValues,
+    private EffectiveReplicatingContainerLayoutElementValue createReplicatingContainerItemValue(@Nonnull EffectiveElementValues itemEffectiveValues,
                                                                                       @Nullable String itemId) {
-        AuthoredElementValues values = itemEffectiveValues.toAuthoredElementValues();
         var id = StringUtils.toNullableTrimmedString(itemId);
-        return new ReplicatingContainerLayoutElementValue()
+        return new EffectiveReplicatingContainerLayoutElementValue()
                 .setId(id != null ? id : UUID.randomUUID().toString())
-                .setValues(values);
+                .setValues(itemEffectiveValues);
     }
 
     @Nullable

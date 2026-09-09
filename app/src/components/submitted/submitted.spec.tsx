@@ -12,20 +12,12 @@ import type {FormLayoutElement} from '../../models/elements/form-layout-element'
 import type {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
 import type {ProcessEntity} from '../../modules/process/entities/process-entity';
 import type {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
+import {literalAuthoredValue} from '../../models/element-data';
 
 const dispatchMock = vi.hoisted(() => vi.fn());
-const confettiPlayKeyMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../hooks/use-app-dispatch', () => ({
     useAppDispatch: () => dispatchMock,
-}));
-
-vi.mock('../confetti/canvas-confetti-overlay', () => ({
-    CanvasConfettiOverlay: (props: {playKey: number | null}) => {
-        confettiPlayKeyMock(props.playKey);
-        return null;
-    },
-    prosunaConfettiColors: [],
 }));
 
 describe('Submitted', () => {
@@ -37,10 +29,6 @@ describe('Submitted', () => {
 
     it('enables the PDF download when form processing completes without payment', async () => {
         vi.useFakeTimers();
-        Object.defineProperty(window, 'matchMedia', {
-            configurable: true,
-            value: vi.fn().mockReturnValue({matches: false}),
-        });
 
         const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
             .mockResolvedValueOnce(createStatusResponse(
@@ -57,7 +45,7 @@ describe('Submitted', () => {
                 startedProcessAccessKey="completed-process-access-key"
                 paymentRequired={false}
                 formElement={{children: []} as unknown as FormLayoutElement}
-                node={{configuration: {formSlug: 'form'}} as unknown as ProcessNodeEntity}
+                node={{configuration: {formSlug: literalAuthoredValue('form')}} as unknown as ProcessNodeEntity}
                 process={{slug: 'process'} as unknown as ProcessEntity}
                 version={{processVersion: 1} as unknown as ProcessVersionEntity}
             />,
@@ -83,10 +71,6 @@ describe('Submitted', () => {
 
     it('disables payment and PDF actions when process preparation fails', async () => {
         vi.useFakeTimers();
-        Object.defineProperty(window, 'matchMedia', {
-            configurable: true,
-            value: vi.fn().mockReturnValue({matches: false}),
-        });
 
         const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
             .mockResolvedValueOnce(createStatusResponse(ProcessInstanceStatus.Running))
@@ -100,7 +84,7 @@ describe('Submitted', () => {
                 startedProcessAccessKey="process-access-key"
                 paymentRequired
                 formElement={{children: []} as unknown as FormLayoutElement}
-                node={{configuration: {formSlug: 'form'}} as unknown as ProcessNodeEntity}
+                node={{configuration: {formSlug: literalAuthoredValue('form')}} as unknown as ProcessNodeEntity}
                 process={{slug: 'process'} as unknown as ProcessEntity}
                 version={{processVersion: 1} as unknown as ProcessVersionEntity}
             />,
@@ -111,7 +95,6 @@ describe('Submitted', () => {
         });
 
         expect(screen.getByRole('heading', {name: 'Angaben erfolgreich übermittelt'})).toBeVisible();
-        expect(confettiPlayKeyMock).toHaveBeenCalledWith(1);
 
         await act(async () => {
             await vi.advanceTimersByTimeAsync(1000);
@@ -123,7 +106,6 @@ describe('Submitted', () => {
         expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
         expect(screen.getByRole('button', {name: 'PDF nicht verfügbar'})).toBeDisabled();
         expect(screen.queryByRole('link', {name: 'Zur Zahlung'})).not.toBeInTheDocument();
-        expect(confettiPlayKeyMock).toHaveBeenLastCalledWith(null);
 
         await act(async () => {
             await vi.advanceTimersByTimeAsync(3000);

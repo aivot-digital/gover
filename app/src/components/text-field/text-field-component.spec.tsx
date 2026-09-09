@@ -21,6 +21,20 @@ vi.mock('../copy-to-clipboard-button/copy-to-clipboard-button', () => ({
 }));
 
 describe('TextFieldComponent', () => {
+    it('keeps external actions independent from the disabled input and its description', () => {
+        const onAction = vi.fn();
+        render(<TextFieldComponent label="Name" value="Wert" onChange={vi.fn()} disabled
+                                   hint="Hinweis" externalAction={<button onClick={onAction}>Historie</button>} />);
+        const input = screen.getByRole('textbox', {name: 'Name – optional'});
+        const action = screen.getByRole('button', {name: 'Historie'});
+        expect(input).toBeDisabled();
+        expect(input).toHaveAccessibleDescription('Hinweis');
+        expect(action).not.toBeDisabled();
+        expect(input.closest('[data-form-field]')).not.toContainElement(action);
+        fireEvent.click(action);
+        expect(onAction).toHaveBeenCalledOnce();
+    });
+
     afterEach(() => {
         vi.useRealTimers();
     });

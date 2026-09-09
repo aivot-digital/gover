@@ -3,7 +3,7 @@ import Code from '@aivot/mui-material-symbols-400-n25-outlined/Code';
 import FactCheck from '@aivot/mui-material-symbols-400-n25-outlined/FactCheck';
 import Webhook from '@aivot/mui-material-symbols-400-n25-outlined/Webhook';
 import {type SvgIconComponent} from '../../../types/svg-icon-component';
-import RegularExpression from '@aivot/mui-material-symbols-400-n25-outlined/RegularExpression';
+import {NoCodeIcon} from '../../nocode/data/no-code-icon';
 import LineEndSquare from '@aivot/mui-material-symbols-400-n25-outlined/LineEndSquare';
 import Mail from '@aivot/mui-material-symbols-400-n25-outlined/Mail';
 import EditDocument from '@aivot/mui-material-symbols-400-n25-outlined/EditDocument';
@@ -19,7 +19,7 @@ export const KnownProviderIcons: Record<string, SvgIconComponent> = {
     'if': AltRoute,
     'webhook': Webhook,
     'js': Code,
-    'no-code': RegularExpression,
+    'no-code': NoCodeIcon,
     'check-and-update': FactCheck,
     'data_mapping': InputCircle,
     'http_request': Api,

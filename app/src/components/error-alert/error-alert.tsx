@@ -8,6 +8,7 @@ import EditOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Edit'
 import {
     AuthoredElementValues,
     DerivedRuntimeElementData,
+    getLiteralElementValue,
     resolveReplicatingContainerElementValues,
 } from '../../models/element-data';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
@@ -88,7 +89,7 @@ export function _collectErrors(
 
     if (isAnyElementWithChildren(element) && element.children != null) {
         if (element.type === ElementType.ReplicatingContainer) {
-            const childElementValues = authoredElementValues[element.id];
+            const childElementValues = getLiteralElementValue<unknown[]>(authoredElementValues, element.id);
 
             if (Array.isArray(childElementValues)) {
                 for (let index = 0; index < childElementValues.length; index++) {

@@ -200,9 +200,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
     @Nonnull
     private Map<String, Object> deriveDataObjectItemData(@Nonnull DataObjectItemEntity entity,
                                                          @Nonnull DataObjectSchemaEntity schema) throws ResponseException {
-        var entityElementData = JsonMapperFactory
-                .getInstance()
-                .convertValue(entity.getData(), AuthoredElementValues.class);
+        var entityElementData = AuthoredElementValues.fromLiteralValues(entity.getData());
         var edo = new ElementDerivationOptions();
         var edr = new ElementDerivationRequest(
                 schema.getSchema(),
@@ -216,7 +214,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                     .badRequest(derivedData);
         }
 
-        return entityElementData;
+        return derivedData.getEffectiveValues();
     }
 
     @Nonnull

@@ -6,6 +6,8 @@ import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
+import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -324,7 +326,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
         @InputElementPOJOBinding(id = VARIABLE_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Vorgangsdatenvariable"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Optionaler Pfad innerhalb der Vorgangsdaten, z. B. schleife.zähler. Wenn leer, wird der letzte Zählerstand dieses Prozesselementes aus den Elementdaten verwendet."),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 9.0),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
                 @ElementPOJOBindingProperty(key = "disableWildCards", boolValue = true),
         })
         @Nullable
@@ -333,12 +335,23 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
         /**
          * This field contains the increment value by which the counter is incremented on each instantiation. It is nullable which will be handled by the node separately.
          */
-        @InputElementPOJOBinding(id = INCREMENT_FIELD_ID, type = ElementType.Number, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Inkrement"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optionale Natürliche Zahl, um die der Zähler erhöht wird. Wenn leer, wird standardmäßig um 1 erhöht."),
-                @ElementPOJOBindingProperty(key = "decimalPlaces", intValue = 0),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 3.0)
-        })
+        @InputElementPOJOBinding(
+                id = INCREMENT_FIELD_ID,
+                type = ElementType.Number,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode},
+                allowedVariableSources = {
+                        InputVariableSource.ProcessData,
+                        InputVariableSource.ElementData,
+                        InputVariableSource.ElementMetadata,
+                        InputVariableSource.ProtectedProcessData
+                },
+                properties = {
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Inkrement"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Optionale Natürliche Zahl, um die der Zähler erhöht wird. Wenn leer, wird standardmäßig um 1 erhöht."),
+                        @ElementPOJOBindingProperty(key = "decimalPlaces", intValue = 0),
+                        @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
+                }
+        )
         @Nullable
         public Number increment;
     }

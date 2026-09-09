@@ -49,6 +49,7 @@ export function DateRangeFieldComponent(props: DateRangeFieldComponentProps) {
             id={props.id}
             label={props.label}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             hint={props.hint}
             error={props.error}

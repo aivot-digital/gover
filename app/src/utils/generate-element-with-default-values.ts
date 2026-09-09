@@ -358,7 +358,6 @@ const elementConstructors: {
         textPostSubmit: 'Ihre Angaben wurden erfolgreich übermittelt. Die zuständige/bewirtschaftende Stelle kann diese nun bearbeiten. Sofern weitere Schritte erforderlich sind, erhalten Sie dazu gesonderte Hinweise.',
         textProcessingTime: undefined,
         documentsToReceive: undefined,
-    disableConfetti: false,
             }),
     [ElementType.SummaryStep]: (id) => ({
         ...makeFormBase(ElementType.SummaryStep, id),
@@ -391,7 +390,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.CodeInput, id),
         label: 'Codeeingabe',
         language: CodeInputFieldLanguage.Javascript,
-        editorHeight: 320,
+        editorHeight: 240,
         wordWrap: false,
     }),
     [ElementType.RichTextInput]: (id) => ({

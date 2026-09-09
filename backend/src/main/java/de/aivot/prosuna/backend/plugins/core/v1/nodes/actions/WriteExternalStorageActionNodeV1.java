@@ -5,15 +5,19 @@ import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -25,6 +29,7 @@ import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOpe
 import de.aivot.prosuna.backend.plugins.core.v1.operators.object.NoCodeObjectGetOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
@@ -37,6 +42,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
@@ -237,6 +243,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                                     in.setId(metadataAttributeFieldId(provider.getId(), m.getKey()));
                                     in.setLabel(m.getLabel());
                                     in.setHint(m.getDescription());
+                                    in.setDynamicTextPolicy(new DynamicTextPolicy());
                                     group.addChild(in);
                                 }
 
@@ -278,9 +285,32 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
     @Nullable
     @Override
-    public Map<String, List<String>> validateConfiguration(@Nonnull de.aivot.prosuna.backend.process.entities.ProcessNodeEntity processNodeEntity,
+    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
                                                            @Nonnull WriteExternalStorageActionNodeConfig configuration) {
+        return validateConfiguration(processNodeEntity, configuration, null);
+    }
+
+    @Nullable
+    @Override
+    public Map<String, List<String>> validateConfiguration(
+            @Nonnull ProcessNodeConfigurationValidationContext<WriteExternalStorageActionNodeConfig> context
+    ) {
+        return validateConfiguration(context.thisNode(), context.configuration(), context);
+    }
+
+    @Nullable
+    private Map<String, List<String>> validateConfiguration(
+            @Nonnull ProcessNodeEntity processNodeEntity,
+            @Nonnull WriteExternalStorageActionNodeConfig configuration,
+            @Nullable ProcessNodeConfigurationValidationContext<WriteExternalStorageActionNodeConfig> context
+    ) {
         var errors = new HashMap<String, List<String>>();
+
+        // A dynamic container has no authoring rows to inspect. Its shape and all row values are validated after the
+        // container resolves at runtime.
+        if (context != null && context.isDeferred(WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID)) {
+            return null;
+        }
 
         var attachmentSetConfigs = configuration.attachmentSets == null ? List.<WriteExternalStorageConfig>of() : configuration.attachmentSets;
         if (attachmentSetConfigs.isEmpty()) {
@@ -326,23 +356,14 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 }
             }
 
-            if (storageProvider != null && storageProviderSupportsMetadataAttributes(storageProvider)) {
-                validateMetadataTemplates(processNodeEntity.getConfiguration(), storageProvider, i, errors);
-            }
-
-            if (Boolean.TRUE.equals(attachmentSetConfig.customizeFileName)) {
+            if (Boolean.TRUE.equals(attachmentSetConfig.customizeFileName) && (context == null || !context.isDeferred(
+                    WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID,
+                    i,
+                    WriteExternalStorageConfig.FILE_NAME_FIELD_ID
+            ))) {
                 var fileNameTemplate = StringUtils.toNullableTrimmedString(attachmentSetConfig.fileName);
                 if (fileNameTemplate == null) {
                     addError(errors, WriteExternalStorageConfig.FILE_NAME_FIELD_ID, "Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
-                } else {
-                    var diagnostics = templateRenderService.validateInterpolationSyntax(fileNameTemplate);
-                    for (var diagnostic : diagnostics) {
-                        addError(
-                                errors,
-                                WriteExternalStorageConfig.FILE_NAME_FIELD_ID,
-                                "Eintrag %d, Zeile %d: %s".formatted(rowIndex, diagnostic.lineNumber(), diagnostic.message())
-                        );
-                    }
                 }
             }
         }
@@ -353,18 +374,23 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     @Nonnull
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
-        var attachmentSets = configuration.get(WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID);
-        if (attachmentSets instanceof List<?> attachmentSetList) {
-            for (var attachmentSet : attachmentSetList) {
-                if (!(attachmentSet instanceof Map<?, ?> attachmentSetMap)) {
+        var attachmentSets = ReplicatingContainerLayoutElement._formatValue(
+                configuration.getLiteral(WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID)
+        );
+        if (attachmentSets != null) {
+            for (var attachmentSet : attachmentSets) {
+                if (attachmentSet.getValues() == null) {
                     continue;
                 }
-
-                var storagePath = attachmentSetMap.get(WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID);
+                var storagePath = attachmentSet.getValues().getLiteral(WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID);
                 if (storagePath instanceof Map<?, ?> storagePathMap) {
-                    storagePathMap.remove("storageProviderId");
+                    var cleanedStoragePath = new HashMap<>(storagePathMap);
+                    cleanedStoragePath.remove("storageProviderId");
+                    attachmentSet.getValues().putLiteral(WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, cleanedStoragePath);
                 }
             }
+            // JSON-backed rows are converted to new instances by the formatter, so mutations must be written back.
+            configuration.putLiteral(WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, attachmentSets);
         }
         return configuration;
     }
@@ -419,7 +445,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 for (var attachmentGroupSegment : resolveGroupPathSegments(attachment.getGroup(), rowIndex + 1)) {
                     targetFolderPath = appendPathSegment(targetFolderPath, attachmentGroupSegment);
                 }
-                var storedFileName = resolveStoredFileName(context, attachmentSetConfig, attachment.getFileName(), attachmentIndex, usedCustomFileNames, rowIndex + 1);
+                var storedFileName = resolveStoredFileName(attachmentSetConfig, attachment.getFileName(), attachmentIndex, usedCustomFileNames, rowIndex + 1);
                 var targetPath = appendPathSegment(targetFolderPath, storedFileName);
                 ensureParentFolders(storageProviderId, targetPath, createdFolders);
 
@@ -604,8 +630,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     }
 
     @Nonnull
-    private String resolveStoredFileName(@Nonnull ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeConfig> context,
-                                         @Nonnull WriteExternalStorageConfig attachmentSetConfig,
+    private String resolveStoredFileName(@Nonnull WriteExternalStorageConfig attachmentSetConfig,
                                          @Nonnull String originalFileName,
                                          int attachmentIndex,
                                          @Nonnull Set<String> usedCustomFileNames,
@@ -614,17 +639,14 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             return originalFileName;
         }
 
-        var fileNameTemplate = StringUtils.toNullableTrimmedString(attachmentSetConfig.fileName);
-        if (fileNameTemplate == null) {
+        var fileName = StringUtils.toNullableTrimmedString(attachmentSetConfig.fileName);
+        if (fileName == null) {
             throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
         }
 
-        var renderedFileName = StringUtils.toNullableTrimmedString(interpolateFileName(context, fileNameTemplate, rowIndex));
-        if (renderedFileName == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Dateiname bei Speicherung wurde nicht angegeben oder leer interpoliert.".formatted(rowIndex));
-        }
-
-        var configuredBaseFileName = removeExtensionFromConfiguredFileName(renderedFileName)
+        // Text input values have already passed through runtime derivation. Re-rendering the result here would make
+        // Variable, No-Code, and Low-Code output executable as template syntax a second time.
+        var configuredBaseFileName = removeExtensionFromConfiguredFileName(fileName)
                 .replace("#", Integer.toString(attachmentIndex));
         var resolvedFileName = StringUtils
                 .extractExtensionFromFileName(originalFileName)
@@ -636,25 +658,6 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         validateResolvedFileName(resolvedFileName, rowIndex);
         usedCustomFileNames.add(resolvedFileName);
         return resolvedFileName;
-    }
-
-    @Nonnull
-    private String interpolateFileName(@Nonnull ProcessNodeExecutionInitContext<WriteExternalStorageActionNodeConfig> context,
-                                       @Nonnull String fileName,
-                                       int rowIndex) throws ProcessNodeExecutionException {
-        try {
-            var renderedFileName = templateRenderService.interpolate(context.getCurrentProcessExecutionData(), fileName);
-            if (renderedFileName == null) {
-                throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
-            }
-            return renderedFileName;
-        } catch (IllegalArgumentException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(e, "Eintrag %d: Der Dateiname bei Speicherung ist syntaktisch ungültig: %s", rowIndex, e.getMessage());
-        } catch (ProcessNodeExecutionException e) {
-            throw e;
-        } catch (RuntimeException e) {
-            throw new ProcessNodeExecutionExceptionUnknown(e, "Eintrag %d: Der Dateiname bei Speicherung konnte nicht interpoliert werden: %s", rowIndex, e.getMessage());
-        }
     }
 
     @Nonnull
@@ -807,8 +810,14 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             return StorageItemMetadata.empty();
         }
 
-        var rowValues = resolveAttachmentSetRowValues(context.getThisNode().getConfiguration(), rowIndex);
-        if (rowValues == null) {
+        var effectiveRowValues = resolveEffectiveAttachmentSetRowValues(
+                context.getEffectiveConfigurationValuesOfExecutingNode(),
+                rowIndex
+        );
+        var authoredRowValues = effectiveRowValues == null
+                ? resolveAuthoredAttachmentSetRowValues(context.getThisNode().getConfiguration(), rowIndex)
+                : null;
+        if (effectiveRowValues == null && authoredRowValues == null) {
             return StorageItemMetadata.empty();
         }
 
@@ -819,13 +828,21 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 continue;
             }
 
-            var rawValue = rowValues.get(metadataAttributeFieldId(storageProvider.getId(), metadataKey));
+            var fieldId = metadataAttributeFieldId(storageProvider.getId(), metadataKey);
+            var rawValue = effectiveRowValues != null
+                    ? effectiveRowValues.get(fieldId)
+                    : authoredRowValues.getLiteral(fieldId);
             var metadataValueTemplate = rawValue == null ? null : StringUtils.toNullableTrimmedString(rawValue.toString());
             if (metadataValueTemplate == null) {
                 continue;
             }
 
-            var renderedMetadataValue = interpolateMetadataValue(context, metadataValueTemplate, rowIndex + 1, metadataKey);
+            // Effective row values are already resolved centrally. The authored fallback is retained for isolated
+            // callers that do not provide effective configuration values and is safe because getLiteral rejects
+            // executable input modes.
+            var renderedMetadataValue = effectiveRowValues != null
+                    ? metadataValueTemplate
+                    : interpolateMetadataValue(context, metadataValueTemplate, rowIndex + 1, metadataKey);
             var normalizedMetadataValue = StringUtils.toNullableTrimmedString(renderedMetadataValue);
             if (normalizedMetadataValue != null) {
                 metadata.put(metadataKey, normalizedMetadataValue);
@@ -841,18 +858,58 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     }
 
     @Nullable
-    private static AuthoredElementValues resolveAttachmentSetRowValues(@Nullable AuthoredElementValues configuration,
-                                                                       int rowIndex) {
+    private static AuthoredElementValues resolveAuthoredAttachmentSetRowValues(
+            @Nullable AuthoredElementValues configuration,
+            int rowIndex
+    ) {
         if (configuration == null) {
             return null;
         }
 
-        var attachmentSetValues = ReplicatingContainerLayoutElement._formatValue(configuration.get(WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID));
+        var attachmentSetValues = ReplicatingContainerLayoutElement._formatValue(
+                configuration.getLiteral(WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID)
+        );
         if (attachmentSetValues == null || rowIndex < 0 || rowIndex >= attachmentSetValues.size()) {
             return null;
         }
 
         return attachmentSetValues.get(rowIndex).getValues();
+    }
+
+    @Nullable
+    private static EffectiveElementValues resolveEffectiveAttachmentSetRowValues(
+            @Nullable EffectiveElementValues configuration,
+            int rowIndex
+    ) {
+        if (configuration == null) {
+            return null;
+        }
+
+        var rawRows = configuration.get(WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID);
+        if (!(rawRows instanceof List<?> rows) || rowIndex < 0 || rowIndex >= rows.size()) {
+            return null;
+        }
+
+        var rawRow = rows.get(rowIndex);
+        if (rawRow instanceof EffectiveReplicatingContainerLayoutElementValue row) {
+            return row.getValues();
+        }
+        if (!(rawRow instanceof Map<?, ?> rowMap)) {
+            return null;
+        }
+
+        var rawValues = rowMap.containsKey("values") ? rowMap.get("values") : rowMap;
+        if (!(rawValues instanceof Map<?, ?> values)) {
+            return null;
+        }
+
+        var effectiveValues = new EffectiveElementValues();
+        values.forEach((key, value) -> {
+            if (key instanceof String fieldId) {
+                effectiveValues.put(fieldId, value);
+            }
+        });
+        return effectiveValues;
     }
 
     @Nonnull
@@ -879,49 +936,6 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                     StringUtils.quote(metadataKey),
                     e.getMessage()
             );
-        }
-    }
-
-    private void validateMetadataTemplates(@Nullable AuthoredElementValues configuration,
-                                           @Nonnull StorageProviderEntity storageProvider,
-                                           int rowIndex,
-                                           @Nonnull Map<String, List<String>> errors) {
-        var metadataAttributes = resolveStorageProviderMetadataAttributes(storageProvider);
-        if (metadataAttributes.isEmpty()) {
-            return;
-        }
-
-        var rowValues = resolveAttachmentSetRowValues(configuration, rowIndex);
-        if (rowValues == null) {
-            return;
-        }
-
-        for (var metadataAttribute : metadataAttributes) {
-            var metadataKey = StringUtils.toNullableTrimmedString(metadataAttribute.getKey());
-            if (metadataKey == null) {
-                continue;
-            }
-
-            var fieldId = metadataAttributeFieldId(storageProvider.getId(), metadataKey);
-            var rawValue = rowValues.get(fieldId);
-            var metadataValueTemplate = rawValue == null ? null : StringUtils.toNullableTrimmedString(rawValue.toString());
-            if (metadataValueTemplate == null) {
-                continue;
-            }
-
-            var diagnostics = templateRenderService.validateInterpolationSyntax(metadataValueTemplate);
-            for (var diagnostic : diagnostics) {
-                addError(
-                        errors,
-                        fieldId,
-                        "Eintrag %d, Metadatenfeld %s, Zeile %d: %s".formatted(
-                                rowIndex + 1,
-                                StringUtils.quote(metadataKey),
-                                diagnostic.lineNumber(),
-                                diagnostic.message()
-                        )
-                );
-            }
         }
     }
 
@@ -1004,7 +1018,10 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         public List<WriteExternalStorageConfig> attachmentSets;
     }
 
-    @ReplicatingContainerLayoutElementElementPOJOBinding(id = WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, properties = {
+    @ReplicatingContainerLayoutElementElementPOJOBinding(
+            id = WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID,
+            allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode},
+            properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Konfigurieren Sie alle Anlagensätze, die gespeichert werden sollen."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
@@ -1032,7 +1049,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         @InputElementPOJOBinding(id = STORAGE_PATH_FIELD_ID, type = ElementType.StoragePathSelector, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zielpfad"),
                 @ElementPOJOBindingProperty(key = "storageProviderSelectHint", strValue = "Speicheranbieter, bei welchem der Anlagensatz gespeichert wird."),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Pfad unter welchem der Anlagensatz gespeichert wird. Verwenden Sie \"#\" zur Angabe der aktuellen Dateinummerierung im Pfad. Diese Eingabe unterstützt \"Smarte Platzhalter\"."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Pfad, unter dem der Anlagensatz gespeichert wird. Verwenden Sie \"#\" für die aktuelle Dateinummer im Pfad. Der Pfad unterstützt Variablen und Bedingungen in der Syntax für dynamischen Text."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
                 @ElementPOJOBindingProperty(key = "allowReadOnlyStorageProviders", falseValue = true)
@@ -1057,9 +1074,11 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         })
         public Boolean customizeFileName;
 
-        @InputElementPOJOBinding(id = FILE_NAME_FIELD_ID, type = ElementType.Text, properties = {
+        @InputElementPOJOBinding(id = FILE_NAME_FIELD_ID, type = ElementType.Text,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dateiname bei Speicherung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der gespeicherten Datei. Diese Eingabe unterstützt \"Smarte Platzhalter\". Beim Speichern wird immer ein Index angehängt, zum Beispiel DATEINAME-1.pdf."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der gespeicherten Datei. Dieser dynamische Text unterstützt Variablen und Bedingungen. Beim Speichern wird immer ein Index angehängt, zum Beispiel DATEINAME-1.pdf."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
         public String fileName;

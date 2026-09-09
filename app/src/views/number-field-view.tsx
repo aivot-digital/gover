@@ -26,25 +26,27 @@ export function NumberFieldView(props: BaseViewProps<NumberFieldElement, number>
     const isBusy = useMemo(() => {
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
+    const inputModeFieldProps = props.inputModeLiteralContext?.fieldProps;
 
     return (
         <NumberFieldComponent
-            label={element.label ?? ''}
+            {...inputModeFieldProps}
+            label={inputModeFieldProps?.label ?? element.label ?? ''}
             value={value}
             onChange={setValue}
             placeholder={element.placeholder ?? undefined}
             decimalPlaces={element.decimalPlaces ?? undefined}
-            hint={element.hint ?? undefined}
-            error={errors != null ? errors.join(' ') : undefined}
+            hint={inputModeFieldProps?.hint ?? element.hint ?? undefined}
+            error={inputModeFieldProps?.error ?? (errors != null ? errors.join(' ') : undefined)}
             suffix={element.suffix ?? undefined}
-            required={element.required ?? undefined}
-            disabled={isDisabled}
+            required={inputModeFieldProps?.required ?? element.required ?? undefined}
+            disabled={inputModeFieldProps?.disabled ?? isDisabled}
             debounce={1000}
             controlSx={{
                 backgroundColor: isBusy ? getDisabledFieldBackground : undefined,
                 cursor: isBusy ? 'not-allowed' : undefined,
             }}
-            readOnly={isBusy}
+            readOnly={inputModeFieldProps?.readOnly ?? isBusy}
         />
     );
 }
