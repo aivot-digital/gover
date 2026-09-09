@@ -205,7 +205,9 @@ public class FormTriggerControllerV1 {
 
         var shouldObfuscateSteps = identitySlots
                 .stream()
-                .anyMatch(slot -> slot.getIsRequired() && !slot.hasValidIdentity());
+                .anyMatch(slot -> slot.getIsRequired()
+                        && !Boolean.TRUE.equals(slot.allowsEmail())
+                        && !slot.hasValidIdentity());
 
         var formLayout = config
                 .configuration()

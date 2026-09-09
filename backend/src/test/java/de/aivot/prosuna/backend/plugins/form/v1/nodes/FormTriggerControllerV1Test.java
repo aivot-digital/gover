@@ -81,7 +81,7 @@ class FormTriggerControllerV1Test {
     void retrieveShouldObfuscateStepChildrenWhileRequiredIdentityIsMissing() throws Exception {
         var fixture = createFixture(formLayoutWithGenericStep());
         when(fixture.identitySlotService().resolveSlots(isNull(), eq("identity-session"), eq(500)))
-                .thenReturn(List.of(requiredIdentitySlot(null, false, List.of())));
+                .thenReturn(List.of(requiredIdentitySlot(false, null, false, List.of())));
 
         var result = fixture.controller().retrieve(
                 null,
@@ -93,6 +93,24 @@ class FormTriggerControllerV1Test {
 
         var step = (GenericStepElement) result.layoutElement().getChildren().getFirst();
         assertTrue(step.getChildren().isEmpty());
+    }
+
+    @Test
+    void retrieveShouldKeepStepChildrenWhenRequiredIdentityAllowsEmail() throws Exception {
+        var fixture = createFixture(formLayoutWithGenericStep());
+        when(fixture.identitySlotService().resolveSlots(isNull(), eq("identity-session"), eq(500)))
+                .thenReturn(List.of(requiredIdentitySlot(true, null, false, List.of())));
+
+        var result = fixture.controller().retrieve(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session"
+        );
+
+        var step = (GenericStepElement) result.layoutElement().getChildren().getFirst();
+        assertEquals(1, step.getChildren().size());
     }
 
     @Test
@@ -108,6 +126,7 @@ class FormTriggerControllerV1Test {
         );
         when(fixture.identitySlotService().resolveSlots(isNull(), eq("identity-session"), eq(500)))
                 .thenReturn(List.of(requiredIdentitySlot(
+                        false,
                         IdentityType.IdentityProvider,
                         false,
                         List.of(authenticatedProvider)
@@ -947,6 +966,7 @@ class FormTriggerControllerV1Test {
     }
 
     private IdentitySlotResponseDTO requiredIdentitySlot(
+            boolean allowsEmail,
             IdentityType identityType,
             boolean isReady,
             List<IdentityProviderOptionResponseDTO> providers
@@ -956,7 +976,7 @@ class FormTriggerControllerV1Test {
                 null,
                 null,
                 false,
-                false,
+                allowsEmail,
                 identityType,
                 null,
                 isReady,
