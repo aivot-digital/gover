@@ -1,4 +1,4 @@
-import {Box, Checkbox, FormControlLabel, FormHelperText, Switch, type SxProps, type Theme} from '@mui/material';
+import {Box, Checkbox, FormControlLabel, FormHelperText, Switch} from '@mui/material';
 import {type CheckboxFieldComponentProps} from './checkbox-field-component-props';
 import {
     type FormFieldControlContext,
@@ -19,18 +19,6 @@ import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
 function hasContent(content: unknown): boolean {
     return content !== null && content !== undefined && content !== false && content !== '';
 }
-
-const visuallyHiddenSx = {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    p: 0,
-    m: -1,
-    overflow: 'hidden',
-    clip: 'rect(0 0 0 0)',
-    whiteSpace: 'nowrap',
-    border: 0,
-} satisfies SxProps<Theme>;
 
 export function CheckboxFieldComponent(props: CheckboxFieldComponentProps) {
     const generatedId = useNormalizedReactId();
@@ -141,11 +129,11 @@ export function CheckboxFieldComponent(props: CheckboxFieldComponentProps) {
                             component="span"
                             id={labelId}
                             title={props.invisibleLabel ? undefined : props.label}
-                            className={hasError ? 'Mui-error' : (isInteractionDisabled ? 'Mui-disabled' : undefined)}
-                            sx={[
-                                formFieldLabelSx,
-                                props.invisibleLabel ? visuallyHiddenSx : {},
-                            ]}
+                            className={[
+                                hasError ? 'Mui-error' : (isInteractionDisabled ? 'Mui-disabled' : ''),
+                                props.invisibleLabel ? 'visually-hidden' : '',
+                            ].filter(Boolean).join(' ')}
+                            sx={formFieldLabelSx}
                         >
                             <FormFieldLabelContent
                                 required={required}

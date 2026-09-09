@@ -731,9 +731,6 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                     minCharacters={3}
                                     maxCharacters={96}
                                     hint="Wird öffentlich im Kontext der Prozessversion verwendet (z. B. im Self-Service-Portal)."
-                                    controlSx={{
-                                        mt: 2,
-                                    }}
                                 />
 
                                 <TextFieldComponent
@@ -787,9 +784,6 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                                 ),
                                             },
                                         },
-                                    }}
-                                    controlSx={{
-                                        mt: 2,
                                     }}
                                 />
 

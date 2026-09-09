@@ -3,6 +3,13 @@ import {describe, expect, it, vi} from 'vitest';
 import {CheckboxFieldComponent} from './checkbox-field-component';
 
 describe('CheckboxFieldComponent', () => {
+    it('keeps an invisible label available through the shared visually hidden class', () => {
+        const {container} = render(<CheckboxFieldComponent label="Auswahl" invisibleLabel value={false} onChange={vi.fn()} />);
+
+        expect(screen.getByRole('checkbox', {name: 'Auswahl'})).toBeInTheDocument();
+        expect(container.querySelector('.visually-hidden')).toHaveTextContent('Auswahl');
+    });
+
     it('uses the directly clickable label as its accessible name', () => {
         const onChange = vi.fn();
 

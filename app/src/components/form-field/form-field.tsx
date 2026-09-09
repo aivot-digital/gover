@@ -230,17 +230,7 @@ export function FormField(props: FormFieldProps) {
                 <Box
                     component="span"
                     id={assistiveTextId}
-                    sx={{
-                        position: 'absolute',
-                        width: 1,
-                        height: 1,
-                        p: 0,
-                        m: -1,
-                        overflow: 'hidden',
-                        clip: 'rect(0 0 0 0)',
-                        whiteSpace: 'nowrap',
-                        border: 0,
-                    }}
+                    className="visually-hidden"
                 >
                     {props.assistiveText}
                 </Box>

@@ -1,5 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {FormControl} from '@mui/material';
+import globalStyles from '../../index.scss?inline';
 import {
     FormField,
     type FormFieldControlContext,
@@ -103,6 +105,42 @@ describe('FormField', () => {
         expect(getFormFieldMarginSx('normal')).toEqual({mt: 0.25, mb: 1});
         expect(getFormFieldMarginSx('dense')).toEqual({mt: 0.125, mb: 0.5});
         expect(getFormFieldMarginSx('none')).toEqual({});
+    });
+
+    it('matches the outer MUI control layout without restoring floating-label margins', () => {
+        const {container} = render(
+            <>
+                <FormControl data-testid="mui-control" fullWidth margin="none" />
+                <FormField label="Name" margin="none"><input /></FormField>
+            </>,
+        );
+        const fieldStyle = getComputedStyle(container.querySelector('[data-form-field]')!);
+        const muiStyle = getComputedStyle(screen.getByTestId('mui-control'));
+
+        for (const property of ['display', 'flex-direction', 'position', 'vertical-align', 'min-width', 'width', 'margin']) {
+            expect(fieldStyle.getPropertyValue(property), property).toBe(muiStyle.getPropertyValue(property));
+        }
+    });
+
+    it('keeps assistive text at one pixel while preserving the accessible description', () => {
+        render(
+            <>
+                <style>{globalStyles}</style>
+                <FormField id="selection" label="Auswahl" assistiveText="Erforderliche Auswahl." required>
+                    {(field) => <input id={field.controlId} {...field.ariaProps} />}
+                </FormField>
+            </>,
+        );
+
+        const input = screen.getByRole('textbox', {name: 'Auswahl'});
+        const hint = document.getElementById(input.getAttribute('aria-describedby')!)!;
+        const hintStyle = getComputedStyle(hint);
+        expect(hintStyle.width).toBe('1px');
+        expect(hintStyle.height).toBe('1px');
+        expect(hintStyle.margin).toBe('-1px');
+        expect(hintStyle.position).toBe('absolute');
+        expect(getComputedStyle(hint.closest('[data-form-field]')!).position).toBe('relative');
+        expect(input).toHaveAccessibleDescription('Erforderliche Auswahl.');
     });
 
     it('associates the external label and hint with the control', () => {
@@ -225,6 +263,30 @@ describe('FormField', () => {
 });
 
 describe('FormFieldGroup', () => {
+    it.each([
+        ['none', '0px', '0px'],
+        ['dense', '1px', '4px'],
+        ['normal', '2px', '8px'],
+    ] as const)('resets native fieldset margins before applying the %s preset', (margin, top, bottom) => {
+        render(
+            <FormFieldGroup label="Auswahl" margin={margin} disabled labelAction={<button>Ansehen</button>}>
+                <input aria-label="Eintrag" />
+            </FormFieldGroup>,
+        );
+
+        const group = screen.getByRole('group', {name: 'Auswahl – optional'});
+        const style = getComputedStyle(group);
+        expect(style.marginLeft).toBe('0px');
+        expect(style.marginRight).toBe('0px');
+        expect(style.marginTop).toBe(top);
+        expect(style.marginBottom).toBe(bottom);
+        expect(style.minInlineSize).toBe('0px');
+        expect(style.position).toBe('relative');
+        expect(screen.getByRole('textbox', {name: 'Eintrag'})).toBeDisabled();
+        // Actions in the legend must remain usable when the group's editable controls are disabled.
+        expect(screen.getByRole('button', {name: 'Ansehen'})).not.toBeDisabled();
+    });
+
     it('uses native group semantics and labels the nested control group', () => {
         render(
             <FormFieldGroup
