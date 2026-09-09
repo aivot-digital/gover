@@ -14,6 +14,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -73,7 +74,8 @@ public class SearchRecentItemService {
         return result;
     }
 
-    @Transactional
+    // Concurrent visits may update the same history row; no stable transaction snapshot is needed here.
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void recordRecentItem(
             @Nonnull String userId,
             @Nonnull SearchRecentItemRequestDTO request

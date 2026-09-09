@@ -6,7 +6,13 @@ import de.aivot.prosuna.backend.search.entities.SearchRecentItemEntity;
 import de.aivot.prosuna.backend.search.properties.SearchRecentItemProperties;
 import de.aivot.prosuna.backend.search.repositories.SearchRecentItemRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
@@ -19,8 +25,42 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class SearchRecentItemServiceTest {
+    @Test
+    void recordRecentItemUsesOneReadCommittedTransactionForVisibilityUpsertAndCleanup() {
+        var repository = mock(SearchRecentItemRepository.class);
+        var searchItemService = mock(SearchItemService.class);
+        var transactionManager = mock(PlatformTransactionManager.class);
+        var transactionStatus = mock(TransactionStatus.class);
+        when(transactionManager.getTransaction(any())).thenReturn(transactionStatus);
+        when(searchItemService.retrieveVisible("user-1", "secrets", "secret-1"))
+                .thenReturn(Optional.of(new SearchItemResponseDTO("secret-1", "Secret", "secrets")));
+
+        var interceptor = new TransactionInterceptor();
+        interceptor.setTransactionManager(transactionManager);
+        interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
+        var proxyFactory = new ProxyFactory(new SearchRecentItemService(repository, searchItemService, properties(25, 180)));
+        proxyFactory.addAdvice(interceptor);
+        var service = (SearchRecentItemService) proxyFactory.getProxy();
+
+        service.recordRecentItem("user-1", new SearchRecentItemRequestDTO("secret-1", "secrets"));
+
+        var calls = inOrder(transactionManager, searchItemService, repository);
+        calls.verify(transactionManager).getTransaction(argThat(definition ->
+                definition.getIsolationLevel() == TransactionDefinition.ISOLATION_READ_COMMITTED));
+        calls.verify(searchItemService).retrieveVisible("user-1", "secrets", "secret-1");
+        calls.verify(repository).upsert("user-1", "secrets", "secret-1");
+        calls.verify(repository).deleteOverflow("user-1", 25);
+        calls.verify(transactionManager).commit(transactionStatus);
+        calls.verifyNoMoreInteractions();
+    }
+
     @Test
     void listVisibleRecentItemsFiltersItemsByCurrentPermissions() {
         var pageableReference = new AtomicReference<Pageable>();

@@ -114,7 +114,7 @@ import {
     IdentityConfigElementSlotWithProviders,
 } from '../../../models/elements/form/input/identity-config-element';
 import IdentityPlatform from '@aivot/mui-material-symbols-400-n25-outlined/IdentityPlatform';
-import {SearchItemService} from '../../search/search-item-service';
+import {useRecordRecentSearchItem} from '../../search/hooks/use-record-recent-search-item';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {IdentityButton} from '../../identity/components/identity-button/identity-button';
 import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';
@@ -247,18 +247,7 @@ export function FormNodeEditorPage() {
         edited: normalizeUiDefinitionForStorage(formLayout),
     });
 
-    useEffect(() => {
-        if (node == null) {
-            return;
-        }
-        new SearchItemService()
-            .recordRecentSearchItem({
-                id: node.id.toString(),
-                originTable: ServerEntityType.ProcessNodes,
-            })
-            .catch(() => {
-            });
-    }, [node]);
+    useRecordRecentSearchItem(ServerEntityType.ProcessNodes, node?.id.toString());
 
     useEffect(() => {
         if (node == null) {

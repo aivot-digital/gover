@@ -26,7 +26,7 @@ import {
     resolvePermissionRequirement,
 } from '../../modules/permissions/utils/permission-utils';
 import {type PermissionSet} from '../../modules/permissions/models/permission-set';
-import {SearchItemService} from '../../modules/search/search-item-service';
+import {useRecordRecentSearchItem} from '../../modules/search/hooks/use-record-recent-search-item';
 
 export const DEFAULT_ID_PARAM = 'id';
 export const NEW_ID_INDICATOR = 'new';
@@ -308,27 +308,10 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
         return resolvedHeader.title ?? 'Resource bearbeiten';
     }, [props.getHeaderTitle, item, isNewItem, notFound, resolvedHeader]);
 
-    useEffect(() => {
-        if (isNewItem || notFound || item == null) {
-            return;
-        }
-        if (entityType == null) {
-            return;
-        }
-
-        const searchItemId = propsRef.current.getSearchItemId?.(item, id) ?? String(id);
-        if (searchItemId.length === 0) {
-            return;
-        }
-
-        new SearchItemService()
-            .recordRecentSearchItem({
-                id: searchItemId,
-                originTable: entityType,
-            })
-            .catch(() => {
-            });
-    }, [id, entityType, item, notFound]);
+    const searchItemId = !isNewItem && !notFound && item != null && entityType != null
+        ? props.getSearchItemId?.(item, id) ?? String(id)
+        : undefined;
+    useRecordRecentSearchItem(entityType, searchItemId);
 
     if (loadError != null) {
         throw loadError;
