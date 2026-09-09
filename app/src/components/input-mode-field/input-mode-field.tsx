@@ -317,6 +317,7 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
         busy,
         ariaLabel: props.ariaLabel,
         ariaDescribedBy: props.ariaDescribedBy,
+        externalAction: props.externalAction,
         labelAction,
         margin: props.margin,
         showOptionalIndicator: props.showOptionalIndicator,

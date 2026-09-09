@@ -142,6 +142,7 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
             label={label}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             hint={!hasError ? helperText : undefined}
             error={hasError ? helperText : undefined}

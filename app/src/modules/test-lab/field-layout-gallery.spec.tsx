@@ -1,5 +1,5 @@
 import {describe, expect, it, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen, within} from '@testing-library/react';
 import {FieldLayoutGallery} from './field-layout-gallery';
 import {DynamicTextIndicatorLabel} from '../../components/input-mode-selector';
 import {getLiteralAuthoredValue, type AuthoredElementValues} from '../../models/element-data';
@@ -144,6 +144,16 @@ vi.mock('../../components/map-point-field/leaflet-point-picker-map', async () =>
 });
 
 describe('FieldLayoutGallery accessibility', () => {
+    it('allows the external action to enable a disabled field group', () => {
+        const {container} = render(<FieldLayoutGallery/>);
+        const gallery = within(container.querySelector<HTMLElement>('[data-external-action-gallery]')!);
+        const group = gallery.getByRole('group', {name: 'Zustellung des Bescheids – optional'});
+        expect(within(group).getByRole('radio', {name: 'Digital'})).toBeDisabled();
+        fireEvent.click(gallery.getByRole('button', {name: 'Auswahl freigeben'}));
+        expect(within(group).getByRole('radio', {name: 'Digital'})).toBeEnabled();
+        expect(gallery.getByRole('button', {name: 'Auswahl sperren'})).toBeEnabled();
+    });
+
     it('keeps values, field labels and label actions as separate accessible concepts', () => {
         const {container} = render(<FieldLayoutGallery/>);
 

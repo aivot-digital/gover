@@ -104,6 +104,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                 disabled={inputModeFieldProps?.disabled ?? Boolean(element.disabled || isBusy)}
                 readOnly={inputModeFieldProps?.readOnly}
                 busy={inputModeFieldProps?.busy ?? isContainerBusy}
+                externalAction={inputModeFieldProps?.externalAction}
                 labelAction={inputModeFieldProps?.labelAction}
                 margin={inputModeFieldProps?.margin}
                 sx={inputModeFieldProps?.sx}

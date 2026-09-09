@@ -172,6 +172,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                 label={label}
                 ariaLabel={props.ariaLabel}
                 ariaDescribedBy={props.ariaDescribedBy}
+                externalAction={props.externalAction}
                 labelAction={(field) => {
                     const suppliedLabelAction = typeof props.labelAction === 'function'
                         ? props.labelAction(field)

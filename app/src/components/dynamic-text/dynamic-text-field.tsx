@@ -445,6 +445,7 @@ export const DynamicTextInputField = forwardRef<DynamicTextFieldMethods, Dynamic
         busy={props.busy}
         ariaLabel={props.ariaLabel}
         ariaDescribedBy={props.ariaDescribedBy}
+        externalAction={props.externalAction}
         labelAction={props.labelAction}
         margin={props.margin}
         showOptionalIndicator={props.showOptionalIndicator}

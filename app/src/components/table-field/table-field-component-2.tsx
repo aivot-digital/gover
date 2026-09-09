@@ -229,6 +229,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
                 id={props.id}
                 label={label}
                 ariaDescribedBy={props.ariaDescribedBy}
+                externalAction={props.externalAction}
                 labelAction={props.labelAction}
                 hint={hint}
                 error={error}

@@ -58,6 +58,7 @@ export function DepartmentSelectField(props: DepartmentSelectFieldProps): React.
                 ariaLabel={props.ariaLabel}
                 ariaDescribedBy={props.ariaDescribedBy}
                 label={label}
+                externalAction={props.externalAction}
                 labelAction={props.labelAction}
                 hint={hint}
                 error={error}

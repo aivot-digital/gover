@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {FormControl} from '@mui/material';
 import globalStyles from '../../index.scss?inline';
 import {
@@ -263,6 +263,26 @@ describe('FormField', () => {
 });
 
 describe('FormFieldGroup', () => {
+    it('keeps external actions outside a disabled fieldset and after its helper', () => {
+        let clicks = 0;
+        render(
+            <FormFieldGroup label="Auswahl" hint="Hinweis zur Auswahl" disabled
+                            externalAction={<button onClick={() => clicks++}>Freigeben</button>}>
+                <input aria-label="Eintrag" />
+            </FormFieldGroup>,
+        );
+        const group = screen.getByRole('group', {name: 'Auswahl – optional'});
+        const action = screen.getByRole('button', {name: 'Freigeben'});
+        expect(group).not.toContainElement(action);
+        expect(screen.getByRole('textbox')).toBeDisabled();
+        expect(action).not.toBeDisabled();
+        expect(screen.getByText('Hinweis zur Auswahl').compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        fireEvent.click(action);
+        expect(clicks).toBe(1);
+        expect(group).toHaveAccessibleDescription('Hinweis zur Auswahl');
+        expect(group).not.toHaveAccessibleName(/Freigeben/);
+    });
+
     it.each([
         ['none', '0px', '0px'],
         ['dense', '1px', '4px'],

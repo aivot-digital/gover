@@ -82,6 +82,7 @@ export function SecretSelectComponent(props: SecretSelectComponentProps): ReactN
                 ariaLabel={props.ariaLabel}
                 ariaDescribedBy={props.ariaDescribedBy}
                 label={props.label}
+                externalAction={props.externalAction}
                 labelAction={props.labelAction}
                 hint={props.hint}
                 error={props.error}

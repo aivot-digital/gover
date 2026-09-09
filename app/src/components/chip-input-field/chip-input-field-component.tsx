@@ -202,6 +202,7 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
             label={label}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             hint={!hasError ? helperContent : undefined}
             error={hasError ? helperContent : undefined}

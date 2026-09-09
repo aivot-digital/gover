@@ -53,6 +53,7 @@ export function DateFieldComponent({
                                        id,
                                        ariaLabel,
                                        ariaDescribedBy,
+                                       externalAction,
                                        labelAction,
                                        margin = 'normal',
                                        sx,
@@ -168,6 +169,7 @@ export function DateFieldComponent({
             label={label}
             ariaLabel={ariaLabel}
             ariaDescribedBy={ariaDescribedBy}
+            externalAction={externalAction}
             labelAction={labelAction}
             hint={hint}
             error={error}

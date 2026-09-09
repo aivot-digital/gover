@@ -103,6 +103,7 @@ export function CodeInputFieldComponent(props: CodeInputFieldComponentProps) {
             margin={props.margin}
             showOptionalIndicator={props.showOptionalIndicator}
             sx={props.sx}
+            externalAction={props.externalAction}
             labelAction={(field) => {
                 const suppliedLabelAction = typeof props.labelAction === 'function'
                     ? props.labelAction(field)

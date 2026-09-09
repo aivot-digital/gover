@@ -535,6 +535,7 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
             id={props.id}
             label={props.label}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={(groupContext) => {
                 const suppliedLabelAction = typeof props.labelAction === 'function'
                     ? props.labelAction(groupContext)

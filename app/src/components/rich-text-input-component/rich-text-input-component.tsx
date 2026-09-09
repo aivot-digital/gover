@@ -351,6 +351,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
             busy={Boolean(busy)}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             margin={props.margin}
             showOptionalIndicator={props.showOptionalIndicator}

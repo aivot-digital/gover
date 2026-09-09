@@ -19,6 +19,8 @@ function findAnchor(content: HTMLElement): HTMLElement {
     const controlId = field?.dataset.formFieldControlId;
     let control = controlId == null ? null : content.ownerDocument.getElementById(controlId);
     if (field != null && control != null && field.contains(control)) {
+        const controlRow = control.closest<HTMLElement>('[data-form-field-control]');
+        if (controlRow?.parentElement === field) return controlRow;
         // The direct child is the visual control, independent of MUI's native/segmented input internals.
         while (control.parentElement !== field && control.parentElement != null) {
             control = control.parentElement;

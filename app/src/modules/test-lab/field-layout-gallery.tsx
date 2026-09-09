@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {
     Box,
+    Button,
     Stack,
     TextField,
     Typography,
@@ -86,6 +87,8 @@ import {
 import {getDepartmentTypeIcons} from '../departments/utils/department-utils';
 import {ModuleIcons} from '../../shells/staff/data/module-icons';
 import Person from '@aivot/mui-material-symbols-400-n25-outlined/Person';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
 import {SelectFieldPresentation} from '../../models/elements/form/input/select-field-presentation';
 
 const fieldGridSx = {
@@ -231,6 +234,51 @@ const departmentOptions: VDepartmentShadowedEntityWithChildren[] = [{
 interface InputModeGalleryFieldProps {
     value: string | null;
     onChange: (value: string | null) => void;
+}
+
+function ExternalActionGallery() {
+    const [title, setTitle] = useState<string | null>('Hundesteuer');
+    const [locked, setLocked] = useState(true);
+    const [delivery, setDelivery] = useState<string | null>('digital');
+    return (
+        <>
+            <Typography variant="h6" sx={{mt: 5, mb: 2}}>Externe Feldaktionen</Typography>
+            <Stack spacing={2} data-external-action-gallery>
+                {[undefined, 480, 360].map((width, index) => (
+                    <TextFieldComponent
+                        key={index}
+                        label="Öffentliche Bezeichnung des Prozesses"
+                        value={title}
+                        onChange={setTitle}
+                        required
+                        margin="none"
+                        sx={{width}}
+                        hint="Diese Bezeichnung erscheint in den zugehörigen Formularen."
+                        error={title ? undefined : 'Geben Sie eine öffentliche Bezeichnung ein.'}
+                        externalAction={(
+                            <Button variant="outlined" startIcon={<Refresh/>} onClick={() => setTitle('Hundesteuer')}>
+                                Vorschlag übernehmen
+                            </Button>
+                        )}
+                    />
+                ))}
+                <RadioFieldComponent
+                    label="Zustellung des Bescheids"
+                    value={delivery}
+                    onChange={setDelivery}
+                    options={[{value: 'digital', label: 'Digital'}, {value: 'post', label: 'Per Post'}]}
+                    disabled={locked}
+                    hint="Die Auswahl gilt für die Zustellung des Bescheids."
+                    margin="none"
+                    externalAction={(
+                        <Button startIcon={<Edit/>} onClick={() => setLocked(!locked)}>
+                            {locked ? 'Auswahl freigeben' : 'Auswahl sperren'}
+                        </Button>
+                    )}
+                />
+            </Stack>
+        </>
+    );
 }
 
 function InputModeGalleryField(props: InputModeGalleryFieldProps) {
@@ -1072,6 +1120,7 @@ export function FieldLayoutGallery() {
                     derivationTriggerIdQueue={[]}
                 />
             </ViewDispatcherContextProvider>
+            <ExternalActionGallery/>
         </Box>
     );
 }

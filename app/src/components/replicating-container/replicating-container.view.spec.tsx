@@ -75,6 +75,22 @@ function renderView(overrides: Partial<BaseViewProps<ReplicatingContainerLayout,
 }
 
 describe('ReplicatingContainerView', () => {
+    it('forwards external actions from the input-mode context without disabling them', () => {
+        renderView({
+            inputModeLiteralContext: {
+                fieldProps: {
+                    label: 'Adressen',
+                    disabled: true,
+                    externalAction: <button>Adressen ansehen</button>,
+                },
+            },
+        });
+        const action = screen.getByRole('button', {name: 'Adressen ansehen'});
+        expect(action).toBeEnabled();
+        expect(screen.getByRole('group', {name: 'Adressen – optional'})).not.toContainElement(action);
+        expect(screen.getByRole('button', {name: 'Datensatz hinzufügen'})).toBeDisabled();
+    });
+
     it('exposes the collection and every data set as labelled groups', () => {
         renderView();
 
