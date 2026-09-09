@@ -4,6 +4,7 @@ import {BaseApiService} from '../../services/base-api-service';
 import {DataObjectItem} from '../../modules/data-objects/models/data-object-item';
 import {Page} from '../../models/dtos/page';
 import {listAllPages} from '../../utils/page-utils';
+import {getLiteralAuthoredValue} from '../../models/element-data';
 
 export interface DataObjectSelectOption {
     key: string;
@@ -81,7 +82,7 @@ function extractPrimaryLabel(
         return item.id;
     }
 
-    const inputValue = item.data?.[dataLabelAttributeKey];
+    const inputValue = getLiteralAuthoredValue(item.data?.[dataLabelAttributeKey]);
 
     const primitiveLabel = formatPrimitiveLabelValue(inputValue);
     if (primitiveLabel != null) {
@@ -147,5 +148,4 @@ async function loadDataObjectItems(
     cachedItemsPromises.set(dataModelKey, promise);
     return promise;
 }
-
 
