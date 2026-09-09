@@ -334,8 +334,6 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
 
             <Box
                 sx={{
-                    display: 'flex',
-                    alignItems: 'center',
                     maxWidth: 680,
                 }}
             >
@@ -357,33 +355,35 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                                 themeId: value != null ? parseInt(value) : null,
                             });
                         }}
+                        externalAction={
+                            <Hint
+                                summary="Sie können ein abweichendes Erscheinungsbild für alle Formulare dieser Prozessversion auswählen."
+                                detailsTitle="Erscheinungsbild"
+                                details={
+                                    <>
+                                        <p>
+                                            Erscheinungsbilder werden nach folgendem Prioritätsprinzip angewendet. Der erste passende
+                                            Eintrag in der folgenden Liste wird verwendet:
+                                        </p>
+                                        <ol>
+                                            <li>Das Erscheinungsbild der Prozessversion</li>
+                                            <li>Das Erscheinungsbild der zuständigen Organisationseinheit (Nur in Formularen)</li>
+                                            <li>Das Erscheinungsbild der bewirtschaftenden Organisationseinheit (Nur in Formularen)</li>
+                                            <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
+                                            <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
+                                        </ol>
+                                        <p>
+                                            Das Erscheinungsbild legt Farben, Logo und Favicon aller Formulare der Prozessversion fest.
+                                        </p>
+                                    </>
+                                }
+                            />
+                        }
                         options={themeOptions}
                         disabled={!isEditable || isSaving}
                     />
                 }
-                <Hint
-                    summary="Sie können ein abweichendes Erscheinungsbild für alle Formulare dieser Prozessversion auswählen."
-                    detailsTitle="Erscheinungsbild"
-                    details={
-                        <>
-                            <p>
-                                Erscheinungsbilder werden nach folgendem Prioritätsprinzip angewendet. Der erste passende
-                                Eintrag in der folgenden Liste wird verwendet:
-                            </p>
-                            <ol>
-                                <li>Das Erscheinungsbild der Prozessversion</li>
-                                <li>Das Erscheinungsbild der zuständigen Organisationseinheit (Nur in Formularen)</li>
-                                <li>Das Erscheinungsbild der bewirtschaftenden Organisationseinheit (Nur in Formularen)</li>
-                                <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
-                                <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
-                            </ol>
-                            <p>
-                                Das Erscheinungsbild legt Farben, Logo und Favicon aller Formulare der Prozessversion fest.
-                            </p>
-                        </>
-                    }
-                    sx={{ml: 2}}
-                />
+
             </Box>
 
             <ElementEditorSectionHeader

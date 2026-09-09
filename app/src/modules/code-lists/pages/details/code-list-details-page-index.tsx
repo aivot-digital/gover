@@ -619,24 +619,16 @@ export function CodeListDetailsPageIndex() {
 
                         {
                             codeList.sourceType === CodeListSourceType.XRepository &&
-                            <Stack
-                                direction={{xs: 'column', md: 'row'}}
-                                spacing={2}
-                            >
-                                <Box sx={{flex: 1, minWidth: 0}}>
-                                    <TextFieldComponent
-                                        label="XRepository-URN"
-                                        value={codeList.sourceRef}
-                                        onChange={handleInputChange('sourceRef')}
-                                        onBlur={handleInputBlur('sourceRef')}
-                                        required={true}
-                                        error={errors.sourceRef}
-                                        disabled={isBusy || !isEditable}
-                                        hint={isFetchingMetadata ? 'Metadaten werden abgerufen...' : XRepositoryMetadataHint}
-                                    />
-                                </Box>
-
-                                <Box>
+                            <TextFieldComponent
+                                label="XRepository-URN"
+                                value={codeList.sourceRef}
+                                onChange={handleInputChange('sourceRef')}
+                                onBlur={handleInputBlur('sourceRef')}
+                                required={true}
+                                error={errors.sourceRef}
+                                disabled={isBusy || !isEditable}
+                                hint={isFetchingMetadata ? 'Metadaten werden abgerufen...' : XRepositoryMetadataHint}
+                                externalAction={
                                     <DisabledTooltip
                                         disabled={saveDisabledByPermission}
                                         title={saveDisabledTooltip}
@@ -655,15 +647,12 @@ export function CodeListDetailsPageIndex() {
                                                     ? <CircularProgress size={18} color="inherit"/>
                                                     : <Download/>
                                             }
-                                            sx={{
-                                                mt: {xs: 0, md: 3},
-                                            }}
                                         >
                                             Metadaten abrufen
                                         </Button>
                                     </DisabledTooltip>
-                                </Box>
-                            </Stack>
+                                }
+                            />
                         }
                     </Grid>
                 }

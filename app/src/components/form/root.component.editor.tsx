@@ -210,49 +210,43 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         lg: 6,
                     }}
                 >
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center"
-                        }}>
-                        <AssetSelector
-                            label="PDF-Vorlage"
-                            selectLabel="PDF-Vorlage auswählen"
-                            value={form.pdfTemplateKey ?? null}
-                            onChange={(val) => {
-                                onPatch({
-                                    pdfTemplateKey: val ?? null,
-                                });
-                            }}
-                            mimetype="text/html"
-                            disabled={!props.editable}
-                        />
-
-                        <Hint
-                            summary="Sie können eine individuelle Vorlage für die Generierung von PDF-Dokumenten auswählen."
-                            detailsTitle="PDF-Vorlage"
-                            details={
-                                <>
-                                    <p>
-                                        Sie können eine individuelle Vorlage für die Generierung von PDF-Dokumenten
-                                        auswählen.
-                                    </p>
-                                    <p>
-                                        Die Vorlage wird für das PDF des eingereichten Antrags (welches antragstellende
-                                        Personen und
-                                        Mitarbeiter:innen der Verwaltung erhalten) verwendet.
-                                        Auch der Vordruck des Formulars verwendet die ausgewählte Vorlage.
-                                    </p>
-                                    <p>
-                                        Vorlagen können im Bereich <Link to="/assets">Dokumente &
-                                                                                      Medieninhalte</Link> hochgeladen
-                                        werden.
-                                    </p>
-                                </>
-                            }
-                            sx={{ml: 2}}
-                        />
-                    </Box>
+                    <AssetSelector
+                        label="PDF-Vorlage"
+                        selectLabel="PDF-Vorlage auswählen"
+                        value={form.pdfTemplateKey ?? null}
+                        onChange={(val) => {
+                            onPatch({
+                                pdfTemplateKey: val ?? null,
+                            });
+                        }}
+                        mimetype="text/html"
+                        disabled={!props.editable}
+                        externalAction={
+                            <Hint
+                                summary="Sie können eine individuelle Vorlage für die Generierung von PDF-Dokumenten auswählen."
+                                detailsTitle="PDF-Vorlage"
+                                details={
+                                    <>
+                                        <p>
+                                            Sie können eine individuelle Vorlage für die Generierung von PDF-Dokumenten
+                                            auswählen.
+                                        </p>
+                                        <p>
+                                            Die Vorlage wird für das PDF des eingereichten Antrags (welches antragstellende
+                                            Personen und
+                                            Mitarbeiter:innen der Verwaltung erhalten) verwendet.
+                                            Auch der Vordruck des Formulars verwendet die ausgewählte Vorlage.
+                                        </p>
+                                        <p>
+                                            Vorlagen können im Bereich <Link to="/assets">Dokumente &
+                                                                                          Medieninhalte</Link> hochgeladen
+                                            werden.
+                                        </p>
+                                    </>
+                                }
+                            />
+                        }
+                    />
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader

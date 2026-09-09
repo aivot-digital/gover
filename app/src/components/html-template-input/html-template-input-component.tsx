@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {Box, Button, Stack} from '@mui/material';
+import {Button} from '@mui/material';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {AssetSelector} from '../../modules/assets/components/asset-selector';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
@@ -80,10 +80,7 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
     }, [assetKey, showEditorDialog]);
 
     return (
-        <Stack
-            spacing={2}
-            direction="row"
-        >
+        <>
             <AssetSelector
                 label={label}
                 hint={hint ?? undefined}
@@ -100,21 +97,19 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                 required={required ?? undefined}
                 mimetype="text/html"
                 placeholder="Keine HTML-Vorlage ausgewählt"
+                externalAction={
+                    <Button
+                        variant="outlined"
+                        startIcon={<Edit/>}
+                        onClick={() => {
+                            setShowEditorDialog(true);
+                        }}
+                        disabled={disabled || assetKey == null || isStringNullOrEmpty(assetKey) || isLoadingTemplate || templateLoadError != null}
+                    >
+                        Anpassen
+                    </Button>
+                }
             />
-
-            <Box>
-                <Button
-                    variant="outlined"
-                    startIcon={<Edit/>}
-                    onClick={() => {
-                        setShowEditorDialog(true);
-                    }}
-                    sx={{mt: 1.25}}
-                    disabled={disabled || assetKey == null || isStringNullOrEmpty(assetKey) || isLoadingTemplate || templateLoadError != null}
-                >
-                    Anpassen
-                </Button>
-            </Box>
 
             <HtmlTemplateInputComponentDialog
                 label={label}
@@ -131,6 +126,6 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                     setShowEditorDialog(false);
                 }}
             />
-        </Stack>
+        </>
     );
 }
