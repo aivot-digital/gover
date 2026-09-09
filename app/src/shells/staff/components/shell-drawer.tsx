@@ -1221,7 +1221,11 @@ function DrawerListItem({
                         <DrawerNavigationIcon item={item}
                                               active={isActive}/>
                     </ListItemIcon>
-                    <ListItemText primary={item.label}/>
+                    <ListItemText
+                        primary={item.label}
+                        sx={{minWidth: 0}}
+                        slotProps={{primary: {noWrap: true}}}
+                    />
                     {item.chipContent != null && (
                         <Chip
                             label={item.chipContent}
