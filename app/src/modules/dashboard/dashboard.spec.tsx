@@ -4,6 +4,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {Dashboard} from './dashboard';
 import {DashboardApiService} from './dashboard-api-service';
 import {DashboardActivityPeriod} from './models/dashboard-overview';
+import {MemoryRouter} from 'react-router-dom';
 
 const {loadConfetti, createConfetti, fireConfetti} = vi.hoisted(() => ({
     loadConfetti: vi.fn(),
@@ -51,7 +52,7 @@ describe('Dashboard confetti', () => {
             buckets: [],
         });
 
-        const {container, unmount} = render(<Dashboard/>);
+        const {container, unmount} = render(<MemoryRouter><Dashboard/></MemoryRouter>);
         await act(async () => {
             await Promise.resolve();
         });

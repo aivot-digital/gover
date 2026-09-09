@@ -1,6 +1,7 @@
 import {PageWrapper} from '../../components/page-wrapper/page-wrapper';
 import {Box, Divider, Grid, Typography} from '@mui/material';
 import React, {lazy, Suspense, useEffect, useMemo, useState} from 'react';
+import {useSearchParams} from 'react-router-dom';
 import {DashboardGreeting} from './components/dashboard-greeting';
 import {DashboardTasksPanel} from './components/dashboard-tasks-panel';
 import {DashboardLinksPanel} from './components/dashboard-links-panel';
@@ -17,6 +18,7 @@ import {dispatchProcessAssignedTaskCountRefreshEvent} from '../process/utils/pro
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
+import {createSimulatedDashboardData} from './dashboard-simulation';
 
 const germanyFlagColors = ['#213048', '#EA312A', '#EEA53C'];
 
@@ -24,6 +26,8 @@ const CanvasConfettiOverlay = lazy(() => import('../../components/confetti/canva
     .then(({CanvasConfettiOverlay}) => ({default: CanvasConfettiOverlay})));
 
 export function Dashboard() {
+    const [searchParams] = useSearchParams();
+    const shouldSimulate = searchParams.get('simulate') === '1';
     const [flagConfettiPlayKey, setFlagConfettiPlayKey] = useState<number | null>(null);
     const [overview, setOverview] = useState<DashboardOverview>();
     const [activity, setActivity] = useState<DashboardActivity>();
@@ -32,20 +36,39 @@ export function Dashboard() {
     const service = useMemo(() => new DashboardApiService(), []);
     const activityEnabledConfig = useAppSelector(selectSystemConfigValue(SystemConfigKeys.dashboard.activity.enabled));
     const activityPeriodConfig = useAppSelector(selectSystemConfigValue(SystemConfigKeys.dashboard.activity.period));
-
-    useEffect(() => {
-        dispatchProcessAssignedTaskCountRefreshEvent();
-        service.fetchOverview().then(setOverview).catch(() => setOverviewError(true));
-        service.fetchActivity().then(setActivity).catch(() => setActivityError(true));
-    }, [service]);
-
-    const recentProcesses = overview?.recentProcesses ?? [];
-    // These public display configs are known before the activity request and keep the initial layout stable.
-    const activityExpected = activityEnabledConfig !== 'false';
     const initialActivityPeriod = activityPeriodConfig === DashboardActivityPeriodConfig.ThirtyDays
         ? DashboardActivityPeriod.ThirtyDays
         : DashboardActivityPeriod.ThreeMonths;
-    const showActivity = activity?.available === true || (activity == null && activityExpected) || (activityError && activityExpected);
+    const simulatedData = useMemo(() => shouldSimulate
+        ? createSimulatedDashboardData(initialActivityPeriod)
+        : undefined, [shouldSimulate, initialActivityPeriod]);
+
+    useEffect(() => {
+        if (shouldSimulate) return;
+
+        let isActive = true;
+        setOverview(undefined);
+        setActivity(undefined);
+        setOverviewError(false);
+        setActivityError(false);
+        dispatchProcessAssignedTaskCountRefreshEvent();
+        service.fetchOverview()
+            .then((value) => { if (isActive) setOverview(value); })
+            .catch(() => { if (isActive) setOverviewError(true); });
+        service.fetchActivity()
+            .then((value) => { if (isActive) setActivity(value); })
+            .catch(() => { if (isActive) setActivityError(true); });
+        return () => { isActive = false; };
+    }, [service, shouldSimulate]);
+
+    const displayedOverview = simulatedData?.overview ?? overview;
+    const displayedActivity = simulatedData?.activity ?? activity;
+    const displayedOverviewError = !shouldSimulate && overviewError;
+    const displayedActivityError = !shouldSimulate && activityError;
+    const recentProcesses = displayedOverview?.recentProcesses ?? [];
+    // These public display configs are known before the activity request and keep the initial layout stable.
+    const activityExpected = activityEnabledConfig !== 'false';
+    const showActivity = displayedActivity?.available === true || (displayedActivity == null && activityExpected) || (displayedActivityError && activityExpected);
     const showRecentProcesses = recentProcesses.length > 0;
 
     return (
@@ -63,18 +86,18 @@ export function Dashboard() {
                     mt: 2.75
                 }}>
                 <Grid size={{xs: 12, lg: showRecentProcesses ? 8 : 12}} sx={{display: 'flex'}}>
-                    <DashboardTasksPanel summary={overview?.tasks} error={overviewError}/>
+                    <DashboardTasksPanel summary={displayedOverview?.tasks} error={displayedOverviewError} previewOnly={shouldSimulate}/>
                 </Grid>
                 {showRecentProcesses && (
                     <Grid size={{xs: 12, lg: 4}} sx={{display: 'flex'}}>
-                        <DashboardRecentProcessesPanel processes={recentProcesses}/>
+                        <DashboardRecentProcessesPanel processes={recentProcesses} previewOnly={shouldSimulate}/>
                     </Grid>
                 )}
                 {showActivity && (
                     <Grid size={12}>
                         <DashboardActivityPanel
-                            activity={activity}
-                            error={activityError}
+                            activity={displayedActivity}
+                            error={displayedActivityError}
                             initialPeriod={initialActivityPeriod}
                         />
                     </Grid>
