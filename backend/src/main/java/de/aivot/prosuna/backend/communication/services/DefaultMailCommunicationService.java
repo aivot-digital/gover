@@ -5,13 +5,18 @@ import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.communication.models.MailCommunicationSendOptions;
 import de.aivot.prosuna.backend.communication.utils.EmailAddressUtils;
+import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.enums.MailTemplate;
 import de.aivot.prosuna.backend.mail.models.MailSendOptions;
 import de.aivot.prosuna.backend.mail.services.MailService;
 import de.aivot.prosuna.backend.models.lib.MailAttachmentBytes;
 import de.aivot.prosuna.backend.system.services.SystemService;
+import de.aivot.prosuna.backend.theme.services.ThemeService;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.mail.MessagingException;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
@@ -30,10 +35,17 @@ import java.util.Optional;
 public class DefaultMailCommunicationService {
     private final MailService mailService;
     private final SystemService systemService;
+    private final VDepartmentShadowedService vDepartmentShadowedService;
+    private final ThemeService themeService;
 
-    public DefaultMailCommunicationService(MailService mailService, SystemService systemService) {
+    public DefaultMailCommunicationService(MailService mailService,
+                                           SystemService systemService,
+                                           VDepartmentShadowedService vDepartmentShadowedService,
+                                           ThemeService themeService) {
         this.mailService = mailService;
         this.systemService = systemService;
+        this.vDepartmentShadowedService = vDepartmentShadowedService;
+        this.themeService = themeService;
     }
 
     public void sendMessage(@Nonnull String rawRecipient, @Nonnull CommunicationMessage message) throws CommunicationException {
@@ -103,15 +115,28 @@ public class DefaultMailCommunicationService {
             templateContext.put("messageHtml", HtmlRenderer.builder().build().render(document));
             templateContext.put("callToActions", callToActions);
 
+            var theme = systemService.retrieveDefaultTheme();
+            var includeDefaultMailSignature = false;
+            if (message.sendingDepartment() != null) {
+                var department = resolveDepartment(message.sendingDepartment());
+                templateContext.put("department", department);
+                includeDefaultMailSignature = true;
+
+                var themeId = resolveThemeId(department);
+                if (themeId != null) {
+                    theme = themeService.retrieve(themeId).orElse(theme);
+                }
+            }
+
             var attachments = readAttachments(message);
             var mailOptions = new MailSendOptions(
-                    false,
+                    includeDefaultMailSignature,
                     senderName,
                     senderAddress,
                     replyToAddress
             );
             mailService.sendMail(
-                    systemService.retrieveDefaultTheme(),
+                    theme,
                     recipient,
                     Optional.empty(),
                     Optional.empty(),
@@ -128,6 +153,26 @@ public class DefaultMailCommunicationService {
                     e
             );
         }
+    }
+
+    @Nonnull
+    private Object resolveDepartment(@Nonnull DepartmentEntity department) {
+        if (department.getId() == null) {
+            return department;
+        }
+        var shadowedDepartment = vDepartmentShadowedService.retrieve(department.getId());
+        return shadowedDepartment.isPresent() ? shadowedDepartment.get() : department;
+    }
+
+    @Nullable
+    private static Integer resolveThemeId(@Nonnull Object department) {
+        if (department instanceof VDepartmentShadowedEntity shadowedDepartment) {
+            return shadowedDepartment.getThemeId();
+        }
+        if (department instanceof DepartmentEntity departmentEntity) {
+            return departmentEntity.getThemeId();
+        }
+        return null;
     }
 
     private static String trimToNull(String value) {

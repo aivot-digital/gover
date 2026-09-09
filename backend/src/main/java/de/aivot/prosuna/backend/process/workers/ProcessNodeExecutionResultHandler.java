@@ -1,7 +1,10 @@
 package de.aivot.prosuna.backend.process.workers;
 
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
+import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
+import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -9,6 +12,7 @@ import de.aivot.prosuna.backend.mail.services.ProcessTaskMailService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
@@ -23,6 +27,7 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
+import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -37,6 +42,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class ProcessNodeExecutionResultHandler {
@@ -49,6 +55,8 @@ public class ProcessNodeExecutionResultHandler {
     private final ProcessTaskMailService processTaskMailService;
     private final ProcessNodeRepository processNodeRepository;
     private final ProcessNodeDefinitionService processNodeDefinitionService;
+    private final ProcessService processService;
+    private final DepartmentService departmentService;
 
     @Autowired
     public ProcessNodeExecutionResultHandler(RabbitTemplate rabbitTemplate,
@@ -59,7 +67,9 @@ public class ProcessNodeExecutionResultHandler {
                                              UserService userService,
                                              ProcessTaskMailService processTaskMailService,
                                              ProcessNodeRepository processNodeRepository,
-                                             ProcessNodeDefinitionService processNodeDefinitionService) {
+                                             ProcessNodeDefinitionService processNodeDefinitionService,
+                                             ProcessService processService,
+                                             DepartmentService departmentService) {
         this.rabbitTemplate = rabbitTemplate;
         this.communicationService = communicationService;
         this.processInstanceRepository = processInstanceRepository;
@@ -69,6 +79,8 @@ public class ProcessNodeExecutionResultHandler {
         this.processTaskMailService = processTaskMailService;
         this.processNodeRepository = processNodeRepository;
         this.processNodeDefinitionService = processNodeDefinitionService;
+        this.processService = processService;
+        this.departmentService = departmentService;
     }
 
     public void handleResult(@Nonnull ProcessNodeExecutionLogger logger,
@@ -262,9 +274,14 @@ public class ProcessNodeExecutionResultHandler {
             );
         }
 
+        var message = communicationRequest.message().withSendingContext(
+                context.triggeringUser,
+                resolveSendingDepartment(context)
+        );
+
         final Map<String, Object> sendResult;
         try {
-            sendResult = communicationService.sendMessage(recipientIdentity, communicationRequest.message());
+            sendResult = communicationService.sendMessage(recipientIdentity, message);
         } catch (CommunicationException e) {
             markTaskFailed(context.processInstanceTask);
             throw new ProcessNodeExecutionExceptionUnknown(
@@ -275,7 +292,7 @@ public class ProcessNodeExecutionResultHandler {
             );
         }
 
-        logCommunicationSent(context, recipientIdentity, communicationRequest, sendResult);
+        logCommunicationSent(context, recipientIdentity, message, sendResult);
 
         if (communicationRequest.nodeDataOutputKey() == null) {
             return;
@@ -290,7 +307,7 @@ public class ProcessNodeExecutionResultHandler {
 
     private void logCommunicationSent(@Nonnull HandlerContext<?> context,
                                       @Nonnull IdentityData recipientIdentity,
-                                      @Nonnull ProcessNodeExecutionResultCommunicationRequest communicationRequest,
+                                      @Nonnull CommunicationMessage message,
                                       @Nonnull Map<String, Object> sendResult) {
         var processInstanceDetails = new LinkedHashMap<String, Object>();
         processInstanceDetails.put("id", context.processInstance.getId());
@@ -307,9 +324,11 @@ public class ProcessNodeExecutionResultHandler {
         recipientIdentityDetails.put("communicationProviderBindingId", recipientIdentity.communicationProviderBindingId());
 
         var messageDetails = new LinkedHashMap<String, Object>();
-        messageDetails.put("subject", communicationRequest.message().subject());
-        messageDetails.put("body", communicationRequest.message().body());
-        messageDetails.put("htmlBody", communicationRequest.message().htmlBody());
+        messageDetails.put("subject", message.subject());
+        messageDetails.put("body", message.body());
+        messageDetails.put("htmlBody", message.htmlBody());
+        messageDetails.put("sendingUser", createSendingUserDetails(message.sendingUser()));
+        messageDetails.put("sendingDepartment", createSendingDepartmentDetails(message.sendingDepartment()));
 
         var eventDetails = new LinkedHashMap<String, Object>();
         eventDetails.put("processInstance", processInstanceDetails);
@@ -324,9 +343,74 @@ public class ProcessNodeExecutionResultHandler {
                 "Nachricht versendet",
                 eventDetails,
                 "Die Nachricht mit dem Betreff %s wurde erfolgreich an die Identität %s versendet.",
-                StringUtils.quote(communicationRequest.message().subject()),
+                StringUtils.quote(message.subject()),
                 StringUtils.quote(recipientIdentity.identityId())
         );
+    }
+
+    @Nonnull
+    private DepartmentEntity resolveSendingDepartment(@Nonnull HandlerContext<?> context)
+            throws ProcessNodeExecutionException {
+        final Optional<ProcessEntity> process;
+        try {
+            process = processService.retrieve(context.processInstance.getProcessId());
+        } catch (ResponseException e) {
+            markTaskFailed(context.processInstanceTask);
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Der Prozess %s der Prozessinstanz konnte nicht geladen werden: %s",
+                    context.processInstance.getProcessId(),
+                    e.getMessage()
+            );
+        }
+
+        if (process.isEmpty()) {
+            markTaskFailed(context.processInstanceTask);
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Der Prozess %s der Prozessinstanz ist nicht vorhanden.",
+                    context.processInstance.getProcessId()
+            );
+        }
+
+        var departmentId = process.get().getDepartmentId();
+        if (departmentId == null) {
+            markTaskFailed(context.processInstanceTask);
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Für den Prozess %s ist keine Organisationseinheit hinterlegt.",
+                    process.get().getId()
+            );
+        }
+        var department = departmentService.retrieve(departmentId);
+        if (department.isEmpty()) {
+            markTaskFailed(context.processInstanceTask);
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Die Organisationseinheit %s des Prozesses ist nicht vorhanden.",
+                    departmentId
+            );
+        }
+        return department.get();
+    }
+
+    @Nullable
+    private static Map<String, Object> createSendingUserDetails(@Nullable UserEntity user) {
+        if (user == null) {
+            return null;
+        }
+        var details = new LinkedHashMap<String, Object>();
+        details.put("id", user.getId());
+        details.put("name", user.getFullName());
+        return details;
+    }
+
+    @Nullable
+    private static Map<String, Object> createSendingDepartmentDetails(@Nullable DepartmentEntity department) {
+        if (department == null) {
+            return null;
+        }
+        var details = new LinkedHashMap<String, Object>();
+        details.put("id", department.getId());
+        details.put("name", department.getName());
+        return details;
     }
 
     private void markTaskFailed(@Nonnull ProcessInstanceTaskEntity task) {

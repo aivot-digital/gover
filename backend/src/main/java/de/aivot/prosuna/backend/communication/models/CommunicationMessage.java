@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.communication.models;
 
+import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -18,24 +20,15 @@ public record CommunicationMessage(
         @Nonnull
         Instant timestamp,
         @Nonnull
-        List<CommunicationMessageAttachment> attachments
+        List<CommunicationMessageAttachment> attachments,
+        @Nullable
+        UserEntity sendingUser,
+        @Nullable
+        DepartmentEntity sendingDepartment
 ) {
     public CommunicationMessage {
         callToActions = callToActions == null ? List.of() : callToActions;
         attachments = attachments == null ? List.of() : attachments;
-    }
-
-    /**
-     * Keeps callers using the message shape from before call-to-actions were introduced compatible.
-     */
-    public CommunicationMessage(
-            @Nonnull String subject,
-            @Nonnull String body,
-            @Nonnull String htmlBody,
-            @Nonnull Instant timestamp,
-            @Nullable List<CommunicationMessageAttachment> attachments
-    ) {
-        this(subject, body, htmlBody, List.of(), timestamp, attachments);
     }
 
     public static CommunicationMessage of(
@@ -52,7 +45,7 @@ public record CommunicationMessage(
             @Nonnull String htmlBody,
             @Nonnull List<CommunicationMessageAttachment> attachments
     ) {
-        return new CommunicationMessage(subject, body, htmlBody, List.of(), Instant.now(), attachments);
+        return new CommunicationMessage(subject, body, htmlBody, List.of(), Instant.now(), attachments, null, null);
     }
 
     public static CommunicationMessage of(
@@ -62,6 +55,23 @@ public record CommunicationMessage(
             @Nonnull List<CommunicationMessageCallToAction> callToActions,
             @Nonnull List<CommunicationMessageAttachment> attachments
     ) {
-        return new CommunicationMessage(subject, body, htmlBody, callToActions, Instant.now(), attachments);
+        return new CommunicationMessage(subject, body, htmlBody, callToActions, Instant.now(), attachments, null, null);
+    }
+
+    @Nonnull
+    public CommunicationMessage withSendingContext(
+            @Nullable UserEntity sendingUser,
+            @Nullable DepartmentEntity sendingDepartment
+    ) {
+        return new CommunicationMessage(
+                subject,
+                body,
+                htmlBody,
+                callToActions,
+                timestamp,
+                attachments,
+                sendingUser,
+                sendingDepartment
+        );
     }
 }

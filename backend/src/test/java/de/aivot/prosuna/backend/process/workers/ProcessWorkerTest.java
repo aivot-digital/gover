@@ -443,7 +443,7 @@ class ProcessWorkerTest {
         private boolean handleResultCalled;
 
         private TestProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override

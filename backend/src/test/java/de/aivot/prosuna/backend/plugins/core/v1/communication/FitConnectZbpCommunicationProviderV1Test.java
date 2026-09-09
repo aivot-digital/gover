@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEnti
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
+import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
@@ -17,6 +18,7 @@ import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
 import dev.fitko.fitconnect.zbp.model.AuthenticationLevel;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -93,6 +95,50 @@ class FitConnectZbpCommunicationProviderV1Test {
                 CommunicationException.class,
                 () -> FitConnectZbpCommunicationProviderV1.renderMessageHtml(message)
         );
+    }
+
+    @Test
+    void createsZbpMessageWithDepartmentAsSenderAndProsunaAsService() throws Exception {
+        var department = new DepartmentEntity()
+                .setId(17)
+                .setName(" Fachbereich Leistungen ");
+        var message = CommunicationMessage
+                .of("Subject", "Body", "<p>Body</p>")
+                .withSendingContext(null, department);
+        var mailboxId = UUID.randomUUID();
+
+        var zbpMessage = FitConnectZbpCommunicationProviderV1.createZbpMessage(
+                message,
+                mailboxId,
+                AuthenticationLevel.THREE,
+                List.of()
+        );
+
+        assertEquals("Fachbereich Leistungen", zbpMessage.sender());
+        assertEquals("Prosuna", zbpMessage.service());
+        assertEquals("<p>Body</p>", zbpMessage.content());
+        assertEquals("Subject", zbpMessage.title());
+        assertEquals(mailboxId, zbpMessage.mailboxUuid());
+        assertEquals(AuthenticationLevel.THREE, zbpMessage.stork_qaa_level());
+    }
+
+    @Test
+    void createsZbpMessageWithProsunaSenderWhenOnlySendingUserIsSet() throws Exception {
+        var user = new UserEntity().setId("user-1").setFullName("Sender User");
+        var message = CommunicationMessage
+                .of("Subject", "Body", "<p>Body</p>")
+                .withSendingContext(user, null);
+
+        var zbpMessage = FitConnectZbpCommunicationProviderV1.createZbpMessage(
+                message,
+                UUID.randomUUID(),
+                AuthenticationLevel.ONE,
+                List.of()
+        );
+
+        assertEquals("Prosuna", zbpMessage.sender());
+        assertEquals("Prosuna", zbpMessage.service());
+        assertEquals("<p>Body</p>", zbpMessage.content());
     }
 
     @Test

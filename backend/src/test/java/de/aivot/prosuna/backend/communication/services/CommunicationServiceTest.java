@@ -17,7 +17,6 @@ import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -101,7 +100,7 @@ class CommunicationServiceTest {
 
     @Test
     void sendMessageResolvesSelectedBindingAndInvokesDefinition() throws Exception {
-        var message = new CommunicationMessage("Subject", "Body", "Body", Instant.now(), null);
+        var message = CommunicationMessage.of("Subject", "Body", "Body");
 
         communicationService.sendMessage(identity, message);
 
@@ -121,7 +120,7 @@ class CommunicationServiceTest {
 
         assertThrows(CommunicationException.class, () -> communicationService.sendMessage(
                 identity,
-                new CommunicationMessage("Subject", "Body", "Body", Instant.now(), null)
+                CommunicationMessage.of("Subject", "Body", "Body")
         ));
 
         verify(definition, never()).sendMessage(any(), any(), any());
@@ -136,7 +135,7 @@ class CommunicationServiceTest {
 
         assertThrows(CommunicationException.class, () -> communicationService.sendMessage(
                 identityWithoutSelection,
-                new CommunicationMessage("Subject", "Body", "Body", Instant.now(), null)
+                CommunicationMessage.of("Subject", "Body", "Body")
         ));
 
         verify(definition, never()).sendMessage(any(), any(), any());
@@ -165,7 +164,7 @@ class CommunicationServiceTest {
                 "session", "applicant", IdentityType.Email, null, null, null, "customer@example.test",
                 Map.of(), null, Map.of()
         );
-        var message = new CommunicationMessage("Subject", "Body", "Body", Instant.now(), null);
+        var message = CommunicationMessage.of("Subject", "Body", "Body");
 
         communicationService.sendMessage(emailIdentity, message);
 

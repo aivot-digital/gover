@@ -406,7 +406,16 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                 .setNodeData(nodeData)
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
                         identityId,
-                        new CommunicationMessage(subject, content, content, sentAt, attachments),
+                        new CommunicationMessage(
+                                subject,
+                                content,
+                                content,
+                                List.of(),
+                                sentAt,
+                                attachments,
+                                null,
+                                null
+                        ),
                         OUTPUT_SEND_RESULT
                 ));
     }

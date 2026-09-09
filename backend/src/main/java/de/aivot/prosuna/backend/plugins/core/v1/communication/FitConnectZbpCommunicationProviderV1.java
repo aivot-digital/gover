@@ -65,6 +65,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     private static final int TEST_BINDING_ID = -1;
     private static final String UUID_REGEX = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
     private static final String MESSAGE_SENDING_IDENTIFIER = "urn:schema-fitko-de:fit-connect:id.bund.de:message_v6";
+    private static final String PROSUNA_NAME = "Prosuna";
     private static final URI ZBP_MESSAGE_SCHEMA_URI = URI.create(
             "https://schema.fitko.de/fit-connect/id.bund.de/message_v6/1.0.0/zbp-message.schema.json"
     );
@@ -345,18 +346,12 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
 
         final AuthenticationLevel mappedAuthenticationLevel = mapAuthenticationLevel(context, identity);
 
-        final CreateMessage zbpMessage = CreateMessage
-                .builder()
-                .content(renderMessageHtml(message))
-                .sender("FIT-Connect")
-                .service("FIT-Connect Test")
-                .title(message.subject())
-                //.retrievalConfirmationAddress("retrieval@mail.net")
-                //.replyAddress("reply@mail.net")
-                .mailboxUuid(postfachId)
-                .stork_qaa_level(mappedAuthenticationLevel)
-                .attachmentMetadata(attachmentMetadata)
-                .build();
+        final CreateMessage zbpMessage = createZbpMessage(
+                message,
+                postfachId,
+                mappedAuthenticationLevel,
+                attachmentMetadata
+        );
 
         final OutgoingSubmission submission = OutgoingSubmission
                 .to(Participant.of(
@@ -401,6 +396,34 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                 "submissionId", sentSubmission.submissionId().toString(),
                 "status", status.state().name()
         );
+    }
+
+    @Nonnull
+    static CreateMessage createZbpMessage(
+            @Nonnull CommunicationMessage message,
+            @Nonnull UUID postfachId,
+            @Nonnull AuthenticationLevel authenticationLevel,
+            @Nonnull List<ZBPAttachmentMetadata> attachmentMetadata
+    ) throws CommunicationException {
+        var departmentName = message.sendingDepartment() == null
+                ? null
+                : message.sendingDepartment().getName();
+        var sender = departmentName == null || departmentName.isBlank()
+                ? PROSUNA_NAME
+                : departmentName.trim();
+
+        return CreateMessage
+                .builder()
+                .content(renderMessageHtml(message))
+                .sender(sender)
+                .service(PROSUNA_NAME)
+                .title(message.subject())
+                //.retrievalConfirmationAddress("retrieval@mail.net")
+                //.replyAddress("reply@mail.net")
+                .mailboxUuid(postfachId)
+                .stork_qaa_level(authenticationLevel)
+                .attachmentMetadata(attachmentMetadata)
+                .build();
     }
 
     @Nonnull

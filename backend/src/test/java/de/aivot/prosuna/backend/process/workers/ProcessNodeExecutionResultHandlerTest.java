@@ -3,6 +3,8 @@ package de.aivot.prosuna.backend.process.workers;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
+import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
@@ -12,6 +14,7 @@ import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
@@ -34,10 +37,12 @@ import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
+import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
@@ -51,7 +56,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -122,12 +130,17 @@ class ProcessNodeExecutionResultHandlerTest {
     void handleResult_DispatchesCommunicationAndMapsProviderResultBeforeOutputs() throws Exception {
         var communicationService = mock(CommunicationService.class);
         var identity = providerIdentity("applicant");
-        var message = CommunicationMessage.of("Subject", "Body", "Body");
+        var message = CommunicationMessage
+                .of("Subject", "Body", "Body")
+                .withSendingContext(
+                        user("stale-user", "Stale User"),
+                        new DepartmentEntity().setId(99).setName("Stale Department")
+                );
         var sendResult = Map.<String, Object>of(
                 "submissionId", "submission-1",
                 "status", "SUBMITTED"
         );
-        when(communicationService.sendMessage(same(identity), same(message))).thenReturn(sendResult);
+        when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class))).thenReturn(sendResult);
 
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
         var handler = createHandler(
@@ -160,7 +173,16 @@ class ProcessNodeExecutionResultHandlerTest {
                         ))
         );
 
-        verify(communicationService).sendMessage(same(identity), same(message));
+        var messageCaptor = ArgumentCaptor.forClass(CommunicationMessage.class);
+        verify(communicationService).sendMessage(same(identity), messageCaptor.capture());
+        var sentMessage = messageCaptor.getValue();
+        assertEquals(message.subject(), sentMessage.subject());
+        assertEquals(message.body(), sentMessage.body());
+        assertEquals(message.htmlBody(), sentMessage.htmlBody());
+        assertEquals(message.timestamp(), sentMessage.timestamp());
+        assertNull(sentMessage.sendingUser());
+        assertEquals(17, sentMessage.sendingDepartment().getId());
+        assertEquals("Fachbereich Leistungen", sentMessage.sendingDepartment().getName());
         assertEquals(sendResult, task.getNodeData().get("sendResult"));
         assertEquals(Map.of("delivery", sendResult), task.getProcessData());
         assertEquals(ProcessTaskStatus.Running, task.getStatus());
@@ -197,11 +219,16 @@ class ProcessNodeExecutionResultHandlerTest {
         assertFalse(identityDetails.containsKey("attributes"));
         assertFalse(identityDetails.containsKey("communicationProviderData"));
 
-        assertEquals(Map.of(
-                "subject", "Subject",
-                "body", "Body",
-                "htmlBody", "Body"
-        ), event.details().get("message"));
+        @SuppressWarnings("unchecked")
+        var messageDetails = (Map<String, Object>) event.details().get("message");
+        assertEquals("Subject", messageDetails.get("subject"));
+        assertEquals("Body", messageDetails.get("body"));
+        assertEquals("Body", messageDetails.get("htmlBody"));
+        assertNull(messageDetails.get("sendingUser"));
+        assertEquals(
+                Map.of("id", 17, "name", "Fachbereich Leistungen"),
+                messageDetails.get("sendingDepartment")
+        );
         assertEquals(sendResult, event.details().get("sendResult"));
     }
 
@@ -210,7 +237,8 @@ class ProcessNodeExecutionResultHandlerTest {
         var communicationService = mock(CommunicationService.class);
         var identity = identity("applicant");
         var message = CommunicationMessage.of("Payment", "Please pay", "Please pay");
-        when(communicationService.sendMessage(same(identity), same(message))).thenReturn(Map.of());
+        when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class))).thenReturn(Map.of());
+        var triggeringUser = user("user-1", "Trigger User");
 
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
         var handler = createHandler(
@@ -224,7 +252,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         handler.handleResult(
                 logger,
-                null,
+                triggeringUser,
                 new TestProcessNodeDefinition("Payment"),
                 processNode("Payment"),
                 processInstance(identity),
@@ -239,13 +267,28 @@ class ProcessNodeExecutionResultHandlerTest {
                         ))
         );
 
-        verify(communicationService).sendMessage(same(identity), same(message));
+        var messageCaptor = ArgumentCaptor.forClass(CommunicationMessage.class);
+        verify(communicationService).sendMessage(same(identity), messageCaptor.capture());
+        assertSame(triggeringUser, messageCaptor.getValue().sendingUser());
+        assertEquals(17, messageCaptor.getValue().sendingDepartment().getId());
         assertEquals(ProcessTaskStatus.AwaitingPayment, task.getStatus());
         assertEquals("transaction-1", task.getRuntimeData().get("transactionKey"));
         assertEquals(1, savedTasks.size());
         assertEquals(1, logger.events.stream()
                 .filter(event -> event.title().equals("Nachricht versendet"))
                 .count());
+
+        var communicationEvent = logger.events.stream()
+                .filter(event -> event.title().equals("Nachricht versendet"))
+                .findFirst()
+                .orElseThrow();
+        @SuppressWarnings("unchecked")
+        var messageDetails = (Map<String, Object>) communicationEvent.details().get("message");
+        assertEquals(Map.of("id", "user-1", "name", "Trigger User"), messageDetails.get("sendingUser"));
+        assertEquals(
+                Map.of("id", 17, "name", "Fachbereich Leistungen"),
+                messageDetails.get("sendingDepartment")
+        );
     }
 
     @Test
@@ -253,7 +296,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var communicationService = mock(CommunicationService.class);
         var identity = identity("applicant");
         var message = CommunicationMessage.of("Subject", "Body", "Body");
-        when(communicationService.sendMessage(same(identity), same(message)))
+        when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class)))
                 .thenThrow(new CommunicationException("Versand fehlgeschlagen"));
 
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
@@ -326,6 +369,82 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(0, logger.events.stream()
                 .filter(event -> event.title().equals("Nachricht versendet"))
                 .count());
+    }
+
+    @Test
+    void handleResult_MarksTaskFailedWhenOwningProcessIsMissing() {
+        var communicationService = mock(CommunicationService.class);
+        var identity = identity("applicant");
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(
+                savedTasks,
+                Map.of(),
+                new RecordingProcessTaskMailService(),
+                communicationService,
+                new ArrayList<>(),
+                new TestProcessService(Optional.empty()),
+                new TestDepartmentService(Optional.of(department()))
+        );
+        var task = processInstanceTask(null);
+
+        assertThrows(ProcessNodeExecutionExceptionMissingValue.class, () -> handler.handleResult(
+                new RecordingProcessNodeExecutionLogger(),
+                null,
+                new TestProcessNodeDefinition("Fallback task"),
+                processNode("Nachricht"),
+                processInstance(identity),
+                task,
+                null,
+                new ProcessNodeExecutionResultTaskUpdated()
+                        .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
+                                identity.identityId(),
+                                CommunicationMessage.of("Subject", "Body", "Body"),
+                                null
+                        ))
+        ));
+
+        verifyNoInteractions(communicationService);
+        assertEquals(ProcessTaskStatus.Failed, task.getStatus());
+        assertNotNull(task.getFinished());
+        assertEquals(1, savedTasks.size());
+    }
+
+    @Test
+    void handleResult_MarksTaskFailedWhenOwningDepartmentIsMissing() {
+        var communicationService = mock(CommunicationService.class);
+        var identity = identity("applicant");
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(
+                savedTasks,
+                Map.of(),
+                new RecordingProcessTaskMailService(),
+                communicationService,
+                new ArrayList<>(),
+                new TestProcessService(Optional.of(process())),
+                new TestDepartmentService(Optional.empty())
+        );
+        var task = processInstanceTask(null);
+
+        assertThrows(ProcessNodeExecutionExceptionMissingValue.class, () -> handler.handleResult(
+                new RecordingProcessNodeExecutionLogger(),
+                null,
+                new TestProcessNodeDefinition("Fallback task"),
+                processNode("Nachricht"),
+                processInstance(identity),
+                task,
+                null,
+                new ProcessNodeExecutionResultTaskUpdated()
+                        .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
+                                identity.identityId(),
+                                CommunicationMessage.of("Subject", "Body", "Body"),
+                                null
+                        ))
+        ));
+
+        verifyNoInteractions(communicationService);
+        assertEquals(ProcessTaskStatus.Failed, task.getStatus());
+        assertNotNull(task.getFinished());
+        assertEquals(1, savedTasks.size());
     }
 
     @Test
@@ -528,6 +647,24 @@ class ProcessNodeExecutionResultHandlerTest {
                                                                    RecordingProcessTaskMailService mailService,
                                                                    CommunicationService communicationService,
                                                                    List<ProcessInstanceEntity> savedInstances) {
+        return createHandler(
+                savedTasks,
+                users,
+                mailService,
+                communicationService,
+                savedInstances,
+                new TestProcessService(Optional.of(process())),
+                new TestDepartmentService(Optional.of(department()))
+        );
+    }
+
+    private static ProcessNodeExecutionResultHandler createHandler(List<ProcessInstanceTaskEntity> savedTasks,
+                                                                   Map<String, UserEntity> users,
+                                                                   RecordingProcessTaskMailService mailService,
+                                                                   CommunicationService communicationService,
+                                                                   List<ProcessInstanceEntity> savedInstances,
+                                                                   ProcessService processService,
+                                                                   DepartmentService departmentService) {
         return new ProcessNodeExecutionResultHandler(
                 null,
                 communicationService,
@@ -537,7 +674,9 @@ class ProcessNodeExecutionResultHandlerTest {
                 new TestUserService(users),
                 mailService,
                 null,
-                null
+                null,
+                processService,
+                departmentService
         );
     }
 
@@ -601,6 +740,18 @@ class ProcessNodeExecutionResultHandlerTest {
                 null,
                 null
         );
+    }
+
+    private static ProcessEntity process() {
+        return new ProcessEntity()
+                .setId(7)
+                .setDepartmentId(17);
+    }
+
+    private static DepartmentEntity department() {
+        return new DepartmentEntity()
+                .setId(17)
+                .setName("Fachbereich Leistungen");
     }
 
     private static IdentityData identity(String identityId) {
@@ -730,6 +881,34 @@ class ProcessNodeExecutionResultHandlerTest {
         @Override
         public Optional<UserEntity> retrieve(String id) throws ResponseException {
             return Optional.ofNullable(users.get(id));
+        }
+    }
+
+    private static final class TestProcessService extends ProcessService {
+        private final Optional<ProcessEntity> process;
+
+        private TestProcessService(Optional<ProcessEntity> process) {
+            super(null, null, null);
+            this.process = process;
+        }
+
+        @Override
+        public Optional<ProcessEntity> retrieve(Integer id) throws ResponseException {
+            return process;
+        }
+    }
+
+    private static final class TestDepartmentService extends DepartmentService {
+        private final Optional<DepartmentEntity> department;
+
+        private TestDepartmentService(Optional<DepartmentEntity> department) {
+            super(null, null, null);
+            this.department = department;
+        }
+
+        @Override
+        public Optional<DepartmentEntity> retrieve(Integer id) {
+            return department;
         }
     }
 

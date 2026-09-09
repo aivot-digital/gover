@@ -25,7 +25,6 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -329,7 +328,7 @@ class MailCommunicationProviderV1Test {
     }
 
     private static CommunicationMessage message() {
-        return new CommunicationMessage("Subject", "Body", "Body", Instant.now(), List.of());
+        return CommunicationMessage.of("Subject", "Body", "Body");
     }
 
     private static CommunicationProviderEntity provider() {

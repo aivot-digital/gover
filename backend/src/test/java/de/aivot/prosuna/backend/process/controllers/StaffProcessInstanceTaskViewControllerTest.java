@@ -553,7 +553,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class ApplyingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private ApplyingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
