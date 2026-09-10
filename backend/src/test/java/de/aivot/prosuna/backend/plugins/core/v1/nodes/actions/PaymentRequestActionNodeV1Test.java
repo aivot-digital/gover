@@ -688,23 +688,26 @@ class PaymentRequestActionNodeV1Test {
     }
 
     @Test
-    void cleanConfigurationForExport_RemovesPaymentAndAssignment() {
+    void cleanConfigurationForExportRemovesIdentityPaymentAndAssignment() {
         var configuration = authored(
                 PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID,
                 RECIPIENT_IDENTITY_ID,
                 PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.PAYMENT_FIELD_ID,
                 Map.of("provider", "secret"),
                 SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
-                Map.of("user", "staff-1")
+                Map.of("user", "staff-1"),
+                "portableValue",
+                "kept"
         );
 
         var cleaned = node.cleanConfigurationForExport(configuration);
 
-        assertEquals(RECIPIENT_IDENTITY_ID, cleaned.get(
+        assertFalse(cleaned.containsKey(
                 PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID
         ));
         assertFalse(cleaned.containsKey(PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.PAYMENT_FIELD_ID));
         assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID));
+        assertEquals("kept", cleaned.get("portableValue"));
     }
 
     private static ProcessNodeExecutionInitContext<PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig> context(

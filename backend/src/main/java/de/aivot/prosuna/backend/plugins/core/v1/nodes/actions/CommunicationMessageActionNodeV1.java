@@ -581,6 +581,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     @Nonnull
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
+        configuration.remove(Configuration.IDENTITY_ID_FIELD_ID);
         configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
         return configuration;
     }

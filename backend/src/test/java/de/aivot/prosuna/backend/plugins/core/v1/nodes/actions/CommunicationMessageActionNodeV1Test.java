@@ -289,7 +289,7 @@ class CommunicationMessageActionNodeV1Test {
     }
 
     @Test
-    void invalidExecutionTypeFailsAndExportRemovesAssignment() {
+    void invalidExecutionTypeFailsAndExportRemovesSystemReferences() {
         var node = createNode(mock(TemplateRenderService.class), mock(AssignmentContextAssigneeResolverService.class));
         var invalidConfiguration = configuration("unexpected");
 
@@ -307,11 +307,14 @@ class CommunicationMessageActionNodeV1Test {
                 CommunicationMessageActionNodeV1.Configuration.IDENTITY_ID_FIELD_ID,
                 "applicant",
                 SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
-                Map.of("user", "staff-1")
+                Map.of("user", "staff-1"),
+                "portableValue",
+                "kept"
         );
         var cleaned = node.cleanConfigurationForExport(exported);
-        assertEquals("applicant", cleaned.get(CommunicationMessageActionNodeV1.Configuration.IDENTITY_ID_FIELD_ID));
+        assertFalse(cleaned.containsKey(CommunicationMessageActionNodeV1.Configuration.IDENTITY_ID_FIELD_ID));
         assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID));
+        assertEquals("kept", cleaned.get("portableValue"));
     }
 
     private static CommunicationMessageActionNodeV1.Configuration configuration(String executionType) {

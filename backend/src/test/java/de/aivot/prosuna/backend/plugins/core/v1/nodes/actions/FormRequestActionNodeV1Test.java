@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputEle
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -243,6 +244,23 @@ class FormRequestActionNodeV1Test {
         assertEquals(PROCESS_INSTANCE_TASK_ID, filter.getValue().getProcessInstanceTaskId());
         assertTrue(attachments.stream().noneMatch(value -> removedAttachmentKey.equals(value.get("key"))));
         assertTrue(attachments.stream().noneMatch(value -> foreignAttachmentKey.equals(value.get("key"))));
+    }
+
+    @Test
+    void cleanConfigurationForExportRemovesIdentityAndAssignment() {
+        var configuration = new AuthoredElementValues();
+        configuration.put(FormRequestActionNodeV1.NodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID, RECIPIENT_IDENTITY_ID);
+        configuration.put(
+                SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
+                Map.of("user", "staff-1")
+        );
+        configuration.put("portableValue", "kept");
+
+        var cleaned = node.cleanConfigurationForExport(configuration);
+
+        assertFalse(cleaned.containsKey(FormRequestActionNodeV1.NodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID));
+        assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID));
+        assertEquals("kept", cleaned.get("portableValue"));
     }
 
     @SuppressWarnings("unchecked")

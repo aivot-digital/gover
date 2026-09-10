@@ -558,6 +558,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     @Nonnull
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
+        configuration.remove(NodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID);
         configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
         return configuration;
     }

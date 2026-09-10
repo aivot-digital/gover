@@ -579,6 +579,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     @Nonnull
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
+        configuration.remove(PaymentRequestActionNodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID);
         configuration.remove(PaymentRequestActionNodeConfig.PAYMENT_FIELD_ID);
         configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
         return configuration;
