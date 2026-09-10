@@ -27,18 +27,21 @@ public class CommunicationProviderConfigurationService {
     @Nonnull
     public <C> C mapProviderConfiguration(@Nonnull CommunicationProviderEntity provider,
                                           @Nonnull CommunicationProviderDefinition<C, ?> definition) throws CommunicationException {
+        var providerReference = formatReference(provider.getName(), provider.getId());
         try {
             return map(
                     definition.getConfigLayout(),
                     provider.getConfiguration(),
                     definition.getConfigClass(),
-                    "Die Konfiguration des Kommunikationsanbieters %s (ID %d) ist ungültig."
-                            .formatted(provider.getName(), provider.getId())
+                    "Die Konfiguration des Kommunikationsanbieters %s ist ungültig."
+                            .formatted(providerReference)
             );
+        } catch (CommunicationException e) {
+            throw e;
         } catch (Exception e) {
             throw new CommunicationException(
-                    "Die Konfiguration des Kommunikationsanbieters %s (ID %d) konnte nicht geladen werden."
-                            .formatted(provider.getName(), provider.getId()),
+                    "Die Konfiguration des Kommunikationsanbieters %s konnte nicht geladen werden."
+                            .formatted(providerReference),
                     e
             );
         }
@@ -48,18 +51,21 @@ public class CommunicationProviderConfigurationService {
     public <I> I mapBindingConfiguration(@Nonnull CommunicationProviderBindingEntity binding,
                                          @Nonnull IdentityProviderEntity identityProvider,
                                          @Nonnull CommunicationProviderDefinition<?, I> definition) throws CommunicationException {
+        var bindingReference = formatReference(binding.getName(), binding.getId());
         try {
             return map(
                     definition.getIdentityProviderBindingConfigLayout(identityProvider),
                     binding.getConfiguration(),
                     definition.getIdentityProviderBindingConfigClass(),
-                    "Die Konfiguration der Kommunikationsanbindung %s (ID %d) ist ungültig."
-                            .formatted(binding.getName(), binding.getId())
+                    "Die Konfiguration der Kommunikationsanbindung %s ist ungültig."
+                            .formatted(bindingReference)
             );
+        } catch (CommunicationException e) {
+            throw e;
         } catch (Exception e) {
             throw new CommunicationException(
-                    "Die Konfiguration der Kommunikationsanbindung %s (ID %d) konnte nicht geladen werden."
-                            .formatted(binding.getName(), binding.getId()),
+                    "Die Konfiguration der Kommunikationsanbindung %s konnte nicht geladen werden."
+                            .formatted(bindingReference),
                     e
             );
         }
@@ -81,5 +87,10 @@ public class CommunicationProviderConfigurationService {
             throw new CommunicationException(validationMessage);
         }
         return ElementPOJOMapper.mapToPOJO(derived.getEffectiveValues(), targetClass);
+    }
+
+    @Nonnull
+    private static String formatReference(@Nonnull String name, Integer id) {
+        return id == null ? name : "%s (ID %d)".formatted(name, id);
     }
 }

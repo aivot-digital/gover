@@ -97,6 +97,23 @@ class CommunicationProviderManagementServiceTest {
     }
 
     @Test
+    void invalidProviderConfigurationIsReturnedAsBadRequest() throws Exception {
+        provider.setEnabled(false);
+        doThrow(new CommunicationException("Die Konfiguration ist ungültig."))
+                .when(configurationService)
+                .mapProviderConfiguration(provider, definition);
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> service.createProvider(provider)
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("Die Konfiguration ist ungültig.", exception.getTitle());
+        verify(providerRepository, never()).save(any());
+    }
+
+    @Test
     void mismatchedTestAndProductionProvidersCannotBeBound() {
         provider.setTestProvider(true);
 

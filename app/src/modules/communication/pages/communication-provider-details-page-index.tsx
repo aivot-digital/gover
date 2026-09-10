@@ -26,6 +26,8 @@ import {
     type CommunicationProviderRequest,
 } from '../models';
 import {type CommunicationProviderAdditionalData} from './communication-provider-details-page-additional-data';
+import {type ComputedElementErrors, type DerivedRuntimeElementData} from '../../../models/element-data';
+import {mapFormManagerErrorsToComputedErrors, prosunaSchemaToYup} from '../../../utils/prosuna-schema-to-yup';
 
 const communicationProviderSchema = yup.object({
     id: yup.number().required(),
@@ -54,6 +56,8 @@ export function CommunicationProviderDetailsPageIndex() {
     const confirm = useConfirm();
     const canDelete = useHasSystemPermission(Permission.COMMUNICATION_PROVIDER_DELETE);
     const [layout, setLayout] = useState<CommunicationConfigurationLayout | null>(null);
+    const [derivedConfigurationData, setDerivedConfigurationData] = useState<DerivedRuntimeElementData | null>(null);
+    const [clientSideValidationErrors, setClientSideValidationErrors] = useState<ComputedElementErrors | null>(null);
 
     const {
         item: originalProvider,
@@ -66,6 +70,21 @@ export function CommunicationProviderDetailsPageIndex() {
     } = useGenericDetailsPageContext<CommunicationProvider, CommunicationProviderAdditionalData>();
 
     const definitions = additionalData?.definitions ?? [];
+    const resolvedSchema = useMemo(() => {
+        if (layout == null || derivedConfigurationData == null) {
+            return communicationProviderSchema;
+        }
+
+        return communicationProviderSchema.shape({
+            configuration: yup.object()
+                .transform((authoredValues) => ({
+                    ...derivedConfigurationData.effectiveValues,
+                    ...(authoredValues ?? {}),
+                }))
+                .shape(prosunaSchemaToYup(layout, derivedConfigurationData.elementStates))
+                .required(),
+        }) as yup.ObjectSchema<CommunicationProvider>;
+    }, [derivedConfigurationData, layout]);
     const {
         currentItem: provider,
         errors,
@@ -75,7 +94,7 @@ export function CommunicationProviderDetailsPageIndex() {
         handleInputPatch,
         validate,
         reset,
-    } = useFormManager<CommunicationProvider>(originalProvider, communicationProviderSchema, true);
+    } = useFormManager<CommunicationProvider>(originalProvider, resolvedSchema, true);
 
     const definitionOptions = useMemo(() => {
         const uniqueDefinitions = new Map<string, (typeof definitions)[number]>();
@@ -96,6 +115,10 @@ export function CommunicationProviderDetailsPageIndex() {
         definition.key === provider?.communicationProviderDefinitionKey &&
         definition.version === provider?.communicationProviderDefinitionVersion
     )), [definitions, provider?.communicationProviderDefinitionKey, provider?.communicationProviderDefinitionVersion]);
+    const configurationValidationPending = provider?.communicationProviderDefinitionKey != null &&
+        provider.communicationProviderDefinitionKey.length > 0 &&
+        provider.communicationProviderDefinitionVersion > 0 &&
+        (layout == null || derivedConfigurationData == null);
 
     useEffect(() => {
         const definitionKey = provider?.communicationProviderDefinitionKey;
@@ -103,6 +126,8 @@ export function CommunicationProviderDetailsPageIndex() {
         let isActive = true;
 
         setLayout(null);
+        setDerivedConfigurationData(null);
+        setClientSideValidationErrors(null);
         if (!definitionKey || definitionVersion < 1) {
             return () => {
                 isActive = false;
@@ -124,6 +149,22 @@ export function CommunicationProviderDetailsPageIndex() {
             isActive = false;
         };
     }, [dispatch, provider?.communicationProviderDefinitionKey, provider?.communicationProviderDefinitionVersion]);
+
+    useEffect(() => {
+        if (layout == null || provider == null || Object.keys(errors).length === 0) {
+            setClientSideValidationErrors(null);
+            return;
+        }
+
+        const computedErrors = mapFormManagerErrorsToComputedErrors(
+            layout,
+            provider.configuration ?? {},
+            errors,
+            {rootPath: 'configuration'},
+        );
+
+        setClientSideValidationErrors(Object.keys(computedErrors).length === 0 ? null : computedErrors);
+    }, [errors, layout, provider]);
 
     const changeBlocker = useChangeBlocker({
         original: originalProvider,
@@ -150,6 +191,10 @@ export function CommunicationProviderDetailsPageIndex() {
     const deleteDisabled = isBusy || !canDelete || originalProvider.isEnabled || provider.isEnabled;
 
     const handleSave = async () => {
+        if (configurationValidationPending) {
+            return;
+        }
+
         if (!validate()) {
             dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
             return;
@@ -287,6 +332,10 @@ export function CommunicationProviderDetailsPageIndex() {
                     authoredElementValues={provider.configuration ?? {}}
                     onAuthoredElementValuesChange={handleInputChange('configuration')}
                     disabled={isBusy || !isEditable}
+                    onDerivationStarted={() => setDerivedConfigurationData(null)}
+                    onDerivationFinished={setDerivedConfigurationData}
+                    computedErrors={clientSideValidationErrors}
+                    suppressErrors={hasNotChanged}
                 />
             )}
 
@@ -312,13 +361,13 @@ export function CommunicationProviderDetailsPageIndex() {
             <Box sx={{display: 'flex', gap: 2, mt: 3}}>
                 <DisabledTooltip
                     title={editDisabledTooltip}
-                    disabled={isBusy || !isEditable || hasNotChanged}
+                    disabled={isBusy || !isEditable || hasNotChanged || configurationValidationPending}
                 >
                     <Button
                         variant="contained"
                         startIcon={<SaveOutlinedIcon/>}
                         onClick={() => void handleSave()}
-                        disabled={isBusy || !isEditable || hasNotChanged}
+                        disabled={isBusy || !isEditable || hasNotChanged || configurationValidationPending}
                     >
                         Speichern
                     </Button>
