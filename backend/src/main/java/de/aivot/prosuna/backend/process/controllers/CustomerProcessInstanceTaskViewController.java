@@ -33,6 +33,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessTestClaimEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceTaskFilter;
@@ -433,6 +434,7 @@ public class CustomerProcessInstanceTaskViewController {
                 procAccess,
                 taskAccess
         );
+        requireActiveCustomerTask(taskViewData.task());
 
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
         var logger = context.getLogger();
@@ -809,6 +811,13 @@ public class CustomerProcessInstanceTaskViewController {
                 provider,
                 cfgRes.configuration()
         );
+    }
+
+    private void requireActiveCustomerTask(@Nonnull ProcessInstanceTaskEntity task) throws ResponseException {
+        if (task.getStatus() != ProcessTaskStatus.AwaitingCustomer &&
+            task.getStatus() != ProcessTaskStatus.AwaitingPayment) {
+            throw ResponseException.forbidden();
+        }
     }
 
     @Nonnull

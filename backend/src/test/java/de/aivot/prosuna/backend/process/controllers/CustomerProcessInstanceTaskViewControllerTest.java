@@ -81,6 +81,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class CustomerProcessInstanceTaskViewControllerTest {
     @Test
+    void retrieve_AllowsCompletedCustomerTask() throws ResponseException {
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(),
+                new AuthoredElementValues()
+        );
+        fixture.task().setStatus(ProcessTaskStatus.Completed);
+
+        var response = fixture.controller().retrieve(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                null,
+                null
+        );
+
+        assertNotNull(response.layout());
+    }
+
+    @Test
     void retrieve_ReadsIdentitySessionFromCookie() throws Exception {
         var fixture = createFixture(
                 new NoOpCustomerProcessNodeDefinition(),
@@ -363,7 +381,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 null,
-                ProcessTaskStatus.Running,
+                ProcessTaskStatus.AwaitingCustomer,
                 null,
                 now,
                 now,
@@ -475,7 +493,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 null,
-                ProcessTaskStatus.Running,
+                ProcessTaskStatus.AwaitingCustomer,
                 null,
                 Instant.now(),
                 Instant.now(),
@@ -572,6 +590,28 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertEquals("inline-submit", provider.eventInvokedWith);
         assertEquals("inline-submit", fixture.task().getRuntimeData().get("event"));
         assertEquals("normalized", response.data().get("field"));
+    }
+
+    @Test
+    void update_RejectsCompletedCustomerTask() {
+        var provider = new InlineCustomerTaskProcessNodeDefinition(null);
+        var fixture = createFixture(provider, new AuthoredElementValues());
+        fixture.task().setStatus(ProcessTaskStatus.Completed);
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                "{}",
+                null,
+                null,
+                "inline-submit",
+                null,
+                null,
+                new MockHttpServletResponse()
+        ));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        assertNull(provider.eventInvokedWith);
     }
 
     @Test
@@ -748,7 +788,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 null,
-                ProcessTaskStatus.Running,
+                ProcessTaskStatus.AwaitingCustomer,
                 null,
                 now,
                 now,

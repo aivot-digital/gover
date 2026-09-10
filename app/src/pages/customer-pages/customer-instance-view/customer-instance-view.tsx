@@ -1,4 +1,4 @@
-import {Box, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {Box, ThemeProvider, useTheme} from '@mui/material';
 import {Outlet, useNavigate, useParams} from 'react-router-dom';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
@@ -6,6 +6,7 @@ import {
     buildCustomerTaskPath,
     CustomerTaskViewApiService,
     getActiveCustomerTasks,
+    getCustomerTasks,
     ProcessInstanceStatusResponse,
 } from './customer-task-view-api-service';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -30,6 +31,7 @@ const INSTANCE_POLL_INTERVAL_MS = 2000;
 export interface CustomerInstanceViewOutletContext {
     refreshInstanceStatus: () => Promise<void>;
     invalidateInstanceTasks: () => void;
+    taskIsActive: boolean;
 }
 
 export function CustomerInstanceView() {
@@ -63,7 +65,8 @@ export function CustomerInstanceView() {
     const refreshInstanceStatus = useCallback(async (): Promise<void> => {
         const requestGeneration = ++statusRequestGenerationRef.current;
         try {
-            const status = await new CustomerTaskViewApiService().getInstanceStatus(instanceAccessKey);
+            const status = await new CustomerTaskViewApiService()
+                .getInstanceStatus(instanceAccessKey);
 
             if (requestGeneration === statusRequestGenerationRef.current) {
                 setInstanceStatus(status);
@@ -109,10 +112,20 @@ export function CustomerInstanceView() {
         });
     }, []);
 
+    const customerTasks = instanceStatus == null || instanceStatus === 'failed'
+        ? []
+        : getCustomerTasks(instanceStatus.tasks);
+    const activeCustomerTasks = getActiveCustomerTasks(customerTasks);
+    const selectedTask = taskAccessKey == null
+        ? undefined
+        : customerTasks.find((task) => task.accessKey === taskAccessKey);
+    const taskIsActive = selectedTask != null && activeCustomerTasks.includes(selectedTask);
+
     const outletContext = useMemo<CustomerInstanceViewOutletContext>(() => ({
         refreshInstanceStatus,
         invalidateInstanceTasks,
-    }), [invalidateInstanceTasks, refreshInstanceStatus]);
+        taskIsActive,
+    }), [invalidateInstanceTasks, refreshInstanceStatus, taskIsActive]);
 
     useEffect(() => {
         fetchInstanceStatus();
@@ -131,11 +144,12 @@ export function CustomerInstanceView() {
             return;
         }
 
-        const activeTasks = getActiveCustomerTasks(instanceStatus.tasks);
-        if (taskAccessKey != null && activeTasks.some((task) => task.accessKey === taskAccessKey)) {
+        const customerTasks = getCustomerTasks(instanceStatus.tasks);
+        if (taskAccessKey != null && customerTasks.some((task) => task.accessKey === taskAccessKey)) {
             return;
         }
 
+        const activeTasks = getActiveCustomerTasks(customerTasks);
         const nextTask = activeTasks[0];
         if (nextTask != null) {
             navigate(buildCustomerTaskPath(instanceAccessKey, nextTask.accessKey), {replace: true});
@@ -154,8 +168,7 @@ export function CustomerInstanceView() {
         return null;
     }
 
-    const activeTasks = getActiveCustomerTasks(instanceStatus.tasks);
-    const selectedTaskIsActive = taskAccessKey != null && activeTasks.some((task) => task.accessKey === taskAccessKey);
+    const selectedTaskExists = selectedTask != null;
 
     return (
         <ThemeProvider theme={resolvedTheme}>
@@ -173,17 +186,17 @@ export function CustomerInstanceView() {
                     }
 
                     {
-                        instanceStatus.tasks != null && activeTasks.length === 0 &&
+                        instanceStatus.tasks != null && !selectedTaskExists && activeCustomerTasks.length === 0 &&
                         <NoTaskToDoPlaceholder/>
                     }
 
                     {
-                        instanceStatus.tasks != null && activeTasks.length > 0 && !selectedTaskIsActive &&
+                        instanceStatus.tasks != null && activeCustomerTasks.length > 0 && !selectedTaskExists &&
                         <LoadingPlaceholder/>
                     }
 
                     {
-                        instanceStatus.tasks != null && selectedTaskIsActive &&
+                        instanceStatus.tasks != null && selectedTaskExists &&
                         <Outlet context={outletContext}/>
                     }
                 </PageWrapper>

@@ -19,7 +19,7 @@ export function LinkButtonView(props: BaseViewProps<LinkButtonElement, void>): R
         isBusy,
         onEvent,
     } = props;
-    const {taskViewMode} = useViewDispatcherContext();
+    const {readOnly, taskViewMode} = useViewDispatcherContext();
 
     const label = resolveLabel(element.label);
     const href = resolveHref(element.href);
@@ -44,7 +44,7 @@ export function LinkButtonView(props: BaseViewProps<LinkButtonElement, void>): R
     }
 
     const event = resolveTaskEvent(element, taskViewMode);
-    const disabled = isBusy || event == null;
+    const disabled = isBusy || readOnly === true || event == null;
 
     return (
         <Button

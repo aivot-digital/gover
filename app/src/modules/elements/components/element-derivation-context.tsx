@@ -47,6 +47,7 @@ interface ElementDerivationContextProps {
     computedErrors?: ComputedElementErrors | null;
     onDerivedDataChange?: (newData: DerivedRuntimeElementData) => void;
     disabled?: boolean;
+    readOnly?: boolean;
     onDerivationStarted?: (triggeringElementData: AuthoredElementValues) => void;
     onDerivationFinished?: (derivedElementData: DerivedRuntimeElementData) => void;
     suppressErrors?: boolean;
@@ -111,6 +112,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         computedErrors,
         onDerivedDataChange,
         disabled,
+        readOnly,
         onDerivationStarted,
         onDerivationFinished,
         suppressErrors,
@@ -163,7 +165,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
         return {
             renderMode: renderMode,
-            isEditable: !disabled,
+            isEditable: !disabled && !readOnly,
             showInvisible: false,
             showTechnical: true,
             scrollContainerRef: null,
@@ -179,6 +181,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         };
     }, [
         disabled,
+        readOnly,
         element,
         authoredElementValues,
         derivedData,
@@ -363,6 +366,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                     showInvisibleElements: disableVisibilities && renderMode === ViewDispatcherMode.Editor,
                     highlightedElementId: highlightedElementId,
                     taskViewMode,
+                    readOnly,
                 }}
             >
                 <ViewDispatcherComponent

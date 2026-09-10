@@ -29,10 +29,16 @@ export interface ProcessInstanceTaskStatusResponse {
     statusOverride: string;
 }
 
+export function getCustomerTasks(
+    tasks: ProcessInstanceTaskStatusResponse[] | null | undefined,
+): ProcessInstanceTaskStatusResponse[] {
+    return (tasks ?? []);
+}
+
 export function getActiveCustomerTasks(
     tasks: ProcessInstanceTaskStatusResponse[] | null | undefined,
 ): ProcessInstanceTaskStatusResponse[] {
-    return (tasks ?? []).filter((task) => (
+    return getCustomerTasks(tasks).filter((task) => (
         task.status === ProcessTaskStatus.AwaitingCustomer ||
         task.status === ProcessTaskStatus.AwaitingPayment
     ));

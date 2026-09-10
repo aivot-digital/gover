@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
     invalidateInstanceTasks: vi.fn(),
     navigate: vi.fn(),
     refreshInstanceStatus: vi.fn(),
+    taskIsActive: true,
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => ({
@@ -28,6 +29,7 @@ vi.mock('react-router-dom', async (importOriginal) => ({
     useOutletContext: () => ({
         invalidateInstanceTasks: mocks.invalidateInstanceTasks,
         refreshInstanceStatus: mocks.refreshInstanceStatus,
+        taskIsActive: mocks.taskIsActive,
     }),
     useParams: () => ({
         instanceAccessKey: 'instance-key',
@@ -84,6 +86,7 @@ describe('CustomerInstanceTaskView', () => {
         mocks.invalidateInstanceTasks.mockReset();
         mocks.navigate.mockReset();
         mocks.refreshInstanceStatus.mockReset().mockResolvedValue(createInstanceStatus());
+        mocks.taskIsActive = true;
 
         vi.spyOn(CustomerTaskViewApiService.prototype, 'getTaskView')
             .mockResolvedValue(createTaskView());
@@ -403,6 +406,17 @@ describe('CustomerInstanceTaskView', () => {
         await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith('/process/instance-key', {replace: true}));
         expect(mocks.invalidateInstanceTasks).toHaveBeenCalledOnce();
         expectSnackbar('Der Aufgabenstatus konnte nach der Aktion nicht aktualisiert werden.');
+    });
+
+    it('renders completed task content without task events', async () => {
+        mocks.taskIsActive = false;
+
+        render(<CustomerInstanceTaskView/>);
+
+        await waitFor(() => expect(mocks.elementDerivationProps).toBeDefined());
+        expect(mocks.elementDerivationProps.readOnly).toBe(true);
+        expect(mocks.elementDerivationProps.onEvent).toBeUndefined();
+        expect(screen.queryByRole('button', {name: 'Daten einreichen'})).not.toBeInTheDocument();
     });
 });
 

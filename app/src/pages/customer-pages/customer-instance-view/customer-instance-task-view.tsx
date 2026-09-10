@@ -57,6 +57,7 @@ export function CustomerInstanceTaskView() {
     const {
         refreshInstanceStatus,
         invalidateInstanceTasks,
+        taskIsActive,
     } = useOutletContext<CustomerInstanceViewOutletContext>();
     const taskApi = useMemo(() => new CustomerTaskViewApiService(), []);
 
@@ -318,14 +319,18 @@ export function CustomerInstanceTaskView() {
                 onAuthoredElementValuesChange={handleAuthoredValuesChange}
                 computedErrors={derivedErrors?.elementStates}
                 onDeriveOverride={handleDerive}
-                onEvent={handleInlineEvent}
+                onEvent={taskIsActive ? handleInlineEvent : undefined}
                 taskViewMode="customer"
+                readOnly={!taskIsActive}
             />
 
-            <TaskViewEventButtons
-                events={taskView.events}
-                onEvent={handleEventClick}
-            />
+            {
+                taskIsActive &&
+                <TaskViewEventButtons
+                    events={taskView.events}
+                    onEvent={handleEventClick}
+                />
+            }
         </Box>
     );
 }

@@ -24,7 +24,9 @@ vi.mock('../../../hooks/use-app-selector', () => ({
 
 vi.mock('react-router-dom', async (importOriginal) => ({
     ...await importOriginal<typeof import('react-router-dom')>(),
-    Outlet: () => <div>Aktive Aufgabenansicht</div>,
+    Outlet: ({context}: {context: {taskIsActive: boolean}}) => (
+        <div data-task-is-active={String(context.taskIsActive)}>Aufgabenansicht</div>
+    ),
     useNavigate: () => mocks.navigate,
     useParams: () => mocks.params,
 }));
@@ -99,7 +101,7 @@ describe('CustomerInstanceView', () => {
             '/process/instance-key/tasks/payment-task',
             {replace: true},
         ));
-        expect(screen.queryByText('Aktive Aufgabenansicht')).not.toBeInTheDocument();
+        expect(screen.queryByText('Aufgabenansicht')).not.toBeInTheDocument();
     });
 
     it('keeps the route when the selected task is still active', async () => {
@@ -111,11 +113,11 @@ describe('CustomerInstanceView', () => {
 
         render(<CustomerInstanceView/>);
 
-        expect(await screen.findByText('Aktive Aufgabenansicht')).toBeInTheDocument();
+        expect(await screen.findByText('Aufgabenansicht')).toHaveAttribute('data-task-is-active', 'true');
         expect(mocks.navigate).not.toHaveBeenCalled();
     });
 
-    it('returns from a stale task route to the instance page when no active task remains', async () => {
+    it('keeps a completed customer task route available as history', async () => {
         mocks.params.taskAccessKey = 'completed-task';
         vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus').mockResolvedValue(createStatus([
             createTask('completed-task', ProcessTaskStatus.Completed),
@@ -123,9 +125,20 @@ describe('CustomerInstanceView', () => {
 
         render(<CustomerInstanceView/>);
 
-        await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith('/process/instance-key', {replace: true}));
-        expect(screen.getByText('Freuen Sie sich. Es gibt für Sie nichts zu tun!')).toBeInTheDocument();
-        expect(screen.queryByText('Aktive Aufgabenansicht')).not.toBeInTheDocument();
+        expect(await screen.findByText('Aufgabenansicht')).toHaveAttribute('data-task-is-active', 'false');
+        expect(mocks.navigate).not.toHaveBeenCalled();
+    });
+
+    it('shows the instance page when only task history remains', async () => {
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus').mockResolvedValue(createStatus([
+            createTask('older-task', ProcessTaskStatus.Completed),
+            createTask('newer-task', ProcessTaskStatus.Completed),
+        ]));
+
+        render(<CustomerInstanceView/>);
+
+        expect(await screen.findByText('Freuen Sie sich. Es gibt für Sie nichts zu tun!')).toBeInTheDocument();
+        expect(mocks.navigate).not.toHaveBeenCalled();
     });
 
     it('passes the process version department IDs to the dialogs', async () => {
