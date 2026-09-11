@@ -316,7 +316,7 @@ class IdentityServiceTest {
     }
 
     @Test
-    void handleCallback_ShouldProcessCallbackSuccessfully() throws Exception {
+    void handleCallback_ShouldProcessCallbackSuccessfullyAndPreserveOtherSlots() throws Exception {
         UUID providerKey = UUID.randomUUID();
         var cacheEntityId = "cache-entity-id";
         var sessionId = "identity-session-id";
@@ -331,9 +331,29 @@ class IdentityServiceTest {
         provider.setAttributes(List.of());
 
         IdentityCacheEntity identity = createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE);
+        var previousSameSlot = createIdentityCacheEntity(
+                "previous-same-slot",
+                sessionId,
+                providerKey,
+                VALID_ORIGIN,
+                VALID_STATE
+        ).setIdentityData(Map.of("sub", "previous"));
+        var otherSlot = createIdentityCacheEntity(
+                "other-slot",
+                sessionId,
+                providerKey,
+                VALID_ORIGIN,
+                VALID_STATE
+        )
+                .setIdentityId("representative")
+                .setIdentityData(Map.of("sub", "representative"))
+                .setCommunicationProviderBindingId(23)
+                .setCommunicationProviderData(Map.of("address", "inbox"));
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
         when(identityCacheRepository.findById(cacheEntityId)).thenReturn(Optional.of(identity));
+        when(identityCacheRepository.findAllBySessionIdAndRelatedProcessNodeId(sessionId, null))
+                .thenReturn(List.of(identity, previousSameSlot, otherSlot));
 
         var mockTokenResponse = mockHttpResponse(200, """
                 {"access_token": "access-token", "refresh_token": "refresh-token", "expires_in": 3600}
@@ -352,6 +372,9 @@ class IdentityServiceTest {
         assertTrue(result.contains("identity-state=0"));
         assertTrue(result.startsWith(VALID_ORIGIN));
         assertEquals("provider-user-123", identity.getUniqueIdFromIdentityProvider());
+        verify(identityCacheRepository).deleteAll(List.of(previousSameSlot));
+        assertEquals(23, otherSlot.getCommunicationProviderBindingId());
+        assertEquals(Map.of("address", "inbox"), otherSlot.getCommunicationProviderData());
     }
 
     @Test

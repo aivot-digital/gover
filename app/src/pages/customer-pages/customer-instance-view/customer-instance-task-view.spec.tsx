@@ -267,6 +267,63 @@ describe('CustomerInstanceTaskView', () => {
         expect(await screen.findByRole('button', {name: 'Daten einreichen'})).toBeInTheDocument();
     });
 
+    it('persists a new identity communication draft before reauthenticating the existing identity', async () => {
+        const initialCommunication = {
+            required: true,
+            ready: false,
+            selectedBindingId: null,
+            choices: [
+                {id: 10, name: 'E-Mail', description: 'Versand per E-Mail'},
+                {id: 20, name: 'Postfach', description: 'Digitales Postfach'},
+            ],
+            customerLayout: null,
+            customerData: {},
+            derivedData: createDerivedRuntimeElementData(),
+        };
+        const previewCommunication = {...initialCommunication, selectedBindingId: 20};
+        const newIdentitySlot = createIdentitySlot({
+            allowsEmail: false,
+            identityType: 'IdentityProvider',
+            availableIdentityProviders: [createIdentityProvider(true)],
+            communication: initialCommunication,
+        });
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockResolvedValue(createBlockedTaskView({
+                existingIdentitySlot: createExistingIdentitySlot({id: 'recipient'}),
+                newIdentitySlot,
+            }));
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'createRequiredIdentityAuthenticationStartLink')
+            .mockReturnValue('#required-login');
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'deriveNewIdentityCommunication')
+            .mockResolvedValue(previewCommunication);
+        let resolveSelection!: (state: typeof previewCommunication) => void;
+        const selectionPending = new Promise<typeof previewCommunication>((resolve) => {
+            resolveSelection = resolve;
+        });
+        const selectCommunication = vi.spyOn(
+            CustomerTaskViewApiService.prototype,
+            'selectNewIdentityCommunication',
+        ).mockReturnValue(selectionPending);
+        const user = userEvent.setup();
+
+        render(<CustomerInstanceTaskView/>);
+
+        await user.click(await screen.findByRole('radio', {name: /Postfach/}));
+        await user.click(screen.getByRole('link', {name: /Mit „BundID“ anmelden/}));
+
+        await waitFor(() => expect(selectCommunication).toHaveBeenCalledWith(
+            'instance-key',
+            'task-key',
+            'applicant',
+            20,
+            {},
+        ));
+        expect(window.location.hash).toBe('');
+
+        resolveSelection(previewCommunication);
+        await waitFor(() => expect(window.location.hash).toBe('#required-login'));
+    });
+
     it('shows existing and new identity requirements together', async () => {
         vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
             .mockResolvedValue(createBlockedTaskView({

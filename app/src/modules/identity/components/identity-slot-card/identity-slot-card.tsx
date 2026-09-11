@@ -17,6 +17,8 @@ export interface IdentitySlotCardProps {
     saveMode?: 'explicit' | 'deferred';
     onChange: (slot: IdentitySlot) => void;
     onStatusChange?: (slotId: string, status: FormIdentitySelectionControlsStatus | null) => void;
+    beforeIdentityProviderStart?: (identityId: string) => Promise<boolean>;
+    identityProviderAuthenticationDisabled?: boolean;
 }
 
 export function getIdentityDisplayName(identity: {title: string | null}): string {
@@ -28,6 +30,8 @@ export const IdentitySlotCard = forwardRef<FormIdentitySelectionControlsHandle, 
     function IdentitySlotCard(props, ref) {
         const {
             api,
+            beforeIdentityProviderStart,
+            identityProviderAuthenticationDisabled,
             onChange,
             onStatusChange,
             saveMode,
@@ -111,6 +115,8 @@ export const IdentitySlotCard = forwardRef<FormIdentitySelectionControlsHandle, 
                         slot={slot}
                         api={api}
                         saveMode={saveMode}
+                        beforeIdentityProviderStart={beforeIdentityProviderStart}
+                        identityProviderAuthenticationDisabled={identityProviderAuthenticationDisabled}
                         onChange={onChange}
                         onStatusChange={onStatusChange}
                     />

@@ -1,12 +1,16 @@
 import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {createRef} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {createDerivedRuntimeElementData} from '../../../../models/element-data';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
 import type {IdentitySelectionApi} from '../../models/identity-selection-api';
 import type {IdentityCommunicationState, IdentitySlot} from '../../models/identity-slot';
-import {FormIdentitySelectionControls} from './form-identity-selection-controls';
+import {
+    FormIdentitySelectionControls,
+    type FormIdentitySelectionControlsHandle,
+} from './form-identity-selection-controls';
 
 const dispatch = vi.fn();
 
@@ -133,6 +137,58 @@ describe('FormIdentitySelectionControls', () => {
             identityType: 'IdentityProvider',
             isReady: true,
             communication: selectedCommunication,
+        }));
+    });
+
+    it('persists an incomplete communication draft before another identity login', async () => {
+        const initialCommunication: IdentityCommunicationState = {
+            required: true,
+            ready: false,
+            selectedBindingId: null,
+            choices: [
+                {id: 10, name: 'E-Mail', description: 'Versand per E-Mail'},
+                {id: 20, name: 'Postfach', description: 'Digitales Postfach'},
+            ],
+            customerLayout: null,
+            customerData: {},
+            derivedData: createDerivedRuntimeElementData(),
+        };
+        const incompleteCommunication = {...initialCommunication, selectedBindingId: 20};
+        const deriveCommunication = vi.fn().mockResolvedValue(incompleteCommunication);
+        const selectCommunication = vi.fn().mockResolvedValue(incompleteCommunication);
+        const onChange = vi.fn();
+        const controlsRef = createRef<FormIdentitySelectionControlsHandle>();
+        const user = userEvent.setup();
+        render(
+            <ThemeProvider theme={createTheme()}>
+                <FormIdentitySelectionControls
+                    ref={controlsRef}
+                    slot={slot({
+                        allowsEmail: false,
+                        identityType: 'IdentityProvider',
+                        availableIdentityProviders: [{...provider, isAuthenticatedWithThis: true}],
+                        communication: initialCommunication,
+                    })}
+                    api={createIdentityApi({deriveCommunication, selectCommunication})}
+                    onChange={onChange}
+                    saveMode="deferred"
+                />
+            </ThemeProvider>,
+        );
+
+        await user.click(screen.getByRole('radio', {name: /Postfach/}));
+        await waitFor(() => expect(deriveCommunication).toHaveBeenCalledOnce());
+
+        let persisted = false;
+        await act(async () => {
+            persisted = await controlsRef.current!.persistPendingSelection();
+        });
+
+        expect(persisted).toBe(true);
+        expect(selectCommunication).toHaveBeenCalledWith('applicant', 20, {});
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            isReady: false,
+            communication: incompleteCommunication,
         }));
     });
 

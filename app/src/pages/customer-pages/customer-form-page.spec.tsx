@@ -115,6 +115,7 @@ describe('CustomerFormPage', () => {
     });
 
     beforeEach(() => {
+        window.history.replaceState({}, '', '/form/test-process/test-form');
         mocks.confirm.mockReset().mockResolvedValue(true);
         mocks.dispatch.mockReset();
         mocks.eventResolved.mockReset();
@@ -388,6 +389,125 @@ describe('CustomerFormPage', () => {
         expect(await screen.findByRole('button', {name: 'Formular absenden'})).toBeVisible();
     });
 
+    it('persists another identity communication draft before starting a provider login', async () => {
+        const initialCommunication = createCommunicationState();
+        const previewCommunication = {
+            ...initialCommunication,
+            selectedBindingId: 20,
+        };
+        const firstSlot = createIdentitySlot({
+            allowsEmail: false,
+            identityType: 'IdentityProvider',
+            availableIdentityProviders: [createIdentityProvider(true)],
+            communication: initialCommunication,
+        });
+        const secondSlot = createIdentitySlot({
+            id: 'representative',
+            title: 'Vertretung',
+            allowsEmail: false,
+            availableIdentityProviders: [createIdentityProvider()],
+        });
+        vi.mocked(BaseApiService.prototype.get).mockResolvedValue(createRetrieveResponse(
+            createFormLayout(),
+            [firstSlot, secondSlot],
+        ));
+        vi.spyOn(FormTriggerApiService.prototype, 'createIdentityProviderStartLink')
+            .mockImplementation((_processSlug, _formSlug, identityId) => `#login-${identityId}`);
+        vi.spyOn(FormTriggerApiService.prototype, 'deriveCommunication')
+            .mockResolvedValue(previewCommunication);
+        let resolveSelection!: (state: IdentityCommunicationState) => void;
+        const selectionPending = new Promise<IdentityCommunicationState>((resolve) => {
+            resolveSelection = resolve;
+        });
+        const select = vi.spyOn(FormTriggerApiService.prototype, 'selectCommunication')
+            .mockReturnValue(selectionPending);
+        const user = userEvent.setup();
+
+        render(<CustomerFormPage/>);
+
+        await user.click(await screen.findByRole('radio', {name: /Postfach/}));
+        const secondLogin = screen.getByRole('link', {name: /Mit „BundID“ anmelden/});
+        await user.click(secondLogin);
+
+        await waitFor(() => expect(select).toHaveBeenCalledWith('applicant', 1, 20, {}));
+        expect(window.location.hash).toBe('');
+
+        resolveSelection(previewCommunication);
+        await waitFor(() => expect(window.location.hash).toBe('#login-representative'));
+    });
+
+    it('does not start another provider login when the communication draft cannot be persisted', async () => {
+        const initialCommunication = createCommunicationState();
+        const previewCommunication = {
+            ...initialCommunication,
+            selectedBindingId: 20,
+        };
+        vi.mocked(BaseApiService.prototype.get).mockResolvedValue(createRetrieveResponse(
+            createFormLayout(),
+            [
+                createIdentitySlot({
+                    allowsEmail: false,
+                    identityType: 'IdentityProvider',
+                    availableIdentityProviders: [createIdentityProvider(true)],
+                    communication: initialCommunication,
+                }),
+                createIdentitySlot({
+                    id: 'representative',
+                    title: 'Vertretung',
+                    allowsEmail: false,
+                    availableIdentityProviders: [createIdentityProvider()],
+                }),
+            ],
+        ));
+        vi.spyOn(FormTriggerApiService.prototype, 'createIdentityProviderStartLink')
+            .mockImplementation((_processSlug, _formSlug, identityId) => `#login-${identityId}`);
+        vi.spyOn(FormTriggerApiService.prototype, 'deriveCommunication')
+            .mockResolvedValue(previewCommunication);
+        vi.spyOn(FormTriggerApiService.prototype, 'selectCommunication').mockRejectedValue({
+            status: 500,
+            message: 'Internal Server Error',
+            details: null,
+            displayableToUser: false,
+        });
+        const user = userEvent.setup();
+
+        render(<CustomerFormPage/>);
+
+        await user.click(await screen.findByRole('radio', {name: /Postfach/}));
+        await user.click(screen.getByRole('link', {name: /Mit „BundID“ anmelden/}));
+
+        await waitFor(() => expectSnackbar('Die Angaben zum Kommunikationsweg konnten nicht gespeichert werden.'));
+        expect(window.location.hash).toBe('');
+    });
+
+    it('does not start another provider login when another identity has an invalid email draft', async () => {
+        vi.mocked(BaseApiService.prototype.get).mockResolvedValue(createRetrieveResponse(
+            createFormLayout(),
+            [
+                createIdentitySlot({availableIdentityProviders: []}),
+                createIdentitySlot({
+                    id: 'representative',
+                    title: 'Vertretung',
+                    allowsEmail: false,
+                    availableIdentityProviders: [createIdentityProvider()],
+                }),
+            ],
+        ));
+        vi.spyOn(FormTriggerApiService.prototype, 'createIdentityProviderStartLink')
+            .mockImplementation((_processSlug, _formSlug, identityId) => `#login-${identityId}`);
+        const setEmail = vi.spyOn(FormTriggerApiService.prototype, 'setEmailIdentity');
+        const user = userEvent.setup();
+
+        render(<CustomerFormPage/>);
+
+        await user.type(await screen.findByRole('textbox', {name: /E-Mail-Adresse/}), 'invalid');
+        await user.click(screen.getByRole('link', {name: /Mit „BundID“ anmelden/}));
+
+        expect(await screen.findByText('Geben Sie eine gültige E-Mail-Adresse ein.')).toBeVisible();
+        expect(setEmail).not.toHaveBeenCalled();
+        expect(window.location.hash).toBe('');
+    });
+
     it('stays on the identity step when a saved communication path is incomplete', async () => {
         const initialCommunication = createCommunicationState();
         const incompleteCommunication = {
@@ -470,14 +590,30 @@ describe('CustomerFormPage', () => {
             createFormLayout(),
             [firstSlot, secondSlot],
         ));
+        let resolveFirstIdentity!: (slot: IdentitySlot) => void;
         const setEmail = vi.spyOn(FormTriggerApiService.prototype, 'setEmailIdentity')
-            .mockImplementation(async (_processSlug, _formSlug, identityId, emailAddress) => createIdentitySlot({
-                id: identityId,
-                title: identityId === 'applicant' ? 'Antragsteller:in' : 'Vertretung',
-                identityType: 'Email',
-                emailAddress,
-                isReady: true,
-            }));
+            .mockImplementation(async (_processSlug, _formSlug, identityId, emailAddress) => {
+                const savedSlot = createIdentitySlot({
+                    id: identityId,
+                    title: identityId === 'applicant' ? 'Antragsteller:in' : 'Vertretung',
+                    identityType: 'Email',
+                    emailAddress,
+                    isReady: true,
+                });
+                if (identityId === 'applicant') {
+                    return await new Promise<IdentitySlot>((resolve) => {
+                        resolveFirstIdentity = resolve;
+                    });
+                }
+                return savedSlot;
+            });
+        const savedFirstSlot = createIdentitySlot({
+            id: 'applicant',
+            title: 'Antragsteller:in',
+            identityType: 'Email',
+            emailAddress: 'first@example.test',
+            isReady: true,
+        });
         const user = userEvent.setup();
 
         render(<CustomerFormPage/>);
@@ -489,6 +625,15 @@ describe('CustomerFormPage', () => {
         await waitFor(() => expect(continueButton).toBeEnabled());
         await user.click(continueButton);
 
+        await waitFor(() => expect(setEmail).toHaveBeenCalledOnce());
+        expect(setEmail).not.toHaveBeenCalledWith(
+            'test-process',
+            'test-form',
+            'representative',
+            'second@example.test',
+            undefined,
+        );
+        resolveFirstIdentity(savedFirstSlot);
         await waitFor(() => expect(setEmail).toHaveBeenCalledTimes(2));
         expect(setEmail).toHaveBeenCalledWith(
             'test-process',

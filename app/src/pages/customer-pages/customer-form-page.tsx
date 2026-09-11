@@ -61,6 +61,7 @@ import {IdentityProvidersApiService} from '../../modules/identity/identity-provi
 import {
     type FormIdentitySelectionControlsHandle,
     type FormIdentitySelectionControlsStatus,
+    persistPendingIdentitySelections,
 } from '../../modules/identity/components/form-identity-selection-controls/form-identity-selection-controls';
 import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
@@ -591,6 +592,8 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
     const controlsBySlotId = useRef<Map<string, FormIdentitySelectionControlsHandle>>(new Map());
     const [controlStatuses, setControlStatuses] = useState<Map<string, FormIdentitySelectionControlsStatus>>(new Map());
     const [isContinuing, setIsContinuing] = useState(false);
+    const [isStartingIdentityProvider, setIsStartingIdentityProvider] = useState(false);
+    const identityProviderStartPendingRef = useRef(false);
     const identitySelectionApi = useMemo(() => (
         new FormTriggerApiService().createIdentitySelectionApi(
             processSlug,
@@ -641,7 +644,26 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
     });
     const someIdentitySelected = identitySlots.some(isIdentitySelected);
     const someIdentityControlBusy = Array.from(controlStatuses.values()).some(status => status.isBusy);
-    const continueDisabled = isContinuing || someIdentityControlBusy || !allSelectedIdentitiesCanCommit;
+    const identityProviderAuthenticationDisabled = isStartingIdentityProvider || someIdentityControlBusy;
+    const continueDisabled = isContinuing || identityProviderAuthenticationDisabled || !allSelectedIdentitiesCanCommit;
+
+    const handleIdentityProviderStart = useCallback(async (targetIdentityId: string): Promise<boolean> => {
+        if (identityProviderStartPendingRef.current || someIdentityControlBusy) {
+            return false;
+        }
+
+        identityProviderStartPendingRef.current = true;
+        setIsStartingIdentityProvider(true);
+        try {
+            return await persistPendingIdentitySelections(
+                controlsBySlotId.current.entries(),
+                targetIdentityId,
+            );
+        } finally {
+            identityProviderStartPendingRef.current = false;
+            setIsStartingIdentityProvider(false);
+        }
+    }, [someIdentityControlBusy]);
 
     const handleContinue = async () => {
         if (continueDisabled) {
@@ -651,15 +673,16 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
         setIsContinuing(true);
         try {
             const selectedSlots = identitySlots.filter(isIdentitySelected);
-            const results = await Promise.all(selectedSlots.map(async slot => {
+            let allCommitted = true;
+            for (const slot of selectedSlots) {
                 const controls = controlsBySlotId.current.get(slot.id);
-                if (controls == null) {
-                    return false;
+                if (controls == null || !await controls.commitPendingSelection()) {
+                    allCommitted = false;
+                    break;
                 }
-                return controls.commitPendingSelection();
-            }));
+            }
 
-            if (results.every(Boolean)) {
+            if (allCommitted) {
                 onDismiss();
             }
         } finally {
@@ -750,6 +773,8 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                     slot={slot}
                                     api={identitySelectionApi}
                                     saveMode="deferred"
+                                    beforeIdentityProviderStart={handleIdentityProviderStart}
+                                    identityProviderAuthenticationDisabled={identityProviderAuthenticationDisabled}
                                     onChange={onIdentitySlotChange}
                                     onStatusChange={handleControlStatusChange}
                                 />

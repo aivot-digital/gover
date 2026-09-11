@@ -31,10 +31,26 @@ export interface FormIdentitySelectionControlsProps {
     onChange: (slot: IdentitySlot) => void;
     saveMode?: 'explicit' | 'deferred';
     onStatusChange?: (slotId: string, status: FormIdentitySelectionControlsStatus | null) => void;
+    beforeIdentityProviderStart?: (identityId: string) => Promise<boolean>;
+    identityProviderAuthenticationDisabled?: boolean;
 }
 
 export interface FormIdentitySelectionControlsHandle {
     commitPendingSelection: () => Promise<boolean>;
+    /** Persists a dirty draft; successful incomplete communication data returns true. */
+    persistPendingSelection: () => Promise<boolean>;
+}
+
+export async function persistPendingIdentitySelections(
+    controls: Iterable<readonly [string, FormIdentitySelectionControlsHandle]>,
+    targetIdentityId: string,
+): Promise<boolean> {
+    for (const [identityId, control] of Array.from(controls)) {
+        if (identityId !== targetIdentityId && !await control.persistPendingSelection()) {
+            return false;
+        }
+    }
+    return true;
 }
 
 export interface FormIdentitySelectionControlsStatus {
@@ -52,6 +68,8 @@ export const FormIdentitySelectionControls = forwardRef<
     const {
         slot,
         api,
+        beforeIdentityProviderStart,
+        identityProviderAuthenticationDisabled = false,
         onChange,
         saveMode = 'explicit',
         onStatusChange,
@@ -169,9 +187,11 @@ export const FormIdentitySelectionControls = forwardRef<
         return state.derivedData;
     };
 
-    const handleCommunicationSave = useCallback(async (): Promise<boolean> => {
+    const saveCommunication = useCallback(async (
+        showValidationErrors: boolean,
+    ): Promise<IdentityCommunicationState | null> => {
         if (selectedBindingId == null) {
-            return false;
+            return null;
         }
 
         setBusy(true);
@@ -180,7 +200,7 @@ export const FormIdentitySelectionControls = forwardRef<
             setCommunication(state);
             setDerivedData(state.derivedData);
             setCommunicationChanged(false);
-            if (!state.ready) {
+            if (showValidationErrors && !state.ready) {
                 setCommunicationValidationRevision((current) => current + 1);
             }
             replaceSlot({
@@ -190,14 +210,18 @@ export const FormIdentitySelectionControls = forwardRef<
                 isReady: state.ready,
                 communication: state,
             });
-            return state.ready;
+            return state;
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Die Angaben zum Kommunikationsweg konnten nicht gespeichert werden.'));
-            return false;
+            return null;
         } finally {
             setBusy(false);
         }
     }, [api, customerData, dispatch, replaceSlot, selectedBindingId, slot]);
+
+    const handleCommunicationSave = useCallback(async (): Promise<boolean> => {
+        return (await saveCommunication(true))?.ready ?? false;
+    }, [saveCommunication]);
 
     const normalizedEmailAddress = emailAddress.trim();
     const savedEmailAddress = slot.emailAddress?.trim() ?? '';
@@ -229,9 +253,30 @@ export const FormIdentitySelectionControls = forwardRef<
         return slot.isReady;
     }, [busy, communicationNeedsCommit, emailNeedsCommit, handleCommunicationSave, handleEmailSave, slot.isReady]);
 
+    const persistPendingSelection = useCallback(async (): Promise<boolean> => {
+        if (busy) {
+            return false;
+        }
+        if (emailNeedsCommit) {
+            return handleEmailSave();
+        }
+        if (slot.identityType === 'IdentityProvider' && communicationChanged) {
+            return await saveCommunication(false) != null;
+        }
+        return true;
+    }, [
+        busy,
+        communicationChanged,
+        emailNeedsCommit,
+        handleEmailSave,
+        saveCommunication,
+        slot,
+    ]);
+
     useImperativeHandle(ref, () => ({
         commitPendingSelection,
-    }), [commitPendingSelection]);
+        persistPendingSelection,
+    }), [commitPendingSelection, persistPendingSelection]);
 
     useEffect(() => {
         onStatusChange?.(slot.id, {
@@ -264,6 +309,10 @@ export const FormIdentitySelectionControls = forwardRef<
                             identityProviderType={provider.identityProviderType}
                             identityProviderAssetKey={provider.identityProviderAssetKey}
                             isAuthenticated={provider.isAuthenticatedWithThis}
+                            beforeStart={beforeIdentityProviderStart == null
+                                ? undefined
+                                : () => beforeIdentityProviderStart(slot.id)}
+                            disabled={busy || identityProviderAuthenticationDisabled}
                         />
                     ))
             }

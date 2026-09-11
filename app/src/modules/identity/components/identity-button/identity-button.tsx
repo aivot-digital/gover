@@ -2,6 +2,7 @@ import {Box, Button, Typography, useTheme} from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import {useState} from 'react';
 import {Chip} from '../../../../components/chip/chip';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
 import {IdentityProviderIcon} from '../identity-provider-icon/identity-provider-icon';
@@ -13,6 +14,8 @@ export interface IdentityButtonProps {
     identityProviderName: string;
     identityProviderType: IdentityProviderType;
     disabled?: boolean;
+    /** Returns whether navigation may continue after pending identity data has been persisted. */
+    beforeStart?: () => Promise<boolean>;
 }
 
 export function IdentityButton(props: IdentityButtonProps) {
@@ -24,7 +27,9 @@ export function IdentityButton(props: IdentityButtonProps) {
         identityProviderName,
         identityProviderType,
         disabled,
+        beforeStart,
     } = props;
+    const [starting, setStarting] = useState(false);
 
     const content = (
         <>
@@ -110,6 +115,21 @@ export function IdentityButton(props: IdentityButtonProps) {
             fullWidth
             component="a"
             href={startUri}
+            onClick={beforeStart == null ? undefined : (event) => {
+                event.preventDefault();
+                if (disabled || starting) {
+                    return;
+                }
+
+                setStarting(true);
+                void beforeStart()
+                    .then((shouldStart) => {
+                        if (shouldStart) {
+                            window.location.assign(startUri);
+                        }
+                    })
+                    .finally(() => setStarting(false));
+            }}
             sx={{
                 minHeight: 88,
                 mt: 2,
@@ -124,7 +144,7 @@ export function IdentityButton(props: IdentityButtonProps) {
                 gap: 2,
                 textTransform: 'none',
             }}
-            disabled={disabled}
+            disabled={disabled || starting}
         >
             {content}
             <ArrowForward sx={{flexShrink: 0}}/>

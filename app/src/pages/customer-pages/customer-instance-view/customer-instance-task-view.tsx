@@ -13,9 +13,10 @@ import {
     isDerivedRuntimeElementData,
 } from '../../../models/element-data';
 import {ElementDerivationContext} from '../../../modules/elements/components/element-derivation-context';
-import type {
-    FormIdentitySelectionControlsHandle,
-    FormIdentitySelectionControlsStatus,
+import {
+    type FormIdentitySelectionControlsHandle,
+    type FormIdentitySelectionControlsStatus,
+    persistPendingIdentitySelections,
 } from '../../../modules/identity/components/form-identity-selection-controls/form-identity-selection-controls';
 import {IdentityButton} from '../../../modules/identity/components/identity-button/identity-button';
 import {IdentitySlotCard} from '../../../modules/identity/components/identity-slot-card/identity-slot-card';
@@ -356,6 +357,8 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
     const controlsRef = useRef<FormIdentitySelectionControlsHandle | null>(null);
     const [controlStatus, setControlStatus] = useState<FormIdentitySelectionControlsStatus | null>(null);
     const [isContinuing, setIsContinuing] = useState(false);
+    const [isStartingIdentityProvider, setIsStartingIdentityProvider] = useState(false);
+    const identityProviderStartPendingRef = useRef(false);
     const handleControlStatusChange = useCallback((
         _slotId: string,
         status: FormIdentitySelectionControlsStatus | null,
@@ -382,13 +385,32 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
     );
     const existingIdentityReady = existingIdentitySlot?.isReady ?? true;
     const identityControlBusy = controlStatus?.isBusy ?? false;
-    const continueDisabled = isContinuing || identityControlBusy || !existingIdentityReady || !newIdentityCanCommit;
+    const identityProviderAuthenticationDisabled = isStartingIdentityProvider || identityControlBusy;
+    const continueDisabled = isContinuing || identityProviderAuthenticationDisabled || !existingIdentityReady || !newIdentityCanCommit;
     const canContinueWithoutAuthentication = existingIdentitySlot == null &&
         newIdentitySlot?.isOptional === true &&
         !newIdentitySelected;
     const wrongExistingAccount = existingIdentitySlot != null &&
         !existingIdentitySlot.isReady &&
         existingIdentitySlot.identityProvider.isAuthenticatedWithThis;
+
+    const handleIdentityProviderStart = useCallback(async (targetIdentityId: string): Promise<boolean> => {
+        if (identityProviderStartPendingRef.current || identityControlBusy) {
+            return false;
+        }
+
+        identityProviderStartPendingRef.current = true;
+        setIsStartingIdentityProvider(true);
+        try {
+            const controls = newIdentitySlot != null && controlsRef.current != null
+                ? [[newIdentitySlot.id, controlsRef.current] as const]
+                : [];
+            return await persistPendingIdentitySelections(controls, targetIdentityId);
+        } finally {
+            identityProviderStartPendingRef.current = false;
+            setIsStartingIdentityProvider(false);
+        }
+    }, [identityControlBusy, newIdentitySlot]);
 
     const handleContinue = async () => {
         if (continueDisabled) {
@@ -498,6 +520,8 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                                 identityProviderType={existingIdentitySlot.identityProvider.identityProviderType}
                                 identityProviderAssetKey={existingIdentitySlot.identityProvider.identityProviderAssetKey}
                                 isAuthenticated={existingIdentitySlot.isReady}
+                                beforeStart={() => handleIdentityProviderStart(existingIdentitySlot.id)}
+                                disabled={identityProviderAuthenticationDisabled}
                             />
                         </Paper>
                     </Grid>
@@ -511,6 +535,8 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                             slot={newIdentitySlot}
                             api={identitySelectionApi}
                             saveMode="deferred"
+                            beforeIdentityProviderStart={handleIdentityProviderStart}
+                            identityProviderAuthenticationDisabled={identityProviderAuthenticationDisabled}
                             onChange={onIdentitySlotChange}
                             onStatusChange={handleControlStatusChange}
                         />
