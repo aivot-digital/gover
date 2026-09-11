@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.models.lib.MailAttachmentBytes;
 import de.aivot.prosuna.backend.services.TemplateLoaderService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
+import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -58,6 +59,7 @@ public class MailService {
     private final DepartmentMembershipService departmetMembershipService;
 
     private final MailLogoService mailLogoService;
+    private final ThemeService themeService;
     private final UserService userService;
     private final UserConfigService userConfigService;
 
@@ -73,6 +75,7 @@ public class MailService {
             VDepartmentShadowedService vDepartmentShadowedService,
             DepartmentMembershipService departmentMembershipService,
             MailLogoService mailLogoService,
+            ThemeService themeService,
             UserService userService,
             UserConfigService userConfigService) {
         this.prosunaConfig = prosunaConfig;
@@ -82,6 +85,7 @@ public class MailService {
         this.vDepartmentShadowedService = vDepartmentShadowedService;
         this.departmetMembershipService = departmentMembershipService;
         this.mailLogoService = mailLogoService;
+        this.themeService = themeService;
         this.userService = userService;
         this.userConfigService = userConfigService;
     }
@@ -398,7 +402,8 @@ public class MailService {
 
         // Mail clients apply dark mode inconsistently. Embed one light-scheme logo on a neutral raster surface
         // instead of attaching a second variant that clients cannot select reliably.
-        var senderLogo = mailLogoService.createSenderLogo(theme.getLogoKey());
+        var resolvedTheme = themeService.resolveThemeWithSystemFallback(theme);
+        var senderLogo = mailLogoService.createSenderLogo(resolvedTheme.getLogoKey());
         context.put("base", createBaseContext(senderLogo.isPresent()));
         context.put("mailSignature", resolveDefaultMailSignature(context, options));
 

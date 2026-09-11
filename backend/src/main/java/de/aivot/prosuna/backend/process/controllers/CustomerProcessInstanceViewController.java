@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
@@ -9,7 +11,10 @@ import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceTaskFilter;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceTaskService;
+import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.process.services.ProcessVersionService;
+import de.aivot.prosuna.backend.theme.dtos.ResolvedThemeDTO;
+import de.aivot.prosuna.backend.theme.services.ThemeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
@@ -33,13 +38,25 @@ public class CustomerProcessInstanceViewController {
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceTaskService processInstanceTaskService;
     private final ProcessVersionService processVersionService;
+    private final ProcessService processService;
+    private final ThemeService themeService;
+    private final AssetService assetService;
+    private final ProsunaConfig prosunaConfig;
 
     public CustomerProcessInstanceViewController(ProcessInstanceService processInstanceService,
                                                  ProcessInstanceTaskService processInstanceTaskService,
-                                                 ProcessVersionService processVersionService) {
+                                                 ProcessVersionService processVersionService,
+                                                 ProcessService processService,
+                                                 ThemeService themeService,
+                                                 AssetService assetService,
+                                                 ProsunaConfig prosunaConfig) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processVersionService = processVersionService;
+        this.processService = processService;
+        this.themeService = themeService;
+        this.assetService = assetService;
+        this.prosunaConfig = prosunaConfig;
     }
 
     @GetMapping("")
@@ -58,6 +75,10 @@ public class CustomerProcessInstanceViewController {
         var processVersion = processVersionService
                 .retrieve(ProcessVersionEntityId.of(instance.getProcessId(), instance.getInitialProcessVersion()))
                 .orElseThrow(ResponseException::notFound);
+        var process = processService
+                .retrieve(instance.getProcessId())
+                .orElseThrow(ResponseException::notFound);
+        var resolvedTheme = themeService.resolveProcessTheme(processVersion, process.getDepartmentId());
 
         var taskFilter = new ProcessInstanceTaskFilter()
                 .setProcessInstanceId(instance.getId());
@@ -79,7 +100,8 @@ public class CustomerProcessInstanceViewController {
                 processVersion.getPrivacyDepartmentId(),
                 processVersion.getImprintDepartmentId(),
                 processVersion.getLegalSupportDepartmentId(),
-                processVersion.getTechnicalSupportDepartmentId()
+                processVersion.getTechnicalSupportDepartmentId(),
+                ResolvedThemeDTO.fromResolvedTheme(resolvedTheme, assetService, prosunaConfig)
         );
     }
 
@@ -101,7 +123,9 @@ public class CustomerProcessInstanceViewController {
             @Nullable
             Integer legalSupportDepartmentId,
             @Nullable
-            Integer technicalSupportDepartmentId
+            Integer technicalSupportDepartmentId,
+            @Nonnull
+            ResolvedThemeDTO theme
     ) {
     }
 

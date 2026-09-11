@@ -25,6 +25,7 @@ import {showDialog} from "../../../slices/app-slice";
 import {ImprintDialog, ImprintDialogId} from "../../../dialogs/imprint-dialog/imprint-dialog";
 import {AccessibilityDialog, AccessibilityDialogId} from "../../../dialogs/accessibility-dialog/accessibility-dialog";
 import {HelpDialog, HelpDialogId} from "../../../dialogs/help-dialog/help.dialog";
+import {MetaElement} from '../../../components/meta-element/meta-element';
 
 const INSTANCE_POLL_INTERVAL_MS = 2000;
 
@@ -47,20 +48,18 @@ export function CustomerInstanceView() {
     const navigate = useNavigate();
     const baseTheme = useTheme();
 
-    const theme = null;
-
     const [instanceStatus, setInstanceStatus] = useState<ProcessInstanceStatusResponse | null | 'failed'>(null);
     const statusRequestGenerationRef = useRef(0);
 
     const metaDialog = useAppSelector((state) => state.app.showDialog);
 
     const resolvedTheme = useMemo(() => {
-        if (theme == null) {
+        if (instanceStatus == null || instanceStatus === 'failed') {
             return baseTheme;
         }
 
-        return createAppTheme(theme, BaseTheme, baseTheme.palette.mode);
-    }, [baseTheme, theme]);
+        return createAppTheme(instanceStatus.theme, BaseTheme, baseTheme.palette.mode);
+    }, [baseTheme, instanceStatus]);
 
     const refreshInstanceStatus = useCallback(async (): Promise<void> => {
         const requestGeneration = ++statusRequestGenerationRef.current;
@@ -173,6 +172,11 @@ export function CustomerInstanceView() {
     return (
         <ThemeProvider theme={resolvedTheme}>
             <SnackbarProvider>
+                <MetaElement
+                    faviconUrl={instanceStatus.theme.faviconUrl}
+                    title={instanceStatus.title}
+                    titlePrefix={AppConfig.providerName}
+                />
                 <CustomerInstanceViewHeader
                     status={instanceStatus}
                 />

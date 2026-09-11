@@ -91,14 +91,14 @@ import {walkAuthoredElementValues} from '../../../utils/element-data-utils';
 import {FileUploadElementItem, isFileUploadElementItem} from '../../../models/elements/form/input/file-upload-element';
 import {Submitted} from '../../../components/submitted/submitted';
 import {setCurrentStep} from '../../../slices/stepper-slice';
-import {createApiPath, createCustomerPath} from '../../../utils/url-path-utils';
+import {createCustomerPath} from '../../../utils/url-path-utils';
 import {ProcessTestClaimEntity} from '../../process/entities/process-test-claim-entity';
 import {downloadQrCode} from '../../../utils/download-qrcode';
 import {downloadBlobFile, uploadTextFile} from '../../../utils/download-utils';
 import {useNotImplemented} from '../../../hooks/use-not-implemented';
 import {ViewDispatcherMode} from '../../../components/view-dispatcher/view-dispatcher.context';
 import {ProcessStatus} from '../../process/enums/process-status';
-import type {Theme as AppTheme} from '../../themes/models/theme';
+import type {ResolvedThemeDTO, Theme as AppTheme} from '../../themes/models/theme';
 import {FormTriggerApiService} from '../../forms/services/form-trigger-api-service';
 import {createAppTheme} from '../../../theming/themes';
 import {BaseTheme} from '../../../theming/base-theme';
@@ -218,7 +218,7 @@ export function FormNodeEditorPage() {
     const [processVersion, setProcessVersion] = useState<ProcessVersionEntity | null>(null);
     const [testClaim, setTestClaim] = useState<ProcessTestClaimEntity | null>(null);
     const testClaimRef = useRef<ProcessTestClaimEntity | null>(null);
-    const [formTheme, setFormTheme] = useState<AppTheme>();
+    const [formTheme, setFormTheme] = useState<ResolvedThemeDTO>();
     const [draftPreviewThemeChain, setDraftPreviewThemeChain] = useState<AppTheme[] | null>(null);
 
     const [identityMappingInformation, setIdentityMappingInformation] = useState<IdentityConfigElementSlotWithProviders[]>([]);
@@ -458,6 +458,7 @@ export function FormNodeEditorPage() {
     const selectedProcessVersionThemeId = processVersion?.themeId ?? null;
     const selectedResponsibleDepartmentId = formLayout?.responsibleDepartmentId ?? null;
     const selectedManagingDepartmentId = formLayout?.managingDepartmentId ?? null;
+    const processDepartmentId = process?.departmentId ?? null;
 
     useEffect(() => {
         if (!hasFormLayout) {
@@ -505,6 +506,8 @@ export function FormNodeEditorPage() {
             await appendTheme(themeChain, selectedProcessVersionThemeId);
             await appendDepartmentTheme(themeChain, selectedResponsibleDepartmentId);
             await appendDepartmentTheme(themeChain, selectedManagingDepartmentId);
+            await appendDepartmentTheme(themeChain, processDepartmentId);
+            themeChain.push(AppConfig.systemTheme);
 
             if (!isCancelled) {
                 setDraftPreviewThemeChain(themeChain);
@@ -520,6 +523,7 @@ export function FormNodeEditorPage() {
         selectedProcessVersionThemeId,
         selectedResponsibleDepartmentId,
         selectedManagingDepartmentId,
+        processDepartmentId,
     ]);
 
     const [searchParams] = useSearchParams();
@@ -1073,33 +1077,19 @@ export function FormNodeEditorPage() {
         return;
     }
 
-    const formAssetQueryParams = new URLSearchParams({
-        version: processVersion.processVersion.toString(),
-    });
-    formAssetQueryParams.set('theme-id', processVersion.themeId?.toString() ?? 'default');
-    if (testClaim != null) {
-        formAssetQueryParams.set('test-claim', testClaim.accessKey);
-    }
-
-    // Use the locally resolved draft chain for logos as well. The public form logo endpoint is based
-    // on the persisted form and the system logo should only appear when no custom theme is resolved.
+    // Use the locally resolved draft chain so unsaved theme assignments are reflected immediately.
     const resolveDraftLogoUrl = (colorScheme: 'light' | 'dark'): string | null => {
         if (draftPreviewThemeChain == null) {
-            const queryParams = new URLSearchParams(formAssetQueryParams);
-            if (colorScheme === 'dark') {
-                queryParams.set('color-scheme', 'dark');
-            }
-            return `/api/public/form/${process.slug}/${node.configuration.formSlug}/logo/?${queryParams.toString()}`;
-        }
-
-        if (draftPreviewThemeChain.length === 0) {
-            return createApiPath(
-                `/api/public/system/logo/${colorScheme === 'dark' ? '?color-scheme=dark' : ''}`,
-            );
+            return colorScheme === 'dark'
+                ? formTheme?.logoUrlDark ?? AppConfig.logoUrlDark
+                : formTheme?.logoUrl ?? AppConfig.logoUrl;
         }
 
         const logoKey = resolveThemeChainLogoKey(draftPreviewThemeChain, colorScheme);
-        return logoKey == null ? null : AssetsApiService.useAssetLink(logoKey);
+        if (logoKey != null) {
+            return AssetsApiService.useAssetLink(logoKey);
+        }
+        return colorScheme === 'dark' ? AppConfig.logoUrlDark : AppConfig.logoUrl;
     };
     const formLogoUrl = resolveDraftLogoUrl('light');
     const formLogoUrlDark = resolveDraftLogoUrl('dark');

@@ -46,7 +46,6 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.services.*;
 import de.aivot.prosuna.backend.process.workers.ProcessNodeExecutionResultHandler;
 import de.aivot.prosuna.backend.services.PdfService;
-import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -853,15 +852,10 @@ public class CustomerProcessInstanceTaskViewController {
 
     @Nonnull
     private String resolvePaymentConfirmationLogoUrl(@Nonnull VDepartmentShadowedEntity department) {
-        UUID logoKey = null;
-        if (department.getThemeId() != null) {
-            logoKey = themeService
-                    .retrieve(department.getThemeId())
-                    .map(ThemeEntity::getLogoKey)
-                    .orElse(null);
-        }
-
-        return logoKey == null ? prosunaConfig.getDefaultLogoUrl() : assetService.createUrl(logoKey);
+        var theme = themeService.resolveDepartmentTheme(department.getId());
+        return theme.getLogoKey() == null
+                ? prosunaConfig.getDefaultLogoUrl()
+                : assetService.createUrl(theme.getLogoKey());
     }
 
     private record TaskViewData<NodeConfig>(

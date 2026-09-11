@@ -70,6 +70,8 @@ export function CustomerInstanceViewHeader(props: CustomerListPageHeaderProps) {
                             }}
                         >
                             <Logo
+                                src={status.theme.logoUrl}
+                                srcDark={status.theme.logoUrlDark}
                                 width={200}
                                 height={100}
                                 onStatusChange={setLogoStatus}

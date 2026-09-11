@@ -19,7 +19,7 @@ import {alpha} from '@mui/material/styles';
 import {showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {Theme} from '../../modules/themes/models/theme';
+import {ResolvedThemeDTO} from '../../modules/themes/models/theme';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {
@@ -185,7 +185,7 @@ export function CustomerFormPage() {
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
-    const [theme, setTheme] = useState<Theme>();
+    const [theme, setTheme] = useState<ResolvedThemeDTO>();
 
     const {
         layoutElement,
@@ -377,17 +377,9 @@ export function CustomerFormPage() {
         return null;
     }
 
-    const formAssetQueryParams = new URLSearchParams();
-    if (testClaimKey != null) {
-        formAssetQueryParams.set('test-claim', testClaimKey);
-    }
-
-    const formAssetQuery = formAssetQueryParams.toString();
-    const formLogoUrl = `/api/public/form/${process.slug}/${resolvedFormSlug}/logo/?${formAssetQuery}`;
-    const darkLogoQueryParams = new URLSearchParams(formAssetQueryParams);
-    darkLogoQueryParams.set('color-scheme', 'dark');
-    const formLogoUrlDark = `/api/public/form/${process.slug}/${resolvedFormSlug}/logo/?${darkLogoQueryParams.toString()}`;
-    const formFaviconUrl = `/api/public/form/${process.slug}/${resolvedFormSlug}/favicon/?${formAssetQuery}`;
+    const formLogoUrl = theme?.logoUrl ?? AppConfig.logoUrl;
+    const formLogoUrlDark = theme?.logoUrlDark ?? AppConfig.logoUrlDark;
+    const formFaviconUrl = theme?.faviconUrl ?? AppConfig.faviconUrl;
     const customerInputDraft = CustomerInputService.loadCustomerInputDraft(process.slug, resolvedFormSlug, version.processVersion);
     const showFormFlow = data.identitySlots.length === 0 || dismissAuthentication;
 

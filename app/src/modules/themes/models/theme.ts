@@ -14,3 +14,14 @@ export interface ThemeResponseDTO extends ThemeRequestDTO {
 }
 
 export type Theme = ThemeResponseDTO;
+
+export type ThemeColors = Pick<
+    ThemeRequestDTO,
+    'primaryColor' | 'secondaryColor' | 'primaryColorDark' | 'secondaryColorDark'
+>;
+
+export interface ResolvedThemeDTO extends ThemeColors {
+    logoUrl: string;
+    logoUrlDark: string;
+    faviconUrl: string;
+}

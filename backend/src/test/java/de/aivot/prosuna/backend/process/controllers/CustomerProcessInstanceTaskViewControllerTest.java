@@ -663,8 +663,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 .thenReturn(Optional.of(process));
         when(fixture.vDepartmentShadowedService().retrieve(process.getDepartmentId()))
                 .thenReturn(Optional.of(department));
-        when(fixture.themeService().retrieve(5))
-                .thenReturn(Optional.of(theme));
+        when(fixture.themeService().resolveDepartmentTheme(process.getDepartmentId()))
+                .thenReturn(theme);
         when(fixture.assetService().createUrl(logoKey))
                 .thenReturn("https://example.test/api/public/assets/" + logoKey + "/");
         when(fixture.pdfService().generatePaymentConfirmation(

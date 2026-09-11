@@ -63,6 +63,7 @@ public class AppConfigController {
     private static final String PUBLIC_SYSTEM_CONFIGS_CONFIG_KEY = "systemConfigs";
     private static final String FAVICON_URL_CONFIG_KEY = "faviconUrl";
     private static final String LOGO_URL_CONFIG_KEY = "logoUrl";
+    private static final String LOGO_URL_DARK_CONFIG_KEY = "logoUrlDark";
     private static final String API_HOSTNAME_CONFIG_KEY = "apiHostname";
     private static final String REGISTRY_HOSTNAME_CONFIG_KEY = "registryHostname";
     private static final String SUPPORT_URL_CONFIG_KEY = "supportUrl";
@@ -111,6 +112,10 @@ public class AppConfigController {
             logoURL = assetService.createUrl(systemTheme.getLogoKey());
         }
         appConfig.put(LOGO_URL_CONFIG_KEY, logoURL);
+
+        var darkLogoKey = systemTheme.getLogoKeyDark();
+        var darkLogoUrl = darkLogoKey == null ? logoURL : assetService.createUrl(darkLogoKey);
+        appConfig.put(LOGO_URL_DARK_CONFIG_KEY, darkLogoUrl);
 
         appConfig.put(API_HOSTNAME_CONFIG_KEY, prosunaConfig.getProsunaHostname());
         appConfig.put(REGISTRY_HOSTNAME_CONFIG_KEY, prosunaConfig.getRegistryHostname());

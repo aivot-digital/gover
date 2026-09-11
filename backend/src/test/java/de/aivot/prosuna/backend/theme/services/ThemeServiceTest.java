@@ -1,20 +1,21 @@
 package de.aivot.prosuna.backend.theme.services;
 
+import de.aivot.prosuna.backend.asset.entities.VStorageIndexItemWithAssetEntity;
+import de.aivot.prosuna.backend.asset.repositories.VStorageIndexItemWithAssetRepository;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.repositories.DepartmentRepository;
 import de.aivot.prosuna.backend.department.repositories.VDepartmentShadowedRepository;
-import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.system.services.SystemService;
-import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.repositories.ThemeRepository;
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -34,23 +35,28 @@ class ThemeServiceTest {
         var processVersionTheme = new ThemeEntity().setId(1);
         var responsibleTheme = new ThemeEntity().setId(2);
         var managingTheme = new ThemeEntity().setId(3);
-        var systemTheme = new ThemeEntity().setId(4);
+        var processDepartmentTheme = new ThemeEntity().setId(4);
+        var systemTheme = new ThemeEntity().setId(5);
 
         when(themeRepository.findById(1)).thenReturn(Optional.of(processVersionTheme));
         when(themeRepository.findById(2)).thenReturn(Optional.of(responsibleTheme));
         when(themeRepository.findById(3)).thenReturn(Optional.of(managingTheme));
+        when(themeRepository.findById(4)).thenReturn(Optional.of(processDepartmentTheme));
         when(departmentRepository.findById(20)).thenReturn(Optional.of(
                 new VDepartmentShadowedEntity().setId(20).setThemeId(2)
         ));
         when(departmentRepository.findById(30)).thenReturn(Optional.of(
                 new VDepartmentShadowedEntity().setId(30).setThemeId(3)
         ));
+        when(departmentRepository.findById(40)).thenReturn(Optional.of(
+                new VDepartmentShadowedEntity().setId(40).setThemeId(4)
+        ));
         when(systemService.retrieveDefaultTheme()).thenReturn(systemTheme);
 
         var service = new ThemeService(
                 themeRepository,
                 mock(DepartmentRepository.class),
-                mock(AssetRepository.class),
+                mock(VStorageIndexItemWithAssetRepository.class),
                 departmentRepository,
                 systemService
         );
@@ -59,10 +65,67 @@ class ThemeServiceTest {
                 new ProcessVersionEntity().setThemeId(1),
                 new FormLayoutElement()
                         .setResponsibleDepartmentId(20)
-                        .setManagingDepartmentId(30)
+                        .setManagingDepartmentId(30),
+                40
         );
 
-        assertEquals(List.of(processVersionTheme, responsibleTheme, managingTheme, systemTheme), result);
+        assertEquals(List.of(
+                processVersionTheme,
+                responsibleTheme,
+                managingTheme,
+                processDepartmentTheme,
+                systemTheme
+        ), result);
+    }
+
+    @Test
+    void resolveThemeChainShouldInheritMissingMediaAndKeepSpecificColors() {
+        var lightLogoKey = UUID.randomUUID();
+        var darkLogoKey = UUID.randomUUID();
+        var faviconKey = UUID.randomUUID();
+        var specificTheme = new ThemeEntity(
+                1, "Specific", "#111111", "#222222", "#333333", "#444444",
+                null, null, null
+        );
+        var defaultTheme = new ThemeEntity(
+                2, "Default", "#AAAAAA", "#BBBBBB", null, null,
+                lightLogoKey, darkLogoKey, faviconKey
+        );
+        var service = new ThemeService(
+                mock(ThemeRepository.class),
+                mock(DepartmentRepository.class),
+                mock(VStorageIndexItemWithAssetRepository.class),
+                mock(VDepartmentShadowedRepository.class),
+                mock(SystemService.class)
+        );
+
+        var result = service.resolveThemeChain(List.of(specificTheme, defaultTheme));
+
+        assertEquals("#111111", result.getPrimaryColor());
+        assertEquals("#222222", result.getSecondaryColor());
+        assertEquals(lightLogoKey, result.getLogoKey());
+        assertEquals(darkLogoKey, result.getLogoKeyDark());
+        assertEquals(faviconKey, result.getFaviconKey());
+    }
+
+    @Test
+    void resolveThemeChainShouldUseSpecificLightLogoAsDarkFallback() {
+        var specificLogoKey = UUID.randomUUID();
+        var defaultDarkLogoKey = UUID.randomUUID();
+        var service = new ThemeService(
+                mock(ThemeRepository.class),
+                mock(DepartmentRepository.class),
+                mock(VStorageIndexItemWithAssetRepository.class),
+                mock(VDepartmentShadowedRepository.class),
+                mock(SystemService.class)
+        );
+
+        var result = service.resolveThemeChain(List.of(
+                new ThemeEntity().setLogoKey(specificLogoKey),
+                new ThemeEntity().setLogoKeyDark(defaultDarkLogoKey)
+        ));
+
+        assertEquals(specificLogoKey, result.getLogoKeyDark());
     }
 
     @Test
@@ -76,7 +139,7 @@ class ThemeServiceTest {
         var service = new ThemeService(
                 themeRepository,
                 mock(DepartmentRepository.class),
-                mock(AssetRepository.class),
+                mock(VStorageIndexItemWithAssetRepository.class),
                 mock(VDepartmentShadowedRepository.class),
                 systemService
         );
@@ -97,7 +160,7 @@ class ThemeServiceTest {
         var service = new ThemeService(
                 themeRepository,
                 departmentRepository,
-                mock(AssetRepository.class),
+                mock(VStorageIndexItemWithAssetRepository.class),
                 mock(VDepartmentShadowedRepository.class),
                 systemService
         );
@@ -111,7 +174,7 @@ class ThemeServiceTest {
     void performUpdateShouldAllowRemovingLogoAndFavicon() throws ResponseException {
         var themeRepository = mock(ThemeRepository.class);
         var departmentRepository = mock(DepartmentRepository.class);
-        var assetRepository = mock(AssetRepository.class);
+        var assetRepository = mock(VStorageIndexItemWithAssetRepository.class);
 
         var service = new ThemeService(
                 themeRepository,
@@ -157,6 +220,35 @@ class ThemeServiceTest {
         assertNull(savedEntity.getLogoKey());
         assertNull(savedEntity.getLogoKeyDark());
         assertNull(savedEntity.getFaviconKey());
-        verify(assetRepository, never()).existsById(any());
+        verify(assetRepository, never()).findByAssetKey(any());
+    }
+
+    @Test
+    void performUpdateShouldRejectPrivateThemeMedia() {
+        var assetKey = UUID.randomUUID();
+        var assetRepository = mock(VStorageIndexItemWithAssetRepository.class);
+        when(assetRepository.findByAssetKey(assetKey)).thenReturn(Optional.of(
+                new VStorageIndexItemWithAssetEntity()
+                        .setAssetKey(assetKey)
+                        .setDirectory(false)
+                        .setMissing(false)
+                        .setAssetIsPrivate(true)
+                        .setMimeType("image/png")
+        ));
+        var service = new ThemeService(
+                mock(ThemeRepository.class),
+                mock(DepartmentRepository.class),
+                assetRepository,
+                mock(VDepartmentShadowedRepository.class),
+                mock(SystemService.class)
+        );
+        var update = new ThemeEntity().setLogoKey(assetKey);
+
+        var error = assertThrows(
+                ResponseException.class,
+                () -> service.performUpdate(1, update, new ThemeEntity().setId(1))
+        );
+
+        assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST, error.getStatus());
     }
 }

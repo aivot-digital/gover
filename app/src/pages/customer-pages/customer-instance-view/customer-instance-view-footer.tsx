@@ -57,6 +57,8 @@ export function CustomerInstanceViewFooter(props: CustomerListPageFooterProps) {
                     }}
                 >
                     <Logo
+                        src={status.theme.logoUrl}
+                        srcDark={status.theme.logoUrlDark}
                         width={200}
                         height={100}
                     />

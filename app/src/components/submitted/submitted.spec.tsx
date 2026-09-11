@@ -150,5 +150,14 @@ function createStatusResponse(
         privacyDepartmentId: null,
         legalSupportDepartmentId: null,
         technicalSupportDepartmentId: null,
+        theme: {
+            primaryColor: '#733635',
+            secondaryColor: '#A0C9CB',
+            primaryColorDark: null,
+            secondaryColorDark: null,
+            logoUrl: '/logo.svg',
+            logoUrlDark: '/logo-dark.svg',
+            faviconUrl: '/favicon.svg',
+        },
     };
 }

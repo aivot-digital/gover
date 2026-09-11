@@ -55,9 +55,7 @@ import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
-import de.aivot.prosuna.backend.system.services.SystemService;
-import de.aivot.prosuna.backend.theme.dtos.ThemeResponseDTO;
-import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
+import de.aivot.prosuna.backend.theme.dtos.ResolvedThemeDTO;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -96,7 +94,6 @@ public class FormTriggerControllerV1 {
     private final AssetService assetService;
     private final ThemeService themeService;
     private final VDepartmentShadowedService vDepartmentShadowedService;
-    private final SystemService systemService;
     private final UserService userService;
     private final ProcessService processService;
     private final ProcessNodeService processNodeService;
@@ -129,7 +126,6 @@ public class FormTriggerControllerV1 {
                                    AssetService assetService,
                                    ThemeService themeService,
                                    VDepartmentShadowedService vDepartmentShadowedService,
-                                   SystemService systemService,
                                    UserService userService,
                                    ProcessService processService,
                                    ProcessNodeService processNodeService,
@@ -160,7 +156,6 @@ public class FormTriggerControllerV1 {
         this.assetService = assetService;
         this.themeService = themeService;
         this.vDepartmentShadowedService = vDepartmentShadowedService;
-        this.systemService = systemService;
         this.userService = userService;
         this.processService = processService;
         this.processNodeService = processNodeService;
@@ -760,75 +755,19 @@ public class FormTriggerControllerV1 {
             description = "Retrieve the theme details associated with the specified form. " +
                     "Includes information such as colors, fonts, logos, and other visual elements that define the form's appearance."
     )
-    public ThemeResponseDTO getTheme(@Nullable @AuthenticationPrincipal Jwt jwt,
+    public ResolvedThemeDTO getTheme(@Nullable @AuthenticationPrincipal Jwt jwt,
                                      @Nonnull @PathVariable String processSlug,
                                      @Nonnull @PathVariable String formSlug,
                                      @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                                      @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion
     ) throws ResponseException {
         var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var theme = getFormTheme(context.processVersion(), context.formLayout());
-        return ThemeResponseDTO.fromEntity(theme);
-    }
-
-    @GetMapping("logo/")
-    @Operation(
-            summary = "Get the logo for a form",
-            description = "Get the logo image associated with the specified form. " +
-                    "If the form does not resolve to a custom theme, a default logo URL will be provided."
-    )
-    public void getLogo(@Nullable @AuthenticationPrincipal Jwt jwt,
-                        @Nonnull @PathVariable String processSlug,
-                        @Nonnull @PathVariable String formSlug,
-                        @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                        @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion,
-                        @Nullable @RequestParam(value = "color-scheme", required = false) String colorScheme,
-                        @Nonnull HttpServletResponse response
-    ) throws ResponseException, IOException {
-        var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var logoResolution = getFormLogoResolution(
+        var theme = themeService.resolveFormTheme(
                 context.processVersion(),
                 context.formLayout(),
-                "dark".equalsIgnoreCase(colorScheme)
+                context.process().getDepartmentId()
         );
-
-        String redirectUrl;
-        if (logoResolution.assetKey() == null && logoResolution.allowDefaultFallback()) {
-            redirectUrl = prosunaConfig.getDefaultLogoUrl();
-        } else if (logoResolution.assetKey() == null) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;
-        } else {
-            redirectUrl = assetService.createUrl(logoResolution.assetKey());
-        }
-
-        response.sendRedirect(redirectUrl);
-    }
-
-    @GetMapping("favicon/")
-    @Operation(
-            summary = "Get the favicon for a form",
-            description = "Get the favicon image associated with the specified form. " +
-                    "If the form does not have a custom favicon, a default favicon URL will be provided."
-    )
-    public void getFavicon(@Nullable @AuthenticationPrincipal Jwt jwt,
-                           @Nonnull @PathVariable String processSlug,
-                           @Nonnull @PathVariable String formSlug,
-                           @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                           @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion,
-                           @Nonnull HttpServletResponse response
-    ) throws ResponseException, IOException {
-        var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var faviconKey = getFormFaviconKey(context.processVersion(), context.formLayout());
-
-        String redirectUrl;
-        if (faviconKey == null) {
-            redirectUrl = prosunaConfig.getDefaultFaviconUrl();
-        } else {
-            redirectUrl = assetService.createUrl(faviconKey);
-        }
-
-        response.sendRedirect(redirectUrl);
+        return ResolvedThemeDTO.fromResolvedTheme(theme, assetService, prosunaConfig);
     }
 
     @GetMapping("submit/{instanceAccessKey}/{taskAccessKey}/print/")
@@ -898,7 +837,11 @@ public class FormTriggerControllerV1 {
         }
 
         var department = resolvePaymentConfirmationDepartment(context);
-        var logoUrl = resolvePaymentConfirmationLogoUrl(context.processVersion(), context.formLayout());
+        var logoUrl = resolvePaymentConfirmationLogoUrl(
+                context.processVersion(),
+                context.formLayout(),
+                context.process().getDepartmentId()
+        );
 
         byte[] pdfBytes;
         try {
@@ -1060,13 +1003,12 @@ public class FormTriggerControllerV1 {
 
     @Nullable
     private String resolvePaymentConfirmationLogoUrl(@Nonnull ProcessVersionEntity processVersion,
-                                                     @Nonnull FormLayoutElement formLayout) {
-        var logoResolution = getFormLogoResolution(processVersion, formLayout, false); // We never use the dark logo for printouts
-        if (logoResolution.assetKey() != null) {
-            return assetService.createUrl(logoResolution.assetKey());
-        }
-
-        return logoResolution.allowDefaultFallback() ? prosunaConfig.getDefaultLogoUrl() : null;
+                                                     @Nonnull FormLayoutElement formLayout,
+                                                     @Nullable Integer processDepartmentId) {
+        var theme = themeService.resolveFormTheme(processVersion, formLayout, processDepartmentId);
+        return theme.getLogoKey() == null
+                ? prosunaConfig.getDefaultLogoUrl()
+                : assetService.createUrl(theme.getLogoKey());
     }
 
     @Nonnull
@@ -1089,110 +1031,6 @@ public class FormTriggerControllerV1 {
 
         return new ResolvedFormTriggerContext(process, processVersionEntity, node, formLayout);
     }
-
-    @Nonnull
-    private ThemeEntity getFormTheme(@Nonnull ProcessVersionEntity processVersion,
-                                     @Nonnull FormLayoutElement formLayout) {
-        return getFormThemesInOrderOfImportance(processVersion, formLayout).getFirst();
-    }
-
-    @Nonnull
-    private List<ThemeEntity> getCustomFormThemesInOrderOfImportance(@Nonnull ProcessVersionEntity processVersion,
-                                                                     @Nonnull FormLayoutElement formLayout) {
-        var themes = new ArrayList<ThemeEntity>();
-
-        if (processVersion.getThemeId() != null) {
-            themeService
-                    .retrieve(processVersion.getThemeId())
-                    .ifPresent(themes::add);
-        }
-
-        addDepartmentTheme(themes, formLayout.getResponsibleDepartmentId());
-        addDepartmentTheme(themes, formLayout.getManagingDepartmentId());
-
-        return themes;
-    }
-
-    @Nonnull
-    private List<ThemeEntity> getFormThemesInOrderOfImportance(@Nonnull ProcessVersionEntity processVersion,
-                                                               @Nonnull FormLayoutElement formLayout) {
-        var themes = getCustomFormThemesInOrderOfImportance(processVersion, formLayout);
-        themes.add(systemService.retrieveDefaultTheme());
-
-        return themes;
-    }
-
-    private void addDepartmentTheme(@Nonnull List<ThemeEntity> themes,
-                                    @Nullable Integer departmentId) {
-        if (departmentId == null) {
-            return;
-        }
-
-        vDepartmentShadowedService
-                .retrieve(departmentId)
-                .ifPresent(department -> {
-                    if (department.getThemeId() != null) {
-                        themeService
-                                .retrieve(department.getThemeId())
-                                .ifPresent(themes::add);
-                    }
-                });
-    }
-
-    @Nullable
-    private UUID getFirstLogoKey(@Nonnull List<ThemeEntity> themes, boolean darkColorScheme) {
-        for (var theme : themes) {
-            var logoKey = darkColorScheme && theme.getLogoKeyDark() != null
-                    ? theme.getLogoKeyDark()
-                    : theme.getLogoKey();
-            if (logoKey != null) {
-                return logoKey;
-            }
-        }
-
-        return null;
-    }
-
-    @Nonnull
-    private LogoResolution getFormLogoResolution(@Nonnull ProcessVersionEntity processVersion,
-                                                 @Nonnull FormLayoutElement formLayout,
-                                                 boolean darkColorScheme) {
-        var customThemes = getCustomFormThemesInOrderOfImportance(processVersion, formLayout);
-
-        // A resolved custom theme chain without a logo should stay logo-less instead of inheriting
-        // the system theme logo. Only forms without custom themes fall back to the system/default logo.
-        if (!customThemes.isEmpty()) {
-            return new LogoResolution(getFirstLogoKey(customThemes, darkColorScheme), false);
-        }
-
-        var systemTheme = systemService.retrieveDefaultTheme();
-        var systemLogoKey = darkColorScheme && systemTheme.getLogoKeyDark() != null
-                ? systemTheme.getLogoKeyDark()
-                : systemTheme.getLogoKey();
-        if (systemLogoKey != null) {
-            return new LogoResolution(systemLogoKey, true);
-        }
-
-        return new LogoResolution(null, true);
-    }
-
-    @Nullable
-    private UUID getFormFaviconKey(@Nonnull ProcessVersionEntity processVersion,
-                                   @Nonnull FormLayoutElement formLayout) {
-        var themes = getFormThemesInOrderOfImportance(processVersion, formLayout);
-
-        for (var theme : themes) {
-            if (theme.getFaviconKey() != null) {
-                return theme.getFaviconKey();
-            }
-        }
-
-        return null;
-    }
-
-    private record LogoResolution(@Nullable UUID assetKey, boolean allowDefaultFallback) {
-    }
-
 
     @Nonnull
     private FormTriggerNodeV1 getProvider(ProcessNodeEntity node) throws ResponseException {

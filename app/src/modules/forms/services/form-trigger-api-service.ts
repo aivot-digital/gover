@@ -7,7 +7,7 @@ import {BaseApiService} from '../../../services/base-api-service';
 import type {ProcessEntity} from '../../process/entities/process-entity';
 import type {ProcessNodeEntity} from '../../process/entities/process-node-entity';
 import type {ProcessVersionEntity} from '../../process/entities/process-version-entity';
-import type {Theme} from '../../themes/models/theme';
+import type {ResolvedThemeDTO} from '../../themes/models/theme';
 import type {FormTriggerIdentityDetailsDTO} from '../dtos/form-trigger-identity-details-dto';
 import type {PaymentConfigElementValue} from '../../../models/elements/form/input/payment-config-element';
 import type {IdentityCommunicationState, IdentitySlot} from '../../identity/models/identity-slot';
@@ -286,8 +286,8 @@ export class FormTriggerApiService extends BaseApiService {
         formSlug: string,
         version?: number,
         testClaimAccessKey?: string,
-    ): Promise<Theme> {
-        return await this.get<Theme>(`/api/public/form/${processSlug}/${formSlug}/theme/`, {
+    ): Promise<ResolvedThemeDTO> {
+        return await this.get<ResolvedThemeDTO>(`/api/public/form/${processSlug}/${formSlug}/theme/`, {
             query: {
                 version,
                 'test-claim': testClaimAccessKey,

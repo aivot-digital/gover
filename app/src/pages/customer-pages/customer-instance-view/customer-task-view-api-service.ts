@@ -6,6 +6,7 @@ import {isApiError} from '../../../models/api-error';
 import type {IdentityCommunicationState, IdentitySlot} from '../../../modules/identity/models/identity-slot';
 import type {IdentitySelectionApi} from '../../../modules/identity/models/identity-selection-api';
 import type {CustomerTaskViewResponse} from '../../../modules/process/models/customer-task-view';
+import type {ResolvedThemeDTO} from '../../../modules/themes/models/theme';
 
 export type {CustomerTaskViewResponse as TaskViewResponse} from '../../../modules/process/models/customer-task-view';
 
@@ -21,6 +22,7 @@ export interface ProcessInstanceStatusResponse {
     imprintDepartmentId: number | null;
     legalSupportDepartmentId: number | null;
     technicalSupportDepartmentId: number | null;
+    theme: ResolvedThemeDTO;
 }
 
 export interface ProcessInstanceTaskStatusResponse {
