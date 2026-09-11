@@ -3,6 +3,9 @@ import {CommunicationProvidersListPage} from './pages/communication-providers-li
 import {CommunicationProviderDetailsPage} from './pages/communication-provider-details-page';
 import {CommunicationProviderDetailsPageIndex} from './pages/communication-provider-details-page-index';
 import {CommunicationProviderDetailsPageTest} from './pages/communication-provider-details-page-test';
+import {
+    CommunicationProviderDetailsPageIdentityProviders,
+} from './pages/communication-provider-details-page-identity-providers';
 import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
 
 export const communicationRoutes: RouteObject[] = [
@@ -22,6 +25,10 @@ export const communicationRoutes: RouteObject[] = [
             {
                 path: '/communication-providers/:id/test',
                 element: <CommunicationProviderDetailsPageTest/>,
+            },
+            {
+                path: '/communication-providers/:id/identity-providers',
+                element: <CommunicationProviderDetailsPageIdentityProviders/>,
             },
         ],
     },

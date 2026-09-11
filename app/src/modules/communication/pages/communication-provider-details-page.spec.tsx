@@ -35,12 +35,36 @@ describe('CommunicationProviderDetailsPage', () => {
         expect(testTab.isDisabled).toBeUndefined();
     });
 
+    it('enables the linked identity providers tab only for existing providers with read permission', () => {
+        render(<CommunicationProviderDetailsPage/>);
+
+        const identityProvidersTab = testState.detailsPageProps?.tabs.find((tab: Record<string, any>) => (
+            tab.path === '/communication-providers/:id/identity-providers'
+        ));
+
+        expect(identityProvidersTab).toMatchObject({
+            label: 'Verknüpfte Nutzerkontenanbieter',
+            onlyExisting: true,
+            requiredPermission: Permission.IDENTITY_PROVIDER_READ,
+        });
+    });
+
     it('registers the test page as a child route', () => {
         const detailsRoute = communicationRoutes.find(route => route.path === '/communication-providers/:id');
 
         expect(detailsRoute?.children).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 path: '/communication-providers/:id/test',
+            }),
+        ]));
+    });
+
+    it('registers the linked identity providers page as a child route', () => {
+        const detailsRoute = communicationRoutes.find(route => route.path === '/communication-providers/:id');
+
+        expect(detailsRoute?.children).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                path: '/communication-providers/:id/identity-providers',
             }),
         ]));
     });

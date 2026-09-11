@@ -14,6 +14,7 @@ export interface IdentityProvidersFilter {
     type: IdentityProviderType;
     isEnabled: boolean;
     isTestProvider: boolean;
+    communicationProviderId: number;
 }
 
 export interface IdentityProviderTestStartResponseDTO {

@@ -48,6 +48,12 @@ export function CommunicationProviderDetailsPage() {
                         onlyExisting: true,
                         requiredPermission: Permission.COMMUNICATION_PROVIDER_UPDATE,
                     },
+                    {
+                        path: '/communication-providers/:id/identity-providers',
+                        label: 'Verknüpfte Nutzerkontenanbieter',
+                        onlyExisting: true,
+                        requiredPermission: Permission.IDENTITY_PROVIDER_READ,
+                    },
                 ]}
                 initializeItem={() => new CommunicationProvidersApiService().initializeProvider()}
                 fetchData={(_, id) => new CommunicationProvidersApiService().retrieveProvider(Number(id))}
