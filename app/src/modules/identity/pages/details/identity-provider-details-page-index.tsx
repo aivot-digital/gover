@@ -236,6 +236,7 @@ export function IdentityProviderDetailsPageIndex() {
     const inputsDisabled = useMemo(() => (
         isBusy || identityProvider == null || !isEditable
     ), [isBusy, identityProvider, isEditable]);
+    const configurationTablesReadOnly = isSystemProvider || !isEditable;
 
     const uniqueIdAttributeOptions = useMemo(() => (
         (identityProvider?.attributes ?? [])
@@ -833,7 +834,8 @@ export function IdentityProviderDetailsPageIndex() {
                     handleInputChange('defaultScopes')(value ?? []);
                 }}
                 allowEmpty={true}
-                disabled={inputsDisabled || isSystemProvider}
+                busy={isBusy}
+                readOnly={configurationTablesReadOnly}
                 error={defaultScopesError}
                 sx={{my: 4}}
             />
@@ -844,13 +846,11 @@ export function IdentityProviderDetailsPageIndex() {
                         key: 'key',
                         label: 'Schlüssel',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'value',
                         label: 'Wert',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                 ]}
                 createDefaultRow={() => ({key: '', value: ''})}
@@ -858,7 +858,8 @@ export function IdentityProviderDetailsPageIndex() {
                 onChange={(value) => {
                     handleInputChange('additionalParams')(value ?? []);
                 }}
-                disabled={inputsDisabled || isSystemProvider}
+                busy={isBusy}
+                readOnly={configurationTablesReadOnly}
                 error={additionalParamsError}
                 sx={{my: 4}}
             />
@@ -877,25 +878,21 @@ export function IdentityProviderDetailsPageIndex() {
                         key: 'label',
                         label: 'Titel',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'description',
                         label: 'Beschreibung',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'keyInData',
                         label: 'Feldname',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'displayAttribute',
                         label: 'Anzeigeattribut',
                         type: 'boolean',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                 ]}
                 hint="Geben Sie hier die Attributszuweisungen an, die für den Nutzerkontenanbieter gelten sollen."
@@ -909,7 +906,8 @@ export function IdentityProviderDetailsPageIndex() {
                 onChange={(value) => {
                     handleInputChange('attributes')(value ?? []);
                 }}
-                disabled={inputsDisabled || isSystemProvider}
+                busy={isBusy}
+                readOnly={configurationTablesReadOnly}
                 addTooltip="Attributszuweisung hinzufügen"
                 deleteTooltip="Attributszuweisung löschen"
                 noRowsPlaceholder="Keine Attributszuweisungen vorhanden"

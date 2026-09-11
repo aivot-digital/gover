@@ -11,6 +11,8 @@ import {formSchema, IdentityProviderDetailsPageIndex} from './identity-provider-
 
 const testState = vi.hoisted(() => ({
     canReadSecrets: true,
+    isBusy: false,
+    isEditable: true,
     provider: undefined as IdentityProviderDetailsDTO | undefined,
     handleFieldChange: vi.fn(),
 }));
@@ -78,11 +80,35 @@ vi.mock('../../components/identity-provider-icon/identity-provider-icon', () => 
 }));
 
 vi.mock('../../../../components/string-list-input/string-list-input', () => ({
-    StringListInput: () => null,
+    StringListInput: (props: {
+        busy?: boolean;
+        disabled?: boolean;
+        label: string;
+        readOnly?: boolean;
+    }) => (
+        <div
+            data-testid={props.label}
+            data-busy={String(Boolean(props.busy))}
+            data-disabled={String(Boolean(props.disabled))}
+            data-readonly={String(Boolean(props.readOnly))}
+        />
+    ),
 }));
 
 vi.mock('../../../../components/table-field/table-field-component-2', () => ({
-    TableFieldComponent2: () => null,
+    TableFieldComponent2: (props: {
+        busy?: boolean;
+        disabled?: boolean;
+        label: string;
+        readOnly?: boolean;
+    }) => (
+        <div
+            data-testid={props.label}
+            data-busy={String(Boolean(props.busy))}
+            data-disabled={String(Boolean(props.disabled))}
+            data-readonly={String(Boolean(props.readOnly))}
+        />
+    ),
 }));
 
 vi.mock('../../../../components/select-field/select-field-component', () => ({
@@ -114,6 +140,8 @@ vi.mock('../../../../dialogs/constraint-dialog/constraint-dialog', () => ({
 describe('IdentityProviderDetailsPageIndex', () => {
     beforeEach(() => {
         testState.canReadSecrets = true;
+        testState.isBusy = false;
+        testState.isEditable = true;
         testState.provider = createProvider();
         testState.handleFieldChange.mockReset();
     });
@@ -156,6 +184,53 @@ describe('IdentityProviderDetailsPageIndex', () => {
 
         expect(screen.getByTestId('secret-select')).toHaveAttribute('data-disabled', 'true');
         expect(screen.getByTestId('unique-id-attribute-select')).toHaveAttribute('data-disabled', 'true');
+    });
+
+    it('keeps all system provider tables navigable and read-only', () => {
+        testState.provider = createProvider(IdentityProviderType.BundID);
+
+        renderPage();
+
+        for (const label of ['Scopes', 'Zusätzliche Parameter', 'Attributszuweisungen']) {
+            const table = screen.getByTestId(label);
+            expect(table).toHaveAttribute('data-disabled', 'false');
+            expect(table).toHaveAttribute('data-readonly', 'true');
+            expect(table).toHaveAttribute('data-busy', 'false');
+        }
+    });
+
+    it('uses read-only tables when update permission is missing', () => {
+        testState.isEditable = false;
+
+        renderPage();
+
+        for (const label of ['Scopes', 'Zusätzliche Parameter', 'Attributszuweisungen']) {
+            const table = screen.getByTestId(label);
+            expect(table).toHaveAttribute('data-disabled', 'false');
+            expect(table).toHaveAttribute('data-readonly', 'true');
+        }
+    });
+
+    it('keeps custom provider tables editable', () => {
+        renderPage();
+
+        for (const label of ['Scopes', 'Zusätzliche Parameter', 'Attributszuweisungen']) {
+            const table = screen.getByTestId(label);
+            expect(table).toHaveAttribute('data-disabled', 'false');
+            expect(table).toHaveAttribute('data-readonly', 'false');
+        }
+    });
+
+    it('marks configuration tables busy during requests', () => {
+        testState.isBusy = true;
+
+        renderPage();
+
+        for (const label of ['Scopes', 'Zusätzliche Parameter', 'Attributszuweisungen']) {
+            const table = screen.getByTestId(label);
+            expect(table).toHaveAttribute('data-disabled', 'false');
+            expect(table).toHaveAttribute('data-busy', 'true');
+        }
     });
 
     it('selects the unique ID from the configured attribute mappings', () => {
@@ -210,10 +285,10 @@ function renderPage() {
         isNewItem: false,
         isExistingItem: true,
         setAdditionalData: vi.fn(),
-        isBusy: false,
+        isBusy: testState.isBusy,
         setIsBusy: vi.fn(),
         refresh: vi.fn(),
-        isEditable: true,
+        isEditable: testState.isEditable,
     };
 
     return render(
