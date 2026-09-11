@@ -49,11 +49,12 @@ import {SearchInput} from '../../../components/search-input/search-input';
 import {type AssetStorageProvider} from '../../assets/models/asset-storage-provider';
 import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
 import {FormFieldTokens} from '../../../theming/form-field-tokens';
+import {AssetVisibility} from '../../assets/models/asset-visibility';
 
 interface StorageExplorerProps {
     providerId: number;
     filterMimeTypes?: string[];
-    filterOnlyPublic?: boolean;
+    filterVisibility?: AssetVisibility;
     onFileSelect?: (item: StorageIndexItem) => void;
     allowFileDownload?: boolean;
     showContainerBorder?: boolean;
@@ -279,7 +280,7 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
     const {
         providerId,
         filterMimeTypes,
-        filterOnlyPublic,
+        filterVisibility = AssetVisibility.All,
         onFileSelect,
         allowFileDownload = false,
         showContainerBorder = false,
@@ -327,10 +328,12 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
             .listFolderContent(providerId, normalizedPath, {
                 query: {
                     contentType: filterMimeTypes,
-                    isPublic: filterOnlyPublic ? true : undefined,
+                    isPublic: filterVisibility === AssetVisibility.Public
+                        ? true
+                        : filterVisibility === AssetVisibility.Private ? false : undefined,
                 },
             });
-    }, [filterMimeTypes, filterOnlyPublic, providerId]);
+    }, [filterMimeTypes, filterVisibility, providerId]);
 
     // Tree is loaded on demand per expanded folder and cached to avoid repeat requests.
     const loadTreeChildren = useCallback((path: string): void => {
@@ -461,7 +464,9 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
             .search(providerId, trimmedSearch, {
                 query: {
                     contentType: filterMimeTypes,
-                    isPublic: filterOnlyPublic,
+                    isPublic: filterVisibility === AssetVisibility.Public
+                        ? true
+                        : filterVisibility === AssetVisibility.Private ? false : undefined,
                 },
             })
             .then((page) => {
@@ -491,7 +496,7 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
         return () => {
             isActive = false;
         };
-    }, [dispatch, filterMimeTypes, filterOnlyPublic, providerId, search]);
+    }, [dispatch, filterMimeTypes, filterVisibility, providerId, search]);
 
     const rows = useMemo(() => {
         return searchResults?.content ?? filteredItems;

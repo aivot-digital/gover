@@ -1,7 +1,6 @@
 import {useMemo} from 'react';
 import {type BaseViewProps} from './base-view';
 import {
-    StoragePathSelectorMode,
     type StoragePathSelectorInputElement,
     type StoragePathSelectorInputElementValue,
 } from '../models/elements/form/input/storage-path-selector-input-element';
@@ -33,7 +32,6 @@ export function StoragePathSelectorInputView(
     return (
         <StoragePathSelectorInputComponent
             label={element.label ?? ''}
-            mode={element.mode ?? StoragePathSelectorMode.Folder}
             value={value}
             onChange={setValue}
             allowedStorageProviderTypes={element.allowedStorageProviderTypes}

@@ -70,6 +70,7 @@ public enum ElementType implements Identifiable<Integer> {
     PaymentConfig(50),
     LinkButton(51),
     SecretSelectInput(52),
+    AssetSelectInput(53),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -125,6 +126,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_PaymentConfig = "50";
     public static final String ID_LinkButton = "51";
     public static final String ID_SecretSelectInput = "52";
+    public static final String ID_AssetSelectInput = "53";
 
     private final Integer key;
 
@@ -206,6 +208,7 @@ public enum ElementType implements Identifiable<Integer> {
             case PaymentConfig -> new PaymentConfigElement();
             case LinkButton -> new LinkButtonContentElement();
             case SecretSelectInput -> new SecretSelectInputElement();
+            case AssetSelectInput -> new AssetSelectInputElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

@@ -55,11 +55,12 @@ import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/p
 import {ProcessInstanceAttachmentSetSelectElement} from '../models/elements/form/input/process-instance-attachment-set-select-element';
 import {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
 import {SecretSelectInputElement} from '../models/elements/form/input/secret-select-input-element';
+import {AssetSelectInputElement} from '../models/elements/form/input/asset-select-input-element';
+import {AssetVisibility} from '../modules/assets/models/asset-visibility';
 import {getDefaultElementWeight} from './element-widths';
 import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
 import {
     StoragePathSelectorInputElement,
-    StoragePathSelectorMode,
 } from '../models/elements/form/input/storage-path-selector-input-element';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 import {SelectFieldPresentation} from '../models/elements/form/input/select-field-presentation';
@@ -149,6 +150,7 @@ const elementConstructors: {
     [ElementType.ProcessInstanceAttachmentSetSelect]: (id: string) => ProcessInstanceAttachmentSetSelectElement;
     [ElementType.ProcessIdentityIdInput]: (id: string) => ProcessIdentityIdInputElement;
     [ElementType.SecretSelectInput]: (id: string) => SecretSelectInputElement;
+    [ElementType.AssetSelectInput]: (id: string) => AssetSelectInputElement;
     [ElementType.HtmlTemplateInput]: (id: string) => HtmlTemplateInputElement;
     [ElementType.StoragePathSelector]: (id: string) => StoragePathSelectorInputElement;
     [ElementType.PaymentConfigElement]: (id: string) => PaymentConfigElement;
@@ -524,6 +526,14 @@ const elementConstructors: {
         label: 'Geheimnis',
         placeholder: 'Geheimnis auswählen',
     }),
+    [ElementType.AssetSelectInput]: (id) => ({
+        ...makeInputBase(ElementType.AssetSelectInput, id),
+        label: 'Asset',
+        placeholder: 'Keine Datei ausgewählt',
+        dialogTitle: 'Datei auswählen',
+        allowedMimeTypes: undefined,
+        assetVisibility: AssetVisibility.All,
+    }),
     [ElementType.HtmlTemplateInput]: (id) => ({
         ...makeInputBase(ElementType.HtmlTemplateInput, id),
         label: 'HTML-Vorlage',
@@ -531,7 +541,6 @@ const elementConstructors: {
     [ElementType.StoragePathSelector]: (id) => ({
         ...makeInputBase(ElementType.StoragePathSelector, id),
         label: 'Speicherpfad',
-        mode: StoragePathSelectorMode.Folder,
         placeholder: 'Ordner auswählen',
         storageProviderSelectHint: undefined,
         allowedStorageProviderTypes: undefined,

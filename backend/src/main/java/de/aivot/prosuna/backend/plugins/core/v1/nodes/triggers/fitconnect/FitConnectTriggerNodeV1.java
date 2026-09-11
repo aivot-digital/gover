@@ -6,13 +6,13 @@ import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.StoragePathSelectorInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
-import de.aivot.prosuna.backend.elements.enums.StoragePathSelectorMode;
+import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
@@ -33,7 +33,6 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.services.PublicUrlService;
-import de.aivot.prosuna.backend.storage.enums.StorageProviderType;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -347,11 +346,10 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
     private void configureKeyFileSelector(@Nonnull ConfigLayoutElement layout,
                                           @Nonnull String fieldId) {
         layout
-                .findChild(fieldId, StoragePathSelectorInputElement.class)
+                .findChild(fieldId, AssetSelectInputElement.class)
                 .ifPresent(field -> {
-                    field.setMode(StoragePathSelectorMode.File);
-                    field.setAllowedStorageProviderTypes(List.of(StorageProviderType.Assets));
-                    field.setAllowReadOnlyStorageProviders(true);
+                    field.setAllowedMimeTypes(List.of("application/json"));
+                    field.setAssetVisibility(AssetVisibility.Private);
                 });
     }
 

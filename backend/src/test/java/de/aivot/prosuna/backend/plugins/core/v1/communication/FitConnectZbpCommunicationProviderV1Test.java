@@ -7,7 +7,10 @@ import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
+import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
@@ -17,7 +20,6 @@ import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
-import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import dev.fitko.fitconnect.zbp.model.AuthenticationLevel;
 import org.junit.jupiter.api.Test;
@@ -49,8 +51,9 @@ import static org.mockito.Mockito.when;
 
 class FitConnectZbpCommunicationProviderV1Test {
     private final SecretService secretService = mock(SecretService.class);
+    private final AssetContentResolverService assetContentResolverService = mock(AssetContentResolverService.class);
     private final FitConnectZbpCommunicationProviderV1 definition = new FitConnectZbpCommunicationProviderV1(
-            mock(StorageService.class),
+            assetContentResolverService,
             secretService
     );
 
@@ -153,6 +156,20 @@ class FitConnectZbpCommunicationProviderV1Test {
                 FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_ID_FIELD_ID,
                 TextInputElement.class
         ).orElseThrow().getRequired());
+        var privateKey = layout.findChild(
+                FitConnectZbpCommunicationProviderV1.Config.ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID,
+                AssetSelectInputElement.class
+        ).orElseThrow();
+        var clientCertificate = layout.findChild(
+                FitConnectZbpCommunicationProviderV1.Config.ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID,
+                AssetSelectInputElement.class
+        ).orElseThrow();
+        assertEquals(List.of("application/x-pem-file"), privateKey.getAllowedMimeTypes());
+        assertEquals(List.of("application/x-pem-file"), clientCertificate.getAllowedMimeTypes());
+        assertEquals(AssetVisibility.Private, privateKey.getAssetVisibility());
+        assertEquals(AssetVisibility.Private, clientCertificate.getAssetVisibility());
+        assertTrue(privateKey.getRequired());
+        assertTrue(clientCertificate.getRequired());
         verifyNoInteractions(secretService);
     }
 
@@ -180,7 +197,7 @@ class FitConnectZbpCommunicationProviderV1Test {
     @SuppressWarnings({"rawtypes", "unchecked"})
     void testSendBuildsTemporaryIdentityAndDelegatesToSendMessage() throws Exception {
         var testDefinition = spy(new FitConnectZbpCommunicationProviderV1(
-                mock(StorageService.class),
+                mock(AssetContentResolverService.class),
                 mock(SecretService.class)
         ));
         var provider = provider();
@@ -228,7 +245,7 @@ class FitConnectZbpCommunicationProviderV1Test {
     @Test
     void testSendRejectsMissingInvalidAndNonStringPostfachIds() throws Exception {
         var testDefinition = spy(new FitConnectZbpCommunicationProviderV1(
-                mock(StorageService.class),
+                mock(AssetContentResolverService.class),
                 mock(SecretService.class)
         ));
         var provider = provider();
@@ -266,7 +283,7 @@ class FitConnectZbpCommunicationProviderV1Test {
     @Test
     void testSendPropagatesCommunicationFailure() throws Exception {
         var testDefinition = spy(new FitConnectZbpCommunicationProviderV1(
-                mock(StorageService.class),
+                mock(AssetContentResolverService.class),
                 mock(SecretService.class)
         ));
         var failure = new CommunicationException("FIT-Connect test failed");

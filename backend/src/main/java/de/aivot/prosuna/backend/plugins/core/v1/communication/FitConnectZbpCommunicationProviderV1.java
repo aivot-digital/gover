@@ -6,10 +6,11 @@ import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefinition;
+import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
-import de.aivot.prosuna.backend.elements.enums.StoragePathSelectorMode;
+import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
@@ -24,8 +25,6 @@ import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
-import de.aivot.prosuna.backend.storage.enums.StorageProviderType;
-import de.aivot.prosuna.backend.storage.services.StorageService;
 import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
 import dev.fitko.fitconnect.rest.model.event.EventState;
 import dev.fitko.fitconnect.rest.model.submission.SentSubmission;
@@ -70,11 +69,14 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
             "https://schema.fitko.de/fit-connect/id.bund.de/message_v6/1.0.0/zbp-message.schema.json"
     );
 
-    private final StorageService storageService;
+    private static final String PEM_MIME_TYPE = "application/x-pem-file";
+
+    private final AssetContentResolverService assetContentResolverService;
     private final SecretService secretService;
 
-    public FitConnectZbpCommunicationProviderV1(StorageService storageService, SecretService secretService) {
-        this.storageService = storageService;
+    public FitConnectZbpCommunicationProviderV1(AssetContentResolverService assetContentResolverService,
+                                                SecretService secretService) {
+        this.assetContentResolverService = assetContentResolverService;
         this.secretService = secretService;
     }
 
@@ -132,17 +134,17 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         }
 
         config
-                .findChild(Config.ZBP_CERTIFICATE_PRIVATE_KEY_PATH_FIELD_ID, StoragePathSelectorInputElement.class)
+                .findChild(Config.ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID, AssetSelectInputElement.class)
                 .ifPresent(element -> {
-                    element.setMode(StoragePathSelectorMode.File);
-                    element.setAllowedStorageProviderTypes(List.of(StorageProviderType.Assets));
+                    element.setAllowedMimeTypes(List.of(PEM_MIME_TYPE));
+                    element.setAssetVisibility(AssetVisibility.Private);
                 });
 
         config
-                .findChild(Config.ZBP_CERTIFICATE_CLIENT_CERT_PATH_FIELD_ID, StoragePathSelectorInputElement.class)
+                .findChild(Config.ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID, AssetSelectInputElement.class)
                 .ifPresent(element -> {
-                    element.setMode(StoragePathSelectorMode.File);
-                    element.setAllowedStorageProviderTypes(List.of(StorageProviderType.Assets));
+                    element.setAllowedMimeTypes(List.of(PEM_MIME_TYPE));
+                    element.setAssetVisibility(AssetVisibility.Private);
                 });
 
         return config;
@@ -549,15 +551,21 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     private AuthorKeyPair getAuthorKeyPair(Config config) throws CommunicationException {
         String privateKeyPem;
         try {
-            privateKeyPem = resolveFile(config.zbpCertificatePrivateKeyPath);
-        } catch (ResponseException | IOException e) {
+            privateKeyPem = resolveFile(
+                    config.zbpCertificatePrivateKeyAssetKey,
+                    "Der private Schlüssel des FIT-Connect-Zertifikats"
+            );
+        } catch (ResponseException e) {
             throw new CommunicationException("Failed to resolve private key for FIT-Connect communication provider.", e);
         }
 
         String clientCertPem;
         try {
-            clientCertPem = resolveFile(config.zbpCertificateClientCertPath);
-        } catch (ResponseException | IOException e) {
+            clientCertPem = resolveFile(
+                    config.zbpCertificateClientCertAssetKey,
+                    "Das Client-Zertifikat des FIT-Connect-Zertifikats"
+            );
+        } catch (ResponseException e) {
             throw new CommunicationException("Failed to resolve client certificate for FIT-Connect communication provider.", e);
         }
 
@@ -572,42 +580,41 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         }
     }
 
-    private String resolveFile(StoragePathSelectorInputElementValue p) throws ResponseException, IOException {
-        if (p == null || p.getStorageProviderId() == null || p.getPath() == null) {
-            throw new IOException("Die Datei ist nicht konfiguriert.");
-        }
-
-        try (var content = storageService.getDocumentContent(p.getStorageProviderId(), p.getPath())) {
-            return new String(content.readAllBytes(), StandardCharsets.UTF_8);
-        }
+    private String resolveFile(@Nullable String assetKey, @Nonnull String description) throws ResponseException {
+        return new String(
+                assetContentResolverService.resolveContent(assetKey, AssetVisibility.Private, description),
+                StandardCharsets.UTF_8
+        );
     }
 
     @LayoutElementPOJOBinding(id = "fit-connect-provider-config", type = ElementType.ConfigLayout)
     public static class Config {
-        public static final String ZBP_CERTIFICATE_PRIVATE_KEY_PATH_FIELD_ID = "zbpCertificatePrivateKeyPath";
-        public static final String ZBP_CERTIFICATE_CLIENT_CERT_PATH_FIELD_ID = "zbpCertificateClientCertPath";
+        public static final String ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID = "zbpCertificatePrivateKeyAssetKey";
+        public static final String ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID = "zbpCertificateClientCertAssetKey";
         public static final String DESTINATION_ID_FIELD_ID = "destinationId";
         public static final String SENDER_DESTINATION_ID_FIELD_ID = "senderDestinationId";
         public static final String SENDER_CLIENT_ID_FIELD_ID = "senderClientId";
         public static final String SENDER_CLIENT_SECRET_KEY_FIELD_ID = "senderClientSecret";
 
-        @InputElementPOJOBinding(id = ZBP_CERTIFICATE_PRIVATE_KEY_PATH_FIELD_ID, type = ElementType.StoragePathSelector, properties = {
+        @InputElementPOJOBinding(id = ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID, type = ElementType.AssetSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Privater Schlüssel"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Pfad zum privaten Schlüssel des FIT-Connect-Zertifikats."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Private PEM-Datei mit dem Schlüssel des FIT-Connect-Zertifikats."),
+                @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Privaten Schlüssel auswählen"),
+                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine PEM-Datei ausgewählt"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "allowReadOnlyStorageProviders", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
-        public StoragePathSelectorInputElementValue zbpCertificatePrivateKeyPath;
+        public String zbpCertificatePrivateKeyAssetKey;
 
-        @InputElementPOJOBinding(id = ZBP_CERTIFICATE_CLIENT_CERT_PATH_FIELD_ID, type = ElementType.StoragePathSelector, properties = {
+        @InputElementPOJOBinding(id = ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID, type = ElementType.AssetSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Client-Zertifikat"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Pfad zum Client-Zertifikat des FIT-Connect-Zertifikats."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Private PEM-Datei mit dem Client-Zertifikat für FIT-Connect."),
+                @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Client-Zertifikat auswählen"),
+                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine PEM-Datei ausgewählt"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "allowReadOnlyStorageProviders", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
-        public StoragePathSelectorInputElementValue zbpCertificateClientCertPath;
+        public String zbpCertificateClientCertAssetKey;
 
         @InputElementPOJOBinding(id = DESTINATION_ID_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Empfänger-Zustellpunkt-ID"),

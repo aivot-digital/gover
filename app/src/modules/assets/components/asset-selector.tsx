@@ -9,6 +9,7 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {AssetSelectionField} from './asset-selection-field';
 import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
+import {AssetVisibility} from '../models/asset-visibility';
 
 interface AssetSelectorProps extends FormFieldLayoutProps {
     label: string;
@@ -20,8 +21,8 @@ interface AssetSelectorProps extends FormFieldLayoutProps {
     readOnly?: boolean;
     required?: boolean;
     error?: string;
-    mimetype?: string;
-    onlyPublic?: boolean;
+    mimetype?: string | string[];
+    visibility?: AssetVisibility;
     placeholder?: string;
     isBusy?: boolean;
     controlSx?: SxProps<Theme>;
@@ -39,7 +40,7 @@ export function AssetSelector(props: AssetSelectorProps) {
         required = false,
         error,
         mimetype,
-        onlyPublic,
+        visibility = AssetVisibility.All,
         placeholder = 'Keine Datei ausgewählt',
         isBusy = false,
     } = props;
@@ -168,7 +169,7 @@ export function AssetSelector(props: AssetSelectorProps) {
                     setShowSelectAssetDialog(false);
                 }}
                 onCancel={() => setShowSelectAssetDialog(false)}
-                mode={onlyPublic ? 'public' : 'all'}
+                visibility={visibility}
                 mimetype={mimetype}
             />
         </>

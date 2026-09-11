@@ -1326,6 +1326,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ProcessInstanceAttachmentSetSelect]: null,
     [ElementType.ProcessIdentityIdInput]: null,
     [ElementType.SecretSelectInput]: null,
+    [ElementType.AssetSelectInput]: null,
     [ElementType.HtmlTemplateInput]: null,
     [ElementType.StoragePathSelector]: null,
     [ElementType.CodeInput]: (

@@ -106,6 +106,7 @@ function elementToValueType(element: AnyElement): string {
         case ElementType.DataObjectSelect:
         case ElementType.ProcessDataKeyInput:
         case ElementType.SecretSelectInput:
+        case ElementType.AssetSelectInput:
         case ElementType.RichTextInput:
             return 'string';
         case ElementType.DateRange:

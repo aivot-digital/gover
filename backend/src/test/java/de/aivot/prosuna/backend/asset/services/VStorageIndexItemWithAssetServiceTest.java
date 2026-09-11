@@ -226,7 +226,7 @@ class VStorageIndexItemWithAssetServiceTest {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
-    void searchIndexItems_WithPrivateFilter_AddsPrivateFilePredicate() {
+    void searchIndexItems_WithPrivateFilter_AddsFolderOrPrivateFilePredicate() {
         when(repository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
@@ -249,10 +249,12 @@ class VStorageIndexItemWithAssetServiceTest {
         Expression lowerFilename = mock(Expression.class);
         Expression lowerPathFromRoot = mock(Expression.class);
         Predicate providerPredicate = mock(Predicate.class);
+        Predicate folderPredicate = mock(Predicate.class);
         Predicate filePredicate = mock(Predicate.class);
         Predicate privateAssetPredicate = mock(Predicate.class);
         Predicate unknownVisibilityPredicate = mock(Predicate.class);
         Predicate privateVisibilityPredicate = mock(Predicate.class);
+        Predicate privateFilePredicate = mock(Predicate.class);
         Predicate visibilityPredicate = mock(Predicate.class);
         Predicate contentTypePredicate = mock(Predicate.class);
         Predicate filenamePredicate = mock(Predicate.class);
@@ -273,11 +275,13 @@ class VStorageIndexItemWithAssetServiceTest {
         when(pathFromRootPath.as(String.class)).thenReturn(pathFromRootPath);
 
         when(builder.equal(storageProviderIdPath, 3)).thenReturn(providerPredicate);
+        when(builder.isTrue(directoryPath)).thenReturn(folderPredicate);
         when(builder.isFalse(directoryPath)).thenReturn(filePredicate);
         when(builder.isTrue(assetIsPrivatePath)).thenReturn(privateAssetPredicate);
         when(builder.isNull(assetIsPrivatePath)).thenReturn(unknownVisibilityPredicate);
         when(builder.or(privateAssetPredicate, unknownVisibilityPredicate)).thenReturn(privateVisibilityPredicate);
-        when(builder.and(filePredicate, privateVisibilityPredicate)).thenReturn(visibilityPredicate);
+        when(builder.and(filePredicate, privateVisibilityPredicate)).thenReturn(privateFilePredicate);
+        when(builder.or(folderPredicate, privateFilePredicate)).thenReturn(visibilityPredicate);
         when(builder.conjunction()).thenReturn(contentTypePredicate);
         when(builder.lower(filenamePath)).thenReturn(lowerFilename);
         when(builder.lower(pathFromRootPath)).thenReturn(lowerPathFromRoot);
@@ -289,6 +293,7 @@ class VStorageIndexItemWithAssetServiceTest {
         var result = specification.toPredicate(root, query, builder);
 
         assertSame(combinedPredicate, result);
+        verify(builder).isTrue(directoryPath);
         verify(builder).isFalse(directoryPath);
         verify(builder).isTrue(assetIsPrivatePath);
         verify(builder).isNull(assetIsPrivatePath);

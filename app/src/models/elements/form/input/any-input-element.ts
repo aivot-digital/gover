@@ -33,6 +33,7 @@ import {SecretSelectInputElement} from './secret-select-input-element';
 import {ElementIsInput} from '../../../../data/element-type/element-is-input';
 import {HtmlTemplateInputElement} from './html-template-input-element';
 import {StoragePathSelectorInputElement} from './storage-path-selector-input-element';
+import {AssetSelectInputElement} from './asset-select-input-element';
 import {PaymentConfigElement} from './payment-config-element';
 
 export type AnyInputElement = (
@@ -66,6 +67,7 @@ export type AnyInputElement = (
     SecretSelectInputElement |
     HtmlTemplateInputElement |
     StoragePathSelectorInputElement |
+    AssetSelectInputElement |
     UiDefinitionInputFieldElement |
     IdentityConfigElement |
     PaymentConfigElement |

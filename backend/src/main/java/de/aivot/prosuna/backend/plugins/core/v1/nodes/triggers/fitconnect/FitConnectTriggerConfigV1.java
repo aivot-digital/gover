@@ -4,7 +4,6 @@ import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.StoragePathSelectorInputElementValue;
 import de.aivot.prosuna.backend.enums.ElementType;
 import jakarta.annotation.Nullable;
 
@@ -72,14 +71,15 @@ public class FitConnectTriggerConfigV1 {
     public String subscriberClientSecret;
 
     /** Asset containing the private signing JWK used for organisation events. */
-    @InputElementPOJOBinding(id = PRIVATE_SIGNING_KEY_CONFIG_KEY, type = ElementType.StoragePathSelector, properties = {
+    @InputElementPOJOBinding(id = PRIVATE_SIGNING_KEY_CONFIG_KEY, type = ElementType.AssetSelectInput, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "Privater Signaturschlüssel"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Asset-Datei mit dem privaten Signatur-JWK der Organisation."),
+            @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Signaturschlüssel auswählen"),
+            @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine JWK-Datei ausgewählt"),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
-            @ElementPOJOBindingProperty(key = "allowReadOnlyStorageProviders", boolValue = true),
             @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
     })
-    public StoragePathSelectorInputElementValue privateSigningKey;
+    public String privateSigningKey;
 
     /** Private decryption JWKs; at least one entry is required and multiple entries support key rollover. */
     public List<PrivateDecryptionKeyConfig> privateDecryptionKeys = new LinkedList<>();
@@ -117,13 +117,14 @@ public class FitConnectTriggerConfigV1 {
 
         /** Asset containing a private decryption JWK; null is invalid for a persisted row. */
         @Nullable
-        @InputElementPOJOBinding(id = KEY_FILE_CONFIG_KEY, type = ElementType.StoragePathSelector, properties = {
+        @InputElementPOJOBinding(id = KEY_FILE_CONFIG_KEY, type = ElementType.AssetSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "JWK-Datei"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Asset-Datei mit einem privaten Entschlüsselungs-JWK."),
+                @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Entschlüsselungsschlüssel auswählen"),
+                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine JWK-Datei ausgewählt"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "allowReadOnlyStorageProviders", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
         })
-        public StoragePathSelectorInputElementValue keyFile;
+        public String keyFile;
     }
 }

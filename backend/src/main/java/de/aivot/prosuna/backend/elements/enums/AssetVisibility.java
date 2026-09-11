@@ -4,13 +4,14 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import de.aivot.prosuna.backend.lib.models.Identifiable;
 
-public enum StoragePathSelectorMode implements Identifiable<String> {
-    Folder("folder"),
-    File("file");
+public enum AssetVisibility implements Identifiable<String> {
+    All("all"),
+    Public("public"),
+    Private("private");
 
     private final String key;
 
-    StoragePathSelectorMode(String key) {
+    AssetVisibility(String key) {
         this.key = key;
     }
 
@@ -26,9 +27,9 @@ public enum StoragePathSelectorMode implements Identifiable<String> {
     }
 
     @JsonCreator
-    public static StoragePathSelectorMode fromKey(String key) {
+    public static AssetVisibility fromKey(String key) {
         if (key == null) {
-            return Folder;
+            return All;
         }
 
         for (var value : values()) {
@@ -37,6 +38,6 @@ public enum StoragePathSelectorMode implements Identifiable<String> {
             }
         }
 
-        throw new IllegalArgumentException("Unknown storage path selector mode: " + key);
+        throw new IllegalArgumentException("Unknown asset visibility: " + key);
     }
 }

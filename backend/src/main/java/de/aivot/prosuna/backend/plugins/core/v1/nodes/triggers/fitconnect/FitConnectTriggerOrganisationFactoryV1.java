@@ -3,10 +3,10 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.fitconnect;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyOperation;
 import com.nimbusds.jose.jwk.RSAKey;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.StoragePathSelectorInputElementValue;
+import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
+import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
-import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
 import dev.fitko.fitconnect.sdk.FitConnectSdk;
@@ -30,12 +30,12 @@ public class FitConnectTriggerOrganisationFactoryV1 {
     private static final Set<String> SUPPORTED_ENVIRONMENTS = Set.of("TEST", "STAGE", "PROD");
 
     private final SecretService secretService;
-    private final StorageService storageService;
+    private final AssetContentResolverService assetContentResolverService;
 
     public FitConnectTriggerOrganisationFactoryV1(SecretService secretService,
-                                                   StorageService storageService) {
+                                                   AssetContentResolverService assetContentResolverService) {
         this.secretService = secretService;
-        this.storageService = storageService;
+        this.assetContentResolverService = assetContentResolverService;
     }
 
     @Nonnull
@@ -225,22 +225,23 @@ public class FitConnectTriggerOrganisationFactoryV1 {
     }
 
     @Nonnull
-    private JWK resolveJwk(@Nullable StoragePathSelectorInputElementValue keyFile,
+    private JWK resolveJwk(@Nullable String assetKey,
                            @Nonnull String description) throws ResponseException {
-        if (keyFile == null || keyFile.getStorageProviderId() == null ||
-                StringUtils.toNullableTrimmedString(keyFile.getPath()) == null) {
-            throw ResponseException.internalServerError(description + " ist nicht konfiguriert.");
-        }
-
-        try (var content = storageService.getDocumentContent(keyFile.getStorageProviderId(), keyFile.getPath())) {
-            var jwk = JWK.parse(new String(content.readAllBytes(), StandardCharsets.UTF_8));
+        var resolvedAssetKey = requireValue(assetKey, description + " ist nicht konfiguriert.");
+        try {
+            var content = assetContentResolverService.resolveContent(
+                    resolvedAssetKey,
+                    AssetVisibility.Private,
+                    description
+            );
+            var jwk = JWK.parse(new String(content, StandardCharsets.UTF_8));
             if (!(jwk instanceof RSAKey) || !jwk.isPrivate()) {
                 throw ResponseException.internalServerError(description + " muss ein privater RSA-JWK sein.");
             }
             return jwk;
         } catch (ResponseException e) {
             throw e;
-        } catch (IOException | ParseException e) {
+        } catch (ParseException e) {
             throw ResponseException.internalServerError(description + " konnte nicht als JWK gelesen werden.", e);
         }
     }
@@ -256,13 +257,13 @@ public class FitConnectTriggerOrganisationFactoryV1 {
         }
     }
 
-    private void validateJwkReference(@Nullable StoragePathSelectorInputElementValue keyFile,
+    private void validateJwkReference(@Nullable String assetKey,
                                       @Nonnull String fieldId,
                                       @Nonnull String description,
                                       @Nonnull KeyOperation requiredOperation,
                                       @Nonnull List<ValidationIssue> issues) {
         try {
-            var jwk = resolveJwk(keyFile, description);
+            var jwk = resolveJwk(assetKey, description);
             if (jwk.getKeyOperations() == null || !jwk.getKeyOperations().contains(requiredOperation)) {
                 issues.add(new ValidationIssue(
                         fieldId,

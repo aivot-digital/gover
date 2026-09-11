@@ -7,10 +7,9 @@ import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/p
 import type {LinkButtonElement} from '../models/elements/form/content/link-button-element';
 import type {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
 import type {SecretSelectInputElement} from '../models/elements/form/input/secret-select-input-element';
-import {
-    type StoragePathSelectorInputElement,
-    StoragePathSelectorMode,
-} from '../models/elements/form/input/storage-path-selector-input-element';
+import {type StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
+import {type AssetSelectInputElement} from '../models/elements/form/input/asset-select-input-element';
+import {AssetVisibility} from '../modules/assets/models/asset-visibility';
 
 describe('generateElementWithDefaultValues', () => {
     it('should default text fields to not being copyable', () => {
@@ -66,10 +65,18 @@ describe('generateElementWithDefaultValues', () => {
         expect(element).not.toHaveProperty('options');
     });
 
-    it('should initialize storage path selectors in folder mode', () => {
+    it('should initialize storage path selectors for folders and destination paths', () => {
         const element = generateElementWithDefaultValues(ElementType.StoragePathSelector) as StoragePathSelectorInputElement;
 
-        expect(element.mode).toBe(StoragePathSelectorMode.Folder);
         expect(element.placeholder).toBe('Ordner auswählen');
+        expect(element).not.toHaveProperty('mode');
+    });
+
+    it('should initialize asset selections with a stable scalar reference', () => {
+        const element = generateElementWithDefaultValues(ElementType.AssetSelectInput) as AssetSelectInputElement;
+
+        expect(element.placeholder).toBe('Keine Datei ausgewählt');
+        expect(element.dialogTitle).toBe('Datei auswählen');
+        expect(element.assetVisibility).toBe(AssetVisibility.All);
     });
 });

@@ -91,6 +91,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.ProcessInstanceAttachmentSetSelect]: AttachFileOutlinedIcon,
     [ElementType.ProcessIdentityIdInput]: LocalOfferOutlinedIcon,
     [ElementType.SecretSelectInput]: KeyOutlinedIcon,
+    [ElementType.AssetSelectInput]: InsertDriveFileOutlinedIcon,
     [ElementType.HtmlTemplateInput]: DescriptionOutlinedIcon,
     [ElementType.StoragePathSelector]: FolderOutlinedIcon,
     [ElementType.ProcessAttachmentDisplay]: AttachFileOutlinedIcon,

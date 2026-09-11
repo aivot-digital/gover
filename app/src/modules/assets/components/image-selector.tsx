@@ -13,6 +13,7 @@ import {Permission} from '../../../data/permissions/permission';
 import {isApiError} from '../../../models/api-error';
 import {AssetSelectionField} from './asset-selection-field';
 import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
+import {AssetVisibility} from '../models/asset-visibility';
 
 interface ImageSelectorProps extends FormFieldLayoutProps {
     label: string;
@@ -224,7 +225,7 @@ export function ImageSelector(props: ImageSelectorProps) {
                     setShowSelectAssetDialog(false);
                 }}
                 onCancel={() => setShowSelectAssetDialog(false)}
-                mode="public"
+                visibility={AssetVisibility.Public}
                 mimetype="image"
             />
         </>

@@ -74,6 +74,7 @@ export const evaluators: {
     [ElementType.ProcessInstanceAttachmentSetSelect]: ChipInputEvaluator,
     [ElementType.ProcessIdentityIdInput]: SelectEvaluator,
     [ElementType.SecretSelectInput]: SelectEvaluator,
+    [ElementType.AssetSelectInput]: SelectEvaluator,
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputEvaluator,
     [ElementType.StoragePathSelector]: StoragePathSelectorInputEvaluator,
     [ElementType.ProcessAttachmentDisplay]: null,

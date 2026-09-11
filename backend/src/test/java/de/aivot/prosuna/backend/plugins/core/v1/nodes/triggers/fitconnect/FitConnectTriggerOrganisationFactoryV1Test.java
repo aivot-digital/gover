@@ -1,8 +1,8 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.fitconnect;
 
+import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
-import de.aivot.prosuna.backend.storage.services.StorageService;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,9 +17,9 @@ import static org.mockito.Mockito.when;
 
 class FitConnectTriggerOrganisationFactoryV1Test {
     private final SecretService secretService = mock(SecretService.class);
-    private final StorageService storageService = mock(StorageService.class);
+    private final AssetContentResolverService assetContentResolverService = mock(AssetContentResolverService.class);
     private final FitConnectTriggerOrganisationFactoryV1 factory =
-            new FitConnectTriggerOrganisationFactoryV1(secretService, storageService);
+            new FitConnectTriggerOrganisationFactoryV1(secretService, assetContentResolverService);
 
     @Test
     void missingPrivateKeysAreRejected() throws Exception {
@@ -35,7 +35,7 @@ class FitConnectTriggerOrganisationFactoryV1Test {
                 ),
                 issues.stream().map(FitConnectTriggerOrganisationFactoryV1.ValidationIssue::fieldId).toList()
         );
-        verifyNoInteractions(storageService);
+        verifyNoInteractions(assetContentResolverService);
     }
 
     @Test
@@ -47,7 +47,7 @@ class FitConnectTriggerOrganisationFactoryV1Test {
         assertTrue(issues.stream().anyMatch(
                 issue -> FitConnectTriggerConfigV1.PRIVATE_DECRYPTION_KEYS_CONFIG_KEY.equals(issue.fieldId())
         ));
-        verifyNoInteractions(storageService);
+        verifyNoInteractions(assetContentResolverService);
     }
 
     private FitConnectTriggerConfigV1 validConfig() throws Exception {

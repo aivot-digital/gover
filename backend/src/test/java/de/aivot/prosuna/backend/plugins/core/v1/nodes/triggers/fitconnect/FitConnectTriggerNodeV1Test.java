@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.fitconnect;
 
-import de.aivot.prosuna.backend.elements.models.elements.form.input.StoragePathSelectorInputElement;
+import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -67,12 +68,14 @@ class FitConnectTriggerNodeV1Test {
         assertTrue(layout.findChild(REMOVED_DESTINATION_TYPE_CONFIG_KEY).isEmpty());
 
         var privateSigningKey = layout
-                .findChild(FitConnectTriggerConfigV1.PRIVATE_SIGNING_KEY_CONFIG_KEY, StoragePathSelectorInputElement.class)
+                .findChild(FitConnectTriggerConfigV1.PRIVATE_SIGNING_KEY_CONFIG_KEY, AssetSelectInputElement.class)
                 .orElseThrow();
         var privateDecryptionKeys = layout
                 .findChild(FitConnectTriggerConfigV1.PRIVATE_DECRYPTION_KEYS_CONFIG_KEY, ReplicatingContainerLayoutElement.class)
                 .orElseThrow();
         assertTrue(privateSigningKey.getRequired());
+        assertEquals(List.of("application/json"), privateSigningKey.getAllowedMimeTypes());
+        assertEquals(AssetVisibility.Private, privateSigningKey.getAssetVisibility());
         assertTrue(privateDecryptionKeys.getRequired());
         assertNull(privateSigningKey.getVisibility());
         assertNull(privateDecryptionKeys.getVisibility());
