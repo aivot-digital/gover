@@ -13,6 +13,8 @@ import java.util.Objects;
 public class ProcessIdentityIdInputElement extends BaseInputElement<String> implements PrintableElement<String> {
     @Nullable
     private String placeholder;
+    @Nullable
+    private Boolean requiresCommunication;
 
     public ProcessIdentityIdInputElement() {
         super(ElementType.ProcessIdentityIdInput);
@@ -69,12 +71,13 @@ public class ProcessIdentityIdInputElement extends BaseInputElement<String> impl
         if (!super.equals(o)) return false;
 
         ProcessIdentityIdInputElement that = (ProcessIdentityIdInputElement) o;
-        return Objects.equals(placeholder, that.placeholder);
+        return Objects.equals(placeholder, that.placeholder) &&
+                Objects.equals(requiresCommunication, that.requiresCommunication);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), placeholder);
+        return Objects.hash(super.hashCode(), placeholder, requiresCommunication);
     }
 
     @Nullable
@@ -84,6 +87,16 @@ public class ProcessIdentityIdInputElement extends BaseInputElement<String> impl
 
     public ProcessIdentityIdInputElement setPlaceholder(@Nullable String placeholder) {
         this.placeholder = placeholder;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getRequiresCommunication() {
+        return requiresCommunication;
+    }
+
+    public ProcessIdentityIdInputElement setRequiresCommunication(@Nullable Boolean requiresCommunication) {
+        this.requiresCommunication = requiresCommunication;
         return this;
     }
 }

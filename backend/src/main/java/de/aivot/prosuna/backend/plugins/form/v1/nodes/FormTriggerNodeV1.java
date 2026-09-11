@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
@@ -267,6 +268,15 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                         identity.getId(),
                         identity.getTitle(),
                         identity.getDescription(),
+                        identity.getOptions() == null
+                                ? List.of()
+                                : identity.getOptions()
+                                        .stream()
+                                        .filter(Objects::nonNull)
+                                        .map(IdentityConfigElementOption::getIdentityProviderKey)
+                                        .filter(Objects::nonNull)
+                                        .distinct()
+                                        .toList(),
                         processNodeEntity
                 );
             }

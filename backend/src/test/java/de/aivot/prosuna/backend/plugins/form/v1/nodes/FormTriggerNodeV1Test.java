@@ -6,6 +6,8 @@ import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
@@ -188,6 +190,37 @@ class FormTriggerNodeV1Test {
         assertEquals("formNode", attachmentSet.dataKey());
         assertEquals("Formularzusammenfassung", attachmentSet.label());
         assertFalse(attachmentSet.isMultifile());
+    }
+
+    @Test
+    void getMetadata_ShouldForwardIdentityProviderKeys() {
+        var firstProviderKey = UUID.randomUUID();
+        var secondProviderKey = UUID.randomUUID();
+        var configuration = configuration("antrag-online", validFormLayout());
+        configuration.identities = List.of(new IdentityConfigElementSlot(
+                "applicant",
+                "Antragsteller:in",
+                null,
+                true,
+                false,
+                List.of(
+                        new IdentityConfigElementOption(firstProviderKey, List.of()),
+                        new IdentityConfigElementOption(firstProviderKey, List.of()),
+                        new IdentityConfigElementOption(secondProviderKey, List.of())
+                )
+        ));
+
+        var metadata = node.getMetadata(
+                processNode(),
+                configuration,
+                ProcessNodeDefinitionMetadata.empty()
+        );
+
+        assertEquals(1, metadata.forwardedIdentities().size());
+        assertEquals(
+                List.of(firstProviderKey, secondProviderKey),
+                metadata.forwardedIdentities().getFirst().identityProviderKeys()
+        );
     }
 
     @Test

@@ -596,12 +596,14 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
 
         /**
          * Logical process identity receiving the message. Options come from incoming node metadata;
-         * a null or blank value makes the node configuration invalid at execution time.
+         * a null or blank value makes the node configuration invalid at execution time. Every configured provider
+         * option must have a usable communication binding because the message is sent through the selected identity.
          */
         @InputElementPOJOBinding(id = IDENTITY_ID_FIELD_ID, type = ElementType.ProcessIdentityIdInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Identität"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Identität, an die die Nachricht über den bei der Anmeldung gewählten Kommunikationsweg gesendet wird."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "requiresCommunication", boolValue = true)
         })
         @Nullable
         public String identityId;

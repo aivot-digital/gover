@@ -3,4 +3,5 @@ import {type ElementType} from '../../../../data/element-type/element-type';
 
 export interface ProcessIdentityIdInputElement extends BaseInputElement<ElementType.ProcessIdentityIdInput> {
     placeholder: string | null | undefined;
+    requiresCommunication: boolean | null | undefined;
 }

@@ -989,12 +989,14 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
         /**
          * Logical process identity receiving the payment request. A missing identity or an identity that is not
-         * present in the process instance prevents initialization or dispatch.
+         * present in the process instance prevents initialization or dispatch. Every configured provider option
+         * must have a usable communication binding because the request is sent through the selected identity.
          */
         @InputElementPOJOBinding(id = RECIPIENT_IDENTITY_ID_FIELD_ID, type = ElementType.ProcessIdentityIdInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Empfängeridentität"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Identität, an die die Zahlungsaufforderung über den ausgewählten Kommunikationsweg gesendet wird."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "requiresCommunication", boolValue = true)
         })
         public String recipientIdentityId;
 

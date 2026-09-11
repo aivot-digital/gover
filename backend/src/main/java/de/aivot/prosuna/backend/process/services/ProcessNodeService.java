@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
@@ -55,6 +56,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     private final ProcessVersionRepository processDefinitionVersionRepository;
     private final ProcessEdgeRepository processEdgeRepository;
     private final ProsunaConfig prosunaConfig;
+    private final IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService;
 
     @Autowired
     public ProcessNodeService(ProcessNodeRepository processNodeRepository,
@@ -64,7 +66,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                               ProcessRepository processDefinitionRepository,
                               ProcessVersionRepository processDefinitionVersionRepository,
                               ProcessEdgeRepository processEdgeRepository,
-                              ProsunaConfig prosunaConfig) {
+                              ProsunaConfig prosunaConfig,
+                              IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService) {
         this.processNodeRepository = processNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
         this.elementDerivationService = elementDerivationService;
@@ -73,6 +76,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         this.processDefinitionVersionRepository = processDefinitionVersionRepository;
         this.processEdgeRepository = processEdgeRepository;
         this.prosunaConfig = prosunaConfig;
+        this.identityCommunicationAvailabilityService = identityCommunicationAvailabilityService;
     }
 
     @Nonnull
@@ -595,25 +599,66 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             return;
         }
 
-        var availableIdentityIds = incomingMetadata
+        var forwardedIdentitiesById = incomingMetadata
                 .forwardedIdentities()
                 .stream()
-                .map(ProcessNodeDefinitionMetadata.ForwardedIdentity::identityId)
-                .map(String::trim)
-                .filter(identityId -> !identityId.isEmpty())
-                .collect(Collectors.toSet());
+                .filter(identity -> StringUtils.isNotNullOrEmpty(identity.identityId()))
+                .collect(Collectors.groupingBy(
+                        identity -> identity.identityId().trim(),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
 
         for (var selection : selectionsByElement.entrySet()) {
-            if (availableIdentityIds.contains(selection.getValue())) {
+            var forwardedIdentities = forwardedIdentitiesById.get(selection.getValue());
+            if (forwardedIdentities == null) {
+                putProcessIdentityValidationError(
+                        derivedRuntimeElementData,
+                        selection.getKey(),
+                        "Die ausgewählte Prozessidentität " + StringUtils.quote(selection.getValue()) + " ist nicht mehr verfügbar."
+                );
                 continue;
             }
 
-            putProcessIdentityValidationError(
-                    derivedRuntimeElementData,
-                    selection.getKey(),
-                    "Die ausgewählte Prozessidentität " + StringUtils.quote(selection.getValue()) + " ist nicht mehr verfügbar."
-            );
+            if (!Boolean.TRUE.equals(selection.getKey().getRequiresCommunication())) {
+                continue;
+            }
+
+            var providerUsages = forwardedIdentities
+                    .stream()
+                    .flatMap(identity -> identity.identityProviderKeys()
+                            .stream()
+                            .map(providerKey -> new IdentityCommunicationAvailabilityService.IdentityProviderUsage(
+                                    providerKey,
+                                    resolveForwardedIdentityName(identity)
+                            )))
+                    .toList();
+            var communicationValidation = identityCommunicationAvailabilityService.validate(providerUsages);
+            if (!communicationValidation.successful()) {
+                putProcessIdentityValidationError(
+                        derivedRuntimeElementData,
+                        selection.getKey(),
+                        "Die Kommunikationsanbindungen konnten nicht überprüft werden."
+                );
+                continue;
+            }
+
+            for (var validationError : communicationValidation.errors()) {
+                putProcessIdentityValidationError(
+                        derivedRuntimeElementData,
+                        selection.getKey(),
+                        validationError
+                );
+            }
         }
+    }
+
+    @Nonnull
+    private static String resolveForwardedIdentityName(
+            @Nonnull ProcessNodeDefinitionMetadata.ForwardedIdentity identity
+    ) {
+        var label = StringUtils.toNullableTrimmedString(identity.label());
+        return label == null ? identity.identityId().trim() : label;
     }
 
     private static void putProcessIdentityValidationError(@Nonnull DerivedRuntimeElementData derivedRuntimeElementData,

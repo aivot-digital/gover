@@ -51,6 +51,7 @@ describe('generateElementWithDefaultValues', () => {
 
         expect(element.label).toBe('Prozessidentität');
         expect(element.placeholder).toBe('Prozessidentität auswählen');
+        expect(element.requiresCommunication).toBe(false);
         expect(element).not.toHaveProperty('minItems');
         expect(element).not.toHaveProperty('maxItems');
         expect(element).not.toHaveProperty('suggestions');

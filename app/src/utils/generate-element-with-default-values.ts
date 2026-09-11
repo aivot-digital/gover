@@ -517,6 +517,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.ProcessIdentityIdInput, id),
         label: 'Prozessidentität',
         placeholder: 'Prozessidentität auswählen',
+        requiresCommunication: false,
     }),
     [ElementType.SecretSelectInput]: (id) => ({
         ...makeInputBase(ElementType.SecretSelectInput, id),

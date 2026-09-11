@@ -76,6 +76,7 @@ import {ProcessTestClaimProcessInstancesDialog} from '../../dialogs/process-test
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
+import {includeNodeProblems} from '../../utils/include-node-problems';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectUser} from '../../../../slices/user-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
@@ -693,30 +694,14 @@ export function ProcessDetailsPage(): ReactNode {
                 const nodeProblems = problems.nodeProblems;
                 setProcessNodeProblems(nodeProblems);
 
-                const problemNodeIds = new Set(nodeProblems.map((problem) => problem.node.id));
-                const savedWithErrorsNodeIds = processFlow.nodes
-                    .filter((node) => node.savedWithErrors && problemNodeIds.has(node.id))
-                    .map((node) => node.id);
-
-                if (savedWithErrorsNodeIds.length === 0) {
+                if (nodeProblems.length === 0) {
                     return;
                 }
 
-                setShowProcessNodeProblemsForNodes((previousShownProblems) => {
-                    let hasChanged = false;
-                    const nextShownProblems = {
-                        ...previousShownProblems,
-                    };
-
-                    for (const nodeId of savedWithErrorsNodeIds) {
-                        if (nextShownProblems[nodeId] !== true) {
-                            nextShownProblems[nodeId] = true;
-                            hasChanged = true;
-                        }
-                    }
-
-                    return hasChanged ? nextShownProblems : previousShownProblems;
-                });
+                setShowProcessNodeProblemsForNodes((previousShownProblems) => includeNodeProblems(
+                    previousShownProblems,
+                    nodeProblems,
+                ));
             });
     }, [processId, processVersion, processFlow?.nodes, processFlow?.edges]);
 

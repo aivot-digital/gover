@@ -127,8 +127,10 @@ public record ProcessNodeDefinitionMetadata(
                                                               @Nullable
                                                               String subLabel,
                                                               @Nonnull
+                                                              List<UUID> identityProviderKeys,
+                                                              @Nonnull
                                                               ProcessNodeEntity origin) {
-        return addForwardedIdentity(new ForwardedIdentity(identityId, label, subLabel, origin));
+        return addForwardedIdentity(new ForwardedIdentity(identityId, label, subLabel, identityProviderKeys, origin));
     }
 
 
@@ -376,6 +378,8 @@ public record ProcessNodeDefinitionMetadata(
             String label,
             @Nullable
             String subLabel,
+            @Nonnull
+            List<UUID> identityProviderKeys,
             @Nonnull
             ProcessNodeEntity origin
     ) {
