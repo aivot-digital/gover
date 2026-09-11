@@ -225,20 +225,23 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
             @Nonnull CommunicationProviderContext<Config, IdentityBinding> context,
             @Nonnull IdentityData identityData
     ) {
-        if (resolveMappedEmail(context.identityProviderBindingConfiguration(), identityData) != null) {
-            return null;
-        }
-
+        var mappedEmail = resolveMappedEmail(context.identityProviderBindingConfiguration(), identityData);
         var email = new TextInputElement();
         email.setId(CUSTOMER_EMAIL_FIELD_ID);
         email.setLabel("E-Mail-Adresse");
-        email.setHint("An diese Adresse werden Nachrichten zu Ihrem Vorgang gesendet.");
         email.setAutocomplete("email");
         email.setRequired(true);
         email.setPattern(TextInputElementPattern.of(
                 EmailAddressUtils.EMAIL_PATTERN_VALUE,
                 "Bitte geben Sie eine gültige E-Mail-Adresse ein."
         ));
+        if (mappedEmail == null) {
+            email.setHint("An diese Adresse werden Nachrichten zu Ihrem Vorgang gesendet.");
+        } else {
+            email.setHint("Diese E-Mail-Adresse wurde aus Ihrem Nutzerkonto übernommen und kann hier nicht geändert werden.");
+            email.setDisabled(true);
+            email.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(mappedEmail)));
+        }
 
         var layout = new GroupLayoutElement();
         layout.setId("mail-customer-config");

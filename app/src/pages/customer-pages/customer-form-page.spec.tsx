@@ -380,7 +380,7 @@ describe('CustomerFormPage', () => {
         })).not.toBeInTheDocument();
 
         await user.click(screen.getByRole('radio', {name: /Postfach/}));
-        await waitFor(() => expect(derive).toHaveBeenCalledWith('applicant', 1, 20, {}));
+        await waitFor(() => expect(derive).toHaveBeenCalledWith('applicant', 1, 20, {}, ['ALL']));
         await waitFor(() => expect(continueButton).toBeEnabled());
         await user.click(continueButton);
 

@@ -252,6 +252,7 @@ describe('CustomerInstanceTaskView', () => {
             'applicant',
             20,
             {},
+            ['ALL'],
         ));
         await waitFor(() => expect(continueButton).toBeEnabled());
         await user.click(continueButton);

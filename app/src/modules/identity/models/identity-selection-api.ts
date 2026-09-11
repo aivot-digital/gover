@@ -24,5 +24,6 @@ export interface IdentitySelectionApi {
         identityId: string,
         bindingId: number,
         customerData: AuthoredElementValues,
+        skipErrorsForElementIds: string[],
     ) => Promise<IdentityCommunicationState>;
 }

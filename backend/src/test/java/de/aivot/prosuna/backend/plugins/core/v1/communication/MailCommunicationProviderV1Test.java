@@ -171,13 +171,19 @@ class MailCommunicationProviderV1Test {
     }
 
     @Test
-    void mappedEmailSkipsCustomerInput() {
+    void mappedEmailIsVisibleAndCannotBeChanged() {
         var bindingConfig = new MailCommunicationProviderV1.IdentityBinding();
         bindingConfig.emailAttribute = "mail";
         var context = context(bindingConfig);
-        var identity = identity(Map.of("mail", "customer@example.test"));
+        var identity = identity(Map.of("mail", "  customer@example.test  "));
 
-        assertNull(definition.getCustomerLayout(context, identity));
+        var layout = definition.getCustomerLayout(context, identity);
+        var email = layout.findChild(MailCommunicationProviderV1.CUSTOMER_EMAIL_FIELD_ID, TextInputElement.class)
+                .orElseThrow();
+
+        assertTrue(email.getDisabled());
+        assertEquals("customer@example.test", staticValue(email));
+        assertTrue(email.getHint().contains("Nutzerkonto"));
     }
 
     @Test
@@ -186,15 +192,51 @@ class MailCommunicationProviderV1Test {
         bindingConfig.emailAttribute = "mail";
         var context = context(bindingConfig);
 
-        assertNotNull(definition.getCustomerLayout(context, identity(Map.of())));
-        assertNotNull(definition.getCustomerLayout(context, identity(Map.of("mail", "invalid"))));
+        var missingEmail = definition.getCustomerLayout(context, identity(Map.of()))
+                .findChild(MailCommunicationProviderV1.CUSTOMER_EMAIL_FIELD_ID, TextInputElement.class)
+                .orElseThrow();
+        var invalidEmail = definition.getCustomerLayout(context, identity(Map.of("mail", "invalid")))
+                .findChild(MailCommunicationProviderV1.CUSTOMER_EMAIL_FIELD_ID, TextInputElement.class)
+                .orElseThrow();
+
+        assertFalse(Boolean.TRUE.equals(missingEmail.getDisabled()));
+        assertFalse(Boolean.TRUE.equals(invalidEmail.getDisabled()));
+        assertTrue(missingEmail.getRequired());
+        assertNull(missingEmail.getValue());
+        assertNull(invalidEmail.getValue());
     }
 
     @Test
     void attributeMappingIsOptional() {
         var bindingConfig = new MailCommunicationProviderV1.IdentityBinding();
 
-        assertNotNull(definition.getCustomerLayout(context(bindingConfig), identity(Map.of("email", "customer@example.test"))));
+        var email = definition.getCustomerLayout(context(bindingConfig), identity(Map.of("email", "customer@example.test")))
+                .findChild(MailCommunicationProviderV1.CUSTOMER_EMAIL_FIELD_ID, TextInputElement.class)
+                .orElseThrow();
+
+        assertFalse(Boolean.TRUE.equals(email.getDisabled()));
+        assertNull(email.getValue());
+    }
+
+    @Test
+    void missingMappedEmailUsesCustomerInputForSending() throws Exception {
+        var config = new MailCommunicationProviderV1.Config();
+        config.senderMode = MailCommunicationProviderV1.SENDER_MODE_DEFAULT;
+        var bindingConfig = new MailCommunicationProviderV1.IdentityBinding();
+        bindingConfig.emailAttribute = "mail";
+        var identity = identity(Map.of(), Map.of(
+                MailCommunicationProviderV1.CUSTOMER_EMAIL_FIELD_ID,
+                "  customer@example.test  "
+        ));
+        var message = message();
+
+        definition.sendMessage(context(config, bindingConfig), identity, message);
+
+        verify(mailService).sendMessage(
+                eq("customer@example.test"),
+                same(message),
+                eq(MailCommunicationSendOptions.defaults())
+        );
     }
 
     @Test
@@ -370,9 +412,13 @@ class MailCommunicationProviderV1Test {
     }
 
     private static IdentityData identity(Map<String, String> attributes) {
+        return identity(attributes, Map.of());
+    }
+
+    private static IdentityData identity(Map<String, String> attributes, Map<String, Object> communicationProviderData) {
         return new IdentityData(
                 "session", "applicant", IdentityType.IdentityProvider, UUID.randomUUID(), "metadata", "provider-user-123", null,
-                attributes, 1, Map.of()
+                attributes, 1, communicationProviderData
         );
     }
 }

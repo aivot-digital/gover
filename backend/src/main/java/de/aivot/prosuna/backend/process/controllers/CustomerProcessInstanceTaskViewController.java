@@ -18,6 +18,7 @@ import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.identity.dtos.EmailIdentityRequestDTO;
+import de.aivot.prosuna.backend.identity.dtos.IdentityCommunicationDerivationRequestDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentityCommunicationSelectionRequestDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentityProviderOptionResponseDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
@@ -330,7 +331,7 @@ public class CustomerProcessInstanceTaskViewController {
             @Nonnull @PathVariable String identityId,
             @RequestParam(required = false) Map<String, List<String>> queryParameters,
             @Nonnull @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME) String identitySessionId,
-            @Nonnull @Valid @RequestBody IdentityCommunicationSelectionRequestDTO request
+            @Nonnull @Valid @RequestBody IdentityCommunicationDerivationRequestDTO request
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(procAccess, taskAccess);
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
@@ -346,7 +347,8 @@ public class CustomerProcessInstanceTaskViewController {
                 identitySessionId,
                 taskViewData.node().getId(),
                 request.bindingId(),
-                request.customerData()
+                request.customerData(),
+                request.skipErrorsForElementIds()
         );
     }
 

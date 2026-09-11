@@ -114,8 +114,14 @@ export class FormTriggerApiService extends BaseApiService {
             selectCommunication: (identityId, bindingId, customerData) => (
                 this.selectCommunication(identityId, relatedProcessNodeId, bindingId, customerData)
             ),
-            deriveCommunication: (identityId, bindingId, customerData) => (
-                this.deriveCommunication(identityId, relatedProcessNodeId, bindingId, customerData)
+            deriveCommunication: (identityId, bindingId, customerData, skipErrorsForElementIds) => (
+                this.deriveCommunication(
+                    identityId,
+                    relatedProcessNodeId,
+                    bindingId,
+                    customerData,
+                    skipErrorsForElementIds,
+                )
             ),
         };
     }
@@ -197,10 +203,11 @@ export class FormTriggerApiService extends BaseApiService {
         relatedProcessNodeId: number,
         bindingId: number,
         customerData: AuthoredElementValues,
+        skipErrorsForElementIds: string[],
     ): Promise<IdentityCommunicationState> {
         return this.post(
             `/api/public/identity/${encodeURIComponent(identityId)}/communication/derive/`,
-            {bindingId, customerData},
+            {bindingId, customerData, skipErrorsForElementIds},
             {query: {relatedProcessNodeId}, skipAuthCheck: true},
         );
     }

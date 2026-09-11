@@ -58,6 +58,7 @@ interface ElementDerivationContextProps {
     disableVisibilities?: boolean;
     highlightedElementId?: string | null;
     taskViewMode?: TaskViewMode | null;
+    deriveOnMount?: boolean;
 }
 
 interface ElementDerivationContextType {
@@ -123,6 +124,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         disableVisibilities = false,
         highlightedElementId,
         taskViewMode = null,
+        deriveOnMount = true,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -202,6 +204,10 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     }, [computedErrors]);
 
     useEffect(() => {
+        if (!deriveOnMount) {
+            return;
+        }
+
         const controller = new AbortController();
         let isActive = true;
 
@@ -218,7 +224,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             isActive = false;
             controller.abort();
         };
-    }, [element, disableValidation, disableVisibilities, renderMode]);
+    }, [element, disableValidation, disableVisibilities, renderMode, deriveOnMount]);
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
         const normalizedNewData = normalizeReplicatingContainerValues(element, newData);

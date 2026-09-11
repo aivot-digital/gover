@@ -123,7 +123,7 @@ describe('FormIdentitySelectionControls', () => {
         const user = userEvent.setup();
 
         await user.click(screen.getByRole('radio', {name: /Postfach/}));
-        await waitFor(() => expect(deriveCommunication).toHaveBeenCalledWith('applicant', 20, {}));
+        await waitFor(() => expect(deriveCommunication).toHaveBeenCalledWith('applicant', 20, {}, ['ALL']));
         expect(selectCommunication).not.toHaveBeenCalled();
 
         await user.click(screen.getByRole('button', {name: 'Angaben zum Kommunikationsweg übernehmen'}));

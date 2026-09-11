@@ -9,6 +9,9 @@ import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefini
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderBindingRepository;
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderRepository;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
@@ -23,6 +26,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
@@ -171,5 +175,23 @@ class CommunicationServiceTest {
         verify(defaultMailCommunicationService).sendMessage("customer@example.test", message);
         verify(bindingRepository, never()).findById(any());
         verify(definition, never()).sendMessage(any(), any(), any());
+    }
+
+    @Test
+    void customerConfigurationCanSuppressDisplayedErrorsWithoutChangingReadiness() throws Exception {
+        var layout = new GroupLayoutElement();
+        layout.setId("customer-layout");
+        var editingData = DerivedRuntimeElementData.empty();
+        var validatedData = new DerivedRuntimeElementData().putError("email", "Die E-Mail-Adresse ist erforderlich.");
+        var options = new ElementDerivationOptions()
+                .setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS));
+        when(definition.getCustomerLayout(any(), eq(identity))).thenReturn(layout);
+        when(configurationService.deriveCustomerData(eq(layout), any(), eq(options))).thenReturn(editingData);
+        when(configurationService.deriveCustomerData(eq(layout), any())).thenReturn(validatedData);
+
+        var configuration = communicationService.getCustomerConfiguration(identity, options);
+
+        assertSame(editingData, configuration.derivedData());
+        assertFalse(configuration.ready());
     }
 }

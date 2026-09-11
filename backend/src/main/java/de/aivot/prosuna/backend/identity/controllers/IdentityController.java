@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.identity.controllers;
 
 import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
+import de.aivot.prosuna.backend.identity.dtos.IdentityCommunicationDerivationRequestDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentityCommunicationSelectionRequestDTO;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
@@ -160,14 +161,15 @@ public class IdentityController {
             @Nonnull @PathVariable String identityId,
             @Nonnull @RequestParam(name = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID) Integer relatedProcessNodeId,
             @Nonnull @CookieValue(name = IDENTITY_COOKIE_NAME) String identitySessionId,
-            @Nonnull @Valid @RequestBody IdentityCommunicationSelectionRequestDTO request
+            @Nonnull @Valid @RequestBody IdentityCommunicationDerivationRequestDTO request
     ) throws ResponseException {
         return identityCommunicationService.preview(
                 identitySessionId,
                 relatedProcessNodeId,
                 identityId,
                 request.bindingId(),
-                request.customerData()
+                request.customerData(),
+                request.skipErrorsForElementIds()
         );
     }
 

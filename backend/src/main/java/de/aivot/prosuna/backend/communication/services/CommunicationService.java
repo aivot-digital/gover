@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.communication.repositories.CommunicationProvider
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderRepository;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
@@ -102,8 +103,14 @@ public class CommunicationService {
 
     @Nonnull
     public CustomerConfiguration getCustomerConfiguration(@Nonnull IdentityData identityData) throws CommunicationException {
+        return getCustomerConfiguration(identityData, new ElementDerivationOptions());
+    }
+
+    @Nonnull
+    public CustomerConfiguration getCustomerConfiguration(@Nonnull IdentityData identityData,
+                                                          @Nonnull ElementDerivationOptions derivationOptions) throws CommunicationException {
         var resolved = resolveSelected(identityData);
-        return getCustomerConfigurationResolved(resolved, identityData);
+        return getCustomerConfigurationResolved(resolved, identityData, derivationOptions);
     }
 
     public boolean isCustomerConfigurationReady(@Nonnull IdentityData identityData) {
@@ -287,7 +294,8 @@ public class CommunicationService {
     @SuppressWarnings("unchecked")
     private <C, I> CustomerConfiguration getCustomerConfigurationResolved(
             @Nonnull ResolvedCommunicationProvider resolved,
-            @Nonnull IdentityData identityData
+            @Nonnull IdentityData identityData,
+            @Nonnull ElementDerivationOptions derivationOptions
     ) throws CommunicationException {
         var definition = (CommunicationProviderDefinition<C, I>) resolved.definition();
         var context = (CommunicationProviderContext<C, I>) resolved.context();
@@ -309,8 +317,13 @@ public class CommunicationService {
 
         var authoredValues = new AuthoredElementValues();
         authoredValues.putAll(identityData.communicationProviderData());
-        var derived = configurationService.deriveCustomerData(layout, authoredValues);
-        return new CustomerConfiguration(layout, derived, !derived.hasAnyError());
+        var derived = configurationService.deriveCustomerData(layout, authoredValues, derivationOptions);
+        var ready = !derived.hasAnyError();
+        // Editing derivations may suppress validation errors, but readiness always reflects full validation.
+        if (ready && !derivationOptions.getSkipErrorsForElementIds().isEmpty()) {
+            ready = !configurationService.deriveCustomerData(layout, authoredValues).hasAnyError();
+        }
+        return new CustomerConfiguration(layout, derived, ready);
     }
 
     public record CustomerConfiguration(

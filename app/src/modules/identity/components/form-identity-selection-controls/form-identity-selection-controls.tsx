@@ -68,6 +68,7 @@ export const FormIdentitySelectionControls = forwardRef<
         slot.communication?.derivedData ?? createDerivedRuntimeElementData(),
     );
     const [communicationChanged, setCommunicationChanged] = useState(false);
+    const [communicationValidationRevision, setCommunicationValidationRevision] = useState(0);
     const [busy, setBusy] = useState(false);
 
     useEffect(() => {
@@ -127,8 +128,8 @@ export const FormIdentitySelectionControls = forwardRef<
         }
     };
 
-    const previewCommunication = async (bindingId: number, values: AuthoredElementValues) => {
-        const state = await api.deriveCommunication(slot.id, bindingId, values);
+    const prepareCommunication = async (bindingId: number, values: AuthoredElementValues) => {
+        const state = await api.deriveCommunication(slot.id, bindingId, values, ['ALL']);
         setCommunication(state);
         setDerivedData(state.derivedData);
         return state;
@@ -140,9 +141,10 @@ export const FormIdentitySelectionControls = forwardRef<
         setCustomerData({});
         setDerivedData(createDerivedRuntimeElementData());
         setCommunicationChanged(true);
+        setCommunicationValidationRevision(0);
         setBusy(true);
         try {
-            await previewCommunication(bindingId, {});
+            await prepareCommunication(bindingId, {});
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Der Kommunikationsweg konnte nicht vorbereitet werden.'));
         } finally {
@@ -150,11 +152,20 @@ export const FormIdentitySelectionControls = forwardRef<
         }
     };
 
-    const handleCommunicationDerive = async (values: AuthoredElementValues) => {
+    const handleCommunicationDerive = async (
+        values: AuthoredElementValues,
+        skipErrorsForElementIds: string[],
+    ) => {
         if (selectedBindingId == null) {
             return createDerivedRuntimeElementData();
         }
-        const state = await previewCommunication(selectedBindingId, values);
+        const state = await api.deriveCommunication(
+            slot.id,
+            selectedBindingId,
+            values,
+            skipErrorsForElementIds,
+        );
+        // The layout is stable until the binding changes. Replacing it here would trigger another mount derivation.
         return state.derivedData;
     };
 
@@ -169,6 +180,9 @@ export const FormIdentitySelectionControls = forwardRef<
             setCommunication(state);
             setDerivedData(state.derivedData);
             setCommunicationChanged(false);
+            if (!state.ready) {
+                setCommunicationValidationRevision((current) => current + 1);
+            }
             replaceSlot({
                 ...slot,
                 identityType: 'IdentityProvider',
@@ -360,6 +374,7 @@ export const FormIdentitySelectionControls = forwardRef<
                         selectedBindingId != null &&
                         communication.customerLayout != null &&
                         <ElementDerivationContext
+                            key={`${selectedBindingId}-${communicationValidationRevision}`}
                             element={communication.customerLayout}
                             authoredElementValues={customerData}
                             derivedData={derivedData}
@@ -369,6 +384,7 @@ export const FormIdentitySelectionControls = forwardRef<
                             }}
                             onDerivedDataChange={setDerivedData}
                             onDeriveOverride={handleCommunicationDerive}
+                            deriveOnMount={false}
                         />
                     }
 

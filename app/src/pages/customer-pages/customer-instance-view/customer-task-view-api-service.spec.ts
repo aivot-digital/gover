@@ -81,9 +81,17 @@ describe('CustomerTaskViewApiService', () => {
         const post = vi.spyOn(BaseApiService.prototype, 'post').mockResolvedValue({ready: false});
         const api = new CustomerTaskViewApiService();
         const customerData = {field: 'value'};
+        const skipErrorsForElementIds = ['field'];
 
         await api.selectNewIdentityCommunication('instance', 'task', 'representative', 12, customerData);
-        await api.deriveNewIdentityCommunication('instance', 'task', 'representative', 12, customerData);
+        await api.deriveNewIdentityCommunication(
+            'instance',
+            'task',
+            'representative',
+            12,
+            customerData,
+            skipErrorsForElementIds,
+        );
 
         const options = {skipAuthCheck: true, doNotHandleStatusCodes: true};
         expect(put).toHaveBeenCalledWith(
@@ -93,7 +101,7 @@ describe('CustomerTaskViewApiService', () => {
         );
         expect(post).toHaveBeenCalledWith(
             '/api/public/processes/instance/tasks/task/identities/representative/communication/derive/',
-            {bindingId: 12, customerData},
+            {bindingId: 12, customerData, skipErrorsForElementIds},
             options,
         );
     });

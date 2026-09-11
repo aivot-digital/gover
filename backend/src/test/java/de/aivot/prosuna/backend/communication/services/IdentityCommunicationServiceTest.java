@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.communication.services;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
@@ -57,13 +58,13 @@ class IdentityCommunicationServiceTest {
         );
 
         assertTrue(exception.getMessage().contains("keine verwendbare Kommunikationsanbindung"));
-        verify(communicationService, never()).getCustomerConfiguration(any());
+        verify(communicationService, never()).getCustomerConfiguration(any(), any());
     }
 
     @Test
     void exactlyOneAvailableBindingIsSelectedAutomatically() throws Exception {
         when(communicationService.getAvailableBindings(any())).thenReturn(List.of(mail));
-        when(communicationService.getCustomerConfiguration(any())).thenReturn(
+        when(communicationService.getCustomerConfiguration(any(), any())).thenReturn(
                 new CommunicationService.CustomerConfiguration(null, DerivedRuntimeElementData.empty(), true)
         );
 
@@ -92,7 +93,7 @@ class IdentityCommunicationServiceTest {
     @Test
     void selectionPersistsBindingSpecificCustomerData() throws Exception {
         when(communicationService.getAvailableBindings(any())).thenReturn(List.of(mail, inbox));
-        when(communicationService.getCustomerConfiguration(any())).thenReturn(
+        when(communicationService.getCustomerConfiguration(any(), any())).thenReturn(
                 new CommunicationService.CustomerConfiguration(null, DerivedRuntimeElementData.empty(), true)
         );
         var customerData = new AuthoredElementValues();
@@ -108,17 +109,19 @@ class IdentityCommunicationServiceTest {
     @Test
     void previewDerivesBindingSpecificCustomerDataWithoutPersistingIt() throws Exception {
         when(communicationService.getAvailableBindings(any())).thenReturn(List.of(mail, inbox));
-        when(communicationService.getCustomerConfiguration(any())).thenAnswer(invocation -> {
+        when(communicationService.getCustomerConfiguration(any(), any())).thenAnswer(invocation -> {
             var identity = invocation.<de.aivot.prosuna.backend.identity.models.IdentityData>getArgument(0);
+            var options = invocation.<ElementDerivationOptions>getArgument(1);
             assertEquals(mail.getId(), identity.communicationProviderBindingId());
             assertEquals("customer@example.test", identity.communicationProviderData().get("email"));
             assertEquals("123", identity.uniqueIdFromIdentityProvider());
+            assertEquals(List.of(ElementDerivationOptions.ALL_ELEMENTS), options.getSkipErrorsForElementIds());
             return new CommunicationService.CustomerConfiguration(null, DerivedRuntimeElementData.empty(), true);
         });
         var customerData = new AuthoredElementValues();
         customerData.put("email", "customer@example.test");
 
-        var state = service.preview("session", 11, "applicant", mail.getId(), customerData);
+        var state = service.preview("session", 11, "applicant", mail.getId(), customerData, List.of("ALL"));
 
         assertTrue(state.ready());
         assertEquals(mail.getId(), state.selectedBindingId());

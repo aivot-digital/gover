@@ -228,7 +228,8 @@ public class IdentitySlotService {
             @Nonnull String identitySessionId,
             @Nonnull Integer relatedProcessNodeId,
             @Nonnull Integer bindingId,
-            @Nonnull AuthoredElementValues customerData
+            @Nonnull AuthoredElementValues customerData,
+            @Nonnull List<String> skipErrorsForElementIds
     ) throws ResponseException {
         requireConfiguredCachedProvider(slot, requestedIdentityId, identitySessionId, relatedProcessNodeId);
         return identityCommunicationService.preview(
@@ -236,7 +237,8 @@ public class IdentitySlotService {
                 relatedProcessNodeId,
                 requestedIdentityId,
                 bindingId,
-                customerData
+                customerData,
+                skipErrorsForElementIds
         );
     }
 

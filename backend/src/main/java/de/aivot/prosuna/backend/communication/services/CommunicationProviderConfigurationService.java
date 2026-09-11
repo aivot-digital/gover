@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefini
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
@@ -74,7 +75,14 @@ public class CommunicationProviderConfigurationService {
     @Nonnull
     public DerivedRuntimeElementData deriveCustomerData(@Nonnull BaseElement layout,
                                                         @Nonnull AuthoredElementValues values) {
-        return elementDerivationService.derive(new ElementDerivationRequest(layout, values));
+        return deriveCustomerData(layout, values, new ElementDerivationOptions());
+    }
+
+    @Nonnull
+    public DerivedRuntimeElementData deriveCustomerData(@Nonnull BaseElement layout,
+                                                        @Nonnull AuthoredElementValues values,
+                                                        @Nonnull ElementDerivationOptions options) {
+        return elementDerivationService.derive(new ElementDerivationRequest(layout, values, options));
     }
 
     @Nonnull

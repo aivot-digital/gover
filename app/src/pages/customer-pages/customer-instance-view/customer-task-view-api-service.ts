@@ -104,13 +104,14 @@ export class CustomerTaskViewApiService extends BaseApiService {
                     customerData,
                 )
             ),
-            deriveCommunication: (identityId, bindingId, customerData) => (
+            deriveCommunication: (identityId, bindingId, customerData, skipErrorsForElementIds) => (
                 this.deriveNewIdentityCommunication(
                     instanceAccessKey,
                     taskAccessKey,
                     identityId,
                     bindingId,
                     customerData,
+                    skipErrorsForElementIds,
                 )
             ),
         };
@@ -219,10 +220,11 @@ export class CustomerTaskViewApiService extends BaseApiService {
         identityId: string,
         bindingId: number,
         customerData: AuthoredElementValues,
+        skipErrorsForElementIds: string[],
     ): Promise<IdentityCommunicationState> {
         return this.post(
             `/api/public/processes/${encodeURIComponent(instanceAccessKey)}/tasks/${encodeURIComponent(taskAccessKey)}/identities/${encodeURIComponent(identityId)}/communication/derive/`,
-            {bindingId, customerData},
+            {bindingId, customerData, skipErrorsForElementIds},
             {skipAuthCheck: true, doNotHandleStatusCodes: true},
         );
     }

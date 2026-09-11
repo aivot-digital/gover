@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBind
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
@@ -60,7 +61,7 @@ public class IdentityCommunicationService {
         cacheEntity.setCommunicationProviderBindingId(bindingId);
         cacheEntity.setCommunicationProviderData(new HashMap<>(customerData));
         identityCacheRepository.save(cacheEntity);
-        return createState(IdentityData.from(cacheEntity), available);
+        return createState(IdentityData.from(cacheEntity), available, new ElementDerivationOptions());
     }
 
     /**
@@ -71,7 +72,8 @@ public class IdentityCommunicationService {
                                   @Nonnull Integer relatedProcessNodeId,
                                   @Nonnull String identityId,
                                   @Nonnull Integer bindingId,
-                                  @Nonnull AuthoredElementValues customerData) throws ResponseException {
+                                  @Nonnull AuthoredElementValues customerData,
+                                  @Nonnull List<String> skipErrorsForElementIds) throws ResponseException {
         var cacheEntity = getAuthenticatedIdentity(identitySessionId, relatedProcessNodeId, identityId);
         var identity = IdentityData.from(cacheEntity);
         List<CommunicationProviderBindingEntity> available;
@@ -97,7 +99,11 @@ public class IdentityCommunicationService {
                 bindingId,
                 new HashMap<>(customerData)
         );
-        return createState(previewIdentity, available);
+        return createState(
+                previewIdentity,
+                available,
+                new ElementDerivationOptions().setSkipErrorsForElementIds(skipErrorsForElementIds)
+        );
     }
 
     @Nonnull
@@ -123,12 +129,17 @@ public class IdentityCommunicationService {
             cacheEntity.setCommunicationProviderData(new HashMap<>());
             identityCacheRepository.save(cacheEntity);
         }
-        return createState(IdentityData.from(cacheEntity), available);
+        return createState(
+                IdentityData.from(cacheEntity),
+                available,
+                new ElementDerivationOptions().setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS))
+        );
     }
 
     @Nonnull
     private SelectionState createState(@Nonnull IdentityData identity,
-                                       @Nonnull List<CommunicationProviderBindingEntity> available) throws ResponseException {
+                                       @Nonnull List<CommunicationProviderBindingEntity> available,
+                                       @Nonnull ElementDerivationOptions derivationOptions) throws ResponseException {
         var selectedBindingId = identity.communicationProviderBindingId();
         var choices = available.stream().map(BindingChoice::from).toList();
         var customerData = new AuthoredElementValues();
@@ -142,7 +153,7 @@ public class IdentityCommunicationService {
 
         CommunicationService.CustomerConfiguration customerConfiguration = null;
         try {
-            customerConfiguration = communicationService.getCustomerConfiguration(identity);
+            customerConfiguration = communicationService.getCustomerConfiguration(identity, derivationOptions);
         } catch (CommunicationException e) {
             throw ResponseException.internalServerError("Fehler beim Abrufen der Konfiguration für den ausgewählten Kommunikationsanbieter.", e);
         }
