@@ -1,4 +1,4 @@
-import {act, render, screen} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {AssetPickerDialog} from './asset-picker-dialog';
 import {AssetVisibility} from '../../modules/assets/models/asset-visibility';
@@ -8,11 +8,13 @@ import {type StorageIndexItem} from '../../modules/storage/entities/storage-inde
 const {
     assetExplorerSpy,
     confirmSpy,
+    listStorageProvidersSpy,
     retrieveAssetSpy,
     updateAssetSpy,
 } = vi.hoisted(() => ({
     assetExplorerSpy: vi.fn(),
     confirmSpy: vi.fn(),
+    listStorageProvidersSpy: vi.fn(),
     retrieveAssetSpy: vi.fn(),
     updateAssetSpy: vi.fn(),
 }));
@@ -33,15 +35,7 @@ vi.mock('../../modules/permissions/hooks/use-permissions', () => ({
 }));
 vi.mock('../../modules/assets/assets-api-service', () => ({
     AssetsApiService: class {
-        listStorageProviders = vi.fn().mockResolvedValue([
-            {
-                id: 7,
-                name: 'Lokale Dokumente & Medien',
-                readOnlyStorage: false,
-                maxFileSizeInBytes: 10_000_000,
-                metadataAttributes: [],
-            },
-        ]);
+        listStorageProviders = listStorageProvidersSpy;
         retrieveInStorageProvider = retrieveAssetSpy;
         updateInStorageProvider = updateAssetSpy;
     },
@@ -57,6 +51,15 @@ describe('AssetPickerDialog', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         confirmSpy.mockResolvedValue(true);
+        listStorageProvidersSpy.mockResolvedValue([
+            {
+                id: 7,
+                name: 'Lokale Dokumente & Medien',
+                readOnlyStorage: false,
+                maxFileSizeInBytes: 10_000_000,
+                metadataAttributes: [],
+            },
+        ]);
     });
 
     it('renders provider and selection criteria with the shared field layout', async () => {
@@ -181,5 +184,25 @@ describe('AssetPickerDialog', () => {
             publishedAsset.storagePathFromRoot,
             publishedAsset.storageProviderId,
         );
+    });
+
+    it('reloads providers and remounts the asset explorer whenever it is reopened', async () => {
+        const props = {
+            title: 'Zertifikat auswählen',
+            mimeType: 'application/x-pkcs12',
+            onSelectAsset: vi.fn(),
+            onCancel: vi.fn(),
+        };
+        const {rerender} = render(<AssetPickerDialog {...props} show/>);
+
+        await waitFor(() => expect(listStorageProvidersSpy).toHaveBeenCalledOnce());
+        await screen.findByTestId('asset-explorer');
+        const explorerRenderCount = assetExplorerSpy.mock.calls.length;
+
+        rerender(<AssetPickerDialog {...props} show={false}/>);
+        rerender(<AssetPickerDialog {...props} show/>);
+
+        await waitFor(() => expect(listStorageProvidersSpy).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(assetExplorerSpy.mock.calls.length).toBeGreaterThan(explorerRenderCount));
     });
 });

@@ -99,5 +99,6 @@ describe('StorageProviderDetailsPageIndex', () => {
             'href',
             'https://docs.example.com/storage/test',
         );
+        expect(screen.queryByRole('button', {name: /Auswahllisten neu laden/})).not.toBeInTheDocument();
     });
 });

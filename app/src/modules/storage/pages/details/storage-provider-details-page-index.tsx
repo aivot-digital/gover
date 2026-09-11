@@ -123,8 +123,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     const navigate = useNavigate();
     const {registerSyncPreparationHandler} = useStorageProviderDetailsPageSyncContext();
     const canDeleteStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_DELETE);
-    const canCreateStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_CREATE);
-    const canUpdateStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
 
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
     const [derivedElementData, setDerivedElementData] = useState<DerivedRuntimeElementData | null>(null);
@@ -135,14 +133,11 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         item: originalStorageProvider,
         setItem: setOriginalStorageProvider,
         additionalData,
-        setAdditionalData,
         isBusy,
         setIsBusy,
         isEditable,
         isExistingItem,
     } = useGenericDetailsPageContext<StorageProviderEntity, StorageProviderAdditionalData>();
-    const refreshDefinitionsPermission = isExistingItem === true ? Permission.STORAGE_PROVIDER_UPDATE : Permission.STORAGE_PROVIDER_CREATE;
-    const canRefreshDefinitions = isExistingItem === true ? canUpdateStorageProvider : canCreateStorageProvider;
 
     // Extract the id of the storage provider for later usage.
     const {
@@ -366,27 +361,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         dispatch(showSuccessSnackbar('Der Speicheranbieter wurde erfolgreich gelöscht.'));
     };
 
-    const handleRefreshDefinitions = async () => {
-        if (!canRefreshDefinitions) {
-            return;
-        }
-
-        setIsBusy(true);
-        try {
-            const updatedDefinitions = await new StorageProvidersApiService().listDefinitions();
-            setAdditionalData({
-                ...additionalData,
-                definitions: updatedDefinitions,
-            });
-            dispatch(showSuccessSnackbar('Auswahllisten wurden erfolgreich neu geladen.'));
-        } catch (error) {
-            console.error('Fehler beim Aktualisieren der Auswahllisten', error);
-            dispatch(showErrorSnackbar('Fehler beim Aktualisieren der Auswahllisten.'));
-        } finally {
-            setIsBusy(false);
-        }
-    };
-
     const inputsDisabled = editedStorageProvider.systemProvider || isBusy || !isEditable;
     const editPermission = isExistingItem === true ? Permission.STORAGE_PROVIDER_UPDATE : Permission.STORAGE_PROVIDER_CREATE;
     const editDisabledTooltip = !isEditable
@@ -394,9 +368,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         : editedStorageProvider.systemProvider
             ? 'Systemanbieter können nicht bearbeitet werden.'
             : undefined;
-    const refreshDefinitionsTooltip = canRefreshDefinitions
-        ? 'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'
-        : formatMissingPermissionTooltip(refreshDefinitionsPermission);
     const defaultStorageDeleteDisabled = isDefaultAttachmentStorage || isDefaultAssetStorage;
     const deleteDisabledTooltip = !canDeleteStorageProvider
         ? formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_DELETE)
@@ -839,20 +810,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         Speichern
                     </Button>
                 </DisabledTooltip>
-
-                <Tooltip title={refreshDefinitionsTooltip} arrow>
-                    <Box component="span">
-                        <Button
-                            onClick={handleRefreshDefinitions}
-                            disabled={isBusy || !canRefreshDefinitions}
-                        >
-                            Auswahllisten neu laden <HelpIconOutlined
-                            fontSize="small"
-                            sx={{ml: 1}}
-                        />
-                        </Button>
-                    </Box>
-                </Tooltip>
 
                 {
                     editedStorageProvider.id !== 0 &&

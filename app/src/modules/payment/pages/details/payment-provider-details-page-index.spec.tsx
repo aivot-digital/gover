@@ -81,5 +81,6 @@ describe('PaymentProviderDetailsPageIndex', () => {
             'href',
             'https://docs.example.com/payment/test',
         );
+        expect(screen.queryByRole('button', {name: /Auswahllisten neu laden/})).not.toBeInTheDocument();
     });
 });
