@@ -15,13 +15,15 @@ const testState = vi.hoisted(() => ({
     dispatch: vi.fn(),
     setItem: vi.fn(),
     setIsBusy: vi.fn(),
+    confirm: vi.fn(async () => true),
+    isNewItem: true,
 }));
 
 vi.mock('../../../components/generic-details-page/generic-details-page-context', () => ({
     useGenericDetailsPageContext: () => ({
         item: testState.provider,
         setItem: testState.setItem,
-        isNewItem: true,
+        isNewItem: testState.isNewItem,
         additionalData: {
             definitions: [{
                 key: testState.provider.communicationProviderDefinitionKey,
@@ -46,7 +48,7 @@ vi.mock('../../../hooks/use-change-blocker-2', () => ({
 }));
 
 vi.mock('../../../providers/confirm-provider', () => ({
-    useConfirm: () => vi.fn(async () => true),
+    useConfirm: () => testState.confirm,
 }));
 
 vi.mock('../../permissions/hooks/use-permissions', () => ({
@@ -112,6 +114,7 @@ async function renderChangedProvider() {
 
 describe('CommunicationProviderDetailsPageIndex', () => {
     beforeEach(() => {
+        vi.restoreAllMocks();
         testState.provider = {
             id: 0,
             communicationProviderDefinitionKey: 'de.aivot.test.communication',
@@ -123,6 +126,7 @@ describe('CommunicationProviderDetailsPageIndex', () => {
             isTestProvider: false,
         };
         testState.layout = configLayout();
+        testState.isNewItem = true;
         testState.derivedData = {
             effectiveValues: {},
             elementStates: {},
@@ -130,7 +134,8 @@ describe('CommunicationProviderDetailsPageIndex', () => {
         testState.dispatch.mockReset();
         testState.setItem.mockReset();
         testState.setIsBusy.mockReset();
-        vi.restoreAllMocks();
+        testState.confirm.mockReset();
+        testState.confirm.mockResolvedValue(true);
     });
 
     it('marks a missing custom sender name and does not create the provider', async () => {
@@ -268,5 +273,53 @@ describe('CommunicationProviderDetailsPageIndex', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
 
         await waitFor(() => expect(createProvider).toHaveBeenCalledOnce());
+    });
+
+    it('requires the provider name before deleting an existing provider', async () => {
+        testState.provider.id = 17;
+        testState.isNewItem = false;
+        vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderConfigurationLayout')
+            .mockResolvedValue(testState.layout as any);
+        const deleteProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'deleteProvider')
+            .mockResolvedValue();
+
+        render(
+            <MemoryRouter>
+                <CommunicationProviderDetailsPageIndex/>
+            </MemoryRouter>,
+        );
+
+        await screen.findByTestId('configuration-layout');
+        fireEvent.click(screen.getByRole('button', {name: 'Löschen'}));
+
+        await waitFor(() => expect(testState.confirm).toHaveBeenCalledWith(expect.objectContaining({
+            title: 'Kommunikationsanbieter löschen',
+            confirmationText: 'Test provider',
+            confirmButtonText: 'Ja, endgültig löschen',
+            isDestructive: true,
+        })));
+        await waitFor(() => expect(deleteProvider).toHaveBeenCalledWith(17));
+    });
+
+    it('does not delete the provider when the confirmation is cancelled', async () => {
+        testState.provider.id = 17;
+        testState.isNewItem = false;
+        testState.confirm.mockResolvedValue(false);
+        vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderConfigurationLayout')
+            .mockResolvedValue(testState.layout as any);
+        const deleteProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'deleteProvider')
+            .mockResolvedValue();
+
+        render(
+            <MemoryRouter>
+                <CommunicationProviderDetailsPageIndex/>
+            </MemoryRouter>,
+        );
+
+        await screen.findByTestId('configuration-layout');
+        fireEvent.click(screen.getByRole('button', {name: 'Löschen'}));
+
+        await waitFor(() => expect(testState.confirm).toHaveBeenCalledOnce());
+        expect(deleteProvider).not.toHaveBeenCalled();
     });
 });

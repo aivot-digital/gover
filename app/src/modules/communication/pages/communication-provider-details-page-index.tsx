@@ -240,7 +240,8 @@ export function CommunicationProviderDetailsPageIndex() {
 
         const confirmed = await confirm({
             title: 'Kommunikationsanbieter löschen',
-            confirmButtonText: 'Endgültig löschen',
+            confirmationText: provider.name,
+            confirmButtonText: 'Ja, endgültig löschen',
             isDestructive: true,
             children: <Typography>Möchten Sie „{provider.name}“ endgültig löschen?</Typography>,
         });
