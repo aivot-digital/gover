@@ -82,7 +82,9 @@ export function ProcessInstanceIdentityList(props: ProcessInstanceIdentityListPr
     const [identityProvidersByKey, setIdentityProvidersByKey] = useState<Record<string, IdentityProviderListDTO>>({});
     const [communicationBindingsById, setCommunicationBindingsById] = useState<Record<number, CommunicationProviderBinding>>({});
     const [communicationProvidersById, setCommunicationProvidersById] = useState<Record<number, CommunicationProvider>>({});
-    const [isLoadingIdentityProviders, setIsLoadingIdentityProviders] = useState(false);
+    const [isLoadingIdentityProviders, setIsLoadingIdentityProviders] = useState(
+        props.canReadIdentityProviders && identityProviderKeys.length > 0,
+    );
     const [isLoadingCommunicationProviders, setIsLoadingCommunicationProviders] = useState(false);
 
     useEffect(() => {
@@ -222,11 +224,25 @@ interface IdentityItemProps {
     isLoadingCommunicationProviders: boolean;
 }
 
+interface IdentityAttributeRow {
+    key: string;
+    label: string;
+    value: string | undefined;
+}
+
 function IdentityItem(props: IdentityItemProps): React.JSX.Element {
     const identity = props.identity;
     const isEmailIdentity = identity.type === 'Email';
     const identityLabel = identity.identityId || 'Unbenannte Identität';
-    const attributes = Object.entries(identity.attributes ?? {}).sort(([left], [right]) => compareLabels(left, right));
+    const attributes: IdentityAttributeRow[] | undefined = isEmailIdentity ?
+        Object.entries(identity.attributes ?? {})
+            .sort(([left], [right]) => compareLabels(left, right))
+            .map(([key, value]) => ({key, label: key, value})) :
+        props.identityProvider?.attributes.map((attribute, index) => ({
+            key: `${attribute.keyInData}-${index}`,
+            label: attribute.label,
+            value: identity.attributes[attribute.keyInData],
+        }));
     const communicationProvider = props.communicationBinding == null
         ? null
         : props.communicationProvidersById[props.communicationBinding.communicationProviderId] ?? null;
@@ -308,37 +324,51 @@ function IdentityItem(props: IdentityItemProps): React.JSX.Element {
                 Attribute
             </Typography>
             {
-                attributes.length === 0 ?
-                    <UnavailableText>Keine Attribute vorhanden</UnavailableText> :
-                    <TableContainer
-                        sx={{
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            borderRadius: 1,
-                        }}
-                    >
-                        <Table
-                            size="small"
-                            aria-label={`Attribute der Identität ${identityLabel}`}
-                        >
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell sx={{fontWeight: 600}}>Attribut</TableCell>
-                                    <TableCell sx={{fontWeight: 600}}>Wert</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {
-                                    attributes.map(([key, value]) => (
-                                        <TableRow key={key}>
-                                            <TableCell sx={{overflowWrap: 'anywhere'}}>{key}</TableCell>
-                                            <TableCell sx={{overflowWrap: 'anywhere'}}>{value}</TableCell>
+                !isEmailIdentity && props.isLoadingIdentityProviders ?
+                    <Skeleton width={180}/> :
+                    attributes == null ?
+                        <UnavailableText>
+                            {
+                                props.canReadIdentityProviders ?
+                                    'Attributzuweisungen nicht verfügbar' :
+                                    'Attributzuweisungen mangels Berechtigung nicht verfügbar'
+                            }
+                        </UnavailableText> :
+                        attributes.length === 0 ?
+                            <UnavailableText>
+                                {isEmailIdentity ? 'Keine Attribute vorhanden' : 'Keine Attribute konfiguriert'}
+                            </UnavailableText> :
+                            <TableContainer
+                                sx={{
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    borderRadius: 1,
+                                }}
+                            >
+                                <Table
+                                    size="small"
+                                    aria-label={`Attribute der Identität ${identityLabel}`}
+                                >
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{fontWeight: 600}}>Attribut</TableCell>
+                                            <TableCell sx={{fontWeight: 600}}>Wert</TableCell>
                                         </TableRow>
-                                    ))
-                                }
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                                    </TableHead>
+                                    <TableBody>
+                                        {
+                                            attributes.map((attribute) => (
+                                                <TableRow key={attribute.key}>
+                                                    <TableCell sx={{overflowWrap: 'anywhere'}}>{attribute.label}</TableCell>
+                                                    <TableCell sx={{overflowWrap: 'anywhere'}}>
+                                                        {attribute.value ?? <i>Kein Wert übergeben</i>}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        }
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
             }
         </Box>
     );

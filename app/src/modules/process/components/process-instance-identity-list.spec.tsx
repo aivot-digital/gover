@@ -2,6 +2,7 @@ import {render, screen, waitFor, within} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {IdentityProvidersApiService} from '../../identity/identity-providers-api-service';
 import {IdentityProviderType} from '../../identity/enums/identity-provider-type';
+import {type IdentityAttributeMapping} from '../../identity/models/identity-attribute-mapping';
 import {type IdentityData, type IdentityDataMap} from '../../identity/models/identity-data';
 import {CommunicationProvidersApiService} from '../../communication/communication-providers-api-service';
 import {type CommunicationProvider, type CommunicationProviderBinding} from '../../communication/models';
@@ -19,13 +20,37 @@ const providerIdentity: IdentityData = {
     emailAddress: null,
     attributes: {
         family_name: 'Muster',
+        familyName: 'Duplicate family name',
         given_name: 'Erika',
+        givenName: 'Duplicate given name',
+        unmapped_claim: 'Unmapped value',
     },
     communicationProviderBindingId: 17,
     communicationProviderData: {
         mailbox: 'internal-mailbox-reference',
     },
 };
+
+const identityProviderAttributes: IdentityAttributeMapping[] = [
+    {
+        label: 'Nachname',
+        description: 'Familienname der Person',
+        keyInData: 'family_name',
+        displayAttribute: false,
+    },
+    {
+        label: 'Vorname',
+        description: 'Vorname der Person',
+        keyInData: 'given_name',
+        displayAttribute: false,
+    },
+    {
+        label: 'Geburtsdatum',
+        description: 'Geburtsdatum der Person',
+        keyInData: 'date_of_birth',
+        displayAttribute: false,
+    },
+];
 
 const emailIdentity: IdentityData = {
     sessionId: 'internal-email-session-id',
@@ -68,7 +93,7 @@ const communicationBinding: CommunicationProviderBinding = {
     },
 };
 
-function mockIdentityProviders() {
+function mockIdentityProviders(attributes: IdentityAttributeMapping[] = identityProviderAttributes) {
     return vi.spyOn(IdentityProvidersApiService.prototype, 'listAll').mockResolvedValue({
         content: [{
             key: identityProviderKey,
@@ -77,7 +102,7 @@ function mockIdentityProviders() {
             name: 'BundID Produktion',
             description: 'Interne Beschreibung des Nutzerkontenanbieters',
             iconAssetKey: null,
-            attributes: [],
+            attributes,
             isEnabled: true,
             isTestProvider: false,
         }],
@@ -130,8 +155,20 @@ describe('ProcessInstanceIdentityList', () => {
         expect(screen.queryByText('urn:bundid:metadata')).not.toBeInTheDocument();
         expect(screen.queryByText('17')).not.toBeInTheDocument();
         expect(screen.queryByText('8')).not.toBeInTheDocument();
-        expect(screen.getByText('family_name')).toBeInTheDocument();
+        expect(screen.getByText('Nachname')).toBeInTheDocument();
+        expect(screen.getByText('Vorname')).toBeInTheDocument();
+        expect(screen.getByText('Geburtsdatum')).toBeInTheDocument();
         expect(screen.getByText('Muster')).toBeInTheDocument();
+        expect(screen.getByText('Erika')).toBeInTheDocument();
+        expect(screen.getByText('Kein Wert übergeben')).toBeInTheDocument();
+
+        expect(screen.queryByText('family_name')).not.toBeInTheDocument();
+        expect(screen.queryByText('familyName')).not.toBeInTheDocument();
+        expect(screen.queryByText('Duplicate family name')).not.toBeInTheDocument();
+        expect(screen.queryByText('givenName')).not.toBeInTheDocument();
+        expect(screen.queryByText('Duplicate given name')).not.toBeInTheDocument();
+        expect(screen.queryByText('unmapped_claim')).not.toBeInTheDocument();
+        expect(screen.queryByText('Unmapped value')).not.toBeInTheDocument();
 
         expect(screen.queryByText('internal-session-id')).not.toBeInTheDocument();
         expect(screen.queryByText('internal-mailbox-reference')).not.toBeInTheDocument();
@@ -170,6 +207,8 @@ describe('ProcessInstanceIdentityList', () => {
         expect(screen.queryByText('17')).not.toBeInTheDocument();
         expect(screen.getAllByText('Name mangels Berechtigung nicht verfügbar').length).toBeGreaterThan(0);
         expect(screen.getByText('Über die Anbindung nicht auflösbar')).toBeInTheDocument();
+        expect(screen.getByText('Attributzuweisungen mangels Berechtigung nicht verfügbar')).toBeInTheDocument();
+        expect(screen.queryByText('Muster')).not.toBeInTheDocument();
         expect(listIdentityProviders).not.toHaveBeenCalled();
         expect(listProviders).not.toHaveBeenCalled();
         expect(listBindings).not.toHaveBeenCalled();
@@ -190,7 +229,20 @@ describe('ProcessInstanceIdentityList', () => {
         expect(screen.getByText('BundID Produktion')).toBeInTheDocument();
     });
 
-    it('sorts identities and attributes while deduplicating provider requests', async () => {
+    it('does not expose raw attributes when the identity-provider lookup fails', async () => {
+        vi.spyOn(IdentityProvidersApiService.prototype, 'listAll')
+            .mockRejectedValue(new Error('network'));
+        mockCommunicationProviders();
+
+        renderList({applicant: providerIdentity});
+
+        expect(await screen.findByText('Attributzuweisungen nicht verfügbar')).toBeInTheDocument();
+        expect(screen.queryByText('Muster')).not.toBeInTheDocument();
+        expect(screen.queryByText('Duplicate family name')).not.toBeInTheDocument();
+        expect(screen.queryByText('Unmapped value')).not.toBeInTheDocument();
+    });
+
+    it('sorts identities and preserves mapping order while deduplicating provider requests', async () => {
         const listIdentityProviders = mockIdentityProviders();
         const {listBindings} = mockCommunicationProviders();
         const secondIdentity: IdentityData = {
@@ -202,8 +254,8 @@ describe('ProcessInstanceIdentityList', () => {
             ...providerIdentity,
             identityId: 'alpha',
             attributes: {
-                zeta: 'last',
-                alpha: 'first',
+                given_name: 'First',
+                family_name: 'Last',
             },
         };
 
@@ -215,11 +267,22 @@ describe('ProcessInstanceIdentityList', () => {
         expect(within(cards[1]).getByRole('heading', {name: 'zeta'})).toBeInTheDocument();
 
         const attributeRows = within(cards[0]).getAllByRole('row');
-        expect(attributeRows[1]).toHaveTextContent('alphafirst');
-        expect(attributeRows[2]).toHaveTextContent('zetalast');
-        expect(within(cards[1]).getByText('Keine Attribute vorhanden')).toBeInTheDocument();
+        expect(attributeRows[1]).toHaveTextContent('NachnameLast');
+        expect(attributeRows[2]).toHaveTextContent('VornameFirst');
+        expect(attributeRows[3]).toHaveTextContent('GeburtsdatumKein Wert übergeben');
+        expect(within(cards[1]).getAllByText('Kein Wert übergeben')).toHaveLength(3);
         expect(listIdentityProviders).toHaveBeenCalledTimes(1);
         expect(listBindings).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows an empty configuration instead of raw provider attributes', async () => {
+        mockIdentityProviders([]);
+        mockCommunicationProviders();
+
+        renderList({applicant: providerIdentity});
+
+        expect(await screen.findByText('Keine Attribute konfiguriert')).toBeInTheDocument();
+        expect(screen.queryByText('Muster')).not.toBeInTheDocument();
     });
 
     it('renders nothing for an empty identity map', async () => {
