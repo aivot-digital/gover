@@ -91,6 +91,9 @@ describe('FormIdentitySelectionControls', () => {
         const {onChange} = renderControls(slot(), {setEmailIdentity, selectCommunication});
         const user = userEvent.setup();
 
+        expect(screen.getByText(
+            'Fahren Sie ohne Authentifizierung mit Ihrer E-Mail-Adresse fort. Diese wird ebenfalls zu Kommunikationszwecken verwendet.',
+        )).toBeInTheDocument();
         await user.type(screen.getByRole('textbox', {name: /E-Mail-Adresse/}), 'customer@example.test');
         await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
 
@@ -126,6 +129,9 @@ describe('FormIdentitySelectionControls', () => {
         }), {deriveCommunication, selectCommunication});
         const user = userEvent.setup();
 
+        expect(screen.getByText(
+            'Bitte wählen Sie einen der nachfolgend angebotenen Kommunikationswege aus. Sie werden ausschließlich über den ausgewählten Kommunikationsweg kontaktiert. Die Angaben werden nur für die Kommunikation im Rahmen dieses Vorgangs verwendet.',
+        )).toBeInTheDocument();
         await user.click(screen.getByRole('radio', {name: /Postfach/}));
         await waitFor(() => expect(deriveCommunication).toHaveBeenCalledWith('applicant', 20, {}, ['ALL']));
         expect(selectCommunication).not.toHaveBeenCalled();

@@ -279,7 +279,7 @@ public class IdentityService {
                 }
                 default -> {
                     throw ResponseException.internalServerError(
-                            "Die PKCE-Methode %s des Nutzerkontenanbieters %s (%s) wird nicht unterstützt.",
+                            "Die PKCE-Methode %s des Identitätsanbieters %s (%s) wird nicht unterstützt.",
                             provider.getPkceMethod(),
                             provider.getName(),
                             provider.getKey()
@@ -324,7 +324,7 @@ public class IdentityService {
 
         var provider = getIdentityProviderEntity(providerKey);
         if (!Objects.equals(identity.getProviderKey(), provider.getKey())) {
-            throw ResponseException.badRequest("Der Nutzerkontenanbieter gehört nicht zur Identitätssitzung.");
+            throw ResponseException.badRequest("Der Identitätsanbieter gehört nicht zur Identitätssitzung.");
         }
 
         var authToken = fetchAuthToken(
@@ -347,7 +347,7 @@ public class IdentityService {
         var uniqueIdFromIdentityProvider = userInfo.get(provider.getUniqueIdAttribute());
         if (uniqueIdFromIdentityProvider == null || uniqueIdFromIdentityProvider.isBlank()) {
             throw ResponseException.internalServerError(
-                    "Die Nutzerinformationen des Nutzerkontenanbieters %s (%s) enthalten für das konfigurierte eindeutige Attribut %s keinen Wert.",
+                    "Die Nutzerinformationen des Identitätsanbieters %s (%s) enthalten für die konfigurierte Identitätenkennung %s keinen Wert.",
                     provider.getName(),
                     provider.getKey(),
                     provider.getUniqueIdAttribute()
@@ -444,18 +444,18 @@ public class IdentityService {
         // Check if the provider key is null
         if (providerKey == null) {
             throw ResponseException
-                    .badRequest("Der Nutzerkontenanbieter ist nicht angegeben.");
+                    .badRequest("Der Identitätsanbieter ist nicht angegeben.");
         }
 
         // Retrieve provider or throw not found exception
         var provider = identityProviderService
                 .retrieve(providerKey)
-                .orElseThrow(() -> ResponseException.notFound("Der Nutzerkontenanbieter existiert nicht."));
+                .orElseThrow(() -> ResponseException.notFound("Der Identitätsanbieter existiert nicht."));
 
         // Check if the provider is enabled
         if (!Boolean.TRUE.equals(provider.getIsEnabled())) {
             throw ResponseException
-                    .badRequest("Der Nutzerkontenanbieter ist nicht aktiviert.");
+                    .badRequest("Der Identitätsanbieter ist nicht aktiviert.");
         }
 
         return provider;
@@ -674,7 +674,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verbindungsaufbau zum Nutzerkontenanbieter %s (%s) für den Zugriffsschlüssel",
+                            "Fehler beim Verbindungsaufbau zum Identitätsanbieter %s (%s) für den Zugriffsschlüssel",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -683,7 +683,7 @@ public class IdentityService {
         if (response.statusCode() != 200) {
             throw ResponseException
                     .internalServerError(
-                            "Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Nutzerkontenanbieter %s (%s): %d",
+                            "Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Identitätsanbieter %s (%s): %d",
                             provider.getName(),
                             provider.getKey(),
                             response.statusCode()
@@ -701,7 +701,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verarbeiten der Rückgabe des Zugriffsschlüssels des Nutzerkontenanbieters %s (%s)",
+                            "Fehler beim Verarbeiten der Rückgabe des Zugriffsschlüssels des Identitätsanbieters %s (%s)",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -745,7 +745,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verbindungsaufbau zum Nutzerkontenanbieter %s (%s) für die Nutzerinformationen",
+                            "Fehler beim Verbindungsaufbau zum Identitätsanbieter %s (%s) für die Nutzerinformationen",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -754,7 +754,7 @@ public class IdentityService {
         if (response.statusCode() != 200) {
             throw ResponseException
                     .internalServerError(
-                            "Ungültiger Status-Code beim Abrufen der Nutzerinformationen für Nutzerkontenanbieter %s (%s): %d",
+                            "Ungültiger Status-Code beim Abrufen der Nutzerinformationen für Identitätsanbieter %s (%s): %d",
                             provider.getName(),
                             provider.getKey(),
                             response.statusCode()
@@ -770,7 +770,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verarbeiten der Rückgabe der Nutzerinformationen des Nutzerkontenanbieters %s (%s)",
+                            "Fehler beim Verarbeiten der Rückgabe der Nutzerinformationen des Identitätsanbieters %s (%s)",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -833,7 +833,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verbindungsaufbau zum Nutzerkontenanbieter %s (%s) für den Logout",
+                            "Fehler beim Verbindungsaufbau zum Identitätsanbieter %s (%s) für den Logout",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -842,7 +842,7 @@ public class IdentityService {
         if (response.statusCode() >= 400) {
             throw ResponseException
                     .internalServerError(
-                            "Ungültiger Status-Code beim Logout für Nutzerkontenanbieter %s (%s): %d",
+                            "Ungültiger Status-Code beim Logout für Identitätsanbieter %s (%s): %d",
                             provider.getName(),
                             provider.getKey(),
                             response.statusCode()
@@ -870,7 +870,7 @@ public class IdentityService {
                 .retrieve(provider.getClientSecretKey())
                 .orElseThrow(() -> ResponseException
                         .internalServerError(
-                                "Das Geheimnis mit dem Schlüssel %s existiert nicht für den Nutzerkontenanbieter %s (%s)",
+                                "Das Geheimnis mit dem Schlüssel %s existiert nicht für den Identitätsanbieter %s (%s)",
                                 provider.getClientSecretKey(),
                                 provider.getName(),
                                 provider.getKey()
@@ -883,7 +883,7 @@ public class IdentityService {
         } catch (Exception e) {
             throw ResponseException
                     .internalServerError(
-                            "Das Geheimnis mit dem Schlüssel %s für den Nutzerkontenanbieter %s (%s) konnte nicht entschlüsselt werden",
+                            "Das Geheimnis mit dem Schlüssel %s für den Identitätsanbieter %s (%s) konnte nicht entschlüsselt werden",
                             provider.getClientSecretKey(),
                             provider.getName(),
                             provider.getKey()

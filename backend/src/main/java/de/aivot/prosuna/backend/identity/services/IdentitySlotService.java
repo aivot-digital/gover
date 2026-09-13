@@ -270,16 +270,16 @@ public class IdentitySlotService {
                 .filter(option -> Objects.equals(option.getIdentityProviderKey(), providerKey))
                 .findFirst()
                 .orElseThrow(() -> ResponseException.badRequest(
-                        "Der Nutzerkontenanbieter ist für diese Identität nicht konfiguriert."
+                        "Der Identitätsanbieter ist für diese Identität nicht konfiguriert."
                 ));
         var identityProvider = identityProviderService.retrieve(providerKey)
-                .orElseThrow(() -> ResponseException.notFound("Der Nutzerkontenanbieter existiert nicht."));
+                .orElseThrow(() -> ResponseException.notFound("Der Identitätsanbieter existiert nicht."));
         if (!Boolean.TRUE.equals(identityProvider.getIsEnabled())) {
-            throw ResponseException.badRequest("Der Nutzerkontenanbieter ist nicht aktiviert.");
+            throw ResponseException.badRequest("Der Identitätsanbieter ist nicht aktiviert.");
         }
         if (communicationService.getUsableBindings(identityProvider).isEmpty()) {
             throw ResponseException.conflict(
-                    "Für den Nutzerkontenanbieter ist keine verwendbare Kommunikationsanbindung konfiguriert."
+                    "Für den Identitätsanbieter ist keine verwendbare Kommunikationsanbindung konfiguriert."
             );
         }
         return new ConfiguredIdentityProvider(configuredOption);

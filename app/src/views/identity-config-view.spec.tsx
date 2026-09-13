@@ -103,7 +103,7 @@ describe('IdentityConfigView', () => {
         const list = container.querySelector('[data-dialog-list]');
         const item = container.querySelector('[data-dialog-list-item]');
         const title = screen.getByTitle('Antragstellende Person');
-        const subtitle = await screen.findByTitle('Verpflichtend · 2 Nutzerkontenanbieter');
+        const subtitle = await screen.findByTitle('Verpflichtend · 2 Identitätsanbieter');
 
         expect(getComputedStyle(list!).minHeight).toBe('52px');
         expect(getComputedStyle(list!).borderTopStyle).toBe('solid');

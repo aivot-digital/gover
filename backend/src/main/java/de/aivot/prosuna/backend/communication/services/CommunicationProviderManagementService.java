@@ -85,7 +85,7 @@ public class CommunicationProviderManagementService {
             throw ResponseException.conflict("Der Kommunikationsanbieter muss vor dem Löschen deaktiviert werden.");
         }
         if (!bindingRepository.findAllByCommunicationProviderId(id).isEmpty()) {
-            throw ResponseException.conflict("Der Kommunikationsanbieter ist noch mit mindestens einem Nutzerkontenanbieter verbunden.");
+            throw ResponseException.conflict("Der Kommunikationsanbieter ist noch mit mindestens einem Identitätsanbieter verbunden.");
         }
         providerRepository.delete(provider);
     }
@@ -178,7 +178,7 @@ public class CommunicationProviderManagementService {
         var identityProvider = getIdentityProvider(identityProviderKey);
         var definition = getDefinition(provider.getCommunicationProviderDefinitionKey(), provider.getCommunicationProviderDefinitionVersion());
         if (!definition.supportsIdentityProvider(identityProvider)) {
-            throw ResponseException.badRequest("Der Kommunikationsanbieter unterstützt diesen Nutzerkontenanbieter nicht.");
+            throw ResponseException.badRequest("Der Kommunikationsanbieter unterstützt diesen Identitätsanbieter nicht.");
         }
         return definition.getIdentityProviderBindingConfigLayout(identityProvider);
     }
@@ -206,7 +206,7 @@ public class CommunicationProviderManagementService {
                 provider.getCommunicationProviderDefinitionVersion()
         );
         if (!definition.supportsIdentityProvider(identityProvider)) {
-            throw ResponseException.badRequest("Der Kommunikationsanbieter unterstützt diesen Nutzerkontenanbieter nicht.");
+            throw ResponseException.badRequest("Der Kommunikationsanbieter unterstützt diesen Identitätsanbieter nicht.");
         }
         try {
             validateBindingConfigurationTyped(binding, identityProvider, definition);

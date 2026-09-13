@@ -18,57 +18,57 @@ import java.util.UUID;
 
 public record IdentityProviderRequestDTO(
         @Nonnull
-        @NotNull(message = "Der Identifikator für die Metadaten des Nutzerkontenanbieters ist erforderlich.")
-        @Size(min = 1, max = 64, message = "Der Identifikator für die Metadaten des Nutzerkontenanbieters muss zwischen 1 und 64 Zeichen lang sein.")
+        @NotNull(message = "Der Identifikator für die Metadaten des Identitätsanbieters ist erforderlich.")
+        @Size(min = 1, max = 64, message = "Der Identifikator für die Metadaten des Identitätsanbieters muss zwischen 1 und 64 Zeichen lang sein.")
         String metadataIdentifier,
         @Nonnull
-        @NotBlank(message = "Das Attribut für die eindeutige ID des Nutzerkontenanbieters ist erforderlich.")
-        @Size(max = 255, message = "Das Attribut für die eindeutige ID des Nutzerkontenanbieters darf maximal 255 Zeichen lang sein.")
+        @NotBlank(message = "Die Identitätenkennung des Identitätsanbieters ist erforderlich.")
+        @Size(max = 255, message = "Die Identitätenkennung des Identitätsanbieters darf maximal 255 Zeichen lang sein.")
         String uniqueIdAttribute,
         @Nonnull
-        @NotNull(message = "Der Name des Nutzerkontenanbieters ist erforderlich.")
-        @Size(min = 1, max = 64, message = "Der Name des Nutzerkontenanbieters muss zwischen 1 und 64 Zeichen lang sein.")
+        @NotNull(message = "Der Name des Identitätsanbieters ist erforderlich.")
+        @Size(min = 1, max = 64, message = "Der Name des Identitätsanbieters muss zwischen 1 und 64 Zeichen lang sein.")
         String name,
         @Nonnull
-        @NotNull(message = "Die Beschreibung des Nutzerkontenanbieters ist erforderlich.")
-        @Size(min = 1, max = 255, message = "Die Beschreibung des Nutzerkontenanbieters muss zwischen 1 und 255 Zeichen lang sein.")
+        @NotNull(message = "Die Beschreibung des Identitätsanbieters ist erforderlich.")
+        @Size(min = 1, max = 255, message = "Die Beschreibung des Identitätsanbieters muss zwischen 1 und 255 Zeichen lang sein.")
         String description,
         @Nullable
         UUID iconAssetKey,
         @Nonnull
-        @NotNull(message = "Der Autorisierungsendpunkt des Nutzerkontenanbieters ist erforderlich.")
-        @Size(min = 1, max = 255, message = "Der Autorisierungsendpunkt des Nutzerkontenanbieters muss zwischen 1 und 255 Zeichen lang sein.")
+        @NotNull(message = "Der Autorisierungsendpunkt des Identitätsanbieters ist erforderlich.")
+        @Size(min = 1, max = 255, message = "Der Autorisierungsendpunkt des Identitätsanbieters muss zwischen 1 und 255 Zeichen lang sein.")
         String authorizationEndpoint,
         @Nonnull
-        @NotNull(message = "Der Tokenendpunkt des Nutzerkontenanbieters ist erforderlich.")
-        @Size(min = 1, max = 255, message = "Der Tokenendpunkt des Nutzerkontenanbieters muss zwischen 1 und 255 Zeichen lang sein.")
+        @NotNull(message = "Der Tokenendpunkt des Identitätsanbieters ist erforderlich.")
+        @Size(min = 1, max = 255, message = "Der Tokenendpunkt des Identitätsanbieters muss zwischen 1 und 255 Zeichen lang sein.")
         String tokenEndpoint,
         @Nullable
-        @Size(min = 1, max = 255, message = "Der Benutzerinfoendpunkt des Nutzerkontenanbieters muss zwischen 1 und 255 Zeichen lang sein.")
+        @Size(min = 1, max = 255, message = "Der Benutzerinfoendpunkt des Identitätsanbieters muss zwischen 1 und 255 Zeichen lang sein.")
         String userinfoEndpoint,
         @Nullable
-        @Size(min = 1, max = 255, message = "Der End-Session-Endpunkt des Nutzerkontenanbieters muss zwischen 1 und 255 Zeichen lang sein.")
+        @Size(min = 1, max = 255, message = "Der End-Session-Endpunkt des Identitätsanbieters muss zwischen 1 und 255 Zeichen lang sein.")
         String endSessionEndpoint,
         @Nonnull
-        @NotNull(message = "Die Client-ID des Nutzerkontenanbieters ist erforderlich.")
-        @Size(min = 1, max = 128, message = "Die Client-ID des Nutzerkontenanbieters muss zwischen 1 und 32 Zeichen lang sein.")
+        @NotNull(message = "Die Client-ID des Identitätsanbieters ist erforderlich.")
+        @Size(min = 1, max = 128, message = "Die Client-ID des Identitätsanbieters muss zwischen 1 und 32 Zeichen lang sein.")
         String clientId,
         @Nullable
         UUID clientSecretKey,
         @Nonnull
-        @NotNull(message = "Die Attribute des Nutzerkontenanbieters sind erforderlich.")
+        @NotNull(message = "Die Attribute des Identitätsanbieters sind erforderlich.")
         List<IdentityAttributeMapping> attributes,
         @Nonnull
-        @NotNull(message = "Die Standard-Scopes des Nutzerkontenanbieters sind erforderlich.")
+        @NotNull(message = "Die Standard-Scopes des Identitätsanbieters sind erforderlich.")
         List<String> defaultScopes,
         @Nonnull
-        @NotNull(message = "Die zusätzlichen Parameter des Nutzerkontenanbieters sind erforderlich.")
+        @NotNull(message = "Die zusätzlichen Parameter des Identitätsanbieters sind erforderlich.")
         List<IdentityAdditionalParameter> additionalParams,
         @Nonnull
-        @NotNull(message = "Der Status des Nutzerkontenanbieters ist erforderlich.")
+        @NotNull(message = "Der Status des Identitätsanbieters ist erforderlich.")
         Boolean isEnabled,
         @Nonnull
-        @NotNull(message = "Der Teststatus des Nutzerkontenanbieters ist erforderlich.")
+        @NotNull(message = "Der Teststatus des Identitätsanbieters ist erforderlich.")
         Boolean isTestProvider,
         @Nullable
         String pkceMethod

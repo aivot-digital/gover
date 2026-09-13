@@ -208,11 +208,11 @@ public class CustomerTaskIdentityService {
         var provider = identityProviderService
                 .retrieve(requiredIdentity.providerKey())
                 .orElseThrow(() -> ResponseException.internalServerError(
-                        "Der Nutzerkontenanbieter der erforderlichen Identität ist nicht vorhanden."
+                        "Der Identitätsanbieter der erforderlichen Identität ist nicht vorhanden."
                 ));
         if (!Boolean.TRUE.equals(provider.getIsEnabled())) {
             throw ResponseException.internalServerError(
-                    "Der Nutzerkontenanbieter der erforderlichen Identität ist nicht aktiviert."
+                    "Der Identitätsanbieter der erforderlichen Identität ist nicht aktiviert."
             );
         }
 

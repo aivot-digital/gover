@@ -143,7 +143,7 @@ public class CommunicationService {
                 ));
         if (!Objects.equals(binding.getIdentityProviderKey(), identityData.providerKey())) {
             throw new CommunicationException(
-                    "Die Kommunikationsanbindung %s gehört nicht zum Nutzerkontenanbieter der Identität %s.",
+                    "Die Kommunikationsanbindung %s gehört nicht zum Identitätsanbieter der Identität %s.",
                     binding.getName(),
                     identityData.identityId()
             );
@@ -161,7 +161,7 @@ public class CommunicationService {
         }
         if (!Objects.equals(binding.getIdentityProviderKey(), identityProvider.getKey())) {
             throw new CommunicationException(
-                    "Die Kommunikationsanbindung %s gehört nicht zum Nutzerkontenanbieter %s.",
+                    "Die Kommunikationsanbindung %s gehört nicht zum Identitätsanbieter %s.",
                     binding.getName(),
                     identityProvider.getName()
             );
@@ -190,7 +190,7 @@ public class CommunicationService {
                 ));
         if (!definition.supportsIdentityProvider(identityProvider)) {
             throw new CommunicationException(
-                    "Der Kommunikationsanbieter %s unterstützt den Nutzerkontenanbieter %s nicht.",
+                    "Der Kommunikationsanbieter %s unterstützt den Identitätsanbieter %s nicht.",
                     provider.getName(),
                     identityProvider.getName()
             );
@@ -204,7 +204,7 @@ public class CommunicationService {
                                                         @Nonnull String identityId) throws CommunicationException {
         if (identityProviderKey == null) {
             throw new CommunicationException(
-                    "Für die Identität %s ist kein Nutzerkontenanbieter hinterlegt.",
+                    "Für die Identität %s ist kein Identitätsanbieter hinterlegt.",
                     identityId
             );
         }
@@ -212,14 +212,14 @@ public class CommunicationService {
             return identityProviderRepository
                     .findById(identityProviderKey)
                     .orElseThrow(() -> new CommunicationException(
-                            "Der Nutzerkontenanbieter der Identität %s existiert nicht.",
+                            "Der Identitätsanbieter der Identität %s existiert nicht.",
                             identityId
                     ));
         } catch (CommunicationException e) {
             throw e;
         } catch (RuntimeException e) {
             throw new CommunicationException(
-                    "Der Nutzerkontenanbieter der Identität %s konnte nicht geladen werden."
+                    "Der Identitätsanbieter der Identität %s konnte nicht geladen werden."
                             .formatted(identityId),
                     e
             );
@@ -228,7 +228,7 @@ public class CommunicationService {
 
     private static void requireIdentityProviderEnabled(@Nonnull IdentityProviderEntity identityProvider) throws CommunicationException {
         if (!Boolean.TRUE.equals(identityProvider.getIsEnabled())) {
-            throw new CommunicationException("Der Nutzerkontenanbieter %s ist deaktiviert.", identityProvider.getName());
+            throw new CommunicationException("Der Identitätsanbieter %s ist deaktiviert.", identityProvider.getName());
         }
     }
 

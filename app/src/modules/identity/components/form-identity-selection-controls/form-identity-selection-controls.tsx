@@ -331,9 +331,8 @@ export const FormIdentitySelectionControls = forwardRef<
                             Nur E-Mail-Adresse verwenden
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{mb: 1.5}}>
-                            Es wird kein Nutzerkonto und kein Kommunikationsanbieter verwendet. Nachrichten werden
-                            direkt an
-                            diese Adresse versendet.
+                            Fahren Sie ohne Authentifizierung mit Ihrer E-Mail-Adresse fort. Diese wird ebenfalls zu
+                            Kommunikationszwecken verwendet.
                         </Typography>
                         <Stack direction={{xs: 'column', sm: 'row'}} spacing={1} sx={{alignItems: {sm: 'flex-start'}}}>
                             <TextField
@@ -388,8 +387,9 @@ export const FormIdentitySelectionControls = forwardRef<
                     <Divider/>
 
                     <Typography>
-                        Um Nachrichten über dieses Nutzerkonto zu empfangen, wählen Sie bitte den gewünschten Kommunikationsweg aus und geben Sie die erforderlichen Angaben ein.
-                        Sie werden ausschließlich über den ausgewählten Kommunikationsweg kontaktiert. Die Angaben werden nur für die Kommunikation im Rahmen dieses Prozesses verwendet.
+                        Bitte wählen Sie einen der nachfolgend angebotenen Kommunikationswege aus. Sie werden
+                        ausschließlich über den ausgewählten Kommunikationsweg kontaktiert. Die Angaben werden nur für
+                        die Kommunikation im Rahmen dieses Vorgangs verwendet.
                     </Typography>
 
                     <FormControl>

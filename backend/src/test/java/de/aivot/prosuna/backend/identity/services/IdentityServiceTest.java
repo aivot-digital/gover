@@ -185,7 +185,7 @@ class IdentityServiceTest {
                 null, providerKey, VALID_IDENTITY_ID, VALID_ORIGIN, List.of(), 1
         ));
 
-        assertEquals("Der Nutzerkontenanbieter ist nicht aktiviert.", exception.getMessage());
+        assertEquals("Der Identitätsanbieter ist nicht aktiviert.", exception.getMessage());
     }
 
     @Test
@@ -194,7 +194,7 @@ class IdentityServiceTest {
                 identityService.createRedirectURL(null, null, VALID_IDENTITY_ID, VALID_HOSTNAME, null, null)
         );
 
-        assertEquals("Der Nutzerkontenanbieter ist nicht angegeben.", exception.getMessage());
+        assertEquals("Der Identitätsanbieter ist nicht angegeben.", exception.getMessage());
     }
 
     @Test
@@ -279,7 +279,7 @@ class IdentityServiceTest {
                 identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
         );
 
-        assertEquals("Der Nutzerkontenanbieter existiert nicht.", exception.getMessage());
+        assertEquals("Der Identitätsanbieter existiert nicht.", exception.getMessage());
     }
 
     @Test
@@ -412,7 +412,7 @@ class IdentityServiceTest {
             var exception = assertThrows(ResponseException.class, () ->
                     identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
             );
-            assertTrue(exception.getMessage().contains("eindeutige Attribut sub keinen Wert"));
+            assertTrue(exception.getMessage().contains("Identitätenkennung sub keinen Wert"));
         }
 
         assertNull(identity.getUniqueIdFromIdentityProvider());
@@ -448,7 +448,7 @@ class IdentityServiceTest {
                 identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
         );
 
-        assertEquals("Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Nutzerkontenanbieter null (" + providerKey + "): 400", exception.getMessage());
+        assertEquals("Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Identitätsanbieter null (" + providerKey + "): 400", exception.getMessage());
     }
 
     @Test

@@ -289,7 +289,7 @@ function IdentityItem(props: IdentityItemProps): React.JSX.Element {
 
             <Box component="dl" sx={{m: 0, mt: 0.5}}>
                 <DetailRow label="Typ">
-                    {isEmailIdentity ? 'E-Mail-Identität' : 'Nutzerkontenanbieter-Identität'}
+                    {isEmailIdentity ? 'E-Mail' : 'Nutzerkonto'}
                 </DetailRow>
                 {
                     isEmailIdentity &&
@@ -302,7 +302,7 @@ function IdentityItem(props: IdentityItemProps): React.JSX.Element {
             <Divider sx={{my: 1.5}}/>
 
             <Typography sx={{fontWeight: 600, mb: 0.5}}>
-                Nutzerkontenanbieter
+                Identitätsanbieter
             </Typography>
             {
                 isEmailIdentity ?

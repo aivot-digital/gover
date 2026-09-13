@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
 class IdentityConfigElementTest {
-    private static final String MISSING_OPTION_MESSAGE = "Für jede Identität muss mindestens ein Nutzerkontenanbieter oder die direkte E-Mail-Eingabe aktiviert werden.";
+    private static final String MISSING_OPTION_MESSAGE = "Für jede Identität muss mindestens ein Identitätsanbieter oder die direkte E-Mail-Eingabe aktiviert werden.";
 
     @Test
     void shouldRejectSlotWithoutSelectedOption() {

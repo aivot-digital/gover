@@ -251,7 +251,7 @@ describe('ProcessInstanceIdentityList', () => {
 
         renderList({contact: emailIdentity});
 
-        expect(screen.getByText('E-Mail-Identität')).toBeInTheDocument();
+        expect(screen.getByText('E-Mail')).toBeInTheDocument();
         expect(screen.getAllByText('person@example.org')).toHaveLength(2);
         expect(screen.getByText('Nicht zutreffend – direkte E-Mail-Identität')).toBeInTheDocument();
         expect(screen.getByText('Nicht zutreffend – direkter E-Mail-Versand')).toBeInTheDocument();

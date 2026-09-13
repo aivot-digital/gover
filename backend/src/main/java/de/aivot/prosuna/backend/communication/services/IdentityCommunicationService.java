@@ -172,7 +172,7 @@ public class IdentityCommunicationService {
             throws ResponseException {
         if (available.isEmpty()) {
             throw ResponseException.conflict(
-                    "Für den Nutzerkontenanbieter ist keine verwendbare Kommunikationsanbindung konfiguriert."
+                    "Für den Identitätsanbieter ist keine verwendbare Kommunikationsanbindung konfiguriert."
             );
         }
     }

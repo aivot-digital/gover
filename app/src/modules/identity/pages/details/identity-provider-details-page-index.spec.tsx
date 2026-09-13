@@ -1,4 +1,4 @@
-import {fireEvent, render, screen} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {
@@ -6,6 +6,7 @@ import {
     type GenericDetailsPageContextType,
 } from '../../../../components/generic-details-page/generic-details-page-context';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
+import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {type IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {formSchema, IdentityProviderDetailsPageIndex} from './identity-provider-details-page-index';
 
@@ -15,6 +16,7 @@ const testState = vi.hoisted(() => ({
     isEditable: true,
     provider: undefined as IdentityProviderDetailsDTO | undefined,
     handleFieldChange: vi.fn(),
+    handleInputPatch: vi.fn(),
 }));
 
 vi.mock('../../../../hooks/use-form-manager', () => ({
@@ -22,7 +24,7 @@ vi.mock('../../../../hooks/use-form-manager', () => ({
         currentItem: testState.provider,
         errors: {},
         hasNotChanged: true,
-        handleInputPatch: vi.fn(),
+        handleInputPatch: testState.handleInputPatch,
         handleInputBlur: () => vi.fn(),
         handleInputChange: (field: string) => (value: unknown) => testState.handleFieldChange(field, value),
         validate: vi.fn(() => true),
@@ -144,6 +146,7 @@ describe('IdentityProviderDetailsPageIndex', () => {
         testState.isEditable = true;
         testState.provider = createProvider();
         testState.handleFieldChange.mockReset();
+        testState.handleInputPatch.mockReset();
     });
 
     it('uses the dedicated secret selector and stores only its selected key', () => {
@@ -270,20 +273,41 @@ describe('IdentityProviderDetailsPageIndex', () => {
 
         await expect(formSchema.validate(provider)).resolves.toBeDefined();
         await expect(formSchema.validate({...provider, uniqueIdAttribute: ''})).rejects.toThrow(
-            'Das Attribut für die eindeutige ID ist ein Pflichtfeld.',
+            'Die Identitätenkennung ist ein Pflichtfeld.',
         );
         await expect(formSchema.validate({...provider, uniqueIdAttribute: 'email'})).rejects.toThrow(
-            'Das Attribut für die eindeutige ID muss in den Attributszuweisungen enthalten sein.',
+            'Die Identitätenkennung muss in den Attributszuweisungen enthalten sein.',
         );
+    });
+
+    it('keeps required fields required after loading OpenID metadata', async () => {
+        vi.spyOn(IdentityProvidersApiService.prototype, 'prepare').mockResolvedValue(createProvider());
+
+        renderPage(true);
+
+        fireEvent.change(screen.getByRole('textbox', {name: /Link zu OpenID Endpoint Konfiguration/}), {
+            target: {value: 'https://example.com/.well-known/openid-configuration'},
+        });
+        fireEvent.click(screen.getByRole('button', {name: 'Konfiguration laden'}));
+
+        await waitFor(() => expect(testState.handleInputPatch).toHaveBeenCalled());
+        for (const label of [
+            'Metadaten-Identifikator',
+            'Endpunkt zur Authorisierung',
+            'Endpunkt zum Erstellen des Tokens',
+            'Client ID',
+        ]) {
+            expect(screen.getByRole('textbox', {name: label})).toBeRequired();
+        }
     });
 });
 
-function renderPage() {
+function renderPage(isNewItem = false) {
     const context: GenericDetailsPageContextType<IdentityProviderDetailsDTO, void> = {
         item: testState.provider,
         setItem: vi.fn(),
-        isNewItem: false,
-        isExistingItem: true,
+        isNewItem,
+        isExistingItem: !isNewItem,
         setAdditionalData: vi.fn(),
         isBusy: testState.isBusy,
         setIsBusy: vi.fn(),

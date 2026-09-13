@@ -407,7 +407,7 @@ class IdentityProviderServiceTest {
         entity.setType(IdentityProviderType.BundId);
 
         ResponseException exception = assertThrows(ResponseException.class, () -> identityProviderService.performDelete(entity));
-        assertEquals("Der Nutzerkontenanbieter null (" + entity.getKey() + ") ist ein Systemanbieter und kann nicht gelöscht werden.", exception.getMessage());
+        assertEquals("Der Identitätsanbieter null (" + entity.getKey() + ") ist ein Systemanbieter und kann nicht gelöscht werden.", exception.getMessage());
         verify(identityProviderRepository, never()).delete(entity);
     }
 }

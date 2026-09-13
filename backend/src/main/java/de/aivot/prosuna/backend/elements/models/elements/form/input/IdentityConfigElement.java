@@ -80,7 +80,7 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
 
         for (var slot : value) {
             if (!hasAcquisitionMethod(slot)) {
-                validationErrors.add("Für jede Identität muss mindestens ein Nutzerkontenanbieter oder die direkte E-Mail-Eingabe aktiviert werden.");
+                validationErrors.add("Für jede Identität muss mindestens ein Identitätsanbieter oder die direkte E-Mail-Eingabe aktiviert werden.");
                 continue;
             }
 

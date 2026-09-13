@@ -234,7 +234,7 @@ function wrapIdentityConfigSlot(providers: IdentityProviderListDTO[]): DialogLis
 
 function getIdentityConfigSubtitle(item: IdentityConfigElementSlot, isReadonly: boolean): string {
     const optionCount = item.options?.length ?? 0;
-    const providerText = optionCount === 1 ? '1 Nutzerkontenanbieter' : `${optionCount} Nutzerkontenanbieter`;
+    const providerText = optionCount === 1 ? '1 Identitätsanbieter' : `${optionCount} Identitätsanbieter`;
 
     return [
         item.isOptional === true ? 'Optional' : 'Verpflichtend',
@@ -400,7 +400,7 @@ function IdentityConfigSlot(props: {
                     >
                         <CheckboxFieldComponent
                             label="E-Mail-Adresse zulassen"
-                            hint="Statt einer Anmeldung mittels Nutzerkontenanbieter kann lediglich eine E-Mail-Adresse angegeben werden. Nachrichten werden dann direkt per E-Mail versendet."
+                            hint="Statt einer Anmeldung über einen Identitätsanbieter kann lediglich eine E-Mail-Adresse angegeben werden. Nachrichten werden dann direkt per E-Mail versendet."
                             variant="switch"
                             value={item.allowsMail ?? false}
                             onChange={(val) => {
@@ -420,7 +420,7 @@ function IdentityConfigSlot(props: {
 
             <Box>
                 <ElementEditorSectionHeader
-                    title="Aktive Nutzerkontenanbieter"
+                    title="Aktive Identitätsanbieter"
                     variant={"h5"}
                     disableMarginTop
                 >
