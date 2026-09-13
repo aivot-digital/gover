@@ -59,8 +59,9 @@ export function CommunicationProvidersListPage() {
             tooltip: 'Hilfe anzeigen',
             content: (
                 <Typography variant="body1">
-                    Kommunikationsanbieter sind globale Versanddienste, die Nutzerkontenanbietern beliebig oft
-                    zugeordnet werden können.
+                    Kommunikationsanbieter verbinden Prosuna mit Versanddiensten wie E-Mail oder FIT-Connect. Sie
+                    versenden Nachrichten und – sofern unterstützt – Anhänge an Identitäten. Die technische
+                    Konfiguration wird anschließend passenden Identitätsanbietern als Kommunikationsweg zugeordnet.
                 </Typography>
             ),
         },

@@ -52,26 +52,26 @@ type PaymentProviderYupSchemaType = yup.ObjectSchema<PaymentProviderEditable>;
 export const BasePaymentProviderYupSchema: PaymentProviderYupSchemaType = yup.object({
     name: yup.string()
         .trim()
-        .min(3, 'Der Name des Zahlungsdienstleisters muss mindestens 3 Zeichen lang sein.')
-        .max(96, 'Der Name des Zahlungsdienstleisters darf maximal 96 Zeichen lang sein.')
-        .required('Der Name des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+        .min(3, 'Der Name des Zahlungsanbieters muss mindestens 3 Zeichen lang sein.')
+        .max(96, 'Der Name des Zahlungsanbieters darf maximal 96 Zeichen lang sein.')
+        .required('Der Name des Zahlungsanbieters ist ein Pflichtfeld.'),
     description: yup.string()
         .trim()
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
         .max(500, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
-        .required('Die Beschreibung des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+        .required('Die Beschreibung des Zahlungsanbieters ist ein Pflichtfeld.'),
     providerKey: yup.string()
         .trim()
-        .required('Der Anbieter des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+        .required('Der Zahlungsanbieter ist ein Pflichtfeld.'),
     providerVersion: yup.number()
-        .min(1, 'Die Version des Zahlungsdienstleisters muss mindestens 1 sein.')
-        .required('Die Version des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+        .min(1, 'Die Version des Zahlungsanbieters muss mindestens 1 sein.')
+        .required('Die Version des Zahlungsanbieters ist ein Pflichtfeld.'),
     isEnabled: yup.boolean()
         .default(false),
     isTestProvider: yup.boolean()
         .default(false),
     config: yup.object()
-        .required('Die Konfiguration des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+        .required('Die Konfiguration des Zahlungsanbieters ist ein Pflichtfeld.'),
 });
 
 export function PaymentProviderDetailsPageIndex() {
@@ -214,7 +214,7 @@ export function PaymentProviderDetailsPageIndex() {
                     setOriginalPaymentProvider(createdPaymentProvider);
                     resetFormManager();
 
-                    dispatch(showSuccessSnackbar('Neuer Zahlungsdienstleister erfolgreich angelegt.'));
+                    dispatch(showSuccessSnackbar('Neuer Zahlungsanbieter erfolgreich angelegt.'));
 
                     // use setTimeout instead of useEffect to prevent unnecessary rerender
                     setTimeout(() => {
@@ -234,12 +234,12 @@ export function PaymentProviderDetailsPageIndex() {
                     setOriginalPaymentProvider(updatedPaymentProvider);
                     resetFormManager();
 
-                    dispatch(showSuccessSnackbar('Änderungen am Zahlungsdienstleister erfolgreich gespeichert.'));
+                    dispatch(showSuccessSnackbar('Änderungen am Zahlungsanbieter erfolgreich gespeichert.'));
                 })
                 .catch(err => {
                     if (err.status === 409) {
                         handleInputChange('isEnabled')(true);
-                        dispatch(showApiErrorSnackbar(err, 'Es existieren noch veröffentlichte Formulare, die diesen Zahlungsdienstleister verwenden'));
+                        dispatch(showApiErrorSnackbar(err, 'Es existieren noch veröffentlichte Formulare, die diesen Zahlungsanbieter verwenden'));
                     } else {
                         dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                     }
@@ -309,10 +309,10 @@ export function PaymentProviderDetailsPageIndex() {
                 navigate('/payment-providers', {
                     replace: true,
                 });
-                dispatch(showSuccessSnackbar('Der Zahlungsdienstleister wurde erfolgreich gelöscht.'));
+                dispatch(showSuccessSnackbar('Der Zahlungsanbieter wurde erfolgreich gelöscht.'));
             })
             .catch(err => {
-                dispatch(showApiErrorSnackbar(err, 'Beim Löschen des Zahlungsdienstleisters ist ein Fehler aufgetreten.'));
+                dispatch(showApiErrorSnackbar(err, 'Beim Löschen des Zahlungsanbieters ist ein Fehler aufgetreten.'));
                 setIsBusy(false);
             });
     };
@@ -322,15 +322,15 @@ export function PaymentProviderDetailsPageIndex() {
         if (newValue === false) {
             const confirmed = await showConfirm({
                 title: 'Deaktivierung bestätigen',
-                confirmButtonText: 'Ja, Zahlungsdienstleister deaktivieren',
+                confirmButtonText: 'Ja, Zahlungsanbieter deaktivieren',
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Wenn Sie den Zahlungsdienstleister deaktivieren, wird der Zahlungsdienstleister automatisch
+                            Wenn Sie den Zahlungsanbieter deaktivieren, wird der Zahlungsanbieter automatisch
                             aus Formularen mit dem Status "In Bearbeitung" entfernt.
                         </Typography>
                         <Typography gutterBottom>
-                            Bitte beachten Sie, dass Sie den Zahlungsdienstleister speichern müssen, um diese Änderung
+                            Bitte beachten Sie, dass Sie den Zahlungsanbieter speichern müssen, um diese Änderung
                             zu übernehmen.
                         </Typography>
                     </>
@@ -360,7 +360,7 @@ export function PaymentProviderDetailsPageIndex() {
                     {
                         isNewPaymentProvider ?
                             <SelectFieldComponent
-                                label="Zahlungsdienstleister"
+                                label="Zahlungsanbieter"
                                 required
                                 value={editedPaymentProvider.providerKey}
                                 onChange={(value) => {
@@ -380,10 +380,10 @@ export function PaymentProviderDetailsPageIndex() {
                                 }))}
                                 disabled={isBusy || !isEditable}
                                 error={errors.providerKey}
-                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsanbieters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
                             /> :
                             <SelectFieldComponent
-                                label="Zahlungsdienstleister"
+                                label="Zahlungsanbieter"
                                 required
                                 value={editedPaymentProvider.providerKey}
                                 onChange={handleInputChange('providerKey')}
@@ -394,7 +394,7 @@ export function PaymentProviderDetailsPageIndex() {
                                 }))}
                                 disabled={true}
                                 error={errors.providerKey}
-                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsanbieters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
                             />
                     }
                 </Grid>
@@ -450,7 +450,7 @@ export function PaymentProviderDetailsPageIndex() {
                 onBlur={handleInputBlur('name')}
                 disabled={isBusy || !isEditable}
                 error={errors.name}
-                hint="Dient der internen Identifizierung des Zahlungsdienstleisters."
+                hint="Dient der internen Identifizierung des Zahlungsanbieters."
             />
 
             <TextFieldComponent
@@ -462,7 +462,7 @@ export function PaymentProviderDetailsPageIndex() {
                 multiline={true}
                 disabled={isBusy || !isEditable}
                 error={errors.description}
-                hint="Interne Beschreibung des Zahlungsdienstleisters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
+                hint="Interne Beschreibung des Zahlungsanbieters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
             />
 
             {
@@ -480,12 +480,12 @@ export function PaymentProviderDetailsPageIndex() {
             }
 
             <CheckboxFieldComponent
-                label="Aktiv (kann in konfigurierten Formularen genutzt werden)"
+                label="Aktiv"
                 value={editedPaymentProvider.isEnabled}
                 onChange={handleStatusChange}
                 variant="switch"
                 error={errors.isEnabled}
-                hint="Gibt an, ob diese Konfiguration aktiviert ist. Bei temporären technischen Problemen o.Ä. kann der Dienstleister deaktiviert werden, ohne die Konfiguration zu verlieren."
+                hint="Gibt an, ob diese Konfiguration aktiviert ist. Bei temporären technischen Problemen o. Ä. kann der Zahlungsanbieter deaktiviert werden, ohne die Konfiguration zu verlieren."
                 disabled={isBusy || !isEditable}
             />
 
@@ -544,7 +544,7 @@ export function PaymentProviderDetailsPageIndex() {
                 {
                     !isNewPaymentProvider &&
                     originalPaymentProvider.isEnabled &&
-                    <Tooltip title="Zum Löschen muss der Zahlungsdienstleister zuerst deaktiviert und gespeichert werden.">
+                    <Tooltip title="Zum Löschen muss der Zahlungsanbieter zuerst deaktiviert und gespeichert werden.">
                         <Box sx={{ml: 'auto'}}>
                             <Button
                                 variant="outlined"
@@ -562,7 +562,7 @@ export function PaymentProviderDetailsPageIndex() {
             {changeBlocker.dialog}
 
             <ConfirmDialog
-                title="Zahlungsdienstleister löschen"
+                title="Zahlungsanbieter löschen"
                 onCancel={() => setShowConfirmDialog(false)}
                 onConfirm={showConfirmDialog ? handleDelete : undefined}
                 confirmationText={editedPaymentProvider.name}
@@ -570,7 +570,7 @@ export function PaymentProviderDetailsPageIndex() {
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Möchten Sie diesen Zahlungsdienstleister wirklich löschen? Diese Aktion kann nicht rückgängig
+                    Möchten Sie diesen Zahlungsanbieter wirklich löschen? Diese Aktion kann nicht rückgängig
                     gemacht werden.
                 </Typography>
 
@@ -589,7 +589,7 @@ export function PaymentProviderDetailsPageIndex() {
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
-                message="Dieser Zahlungsdienstleister kann nicht gelöscht werden, da er noch in Formularen verwendet wird."
+                message="Dieser Zahlungsanbieter kann nicht gelöscht werden, da er noch in Formularen verwendet wird."
                 solutionText="Bitte ändern Sie die Einstellungen für Online-Zahlungen dieser Formulare und versuchen Sie es erneut:"
                 links={relatedEntities ?? undefined}
             />

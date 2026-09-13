@@ -43,7 +43,7 @@ describe('CommunicationProviderDetailsPage', () => {
         ));
 
         expect(identityProvidersTab).toMatchObject({
-            label: 'Verknüpfte Nutzerkontenanbieter',
+            label: 'Verknüpfte Identitätsanbieter',
             onlyExisting: true,
             requiredPermission: Permission.IDENTITY_PROVIDER_READ,
         });

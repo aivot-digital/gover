@@ -34,7 +34,7 @@ const communicationProviderSchema = yup.object({
     id: yup.number().required(),
     communicationProviderDefinitionKey: yup.string()
         .trim()
-        .required('Die Definition ist ein Pflichtfeld.'),
+        .required('Der Kommunikationsanbieter ist ein Pflichtfeld.'),
     communicationProviderDefinitionVersion: yup.number()
         .min(1, 'Die Version muss mindestens 1 sein.')
         .required('Die Version ist ein Pflichtfeld.'),
@@ -259,9 +259,10 @@ export function CommunicationProviderDetailsPageIndex() {
     return (
         <Box>
             <Grid container spacing={2}>
-                <Grid size={{xs: 12, md: 8}}>
+                <Grid size={{xs: 12, md: 6}}>
                     <SelectFieldComponent
-                        label="Definition"
+                        label="Kommunikationsanbieter"
+                        hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Kommunikationsanbieters eingeblendet wird. Diese Einstellung kann nach dem initialen Speichern nicht mehr geändert werden."
                         required
                         value={provider.communicationProviderDefinitionKey || undefined}
                         options={definitionOptions}
@@ -277,9 +278,10 @@ export function CommunicationProviderDetailsPageIndex() {
                         error={errors.communicationProviderDefinitionKey}
                     />
                 </Grid>
-                <Grid size={{xs: 12, md: 4}}>
+                <Grid size={{xs: 12, md: 6}}>
                     <SelectFieldComponent
                         label="Version"
+                        hint="Bestimmt, welche Version der Konfigurationsoberfläche und Einstellungsmöglichkeiten angezeigt werden."
                         required
                         value={provider.communicationProviderDefinitionVersion > 0
                             ? String(provider.communicationProviderDefinitionVersion)
@@ -302,6 +304,7 @@ export function CommunicationProviderDetailsPageIndex() {
 
             <TextFieldComponent
                 label="Name"
+                hint="Dient der Identifizierung des Kommunikationsanbieters. Sichtbar nur für Mitarbeiter:innen."
                 required
                 value={provider.name}
                 onChange={handleInputChange('name')}
@@ -312,6 +315,7 @@ export function CommunicationProviderDetailsPageIndex() {
             />
             <TextFieldComponent
                 label="Interne Beschreibung"
+                hint="Interne Beschreibung des Kommunikationsanbieters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
                 required
                 multiline
                 value={provider.description}
@@ -337,7 +341,7 @@ export function CommunicationProviderDetailsPageIndex() {
 
             <CheckboxFieldComponent
                 label="Aktiv"
-                hint="Nur aktive Anbieter stehen in aktiven Kommunikationsanbindungen zur Verfügung."
+                hint="Gibt an, ob diese Konfiguration aktiviert ist. Bei temporären technischen Problemen o. Ä. kann der Kommunikationsanbieter deaktiviert werden, ohne die Konfiguration zu verlieren."
                 variant="switch"
                 value={provider.isEnabled}
                 onChange={handleInputChange('isEnabled')}
@@ -345,8 +349,8 @@ export function CommunicationProviderDetailsPageIndex() {
                 error={errors.isEnabled}
             />
             <CheckboxFieldComponent
-                label="Vorproduktive Konfiguration"
-                hint="Kennzeichnet diese Konfiguration als vorproduktiv."
+                label="Es handelt sich um eine vorproduktive Konfiguration"
+                hint="Gibt an, ob diese Konfiguration für eine Testinstanz bestimmt ist. Das System verhindert den Einsatz von Testkonfigurationen in der Live-Umgebung, um Fehlkonfigurationen zu vermeiden."
                 variant="switch"
                 value={provider.isTestProvider}
                 onChange={handleInputChange('isTestProvider')}

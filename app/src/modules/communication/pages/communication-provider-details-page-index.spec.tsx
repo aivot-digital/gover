@@ -202,7 +202,7 @@ describe('CommunicationProviderDetailsPageIndex', () => {
             </MemoryRouter>,
         );
 
-        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Definition'}));
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Kommunikationsanbieter'}));
         expect(screen.getAllByRole('option')).toHaveLength(1);
         fireEvent.click(screen.getByRole('option', {name: /Latest test definition/}));
 
@@ -389,7 +389,7 @@ describe('CommunicationProviderDetailsPageIndex', () => {
         );
 
         await screen.findByTestId('configuration-layout');
-        const testProviderSwitch = screen.getByRole('switch', {name: 'Vorproduktive Konfiguration'});
+        const testProviderSwitch = screen.getByRole('switch', {name: 'Es handelt sich um eine vorproduktive Konfiguration'});
         expect(testProviderSwitch).toBeEnabled();
 
         fireEvent.click(testProviderSwitch);

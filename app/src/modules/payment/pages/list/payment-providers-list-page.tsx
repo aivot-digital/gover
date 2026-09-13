@@ -48,10 +48,10 @@ export function PaymentProvidersListPage() {
 
     const header = useCallback((permissions: GenericListPagePermissionState<PaymentProviderResponseDTO>) => ({
         icon: ModuleIcons.payment,
-        title: 'Zahlungsdienstleister',
+        title: 'Zahlungsanbieter',
         actions: [
             {
-                label: 'Neuer Zahlungsdienstleister',
+                label: 'Neuer Zahlungsanbieter',
                 icon: <AddOutlinedIcon/>,
                 to: '/payment-providers/new',
                 variant: 'contained' as const,
@@ -60,7 +60,7 @@ export function PaymentProvidersListPage() {
             },
         ],
         helpDialog: {
-            title: 'Hilfe zu Zahlungsdienstleistern',
+            title: 'Hilfe zu Zahlungsanbietern',
             tooltip: 'Hilfe anzeigen',
             content: (
                 <>
@@ -70,7 +70,7 @@ export function PaymentProvidersListPage() {
                             marginBottom: "16px"
                         }}
                     >
-                        Konfigurieren Sie hier Zahlungsdienstleister, die in Ihrer Prosuna-Instanz global
+                        Konfigurieren Sie hier Zahlungsanbieter, die in Ihrer Prosuna-Instanz global
                         verfügbar sein sollen.
                         Die erforderlichen Konfigurationsdaten erhalten Sie vom Zahlungsdienstleister
                         oder finden Sie in dessen Dokumentation.
@@ -81,7 +81,7 @@ export function PaymentProvidersListPage() {
                             marginBottom: "16px"
                         }}
                     >
-                        Es wird empfohlen, für jeden Zahlungsdienstleister sowohl eine produktive als
+                        Es wird empfohlen, für jeden Zahlungsanbieter sowohl eine produktive als
                         auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
                     </Typography>
                 </>
@@ -192,9 +192,9 @@ export function PaymentProvidersListPage() {
 
     const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<PaymentProviderResponseDTO>) => (
         <EmptyDataListPlaceholder
-            title="Keine Zahlungsdienstleister vorhanden"
-            description="Zahlungsdienstleister binden Bezahlverfahren ein, damit Gebühren in Formularen und Vorgängen abgewickelt werden können."
-            addText="Neuen Zahlungsdienstleister anlegen"
+            title="Keine Zahlungsanbieter vorhanden"
+            description="Zahlungsanbieter binden Bezahlverfahren ein, damit Gebühren in Formularen und Vorgängen abgewickelt werden können."
+            addText="Neuen Zahlungsanbieter anlegen"
             onAdd={() => navigate('/payment-providers/new')}
             addDisabled={!permissions.canCreate}
             addDisabledTooltip={permissions.createDisabledTooltip}
@@ -204,20 +204,20 @@ export function PaymentProvidersListPage() {
     return (
         <>
             <PageWrapper
-                title="Zahlungsdienstleister"
+                title="Zahlungsanbieter"
                 fullWidth
                 background
             >
                 <GenericListPage<PaymentProviderResponseDTO>
                     header={header}
                     permissionCheck={paymentProvidersListPermissionCheck}
-                    searchLabel="Zahlungsdienstleister suchen"
+                    searchLabel="Zahlungsanbieter suchen"
                     searchPlaceholder="Name der Konfiguration eingeben…"
                     fetch={fetchPaymentProviders}
                     columnDefinitions={columnDefinitions}
                     getRowIdentifier={getRowIdentifier}
                     noDataPlaceholder={noDataPlaceholder}
-                    noSearchResultsPlaceholder="Keine Zahlungsdienstleister gefunden"
+                    noSearchResultsPlaceholder="Keine Zahlungsanbieter gefunden"
                     rowActionsCount={3}
                     rowActions={rowActions}
                     defaultSortField="name"

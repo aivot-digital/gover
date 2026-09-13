@@ -137,14 +137,14 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         config
                 .findChild(Config.ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID, AssetSelectInputElement.class)
                 .ifPresent(element -> {
-                    element.setAllowedMimeTypes(List.of(CERT_MIME_TYPE));
+                    element.setAllowedMimeTypes(List.of(KEY_MIME_TYPE));
                     element.setAssetVisibility(AssetVisibility.Private);
                 });
 
         config
                 .findChild(Config.ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID, AssetSelectInputElement.class)
                 .ifPresent(element -> {
-                    element.setAllowedMimeTypes(List.of(KEY_MIME_TYPE));
+                    element.setAllowedMimeTypes(List.of(CERT_MIME_TYPE));
                     element.setAssetVisibility(AssetVisibility.Private);
                 });
 
@@ -252,7 +252,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                 .setUniqueIdAttribute("id")
                 .setType(IdentityProviderType.Custom)
                 .setName("Kommunikationsanbieter-Test")
-                .setDescription("Temporärer Nutzerkontenanbieter für einen Kommunikationstest.")
+                .setDescription("Temporärer Identitätsanbieter für einen Kommunikationstest.")
                 .setAuthorizationEndpoint("")
                 .setTokenEndpoint("")
                 .setClientId(TEST_CONTEXT_ID)
@@ -597,53 +597,53 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         public static final String SENDER_CLIENT_ID_FIELD_ID = "senderClientId";
         public static final String SENDER_CLIENT_SECRET_KEY_FIELD_ID = "senderClientSecret";
 
-        @InputElementPOJOBinding(id = ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID, type = ElementType.AssetSelectInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Privater Schlüssel"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Private Schlüssel-Datei im PEM-Format mit dem Schlüssel des FIT-Connect-Zertifikats."),
-                @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Privaten Schlüssel auswählen"),
-                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine Schlüssel-Datei ausgewählt"),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
-        })
-        public String zbpCertificatePrivateKeyAssetKey;
-
         @InputElementPOJOBinding(id = ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID, type = ElementType.AssetSelectInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Client-Zertifikat"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Private Zertifikats-Datei im PEM-Format mit dem Client-Zertifikat für FIT-Connect."),
-                @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Client-Zertifikat auswählen"),
-                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine Zertifikats-Datei ausgewählt"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "BundID-Postfach-Zertifikat"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie das BundID-Postfach-Zertifikat aus, welches für diese Anbindung genutzt wird."),
+                @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "BundID-Postfach-Zertifikat auswählen"),
+                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Kein BundID-Postfach-Zertifikat ausgewählt"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public String zbpCertificateClientCertAssetKey;
 
+        @InputElementPOJOBinding(id = ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID, type = ElementType.AssetSelectInput, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Privater Schlüssel"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie den privaten Schlüssel aus, welcher zu dem gewählten BundID-Postfach-Zertifikat passt."),
+                @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Privaten Schlüssel auswählen"),
+                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Kein privater Schlüssel ausgewählt"),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String zbpCertificatePrivateKeyAssetKey;
+
         @InputElementPOJOBinding(id = DESTINATION_ID_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Empfänger-Zustellpunkt-ID"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Zustellpunkt-ID des ZBP-Brückendienstes, der die Nachricht empfängt."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Zustellpunkt-ID (Empfänger)"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Die ID des Zustellpunktes (Destination), welcher als ZBP-Adapter fungiert und die Nachricht empfängt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public String destinationId;
 
         @InputElementPOJOBinding(id = SENDER_DESTINATION_ID_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Absender-Zustellpunkt-ID"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Zustellpunkt-ID der Organisation, die die ZBP-Nachricht versendet."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Zustellpunkt-ID (Sender)"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Die ID des Zustellpunktes (Destination), von welchem aus die Nachricht an den ZBP-Adapter versendet wird."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public String senderDestinationId;
 
         @InputElementPOJOBinding(id = SENDER_CLIENT_ID_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Sender Client ID"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Client ID für den Sender."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Zugangs-Kennung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Die Zugangs-Kennung (ID) der Zugangsdaten (Client) in FIT-Connect. Diesen Zugangsdaten (Client) muss die hier angegebene Zustellpunkt-ID (Sender) zugeordnet sein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public String senderClientId;
 
         @InputElementPOJOBinding(id = SENDER_CLIENT_SECRET_KEY_FIELD_ID, type = ElementType.SecretSelectInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Sender Client Secret"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Client Secret für den Sender."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Zugangs-Geheimnis"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Das Zugangs-Geheimnis (Secret) der Zugangsdaten (Client) in FIT-Connect. Diesen Zugangsdaten (Client) muss die hier angegebene Zustellpunkt-ID (Sender) zugeordnet sein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
@@ -655,7 +655,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         public static final String BPK2_ATTRIBUTE_FIELD_ID = "bpk2Attribute";
         @InputElementPOJOBinding(id = BPK2_ATTRIBUTE_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Postfach-ID-Attribut"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Attribut des Nutzerkontenanbieters."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Attribut des Identitätsanbieters."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public String bpk2Attribute;
@@ -663,7 +663,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         public static final String STORK_QAA_LEVEL_FIELD_ID = "storkQaaLevel";
         @InputElementPOJOBinding(id = STORK_QAA_LEVEL_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Attribut für das Vertrauensniveau"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Attribut des Nutzerkontenanbieters."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Attribut des Identitätsanbieters."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public String storkQaaLevel;

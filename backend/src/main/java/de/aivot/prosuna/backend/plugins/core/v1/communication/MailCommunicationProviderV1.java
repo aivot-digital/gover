@@ -114,7 +114,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
     @Nonnull
     @Override
     public String getDescription() {
-        return "Versendet Nachrichten an eine E-Mail-Adresse aus den Daten der ausgewählten Identität oder an eine von der Kund:in ergänzte Adresse.";
+        return "Versendet Nachrichten einschließlich Anhängen an die E-Mail-Adresse einer Identität.";
     }
 
     @Nonnull
@@ -210,7 +210,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         var emailAttribute = new SelectInputElement();
         emailAttribute.setId(EMAIL_ATTRIBUTE_FIELD_ID);
         emailAttribute.setLabel("E-Mail-Attribut");
-        emailAttribute.setHint("Optionales Attribut des Nutzerkontenanbieters. Fehlt es in den Anmeldedaten, wird die E-Mail-Adresse von der Kund:in abgefragt.");
+        emailAttribute.setHint("Optionales Attribut des Identitätsanbieters. Fehlt es in den Anmeldedaten, wird die E-Mail-Adresse von der Kund:in abgefragt.");
         emailAttribute.setRequired(false);
         emailAttribute.setOptions(attributeOptions);
 
@@ -289,7 +289,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
                 .setUniqueIdAttribute("id")
                 .setType(IdentityProviderType.Custom)
                 .setName("Kommunikationsanbieter-Test")
-                .setDescription("Temporärer Nutzerkontenanbieter für einen Kommunikationstest.")
+                .setDescription("Temporärer Identitätsanbieter für einen Kommunikationstest.")
                 .setAuthorizationEndpoint("")
                 .setTokenEndpoint("")
                 .setClientId(TEST_CONTEXT_ID)

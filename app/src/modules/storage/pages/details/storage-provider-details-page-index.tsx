@@ -506,7 +506,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         options={latestDefinitions.map(createStorageProviderDefinitionOption)}
                         disabled={isExistingItem}
                         error={errors.storageProviderDefinitionKey}
-                        hint="Diese Einstellung kann nach der Erstellung nicht mehr geändert werden."
+                        hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Speichertyps eingeblendet wird. Diese Einstellung kann nach dem initialen Speichern nicht mehr geändert werden."
                     />
                 </Grid>
                 <Grid
@@ -532,7 +532,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                             value: def.version.toString(),
                             label: `Version ${def.version.toString()}`,
                         }))}
-                        disabled={inputsDisabled}
+                        disabled={inputsDisabled || !editedStorageProvider.storageProviderDefinitionKey}
                         error={errors.storageProviderDefinitionVersion}
                         hint="Bestimmt, welche Version der Konfigurationsoberfläche und Einstellungsmöglichkeiten angezeigt werden."
                     />
@@ -550,14 +550,14 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     }}
                 >
                     <TextFieldComponent
-                        label="Name des Speicheranbieters"
+                        label="Name"
                         required
                         value={editedStorageProvider.name}
                         onChange={handleInputChange('name')}
                         onBlur={handleInputBlur('name')}
                         disabled={inputsDisabled}
                         error={errors.name}
-                        hint="Dient der Identifizierung des Speicheranbieters."
+                        hint="Dient der internen Identifizierung des Speicheranbieters."
                     />
                 </Grid>
                 <Grid
@@ -601,7 +601,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         multiline={true}
                         disabled={inputsDisabled}
                         error={errors.description}
-                        hint="Interne Beschreibung des Speicheranbieters zur besseren Identifizierbarkeit."
+                        hint="Interne Beschreibung des Speicheranbieters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
                         rows={6}
                     />
                 </Grid>

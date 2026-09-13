@@ -15,12 +15,12 @@ import {type CommunicationProvider} from '../models';
 const columns: GridColDef<IdentityProviderListDTO>[] = [
     {
         field: 'name',
-        headerName: 'Nutzerkontenanbieter',
+        headerName: 'Identitätsanbieter',
         flex: 1,
         renderCell: (params) => (
             <CellLink
                 to={`/identity-providers/${params.row.key}`}
-                title="Nutzerkontenanbieter anzeigen"
+                title="Identitätsanbieter anzeigen"
             >
                 {String(params.value)}
                 {params.row.isTestProvider && (
@@ -69,11 +69,11 @@ export function CommunicationProviderDetailsPageIdentityProviders() {
     return (
         <Box sx={{pt: 2}}>
             <Typography variant="h5" sx={{mb: 1}}>
-                Verknüpfte Nutzerkontenanbieter
+                Verknüpfte Identitätsanbieter
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Eine Übersicht der Nutzerkontenanbieter, die diesen Kommunikationsanbieter verwenden.
+                Eine Übersicht der Identitätsanbieter, die diesen Kommunikationsanbieter verwenden.
             </Typography>
 
             <GenericList<IdentityProviderListDTO>
@@ -94,17 +94,17 @@ export function CommunicationProviderDetailsPageIdentityProviders() {
                     },
                 )}
                 getRowIdentifier={(identityProvider) => identityProvider.key}
-                searchLabel="Nutzerkontenanbieter suchen"
-                searchPlaceholder="Name des Nutzerkontenanbieters eingeben…"
+                searchLabel="Identitätsanbieter suchen"
+                searchPlaceholder="Name des Identitätsanbieters eingeben…"
                 defaultSortField="name"
                 noDataPlaceholder={(
                     <EmptyDataListPlaceholder
-                        title="Keine Nutzerkontenanbieter verknüpft"
-                        description="Dieser Kommunikationsanbieter wird aktuell von keinem Nutzerkontenanbieter verwendet."
+                        title="Keine Identitätsanbieter verknüpft"
+                        description="Dieser Kommunikationsanbieter wird aktuell von keinem Identitätsanbieter verwendet."
                     />
                 )}
-                loadingPlaceholder="Lade Nutzerkontenanbieter…"
-                noSearchResultsPlaceholder="Keine Nutzerkontenanbieter gefunden"
+                loadingPlaceholder="Lade Identitätsanbieter…"
+                noSearchResultsPlaceholder="Keine Identitätsanbieter gefunden"
             />
         </Box>
     );

@@ -112,7 +112,7 @@ describe('PaymentProviderDetailsPageIndex', () => {
             </MemoryRouter>,
         );
 
-        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Zahlungsdienstleister'}));
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Zahlungsanbieter'}));
         expect(screen.getAllByRole('option')).toHaveLength(1);
         fireEvent.click(screen.getByRole('option', {name: /Latest test payment definition/}));
 

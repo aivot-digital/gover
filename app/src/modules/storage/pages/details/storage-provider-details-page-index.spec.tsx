@@ -130,6 +130,7 @@ describe('StorageProviderDetailsPageIndex', () => {
             </MemoryRouter>,
         );
 
+        expect(screen.getByRole('combobox', {name: 'Version'})).toHaveAttribute('aria-disabled', 'true');
         fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Speichertyp'}));
         expect(screen.getAllByRole('option')).toHaveLength(1);
         fireEvent.click(screen.getByRole('option', {name: /Latest test storage definition/}));

@@ -108,12 +108,12 @@ describe('CommunicationProviderDetailsPageIdentityProviders', () => {
         testState.row = undefined;
         renderPage();
 
-        expect(screen.getByText('Keine Nutzerkontenanbieter verknüpft')).toBeInTheDocument();
+        expect(screen.getByText('Keine Identitätsanbieter verknüpft')).toBeInTheDocument();
         expect(screen.getByText(
-            'Dieser Kommunikationsanbieter wird aktuell von keinem Nutzerkontenanbieter verwendet.',
+            'Dieser Kommunikationsanbieter wird aktuell von keinem Identitätsanbieter verwendet.',
         )).toBeInTheDocument();
-        expect(testState.genericListProps?.loadingPlaceholder).toBe('Lade Nutzerkontenanbieter…');
-        expect(testState.genericListProps?.noSearchResultsPlaceholder).toBe('Keine Nutzerkontenanbieter gefunden');
+        expect(testState.genericListProps?.loadingPlaceholder).toBe('Lade Identitätsanbieter…');
+        expect(testState.genericListProps?.noSearchResultsPlaceholder).toBe('Keine Identitätsanbieter gefunden');
     });
 });
 

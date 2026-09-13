@@ -164,8 +164,11 @@ class FitConnectZbpCommunicationProviderV1Test {
                 FitConnectZbpCommunicationProviderV1.Config.ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID,
                 AssetSelectInputElement.class
         ).orElseThrow();
-        assertEquals(List.of("application/x-pem-file"), privateKey.getAllowedMimeTypes());
-        assertEquals(List.of("application/x-pem-file"), clientCertificate.getAllowedMimeTypes());
+        assertEquals(List.of("application/pkcs8"), privateKey.getAllowedMimeTypes());
+        assertEquals(List.of("application/x-x509-ca-cert"), clientCertificate.getAllowedMimeTypes());
+        assertEquals("Privater Schlüssel", privateKey.getLabel());
+        assertEquals("BundID-Postfach-Zertifikat", clientCertificate.getLabel());
+        assertTrue(layout.getChildren().indexOf(clientCertificate) < layout.getChildren().indexOf(privateKey));
         assertEquals(AssetVisibility.Private, privateKey.getAssetVisibility());
         assertEquals(AssetVisibility.Private, clientCertificate.getAssetVisibility());
         assertTrue(privateKey.getRequired());
