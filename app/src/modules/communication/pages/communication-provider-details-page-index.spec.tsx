@@ -76,12 +76,23 @@ vi.mock('../../elements/components/element-derivation-context', async () => {
     };
 });
 
-function textField(id: string, label: string) {
+const EMAIL_PATTERN = {
+    regex: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
+    message: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+};
+
+const OPTIONAL_EMAIL_PATTERN = {
+    regex: '^(?:$|[^\\s@]+@[^\\s@]+\\.[^\\s@]+)$',
+    message: EMAIL_PATTERN.message,
+};
+
+function textField(id: string, label: string, properties: Record<string, any> = {}) {
     return {
         id,
         type: ElementType.Text,
         label,
         required: true,
+        ...properties,
     };
 }
 
@@ -90,6 +101,28 @@ function configLayout(...children: Record<string, any>[]) {
         id: 'communication-provider-config',
         type: ElementType.ConfigLayout,
         children,
+    };
+}
+
+function configureMailProvider(configuration: Record<string, any>) {
+    testState.provider.configuration = configuration;
+    testState.layout = configLayout(
+        textField('senderMode', 'Absender'),
+        textField('customSenderName', 'From Name'),
+        textField('customSenderAddress', 'From Adresse', {pattern: EMAIL_PATTERN}),
+        textField('replyToAddress', 'Reply-To-Adresse', {
+            required: false,
+            pattern: OPTIONAL_EMAIL_PATTERN,
+        }),
+    );
+    testState.derivedData = {
+        effectiveValues: configuration,
+        elementStates: {
+            senderMode: {visible: true},
+            customSenderName: {visible: true},
+            customSenderAddress: {visible: true},
+            replyToAddress: {visible: true},
+        },
     };
 }
 
@@ -180,23 +213,10 @@ describe('CommunicationProviderDetailsPageIndex', () => {
     });
 
     it('marks a missing custom sender name and does not create the provider', async () => {
-        testState.provider.configuration = {
+        configureMailProvider({
             senderMode: 'custom',
             customSenderAddress: 'sender@example.test',
-        };
-        testState.layout = configLayout(
-            textField('senderMode', 'Absender'),
-            textField('customSenderName', 'From Name'),
-            textField('customSenderAddress', 'From Adresse'),
-        );
-        testState.derivedData = {
-            effectiveValues: testState.provider.configuration,
-            elementStates: {
-                senderMode: {visible: true},
-                customSenderName: {visible: true},
-                customSenderAddress: {visible: true},
-            },
-        };
+        });
         vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderConfigurationLayout')
             .mockResolvedValue(testState.layout as any);
         const createProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'createProvider')
@@ -210,6 +230,39 @@ describe('CommunicationProviderDetailsPageIndex', () => {
         expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
             payload: expect.objectContaining({message: 'Bitte überprüfen Sie Ihre Eingaben.'}),
         }));
+    });
+
+    it.each([
+        {
+            fieldLabel: 'From Adresse',
+            configuration: {
+                senderMode: 'custom',
+                customSenderName: 'Custom Service',
+                customSenderAddress: 'keine-email',
+                replyToAddress: 'replies@example.test',
+            },
+        },
+        {
+            fieldLabel: 'Reply-To-Adresse',
+            configuration: {
+                senderMode: 'custom',
+                customSenderName: 'Custom Service',
+                customSenderAddress: 'sender@example.test',
+                replyToAddress: 'keine-email',
+            },
+        },
+    ])('marks an invalid $fieldLabel and does not create the provider', async ({configuration}) => {
+        configureMailProvider(configuration);
+        vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderConfigurationLayout')
+            .mockResolvedValue(testState.layout as any);
+        const createProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'createProvider')
+            .mockResolvedValue({...testState.provider, id: 17} as any);
+
+        await renderChangedProvider();
+        fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
+
+        expect(await screen.findByText(EMAIL_PATTERN.message)).toBeInTheDocument();
+        expect(createProvider).not.toHaveBeenCalled();
     });
 
     it('rejects missing visible FIT-Connect fields before creating the provider', async () => {
@@ -238,24 +291,29 @@ describe('CommunicationProviderDetailsPageIndex', () => {
     });
 
     it('creates a provider with a complete custom sender configuration', async () => {
-        testState.provider.configuration = {
+        configureMailProvider({
             senderMode: 'custom',
             customSenderName: 'Custom Service',
             customSenderAddress: 'sender@example.test',
-        };
-        testState.layout = configLayout(
-            textField('senderMode', 'Absender'),
-            textField('customSenderName', 'From Name'),
-            textField('customSenderAddress', 'From Adresse'),
-        );
-        testState.derivedData = {
-            effectiveValues: testState.provider.configuration,
-            elementStates: {
-                senderMode: {visible: true},
-                customSenderName: {visible: true},
-                customSenderAddress: {visible: true},
-            },
-        };
+        });
+        vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderConfigurationLayout')
+            .mockResolvedValue(testState.layout as any);
+        const createProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'createProvider')
+            .mockResolvedValue({...testState.provider, id: 17} as any);
+
+        await renderChangedProvider();
+        fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
+
+        await waitFor(() => expect(createProvider).toHaveBeenCalledOnce());
+    });
+
+    it('creates a provider with an empty optional reply-to address', async () => {
+        configureMailProvider({
+            senderMode: 'custom',
+            customSenderName: 'Custom Service',
+            customSenderAddress: 'sender@example.test',
+            replyToAddress: '',
+        });
         vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderConfigurationLayout')
             .mockResolvedValue(testState.layout as any);
         const createProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'createProvider')

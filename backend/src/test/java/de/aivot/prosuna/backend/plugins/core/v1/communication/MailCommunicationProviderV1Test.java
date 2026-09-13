@@ -112,8 +112,12 @@ class MailCommunicationProviderV1Test {
         assertTrue(customSenderAlert.getText().contains("Spam"));
 
         assertThrows(ValidationException.class, () -> customSenderName.validate(" "));
+        assertDoesNotThrow(() -> customSenderAddress.validate("sender@example.test"));
+        assertThrows(ValidationException.class, () -> customSenderAddress.validate("keine-email"));
         assertThrows(ValidationException.class, () -> customSenderAddress.validate("first@example.test,second@example.test"));
         assertDoesNotThrow(() -> replyToAddress.validate(""));
+        assertDoesNotThrow(() -> replyToAddress.validate("replies@example.test"));
+        assertThrows(ValidationException.class, () -> replyToAddress.validate("keine-email"));
         assertThrows(ValidationException.class, () -> replyToAddress.validate("first@example.test,second@example.test"));
     }
 
