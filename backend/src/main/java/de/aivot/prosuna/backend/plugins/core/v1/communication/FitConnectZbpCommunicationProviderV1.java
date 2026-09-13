@@ -69,7 +69,8 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
             "https://schema.fitko.de/fit-connect/id.bund.de/message_v6/1.0.0/zbp-message.schema.json"
     );
 
-    private static final String PEM_MIME_TYPE = "application/x-pem-file";
+    private static final String KEY_MIME_TYPE = "application/pkcs8";
+    private static final String CERT_MIME_TYPE = "application/x-x509-ca-cert";
 
     private final AssetContentResolverService assetContentResolverService;
     private final SecretService secretService;
@@ -136,14 +137,14 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         config
                 .findChild(Config.ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID, AssetSelectInputElement.class)
                 .ifPresent(element -> {
-                    element.setAllowedMimeTypes(List.of(PEM_MIME_TYPE));
+                    element.setAllowedMimeTypes(List.of(CERT_MIME_TYPE));
                     element.setAssetVisibility(AssetVisibility.Private);
                 });
 
         config
                 .findChild(Config.ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID, AssetSelectInputElement.class)
                 .ifPresent(element -> {
-                    element.setAllowedMimeTypes(List.of(PEM_MIME_TYPE));
+                    element.setAllowedMimeTypes(List.of(KEY_MIME_TYPE));
                     element.setAssetVisibility(AssetVisibility.Private);
                 });
 
@@ -598,9 +599,9 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
 
         @InputElementPOJOBinding(id = ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID, type = ElementType.AssetSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Privater Schlüssel"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Private PEM-Datei mit dem Schlüssel des FIT-Connect-Zertifikats."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Private Schlüssel-Datei im PEM-Format mit dem Schlüssel des FIT-Connect-Zertifikats."),
                 @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Privaten Schlüssel auswählen"),
-                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine PEM-Datei ausgewählt"),
+                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine Schlüssel-Datei ausgewählt"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
@@ -608,9 +609,9 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
 
         @InputElementPOJOBinding(id = ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID, type = ElementType.AssetSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Client-Zertifikat"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Private PEM-Datei mit dem Client-Zertifikat für FIT-Connect."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Private Zertifikats-Datei im PEM-Format mit dem Client-Zertifikat für FIT-Connect."),
                 @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Client-Zertifikat auswählen"),
-                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine PEM-Datei ausgewählt"),
+                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine Zertifikats-Datei ausgewählt"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
