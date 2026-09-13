@@ -44,6 +44,7 @@ import {
 } from '../dynamic-text/dynamic-text-metadata';
 import {dynamicTextPlugin} from './rich-text-input-component-dynamic-text-plugin';
 import {placeholderPlugin} from './rich-text-input-component-placeholder-plugin';
+import {linkDialogInteractionPlugin} from './rich-text-input-component-link-dialog-plugin';
 import '@mdxeditor/editor/style.css';
 
 const MDX_EDITOR_DE_TRANSLATIONS: Record<string, string> = {
@@ -361,8 +362,9 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                 ref={handleOverlayContainerRef}
                 data-dynamic-text-multiline={dynamicText || undefined}
                 sx={[{
+                    // MDXEditor mistakes size-query containers for fixed-position containing blocks.
+                    // Keep container-type off this wrapper; ResizeObserver already controls the compact toolbar.
                     position: 'relative',
-                    containerType: 'inline-size',
                     border: '1px solid',
                     borderColor: hasError ? 'error.main' : outlinedBorderColor,
                     borderRadius: 1,
@@ -761,6 +763,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                             disableAutoLink: true,
                         }),
                         linkDialogPlugin(),
+                        linkDialogInteractionPlugin(),
                         toolbarPlugin({
                             toolbarContents: () => (
                                 <DiffSourceToggleWrapper options={['rich-text', 'source']}>
