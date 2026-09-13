@@ -3,9 +3,14 @@
         <mj-include path="../partials/head.mjml"/>
 
         <mj-html-attributes>
+            <mj-selector path=".communication-action td">
+                <mj-html-attribute name="th:bgcolor">${mailActionBackgroundColor}</mj-html-attribute>
+                <mj-html-attribute name="th:style">${'border:1px solid ' + mailActionBackgroundColor + ';border-radius:4px;cursor:auto;mso-padding-alt:12px 20px;background:' + mailActionBackgroundColor + ';'}</mj-html-attribute>
+            </mj-selector>
             <mj-selector path=".communication-action a">
                 <mj-html-attribute name="th:href">${cta.link}</mj-html-attribute>
                 <mj-html-attribute name="th:text">${cta.title}</mj-html-attribute>
+                <mj-html-attribute name="th:style">${'display:inline-block;background:' + mailActionBackgroundColor + ';color:' + mailActionTextColor + ';font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:bold;line-height:20px;margin:0;text-decoration:none;text-transform:none;padding:12px 20px;mso-padding-alt:0px;border-radius:4px;'}</mj-html-attribute>
             </mj-selector>
         </mj-html-attributes>
 

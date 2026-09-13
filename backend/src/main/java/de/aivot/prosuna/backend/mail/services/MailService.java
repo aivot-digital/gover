@@ -404,8 +404,11 @@ public class MailService {
         // instead of attaching a second variant that clients cannot select reliably.
         var resolvedTheme = themeService.resolveThemeWithSystemFallback(theme);
         var senderLogo = mailLogoService.createSenderLogo(resolvedTheme.getLogoKey());
+        var mailActionBackgroundColor = normalizeMailActionColor(resolvedTheme.getPrimaryColor());
         context.put("base", createBaseContext(senderLogo.isPresent()));
         context.put("mailSignature", resolveDefaultMailSignature(context, options));
+        context.put("mailActionBackgroundColor", mailActionBackgroundColor);
+        context.put("mailActionTextColor", readableTextColor(mailActionBackgroundColor));
 
         String textMessage = loadTemplate(template.getKey() + ".txt", context, TemplateMode.TEXT);
         String htmlMessage = loadTemplate(template.getKey() + ".html", context, TemplateMode.HTML);
@@ -445,6 +448,27 @@ public class MailService {
         if (!mailHost.isEmpty()) {
             mailSender.send(message);
         }
+    }
+
+    private static String normalizeMailActionColor(String color) {
+        return color != null && color.matches("^#[0-9a-fA-F]{6}$") ? color : "#e5e7eb";
+    }
+
+    private static String readableTextColor(String backgroundColor) {
+        var red = Integer.parseInt(backgroundColor.substring(1, 3), 16);
+        var green = Integer.parseInt(backgroundColor.substring(3, 5), 16);
+        var blue = Integer.parseInt(backgroundColor.substring(5, 7), 16);
+        var luminance = 0.2126 * linearRgb(red) + 0.7152 * linearRgb(green) + 0.0722 * linearRgb(blue);
+        var contrastWithWhite = 1.05 / (luminance + 0.05);
+        var contrastWithBlack = (luminance + 0.05) / 0.05;
+        return contrastWithWhite >= contrastWithBlack ? "#ffffff" : "#000000";
+    }
+
+    private static double linearRgb(int colorComponent) {
+        var channel = colorComponent / 255.0;
+        return channel <= 0.04045
+                ? channel / 12.92
+                : Math.pow((channel + 0.055) / 1.055, 2.4);
     }
 
     private String resolveDefaultMailSignature(

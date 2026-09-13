@@ -78,7 +78,7 @@ class MailServiceTest {
         ));
 
         service.sendMail(
-                new ThemeEntity(),
+                new ThemeEntity().setPrimaryColor("#005ea8"),
                 "recipient@example.org",
                 Optional.empty(),
                 Optional.empty(),
@@ -120,6 +120,9 @@ class MailServiceTest {
         assertTrue(text.indexOf("Open portal") < text.indexOf("Show status"));
         assertTrue(html.contains("<strong>customer</strong>"));
         assertTrue(html.contains("href=\"https://example.test/action?x=1&amp;y=2\""));
+        assertTrue(html.contains("bgcolor=\"#005ea8\""));
+        assertTrue(html.contains("background:#005ea8"));
+        assertTrue(html.contains("color:#ffffff"));
         assertTrue(html.indexOf("Open portal") < html.indexOf("Show status"));
         assertFalse(html.contains("th:href"));
         assertFalse(html.contains("th:text"));
