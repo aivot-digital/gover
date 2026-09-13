@@ -30,7 +30,6 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ContentDisposition;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,8 +60,11 @@ class FormTriggerUtilsControllerV1Test {
         var fixture = createFixture(formLayout);
         fixture.processVersion().setThemeId(formTheme.getId());
 
-        when(fixture.themeService().getFormThemesInOrderOfImportance(fixture.processVersion(), formLayout))
-                .thenReturn(List.of(formTheme));
+        when(fixture.themeService().resolveFormTheme(
+                fixture.processVersion(),
+                formLayout,
+                fixture.process().getDepartmentId()
+        )).thenReturn(formTheme);
         when(fixture.departmentService().retrieve(responsibleDepartment.getId())).thenReturn(Optional.of(responsibleDepartment));
         when(fixture.departmentService().retrieve(managingDepartment.getId())).thenReturn(Optional.of(managingDepartment));
         when(fixture.pdfService().generatePrintableForm(
@@ -115,8 +117,11 @@ class FormTriggerUtilsControllerV1Test {
                 .setManagingDepartmentId(managingDepartment.getId());
         var fixture = createFixture(formLayout);
 
-        when(fixture.themeService().getFormThemesInOrderOfImportance(fixture.processVersion(), formLayout))
-                .thenReturn(List.of(managingTheme));
+        when(fixture.themeService().resolveFormTheme(
+                fixture.processVersion(),
+                formLayout,
+                fixture.process().getDepartmentId()
+        )).thenReturn(managingTheme);
         when(fixture.departmentService().retrieve(managingDepartment.getId())).thenReturn(Optional.of(managingDepartment));
         when(fixture.pdfService().generatePrintableForm(
                 any(PrintableFormPdfData.class),
@@ -144,8 +149,11 @@ class FormTriggerUtilsControllerV1Test {
         fixture.process().setDepartmentId(processDepartment.getId());
 
         when(fixture.departmentService().retrieve(processDepartment.getId())).thenReturn(Optional.of(processDepartment));
-        when(fixture.themeService().getFormThemesInOrderOfImportance(fixture.processVersion(), formLayout))
-                .thenReturn(List.of(systemTheme));
+        when(fixture.themeService().resolveFormTheme(
+                fixture.processVersion(),
+                formLayout,
+                fixture.process().getDepartmentId()
+        )).thenReturn(systemTheme);
         when(fixture.pdfService().generatePrintableForm(
                 any(PrintableFormPdfData.class),
                 eq(systemTheme),

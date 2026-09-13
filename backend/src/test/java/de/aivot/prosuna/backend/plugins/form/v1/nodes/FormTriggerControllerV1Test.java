@@ -9,15 +9,21 @@ import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
+import de.aivot.prosuna.backend.identity.dtos.IdentityProviderOptionResponseDTO;
+import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
+import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
-import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
+import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
@@ -43,7 +49,6 @@ import de.aivot.prosuna.backend.storage.services.StorageProviderService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
-import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
@@ -71,6 +76,73 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class FormTriggerControllerV1Test {
+    @Test
+    void retrieveShouldObfuscateStepChildrenWhileRequiredIdentityIsMissing() throws Exception {
+        var fixture = createFixture(formLayoutWithGenericStep());
+        when(fixture.identitySlotService().resolveSlots(isNull(), eq("identity-session"), eq(500)))
+                .thenReturn(List.of(requiredIdentitySlot(false, null, false, List.of())));
+
+        var result = fixture.controller().retrieve(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session"
+        );
+
+        var step = (GenericStepElement) result.layoutElement().getChildren().getFirst();
+        assertTrue(step.getChildren().isEmpty());
+    }
+
+    @Test
+    void retrieveShouldKeepStepChildrenWhenRequiredIdentityAllowsEmail() throws Exception {
+        var fixture = createFixture(formLayoutWithGenericStep());
+        when(fixture.identitySlotService().resolveSlots(isNull(), eq("identity-session"), eq(500)))
+                .thenReturn(List.of(requiredIdentitySlot(true, null, false, List.of())));
+
+        var result = fixture.controller().retrieve(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session"
+        );
+
+        var step = (GenericStepElement) result.layoutElement().getChildren().getFirst();
+        assertEquals(1, step.getChildren().size());
+    }
+
+    @Test
+    void retrieveShouldKeepStepChildrenForAuthenticatedIdentityWithIncompleteCommunication() throws Exception {
+        var fixture = createFixture(formLayoutWithGenericStep());
+        var authenticatedProvider = new IdentityProviderOptionResponseDTO(
+                UUID.randomUUID(),
+                "BundID",
+                null,
+                IdentityProviderType.BundId,
+                true,
+                List.of()
+        );
+        when(fixture.identitySlotService().resolveSlots(isNull(), eq("identity-session"), eq(500)))
+                .thenReturn(List.of(requiredIdentitySlot(
+                        false,
+                        IdentityType.IdentityProvider,
+                        false,
+                        List.of(authenticatedProvider)
+                )));
+
+        var result = fixture.controller().retrieve(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session"
+        );
+
+        var step = (GenericStepElement) result.layoutElement().getChildren().getFirst();
+        assertEquals(1, step.getChildren().size());
+    }
+
     @Test
     void calculateCostsShouldReturnEmptyResponseWithoutPaymentConfiguration() throws Exception {
         var fixture = createFixture(baseFormLayout());
@@ -195,14 +267,19 @@ class FormTriggerControllerV1Test {
         var fixture = createFixture(baseFormLayout());
         fixture.processVersion().setThemeId(formTheme.getId());
 
-        when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
+        when(fixture.themeService().resolveFormTheme(
+                fixture.processVersion(),
+                fixture.triggerConfig().formLayout,
+                fixture.process().getDepartmentId()
+        )).thenReturn(formTheme);
 
         var result = fixture.controller().getTheme(null, fixture.processSlug(), fixture.formSlug(), null, null);
 
-        assertEquals(formTheme.getId(), result.id());
-        assertEquals(formTheme.getName(), result.name());
-        assertEquals(formTheme.getLogoKey(), result.logoKey());
-        assertEquals(formTheme.getFaviconKey(), result.faviconKey());
+        assertEquals(formTheme.getPrimaryColor(), result.primaryColor());
+        assertEquals(formTheme.getSecondaryColor(), result.secondaryColor());
+        assertEquals("https://assets.example/" + formTheme.getLogoKey(), result.logoUrl());
+        assertEquals("https://assets.example/" + formTheme.getLogoKey(), result.logoUrlDark());
+        assertEquals("https://assets.example/" + formTheme.getFaviconKey(), result.faviconUrl());
     }
 
     @Test
@@ -217,7 +294,11 @@ class FormTriggerControllerV1Test {
         );
         fixture.processVersion().setThemeId(formTheme.getId());
 
-        when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
+        when(fixture.themeService().resolveFormTheme(
+                fixture.processVersion(),
+                fixture.triggerConfig().formLayout,
+                fixture.process().getDepartmentId()
+        )).thenReturn(formTheme);
 
         var result = fixture.controller().getTheme(
                 mock(Jwt.class),
@@ -227,7 +308,7 @@ class FormTriggerControllerV1Test {
                 requestedProcessVersion
         );
 
-        assertEquals(formTheme.getId(), result.id());
+        assertEquals(formTheme.getPrimaryColor(), result.primaryColor());
         verify(fixture.processVersionService()).retrieve(argThat((ProcessVersionFilter filter) ->
                 filter.getProcessId().equals(fixture.process().getId()) &&
                         filter.getProcessVersion().equals(requestedProcessVersion) &&
@@ -237,103 +318,24 @@ class FormTriggerControllerV1Test {
     }
 
     @Test
-    void getLogoShouldFallbackToResponsibleDepartmentThemeAndUseTestClaimVersion() throws Exception {
-        var testClaimAccessKey = "claim-123";
-        var formTheme = createTheme(11, "Form Theme", null, null);
-        var responsibleTheme = createTheme(21, "Responsible Theme", UUID.randomUUID(), null);
-        var fixture = createFixture(
-                baseFormLayout()
-                        .setResponsibleDepartmentId(200),
-                testClaimAccessKey
-        );
-        fixture.processVersion().setThemeId(formTheme.getId());
-
-        when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
-        when(fixture.departmentService().retrieve(200)).thenReturn(Optional.of(new VDepartmentShadowedEntity().setId(200).setThemeId(responsibleTheme.getId())));
-        when(fixture.themeService().retrieve(responsibleTheme.getId())).thenReturn(Optional.of(responsibleTheme));
-
-        var response = new MockHttpServletResponse();
-        fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), testClaimAccessKey, null, null, response);
-
-        assertEquals("https://assets.example/" + responsibleTheme.getLogoKey(), response.getRedirectedUrl());
-        verify(fixture.processTestClaimService()).retrieveByAccessKey(fixture.process().getId(), testClaimAccessKey);
-    }
-
-    @Test
-    void getLogoShouldNotFallbackToDefaultLogoWhenCustomThemeChainProvidesNone() throws Exception {
-        var formTheme = createTheme(11, "Form Theme", null, null);
+    void getThemeShouldExposeResolvedFallbackMediaUrls() throws Exception {
+        var inheritedLogoKey = UUID.randomUUID();
+        var inheritedDarkLogoKey = UUID.randomUUID();
+        var inheritedFaviconKey = UUID.randomUUID();
         var fixture = createFixture(baseFormLayout());
-        fixture.processVersion().setThemeId(formTheme.getId());
+        var resolvedTheme = createTheme(11, "Resolved Theme", inheritedLogoKey, inheritedFaviconKey)
+                .setLogoKeyDark(inheritedDarkLogoKey);
+        when(fixture.themeService().resolveFormTheme(
+                fixture.processVersion(),
+                fixture.triggerConfig().formLayout,
+                fixture.process().getDepartmentId()
+        )).thenReturn(resolvedTheme);
 
-        when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
+        var result = fixture.controller().getTheme(null, fixture.processSlug(), fixture.formSlug(), null, null);
 
-        var response = new MockHttpServletResponse();
-        fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), null, null, null, response);
-
-        assertEquals(HttpServletResponse.SC_NOT_FOUND, response.getStatus());
-    }
-
-    @Test
-    void getLogoShouldFallbackToDefaultLogoWhenNoCustomThemeIsResolved() throws Exception {
-        var fixture = createFixture(baseFormLayout());
-
-        var response = new MockHttpServletResponse();
-        fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), null, null, null, response);
-
-        assertEquals("https://prosuna.example/assets/default-logo.png", response.getRedirectedUrl());
-    }
-
-    @Test
-    void getLogoShouldPreferDarkLogoAndFallbackWithinTheSameTheme() throws Exception {
-        var lightLogoKey = UUID.randomUUID();
-        var darkLogoKey = UUID.randomUUID();
-        var formTheme = createTheme(11, "Form Theme", lightLogoKey, null).setLogoKeyDark(darkLogoKey);
-        var fixture = createFixture(baseFormLayout());
-        fixture.processVersion().setThemeId(formTheme.getId());
-        when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
-
-        var darkResponse = new MockHttpServletResponse();
-        fixture.controller().getLogo(
-                null, fixture.processSlug(), fixture.formSlug(), null, null, "dark", darkResponse
-        );
-        assertEquals("https://assets.example/" + darkLogoKey, darkResponse.getRedirectedUrl());
-
-        formTheme.setLogoKeyDark(null);
-        var fallbackResponse = new MockHttpServletResponse();
-        fixture.controller().getLogo(
-                null, fixture.processSlug(), fixture.formSlug(), null, null, "dark", fallbackResponse
-        );
-        assertEquals("https://assets.example/" + lightLogoKey, fallbackResponse.getRedirectedUrl());
-    }
-
-    @Test
-    void getFaviconShouldFallbackToManagingDepartmentTheme() throws Exception {
-        var formTheme = createTheme(11, "Form Theme", null, null);
-        var managingTheme = createTheme(31, "Managing Theme", null, UUID.randomUUID());
-        var fixture = createFixture(
-                baseFormLayout()
-                        .setManagingDepartmentId(300)
-        );
-        fixture.processVersion().setThemeId(formTheme.getId());
-
-        when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
-        when(fixture.departmentService().retrieve(300)).thenReturn(Optional.of(new VDepartmentShadowedEntity().setId(300).setThemeId(managingTheme.getId())));
-        when(fixture.themeService().retrieve(managingTheme.getId())).thenReturn(Optional.of(managingTheme));
-
-        var response = new MockHttpServletResponse();
-        fixture.controller().getFavicon(null, fixture.processSlug(), fixture.formSlug(), null, null, response);
-
-        assertEquals("https://assets.example/" + managingTheme.getFaviconKey(), response.getRedirectedUrl());
-    }
-
-    @Test
-    void getFaviconShouldFallbackToDefaultFaviconWhenNoThemeProvidesOne() throws Exception {
-        var fixture = createFixture(baseFormLayout());
-
-        var response = new MockHttpServletResponse();
-        fixture.controller().getFavicon(null, fixture.processSlug(), fixture.formSlug(), null, null, response);
-
-        assertEquals("https://prosuna.example/assets/default-favicon.ico", response.getRedirectedUrl());
+        assertEquals("https://assets.example/" + inheritedLogoKey, result.logoUrl());
+        assertEquals("https://assets.example/" + inheritedDarkLogoKey, result.logoUrlDark());
+        assertEquals("https://assets.example/" + inheritedFaviconKey, result.faviconUrl());
     }
 
     @Test
@@ -612,9 +614,6 @@ class FormTriggerControllerV1Test {
         var assetService = mock(AssetService.class);
         when(assetService.createUrl(any(UUID.class))).thenAnswer(invocation -> "https://assets.example/" + invocation.getArgument(0, UUID.class));
 
-        var systemService = mock(SystemService.class);
-        when(systemService.retrieveDefaultTheme()).thenReturn(createTheme(1, "System Theme", null, null));
-
         var departmentService = mock(VDepartmentShadowedService.class);
         when(departmentService.retrieve(process.getDepartmentId()))
                 .thenReturn(Optional.of(new VDepartmentShadowedEntity()
@@ -631,15 +630,19 @@ class FormTriggerControllerV1Test {
         }
 
         var pdfService = mock(PdfService.class);
+        var themeService = mock(ThemeService.class);
+        when(themeService.resolveFormTheme(
+                any(ProcessVersionEntity.class),
+                any(FormLayoutElement.class),
+                nullable(Integer.class)
+        )).thenReturn(new ThemeEntity());
 
         var controller = new FormTriggerControllerV1(
                 prosunaConfig,
-                mock(IdentityProviderService.class),
                 mock(ElementDerivationService.class),
                 assetService,
-                mock(ThemeService.class),
+                themeService,
                 departmentService,
-                systemService,
                 userService,
                 processService,
                 processNodeService,
@@ -663,7 +666,8 @@ class FormTriggerControllerV1Test {
                 paymentTransactionService,
                 mock(PaymentProviderRepository.class),
                 pdfService,
-                mock(PaymentProviderDefinitionsService.class)
+                mock(PaymentProviderDefinitionsService.class),
+                mock(IdentitySlotService.class)
         );
 
         return new PrintFixture(
@@ -753,8 +757,6 @@ class FormTriggerControllerV1Test {
 
         var themeService = mock(ThemeService.class);
         var departmentService = mock(VDepartmentShadowedService.class);
-        var systemService = mock(SystemService.class);
-        when(systemService.retrieveDefaultTheme()).thenReturn(createTheme(1, "System Theme", null, null));
 
         var userService = mock(UserService.class);
         when(userService.fromJWT(isNull())).thenReturn(Optional.empty());
@@ -823,15 +825,14 @@ class FormTriggerControllerV1Test {
         var paymentRequestCreationService = mock(PaymentPayloadCreationService.class);
         var paymentProviderRepository = mock(PaymentProviderRepository.class);
         var paymentProviderDefinitionsService = mock(PaymentProviderDefinitionsService.class);
+        var identitySlotService = mock(IdentitySlotService.class);
 
         var controller = new FormTriggerControllerV1(
                 prosunaConfig,
-                mock(IdentityProviderService.class),
                 elementDerivationService,
                 assetService,
                 themeService,
                 departmentService,
-                systemService,
                 userService,
                 processService,
                 processNodeService,
@@ -855,7 +856,8 @@ class FormTriggerControllerV1Test {
                 mock(PaymentTransactionService.class),
                 paymentProviderRepository,
                 mock(PdfService.class),
-                paymentProviderDefinitionsService
+                paymentProviderDefinitionsService,
+                identitySlotService
         );
 
         return new TestFixture(
@@ -873,13 +875,42 @@ class FormTriggerControllerV1Test {
                 elementDataTransformService,
                 paymentRequestCreationService,
                 paymentProviderRepository,
-                paymentProviderDefinitionsService
+                paymentProviderDefinitionsService,
+                identitySlotService
         );
     }
 
     private FormLayoutElement baseFormLayout() {
         return new FormLayoutElement()
                 .setPublicTitle("Example form");
+    }
+
+    private FormLayoutElement formLayoutWithGenericStep() {
+        return baseFormLayout().setChildren(List.of(
+                new GenericStepElement().setChildren(List.of(
+                        new HeadlineContentElement().setContent("Protected form content")
+                ))
+        ));
+    }
+
+    private IdentitySlotResponseDTO requiredIdentitySlot(
+            boolean allowsEmail,
+            IdentityType identityType,
+            boolean isReady,
+            List<IdentityProviderOptionResponseDTO> providers
+    ) {
+        return new IdentitySlotResponseDTO(
+                "applicant",
+                null,
+                null,
+                false,
+                allowsEmail,
+                identityType,
+                null,
+                isReady,
+                providers,
+                null
+        );
     }
 
     private ThemeEntity createTheme(Integer id,
@@ -932,7 +963,8 @@ class FormTriggerControllerV1Test {
             ElementDataTransformService elementDataTransformService,
             PaymentPayloadCreationService paymentRequestCreationService,
             PaymentProviderRepository paymentProviderRepository,
-            PaymentProviderDefinitionsService paymentProviderDefinitionsService
+            PaymentProviderDefinitionsService paymentProviderDefinitionsService,
+            IdentitySlotService identitySlotService
     ) {
     }
 

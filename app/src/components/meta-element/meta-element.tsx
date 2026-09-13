@@ -1,5 +1,4 @@
 import React, {useMemo} from 'react';
-import {createApiPath} from '../../utils/url-path-utils';
 
 interface MetaElementProps {
     faviconUrl?: string;
@@ -9,7 +8,7 @@ interface MetaElementProps {
 
 export function MetaElement({faviconUrl, title, titlePrefix}: MetaElementProps) {
     const favicon = useMemo(() => {
-        return faviconUrl ?? createApiPath("/api/public/system/favicon/");
+        return faviconUrl ?? AppConfig.faviconUrl;
     }, [faviconUrl])
 
     return (

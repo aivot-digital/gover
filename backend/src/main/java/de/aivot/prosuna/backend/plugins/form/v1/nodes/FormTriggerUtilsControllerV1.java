@@ -125,9 +125,11 @@ public class FormTriggerUtilsControllerV1 {
 
         var config = resolveFormTriggerConfiguration(node, execUser);
         var printableForm = buildPrintableForm(process, node, config);
-        var theme = themeService
-                .getFormThemesInOrderOfImportance(processVersion, config.formLayout)
-                .getFirst();
+        var theme = themeService.resolveFormTheme(
+                processVersion,
+                config.formLayout,
+                process.getDepartmentId()
+        );
         var responsibleDepartment = getDepartment(config.formLayout.getResponsibleDepartmentId()).orElse(null);
         var managingDepartment = getDepartment(config.formLayout.getManagingDepartmentId()).orElse(null);
         var department = getPrintableDepartment(process, responsibleDepartment, managingDepartment);

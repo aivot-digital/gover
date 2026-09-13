@@ -268,7 +268,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
     @Nonnull
     @Override
-    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) throws ResponseException {
+    public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) throws ResponseException {
         var config = context.getConfigurationOfExecutingNode();
 
         var layout = new GroupLayoutElement();
@@ -296,28 +296,16 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         children.add(remarkField);
 
         layout.setChildren(children);
-        return layout;
-    }
-
-    @Nonnull
-    @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) {
-        return List.of(
-                new TaskViewEvent(
-                        "Aufgabe abschließen",
-                        EVENT_COMPLETE
-                )
-        );
-    }
-
-    @Nonnull
-    @Override
-    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) throws ResponseException {
-        var config = context.getConfigurationOfExecutingNode();
-
-        return elementDataTransformService
+        var initialData = elementDataTransformService
                 .buildEffectiveValues(config.dataDefinition, context.getThisTask().getProcessData())
                 .toAuthoredElementValues();
+
+        return ProcessNodeStaffView.of(
+                context,
+                layout,
+                List.of(new TaskViewEvent("Aufgabe abschließen", EVENT_COMPLETE)),
+                initialData
+        );
     }
 
     @Nonnull

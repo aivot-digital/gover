@@ -293,6 +293,12 @@ const BaseDrawerGroups: DrawerGroup[] = [
                                 requiredSystemPermission: Permission.IDENTITY_PROVIDER_READ,
                             },
                             {
+                                ...drawerModuleIcon('communication'),
+                                label: 'Kommunikationsanbieter',
+                                to: '/communication-providers',
+                                requiredSystemPermission: Permission.COMMUNICATION_PROVIDER_READ,
+                            },
+                            {
                                 ...drawerModuleIcon('payment'),
                                 label: 'Zahlungsanbieter',
                                 to: '/payment-providers',
@@ -1215,7 +1221,11 @@ function DrawerListItem({
                         <DrawerNavigationIcon item={item}
                                               active={isActive}/>
                     </ListItemIcon>
-                    <ListItemText primary={item.label}/>
+                    <ListItemText
+                        primary={item.label}
+                        sx={{minWidth: 0}}
+                        slotProps={{primary: {noWrap: true}}}
+                    />
                     {item.chipContent != null && (
                         <Chip
                             label={item.chipContent}

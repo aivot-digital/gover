@@ -23,8 +23,8 @@ public record FormPdfContext(String providerName, String logoAssetKey, String lo
         return isStaffPrint();
     }
 
-    public Boolean isCitizenPrint() {
-        return scope == FormPdfScope.Citizen;
+    public Boolean isCustomerPrint() {
+        return scope == FormPdfScope.Customer;
     }
 
     public Boolean isBlankPrint() {

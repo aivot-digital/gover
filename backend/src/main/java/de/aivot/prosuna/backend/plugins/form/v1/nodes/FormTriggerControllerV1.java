@@ -23,11 +23,12 @@ import de.aivot.prosuna.backend.elements.utils.ElementFlattenUtils;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
-import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
-import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
+import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
+import de.aivot.prosuna.backend.identity.dtos.EmailIdentityRequestDTO;
+import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
-import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
+import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
 import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
@@ -54,9 +55,7 @@ import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
-import de.aivot.prosuna.backend.system.services.SystemService;
-import de.aivot.prosuna.backend.theme.dtos.ThemeResponseDTO;
-import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
+import de.aivot.prosuna.backend.theme.dtos.ResolvedThemeDTO;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -91,12 +90,10 @@ public class FormTriggerControllerV1 {
     private static final Logger logger = LoggerFactory.getLogger(FormTriggerControllerV1.class);
 
     private final ProsunaConfig prosunaConfig;
-    private final IdentityProviderService identityProviderService;
     private final ElementDerivationService elementDerivationService;
     private final AssetService assetService;
     private final ThemeService themeService;
     private final VDepartmentShadowedService vDepartmentShadowedService;
-    private final SystemService systemService;
     private final UserService userService;
     private final ProcessService processService;
     private final ProcessNodeService processNodeService;
@@ -121,15 +118,14 @@ public class FormTriggerControllerV1 {
     private final PaymentProviderRepository paymentProviderRepository;
     private final PdfService pdfService;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
+    private final IdentitySlotService identitySlotService;
 
     @Autowired
     public FormTriggerControllerV1(ProsunaConfig prosunaConfig,
-                                   IdentityProviderService identityProviderService,
                                    ElementDerivationService elementDerivationService,
                                    AssetService assetService,
                                    ThemeService themeService,
                                    VDepartmentShadowedService vDepartmentShadowedService,
-                                   SystemService systemService,
                                    UserService userService,
                                    ProcessService processService,
                                    ProcessNodeService processNodeService,
@@ -152,14 +148,14 @@ public class FormTriggerControllerV1 {
                                    PaymentPayloadCreationService paymentRequestCreationService,
                                    PaymentTransactionService paymentTransactionService,
                                    PaymentProviderRepository paymentProviderRepository,
-                                   PdfService pdfService, PaymentProviderDefinitionsService paymentProviderDefinitionsService) {
+                                   PdfService pdfService,
+                                   PaymentProviderDefinitionsService paymentProviderDefinitionsService,
+                                   IdentitySlotService identitySlotService) {
         this.prosunaConfig = prosunaConfig;
-        this.identityProviderService = identityProviderService;
         this.elementDerivationService = elementDerivationService;
         this.assetService = assetService;
         this.themeService = themeService;
         this.vDepartmentShadowedService = vDepartmentShadowedService;
-        this.systemService = systemService;
         this.userService = userService;
         this.processService = processService;
         this.processNodeService = processNodeService;
@@ -184,6 +180,7 @@ public class FormTriggerControllerV1 {
         this.paymentProviderRepository = paymentProviderRepository;
         this.pdfService = pdfService;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
+        this.identitySlotService = identitySlotService;
     }
 
     @GetMapping("")
@@ -203,7 +200,9 @@ public class FormTriggerControllerV1 {
 
         var shouldObfuscateSteps = identitySlots
                 .stream()
-                .anyMatch(s -> s.getIsRequired() && !s.isAuthenticated());
+                .anyMatch(slot -> slot.getIsRequired()
+                        && !Boolean.TRUE.equals(slot.allowsEmail())
+                        && !slot.hasValidIdentity());
 
         var formLayout = config
                 .configuration()
@@ -225,80 +224,119 @@ public class FormTriggerControllerV1 {
         );
     }
 
-    @Nonnull
-    private List<IdentitySlot> getIdentitySlots(@Nonnull ProcessNodeEntity node,
-                                                @Nullable String identitySessionId,
-                                                @Nonnull ProcessNodeService.ProcessConfigurationDetails<FormTriggerConfigV1> config) {
-        if (config.configuration().identities == null) {
-            return new LinkedList<>();
+    @GetMapping("identities/{identityId}/providers/{providerKey}/start/")
+    public void startIdentityProviderAuthentication(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String processSlug,
+            @Nonnull @PathVariable String formSlug,
+            @Nonnull @PathVariable String identityId,
+            @Nonnull @PathVariable UUID providerKey,
+            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.ORIGIN) String origin,
+            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+            @Nonnull HttpServletResponse response
+    ) throws ResponseException, IOException {
+        var execUser = getExecUser(jwt);
+        var process = getProcessEntity(processSlug);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
+        var node = getProcessNodeEntity(formSlug, process, processVersion);
+        var formProvider = getProvider(node);
+        var config = getConfigurationDetails(node, formProvider, execUser);
+        var slot = getConfiguredIdentitySlot(config, identityId);
+        var redirectUrl = identitySlotService.createAuthenticationRedirect(
+                slot,
+                identityId,
+                providerKey,
+                identitySessionId,
+                origin,
+                node.getId()
+        );
+        response.sendRedirect(redirectUrl.toString());
+    }
+
+    @PutMapping("identities/{identityId}/email/")
+    public IdentitySlotResponseDTO setEmailIdentity(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String processSlug,
+            @Nonnull @PathVariable String formSlug,
+            @Nonnull @PathVariable String identityId,
+            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+            @Nonnull @Valid @RequestBody EmailIdentityRequestDTO request,
+            @Nonnull HttpServletResponse response
+    ) throws ResponseException {
+        var execUser = getExecUser(jwt);
+        var process = getProcessEntity(processSlug);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
+        var node = getProcessNodeEntity(formSlug, process, processVersion);
+        var formProvider = getProvider(node);
+        var config = getConfigurationDetails(node, formProvider, execUser);
+        var slot = getConfiguredIdentitySlot(config, identityId);
+        var result = identitySlotService.setEmailIdentity(
+                slot,
+                identityId,
+                identitySessionId,
+                node.getId(),
+                request.emailAddress()
+        );
+        response.addCookie(IdentityCookieUtils.createIdentityCookie(result.identitySessionId()));
+        return result.slot();
+    }
+
+    @DeleteMapping("identities/{identityId}/")
+    public void clearIdentity(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String processSlug,
+            @Nonnull @PathVariable String formSlug,
+            @Nonnull @PathVariable String identityId,
+            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+            @Nonnull HttpServletResponse response
+    ) throws ResponseException {
+        var execUser = getExecUser(jwt);
+        var process = getProcessEntity(processSlug);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
+        var node = getProcessNodeEntity(formSlug, process, processVersion);
+        var formProvider = getProvider(node);
+        var config = getConfigurationDetails(node, formProvider, execUser);
+        var slot = getConfiguredIdentitySlot(config, identityId);
+
+        var identitiesRemain = identitySlotService.clearIdentity(
+                slot,
+                identityId,
+                identitySessionId,
+                node.getId()
+        );
+        if (!identitiesRemain) {
+            response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
         }
-
-        var identityDataMap = identityService
-                .getIdentityDataMap(identitySessionId, node.getId());
-
-        return config
-                .configuration()
-                .identities
-                .stream()
-                .map((slot) -> getIdentitySlot(slot, identityDataMap))
-                .toList();
+        response.setStatus(HttpServletResponse.SC_NO_CONTENT);
     }
 
     @Nonnull
-    private IdentitySlot getIdentitySlot(IdentityConfigElementSlot slot, IdentityDataMap identityDataMap) {
-        if (slot.getId() == null) {
-            throw new IllegalArgumentException("Slot ID is null");
-        }
-
-        var options = slot.getOptions();
-
-        if (options == null) {
-            return new IdentitySlot(
-                    slot.getId(),
-                    slot.getTitle(),
-                    slot.getDescription(),
-                    Boolean.TRUE.equals(slot.getIsOptional()),
-                    Boolean.TRUE.equals(slot.getAllowsMail()),
-                    identityDataMap.containsKey(slot.getId()),
-                    List.of()
-            );
-        }
-
-        var identityData = identityDataMap.get(slot.getId());
-
-        List<IdentityProvider> identityProviders = options
+    private static IdentityConfigElementSlot getConfiguredIdentitySlot(
+            @Nonnull ProcessNodeService.ProcessConfigurationDetails<FormTriggerConfigV1> config,
+            @Nonnull String identityId
+    ) throws ResponseException {
+        return Optional.ofNullable(config.configuration().identities)
+                .orElse(List.of())
                 .stream()
-                .filter(opt -> opt.getIdentityProviderKey() != null)
-                .map((opt) -> {
-                    IdentityProviderEntity idpEntity;
-                    try {
-                        idpEntity = identityProviderService
-                                .retrieve(opt.getIdentityProviderKey())
-                                .orElseThrow(ResponseException::notFound);
-                    } catch (ResponseException e) {
-                        throw new RuntimeException(e);
-                    }
+                .filter(Objects::nonNull)
+                .filter(slot -> Objects.equals(slot.getId(), identityId))
+                .findFirst()
+                .orElseThrow(() -> ResponseException.notFound("Die konfigurierte Identität wurde nicht gefunden."));
+    }
 
-                    return new IdentityProvider(
-                            idpEntity.getKey(),
-                            idpEntity.getName(),
-                            idpEntity.getIconAssetKey(),
-                            idpEntity.getType(),
-                            identityData != null && Objects.equals(identityData.providerKey(), idpEntity.getKey()),
-                            opt.getAdditionalScopes() != null ? opt.getAdditionalScopes() : List.of()
-                    );
-                })
-                .sorted(Comparator.comparing(IdentityProvider::identityProviderName))
-                .toList();
-
-        return new IdentitySlot(
-                slot.getId(),
-                slot.getTitle(),
-                slot.getDescription(),
-                Boolean.TRUE.equals(slot.getIsOptional()),
-                Boolean.TRUE.equals(slot.getAllowsMail()),
-                identityDataMap.containsKey(slot.getId()),
-                identityProviders
+    @Nonnull
+    private List<IdentitySlotResponseDTO> getIdentitySlots(
+            @Nonnull ProcessNodeEntity node,
+            @Nullable String identitySessionId,
+            @Nonnull ProcessNodeService.ProcessConfigurationDetails<FormTriggerConfigV1> config
+    ) throws ResponseException {
+        return identitySlotService.resolveSlots(
+                config.configuration().identities,
+                identitySessionId,
+                node.getId()
         );
     }
 
@@ -312,44 +350,7 @@ public class FormTriggerControllerV1 {
             @Nonnull
             ProcessVersionEntity version,
             @Nonnull
-            List<IdentitySlot> identitySlots
-    ) {
-    }
-
-    public record IdentitySlot(
-            @Nonnull
-            String id,
-            @Nullable
-            String title,
-            @Nullable
-            String description,
-            @Nonnull
-            Boolean isOptional,
-            @Nonnull
-            Boolean allowsEmail,
-            @Nonnull
-            Boolean isAuthenticated,
-            @Nonnull
-            List<IdentityProvider> availableIdentityProviders
-    ) {
-        public Boolean getIsRequired() {
-            return !isOptional;
-        }
-    }
-
-    public record IdentityProvider(
-            @Nonnull
-            UUID identityProviderKey,
-            @Nonnull
-            String identityProviderName,
-            @Nullable
-            UUID identityProviderAssetKey,
-            @Nonnull
-            IdentityProviderType identityProviderType,
-            @Nonnull
-            Boolean isAuthenticatedWithThis,
-            @Nonnull
-            List<String> additionalScopes
+            List<IdentitySlotResponseDTO> identitySlots
     ) {
     }
 
@@ -397,7 +398,7 @@ public class FormTriggerControllerV1 {
                                                                @Nonnull @PathVariable String processSlug,
                                                                @Nonnull @PathVariable String formSlug,
                                                                @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                                                               @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identitySessionId,
+                                                               @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
                                                                @Nonnull @RequestBody AuthoredElementValues values) throws ResponseException {
         var execUser = getExecUser(jwt);
         var process = getProcessEntity(processSlug);
@@ -560,6 +561,14 @@ public class FormTriggerControllerV1 {
 
         var identities = identityService
                 .getIdentityDataMap(identitySessionId, node.getId());
+
+        var identitySlots = getIdentitySlots(node, identitySessionId, config);
+        if (identitySlots.stream().anyMatch(slot -> slot.getIsRequired() && !slot.isReady())) {
+            throw ResponseException.badRequest("Mindestens eine verpflichtende Identität wurde nicht vollständig angegeben.");
+        }
+        if (identitySlots.stream().anyMatch(slot -> slot.identityType() != null && !slot.isReady())) {
+            throw ResponseException.badRequest("Bitte vervollständigen Sie jede ausgewählte Identität.");
+        }
 
         // Perform derivation
         var logger = new ElementDerivationLogger();
@@ -746,75 +755,19 @@ public class FormTriggerControllerV1 {
             description = "Retrieve the theme details associated with the specified form. " +
                     "Includes information such as colors, fonts, logos, and other visual elements that define the form's appearance."
     )
-    public ThemeResponseDTO getTheme(@Nullable @AuthenticationPrincipal Jwt jwt,
+    public ResolvedThemeDTO getTheme(@Nullable @AuthenticationPrincipal Jwt jwt,
                                      @Nonnull @PathVariable String processSlug,
                                      @Nonnull @PathVariable String formSlug,
                                      @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                                      @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion
     ) throws ResponseException {
         var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var theme = getFormTheme(context.processVersion(), context.formLayout());
-        return ThemeResponseDTO.fromEntity(theme);
-    }
-
-    @GetMapping("logo/")
-    @Operation(
-            summary = "Get the logo for a form",
-            description = "Get the logo image associated with the specified form. " +
-                    "If the form does not resolve to a custom theme, a default logo URL will be provided."
-    )
-    public void getLogo(@Nullable @AuthenticationPrincipal Jwt jwt,
-                        @Nonnull @PathVariable String processSlug,
-                        @Nonnull @PathVariable String formSlug,
-                        @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                        @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion,
-                        @Nullable @RequestParam(value = "color-scheme", required = false) String colorScheme,
-                        @Nonnull HttpServletResponse response
-    ) throws ResponseException, IOException {
-        var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var logoResolution = getFormLogoResolution(
+        var theme = themeService.resolveFormTheme(
                 context.processVersion(),
                 context.formLayout(),
-                "dark".equalsIgnoreCase(colorScheme)
+                context.process().getDepartmentId()
         );
-
-        String redirectUrl;
-        if (logoResolution.assetKey() == null && logoResolution.allowDefaultFallback()) {
-            redirectUrl = prosunaConfig.getDefaultLogoUrl();
-        } else if (logoResolution.assetKey() == null) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;
-        } else {
-            redirectUrl = assetService.createUrl(logoResolution.assetKey());
-        }
-
-        response.sendRedirect(redirectUrl);
-    }
-
-    @GetMapping("favicon/")
-    @Operation(
-            summary = "Get the favicon for a form",
-            description = "Get the favicon image associated with the specified form. " +
-                    "If the form does not have a custom favicon, a default favicon URL will be provided."
-    )
-    public void getFavicon(@Nullable @AuthenticationPrincipal Jwt jwt,
-                           @Nonnull @PathVariable String processSlug,
-                           @Nonnull @PathVariable String formSlug,
-                           @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                           @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion,
-                           @Nonnull HttpServletResponse response
-    ) throws ResponseException, IOException {
-        var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var faviconKey = getFormFaviconKey(context.processVersion(), context.formLayout());
-
-        String redirectUrl;
-        if (faviconKey == null) {
-            redirectUrl = prosunaConfig.getDefaultFaviconUrl();
-        } else {
-            redirectUrl = assetService.createUrl(faviconKey);
-        }
-
-        response.sendRedirect(redirectUrl);
+        return ResolvedThemeDTO.fromResolvedTheme(theme, assetService, prosunaConfig);
     }
 
     @GetMapping("submit/{instanceAccessKey}/{taskAccessKey}/print/")
@@ -884,7 +837,11 @@ public class FormTriggerControllerV1 {
         }
 
         var department = resolvePaymentConfirmationDepartment(context);
-        var logoUrl = resolvePaymentConfirmationLogoUrl(context.processVersion(), context.formLayout());
+        var logoUrl = resolvePaymentConfirmationLogoUrl(
+                context.processVersion(),
+                context.formLayout(),
+                context.process().getDepartmentId()
+        );
 
         byte[] pdfBytes;
         try {
@@ -1046,13 +1003,12 @@ public class FormTriggerControllerV1 {
 
     @Nullable
     private String resolvePaymentConfirmationLogoUrl(@Nonnull ProcessVersionEntity processVersion,
-                                                     @Nonnull FormLayoutElement formLayout) {
-        var logoResolution = getFormLogoResolution(processVersion, formLayout, false); // We never use the dark logo for printouts
-        if (logoResolution.assetKey() != null) {
-            return assetService.createUrl(logoResolution.assetKey());
-        }
-
-        return logoResolution.allowDefaultFallback() ? prosunaConfig.getDefaultLogoUrl() : null;
+                                                     @Nonnull FormLayoutElement formLayout,
+                                                     @Nullable Integer processDepartmentId) {
+        var theme = themeService.resolveFormTheme(processVersion, formLayout, processDepartmentId);
+        return theme.getLogoKey() == null
+                ? prosunaConfig.getDefaultLogoUrl()
+                : assetService.createUrl(theme.getLogoKey());
     }
 
     @Nonnull
@@ -1075,110 +1031,6 @@ public class FormTriggerControllerV1 {
 
         return new ResolvedFormTriggerContext(process, processVersionEntity, node, formLayout);
     }
-
-    @Nonnull
-    private ThemeEntity getFormTheme(@Nonnull ProcessVersionEntity processVersion,
-                                     @Nonnull FormLayoutElement formLayout) {
-        return getFormThemesInOrderOfImportance(processVersion, formLayout).getFirst();
-    }
-
-    @Nonnull
-    private List<ThemeEntity> getCustomFormThemesInOrderOfImportance(@Nonnull ProcessVersionEntity processVersion,
-                                                                     @Nonnull FormLayoutElement formLayout) {
-        var themes = new ArrayList<ThemeEntity>();
-
-        if (processVersion.getThemeId() != null) {
-            themeService
-                    .retrieve(processVersion.getThemeId())
-                    .ifPresent(themes::add);
-        }
-
-        addDepartmentTheme(themes, formLayout.getResponsibleDepartmentId());
-        addDepartmentTheme(themes, formLayout.getManagingDepartmentId());
-
-        return themes;
-    }
-
-    @Nonnull
-    private List<ThemeEntity> getFormThemesInOrderOfImportance(@Nonnull ProcessVersionEntity processVersion,
-                                                               @Nonnull FormLayoutElement formLayout) {
-        var themes = getCustomFormThemesInOrderOfImportance(processVersion, formLayout);
-        themes.add(systemService.retrieveDefaultTheme());
-
-        return themes;
-    }
-
-    private void addDepartmentTheme(@Nonnull List<ThemeEntity> themes,
-                                    @Nullable Integer departmentId) {
-        if (departmentId == null) {
-            return;
-        }
-
-        vDepartmentShadowedService
-                .retrieve(departmentId)
-                .ifPresent(department -> {
-                    if (department.getThemeId() != null) {
-                        themeService
-                                .retrieve(department.getThemeId())
-                                .ifPresent(themes::add);
-                    }
-                });
-    }
-
-    @Nullable
-    private UUID getFirstLogoKey(@Nonnull List<ThemeEntity> themes, boolean darkColorScheme) {
-        for (var theme : themes) {
-            var logoKey = darkColorScheme && theme.getLogoKeyDark() != null
-                    ? theme.getLogoKeyDark()
-                    : theme.getLogoKey();
-            if (logoKey != null) {
-                return logoKey;
-            }
-        }
-
-        return null;
-    }
-
-    @Nonnull
-    private LogoResolution getFormLogoResolution(@Nonnull ProcessVersionEntity processVersion,
-                                                 @Nonnull FormLayoutElement formLayout,
-                                                 boolean darkColorScheme) {
-        var customThemes = getCustomFormThemesInOrderOfImportance(processVersion, formLayout);
-
-        // A resolved custom theme chain without a logo should stay logo-less instead of inheriting
-        // the system theme logo. Only forms without custom themes fall back to the system/default logo.
-        if (!customThemes.isEmpty()) {
-            return new LogoResolution(getFirstLogoKey(customThemes, darkColorScheme), false);
-        }
-
-        var systemTheme = systemService.retrieveDefaultTheme();
-        var systemLogoKey = darkColorScheme && systemTheme.getLogoKeyDark() != null
-                ? systemTheme.getLogoKeyDark()
-                : systemTheme.getLogoKey();
-        if (systemLogoKey != null) {
-            return new LogoResolution(systemLogoKey, true);
-        }
-
-        return new LogoResolution(null, true);
-    }
-
-    @Nullable
-    private UUID getFormFaviconKey(@Nonnull ProcessVersionEntity processVersion,
-                                   @Nonnull FormLayoutElement formLayout) {
-        var themes = getFormThemesInOrderOfImportance(processVersion, formLayout);
-
-        for (var theme : themes) {
-            if (theme.getFaviconKey() != null) {
-                return theme.getFaviconKey();
-            }
-        }
-
-        return null;
-    }
-
-    private record LogoResolution(@Nullable UUID assetKey, boolean allowDefaultFallback) {
-    }
-
 
     @Nonnull
     private FormTriggerNodeV1 getProvider(ProcessNodeEntity node) throws ResponseException {

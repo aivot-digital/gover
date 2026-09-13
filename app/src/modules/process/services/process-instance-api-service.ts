@@ -34,7 +34,7 @@ export class ProcessInstanceApiService extends BaseReadApiService<
             keepUntil: null,
             accessKey: '',
             assignedFileNumbers: [],
-            identities: [],
+            identities: {},
             finished: null,
             initialNodeId: 0,
             initialPayload: {},

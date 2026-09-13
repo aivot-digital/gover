@@ -92,7 +92,7 @@
         </div>
 
         <div
-                th:if="${ base.isBlankPrint || base.isCitizenPrint || base.isDestinationPrint }"
+                th:if="${ base.isBlankPrint || base.customerPrint || base.isDestinationPrint }"
                 th:with="privacyUrl=${ base.createUrlWithQueryParameter(form.slug, 'dialog', 'privacy') }"
         >
             <a
@@ -105,7 +105,7 @@
             </a>
         </div>
 
-        <div th:if="${ base.isCitizenPrint }">
+        <div th:if="${ base.customerPrint }">
                     <span
                             class="checked"
                     ></span>

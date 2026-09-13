@@ -72,6 +72,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
         rootDerivedData,
         showInvisibleElements,
         highlightedElementId,
+        readOnly,
     } = useViewDispatcherContext();
 
     const {
@@ -197,7 +198,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
                     onBlur={handleOnBlur}
                     errors={suppressErrors ? undefined : resolvedErrors}
                     errorDetails={suppressErrors ? undefined : resolvedErrorDetails}
-                    isBusy={isBusy || disabled}
+                    isBusy={isBusy || disabled || (readOnly === true && isAnyInputElement(element))}
                     isDeriving={baseIsDeriving}
                 />
             </ElementErrorBoundary>

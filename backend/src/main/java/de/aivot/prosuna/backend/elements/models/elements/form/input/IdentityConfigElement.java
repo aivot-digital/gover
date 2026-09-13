@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
@@ -75,18 +76,35 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
         var identityProviderCache = new HashMap<UUID, Optional<IdentityProviderEntity>>();
         var validationErrors = new ArrayList<String>();
         var missingTrustLevelProviderNames = new ArrayList<String>();
+        var communicationProviderUsages = new ArrayList<IdentityCommunicationAvailabilityService.IdentityProviderUsage>();
 
         for (var slot : value) {
-            if (!hasSelectedOption(slot)) {
-                validationErrors.add("Für jede Identität muss mindestens ein Identitätsanbieter ausgewählt werden.");
+            if (!hasAcquisitionMethod(slot)) {
+                validationErrors.add("Für jede Identität muss mindestens ein Nutzerkontenanbieter oder die direkte E-Mail-Eingabe aktiviert werden.");
                 continue;
             }
 
-            validateSelectedOptions(slot, identityProviderCache, validationErrors, missingTrustLevelProviderNames);
+            validateSelectedOptions(
+                    slot,
+                    identityProviderCache,
+                    validationErrors,
+                    missingTrustLevelProviderNames,
+                    communicationProviderUsages
+            );
         }
 
         if (!missingTrustLevelProviderNames.isEmpty()) {
             validationErrors.add(createMissingTrustLevelError(missingTrustLevelProviderNames));
+        }
+
+        if (!communicationProviderUsages.isEmpty()) {
+            var communicationValidation = SpringContext
+                    .getBean(IdentityCommunicationAvailabilityService.class)
+                    .validate(communicationProviderUsages);
+            if (!communicationValidation.successful()) {
+                throw new ValidationException(this, "Die Kommunikationsanbindungen konnten nicht überprüft werden.");
+            }
+            validationErrors.addAll(communicationValidation.errors());
         }
 
         if (!validationErrors.isEmpty()) {
@@ -101,7 +119,8 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
             IdentityConfigElementSlot slot,
             Map<UUID, Optional<IdentityProviderEntity>> identityProviderCache,
             List<String> validationErrors,
-            List<String> missingTrustLevelProviderNames
+            List<String> missingTrustLevelProviderNames,
+            List<IdentityCommunicationAvailabilityService.IdentityProviderUsage> communicationProviderUsages
     ) throws ValidationException {
         if (slot == null || slot.getOptions() == null) {
             return;
@@ -117,6 +136,11 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
                 validationErrors.add("Ein ausgewählter Identitätsanbieter konnte nicht gefunden werden.");
                 continue;
             }
+
+            communicationProviderUsages.add(new IdentityCommunicationAvailabilityService.IdentityProviderUsage(
+                    identityProvider.get().getKey(),
+                    resolveIdentityName(slot)
+            ));
 
             if (requiresTrustLevel(identityProvider.get()) && !hasSelectedTrustLevel(option)) {
                 missingTrustLevelProviderNames.add(identityProvider.get().getName());
@@ -196,5 +220,18 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
                 .getOptions()
                 .stream()
                 .anyMatch(option -> option != null && option.getIdentityProviderKey() != null);
+    }
+
+    private String resolveIdentityName(IdentityConfigElementSlot slot) {
+        var title = slot == null ? null : StringUtils.toNullableTrimmedString(slot.getTitle());
+        if (title != null) {
+            return title;
+        }
+
+        return slot == null ? null : StringUtils.toNullableTrimmedString(slot.getId());
+    }
+
+    private boolean hasAcquisitionMethod(IdentityConfigElementSlot slot) {
+        return slot != null && (Boolean.TRUE.equals(slot.getAllowsMail()) || hasSelectedOption(slot));
     }
 }

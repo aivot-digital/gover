@@ -16,6 +16,7 @@ import de.aivot.prosuna.backend.elements.utils.ElementFlattenUtils;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.javascript.exceptions.JavascriptException;
 import de.aivot.prosuna.backend.javascript.models.JavascriptResult;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
@@ -636,7 +637,7 @@ public class ElementDerivationService {
             IdentityData identityData = identities
                     .get(baseElement.getMetadata().getIdentitySourceId());
 
-            if (identityData != null) {
+            if (identityData != null && identityData.type() == IdentityType.IdentityProvider) {
                 String identityAttributeKey = baseElement
                         .getMetadata()
                         .getIdentityMappings()

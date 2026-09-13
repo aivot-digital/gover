@@ -1,5 +1,6 @@
 import {Box, Divider, ListItemIcon, ListItemText, Menu, MenuItem, Switch} from '@mui/material';
 import React, {type ReactNode, useMemo} from 'react';
+import {DisabledTooltip} from "../../../../../components/disabled-tooltip/disabled-tooltip";
 
 type FormDetailsPageMoreMenuActionItem = {
     label: string;
@@ -7,6 +8,7 @@ type FormDetailsPageMoreMenuActionItem = {
     endIcon?: ReactNode;
     onClick: () => void;
     disabled?: boolean;
+    disabledTooltip?: string;
     visible?: boolean;
     isDangerous?: boolean;
     type?: 'action';
@@ -165,51 +167,56 @@ export function FormDetailsPageMoreMenu(props: FormDetailsPageMoreMenuProps): Re
                     }
 
                     return (
-                        <MenuItem
-                            key={`${item.label}-${index}`}
-                            onClick={() => {
-                                item.onClick();
-                                onClose();
-                            }}
+                        <DisabledTooltip
+                            title={item.disabledTooltip}
                             disabled={item.disabled}
-                            sx={{
-                                minHeight: 42,
-                                px: 1.5,
-                                gap: 1,
-                            }}
                         >
-                            <ListItemIcon
+                            <MenuItem
+                                key={`${item.label}-${index}`}
+                                onClick={() => {
+                                    item.onClick();
+                                    onClose();
+                                }}
+                                disabled={item.disabled}
                                 sx={{
-                                    minWidth: 32,
-                                    color: item.isDangerous ? 'error.main' : 'text.secondary',
+                                    minHeight: 42,
+                                    px: 1.5,
+                                    gap: 1,
                                 }}
                             >
-                                {item.icon}
-                            </ListItemIcon>
-                            <ListItemText
-                                primary={item.label}
-                                slotProps={{
-                                    primary: {
-                                        noWrap: true,
-                                        color: item.isDangerous ? 'error.main' : 'text.primary',
-                                    }
-                                }}
-                            />
-                            {
-                                item.endIcon != null &&
-                                <Box
+                                <ListItemIcon
                                     sx={{
-                                        ml: 1,
+                                        minWidth: 32,
                                         color: item.isDangerous ? 'error.main' : 'text.secondary',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        flexShrink: 0,
                                     }}
                                 >
-                                    {item.endIcon}
-                                </Box>
-                            }
-                        </MenuItem>
+                                    {item.icon}
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary={item.label}
+                                    slotProps={{
+                                        primary: {
+                                            noWrap: true,
+                                            color: item.isDangerous ? 'error.main' : 'text.primary',
+                                        }
+                                    }}
+                                />
+                                {
+                                    item.endIcon != null &&
+                                    <Box
+                                        sx={{
+                                            ml: 1,
+                                            color: item.isDangerous ? 'error.main' : 'text.secondary',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        {item.endIcon}
+                                    </Box>
+                                }
+                            </MenuItem>
+                        </DisabledTooltip>
                     );
                 })
             }

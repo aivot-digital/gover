@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.models.lib.MailAttachmentBytes;
 import de.aivot.prosuna.backend.services.TemplateLoaderService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
+import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Component;
 import org.thymeleaf.templatemode.TemplateMode;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
@@ -57,6 +59,7 @@ public class MailService {
     private final DepartmentMembershipService departmetMembershipService;
 
     private final MailLogoService mailLogoService;
+    private final ThemeService themeService;
     private final UserService userService;
     private final UserConfigService userConfigService;
 
@@ -72,6 +75,7 @@ public class MailService {
             VDepartmentShadowedService vDepartmentShadowedService,
             DepartmentMembershipService departmentMembershipService,
             MailLogoService mailLogoService,
+            ThemeService themeService,
             UserService userService,
             UserConfigService userConfigService) {
         this.prosunaConfig = prosunaConfig;
@@ -81,6 +85,7 @@ public class MailService {
         this.vDepartmentShadowedService = vDepartmentShadowedService;
         this.departmetMembershipService = departmentMembershipService;
         this.mailLogoService = mailLogoService;
+        this.themeService = themeService;
         this.userService = userService;
         this.userConfigService = userConfigService;
     }
@@ -397,20 +402,21 @@ public class MailService {
 
         // Mail clients apply dark mode inconsistently. Embed one light-scheme logo on a neutral raster surface
         // instead of attaching a second variant that clients cannot select reliably.
-        var senderLogo = mailLogoService.createSenderLogo(theme.getLogoKey());
+        var resolvedTheme = themeService.resolveThemeWithSystemFallback(theme);
+        var senderLogo = mailLogoService.createSenderLogo(resolvedTheme.getLogoKey());
         context.put("base", createBaseContext(senderLogo.isPresent()));
         context.put("mailSignature", resolveDefaultMailSignature(context, options));
 
         String textMessage = loadTemplate(template.getKey() + ".txt", context, TemplateMode.TEXT);
         String htmlMessage = loadTemplate(template.getKey() + ".html", context, TemplateMode.HTML);
 
-        message.setFrom(prosunaConfig.getFromMail());
         message.setSubject(subject.replaceAll("\\r?\\n", " "), "utf-8");
         var messageHelper = new MimeMessageHelper(
                 message,
                 MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
                 StandardCharsets.UTF_8.name()
         );
+        applyEnvelopeHeaders(messageHelper, options);
         messageHelper.setText(textMessage, htmlMessage);
 
         if (senderLogo.isPresent()) {
@@ -469,6 +475,29 @@ public class MailService {
 
     public boolean isSendingConfigured() {
         return !mailHost.isBlank();
+    }
+
+    private void applyEnvelopeHeaders(MimeMessageHelper messageHelper, MailSendOptions options)
+            throws MessagingException {
+        var senderAddress = options.senderAddress();
+        if (senderAddress == null) {
+            messageHelper.setFrom(prosunaConfig.getFromMail());
+        } else {
+            var senderName = options.senderName();
+            if (senderName == null) {
+                messageHelper.setFrom(senderAddress);
+            } else {
+                try {
+                    messageHelper.setFrom(senderAddress, senderName);
+                } catch (UnsupportedEncodingException exception) {
+                    throw new MessagingException("Der Absendername konnte nicht kodiert werden.", exception);
+                }
+            }
+        }
+
+        if (options.replyToAddress() != null) {
+            messageHelper.setReplyTo(options.replyToAddress());
+        }
     }
 
     private String loadTemplate(String template, Map<String, Object> data, TemplateMode mode) {

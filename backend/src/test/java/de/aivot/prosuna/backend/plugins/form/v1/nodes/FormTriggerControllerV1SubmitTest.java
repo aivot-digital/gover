@@ -16,8 +16,8 @@ import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
-import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
+import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
@@ -39,7 +39,6 @@ import de.aivot.prosuna.backend.storage.services.StorageProviderService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
-import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.Test;
@@ -237,12 +236,10 @@ class FormTriggerControllerV1SubmitTest {
 
         var controller = new FormTriggerControllerV1(
                 mock(ProsunaConfig.class),
-                mock(IdentityProviderService.class),
                 elementDerivationService,
                 mock(AssetService.class),
                 mock(ThemeService.class),
                 mock(VDepartmentShadowedService.class),
-                mock(SystemService.class),
                 userService,
                 processService,
                 processNodeService,
@@ -266,7 +263,8 @@ class FormTriggerControllerV1SubmitTest {
                 mock(PaymentTransactionService.class),
                 mock(PaymentProviderRepository.class),
                 mock(PdfService.class),
-                mock(PaymentProviderDefinitionsService.class)
+                mock(PaymentProviderDefinitionsService.class),
+                mock(IdentitySlotService.class)
         );
 
         return new SubmitFixture(

@@ -13,6 +13,7 @@ import java.util.UUID;
 public record IdentityProviderDetailsDTO(
         @Nonnull UUID key,
         @Nonnull String metadataIdentifier,
+        @Nonnull String uniqueIdAttribute,
         @Nonnull IdentityProviderType type,
         @Nullable String pkceMethod,
         @Nonnull String name,
@@ -34,6 +35,7 @@ public record IdentityProviderDetailsDTO(
         return new IdentityProviderDetailsDTO(
                 entity.getKey(),
                 entity.getMetadataIdentifier(),
+                entity.getUniqueIdAttribute(),
                 entity.getType(),
                 entity.getPkceMethod(),
                 entity.getName(),

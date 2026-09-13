@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityAdditionalParameter;
 import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
@@ -22,12 +23,14 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,6 +38,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -65,6 +69,64 @@ class IdentityServiceTest {
                 identityProviderService,
                 identityCacheRepository
         );
+    }
+
+    @Test
+    void setEmailIdentityStoresOnlyTheNormalizedAddressAndReplacesTheSameSlot() {
+        var previousIdentity = new IdentityCacheEntity(
+                "previous", "session", 42, null, IdentityType.IdentityProvider, UUID.randomUUID(),
+                "applicant", "metadata", null, VALID_ORIGIN, VALID_STATE, Map.of("sub", "123"), null, null
+        );
+        when(identityCacheRepository.findAllBySessionIdAndRelatedProcessNodeId("session", 42))
+                .thenReturn(List.of(previousIdentity));
+        when(identityCacheRepository.save(any(IdentityCacheEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var stored = identityService.setEmailIdentity("session", 42, "applicant", " customer@example.test ");
+
+        assertEquals(IdentityType.Email, stored.getType());
+        assertEquals("session", stored.getSessionId());
+        assertEquals("applicant", stored.getIdentityId());
+        assertEquals("customer@example.test", stored.getEmailAddress());
+        assertEquals(Map.of("email", "customer@example.test"), stored.getIdentityData());
+        assertNull(stored.getProviderKey());
+        assertNull(stored.getMetadataIdentifier());
+        assertNull(stored.getCommunicationProviderBindingId());
+        assertNull(stored.getCommunicationProviderData());
+        verify(identityCacheRepository).deleteAll(List.of(previousIdentity));
+        verify(identityCacheRepository).save(stored);
+    }
+
+    @Test
+    void setEmailIdentityRejectsInvalidAddressesWithoutChangingTheCache() {
+        assertThrows(IllegalArgumentException.class, () ->
+                identityService.setEmailIdentity("session", 42, "applicant", "first@example.test,second@example.test")
+        );
+
+        verify(identityCacheRepository, org.mockito.Mockito.never()).save(any());
+        verify(identityCacheRepository, org.mockito.Mockito.never())
+                .findAllBySessionIdAndRelatedProcessNodeId(any(), any());
+    }
+
+    @Test
+    void clearIdentityDeletesOnlyTheRequestedSlot() {
+        var selected = new IdentityCacheEntity(
+                "selected", "session", 42, null, IdentityType.Email, null,
+                "applicant", null, "customer@example.test", "", "",
+                Map.of("email", "customer@example.test"), null, null
+        );
+        var other = new IdentityCacheEntity(
+                "other", "session", 42, null, IdentityType.Email, null,
+                "representative", null, "other@example.test", "", "",
+                Map.of("email", "other@example.test"), null, null
+        );
+        when(identityCacheRepository.findAllBySessionIdAndRelatedProcessNodeId("session", 42))
+                .thenReturn(List.of(selected, other));
+        when(identityCacheRepository.existsBySessionId("session")).thenReturn(true);
+
+        assertTrue(identityService.clearIdentity("session", 42, "applicant"));
+
+        verify(identityCacheRepository).deleteAll(List.of(selected));
     }
 
     @Test
@@ -112,6 +174,21 @@ class IdentityServiceTest {
     }
 
     @Test
+    void createRedirectURL_ShouldRejectDisabledProvider() throws ResponseException {
+        var providerKey = UUID.randomUUID();
+        var provider = new IdentityProviderEntity()
+                .setKey(providerKey)
+                .setIsEnabled(false);
+        when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
+
+        var exception = assertThrows(ResponseException.class, () -> identityService.createRedirectURL(
+                null, providerKey, VALID_IDENTITY_ID, VALID_ORIGIN, List.of(), 1
+        ));
+
+        assertEquals("Der Nutzerkontenanbieter ist nicht aktiviert.", exception.getMessage());
+    }
+
+    @Test
     void createRedirectURL_ShouldThrowException_WhenProviderKeyIsNull() {
         ResponseException exception = assertThrows(ResponseException.class, () ->
                 identityService.createRedirectURL(null, null, VALID_IDENTITY_ID, VALID_HOSTNAME, null, null)
@@ -128,6 +205,7 @@ class IdentityServiceTest {
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setMetadataIdentifier("meta");
+        provider.setUniqueIdAttribute("sub");
         provider.setIsEnabled(true);
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
@@ -224,6 +302,7 @@ class IdentityServiceTest {
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setMetadataIdentifier("meta");
+        provider.setUniqueIdAttribute("sub");
         provider.setIsEnabled(true);
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
@@ -237,7 +316,7 @@ class IdentityServiceTest {
     }
 
     @Test
-    void handleCallback_ShouldProcessCallbackSuccessfully() throws Exception {
+    void handleCallback_ShouldProcessCallbackSuccessfullyAndPreserveOtherSlots() throws Exception {
         UUID providerKey = UUID.randomUUID();
         var cacheEntityId = "cache-entity-id";
         var sessionId = "identity-session-id";
@@ -245,15 +324,36 @@ class IdentityServiceTest {
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setMetadataIdentifier("meta");
+        provider.setUniqueIdAttribute("sub");
         provider.setIsEnabled(true);
         provider.setTokenEndpoint("https://auth.example.com/token");
         provider.setUserinfoEndpoint("https://auth.example.com/userinfo");
         provider.setAttributes(List.of());
 
         IdentityCacheEntity identity = createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE);
+        var previousSameSlot = createIdentityCacheEntity(
+                "previous-same-slot",
+                sessionId,
+                providerKey,
+                VALID_ORIGIN,
+                VALID_STATE
+        ).setIdentityData(Map.of("sub", "previous"));
+        var otherSlot = createIdentityCacheEntity(
+                "other-slot",
+                sessionId,
+                providerKey,
+                VALID_ORIGIN,
+                VALID_STATE
+        )
+                .setIdentityId("representative")
+                .setIdentityData(Map.of("sub", "representative"))
+                .setCommunicationProviderBindingId(23)
+                .setCommunicationProviderData(Map.of("address", "inbox"));
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
         when(identityCacheRepository.findById(cacheEntityId)).thenReturn(Optional.of(identity));
+        when(identityCacheRepository.findAllBySessionIdAndRelatedProcessNodeId(sessionId, null))
+                .thenReturn(List.of(identity, previousSameSlot, otherSlot));
 
         var mockTokenResponse = mockHttpResponse(200, """
                 {"access_token": "access-token", "refresh_token": "refresh-token", "expires_in": 3600}
@@ -261,7 +361,7 @@ class IdentityServiceTest {
         when(httpService.postFormUrlEncoded(any(URI.class), anyMap())).thenReturn(mockTokenResponse);
 
         var mockUserInfoResponse = mockHttpResponse(200, """
-                {"name": "John Doe", "email": "john.doe@example.com"}
+                {"sub": "provider-user-123", "name": "John Doe", "email": "john.doe@example.com"}
                 """);
         when(httpService.get(any(URI.class), any(HttpServiceHeaders.class))).thenReturn(mockUserInfoResponse);
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(identity);
@@ -271,6 +371,53 @@ class IdentityServiceTest {
         assertNotNull(result);
         assertTrue(result.contains("identity-state=0"));
         assertTrue(result.startsWith(VALID_ORIGIN));
+        assertEquals("provider-user-123", identity.getUniqueIdFromIdentityProvider());
+        verify(identityCacheRepository).deleteAll(List.of(previousSameSlot));
+        assertEquals(23, otherSlot.getCommunicationProviderBindingId());
+        assertEquals(Map.of("address", "inbox"), otherSlot.getCommunicationProviderData());
+    }
+
+    @Test
+    void handleCallback_ShouldRejectMissingOrBlankUniqueIdAttribute() throws Exception {
+        UUID providerKey = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
+        var provider = new IdentityProviderEntity()
+                .setKey(providerKey)
+                .setName("Testkonto")
+                .setMetadataIdentifier("meta")
+                .setUniqueIdAttribute("sub")
+                .setIsEnabled(true)
+                .setTokenEndpoint("https://auth.example.com/token")
+                .setUserinfoEndpoint("https://auth.example.com/userinfo")
+                .setAttributes(List.of());
+        var identity = createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE);
+        var tokenResponse = mockHttpResponse(200, """
+                {"access_token": "access-token", "refresh_token": "refresh-token", "expires_in": 3600}
+                """);
+        var missingIdResponse = mockHttpResponse(200, "{\"name\":\"John Doe\"}");
+        var nullIdResponse = mockHttpResponse(200, "{\"sub\":null}");
+        var blankIdResponse = mockHttpResponse(200, "{\"sub\":\"   \"}");
+
+        when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
+        when(identityCacheRepository.findById(cacheEntityId)).thenReturn(Optional.of(identity));
+        when(httpService.postFormUrlEncoded(any(URI.class), anyMap())).thenReturn(tokenResponse);
+        when(httpService.get(any(URI.class), any(HttpServiceHeaders.class))).thenReturn(
+                missingIdResponse,
+                nullIdResponse,
+                blankIdResponse
+        );
+
+        for (int attempt = 0; attempt < 3; attempt++) {
+            var exception = assertThrows(ResponseException.class, () ->
+                    identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
+            );
+            assertTrue(exception.getMessage().contains("eindeutige Attribut sub keinen Wert"));
+        }
+
+        assertNull(identity.getUniqueIdFromIdentityProvider());
+        assertNull(identity.getIdentityData());
+        verify(identityCacheRepository, never()).save(any());
     }
 
     @Test
@@ -282,6 +429,7 @@ class IdentityServiceTest {
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setMetadataIdentifier("meta");
+        provider.setUniqueIdAttribute("sub");
         provider.setIsEnabled(true);
         provider.setTokenEndpoint("https://auth.example.com/token");
         provider.setAttributes(List.of());
@@ -312,6 +460,7 @@ class IdentityServiceTest {
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setMetadataIdentifier("meta");
+        provider.setUniqueIdAttribute("sub");
         provider.setIsEnabled(true);
         provider.setTokenEndpoint("https://auth.example.com/token");
         provider.setUserinfoEndpoint("https://auth.example.com/userinfo");
@@ -332,7 +481,7 @@ class IdentityServiceTest {
         )).thenReturn(mockTokenResponse);
 
         var mockUserInfoResponse = mockHttpResponse(200, """
-                {"name": "John Doe", "email": "john.doe@example.com"}
+                {"sub": "provider-user-123", "name": "John Doe", "email": "john.doe@example.com"}
                 """);
         when(httpService.get(
                 eq(URI.create("https://auth.example.com/userinfo")),
@@ -373,6 +522,7 @@ class IdentityServiceTest {
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setMetadataIdentifier("meta");
+        provider.setUniqueIdAttribute("sub");
         provider.setIsEnabled(true);
         provider.setTokenEndpoint("https://auth.example.com/token");
         provider.setUserinfoEndpoint("https://auth.example.com/userinfo");
@@ -398,7 +548,7 @@ class IdentityServiceTest {
         )).thenReturn(mockTokenResponse);
 
         var mockUserInfoResponse = mockHttpResponse(200, """
-                {"name": "John Doe", "email": "john.doe@example.com"}
+                {"sub": "provider-user-123", "name": "John Doe", "email": "john.doe@example.com"}
                 """);
         when(httpService.get(
                 eq(URI.create("https://auth.example.com/userinfo")),
@@ -507,11 +657,15 @@ class IdentityServiceTest {
                 sessionId,
                 null,
                 null,
+                IdentityType.IdentityProvider,
                 providerKey,
                 VALID_IDENTITY_ID,
                 "meta",
+                null,
                 origin,
                 stateNonce,
+                null,
+                null,
                 null
         );
     }

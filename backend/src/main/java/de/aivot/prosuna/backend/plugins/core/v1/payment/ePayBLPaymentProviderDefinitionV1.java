@@ -3,10 +3,11 @@ package de.aivot.prosuna.backend.plugins.core.v1.payment;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.prosuna.backend.asset.repositories.VStorageIndexItemWithAssetRepository;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -38,6 +39,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.KeyStore;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -142,39 +144,24 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         list.add(endpointIdInput);
 
 
-        var clientCertificateInput = new SelectInputElement();
+        var clientCertificateInput = new AssetSelectInputElement();
         clientCertificateInput.setId(CERTIFICATE_FIELD);
         clientCertificateInput.setRequired(true);
         clientCertificateInput.setLabel("Zertifikat");
         clientCertificateInput.setPlaceholder("ePayBL Zertifikat");
+        clientCertificateInput.setDialogTitle("ePayBL Zertifikat auswählen");
+        clientCertificateInput.setAllowedMimeTypes(List.of(CERTIFICATE_MIME_TYPE));
+        clientCertificateInput.setAssetVisibility(AssetVisibility.All);
         clientCertificateInput.setHint("Das .p12-Zertifikat wird vom Zahlungsdienstleister bereitgestellt. Es muss zuvor unter \"Dateien & Medien\" hochgeladen werden, um hier auswählbar zu sein.");
-        var clientCertificateInputOptions = vStorageIndexItemWithAssetRepository
-                .findAllByMimeType(CERTIFICATE_MIME_TYPE)
-                .stream()
-                .map(secret -> new SelectInputElementOption()
-                        .setValue(secret.getAssetKey().toString())
-                        .setLabel(secret.getFilename())
-                )
-                .toList();
-        clientCertificateInput.setOptions(clientCertificateInputOptions);
         clientCertificateInput.setWeight(6.0d);
         list.add(clientCertificateInput);
 
-        var clientSecretInput = new SelectInputElement();
+        var clientSecretInput = new SecretSelectInputElement();
         clientSecretInput.setId(CERTIFICATE_PASSWORD_FIELD);
         clientSecretInput.setRequired(true);
         clientSecretInput.setLabel("Zertifikatpasswort");
         clientSecretInput.setPlaceholder("ePayBL Zertifikat Passwort");
         clientSecretInput.setHint("Das vom Zahlungsdienstleister bereitgestellte Passwort für das .p12-Zertifikat. Es muss zuvor unter \"Geheimnisse\" hinterlegt werden, um hier auswählbar zu sein.");
-        var clientSecretInputOptions = secretService
-                .list()
-                .stream()
-                .map(secret -> new SelectInputElementOption()
-                        .setValue(secret.getKey().toString())
-                        .setLabel(secret.getName())
-                )
-                .toList();
-        clientSecretInput.setOptions(clientSecretInputOptions);
         clientSecretInput.setWeight(6.0d);
         list.add(clientSecretInput);
 

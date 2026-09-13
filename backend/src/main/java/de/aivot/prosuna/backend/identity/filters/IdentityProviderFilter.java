@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.identity.filters;
 
+import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.lib.models.Filter;
@@ -18,6 +19,7 @@ public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
     private IdentityProviderType type;
     private Boolean isEnabled;
     private Boolean isTestProvider;
+    private Integer communicationProviderId;
 
     public static IdentityProviderFilter create() {
         return new IdentityProviderFilter();
@@ -25,7 +27,7 @@ public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
 
     @Override
     public Specification<IdentityProviderEntity> build() {
-        return SpecificationBuilder
+        var builder = SpecificationBuilder
                 .create(IdentityProviderEntity.class)
                 .withEquals("key", key)
                 .withInList("key", keys)
@@ -34,8 +36,23 @@ public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
                 .withEquals("clientSecretKey", clientSecretKey)
                 .withEquals("type", type)
                 .withEquals("isEnabled", isEnabled)
-                .withEquals("isTestProvider", isTestProvider)
-                .build();
+                .withEquals("isTestProvider", isTestProvider);
+
+        if (communicationProviderId != null) {
+            builder.withSpecification((root, query, criteriaBuilder) -> {
+                var bindingSubquery = query.subquery(Integer.class);
+                var bindingRoot = bindingSubquery.from(CommunicationProviderBindingEntity.class);
+                bindingSubquery
+                        .select(bindingRoot.get("id"))
+                        .where(
+                                criteriaBuilder.equal(bindingRoot.get("identityProviderKey"), root.get("key")),
+                                criteriaBuilder.equal(bindingRoot.get("communicationProviderId"), communicationProviderId)
+                        );
+                return criteriaBuilder.exists(bindingSubquery);
+            });
+        }
+
+        return builder.build();
     }
 
     public UUID getKey() {
@@ -107,6 +124,15 @@ public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
 
     public IdentityProviderFilter setIsTestProvider(Boolean testProvider) {
         isTestProvider = testProvider;
+        return this;
+    }
+
+    public Integer getCommunicationProviderId() {
+        return communicationProviderId;
+    }
+
+    public IdentityProviderFilter setCommunicationProviderId(Integer communicationProviderId) {
+        this.communicationProviderId = communicationProviderId;
         return this;
     }
 }

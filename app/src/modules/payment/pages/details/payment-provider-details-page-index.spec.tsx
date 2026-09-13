@@ -1,6 +1,6 @@
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {PaymentProviderDetailsPageIndex} from './payment-provider-details-page-index';
 
 const testState = vi.hoisted(() => {
@@ -25,6 +25,8 @@ const testState = vi.hoisted(() => {
             documentationUrl: 'https://docs.example.com/payment/test',
             configLayout: null,
         },
+        definitions: [] as Record<string, any>[],
+        handleInputPatch: vi.fn(),
     };
 });
 
@@ -32,7 +34,7 @@ vi.mock('../../../../components/generic-details-page/generic-details-page-contex
     useGenericDetailsPageContext: () => ({
         item: testState.provider,
         setItem: vi.fn(),
-        additionalData: {definitions: [testState.definition]},
+        additionalData: {definitions: testState.definitions},
         setAdditionalData: vi.fn(),
         isBusy: false,
         setIsBusy: vi.fn(),
@@ -48,6 +50,7 @@ vi.mock('../../../../hooks/use-form-manager', () => ({
         hasNotChanged: true,
         handleInputBlur: () => vi.fn(),
         handleInputChange: () => vi.fn(),
+        handleInputPatch: testState.handleInputPatch,
         validate: vi.fn(() => true),
         reset: vi.fn(),
     }),
@@ -70,6 +73,14 @@ vi.mock('../../../permissions/hooks/use-permissions', () => ({
 }));
 
 describe('PaymentProviderDetailsPageIndex', () => {
+    beforeEach(() => {
+        testState.provider.providerKey = testState.definition.key;
+        testState.provider.providerVersion = testState.definition.version;
+        testState.provider.config = {};
+        testState.definitions = [testState.definition];
+        testState.handleInputPatch.mockReset();
+    });
+
     it('shows the selected definition documentation', () => {
         render(
             <MemoryRouter>
@@ -81,5 +92,51 @@ describe('PaymentProviderDetailsPageIndex', () => {
             'href',
             'https://docs.example.com/payment/test',
         );
+        expect(screen.queryByRole('button', {name: /Auswahllisten neu laden/})).not.toBeInTheDocument();
+    });
+
+    it('selects the definition version and clears the configuration with the payment provider', () => {
+        const latestDefinition = {
+            ...testState.definition,
+            version: 2,
+            name: 'Latest test payment definition',
+        };
+        testState.provider.providerKey = '';
+        testState.provider.providerVersion = 0;
+        testState.provider.config = {legacy: 'value'};
+        testState.definitions = [testState.definition, latestDefinition];
+
+        render(
+            <MemoryRouter>
+                <PaymentProviderDetailsPageIndex/>
+            </MemoryRouter>,
+        );
+
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Zahlungsdienstleister'}));
+        expect(screen.getAllByRole('option')).toHaveLength(1);
+        fireEvent.click(screen.getByRole('option', {name: /Latest test payment definition/}));
+
+        expect(testState.handleInputPatch).toHaveBeenCalledWith({
+            providerKey: testState.definition.key,
+            providerVersion: latestDefinition.version,
+            config: {},
+        });
+    });
+
+    it('keeps every payment provider version selectable', () => {
+        testState.definitions = [
+            testState.definition,
+            {...testState.definition, version: 2},
+        ];
+
+        render(
+            <MemoryRouter>
+                <PaymentProviderDetailsPageIndex/>
+            </MemoryRouter>,
+        );
+
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Version'}));
+        expect(screen.getByRole('option', {name: 'Version 1'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: 'Version 2'})).toBeInTheDocument();
     });
 });

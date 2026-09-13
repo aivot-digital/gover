@@ -19,7 +19,6 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,7 +57,6 @@ class AiProcessDataTransformationActionNodeV1Test {
     private static final int CONFIGURED_TRANSFORMATION_MAX_TOKENS = 4444;
 
     private HttpService httpService;
-    private SecretRepository secretRepository;
     private SecretService secretService;
     private RecordingTemplateRenderService templateRenderService;
     private AiProcessDataTransformationActionNodeV1 node;
@@ -66,14 +64,12 @@ class AiProcessDataTransformationActionNodeV1Test {
     @BeforeEach
     void setUp() {
         httpService = mock(HttpService.class);
-        secretRepository = mock(SecretRepository.class);
         secretService = mock(SecretService.class);
         templateRenderService = new RecordingTemplateRenderService();
 
         node = new AiProcessDataTransformationActionNodeV1(
                 httpService,
                 templateRenderService,
-                secretRepository,
                 secretService,
                 createAiPluginProperties(1000, 1337, CONFIGURED_TRANSFORMATION_MAX_TOKENS)
         );
@@ -249,7 +245,6 @@ class AiProcessDataTransformationActionNodeV1Test {
         var defaultOnlyNode = new AiProcessDataTransformationActionNodeV1(
                 httpService,
                 templateRenderService,
-                secretRepository,
                 secretService,
                 createAiPluginProperties(2222, 1337, null)
         );

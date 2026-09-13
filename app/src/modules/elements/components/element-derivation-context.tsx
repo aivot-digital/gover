@@ -47,6 +47,7 @@ interface ElementDerivationContextProps {
     computedErrors?: ComputedElementErrors | null;
     onDerivedDataChange?: (newData: DerivedRuntimeElementData) => void;
     disabled?: boolean;
+    readOnly?: boolean;
     onDerivationStarted?: (triggeringElementData: AuthoredElementValues) => void;
     onDerivationFinished?: (derivedElementData: DerivedRuntimeElementData) => void;
     suppressErrors?: boolean;
@@ -57,6 +58,7 @@ interface ElementDerivationContextProps {
     disableVisibilities?: boolean;
     highlightedElementId?: string | null;
     taskViewMode?: TaskViewMode | null;
+    deriveOnMount?: boolean;
 }
 
 interface ElementDerivationContextType {
@@ -111,6 +113,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         computedErrors,
         onDerivedDataChange,
         disabled,
+        readOnly,
         onDerivationStarted,
         onDerivationFinished,
         suppressErrors,
@@ -121,6 +124,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         disableVisibilities = false,
         highlightedElementId,
         taskViewMode = null,
+        deriveOnMount = true,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -163,7 +167,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
         return {
             renderMode: renderMode,
-            isEditable: !disabled,
+            isEditable: !disabled && !readOnly,
             showInvisible: false,
             showTechnical: true,
             scrollContainerRef: null,
@@ -179,6 +183,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         };
     }, [
         disabled,
+        readOnly,
         element,
         authoredElementValues,
         derivedData,
@@ -199,6 +204,10 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     }, [computedErrors]);
 
     useEffect(() => {
+        if (!deriveOnMount) {
+            return;
+        }
+
         const controller = new AbortController();
         let isActive = true;
 
@@ -215,7 +224,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             isActive = false;
             controller.abort();
         };
-    }, [element, disableValidation, disableVisibilities, renderMode]);
+    }, [element, disableValidation, disableVisibilities, renderMode, deriveOnMount]);
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
         const normalizedNewData = normalizeReplicatingContainerValues(element, newData);
@@ -363,6 +372,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                     showInvisibleElements: disableVisibilities && renderMode === ViewDispatcherMode.Editor,
                     highlightedElementId: highlightedElementId,
                     taskViewMode,
+                    readOnly,
                 }}
             >
                 <ViewDispatcherComponent

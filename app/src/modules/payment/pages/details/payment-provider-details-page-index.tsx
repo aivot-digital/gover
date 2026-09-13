@@ -17,7 +17,6 @@ import {useChangeBlocker} from '../../../../hooks/use-change-blocker-2';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
-import HelpIconOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import Tooltip from '@mui/material/Tooltip';
 import * as yup from 'yup';
 import {prosunaSchemaToYup, mapFormManagerErrorsToComputedErrors} from '../../../../utils/prosuna-schema-to-yup';
@@ -35,6 +34,7 @@ import {formatMissingPermissionTooltip} from '../../../permissions/utils/permiss
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {DocumentationLink} from '../../../../components/documentation-link/documentation-link';
+import {getLatestProviderDefinitions} from '../../../../utils/provider-definition-utils';
 
 type PaymentProviderEditableFields =
     'name' |
@@ -79,8 +79,6 @@ export function PaymentProviderDetailsPageIndex() {
     const navigate = useNavigate();
     const showConfirm = useConfirm();
     const canDeletePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_DELETE);
-    const canCreatePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_CREATE);
-    const canUpdatePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_UPDATE);
 
     const [derivedRuntimeConfigData, setDerivedRuntimeConfigData] = useState<DerivedRuntimeElementData | null>(null);
     const [paymentProviderSchema, setPaymentProviderSchema] = useState<PaymentProviderYupSchemaType>(BasePaymentProviderYupSchema);
@@ -93,7 +91,6 @@ export function PaymentProviderDetailsPageIndex() {
         additionalData = {
             definitions: [],
         } as PaymentProviderAdditionalData,
-        setAdditionalData,
         isBusy,
         setIsBusy,
         isEditable,
@@ -102,6 +99,10 @@ export function PaymentProviderDetailsPageIndex() {
     const {
         definitions: availablePaymentProviderDefinitions,
     } = additionalData;
+    const latestPaymentProviderDefinitions = useMemo(
+        () => getLatestProviderDefinitions(availablePaymentProviderDefinitions),
+        [availablePaymentProviderDefinitions],
+    );
 
     const {
         currentItem: editedPaymentProvider,
@@ -109,6 +110,7 @@ export function PaymentProviderDetailsPageIndex() {
         hasNotChanged,
         handleInputBlur,
         handleInputChange,
+        handleInputPatch,
         validate: validateFormManager,
         reset: resetFormManager,
     } = useFormManager<Pick<PaymentProviderResponseDTO, PaymentProviderEditableFields>>(
@@ -134,18 +136,12 @@ export function PaymentProviderDetailsPageIndex() {
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
     const [relatedEntities, setRelatedEntities] = useState<ConstraintLinkProps[] | null>(null);
     const editPermission = isNewPaymentProvider === true ? Permission.PAYMENT_PROVIDER_CREATE : Permission.PAYMENT_PROVIDER_UPDATE;
-    const refreshDefinitionsPermission = isNewPaymentProvider === true ? Permission.PAYMENT_PROVIDER_CREATE : Permission.PAYMENT_PROVIDER_UPDATE;
-    const canRefreshDefinitions = isNewPaymentProvider === true ? canCreatePaymentProvider : canUpdatePaymentProvider;
     const editDisabledTooltip = !isEditable
         ? formatMissingPermissionTooltip(editPermission)
         : undefined;
     const deleteDisabledTooltip = !canDeletePaymentProvider
         ? formatMissingPermissionTooltip(Permission.PAYMENT_PROVIDER_DELETE)
         : undefined;
-    const refreshDefinitionsTooltip = canRefreshDefinitions
-        ? 'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'
-        : formatMissingPermissionTooltip(refreshDefinitionsPermission);
-
     useEffect(() => {
         if (selectedPaymentProviderDefinition?.configLayout == null) {
             setPaymentProviderSchema(BasePaymentProviderYupSchema);
@@ -198,30 +194,6 @@ export function PaymentProviderDetailsPageIndex() {
             <GenericDetailsSkeleton/>
         );
     }
-
-    const handleRefreshDefinitions = () => {
-        if (!canRefreshDefinitions) {
-            return;
-        }
-
-        setIsBusy(true);
-
-        new PaymentProvidersApiService()
-            .listDefinitions()
-            .then((definitions) => {
-                setAdditionalData({
-                    ...additionalData,
-                    definitions: definitions,
-                });
-                dispatch(showSuccessSnackbar('Auswahllisten wurden erfolgreich neu geladen.'));
-            })
-            .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Fehler beim Laden der Auswahllisten'));
-            })
-            .finally(() => {
-                setIsBusy(false);
-            });
-    };
 
     const handleSave = () => {
         const validationResult = validateFormManager();
@@ -391,8 +363,17 @@ export function PaymentProviderDetailsPageIndex() {
                                 label="Zahlungsdienstleister"
                                 required
                                 value={editedPaymentProvider.providerKey}
-                                onChange={handleInputChange('providerKey')}
-                                options={availablePaymentProviderDefinitions.map(def => ({
+                                onChange={(value) => {
+                                    const selectedDefinition = latestPaymentProviderDefinitions.find((candidate) => (
+                                        candidate.key === value
+                                    ));
+                                    handleInputPatch({
+                                        providerKey: value ?? '',
+                                        providerVersion: selectedDefinition?.version ?? 0,
+                                        config: {},
+                                    });
+                                }}
+                                options={latestPaymentProviderDefinitions.map(def => ({
                                     value: def.key,
                                     label: def.name,
                                     subLabel: def.description,
@@ -406,7 +387,7 @@ export function PaymentProviderDetailsPageIndex() {
                                 required
                                 value={editedPaymentProvider.providerKey}
                                 onChange={handleInputChange('providerKey')}
-                                options={availablePaymentProviderDefinitions.map(def => ({
+                                options={latestPaymentProviderDefinitions.map(def => ({
                                     value: def.key,
                                     label: def.name,
                                     subLabel: def.description,
@@ -539,20 +520,6 @@ export function PaymentProviderDetailsPageIndex() {
                         Speichern
                     </Button>
                 </DisabledTooltip>
-
-                <Tooltip title={refreshDefinitionsTooltip}>
-                    <Box component="span">
-                        <Button
-                            onClick={handleRefreshDefinitions}
-                            disabled={isBusy || !canRefreshDefinitions}
-                        >
-                            Auswahllisten neu laden <HelpIconOutlined
-                            fontSize="small"
-                            sx={{ml: 1}}
-                        />
-                        </Button>
-                    </Box>
-                </Tooltip>
 
                 {
                     !isNewPaymentProvider &&

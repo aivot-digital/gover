@@ -1,5 +1,5 @@
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Box,
     Button,
@@ -19,7 +19,7 @@ import {alpha} from '@mui/material/styles';
 import {showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {Theme} from '../../modules/themes/models/theme';
+import {ResolvedThemeDTO} from '../../modules/themes/models/theme';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {
@@ -52,17 +52,19 @@ import {walkAuthoredElementValues} from '../../utils/element-data-utils';
 import {ElementType} from '../../data/element-type/element-type';
 import {Submitted} from '../../components/submitted/submitted';
 import {DialogSearchParam, TestClaimSearchParam} from '../../modules/forms/constants/form-trigger-search-params';
-import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-api-service';
+import {
+    FormTriggerApiService,
+} from '../../modules/forms/services/form-trigger-api-service';
 import {createAppTheme} from '../../theming/themes';
 import {BaseTheme} from '../../theming/base-theme';
 import {IdentityProvidersApiService} from '../../modules/identity/identity-providers-api-service';
-import {IdentityProviderType} from '../../modules/identity/enums/identity-provider-type';
-import {RichtextComponent} from '../../components/richtext/richtext.component';
-import {IdentityButton} from '../../modules/identity/components/identity-button/identity-button';
+import {
+    type FormIdentitySelectionControlsHandle,
+    type FormIdentitySelectionControlsStatus,
+    persistPendingIdentitySelections,
+} from '../../modules/identity/components/form-identity-selection-controls/form-identity-selection-controls';
 import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
-import {isStringNotNullOrEmpty} from '../../utils/string-utils';
-import {Chip} from '../../components/chip/chip';
 import RestorePageIcon from '@aivot/mui-material-symbols-400-n25-outlined/RestorePage';
 import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
@@ -72,29 +74,15 @@ import {showApiErrorSnackbar, showWarningSnackbar} from '../../slices/snackbar-s
 import {useConfirm} from '../../providers/confirm-provider';
 import {InstantIso} from '../../utils/temporal-types';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
+import type {IdentitySlot} from '../../modules/identity/models/identity-slot';
+import {IdentitySlotCard} from '../../modules/identity/components/identity-slot-card/identity-slot-card';
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
     node: ProcessNodeEntity;
     process: ProcessEntity;
     version: ProcessVersionEntity;
-    identitySlots: {
-        id: string;
-        title: string | null;
-        description: string | null;
-        isOptional: boolean;
-        isRequired: boolean;
-        allowsEmail: boolean;
-        isAuthenticated: boolean;
-        availableIdentityProviders: {
-            identityProviderKey: string;
-            identityProviderName: string;
-            identityProviderAssetKey: string | null;
-            identityProviderType: IdentityProviderType;
-            isAuthenticatedWithThis: boolean;
-            additionalScopes: string[];
-        }[];
-    }[];
+    identitySlots: IdentitySlot[];
 }
 
 const CustomerFormLoadErrorMessage = 'Das Formular konnte nicht geladen werden.';
@@ -197,7 +185,7 @@ export function CustomerFormPage() {
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
-    const [theme, setTheme] = useState<Theme>();
+    const [theme, setTheme] = useState<ResolvedThemeDTO>();
 
     const {
         layoutElement,
@@ -389,17 +377,9 @@ export function CustomerFormPage() {
         return null;
     }
 
-    const formAssetQueryParams = new URLSearchParams();
-    if (testClaimKey != null) {
-        formAssetQueryParams.set('test-claim', testClaimKey);
-    }
-
-    const formAssetQuery = formAssetQueryParams.toString();
-    const formLogoUrl = `/api/public/form/${process.slug}/${resolvedFormSlug}/logo/?${formAssetQuery}`;
-    const darkLogoQueryParams = new URLSearchParams(formAssetQueryParams);
-    darkLogoQueryParams.set('color-scheme', 'dark');
-    const formLogoUrlDark = `/api/public/form/${process.slug}/${resolvedFormSlug}/logo/?${darkLogoQueryParams.toString()}`;
-    const formFaviconUrl = `/api/public/form/${process.slug}/${resolvedFormSlug}/favicon/?${formAssetQuery}`;
+    const formLogoUrl = theme?.logoUrl ?? AppConfig.logoUrl;
+    const formLogoUrlDark = theme?.logoUrlDark ?? AppConfig.logoUrlDark;
+    const formFaviconUrl = theme?.faviconUrl ?? AppConfig.faviconUrl;
     const customerInputDraft = CustomerInputService.loadCustomerInputDraft(process.slug, resolvedFormSlug, version.processVersion);
     const showFormFlow = data.identitySlots.length === 0 || dismissAuthentication;
 
@@ -444,7 +424,10 @@ export function CustomerFormPage() {
                                     ...currentData,
                                     identitySlots: currentData.identitySlots.map((slot) => ({
                                         ...slot,
-                                        isAuthenticated: false,
+                                        identityType: null,
+                                        emailAddress: null,
+                                        isReady: false,
+                                        communication: null,
                                         availableIdentityProviders: slot.availableIdentityProviders.map((provider) => ({
                                             ...provider,
                                             isAuthenticatedWithThis: false,
@@ -460,8 +443,19 @@ export function CustomerFormPage() {
                         !dismissAuthentication &&
                         <AuthPlaceholder
                             relatedProcessNodeId={node.id}
+                            processSlug={process.slug}
+                            formSlug={resolvedFormSlug}
+                            testClaim={testClaimKey ?? undefined}
                             identitySlots={data.identitySlots}
                             customerInputDraftDate={customerInputDraft?.date ?? null}
+                            onIdentitySlotChange={(nextSlot) => {
+                                setData(currentData => currentData == null ? null : {
+                                    ...currentData,
+                                    identitySlots: currentData.identitySlots.map(slot => (
+                                        slot.id === nextSlot.id ? nextSlot : slot
+                                    )),
+                                });
+                            }}
                             onDismiss={() => {
                                 setDismissAuthentication(true);
                             }}
@@ -567,31 +561,126 @@ export function CustomerFormPage() {
 
 interface AuthPlaceholderProps {
     relatedProcessNodeId: number;
+    processSlug: string;
+    formSlug: string;
+    testClaim?: string;
     identitySlots: RetrieveResponse['identitySlots'];
     customerInputDraftDate: InstantIso | null;
+    onIdentitySlotChange: (slot: IdentitySlot) => void;
     onDismiss: () => void;
-}
-
-function getIdentityDisplayName(identity: { title: string | null }): string {
-    const title = identity.title?.trim();
-
-    return title != null && title.length > 0 ? title : 'Unbenannte Identität';
 }
 
 function AuthPlaceholder(props: AuthPlaceholderProps) {
     const {
         customerInputDraftDate,
+        formSlug,
         identitySlots,
+        onIdentitySlotChange,
         onDismiss,
+        processSlug,
         relatedProcessNodeId,
+        testClaim,
     } = props;
+    const controlsBySlotId = useRef<Map<string, FormIdentitySelectionControlsHandle>>(new Map());
+    const [controlStatuses, setControlStatuses] = useState<Map<string, FormIdentitySelectionControlsStatus>>(new Map());
+    const [isContinuing, setIsContinuing] = useState(false);
+    const [isStartingIdentityProvider, setIsStartingIdentityProvider] = useState(false);
+    const identityProviderStartPendingRef = useRef(false);
+    const identitySelectionApi = useMemo(() => (
+        new FormTriggerApiService().createIdentitySelectionApi(
+            processSlug,
+            formSlug,
+            relatedProcessNodeId,
+            testClaim,
+        )
+    ), [formSlug, processSlug, relatedProcessNodeId, testClaim]);
+
+    const handleControlStatusChange = useCallback((
+        slotId: string,
+        status: FormIdentitySelectionControlsStatus | null,
+    ) => {
+        setControlStatuses(current => {
+            const currentStatus = current.get(slotId);
+            if (status == null && currentStatus == null) {
+                return current;
+            }
+            if (
+                status != null &&
+                currentStatus?.hasSelection === status.hasSelection &&
+                currentStatus.canCommit === status.canCommit &&
+                currentStatus.isBusy === status.isBusy
+            ) {
+                return current;
+            }
+
+            const next = new Map(current);
+            if (status == null) {
+                next.delete(slotId);
+            } else {
+                next.set(slotId, status);
+            }
+            return next;
+        });
+    }, []);
 
     const authRequired = identitySlots
         .some(slot => slot.isRequired);
-    const allRequiredAuthenticated = identitySlots
-        .every(slot => slot.isOptional || slot.isAuthenticated);
-    const someAuthenticated = identitySlots
-        .some(slot => slot.isAuthenticated);
+    const isIdentitySelected = (slot: IdentitySlot) => (
+        controlStatuses.get(slot.id)?.hasSelection ?? slot.identityType != null
+    );
+    const allSelectedIdentitiesCanCommit = identitySlots.every(slot => {
+        if (!isIdentitySelected(slot)) {
+            return slot.isOptional;
+        }
+        return controlStatuses.get(slot.id)?.canCommit ?? slot.isReady;
+    });
+    const someIdentitySelected = identitySlots.some(isIdentitySelected);
+    const someIdentityControlBusy = Array.from(controlStatuses.values()).some(status => status.isBusy);
+    const identityProviderAuthenticationDisabled = isStartingIdentityProvider || someIdentityControlBusy;
+    const continueDisabled = isContinuing || identityProviderAuthenticationDisabled || !allSelectedIdentitiesCanCommit;
+
+    const handleIdentityProviderStart = useCallback(async (targetIdentityId: string): Promise<boolean> => {
+        if (identityProviderStartPendingRef.current || someIdentityControlBusy) {
+            return false;
+        }
+
+        identityProviderStartPendingRef.current = true;
+        setIsStartingIdentityProvider(true);
+        try {
+            return await persistPendingIdentitySelections(
+                controlsBySlotId.current.entries(),
+                targetIdentityId,
+            );
+        } finally {
+            identityProviderStartPendingRef.current = false;
+            setIsStartingIdentityProvider(false);
+        }
+    }, [someIdentityControlBusy]);
+
+    const handleContinue = async () => {
+        if (continueDisabled) {
+            return;
+        }
+
+        setIsContinuing(true);
+        try {
+            const selectedSlots = identitySlots.filter(isIdentitySelected);
+            let allCommitted = true;
+            for (const slot of selectedSlots) {
+                const controls = controlsBySlotId.current.get(slot.id);
+                if (controls == null || !await controls.commitPendingSelection()) {
+                    allCommitted = false;
+                    break;
+                }
+            }
+
+            if (allCommitted) {
+                onDismiss();
+            }
+        } finally {
+            setIsContinuing(false);
+        }
+    };
     const sortedIdentitySlots = useMemo(() => (
         identitySlots
             .map((slot, index) => ({
@@ -625,7 +714,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                         variant="h2"
                         component="div"
                     >
-                        Mit Nutzerkonto anmelden
+                        Identität auswählen
                     </Typography>
 
                     {
@@ -637,9 +726,8 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                         maxWidth: 680,
                                     }}
                                 >
-                                    Für dieses Formular ist eine Anmeldung erforderlich. Wählen Sie für jede als verpflichtend
-                                    gekennzeichnete Identität eines der verfügbaren Nutzerkonten aus. Verfügbare Daten können
-                                    anschließend automatisch in das Formular übernommen werden.
+                                    Für dieses Formular ist eine Identität erforderlich. Wählen Sie für jeden als verpflichtend
+                                    gekennzeichneten Eintrag ein Nutzerkonto oder, sofern angeboten, eine E-Mail-Adresse aus.
                                 </Typography>
                             )
                             : (
@@ -649,8 +737,8 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                         maxWidth: 680,
                                     }}
                                 >
-                                    Sie können sich mit einem Nutzerkonto anmelden, um verfügbare Daten automatisch in das
-                                    Formular übernehmen zu lassen. Alternativ können Sie das Formular ohne Anmeldung ausfüllen.
+                                    Sie können ein Nutzerkonto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können
+                                    Sie das Formular ohne Identitätsangabe ausfüllen.
                                 </Typography>
                             )
                     }
@@ -666,139 +754,22 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                     md: 6,
                                 }}
                             >
-                                <Paper
-                                    variant="outlined"
-                                    sx={{
-                                        height: '100%',
-                                        p: {
-                                            xs: 2,
-                                            md: 2.5,
-                                        },
-                                        borderColor: 'divider',
-                                        backgroundColor: 'background.paper',
+                                <IdentitySlotCard
+                                    ref={(controls) => {
+                                        if (controls == null) {
+                                            controlsBySlotId.current.delete(slot.id);
+                                        } else {
+                                            controlsBySlotId.current.set(slot.id, controls);
+                                        }
                                     }}
-                                >
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            height: '100%',
-                                        }}
-                                    >
-                                        <Box>
-                                            <Typography variant="caption">
-                                                Anmelden als
-                                            </Typography>
-                                            <Box
-                                                sx={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    flexWrap: 'wrap',
-                                                    columnGap: 1.25,
-                                                    rowGap: 0.5,
-                                                    mt: 0.25,
-                                                }}
-                                            >
-                                                <Typography
-                                                    variant="h4"
-                                                    component="h2"
-                                                >
-                                                    {getIdentityDisplayName(slot)}
-                                                </Typography>
-
-                                                <Chip
-                                                    mode="soft"
-                                                    label={slot.isRequired ? 'Verpflichtend' : 'Optional'}
-                                                    color={slot.isRequired ? 'warning' : 'info'}
-                                                    size="small"
-                                                />
-                                            </Box>
-                                        </Box>
-
-                                        {
-                                            isStringNotNullOrEmpty(slot.description) &&
-                                            <RichtextComponent
-                                                content={slot.description}
-                                                sx={{
-                                                    mt: 2,
-                                                }}
-                                            />
-                                        }
-
-                                        {
-                                            slot.isRequired &&
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    color: "text.secondary",
-                                                    mt: 2
-                                                }}>
-                                                Eine Authentifizierung mit einem der nachfolgenden Konten
-                                                ist zwingend erforderlich.
-                                            </Typography>
-                                        }
-
-                                        {
-                                            slot.isOptional &&
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    color: "text.secondary",
-                                                    mt: 2
-                                                }}>
-                                                Eine Authentifizierung mit einem der nachfolgenden Konten
-                                                ist optional möglich.
-                                            </Typography>
-                                        }
-
-                                        <Box
-                                            sx={{
-                                                mt: 2,
-                                            }}
-                                        >
-                                            {
-                                                slot.availableIdentityProviders.length === 0
-                                                    ? (
-                                                        <Box
-                                                            sx={(theme) => ({
-                                                                mt: 2,
-                                                                px: 2,
-                                                                py: 1.5,
-                                                                border: '1px dashed',
-                                                                borderColor: alpha(theme.palette.text.primary, 0.18),
-                                                                borderRadius: 1,
-                                                                backgroundColor: alpha(theme.palette.text.primary, 0.015),
-                                                            })}
-                                                        >
-                                                            <Typography
-                                                                variant="body2"
-                                                                sx={{
-                                                                    color: "text.secondary"
-                                                                }}
-                                                            >
-                                                                Für diese Identität steht aktuell keine Anmeldemöglichkeit zur Verfügung.
-                                                            </Typography>
-                                                        </Box>
-                                                    )
-                                                    : slot
-                                                        .availableIdentityProviders
-                                                        .map((idp) => (
-                                                            <IdentityButton
-                                                                key={`${slot.id}-${idp.identityProviderKey}`}
-                                                                relatedProcessNodeId={relatedProcessNodeId}
-                                                                identityProviderKey={idp.identityProviderKey}
-                                                                identityProviderName={idp.identityProviderName}
-                                                                identityProviderType={idp.identityProviderType}
-                                                                identityProviderAssetKey={idp.identityProviderAssetKey}
-                                                                isAuthenticated={idp.isAuthenticatedWithThis}
-                                                                identityId={slot.id}
-                                                                additionalScopes={idp.additionalScopes}
-                                                            />
-                                                        ))
-                                            }
-                                        </Box>
-                                    </Box>
-                                </Paper>
+                                    slot={slot}
+                                    api={identitySelectionApi}
+                                    saveMode="deferred"
+                                    beforeIdentityProviderStart={handleIdentityProviderStart}
+                                    identityProviderAuthenticationDisabled={identityProviderAuthenticationDisabled}
+                                    onChange={onIdentitySlotChange}
+                                    onStatusChange={handleControlStatusChange}
+                                />
                             </Grid>
                         ))
                 }
@@ -822,11 +793,12 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                     >
                         {
                             !authRequired &&
-                            !someAuthenticated &&
+                            !someIdentitySelected &&
                             <Button
                                 variant="contained"
                                 endIcon={<ArrowForward/>}
-                                onClick={onDismiss}
+                                onClick={() => void handleContinue()}
+                                disabled={continueDisabled}
                                 sx={{
                                     width: {
                                         xs: '100%',
@@ -838,12 +810,12 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                             </Button>
                         }
                         {
-                            (authRequired || someAuthenticated) &&
+                            (authRequired || someIdentitySelected) &&
                             <Button
                                 variant="contained"
                                 endIcon={<ArrowForward/>}
-                                onClick={onDismiss}
-                                disabled={!allRequiredAuthenticated}
+                                onClick={() => void handleContinue()}
+                                disabled={continueDisabled}
                                 sx={{
                                     width: {
                                         xs: '100%',

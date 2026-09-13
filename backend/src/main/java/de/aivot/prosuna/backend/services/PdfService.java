@@ -333,9 +333,11 @@ public class PdfService {
                         processVersion,
                         processId
                 ));
-        var formTheme = themeService
-                .getFormThemesInOrderOfImportance(processVersionEntity, form)
-                .getFirst();
+        var processDepartmentId = processRepository
+                .findById(processId)
+                .map(ProcessEntity::getDepartmentId)
+                .orElse(null);
+        var formTheme = themeService.resolveFormTheme(processVersionEntity, form, processDepartmentId);
 
         dto.put("base", createBaseContext(formTheme, scope));
         dto.put("department", resolvePdfDepartment(form, processId));

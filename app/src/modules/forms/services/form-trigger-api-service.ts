@@ -7,9 +7,11 @@ import {BaseApiService} from '../../../services/base-api-service';
 import type {ProcessEntity} from '../../process/entities/process-entity';
 import type {ProcessNodeEntity} from '../../process/entities/process-node-entity';
 import type {ProcessVersionEntity} from '../../process/entities/process-version-entity';
-import type {Theme} from '../../themes/models/theme';
+import type {ResolvedThemeDTO} from '../../themes/models/theme';
 import type {FormTriggerIdentityDetailsDTO} from '../dtos/form-trigger-identity-details-dto';
 import type {PaymentConfigElementValue} from '../../../models/elements/form/input/payment-config-element';
+import type {IdentityCommunicationState, IdentitySlot} from '../../identity/models/identity-slot';
+import type {IdentitySelectionApi} from '../../identity/models/identity-selection-api';
 
 export interface FormTriggerFilter {
     id: number;
@@ -81,7 +83,135 @@ export interface FormOverviewItem {
     published: string | null;
 }
 
+interface IdentitySlotsResponse {
+    identitySlots: IdentitySlot[];
+}
+
 export class FormTriggerApiService extends BaseApiService {
+    public createIdentitySelectionApi(
+        processSlug: string,
+        formSlug: string,
+        relatedProcessNodeId: number,
+        testClaim?: string,
+    ): IdentitySelectionApi {
+        return {
+            createIdentityProviderStartLink: (identityId, providerKey, origin) => (
+                this.createIdentityProviderStartLink(
+                    processSlug,
+                    formSlug,
+                    identityId,
+                    providerKey,
+                    testClaim,
+                    origin,
+                )
+            ),
+            setEmailIdentity: (identityId, emailAddress) => (
+                this.setEmailIdentity(processSlug, formSlug, identityId, emailAddress, testClaim)
+            ),
+            clearIdentity: (identityId) => (
+                this.clearIdentity(processSlug, formSlug, identityId, testClaim)
+            ),
+            selectCommunication: (identityId, bindingId, customerData) => (
+                this.selectCommunication(identityId, relatedProcessNodeId, bindingId, customerData)
+            ),
+            deriveCommunication: (identityId, bindingId, customerData, skipErrorsForElementIds) => (
+                this.deriveCommunication(
+                    identityId,
+                    relatedProcessNodeId,
+                    bindingId,
+                    customerData,
+                    skipErrorsForElementIds,
+                )
+            ),
+        };
+    }
+
+    public async getIdentitySlots(
+        processSlug: string,
+        formSlug: string,
+        testClaim?: string,
+    ): Promise<IdentitySlot[]> {
+        const response = await this.get<IdentitySlotsResponse>(
+            `/api/public/form/${encodeURIComponent(processSlug)}/${encodeURIComponent(formSlug)}/`,
+            {
+                query: {'test-claim': testClaim},
+                skipAuthCheck: true,
+            },
+        );
+
+        return response.identitySlots;
+    }
+
+    public createIdentityProviderStartLink(
+        processSlug: string,
+        formSlug: string,
+        identityId: string,
+        providerKey: string,
+        testClaim?: string,
+        origin?: string,
+    ): string {
+        return this.createPath(
+            `/api/public/form/${encodeURIComponent(processSlug)}/${encodeURIComponent(formSlug)}/identities/${encodeURIComponent(identityId)}/providers/${encodeURIComponent(providerKey)}/start/`,
+            {
+                origin: origin ?? window.location.href,
+                'test-claim': testClaim,
+            },
+        );
+    }
+
+    public setEmailIdentity(
+        processSlug: string,
+        formSlug: string,
+        identityId: string,
+        emailAddress: string,
+        testClaim?: string,
+    ): Promise<IdentitySlot> {
+        return this.put(
+            `/api/public/form/${encodeURIComponent(processSlug)}/${encodeURIComponent(formSlug)}/identities/${encodeURIComponent(identityId)}/email/`,
+            {emailAddress},
+            {query: {'test-claim': testClaim}, skipAuthCheck: true},
+        );
+    }
+
+    public clearIdentity(
+        processSlug: string,
+        formSlug: string,
+        identityId: string,
+        testClaim?: string,
+    ): Promise<void> {
+        return this.delete(
+            `/api/public/form/${encodeURIComponent(processSlug)}/${encodeURIComponent(formSlug)}/identities/${encodeURIComponent(identityId)}/`,
+            {query: {'test-claim': testClaim}, skipAuthCheck: true},
+        );
+    }
+
+    public selectCommunication(
+        identityId: string,
+        relatedProcessNodeId: number,
+        bindingId: number,
+        customerData: AuthoredElementValues,
+    ): Promise<IdentityCommunicationState> {
+        return this.put(
+            `/api/public/identity/${encodeURIComponent(identityId)}/communication/`,
+            {bindingId, customerData},
+            {query: {relatedProcessNodeId}, skipAuthCheck: true},
+        );
+    }
+
+    public deriveCommunication(
+        identityId: string,
+        relatedProcessNodeId: number,
+        bindingId: number,
+        customerData: AuthoredElementValues,
+        skipErrorsForElementIds: string[],
+    ): Promise<IdentityCommunicationState> {
+        return this.post(
+            `/api/public/identity/${encodeURIComponent(identityId)}/communication/derive/`,
+            {bindingId, customerData, skipErrorsForElementIds},
+            {query: {relatedProcessNodeId}, skipAuthCheck: true},
+        );
+    }
+
     public async submitForm(processSlug: string, triggerSlug: string, formData: FormData, options?: {
         testClaim?: string;
     }): Promise<FormTriggerSubmissionStatusResponseV1> {
@@ -156,8 +286,8 @@ export class FormTriggerApiService extends BaseApiService {
         formSlug: string,
         version?: number,
         testClaimAccessKey?: string,
-    ): Promise<Theme> {
-        return await this.get<Theme>(`/api/public/form/${processSlug}/${formSlug}/theme/`, {
+    ): Promise<ResolvedThemeDTO> {
+        return await this.get<ResolvedThemeDTO>(`/api/public/form/${processSlug}/${formSlug}/theme/`, {
             query: {
                 version,
                 'test-claim': testClaimAccessKey,

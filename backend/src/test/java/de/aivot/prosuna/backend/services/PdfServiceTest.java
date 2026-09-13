@@ -107,17 +107,20 @@ class PdfServiceTest {
                 .setStarted(Instant.now());
         var config = new FormTriggerConfigV1();
         config.formSlug = "citizen-form";
-        var expected = ResponseException.badRequest("Stop after resolving the theme.");
+        var expected = new IllegalStateException("Stop after resolving the theme.");
 
         when(elementDerivationService.derive(any(), any(), any())).thenReturn(DerivedRuntimeElementData.empty());
         when(processVersionRepository.findById(ProcessVersionEntityId.of(42, 7)))
                 .thenReturn(Optional.of(processVersion));
-        when(themeService.getFormThemesInOrderOfImportance(processVersion, form)).thenThrow(expected);
+        when(processRepository.findById(42)).thenReturn(Optional.of(
+                new ProcessEntity().setId(42).setDepartmentId(20)
+        ));
+        when(themeService.resolveFormTheme(processVersion, form, 20)).thenThrow(expected);
 
-        var result = assertThrows(ResponseException.class, () -> pdfService.generateCustomerSummary(
+        var result = assertThrows(IllegalStateException.class, () -> pdfService.generateCustomerSummary(
                 form,
                 new AuthoredElementValues(),
-                FormPdfScope.Citizen,
+                FormPdfScope.Customer,
                 processInstance,
                 config,
                 processNode
@@ -125,7 +128,7 @@ class PdfServiceTest {
 
         assertSame(expected, result);
         verify(processVersionRepository).findById(ProcessVersionEntityId.of(42, 7));
-        verify(themeService).getFormThemesInOrderOfImportance(processVersion, form);
+        verify(themeService).resolveFormTheme(processVersion, form, 20);
     }
 
     @Test

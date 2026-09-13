@@ -1,13 +1,13 @@
 import {ElementType} from './element-type';
 
 export enum ElementDisplayContext {
-    CitizenFacing = 'CitizenFacing',
+    CustomerFacing = 'CustomerFacing',
     StaffFacing = 'StaffFacing',
     DataObjectSchema = 'DataObjectSchema',
 }
 
 export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<ElementType, ElementType[]>>> = {
-    [ElementDisplayContext.CitizenFacing]: {
+    [ElementDisplayContext.CustomerFacing]: {
         [ElementType.FormLayout]: [
             ElementType.Step,
             ElementType.IntroductionStep,
@@ -190,6 +190,8 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.ProcessAttachmentDisplay,
             ElementType.ProcessInstanceAttachmentSetSelect,
             ElementType.ProcessIdentityIdInput,
+            ElementType.SecretSelectInput,
+            ElementType.AssetSelectInput,
             ElementType.HtmlTemplateInput,
             ElementType.PaymentConfigElement,
             ElementType.StoragePathSelector,
@@ -224,6 +226,8 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.SummaryLayout,
             ElementType.ProcessAttachmentDisplay,
             ElementType.StoragePathSelector,
+            ElementType.SecretSelectInput,
+            ElementType.AssetSelectInput,
         ],
         [ElementType.ReplicatingContainer]: [
             ElementType.Alert,

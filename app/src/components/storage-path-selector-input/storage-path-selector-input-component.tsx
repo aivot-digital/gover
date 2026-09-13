@@ -22,9 +22,7 @@ import CloseIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import FolderIcon from '@aivot/mui-material-symbols-400-n25-outlined/Folder';
 import StorageIcon from '@aivot/mui-material-symbols-400-n25-outlined/Storage';
 import {type SyntheticEvent, useEffect, useMemo, useRef, useState} from 'react';
-import {
-    type StoragePathSelectorInputElementValue,
-} from '../../models/elements/form/input/storage-path-selector-input-element';
+import {type StoragePathSelectorInputElementValue} from '../../models/elements/form/input/storage-path-selector-input-element';
 import {
     StorageProviderType,
     StorageProviderTypeLabels,
@@ -221,6 +219,9 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
             ? 'Dieser Speicheranbieter ist nur lesend und kann hier nicht ausgewählt werden.'
             : undefined
     );
+    const selectionLabel = 'Ordner auswählen';
+    const dialogTitle = 'Zielordner auswählen';
+    const SelectionIcon = FolderIcon;
 
     const handleProviderChange = (_: SyntheticEvent, provider: StorageProviderOption | null): void => {
         if (provider == null) {
@@ -402,7 +403,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                                     value={selectedPath ?? ''}
                                     onChange={(event) => handlePathChange(event.target.value)}
                                     onBlur={handlePathBlur}
-                                    placeholder={placeholder ?? 'Ordner auswählen'}
+                                    placeholder={placeholder ?? selectionLabel}
                                     error={pathField.invalid}
                                     disabled={pathField.disabled || pathField.busy}
                                     fullWidth
@@ -428,19 +429,19 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                                                         </Tooltip>
                                                     )}
                                                     <Tooltip
-                                                        title={value?.storageProviderId == null ? 'Bitte zuerst einen Speicheranbieter auswählen' : 'Ordner auswählen'}
+                                                        title={value?.storageProviderId == null ? 'Bitte zuerst einen Speicheranbieter auswählen' : selectionLabel}
                                                         arrow
                                                     >
                                                         <span>
                                                             <IconButton
                                                                 size="small"
-                                                                aria-label={`${label}: Ordner auswählen`}
+                                                                aria-label={`${label}: ${selectionLabel}`}
                                                                 aria-haspopup="dialog"
                                                                 aria-expanded={isDialogOpen}
                                                                 disabled={!canBrowse}
                                                                 onClick={() => setIsDialogOpen(true)}
                                                             >
-                                                                <FolderIcon fontSize="small"/>
+                                                                <SelectionIcon fontSize="small"/>
                                                             </IconButton>
                                                         </span>
                                                     </Tooltip>
@@ -462,7 +463,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                 >
                     <DialogTitle sx={{pr: 6}}>
                         <Stack sx={{minWidth: 0}}>
-                            <Typography variant="subtitle1">Zielpfad auswählen</Typography>
+                            <Typography variant="subtitle1">{dialogTitle}</Typography>
                             {selectedProvider != null && (
                                 <Typography variant="caption" noWrap sx={{color: 'text.secondary'}}>
                                     {selectedProvider.name}

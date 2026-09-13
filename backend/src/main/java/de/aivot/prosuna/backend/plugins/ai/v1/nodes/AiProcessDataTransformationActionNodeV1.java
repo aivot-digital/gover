@@ -11,16 +11,11 @@ import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
-import de.aivot.prosuna.backend.elements.enums.OverrideFunctionType;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
-import de.aivot.prosuna.backend.elements.models.elements.ElementOverrideFunctions;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
-import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.ai.AiPlugin;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
@@ -38,7 +33,6 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinit
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -77,7 +71,6 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private static final int DEFAULT_N = 1;
     private static final boolean DEFAULT_STREAM = false;
 
-    private static final String API_MODELS_PATH_SUFFIX = "/models";
     private static final String API_CHAT_COMPLETIONS_PATH_SUFFIX = "/chat/completions";
 
     private static final Pattern JSON_CODE_FENCE_PATTERN = Pattern.compile("^```(?:json)?\\s*(.*?)\\s*```$", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
@@ -97,18 +90,15 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
     private final HttpService httpService;
     private final TemplateRenderService templateRenderService;
-    private final SecretRepository secretRepository;
     private final SecretService secretService;
     private final AiPluginProperties aiPluginProperties;
 
     public AiProcessDataTransformationActionNodeV1(HttpService httpService,
                                                    TemplateRenderService templateRenderService,
-                                                   SecretRepository secretRepository,
                                                    SecretService secretService,
                                                    AiPluginProperties aiPluginProperties) {
         this.httpService = httpService;
         this.templateRenderService = templateRenderService;
-        this.secretRepository = secretRepository;
         this.secretService = secretService;
         this.aiPluginProperties = aiPluginProperties;
     }
@@ -175,9 +165,8 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Override
     @JsonIgnore
     public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
-        ConfigLayoutElement layout;
         try {
-            layout = ElementPOJOMapper.createFromPOJO(AiProcessDataTransformationActionNodeConfig.class);
+            return ElementPOJOMapper.createFromPOJO(AiProcessDataTransformationActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
                     e,
@@ -185,61 +174,6 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                     e.getMessage()
             );
         }
-
-        layout.findChild(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, SelectInputElement.class)
-                .ifPresent(field -> field.setOptions(secretRepository
-                        .findAll()
-                        .stream()
-                        .map(secret -> SelectInputElementOption.of(secret.getKey().toString(), secret.getName()))
-                        .toList()));
-
-        var modelSelectOverride = new ElementOverrideFunctions();
-        modelSelectOverride.setType(OverrideFunctionType.Javascript);
-        modelSelectOverride.setJavascriptCode(JavascriptCode.of("""
-                        (function() {
-                            const endpointUrl = ctx.effectiveValues.%s;
-                            if (endpointUrl == null) {
-                                return element;
-                            }
-                        
-                            const secretKey = ctx.effectiveValues.%s;
-                            if (secretKey == null) {
-                                return element;
-                            }
-                        
-                            const apiToken = _secrets_v1.get(secretKey);
-                        
-                            const fullUrl = endpointUrl + '%s';
-                        
-                            const response = _http_v1.get(fullUrl, {
-                                Authorization: 'Bearer ' + apiToken,
-                            });
-                        
-                            const availableModels = JSON.parse(response.body);
-                            const options = availableModels.data.map(d => ({
-                                label: d.id,
-                                value: d.id,
-                            }));
-                        
-                            return {
-                                ...element,
-                                options: options,
-                            };
-                        })()
-                        """,
-                AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID,
-                AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID,
-                API_MODELS_PATH_SUFFIX
-        ));
-        modelSelectOverride.setReferencedIds(List.of(
-                AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID,
-                AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID
-        ));
-
-        layout.findChild(AiProcessDataTransformationActionNodeConfig.MODEL_FIELD_ID, SelectInputElement.class)
-                .ifPresent(field -> field.setOverride(modelSelectOverride));
-
-        return layout;
     }
 
     @Nonnull
@@ -693,7 +627,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         /**
          * Reference to a stored secret that contains the bearer token for the AI request. The selected secret is decrypted only during execution.
          */
-        @InputElementPOJOBinding(id = API_KEY_SECRET_FIELD_ID, type = ElementType.Select, properties = {
+        @InputElementPOJOBinding(id = API_KEY_SECRET_FIELD_ID, type = ElementType.SecretSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "API-Schlüssel"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie ein hinterlegtes Geheimnis aus, das den Bearer-Token für die KI enthält."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
@@ -704,7 +638,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         /**
          * Identifier of the AI model that should generate the process data transformation.
          */
-        @InputElementPOJOBinding(id = MODEL_FIELD_ID, type = ElementType.Select, properties = {
+        @InputElementPOJOBinding(id = MODEL_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Modellname"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)

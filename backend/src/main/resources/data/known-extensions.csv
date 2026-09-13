@@ -41,6 +41,7 @@
 "PHP-Datei";"application/x-httpd-php";"php"
 "Shell-Skript";"application/x-sh";"sh"
 "SQL-Datei";"application/sql";"sql"
+"PKCS#8 Privater Schlüssel";"application/pkcs8";"p8,key"
 "PKCS#12 Zertifikat";"application/x-pkcs12";"p12,pfx"
 "PEM-Zertifikat";"application/x-pem-file";"pem"
 "CA-Zertifikat";"application/x-x509-ca-cert";"crt,cer"

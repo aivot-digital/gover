@@ -1,4 +1,5 @@
 import {useEffect, useMemo, useState} from 'react';
+import Key from '@aivot/mui-material-symbols-400-n25-outlined/Key';
 import {SearchBaseDialog} from '../../../dialogs/search-base-dialog/search-base-dialog';
 import {type Secret} from '../models/secret';
 import {SecretsApiService} from '../secrets-api-service';
@@ -19,6 +20,7 @@ export function SecretSelectDialog(props: SecretSelectDialogProps) {
     const dispatch = useAppDispatch();
     const [secrets, setSecrets] = useState<Secret[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [loadFailed, setLoadFailed] = useState(false);
 
     useEffect(() => {
         if (!open) {
@@ -26,10 +28,12 @@ export function SecretSelectDialog(props: SecretSelectDialogProps) {
         }
 
         let active = true;
+        setSecrets([]);
         setIsLoading(true);
+        setLoadFailed(false);
 
         new SecretsApiService(api)
-            .listAll()
+            .listAllOrdered('name', 'ASC')
             .then((response) => {
                 if (active) {
                     setSecrets(response.content);
@@ -38,6 +42,7 @@ export function SecretSelectDialog(props: SecretSelectDialogProps) {
             .catch((error) => {
                 if (active) {
                     setSecrets([]);
+                    setLoadFailed(true);
                     dispatch(showApiErrorSnackbar(error, 'Geheimnisse konnten nicht geladen werden.'));
                 }
             })
@@ -64,11 +69,16 @@ export function SecretSelectDialog(props: SecretSelectDialogProps) {
         primaryTextKey: 'name' as const,
         secondaryTextKey: 'description' as const,
         getId: 'key' as const,
-        noOptionsMessage: isLoading
-            ? 'Geheimnisse werden geladen ...'
-            : 'Keine Geheimnisse verfügbar.',
+        getIcon: () => <Key/>,
+        noOptionsMessage: isLoading ? (
+            'Geheimnisse werden geladen ...'
+        ) : loadFailed ? (
+            'Geheimnisse konnten nicht geladen werden.'
+        ) : (
+            'Keine Geheimnisse verfügbar.'
+        ),
         noSearchResultsMessage: 'Keine Geheimnisse gefunden, die zum Suchbegriff passen.',
-    }], [isLoading, onClose, onSelect, secrets]);
+    }], [isLoading, loadFailed, onClose, onSelect, secrets]);
 
     return (
         <SearchBaseDialog

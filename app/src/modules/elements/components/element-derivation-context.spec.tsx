@@ -119,6 +119,23 @@ vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => (
 }));
 
 describe('ElementDerivationContext', () => {
+    it('can use supplied derived data without deriving again on mount', async () => {
+        const onDeriveOverride = vi.fn().mockResolvedValue(createDerivedRuntimeElementData());
+
+        render(
+            <ElementDerivationContext
+                element={createRootElement()}
+                authoredElementValues={{field: 'supplied'}}
+                derivedData={createDerivedRuntimeElementData({effectiveValues: {field: 'supplied'}})}
+                onAuthoredElementValuesChange={vi.fn()}
+                onDeriveOverride={onDeriveOverride}
+                deriveOnMount={false}
+            />,
+        );
+
+        await waitFor(() => expect(onDeriveOverride).not.toHaveBeenCalled());
+    });
+
     it('should not persist external computed errors when authored values change', async () => {
         const onAuthoredElementValuesChange = vi.fn();
         const onDerivedDataChange = vi.fn();

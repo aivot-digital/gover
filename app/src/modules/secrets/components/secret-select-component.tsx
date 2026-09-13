@@ -2,8 +2,6 @@ import {type ReactNode, useEffect, useState} from 'react';
 import {Box, type SxProps, type Theme} from '@mui/material';
 import KeyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Key';
 import {useApi} from '../../../hooks/use-api';
-import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {SecretsApiService} from '../secrets-api-service';
 import {type Secret} from '../models/secret';
 import {SecretSelectDialog} from '../dialogs/secret-select-dialog';
@@ -24,44 +22,62 @@ export interface SecretSelectComponentProps extends FormFieldLayoutProps {
     controlSx?: SxProps<Theme>;
 }
 
+interface LoadedSecretState {
+    key: string;
+    secret?: Secret;
+    unavailable: boolean;
+}
+
 export function SecretSelectComponent(props: SecretSelectComponentProps): ReactNode {
     const api = useApi();
-    const dispatch = useAppDispatch();
-    const [selectedSecret, setSelectedSecret] = useState<Secret>();
+    const [loadedSecret, setLoadedSecret] = useState<LoadedSecretState>();
     const [isLoadingSelection, setIsLoadingSelection] = useState(false);
     const [showDialog, setShowDialog] = useState(false);
     const generatedId = useNormalizedReactId();
     const dialogId = `${props.id ?? `secret-select-${generatedId}`}-dialog`;
-    const secretKey = props.value;
-    const hasValue = secretKey != null && secretKey.trim().length > 0;
+    const secretKey = normalizeSecretKey(props.value);
+    const hasValue = secretKey != null;
+    const currentLoadedSecret = loadedSecret?.key === secretKey ? loadedSecret : undefined;
+    const selectedSecret = currentLoadedSecret?.secret;
+    const isUnavailable = currentLoadedSecret?.unavailable === true;
     const isBusy = Boolean(props.busy || isLoadingSelection);
+    const resolvedError = combineErrors(
+        props.error,
+        isUnavailable ? 'Das ausgewählte Geheimnis ist nicht verfügbar.' : undefined,
+    );
 
     useEffect(() => {
-        if (!hasValue || secretKey == null) {
-            setSelectedSecret(undefined);
+        if (secretKey == null) {
+            setLoadedSecret(undefined);
+            setIsLoadingSelection(false);
+            return;
+        }
+
+        if (loadedSecret?.key === secretKey) {
             setIsLoadingSelection(false);
             return;
         }
 
         let active = true;
-        if (selectedSecret?.key === secretKey) {
-            setIsLoadingSelection(false);
-            return;
-        }
-
-        setSelectedSecret(undefined);
         setIsLoadingSelection(true);
 
         new SecretsApiService(api)
             .retrieve(secretKey)
             .then((secret) => {
                 if (active) {
-                    setSelectedSecret(secret);
+                    setLoadedSecret({
+                        key: secretKey,
+                        secret,
+                        unavailable: false,
+                    });
                 }
             })
-            .catch((error) => {
+            .catch(() => {
                 if (active) {
-                    dispatch(showApiErrorSnackbar(error, 'Das ausgewählte Geheimnis konnte nicht geladen werden.'));
+                    setLoadedSecret({
+                        key: secretKey,
+                        unavailable: true,
+                    });
                 }
             })
             .finally(() => {
@@ -73,7 +89,7 @@ export function SecretSelectComponent(props: SecretSelectComponentProps): ReactN
         return () => {
             active = false;
         };
-    }, [api, dispatch, hasValue, secretKey, selectedSecret?.key]);
+    }, [api, loadedSecret?.key, secretKey]);
 
     return (
         <>
@@ -84,7 +100,7 @@ export function SecretSelectComponent(props: SecretSelectComponentProps): ReactN
                 label={props.label}
                 labelAction={props.labelAction}
                 hint={props.hint}
-                error={props.error}
+                error={resolvedError}
                 required={props.required}
                 disabled={props.disabled}
                 readOnly={props.readOnly}
@@ -99,9 +115,9 @@ export function SecretSelectComponent(props: SecretSelectComponentProps): ReactN
                 primaryText={selectedSecret?.name ?? (
                     isLoadingSelection
                         ? 'Geheimnis wird geladen ...'
-                        : hasValue ? secretKey : props.placeholder ?? 'Kein Geheimnis ausgewählt'
+                        : secretKey ?? props.placeholder ?? 'Kein Geheimnis ausgewählt'
                 )}
-                secondaryText={selectedSecret?.description || undefined}
+                secondaryText={selectedSecret?.description || (isUnavailable ? 'Nicht verfügbar' : undefined)}
                 leadingVisual={(
                     <Box component="span" sx={{display: 'inline-flex', color: hasValue ? 'primary.main' : 'action.active'}}>
                         <KeyOutlinedIcon sx={{fontSize: 20}} />
@@ -109,7 +125,7 @@ export function SecretSelectComponent(props: SecretSelectComponentProps): ReactN
                 )}
                 onOpen={() => setShowDialog(true)}
                 onClear={() => {
-                    setSelectedSecret(undefined);
+                    setLoadedSecret(undefined);
                     props.onChange(null);
                 }}
             />
@@ -119,11 +135,29 @@ export function SecretSelectComponent(props: SecretSelectComponentProps): ReactN
                 open={showDialog}
                 onClose={() => setShowDialog(false)}
                 onSelect={(secret) => {
-                    setSelectedSecret(secret);
+                    setLoadedSecret({
+                        key: secret.key,
+                        secret,
+                        unavailable: false,
+                    });
                     props.onChange(secret.key);
                     setShowDialog(false);
                 }}
             />
         </>
     );
+}
+
+function normalizeSecretKey(value: string | null | undefined): string | null {
+    const normalizedValue = value?.trim();
+    return normalizedValue == null || normalizedValue.length === 0 ? null : normalizedValue;
+}
+
+function combineErrors(...errors: Array<string | undefined>): string | undefined {
+    const messages = new Set(
+        errors
+            .map((message) => message?.trim())
+            .filter((message): message is string => message != null && message.length > 0),
+    );
+    return messages.size > 0 ? Array.from(messages).join(' ') : undefined;
 }

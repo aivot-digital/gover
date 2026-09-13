@@ -45,7 +45,7 @@ export function StoragePathSelectorInputFieldEditor(props: BaseEditorProps<Stora
                 />
             </Grid>
 
-            <Grid size={{xs: 12, lg: 6}}>
+            <Grid size={{xs: 12}}>
                 <TextFieldComponent
                     label="Hinweis Speicheranbieter-Auswahl"
                     value={element.storageProviderSelectHint}

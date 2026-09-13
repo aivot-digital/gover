@@ -24,6 +24,7 @@ declare var AppConfig: {
     };
     faviconUrl: string;
     logoUrl: string;
+    logoUrlDark: string;
     apiHostname: string;
     registryHostname: string;
     supportUrl: string | null;

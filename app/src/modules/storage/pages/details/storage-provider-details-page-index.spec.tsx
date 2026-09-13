@@ -1,6 +1,6 @@
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {StorageProviderDetailsPageIndex} from './storage-provider-details-page-index';
 
 const testState = vi.hoisted(() => {
@@ -36,6 +36,8 @@ const testState = vi.hoisted(() => {
             providerConfigLayout: null,
             supportsMetadataAttributes: false,
         },
+        definitions: [] as Record<string, any>[],
+        handleInputPatch: vi.fn(),
         registerSyncPreparationHandler: vi.fn(),
     };
 });
@@ -44,7 +46,7 @@ vi.mock('../../../../components/generic-details-page/generic-details-page-contex
     useGenericDetailsPageContext: () => ({
         item: testState.provider,
         setItem: vi.fn(),
-        additionalData: {definitions: [testState.definition]},
+        additionalData: {definitions: testState.definitions},
         setAdditionalData: vi.fn(),
         isBusy: false,
         setIsBusy: vi.fn(),
@@ -60,6 +62,7 @@ vi.mock('../../../../hooks/use-form-manager', () => ({
         hasNotChanged: true,
         handleInputBlur: () => vi.fn(),
         handleInputChange: () => vi.fn(),
+        handleInputPatch: testState.handleInputPatch,
         validate: vi.fn(() => true),
         reset: vi.fn(),
     }),
@@ -88,6 +91,14 @@ vi.mock('./storage-provider-details-page', () => ({
 }));
 
 describe('StorageProviderDetailsPageIndex', () => {
+    beforeEach(() => {
+        testState.provider.storageProviderDefinitionKey = testState.definition.key;
+        testState.provider.storageProviderDefinitionVersion = testState.definition.version;
+        testState.provider.configuration = {};
+        testState.definitions = [testState.definition];
+        testState.handleInputPatch.mockReset();
+    });
+
     it('shows the selected definition documentation', () => {
         render(
             <MemoryRouter>
@@ -99,5 +110,51 @@ describe('StorageProviderDetailsPageIndex', () => {
             'href',
             'https://docs.example.com/storage/test',
         );
+        expect(screen.queryByRole('button', {name: /Auswahllisten neu laden/})).not.toBeInTheDocument();
+    });
+
+    it('selects the definition version and clears the configuration with the storage type', () => {
+        const latestDefinition = {
+            ...testState.definition,
+            version: 2,
+            name: 'Latest test storage definition',
+        };
+        testState.provider.storageProviderDefinitionKey = '';
+        testState.provider.storageProviderDefinitionVersion = 0;
+        testState.provider.configuration = {legacy: 'value'};
+        testState.definitions = [testState.definition, latestDefinition];
+
+        render(
+            <MemoryRouter>
+                <StorageProviderDetailsPageIndex/>
+            </MemoryRouter>,
+        );
+
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Speichertyp'}));
+        expect(screen.getAllByRole('option')).toHaveLength(1);
+        fireEvent.click(screen.getByRole('option', {name: /Latest test storage definition/}));
+
+        expect(testState.handleInputPatch).toHaveBeenCalledWith({
+            storageProviderDefinitionKey: testState.definition.key,
+            storageProviderDefinitionVersion: latestDefinition.version,
+            configuration: {},
+        });
+    });
+
+    it('keeps every storage provider version selectable', () => {
+        testState.definitions = [
+            testState.definition,
+            {...testState.definition, version: 2},
+        ];
+
+        render(
+            <MemoryRouter>
+                <StorageProviderDetailsPageIndex/>
+            </MemoryRouter>,
+        );
+
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Version'}));
+        expect(screen.getByRole('option', {name: 'Version 1'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: 'Version 2'})).toBeInTheDocument();
     });
 });

@@ -125,6 +125,12 @@ export function IdentityProviderDetailsPage() {
                                 isDisabled: (item: IdentityProviderDetailsDTO | undefined) => item?.key === '',
                                 requiredPermission: Permission.IDENTITY_PROVIDER_UPDATE,
                             },
+                            {
+                                path: '/identity-providers/:key/communication',
+                                label: 'Kommunikation',
+                                isDisabled: (item: IdentityProviderDetailsDTO | undefined) => item?.key === '',
+                                requiredPermission: Permission.COMMUNICATION_PROVIDER_READ,
+                            },
                         ];
 
                         if (!item || item.key === '') {

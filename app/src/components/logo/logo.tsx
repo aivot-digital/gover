@@ -1,6 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {Box, useTheme} from '@mui/material';
-import {createApiPath} from '../../utils/url-path-utils';
 
 interface LogoProps {
     updated?: string | null | undefined;
@@ -30,9 +29,7 @@ export function Logo(props: LogoProps) {
 
     const url = useMemo(() => {
         const resolvedSrc = theme.palette.mode === 'dark' ? srcDark ?? src : src;
-        let url = resolvedSrc ?? createApiPath(
-            `/api/public/system/logo/${theme.palette.mode === 'dark' ? '?color-scheme=dark' : ''}`,
-        );
+        let url = resolvedSrc ?? (theme.palette.mode === 'dark' ? AppConfig.logoUrlDark : AppConfig.logoUrl);
 
         if (updated == null) {
             return url;

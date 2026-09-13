@@ -23,5 +23,6 @@ export interface ProcessInstanceTaskEntity {
     // process-data UI now compares complete task snapshots because this representation is ambiguous for some changes.
     processDataDiff: Record<string, any>;
     assignedUserId: string | null;
+    assignedCustomerIdentityId: string | null;
     deadline: string | null; // ISO date string
 }

@@ -1,11 +1,10 @@
 import {Box, Button, Divider, Grid, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {useContext, useMemo, useState} from 'react';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType,
 } from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
-import {Api, useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
@@ -16,15 +15,12 @@ import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
-import HelpIconOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import Tooltip from '@mui/material/Tooltip';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
-import {SecretEntityResponseDTO} from '../../../secrets/dtos/secret-entity-response-dto';
-import {SecretsApiService} from '../../../secrets/secrets-api-service';
-import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
+import {SecretSelectComponent} from '../../../secrets/components/secret-select-component';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
 import {IdentityAdditionalParameter} from '../../models/identity-additional-parameter';
@@ -42,6 +38,7 @@ import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 
 // allows absolute and relative URLs
 const urlRegex = /^(https?:\/\/[^\s]+|\/[^\s]*)$/;
@@ -63,6 +60,20 @@ export const formSchema = yup.object({
         .min(1, 'Der Metadaten-Identifikator ist ein Pflichtfeld.')
         .max(64, 'Der Metadaten-Identifikator darf maximal 64 Zeichen lang sein.')
         .required('Der Metadaten-Identifikator ist ein Pflichtfeld.'),
+    uniqueIdAttribute: yup.string()
+        .trim()
+        .max(255, 'Das Attribut für die eindeutige ID darf maximal 255 Zeichen lang sein.')
+        .required('Das Attribut für die eindeutige ID ist ein Pflichtfeld.')
+        .test(
+            'mapped-attribute',
+            'Das Attribut für die eindeutige ID muss in den Attributszuweisungen enthalten sein.',
+            function (value) {
+                if (value == null || value.length === 0) return true;
+
+                const attributes = this.parent.attributes as IdentityAttributeMapping[] | undefined;
+                return attributes?.some(attribute => attribute?.keyInData === value) === true;
+            },
+        ),
     authorizationEndpoint: yup.string()
         .trim()
         .min(1, 'Der Autorisierungsendpunkt ist ein Pflichtfeld.')
@@ -165,12 +176,9 @@ function getIndexedFieldError(
 export function IdentityProviderDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const api = useApi();
     const showConfirm = useConfirm();
     const canDeleteIdentityProvider = useHasSystemPermission(Permission.IDENTITY_PROVIDER_DELETE);
     const canReadSecrets = useHasSystemPermission(Permission.SECRET_READ);
-
-    const [secrets, setSecrets] = useState<SecretEntityResponseDTO[]>();
 
     const [endpointConfigUrl, setEndpointConfigUrl] = useState('');
     const [endpointConfigUrlError, setEndpointConfigUrlError] = useState<string>();
@@ -225,24 +233,22 @@ export function IdentityProviderDetailsPageIndex() {
         ? formatMissingPermissionTooltip(Permission.IDENTITY_PROVIDER_DELETE)
         : undefined;
 
-    useEffect(() => {
-        if (!canReadSecrets) {
-            setSecrets([]);
-            return;
-        }
-
-        fetchSecrets(api)
-            .then(setSecrets)
-            .catch((err) => {
-                console.error(err);
-            });
-    }, [api, canReadSecrets]);
-
     const inputsDisabled = useMemo(() => (
         isBusy || identityProvider == null || !isEditable
     ), [isBusy, identityProvider, isEditable]);
+    const configurationTablesReadOnly = isSystemProvider || !isEditable;
 
-    if (identityProvider == null || secrets == null) {
+    const uniqueIdAttributeOptions = useMemo(() => (
+        (identityProvider?.attributes ?? [])
+            .filter(attribute => isStringNotNullOrEmpty(attribute.keyInData))
+            .map(attribute => ({
+                label: isStringNotNullOrEmpty(attribute.label) ? attribute.label : attribute.keyInData,
+                subLabel: attribute.keyInData,
+                value: attribute.keyInData,
+            }))
+    ), [identityProvider?.attributes]);
+
+    if (identityProvider == null) {
         return (
             <GenericDetailsSkeleton/>
         );
@@ -280,26 +286,6 @@ export function IdentityProviderDetailsPageIndex() {
             .finally(() => {
                 setIsBusy(false);
                 dispatch(hideLoadingOverlay());
-            });
-    };
-
-    const handleRefreshSecrets = () => {
-        if (!canReadSecrets) {
-            return;
-        }
-
-        setIsBusy(true);
-        fetchSecrets(api)
-            .then(setSecrets)
-            .then(() => {
-                dispatch(showSuccessSnackbar('Die Liste der Geheimnisse wurde erfolgreich neu geladen.'));
-            })
-            .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Aktualisieren der Geheimnisse.'));
-            })
-            .finally(() => {
-                setIsBusy(false);
             });
     };
 
@@ -502,18 +488,6 @@ export function IdentityProviderDetailsPageIndex() {
         'additionalParams',
         'Bitte füllen Sie alle Schlüssel/Wert-Paare vollständig aus.',
     );
-
-    const secretOptions = canReadSecrets
-        ? secrets.map((secret) => ({
-            value: secret.key,
-            label: secret.name,
-        }))
-        : identityProvider.clientSecretKey != null
-            ? [{
-                value: identityProvider.clientSecretKey,
-                label: 'Keine Berechtigung zur Einsicht',
-            }]
-            : [];
 
     const secretSelectionHint = canReadSecrets
         ? 'Nur notwendig, wenn der Nutzerkontenanbieter dies erfordert.'
@@ -834,19 +808,17 @@ export function IdentityProviderDetailsPageIndex() {
                         md: 6,
                     }}
                 >
-                    <SelectFieldComponent
+                    <SecretSelectComponent
                         label="Client Secret"
-                        value={identityProvider.clientSecretKey ?? undefined}
+                        value={canReadSecrets ? identityProvider.clientSecretKey ?? undefined : undefined}
                         onChange={(value) => {
-                            if (isStringNullOrEmpty(value)) {
-                                handleInputChange('clientSecretKey')(undefined);
-                            } else {
-                                handleInputChange('clientSecretKey')(value);
-                            }
+                            handleInputChange('clientSecretKey')(value ?? undefined);
                         }}
                         disabled={inputsDisabled || isSystemProvider || !canReadSecrets}
-                        options={
-                            secretOptions
+                        placeholder={
+                            !canReadSecrets && identityProvider.clientSecretKey != null
+                                ? 'Keine Berechtigung zur Einsicht'
+                                : undefined
                         }
                         hint={secretSelectionHint}
                     />
@@ -862,7 +834,8 @@ export function IdentityProviderDetailsPageIndex() {
                     handleInputChange('defaultScopes')(value ?? []);
                 }}
                 allowEmpty={true}
-                disabled={inputsDisabled || isSystemProvider}
+                busy={isBusy}
+                readOnly={configurationTablesReadOnly}
                 error={defaultScopesError}
                 sx={{my: 4}}
             />
@@ -873,13 +846,11 @@ export function IdentityProviderDetailsPageIndex() {
                         key: 'key',
                         label: 'Schlüssel',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'value',
                         label: 'Wert',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                 ]}
                 createDefaultRow={() => ({key: '', value: ''})}
@@ -887,7 +858,8 @@ export function IdentityProviderDetailsPageIndex() {
                 onChange={(value) => {
                     handleInputChange('additionalParams')(value ?? []);
                 }}
-                disabled={inputsDisabled || isSystemProvider}
+                busy={isBusy}
+                readOnly={configurationTablesReadOnly}
                 error={additionalParamsError}
                 sx={{my: 4}}
             />
@@ -906,25 +878,21 @@ export function IdentityProviderDetailsPageIndex() {
                         key: 'label',
                         label: 'Titel',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'description',
                         label: 'Beschreibung',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'keyInData',
                         label: 'Feldname',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'displayAttribute',
                         label: 'Anzeigeattribut',
                         type: 'boolean',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                 ]}
                 hint="Geben Sie hier die Attributszuweisungen an, die für den Nutzerkontenanbieter gelten sollen."
@@ -938,7 +906,8 @@ export function IdentityProviderDetailsPageIndex() {
                 onChange={(value) => {
                     handleInputChange('attributes')(value ?? []);
                 }}
-                disabled={inputsDisabled || isSystemProvider}
+                busy={isBusy}
+                readOnly={configurationTablesReadOnly}
                 addTooltip="Attributszuweisung hinzufügen"
                 deleteTooltip="Attributszuweisung löschen"
                 noRowsPlaceholder="Keine Attributszuweisungen vorhanden"
@@ -985,6 +954,20 @@ export function IdentityProviderDetailsPageIndex() {
                 error={attributesError}
                 sx={{my: 4}}
             />
+            <SelectFieldComponent
+                label="Attribut für die eindeutige ID"
+                required
+                value={identityProvider.uniqueIdAttribute || null}
+                onChange={(value) => {
+                    handleInputChange('uniqueIdAttribute')(value ?? '');
+                }}
+                options={uniqueIdAttributeOptions}
+                disabled={inputsDisabled || isSystemProvider}
+                error={errors.uniqueIdAttribute}
+                emptyStatePlaceholder="Keine Attributszuweisungen vorhanden"
+                hint="Wählen Sie das Attribut aus, dessen Wert eine Identität bei diesem Nutzerkontenanbieter eindeutig kennzeichnet."
+                sx={{my: 4}}
+            />
             <Box
                 sx={{
                     display: 'flex',
@@ -1006,31 +989,6 @@ export function IdentityProviderDetailsPageIndex() {
                         Speichern
                     </Button>
                 </DisabledTooltip>
-
-                {
-                    !isSystemProvider &&
-                    !inputsDisabled &&
-                    <DisabledTooltip
-                        title={canReadSecrets
-                            ? 'Aktualisieren Sie die Liste der Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'
-                            : formatMissingPermissionTooltip(Permission.SECRET_READ)}
-                        disabled={isBusy || !canReadSecrets}
-                    >
-                        <span>
-                            <Tooltip title={canReadSecrets ? 'Aktualisieren Sie die Liste der Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.' : ''} arrow>
-                                <Button
-                                    onClick={handleRefreshSecrets}
-                                    disabled={isBusy || !canReadSecrets}
-                                >
-                                    Geheimnisse neu laden <HelpIconOutlined
-                                    fontSize="small"
-                                    sx={{ml: 1}}
-                                />
-                                </Button>
-                            </Tooltip>
-                        </span>
-                    </DisabledTooltip>
-                }
 
                 {
                     isStringNotNullOrEmpty(identityProvider.key) &&
@@ -1101,11 +1059,4 @@ export function IdentityProviderDetailsPageIndex() {
             />
         </Box>
     );
-}
-
-async function fetchSecrets(api: Api): Promise<SecretEntityResponseDTO[]> {
-    const secrets = await new SecretsApiService(api)
-        .listAll();
-
-    return secrets.content;
 }

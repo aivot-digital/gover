@@ -1,4 +1,5 @@
 import {type ProcessInstanceStatus} from '../enums/process-instance-status';
+import {type IdentityDataMap} from '../../identity/models/identity-data';
 
 export interface ProcessInstanceEntity {
     id: number;
@@ -10,7 +11,7 @@ export interface ProcessInstanceEntity {
     statusOverride: string | null;
     assignedUserId: string | null;
     assignedFileNumbers: string[];
-    identities: DeliveryChannelConfig[];
+    identities: IdentityDataMap;
     started: string; // ISO date string
     updated: string; // ISO date string
     finished: string | null; // ISO date string
@@ -19,8 +20,4 @@ export interface ProcessInstanceEntity {
     initialNodeId: number;
     keepUntil: string | null; // ISO date string
     createdForTestClaimId: number | null;
-}
-
-export interface DeliveryChannelConfig {
-
 }

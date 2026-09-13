@@ -1,0 +1,45 @@
+<mjml lang="de">
+    <mj-head>
+        <mj-include path="../partials/head.mjml"/>
+
+        <mj-html-attributes>
+            <mj-selector path=".communication-action a">
+                <mj-html-attribute name="th:href">${cta.link}</mj-html-attribute>
+                <mj-html-attribute name="th:text">${cta.title}</mj-html-attribute>
+            </mj-selector>
+        </mj-html-attributes>
+
+        <mj-preview>
+            Neue Mitteilung
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <div th:utext="${messageHtml}">
+                        Nachricht
+                    </div>
+                </mj-text>
+
+                <mj-raw>
+                    <!--/*/ <th:block th:each="cta : ${callToActions}"> /*/-->
+                </mj-raw>
+                <mj-button align="left"
+                           css-class="communication-action"
+                           href="#"
+                           padding="24px 0 0">
+                    Aktion öffnen
+                </mj-button>
+                <mj-raw>
+                    <!--/*/ </th:block> /*/-->
+                </mj-raw>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/default-mail-signature.mjml"/>
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

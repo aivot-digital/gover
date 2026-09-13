@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.mail.services;
 
+import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.config.entities.SystemConfigEntity;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.config.services.UserConfigService;
@@ -13,10 +14,12 @@ import de.aivot.prosuna.backend.mail.enums.MailTemplate;
 import de.aivot.prosuna.backend.mail.models.MailSendOptions;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
+import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.mail.BodyPart;
 import jakarta.mail.Multipart;
 import jakarta.mail.Session;
+import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.Test;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -30,11 +33,177 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 class MailServiceTest {
+    @Test
+    void sendMailRendersGenericMessageAndCallToActionsWithCustomEnvelopeHeaders() throws Exception {
+        var prosunaConfig = mock(ProsunaConfig.class);
+        when(prosunaConfig.getFromMail()).thenReturn("noreply@example.org");
+        var mailSender = mock(JavaMailSender.class);
+        var message = new MimeMessage(Session.getInstance(new Properties()));
+        when(mailSender.createMimeMessage()).thenReturn(message);
+        var systemConfigService = mock(SystemConfigService.class);
+        when(systemConfigService.retrieve(ProviderNameSystemConfigDefinition.KEY)).thenReturn(
+                new SystemConfigEntity()
+                        .setKey(ProviderNameSystemConfigDefinition.KEY)
+                        .setValue("Musterstadt")
+                        .setPublicConfig(true)
+        );
+        var mailLogoService = mock(MailLogoService.class);
+        when(mailLogoService.createSenderLogo(null)).thenReturn(Optional.empty());
+        var service = new MailService(
+                prosunaConfig,
+                mailSender,
+                systemConfigService,
+                mock(DepartmentService.class),
+                mock(VDepartmentShadowedService.class),
+                mock(DepartmentMembershipService.class),
+                mailLogoService,
+                passThroughThemeService(),
+                mock(UserService.class),
+                mock(UserConfigService.class)
+        );
+        ReflectionTestUtils.setField(service, "mailHost", "smtp.example.org");
+        var context = new HashMap<String, Object>();
+        context.put("title", "Status update");
+        context.put("messageText", "Hello customer");
+        context.put("messageHtml", "<p>Hello <strong>customer</strong></p>");
+        context.put("callToActions", List.of(
+                new CommunicationMessageCallToAction("Open portal", "https://example.test/action?x=1&y=2"),
+                new CommunicationMessageCallToAction("Show status", "https://example.test/status")
+        ));
+
+        service.sendMail(
+                new ThemeEntity(),
+                "recipient@example.org",
+                Optional.empty(),
+                Optional.empty(),
+                "Status update",
+                MailTemplate.GenericEmailMessage,
+                context,
+                Optional.empty(),
+                Optional.empty(),
+                new MailSendOptions(
+                        false,
+                        "Custom Service",
+                        "custom@example.org",
+                        "replies@example.org"
+                )
+        );
+
+        verify(mailSender).send(message);
+        message.saveChanges();
+        var sender = (InternetAddress) message.getFrom()[0];
+        assertEquals("Custom Service", sender.getPersonal());
+        assertEquals("custom@example.org", sender.getAddress());
+        assertEquals("replies@example.org", message.getHeader("Reply-To")[0]);
+
+        var parts = collectParts(message.getContent());
+        var text = parts.stream()
+                .filter(part -> contentTypeStartsWith(part, "text/plain"))
+                .map(this::readContent)
+                .findFirst()
+                .orElseThrow();
+        var html = parts.stream()
+                .filter(part -> contentTypeStartsWith(part, "text/html"))
+                .map(this::readContent)
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(text.contains("Hello customer"));
+        assertTrue(text.contains("Open portal:\r\nhttps://example.test/action?x=1&y=2")
+                || text.contains("Open portal:\nhttps://example.test/action?x=1&y=2"));
+        assertTrue(text.indexOf("Open portal") < text.indexOf("Show status"));
+        assertTrue(html.contains("<strong>customer</strong>"));
+        assertTrue(html.contains("href=\"https://example.test/action?x=1&amp;y=2\""));
+        assertTrue(html.indexOf("Open portal") < html.indexOf("Show status"));
+        assertFalse(html.contains("th:href"));
+        assertFalse(html.contains("th:text"));
+        assertFalse(html.contains("th:block"));
+    }
+
+    @Test
+    void sendMailRendersTheProcessEmailTemplateWithTextSignatureAndNeutralHint() throws Exception {
+        var prosunaConfig = mock(ProsunaConfig.class);
+        when(prosunaConfig.getFromMail()).thenReturn("noreply@example.org");
+        var mailSender = mock(JavaMailSender.class);
+        var message = new MimeMessage(Session.getInstance(new Properties()));
+        when(mailSender.createMimeMessage()).thenReturn(message);
+        var systemConfigService = mock(SystemConfigService.class);
+        when(systemConfigService.retrieve(ProviderNameSystemConfigDefinition.KEY)).thenReturn(
+                new SystemConfigEntity()
+                        .setKey(ProviderNameSystemConfigDefinition.KEY)
+                        .setValue("Musterstadt")
+                        .setPublicConfig(true)
+        );
+        var mailLogoService = mock(MailLogoService.class);
+        when(mailLogoService.createSenderLogo(null)).thenReturn(Optional.empty());
+        var service = new MailService(
+                prosunaConfig,
+                mailSender,
+                systemConfigService,
+                mock(DepartmentService.class),
+                mock(VDepartmentShadowedService.class),
+                mock(DepartmentMembershipService.class),
+                mailLogoService,
+                passThroughThemeService(),
+                mock(UserService.class),
+                mock(UserConfigService.class)
+        );
+        ReflectionTestUtils.setField(service, "mailHost", "smtp.example.org");
+        var context = new HashMap<String, Object>();
+        context.put("title", "Status update");
+        context.put("messageText", "Hello **customer**");
+        context.put("messageHtml", "<p>Hello <strong>customer</strong></p>");
+        context.put("department", new VDepartmentShadowedEntity()
+                .setId(42)
+                .setDefaultMailSignature("Fachbereich Muster")
+        );
+
+        service.sendMail(
+                new ThemeEntity(),
+                "recipient@example.org",
+                Optional.empty(),
+                Optional.empty(),
+                "Status update",
+                MailTemplate.ProcessEmail,
+                context,
+                Optional.empty(),
+                Optional.empty(),
+                MailSendOptions.defaults()
+        );
+
+        verify(mailSender).send(message);
+        message.saveChanges();
+        assertEquals("noreply@example.org", ((InternetAddress) message.getFrom()[0]).getAddress());
+
+        var parts = collectParts(message.getContent());
+        var text = parts.stream()
+                .filter(part -> contentTypeStartsWith(part, "text/plain"))
+                .map(this::readContent)
+                .findFirst()
+                .orElseThrow();
+        var html = parts.stream()
+                .filter(part -> contentTypeStartsWith(part, "text/html"))
+                .map(this::readContent)
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(text.contains("Hello **customer**"));
+        assertTrue(text.contains("Fachbereich Muster"));
+        assertTrue(text.contains("Diese Nachricht wurde über Prosuna versendet."));
+        assertTrue(html.contains("<strong>customer</strong>"));
+        assertTrue(html.contains("Fachbereich Muster"));
+        assertTrue(html.contains("Diese Nachricht wurde über Prosuna versendet."));
+        assertFalse(html.contains("th:utext"));
+        assertFalse(html.contains("th:text"));
+        assertFalse(html.contains("th:if"));
+    }
+
     @Test
     void sendMailEmbedsTheSenderLogoAndKeepsTextAndHtmlAlternatives() throws Exception {
         var prosunaConfig = mock(ProsunaConfig.class);
@@ -58,6 +227,10 @@ class MailServiceTest {
                         "sender-logo.png"
                 )
         ));
+        var themeService = mock(ThemeService.class);
+        var theme = new ThemeEntity();
+        when(themeService.resolveThemeWithSystemFallback(theme))
+                .thenReturn(new ThemeEntity().setLogoKey(logoKey));
         var service = new MailService(
                 prosunaConfig,
                 mailSender,
@@ -66,11 +239,11 @@ class MailServiceTest {
                 mock(VDepartmentShadowedService.class),
                 mock(DepartmentMembershipService.class),
                 mailLogoService,
+                themeService,
                 mock(UserService.class),
                 mock(UserConfigService.class)
         );
         ReflectionTestUtils.setField(service, "mailHost", "smtp.example.org");
-        var theme = new ThemeEntity().setLogoKey(logoKey);
         var context = new HashMap<String, Object>();
         context.put("title", "Testversand");
 
@@ -86,6 +259,7 @@ class MailServiceTest {
         );
 
         verify(mailSender).send(message);
+        verify(themeService).resolveThemeWithSystemFallback(theme);
         message.saveChanges();
         var parts = collectParts(message.getContent());
         assertTrue(parts.stream().anyMatch(part -> contentTypeStartsWith(part, "text/plain")));
@@ -158,6 +332,7 @@ class MailServiceTest {
                 shadowedDepartmentService,
                 mock(DepartmentMembershipService.class),
                 mock(MailLogoService.class),
+                passThroughThemeService(),
                 mock(UserService.class),
                 mock(UserConfigService.class)
         );
@@ -181,6 +356,13 @@ class MailServiceTest {
         verify(mailSender).send(message);
         message.saveChanges();
         return message;
+    }
+
+    private ThemeService passThroughThemeService() {
+        var themeService = mock(ThemeService.class);
+        when(themeService.resolveThemeWithSystemFallback(any(ThemeEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        return themeService;
     }
 
     private List<BodyPart> collectParts(Object content) throws Exception {

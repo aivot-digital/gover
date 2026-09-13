@@ -83,6 +83,8 @@ class StoragePathSelectorInputElementTest {
                 .getInstance()
                 .writeValueAsString(element);
 
+        assertFalse(serialized.contains("\"mode\""));
+
         var deserialized = JsonMapperFactory
                 .getInstance()
                 .readValue(serialized, BaseElement.class);

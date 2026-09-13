@@ -1,7 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.storage;
 
 import de.aivot.prosuna.backend.plugins.core.v1.storage.S3StorageProviderDefinitionV1;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.exceptions.StorageException;
 import de.aivot.prosuna.backend.storage.models.StorageDocument;
@@ -202,7 +201,7 @@ class S3StorageProviderDefinitionV1Test {
         private final List<String> deletedFolders = new LinkedList<>();
 
         private TestS3StorageProviderDefinitionV1(MinioClient client) {
-            super(mock(SecretRepository.class), mock(SecretService.class), mock(KnownExtensionsService.class), mock(StorageProviderRepository.class));
+            super(mock(SecretService.class), mock(KnownExtensionsService.class), mock(StorageProviderRepository.class));
             this.client = client;
         }
 
@@ -232,7 +231,7 @@ class S3StorageProviderDefinitionV1Test {
         private final MinioClient client;
 
         private ClientOnlyS3StorageProviderDefinitionV1(MinioClient client) {
-            super(mock(SecretRepository.class), mock(SecretService.class), mock(KnownExtensionsService.class), mock(StorageProviderRepository.class));
+            super(mock(SecretService.class), mock(KnownExtensionsService.class), mock(StorageProviderRepository.class));
             this.client = client;
         }
 

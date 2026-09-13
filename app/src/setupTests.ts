@@ -52,6 +52,7 @@ Object.defineProperty(globalThis, 'AppConfig', {
         },
         faviconUrl: '',
         logoUrl: '',
+        logoUrlDark: '',
         apiHostname: 'http://localhost',
         registryHostname: 'http://localhost',
         supportUrl: null,

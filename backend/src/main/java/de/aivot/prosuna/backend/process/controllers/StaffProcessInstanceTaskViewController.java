@@ -133,9 +133,10 @@ public class StaffProcessInstanceTaskViewController {
                 processData
         );
 
-        var layout = taskViewData
+        var staffView = taskViewData
                 .provider
                 .getStaffTaskView(context);
+        var layout = staffView.layout();
 
         if (layout instanceof BaseElement rootElement) {
             var destinationKeyIndex = ElementReferenceUtils
@@ -148,18 +149,10 @@ public class StaffProcessInstanceTaskViewController {
                     );
         }
 
-        var events = taskViewData
-                .provider
-                .getStaffTaskViewEvents(context);
-
-        var elementData = taskViewData
-                .provider
-                .getStaffTaskViewData(context);
-
         return new TaskViewResponse(
                 layout,
-                elementData,
-                events
+                staffView.data(),
+                staffView.events()
         );
     }
 
@@ -222,18 +215,15 @@ public class StaffProcessInstanceTaskViewController {
             previousTask = null;
         }
 
-        var layout = taskViewData
+        var staffView = taskViewData
                 .provider
                 .getStaffTaskView(context);
+        var layout = staffView.layout();
         if (!(layout instanceof BaseElement rootLayout)) {
             throw ResponseException.internalServerError("Die Aufgabenansicht muss ein Basis-Element sein.");
         }
 
-        var events = taskViewData
-                .provider
-                .getStaffTaskViewEvents(context);
-
-        var cleanEvent = resolveValidStaffEvent(rootLayout, events, rawEvent);
+        var cleanEvent = resolveValidStaffEvent(rootLayout, staffView.events(), rawEvent);
 
         if (rawEvent != null && cleanEvent == null) {
             throw ResponseException.badRequest("Invalid event: " + rawEvent);
@@ -309,22 +299,14 @@ public class StaffProcessInstanceTaskViewController {
             }
         }
 
-        var updatedLayout = taskViewData
+        var updatedView = taskViewData
                 .provider
                 .getStaffTaskView(context);
 
-        var updatedEvents = taskViewData
-                .provider
-                .getStaffTaskViewEvents(context);
-
-        var updatedElementData = taskViewData
-                .provider
-                .getStaffTaskViewData(context);
-
         return new TaskViewResponse(
-                updatedLayout,
-                updatedElementData,
-                updatedEvents
+                updatedView.layout(),
+                updatedView.data(),
+                updatedView.events()
         );
     }
 
@@ -407,7 +389,7 @@ public class StaffProcessInstanceTaskViewController {
                 .getStaffTaskView(context);
 
         var elementDerivationRequest = new ElementDerivationRequest(
-                (BaseElement) staffTaskView,
+                (BaseElement) staffTaskView.layout(),
                 authoredElementValues,
                 new ElementDerivationOptions()
                         .setSkipErrorsForElementIds(skipErrorsFor),
