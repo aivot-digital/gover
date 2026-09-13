@@ -1221,11 +1221,13 @@ function DrawerListItem({
                         <DrawerNavigationIcon item={item}
                                               active={isActive}/>
                     </ListItemIcon>
-                    <ListItemText
-                        primary={item.label}
-                        sx={{minWidth: 0}}
-                        slotProps={{primary: {noWrap: true}}}
-                    />
+                    <Tooltip title={item.label} placement="right" arrow>
+                        <ListItemText
+                            primary={item.label}
+                            sx={{minWidth: 0}}
+                            slotProps={{primary: {noWrap: true}}}
+                        />
+                    </Tooltip>
                     {item.chipContent != null && (
                         <Chip
                             label={item.chipContent}
