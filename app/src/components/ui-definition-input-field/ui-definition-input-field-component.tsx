@@ -625,6 +625,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                             onClick: handleSettingsMenuOpen,
                         },
                     ]}
+                    bordered
                 >
                     {label}
                 </DialogTitleWithClose>
@@ -651,6 +652,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                 <Box
                                     sx={{
                                         p: 2,
+                                        px: 2.8,
                                         height: '100%',
                                         overflowY: 'auto',
                                     }}

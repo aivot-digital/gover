@@ -543,7 +543,7 @@ function VariablePickerDialog(props: VariablePickerDialogProps) {
     >
         <DialogTitleWithClose onClose={props.onClose}>{props.title}</DialogTitleWithClose>
         <DialogContent sx={{p: 0}}>
-            <Box sx={{p: 2}}>
+            <Box sx={{p: 2, px: 2.8}}>
                 <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
                     Die Vorschläge zeigen Variablen, die im Prozess erzeugt werden können. Ob zur Laufzeit ein Wert vorliegt, hängt vom ausgeführten Prozesspfad ab.
                 </Typography>
@@ -600,7 +600,7 @@ function VariablePickerDialog(props: VariablePickerDialogProps) {
             </Box>
 
             <Divider/>
-            <Box sx={{p: 2}}>
+            <Box sx={{p: 2, px: 2.8}}>
                 <Typography variant="subtitle2" sx={{mb: 1.5}}>Eigene Referenz</Typography>
                 <Stack spacing={1.5}>
                     <SelectFieldComponent
