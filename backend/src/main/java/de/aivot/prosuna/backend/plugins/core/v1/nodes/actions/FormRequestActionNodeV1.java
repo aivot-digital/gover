@@ -166,6 +166,10 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                             context.thisNode().getProcessId(),
                             context.thisNode().getProcessVersion()
                     );
+                    group.findChild(SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID, RichTextInputElement.class)
+                            .ifPresent(field -> field.setHint("Der Text der Nachricht. Der Link, unter welchem die Identität das Formular aufrufen kann, wird automatisch an das Ende angefügt."));
+                    group.findChild(SemiAutomaticMessageConfig.ManualContent.CONTENT_FIELD_ID, RichTextInputElement.class)
+                            .ifPresent(field -> field.setHint("Der Text der Nachricht. Der Link, unter welchem die Identität das Formular aufrufen kann, wird automatisch an das Ende angefügt."));
                 });
 
         return layout;
@@ -315,6 +319,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var contentField = new RichTextInputElement();
         contentField.setId(STAFF_TASK_CONTENT_FIELD_ID);
         contentField.setLabel("Nachricht der Aufforderung");
+        contentField.setHint("Der Text der Nachricht. Der Link, unter welchem die Identität das Formular aufrufen kann, wird automatisch an das Ende angefügt.");
         contentField.setRequired(true);
 
         var root = new GroupLayoutElement();
@@ -674,8 +679,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
          * must have a usable communication binding because the request is sent through the selected identity.
          */
         @InputElementPOJOBinding(id = RECIPIENT_IDENTITY_ID_FIELD_ID, type = ElementType.ProcessIdentityIdInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Empfängeridentität"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Identität, an die die Anforderung über den ausgewählten Kommunikationsweg gesendet wird."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Identität"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Identität aus, an welche die Nachricht gesendet wird."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "requiresCommunication", boolValue = true)
         })

@@ -107,7 +107,7 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Empfange Daten von FIT-Connect und starte den Prozess.";
+        return "Empfängt Daten von FIT-Connect und startet den Prozess.";
     }
 
     @Nonnull

@@ -139,7 +139,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Sendet eine Nachricht über den für eine Prozessidentität ausgewählten Kommunikationsweg.";
+        return "Sendet eine Nachricht über den ausgewählten Kommunikationsanbieter an die Identität.";
     }
 
     @Nonnull
@@ -601,7 +601,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
          */
         @InputElementPOJOBinding(id = IDENTITY_ID_FIELD_ID, type = ElementType.ProcessIdentityIdInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Identität"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Identität, an die die Nachricht über den bei der Anmeldung gewählten Kommunikationsweg gesendet wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Identität aus, an welche die Nachricht gesendet wird."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "requiresCommunication", boolValue = true)
         })
@@ -614,7 +614,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
          */
         @InputElementPOJOBinding(id = ATTACHMENTS_FIELD_ID, type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optionale Anlagensätze, deren Dateien mit der Nachricht versendet werden."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensätze, deren Dateien mit der Nachricht versendet werden."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         @Nullable

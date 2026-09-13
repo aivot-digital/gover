@@ -180,7 +180,7 @@ class PaymentRequestActionNodeV1Test {
                 },
                 node.getExecutionTypes()
         );
-        assertFalse(node.getAbstract().isBlank());
+        assertEquals("Fordert eine Online-Zahlung von einer dritten Person an.", node.getAbstract());
     }
 
     @Test

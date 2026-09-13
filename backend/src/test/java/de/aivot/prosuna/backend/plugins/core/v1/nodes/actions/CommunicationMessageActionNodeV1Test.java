@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessInstanceAttachmentSetSelectElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
@@ -76,7 +77,10 @@ class CommunicationMessageActionNodeV1Test {
                 },
                 node.getExecutionTypes()
         );
-        assertFalse(node.getAbstract().isBlank());
+        assertEquals(
+                "Sendet eine Nachricht über den ausgewählten Kommunikationsanbieter an die Identität.",
+                node.getAbstract()
+        );
         assertEquals(
                 List.of(
                         "string",
@@ -105,10 +109,17 @@ class CommunicationMessageActionNodeV1Test {
                 processNode
         ));
 
-        assertTrue(layout.findChild(
+        var identity = layout.findChild(
                 CommunicationMessageActionNodeV1.Configuration.IDENTITY_ID_FIELD_ID,
                 ProcessIdentityIdInputElement.class
-        ).isPresent());
+        ).orElseThrow();
+        assertEquals("Identität", identity.getLabel());
+        assertEquals("Wählen Sie die Identität aus, an welche die Nachricht gesendet wird.", identity.getHint());
+        var attachments = layout.findChild(
+                CommunicationMessageActionNodeV1.Configuration.ATTACHMENTS_FIELD_ID,
+                ProcessInstanceAttachmentSetSelectElement.class
+        ).orElseThrow();
+        assertEquals("Anlagensätze, deren Dateien mit der Nachricht versendet werden.", attachments.getHint());
         assertTrue(layout.findChild(
                 SemiAutomaticMessageConfig.GROUP_ID,
                 GroupLayoutElement.class

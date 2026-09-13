@@ -168,7 +168,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Versendet eine Zahlungsaufforderung automatisch oder nach manueller Bearbeitung und wartet auf den Zahlungseingang.";
+        return "Fordert eine Online-Zahlung von einer dritten Person an.";
     }
 
     @Nonnull

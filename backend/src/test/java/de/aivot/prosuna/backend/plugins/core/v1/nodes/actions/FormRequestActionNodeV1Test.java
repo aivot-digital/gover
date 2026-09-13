@@ -6,6 +6,8 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
@@ -15,11 +17,15 @@ import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceAttachmentFilter;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssignedCustomer;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
@@ -67,6 +73,35 @@ class FormRequestActionNodeV1Test {
                 prosunaConfig,
                 new ElementDataTransformService(),
                 processInstanceAttachmentService
+        );
+    }
+
+    @Test
+    void configurationLayoutExplainsTheAutomaticallyAppendedFormLink() throws Exception {
+        var processNode = mock(ProcessNodeEntity.class);
+        when(processNode.getProcessId()).thenReturn(42);
+        when(processNode.getProcessVersion()).thenReturn(3);
+        var layout = node.getConfigurationLayout(new ProcessNodeDefinitionConfigurationLayoutContext(
+                null,
+                mock(ProcessEntity.class),
+                mock(ProcessVersionEntity.class),
+                processNode
+        ));
+
+        var recipient = layout.findChild(
+                FormRequestActionNodeV1.NodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID,
+                ProcessIdentityIdInputElement.class
+        ).orElseThrow();
+        assertEquals("Identität", recipient.getLabel());
+        assertEquals("Wählen Sie die Identität aus, an welche die Nachricht gesendet wird.", recipient.getHint());
+
+        var automaticContent = layout.findChild(
+                SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID,
+                RichTextInputElement.class
+        ).orElseThrow();
+        assertEquals(
+                "Der Text der Nachricht. Der Link, unter welchem die Identität das Formular aufrufen kann, wird automatisch an das Ende angefügt.",
+                automaticContent.getHint()
         );
     }
 
