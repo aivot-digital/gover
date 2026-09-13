@@ -76,7 +76,7 @@ export function PluginInfoDialog(props: PluginInfoDialogProps): ReactNode {
                             />
                             <Chip
                                 size="small"
-                                label={isDeprecated ? 'Veraltet' : 'Aktiv'}
+                                label={isDeprecated ? 'Veraltet' : 'Aktuell'}
                                 color={isDeprecated ? 'warning' : 'success'}
                                 variant="outlined"
                             />

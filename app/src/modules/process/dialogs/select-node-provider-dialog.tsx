@@ -458,13 +458,17 @@ function SelectNodeProviderDetails(props: SelectNodeProviderDetailsProps): React
                         label={`Version ${provider.componentVersion}`}
                         sx={{flexShrink: 0}}
                     />
-                    <Chip
-                        size="small"
-                        label={isStringNotNullOrEmpty(provider.deprecationNotice) ? 'Veraltet' : 'Aktiv'}
-                        color={isStringNotNullOrEmpty(provider.deprecationNotice) ? 'warning' : 'success'}
-                        variant="outlined"
-                        sx={{flexShrink: 0}}
-                    />
+                    {
+                        isStringNotNullOrEmpty(provider.deprecationNotice) &&
+                        <Chip
+                            size="small"
+                            label={'Veraltet'}
+                            color={'warning'}
+                            variant="outlined"
+                            sx={{flexShrink: 0}}
+                        />
+                    }
+
                 </Stack>
             )}
             description={provider.abstractDescription}
