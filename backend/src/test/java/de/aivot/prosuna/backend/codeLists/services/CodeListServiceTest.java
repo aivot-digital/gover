@@ -15,13 +15,20 @@ import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.xrepository.models.*;
 import de.aivot.prosuna.backend.xrepository.services.XRepositoryCodeListService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
+import org.springframework.http.HttpStatus;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,6 +39,88 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class CodeListServiceTest {
+    @ParameterizedTest
+    @MethodSource("invalidItemColumns")
+    void saveItemRejectsMissingRequiredValues(boolean update, int labelColumnIndex, List<String> columns, String message) {
+        var codeListRepository = mock(CodeListRepository.class);
+        var codeListItemRepository = mock(CodeListItemRepository.class);
+        var vCodeListItemRepository = mock(VCodeListItemRepository.class);
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository,
+                mock(XRepositoryCodeListService.class), mock(AssetService.class), mock(StorageService.class));
+        var codeList = createManualCodeList()
+                .setColumns(List.of("Zusatz", "Anzeigename", "Schlüssel"))
+                .setLabelColumnIndex(labelColumnIndex)
+                .setValueColumnIndex(2);
+        var originalColumns = List.of("", "Berlin", "BE");
+        var existingItem = new CodeListItemEntity().setId(10L).setCodeListId(7).setColumns(originalColumns);
+        var item = new CodeListItemEntity().setColumns(columns);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
+        if (update) {
+            when(codeListItemRepository.findByIdAndCodeListId(10L, 7)).thenReturn(Optional.of(existingItem));
+        }
+
+        var exception = assertThrows(ResponseException.class, () -> {
+            if (update) {
+                service.updateItem("test", 10L, item);
+            } else {
+                service.createItem("test", item);
+            }
+        });
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals(message, exception.getMessage());
+        assertEquals(originalColumns, existingItem.getColumns());
+        verify(codeListItemRepository, never()).save(any());
+        verifyNoInteractions(vCodeListItemRepository);
+    }
+
+    private static Stream<Arguments> invalidItemColumns() {
+        return Stream.of(false, true).flatMap(update -> Stream.of(
+                Arguments.of(update, 1, List.of("", "", "BE"), "Bitte geben Sie für „Anzeigename“ einen Wert ein."),
+                Arguments.of(update, 1, Arrays.asList("", null, "BE"), "Bitte geben Sie für „Anzeigename“ einen Wert ein."),
+                Arguments.of(update, 1, List.of("", " \t\n", "BE"), "Bitte geben Sie für „Anzeigename“ einen Wert ein."),
+                Arguments.of(update, 1, List.of("", "Berlin", ""), "Bitte geben Sie für „Schlüssel“ einen Wert ein."),
+                Arguments.of(update, 1, Arrays.asList("", "Berlin", null), "Bitte geben Sie für „Schlüssel“ einen Wert ein."),
+                Arguments.of(update, 1, List.of("", "Berlin", " \t\n"), "Bitte geben Sie für „Schlüssel“ einen Wert ein."),
+                Arguments.of(update, 2, List.of("", "", ""), "Bitte geben Sie für „Schlüssel“ einen Wert ein."),
+                Arguments.of(update, 1, null, "Die Anzahl der Werte passt nicht zur Spaltenanzahl der Codeliste."),
+                Arguments.of(update, 1, List.of("", "Berlin"), "Die Anzahl der Werte passt nicht zur Spaltenanzahl der Codeliste.")
+        ));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false, 1", "true, 1", "false, 2", "true, 2"})
+    void saveItemAllowsEmptyOptionalColumnsAndSharedLabelValueColumn(boolean update, int labelColumnIndex) throws Exception {
+        var codeListRepository = mock(CodeListRepository.class);
+        var codeListItemRepository = mock(CodeListItemRepository.class);
+        var vCodeListItemRepository = mock(VCodeListItemRepository.class);
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository,
+                mock(XRepositoryCodeListService.class), mock(AssetService.class), mock(StorageService.class));
+        var codeList = createManualCodeList()
+                .setColumns(List.of("Zusatz", "Anzeigename", "Schlüssel"))
+                .setLabelColumnIndex(labelColumnIndex)
+                .setValueColumnIndex(2);
+        var label = labelColumnIndex == 1 ? "Berlin" : "";
+        var item = new CodeListItemEntity().setColumns(Arrays.asList(null, label, "BE"));
+        var existingItem = new CodeListItemEntity().setId(10L).setCodeListId(7).setColumns(List.of("", "Alt", "ALT"));
+        var expectedColumns = List.of("", label, "BE");
+        var view = new VCodeListItemEntity().setId(10L).setCodeListId(7).setColumns(expectedColumns);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
+        when(vCodeListItemRepository.findByIdAndCodeListId(10L, 7)).thenReturn(Optional.of(view));
+        when(codeListItemRepository.save(any())).thenAnswer(invocation -> ((CodeListItemEntity) invocation.getArgument(0)).setId(10L));
+        if (update) {
+            when(codeListItemRepository.findByIdAndCodeListId(10L, 7)).thenReturn(Optional.of(existingItem));
+        }
+
+        var result = update ? service.updateItem("test", 10L, item) : service.createItem("test", item);
+
+        assertEquals(view, result);
+        var savedItem = ArgumentCaptor.forClass(CodeListItemEntity.class);
+        verify(codeListItemRepository).save(savedItem.capture());
+        assertEquals(expectedColumns, savedItem.getValue().getColumns());
+        assertEquals(7, savedItem.getValue().getCodeListId());
+    }
+
     @Test
     void createClearsClientProvidedId() throws Exception {
         var codeListRepository = mock(CodeListRepository.class);

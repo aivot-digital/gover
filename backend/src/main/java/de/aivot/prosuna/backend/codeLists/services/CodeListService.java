@@ -618,6 +618,13 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             throw ResponseException.badRequest("Die Anzahl der Werte passt nicht zur Spaltenanzahl der Codeliste.");
         }
 
+        for (var columnIndex : List.of(codeListEntity.getLabelColumnIndex(), codeListEntity.getValueColumnIndex())) {
+            var value = columns.get(columnIndex);
+            if (value == null || value.isBlank()) {
+                throw ResponseException.badRequest("Bitte geben Sie für „%s“ einen Wert ein.", codeListEntity.getColumns().get(columnIndex));
+            }
+        }
+
         return columns
                 .stream()
                 .map(value -> value == null ? "" : value)
