@@ -17,6 +17,7 @@ const testState = vi.hoisted(() => ({
     setIsBusy: vi.fn(),
     confirm: vi.fn(async () => true),
     isNewItem: true,
+    definitions: [] as Record<string, any>[],
 }));
 
 vi.mock('../../../components/generic-details-page/generic-details-page-context', () => ({
@@ -25,13 +26,7 @@ vi.mock('../../../components/generic-details-page/generic-details-page-context',
         setItem: testState.setItem,
         isNewItem: testState.isNewItem,
         additionalData: {
-            definitions: [{
-                key: testState.provider.communicationProviderDefinitionKey,
-                version: testState.provider.communicationProviderDefinitionVersion,
-                name: 'Test definition',
-                description: 'Test definition',
-                supportedIdentityProviderTypes: [],
-            }],
+            definitions: testState.definitions,
         },
         isBusy: false,
         setIsBusy: testState.setIsBusy,
@@ -127,6 +122,13 @@ describe('CommunicationProviderDetailsPageIndex', () => {
         };
         testState.layout = configLayout();
         testState.isNewItem = true;
+        testState.definitions = [{
+            key: testState.provider.communicationProviderDefinitionKey,
+            version: testState.provider.communicationProviderDefinitionVersion,
+            name: 'Test definition',
+            description: 'Test definition',
+            supportedIdentityProviderTypes: [],
+        }];
         testState.derivedData = {
             effectiveValues: {},
             elementStates: {},
@@ -136,6 +138,45 @@ describe('CommunicationProviderDetailsPageIndex', () => {
         testState.setIsBusy.mockReset();
         testState.confirm.mockReset();
         testState.confirm.mockResolvedValue(true);
+    });
+
+    it('lists each definition once, selects its latest version, and keeps all versions selectable', async () => {
+        testState.provider.communicationProviderDefinitionKey = '';
+        testState.provider.communicationProviderDefinitionVersion = 0;
+        testState.provider.configuration = {legacy: 'value'};
+        testState.definitions = [
+            {
+                key: 'de.aivot.test.communication',
+                version: 1,
+                name: 'Old test definition',
+                description: 'Old test definition',
+                supportedIdentityProviderTypes: [],
+            },
+            {
+                key: 'de.aivot.test.communication',
+                version: 2,
+                name: 'Latest test definition',
+                description: 'Latest test definition',
+                supportedIdentityProviderTypes: [],
+            },
+        ];
+        vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderConfigurationLayout')
+            .mockResolvedValue(testState.layout as any);
+
+        render(
+            <MemoryRouter>
+                <CommunicationProviderDetailsPageIndex/>
+            </MemoryRouter>,
+        );
+
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Definition'}));
+        expect(screen.getAllByRole('option')).toHaveLength(1);
+        fireEvent.click(screen.getByRole('option', {name: /Latest test definition/}));
+
+        await waitFor(() => expect(screen.getByRole('combobox', {name: 'Version'})).toHaveTextContent('Version 2'));
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Version'}));
+        expect(screen.getByRole('option', {name: 'Version 1'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: 'Version 2'})).toBeInTheDocument();
     });
 
     it('marks a missing custom sender name and does not create the provider', async () => {

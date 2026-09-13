@@ -34,6 +34,7 @@ import {formatMissingPermissionTooltip} from '../../../permissions/utils/permiss
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {DocumentationLink} from '../../../../components/documentation-link/documentation-link';
+import {getLatestProviderDefinitions} from '../../../../utils/provider-definition-utils';
 
 type PaymentProviderEditableFields =
     'name' |
@@ -98,6 +99,10 @@ export function PaymentProviderDetailsPageIndex() {
     const {
         definitions: availablePaymentProviderDefinitions,
     } = additionalData;
+    const latestPaymentProviderDefinitions = useMemo(
+        () => getLatestProviderDefinitions(availablePaymentProviderDefinitions),
+        [availablePaymentProviderDefinitions],
+    );
 
     const {
         currentItem: editedPaymentProvider,
@@ -105,6 +110,7 @@ export function PaymentProviderDetailsPageIndex() {
         hasNotChanged,
         handleInputBlur,
         handleInputChange,
+        handleInputPatch,
         validate: validateFormManager,
         reset: resetFormManager,
     } = useFormManager<Pick<PaymentProviderResponseDTO, PaymentProviderEditableFields>>(
@@ -357,8 +363,17 @@ export function PaymentProviderDetailsPageIndex() {
                                 label="Zahlungsdienstleister"
                                 required
                                 value={editedPaymentProvider.providerKey}
-                                onChange={handleInputChange('providerKey')}
-                                options={availablePaymentProviderDefinitions.map(def => ({
+                                onChange={(value) => {
+                                    const selectedDefinition = latestPaymentProviderDefinitions.find((candidate) => (
+                                        candidate.key === value
+                                    ));
+                                    handleInputPatch({
+                                        providerKey: value ?? '',
+                                        providerVersion: selectedDefinition?.version ?? 0,
+                                        config: {},
+                                    });
+                                }}
+                                options={latestPaymentProviderDefinitions.map(def => ({
                                     value: def.key,
                                     label: def.name,
                                     subLabel: def.description,
@@ -372,7 +387,7 @@ export function PaymentProviderDetailsPageIndex() {
                                 required
                                 value={editedPaymentProvider.providerKey}
                                 onChange={handleInputChange('providerKey')}
-                                options={availablePaymentProviderDefinitions.map(def => ({
+                                options={latestPaymentProviderDefinitions.map(def => ({
                                     value: def.key,
                                     label: def.name,
                                     subLabel: def.description,

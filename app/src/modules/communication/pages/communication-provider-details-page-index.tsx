@@ -28,6 +28,7 @@ import {
 import {type CommunicationProviderAdditionalData} from './communication-provider-details-page-additional-data';
 import {type ComputedElementErrors, type DerivedRuntimeElementData} from '../../../models/element-data';
 import {mapFormManagerErrorsToComputedErrors, prosunaSchemaToYup} from '../../../utils/prosuna-schema-to-yup';
+import {getLatestProviderDefinitions} from '../../../utils/provider-definition-utils';
 
 const communicationProviderSchema = yup.object({
     id: yup.number().required(),
@@ -96,20 +97,14 @@ export function CommunicationProviderDetailsPageIndex() {
         reset,
     } = useFormManager<CommunicationProvider>(originalProvider, resolvedSchema, true);
 
+    const latestDefinitions = useMemo(() => getLatestProviderDefinitions(definitions), [definitions]);
     const definitionOptions = useMemo(() => {
-        const uniqueDefinitions = new Map<string, (typeof definitions)[number]>();
-        definitions.forEach((definition) => {
-            if (!uniqueDefinitions.has(definition.key)) {
-                uniqueDefinitions.set(definition.key, definition);
-            }
-        });
-
-        return Array.from(uniqueDefinitions.values()).map(definition => ({
+        return latestDefinitions.map(definition => ({
             value: definition.key,
             label: definition.name,
             subLabel: definition.description,
         }));
-    }, [definitions]);
+    }, [latestDefinitions]);
 
     const selectedDefinition = useMemo(() => definitions.find(definition => (
         definition.key === provider?.communicationProviderDefinitionKey &&
@@ -271,7 +266,7 @@ export function CommunicationProviderDetailsPageIndex() {
                         value={provider.communicationProviderDefinitionKey || undefined}
                         options={definitionOptions}
                         onChange={(value) => {
-                            const definition = definitions.find(candidate => candidate.key === value);
+                            const definition = latestDefinitions.find(candidate => candidate.key === value);
                             handleInputPatch({
                                 communicationProviderDefinitionKey: value ?? '',
                                 communicationProviderDefinitionVersion: definition?.version ?? 0,

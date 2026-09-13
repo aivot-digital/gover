@@ -42,6 +42,7 @@ import {StorageProviderStatus} from '../../enums/storage-provider-status';
 import {isApiError} from '../../../../models/api-error';
 import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {getLatestProviderDefinitions} from '../../../../utils/provider-definition-utils';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
@@ -169,6 +170,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         hasNotChanged,
         handleInputBlur,
         handleInputChange,
+        handleInputPatch,
         validate,
         reset,
     } = useFormManager<StorageProviderEntity>(originalStorageProvider, yup.object(storageProviderSchema) as any, true);
@@ -184,6 +186,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     const definitions: StorageProviderDefinition[] = useMemo(() => {
         return additionalData?.definitions ?? [];
     }, [additionalData]);
+    const latestDefinitions = useMemo(() => getLatestProviderDefinitions(definitions), [definitions]);
 
     const definition: StorageProviderDefinition | undefined = useMemo(() => {
         return definitions.find((def) => (
@@ -492,8 +495,15 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         label="Speichertyp"
                         required={true}
                         value={editedStorageProvider.storageProviderDefinitionKey}
-                        onChange={handleInputChange('storageProviderDefinitionKey')}
-                        options={definitions.map(createStorageProviderDefinitionOption)}
+                        onChange={(value) => {
+                            const selectedDefinition = latestDefinitions.find((candidate) => candidate.key === value);
+                            handleInputPatch({
+                                storageProviderDefinitionKey: value ?? '',
+                                storageProviderDefinitionVersion: selectedDefinition?.version ?? 0,
+                                configuration: {},
+                            });
+                        }}
+                        options={latestDefinitions.map(createStorageProviderDefinitionOption)}
                         disabled={isExistingItem}
                         error={errors.storageProviderDefinitionKey}
                         hint="Diese Einstellung kann nach der Erstellung nicht mehr geändert werden."
