@@ -92,7 +92,7 @@ export function CustomLinkDialog(props: CustomLinkDialogProps) {
                         Aktivierte Links werden allen angemeldeten Mitarbeiter:innen im Bereich „Relevante Links“ auf der Übersicht angezeigt.
                     </Typography>
                     <TextFieldComponent
-                        label="Bezeichnung *"
+                        label="Bezeichnung"
                         value={request.label}
                         onChange={(label) => setRequest((current) => ({...current, label: label ?? ''}))}
                         error={attemptedSubmit && (labelLength === 0 || labelLength > 128)
@@ -100,6 +100,7 @@ export function CustomLinkDialog(props: CustomLinkDialogProps) {
                             : undefined}
                         disabled={props.isBusy}
                         controlSx={{mt: 0}}
+                        required
                     />
                     <TextFieldComponent
                         label="Beschreibung"
@@ -110,13 +111,14 @@ export function CustomLinkDialog(props: CustomLinkDialogProps) {
                         disabled={props.isBusy}
                     />
                     <TextFieldComponent
-                        label="URL *"
+                        label="URL"
                         value={request.url}
                         onChange={(url) => setRequest((current) => ({...current, url: url ?? ''}))}
                         error={attemptedSubmit && (!isValidUrl || urlLength > 500)
                             ? urlLength > 500 ? 'Die URL darf höchstens 500 Zeichen lang sein.' : 'Bitte geben Sie eine gültige HTTP- oder HTTPS-URL ein.'
                             : undefined}
                         disabled={props.isBusy}
+                        required
                     />
                     <Box sx={{mt: 2.5, display: 'flex', alignItems: 'center', gap: 2}}>
                         <Button

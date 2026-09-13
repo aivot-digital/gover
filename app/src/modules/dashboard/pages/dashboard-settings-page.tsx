@@ -252,6 +252,7 @@ export function DashboardSettingsPage() {
                                         hint="Kurze Zeiträume werden täglich, längere Zeiträume wöchentlich zusammengefasst."
                                         disabled={!canUpdate || activitySettingsBusy || !activitySettings.enabled}
                                         startIcon={<QueryStats/>}
+                                        required
                                     />
                                 </Box>
 
