@@ -590,12 +590,12 @@ export function CodeListDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid size={{xs: 12, lg: 6}}>
-                    <Alert severity="info">
+                <Grid size={{xs: 12}}>
+                    <AlertComponent color="info" sx={{mt: 2, mb: 3}}>
                         Auswahlwerte von Codelisten können in öffentlichen Formularen verwendet und über die
                         öffentliche Codelisten-API ohne Anmeldung abgerufen werden. Hinterlegen Sie daher keine
                         vertraulichen Informationen.
-                    </Alert>
+                    </AlertComponent>
                 </Grid>
 
                 {
