@@ -11,6 +11,12 @@ import {
     TableRow,
     Typography,
 } from '@mui/material';
+import {
+    BayernIdAttribute,
+    BundIdAttribute,
+    ShIdAttribute,
+} from '../../identity/constants/system-identity-provider-attributes';
+import {IdentityProviderType} from '../../identity/enums/identity-provider-type';
 import {IdentityProvidersApiService} from '../../identity/identity-providers-api-service';
 import {type IdentityData, type IdentityDataMap} from '../../identity/models/identity-data';
 import {type IdentityProviderListDTO} from '../../identity/models/identity-provider-list-dto';
@@ -35,6 +41,12 @@ interface IdentityListItem {
     mapKey: string;
     identity: IdentityData;
 }
+
+const trustLevelAttributeByProviderType: Partial<Record<IdentityProviderType, string>> = {
+    [IdentityProviderType.BayernID]: BayernIdAttribute.TrustLevelAuthentication,
+    [IdentityProviderType.BundID]: BundIdAttribute.TrustLevelAuthentication,
+    [IdentityProviderType.SHID]: ShIdAttribute.TrustLevelAuthentication,
+};
 
 async function settleLookup<T>(request: Promise<T>): Promise<SettledLookup<T>> {
     try {
@@ -234,15 +246,20 @@ function IdentityItem(props: IdentityItemProps): React.JSX.Element {
     const identity = props.identity;
     const isEmailIdentity = identity.type === 'Email';
     const identityLabel = identity.identityId || 'Unbenannte Identität';
+    const trustLevelAttributeKey = props.identityProvider == null
+        ? undefined
+        : trustLevelAttributeByProviderType[props.identityProvider.type];
     const attributes: IdentityAttributeRow[] | undefined = isEmailIdentity ?
         Object.entries(identity.attributes ?? {})
             .sort(([left], [right]) => compareLabels(left, right))
             .map(([key, value]) => ({key, label: key, value})) :
-        props.identityProvider?.attributes.map((attribute, index) => ({
-            key: `${attribute.keyInData}-${index}`,
-            label: attribute.label,
-            value: identity.attributes[attribute.keyInData],
-        }));
+        props.identityProvider?.attributes
+            .filter((attribute) => attribute.keyInData !== trustLevelAttributeKey)
+            .map((attribute, index) => ({
+                key: `${attribute.keyInData}-${index}`,
+                label: attribute.label,
+                value: identity.attributes[attribute.keyInData],
+            }));
     const communicationProvider = props.communicationBinding == null
         ? null
         : props.communicationProvidersById[props.communicationBinding.communicationProviderId] ?? null;
@@ -300,6 +317,12 @@ function IdentityItem(props: IdentityItemProps): React.JSX.Element {
                                 hasPermission={props.canReadIdentityProviders}
                             />
                         </DetailRow>
+                        {
+                            trustLevelAttributeKey != null &&
+                            <DetailRow label="Vertrauensniveau">
+                                {identity.attributes[trustLevelAttributeKey] ?? <i>Kein Wert übergeben</i>}
+                            </DetailRow>
+                        }
                     </Box>
             }
 

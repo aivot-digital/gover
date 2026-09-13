@@ -23,6 +23,7 @@ const providerIdentity: IdentityData = {
         familyName: 'Duplicate family name',
         given_name: 'Erika',
         givenName: 'Duplicate given name',
+        trust_level_authentication: 'level4',
         unmapped_claim: 'Unmapped value',
     },
     communicationProviderBindingId: 17,
@@ -49,6 +50,12 @@ const identityProviderAttributes: IdentityAttributeMapping[] = [
         description: 'Geburtsdatum der Person',
         keyInData: 'date_of_birth',
         displayAttribute: false,
+    },
+    {
+        label: 'Vertrauensniveau',
+        description: 'Qualitätsstufe der Authentifizierung',
+        keyInData: 'trust_level_authentication',
+        displayAttribute: true,
     },
 ];
 
@@ -93,12 +100,15 @@ const communicationBinding: CommunicationProviderBinding = {
     },
 };
 
-function mockIdentityProviders(attributes: IdentityAttributeMapping[] = identityProviderAttributes) {
+function mockIdentityProviders(
+    attributes: IdentityAttributeMapping[] = identityProviderAttributes,
+    type: IdentityProviderType = IdentityProviderType.BundID,
+) {
     return vi.spyOn(IdentityProvidersApiService.prototype, 'listAll').mockResolvedValue({
         content: [{
             key: identityProviderKey,
             metadataIdentifier: 'urn:bundid:metadata',
-            type: IdentityProviderType.BundID,
+            type,
             name: 'BundID Produktion',
             description: 'Interne Beschreibung des Nutzerkontenanbieters',
             iconAssetKey: null,
@@ -160,6 +170,8 @@ describe('ProcessInstanceIdentityList', () => {
         expect(screen.getByText('Geburtsdatum')).toBeInTheDocument();
         expect(screen.getByText('Muster')).toBeInTheDocument();
         expect(screen.getByText('Erika')).toBeInTheDocument();
+        expect(screen.getByText('Vertrauensniveau')).toBeInTheDocument();
+        expect(screen.getByText('level4')).toBeInTheDocument();
         expect(screen.getByText('Kein Wert übergeben')).toBeInTheDocument();
 
         expect(screen.queryByText('family_name')).not.toBeInTheDocument();
@@ -178,6 +190,58 @@ describe('ProcessInstanceIdentityList', () => {
         expect(listIdentityProviders).toHaveBeenCalledWith({keys: [identityProviderKey]});
         expect(listProviders).toHaveBeenCalledTimes(1);
         expect(listBindings).toHaveBeenCalledWith(identityProviderKey);
+    });
+
+    it.each([
+        IdentityProviderType.BayernID,
+        IdentityProviderType.BundID,
+        IdentityProviderType.SHID,
+    ])('shows the trust level once as provider detail for %s', async (type) => {
+        mockIdentityProviders(identityProviderAttributes, type);
+        mockCommunicationProviders();
+
+        renderList({applicant: providerIdentity});
+
+        await screen.findByText('BundID Produktion');
+        const article = screen.getByRole('article', {name: 'Identität applicant'});
+        const attributeTable = within(article).getByRole('table', {name: 'Attribute der Identität applicant'});
+        expect(within(article).getAllByText('Vertrauensniveau')).toHaveLength(1);
+        expect(within(article).getByText('level4')).toBeInTheDocument();
+        expect(within(attributeTable).queryByText('Vertrauensniveau')).not.toBeInTheDocument();
+        expect(within(attributeTable).queryByText('level4')).not.toBeInTheDocument();
+    });
+
+    it('shows a missing trust level for a supported provider', async () => {
+        mockIdentityProviders();
+        mockCommunicationProviders();
+        const identityWithoutTrustLevel: IdentityData = {
+            ...providerIdentity,
+            attributes: {...providerIdentity.attributes},
+        };
+        delete identityWithoutTrustLevel.attributes.trust_level_authentication;
+
+        renderList({applicant: identityWithoutTrustLevel});
+
+        await screen.findByText('BundID Produktion');
+        expect(screen.getByText('Vertrauensniveau').closest('div'))
+            .toHaveTextContent('VertrauensniveauKein Wert übergeben');
+    });
+
+    it.each([
+        IdentityProviderType.Custom,
+        IdentityProviderType.MUK,
+    ])('does not show an explicit trust level for %s', async (type) => {
+        mockIdentityProviders(identityProviderAttributes, type);
+        mockCommunicationProviders();
+
+        renderList({applicant: providerIdentity});
+
+        await screen.findByText('BundID Produktion');
+        const article = screen.getByRole('article', {name: 'Identität applicant'});
+        const attributeTable = within(article).getByRole('table', {name: 'Attribute der Identität applicant'});
+        expect(within(article).getAllByText('Vertrauensniveau')).toHaveLength(1);
+        expect(within(attributeTable).getByText('Vertrauensniveau')).toBeInTheDocument();
+        expect(within(attributeTable).getByText('level4')).toBeInTheDocument();
     });
 
     it('shows direct email identities without requesting provider catalogs', () => {
@@ -270,7 +334,7 @@ describe('ProcessInstanceIdentityList', () => {
         expect(attributeRows[1]).toHaveTextContent('NachnameLast');
         expect(attributeRows[2]).toHaveTextContent('VornameFirst');
         expect(attributeRows[3]).toHaveTextContent('GeburtsdatumKein Wert übergeben');
-        expect(within(cards[1]).getAllByText('Kein Wert übergeben')).toHaveLength(3);
+        expect(within(cards[1]).getAllByText('Kein Wert übergeben')).toHaveLength(4);
         expect(listIdentityProviders).toHaveBeenCalledTimes(1);
         expect(listBindings).toHaveBeenCalledTimes(1);
     });
