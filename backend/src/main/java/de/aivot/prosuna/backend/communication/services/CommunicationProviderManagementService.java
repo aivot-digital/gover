@@ -63,16 +63,9 @@ public class CommunicationProviderManagementService {
     public CommunicationProviderEntity updateProvider(@Nonnull Integer id,
                                                        @Nonnull CommunicationProviderEntity update) throws ResponseException {
         var existing = providerRepository.findByIdForUpdate(id).orElseThrow(ResponseException::notFound);
-        var bindings = bindingRepository.findAllByCommunicationProviderId(id);
         if (!Objects.equals(existing.getCommunicationProviderDefinitionKey(), update.getCommunicationProviderDefinitionKey())
                 || !Objects.equals(existing.getCommunicationProviderDefinitionVersion(), update.getCommunicationProviderDefinitionVersion())) {
             throw ResponseException.badRequest("Definition und Version eines Kommunikationsanbieters können nach der Erstellung nicht geändert werden.");
-        }
-        if (!Objects.equals(existing.getTestProvider(), update.getTestProvider())
-                && !bindings.isEmpty()) {
-            throw ResponseException.conflict(
-                    "Die Umgebung eines Kommunikationsanbieters kann nicht geändert werden, solange Anbindungen bestehen."
-            );
         }
 
         existing.setName(update.getName());
@@ -214,9 +207,6 @@ public class CommunicationProviderManagementService {
         );
         if (!definition.supportsIdentityProvider(identityProvider)) {
             throw ResponseException.badRequest("Der Kommunikationsanbieter unterstützt diesen Nutzerkontenanbieter nicht.");
-        }
-        if (!Objects.equals(provider.getTestProvider(), identityProvider.getIsTestProvider())) {
-            throw ResponseException.badRequest("Test- und Produktivanbieter dürfen nicht miteinander verbunden werden.");
         }
         try {
             validateBindingConfigurationTyped(binding, identityProvider, definition);

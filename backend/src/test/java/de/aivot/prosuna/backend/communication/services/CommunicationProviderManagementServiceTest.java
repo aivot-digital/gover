@@ -64,6 +64,7 @@ class CommunicationProviderManagementServiceTest {
                 provider.getCommunicationProviderDefinitionKey(),
                 provider.getCommunicationProviderDefinitionVersion()
         )).thenReturn(Optional.of(definition));
+        when(definition.getSupportedIdentityProviderTypes()).thenReturn(List.of(IdentityProviderType.BundId));
         when(definition.supportsIdentityProvider(identityProvider)).thenReturn(true);
         when(bindingRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(providerRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -88,11 +89,14 @@ class CommunicationProviderManagementServiceTest {
     }
 
     @Test
-    void disablingAProviderThatWouldOrphanAnEnabledIdentityProviderIsAllowed() {
+    void testProviderStatusCanBeChangedWhileBindingsExist() {
         var binding = binding("Mail").setId(12);
-        var update = provider(7, false, false);
+        var update = provider(7, true, true);
         when(bindingRepository.findAllByCommunicationProviderId(7)).thenReturn(List.of(binding));
+
         assertDoesNotThrow(() -> service.updateProvider(7, update));
+
+        assertEquals(true, provider.getTestProvider());
         verify(providerRepository).saveAndFlush(provider);
     }
 
@@ -114,12 +118,14 @@ class CommunicationProviderManagementServiceTest {
     }
 
     @Test
-    void mismatchedTestAndProductionProvidersCannotBeBound() {
+    void testAndProductionProvidersCanBeBound() throws Exception {
         provider.setTestProvider(true);
 
-        assertThrows(ResponseException.class, () -> service.createBinding(binding("Mail")));
+        var created = service.createBinding(binding("Mail"));
 
-        verify(bindingRepository, never()).saveAndFlush(any());
+        assertEquals(provider.getId(), created.getCommunicationProviderId());
+        assertEquals(identityProvider.getKey(), created.getIdentityProviderKey());
+        verify(bindingRepository).saveAndFlush(created);
     }
 
     @Test

@@ -351,11 +351,11 @@ export function CommunicationProviderDetailsPageIndex() {
             />
             <CheckboxFieldComponent
                 label="Vorproduktive Konfiguration"
-                hint="Vorproduktive Kommunikationsanbieter können nur mit vorproduktiven Nutzerkontenanbietern verbunden werden."
+                hint="Kennzeichnet diese Konfiguration als vorproduktiv."
                 variant="switch"
                 value={provider.isTestProvider}
                 onChange={handleInputChange('isTestProvider')}
-                disabled={isBusy || !isEditable || isNewItem !== true}
+                disabled={isBusy || !isEditable}
                 error={errors.isTestProvider}
             />
 

@@ -100,8 +100,7 @@ export function IdentityProviderDetailsPageCommunication() {
                 candidate.key === provider.communicationProviderDefinitionKey &&
                 candidate.version === provider.communicationProviderDefinitionVersion
             ));
-            return provider.isTestProvider === identityProvider.isTestProvider &&
-                definition?.supportedIdentityProviderTypes.includes(identityProvider.type) === true;
+            return definition?.supportedIdentityProviderTypes.includes(identityProvider.type) === true;
         });
     }, [definitions, identityProvider, providers]);
 

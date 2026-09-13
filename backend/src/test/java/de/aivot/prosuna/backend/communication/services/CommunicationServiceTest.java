@@ -119,15 +119,13 @@ class CommunicationServiceTest {
     }
 
     @Test
-    void sendMessageRejectsTestAndProductionProviderMismatch() throws Exception {
+    void sendMessageAllowsTestAndProductionProviderMismatch() throws Exception {
         provider.setTestProvider(true);
+        var message = CommunicationMessage.of("Subject", "Body", "Body");
 
-        assertThrows(CommunicationException.class, () -> communicationService.sendMessage(
-                identity,
-                CommunicationMessage.of("Subject", "Body", "Body")
-        ));
+        communicationService.sendMessage(identity, message);
 
-        verify(definition, never()).sendMessage(any(), any(), any());
+        verify(definition).sendMessage(any(), eq(identity), eq(message));
     }
 
     @Test
@@ -156,8 +154,21 @@ class CommunicationServiceTest {
                 .setEnabled(false)
                 .setPosition(1)
                 .setConfiguration(new AuthoredElementValues());
+        var inactiveProviderBinding = new CommunicationProviderBindingEntity()
+                .setId(14)
+                .setIdentityProviderKey(identity.providerKey())
+                .setCommunicationProviderId(8)
+                .setName("Inactive provider")
+                .setDescription("Inactive provider")
+                .setEnabled(true)
+                .setPosition(2)
+                .setConfiguration(new AuthoredElementValues());
+        var inactiveProvider = new CommunicationProviderEntity();
+        inactiveProvider.setId(8);
+        inactiveProvider.setEnabled(false);
         when(bindingRepository.findAllByIdentityProviderKeyOrderByPositionAscNameAscIdAsc(identity.providerKey()))
-                .thenReturn(List.of(binding, disabled));
+                .thenReturn(List.of(binding, disabled, inactiveProviderBinding));
+        when(providerRepository.findById(8)).thenReturn(Optional.of(inactiveProvider));
 
         assertEquals(List.of(binding), communicationService.getAvailableBindings(identity));
     }

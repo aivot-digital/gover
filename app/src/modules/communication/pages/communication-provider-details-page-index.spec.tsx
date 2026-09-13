@@ -275,6 +275,32 @@ describe('CommunicationProviderDetailsPageIndex', () => {
         await waitFor(() => expect(createProvider).toHaveBeenCalledOnce());
     });
 
+    it('updates the test status of an existing provider', async () => {
+        testState.provider.id = 17;
+        testState.isNewItem = false;
+        vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderConfigurationLayout')
+            .mockResolvedValue(testState.layout as any);
+        const updateProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'updateProvider')
+            .mockImplementation(async (id, request) => ({id, ...request}));
+
+        render(
+            <MemoryRouter>
+                <CommunicationProviderDetailsPageIndex/>
+            </MemoryRouter>,
+        );
+
+        await screen.findByTestId('configuration-layout');
+        const testProviderSwitch = screen.getByRole('switch', {name: 'Vorproduktive Konfiguration'});
+        expect(testProviderSwitch).toBeEnabled();
+
+        fireEvent.click(testProviderSwitch);
+        fireEvent.click(await screen.findByRole('button', {name: 'Speichern'}));
+
+        await waitFor(() => expect(updateProvider).toHaveBeenCalledWith(17, expect.objectContaining({
+            isTestProvider: true,
+        })));
+    });
+
     it('requires the provider name before deleting an existing provider', async () => {
         testState.provider.id = 17;
         testState.isNewItem = false;

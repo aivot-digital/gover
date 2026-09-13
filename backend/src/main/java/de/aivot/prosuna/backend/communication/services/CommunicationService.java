@@ -177,13 +177,6 @@ public class CommunicationService {
             throw new CommunicationException("Der Kommunikationsanbieter %s ist deaktiviert.", provider.getName());
         }
 
-        if (!Objects.equals(provider.getTestProvider(), identityProvider.getIsTestProvider())) {
-            throw new CommunicationException(
-                    "Test- und Produktivsysteme dürfen für die Kommunikationsanbindung %s nicht gemischt werden.",
-                    binding.getName()
-            );
-        }
-
         var definition = definitionService
                 .retrieveProviderDefinition(
                         provider.getCommunicationProviderDefinitionKey(),
