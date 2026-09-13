@@ -1,4 +1,6 @@
-import ELK, {type ElkNode} from 'elkjs/lib/elk.bundled.js';
+import {type ElkNode} from 'elkjs/lib/elk.bundled.js';
+import {createElkLoader, ElkLoadError} from '../../../../utils/elk-loader';
+import {AlertComponent} from '../../../../components/alert/alert-component';
 import {
     Background,
     BackgroundVariant,
@@ -128,7 +130,7 @@ interface OrganizationChartMemberListProps {
     compact?: boolean;
 }
 
-const elk = new ELK();
+const getElk = createElkLoader();
 const FLOW_NODE_TYPE = 'organization-chart-node';
 const FLOW_NODE_WIDTH = 420;
 const FLOW_NODE_MIN_HEIGHT = 195;
@@ -313,10 +315,13 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
         groups: [],
     });
     const [isLayoutReady, setIsLayoutReady] = useState(false);
+    const [layoutError, setLayoutError] = useState<string>();
+    const [layoutAttempt, setLayoutAttempt] = useState(0);
 
     useEffect(() => {
         let isActive = true;
         setIsLayoutReady(false);
+        setLayoutError(undefined);
 
         createLayout(view, rootDepartments, teams, canReadUsers)
             .then((nextLayout) => {
@@ -338,13 +343,16 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
                     edges: [],
                     groups: [],
                 });
+                setLayoutError(error instanceof ElkLoadError
+                    ? 'Die Darstellung des Organigramms konnte nicht geladen werden.'
+                    : 'Das Organigramm konnte nicht angeordnet werden.');
                 setIsLayoutReady(true);
             });
 
         return () => {
             isActive = false;
         };
-    }, [canReadUsers, rootDepartments, teams, view]);
+    }, [canReadUsers, rootDepartments, teams, view, layoutAttempt]);
 
     useEffect(() => {
         if (!isLayoutReady || layout.nodes.length === 0) {
@@ -359,6 +367,16 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
             cancelAnimationFrame(frameHandle);
         };
     }, [fitView, isLayoutReady, layout.nodes.length, view]);
+
+    if (layoutError != null) {
+        return (
+            <AlertComponent color="error" text={layoutError} sx={{m: 2}}>
+                <Button onClick={() => setLayoutAttempt((value) => value + 1)}>
+                    Erneut versuchen
+                </Button>
+            </AlertComponent>
+        );
+    }
 
     return (
         <ReactFlow
@@ -1183,6 +1201,7 @@ async function createPositionedDepartmentTreeLayout(
             targets: [edge.target],
         })),
     };
+    const elk = await getElk();
     const laidOutGraph = await elk.layout(elkGraph);
     const positionsByNodeId = new Map((laidOutGraph.children ?? []).map((child) => [
         child.id,

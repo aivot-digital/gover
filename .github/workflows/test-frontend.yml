@@ -35,3 +35,13 @@ jobs:
       - name: Run unit tests
         working-directory: app
         run: npm test
+
+      - name: Test asset compression
+        working-directory: app
+        run: npm run test:assets
+
+      - name: Build asset delivery test image
+        run: docker build -f container/Containerfile.nginx-test -t prosuna-nginx-test .
+
+      - name: Test asset delivery
+        run: docker run --rm --network none prosuna-nginx-test

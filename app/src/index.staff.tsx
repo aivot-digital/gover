@@ -9,7 +9,6 @@ import {createRoutesFromChildren, matchRoutes, useLocation, useNavigationType} f
 import {createRoot} from 'react-dom/client';
 import {isStringNotNullOrEmpty} from './utils/string-utils';
 import {StaffShellRouter} from './shells/staff/staff-shell-router';
-import './components/code-editor/configure-monaco';
 
 const rootElement = document.getElementById('root')!;
 const root = createRoot(rootElement);

@@ -6,6 +6,7 @@
   "scripts": {
     "generate:permissions": "node scripts/generate-permission-enum.mjs",
     "test": "vitest run",
+    "test:assets": "node --test scripts/compress-assets.spec.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
@@ -13,8 +14,10 @@
     "start:customer": "VITE_APP_MODE=customer vite --config vite.config.customer.js",
     "prebuild:staff": "npm run generate:permissions",
     "build:staff": "VITE_APP_MODE=staff vite build --config vite.config.staff.js",
+    "postbuild:staff": "node scripts/compress-assets.mjs build/staff/assets",
     "prebuild:customer": "npm run generate:permissions",
     "build:customer": "VITE_APP_MODE=customer vite build --config vite.config.customer.js",
+    "postbuild:customer": "node scripts/compress-assets.mjs build/customer/assets",
     "preview:staff": "VITE_APP_MODE=staff vite preview --config vite.config.staff.js",
     "preview:customer": "VITE_APP_MODE=customer vite preview --config vite.config.customer.js"
   },

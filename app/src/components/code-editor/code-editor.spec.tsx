@@ -12,8 +12,8 @@ const mocks = vi.hoisted(() => ({
     },
 }));
 
-vi.mock('@monaco-editor/react', () => ({
-    default: (props: {onMount?: (editor: typeof mocks.editor, monaco: unknown) => void}) => {
+vi.mock('./monaco-editor', () => ({
+    MonacoEditor: (props: {onMount?: (editor: typeof mocks.editor, monaco: unknown) => void}) => {
         props.onMount?.(mocks.editor, {
             languages: {},
             typescript: {
