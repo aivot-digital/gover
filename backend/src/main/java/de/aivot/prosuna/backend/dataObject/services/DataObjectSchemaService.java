@@ -2,7 +2,11 @@ package de.aivot.prosuna.backend.dataObject.services;
 
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.prosuna.backend.dataObject.repositories.DataObjectSchemaRepository;
+import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.lib.services.EntityService;
@@ -31,7 +35,7 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
     @Nonnull
     @Override
     public DataObjectSchemaEntity create(@Nonnull DataObjectSchemaEntity entity) throws ResponseException {
-        validateSchemaConfig(entity);
+        validateSchemaConfig(entity.getIdGen(), entity.getSchema());
 
         return dataObjectRepository.save(entity);
     }
@@ -50,12 +54,12 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
     @Nonnull
     @Override
     public DataObjectSchemaEntity performUpdate(@Nonnull String key, @Nonnull DataObjectSchemaEntity entity, @Nonnull DataObjectSchemaEntity existingEntity) throws ResponseException {
+        validateSchemaConfig(existingEntity.getIdGen(), entity.getSchema());
+
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
         existingEntity.setSchema(entity.getSchema());
         existingEntity.setDisplayFields(entity.getDisplayFields());
-
-        validateSchemaConfig(existingEntity);
 
         return dataObjectRepository.save(existingEntity);
     }
@@ -82,15 +86,20 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
         return dataObjectRepository.exists(specification);
     }
 
-    private void validateSchemaConfig(@Nonnull DataObjectSchemaEntity entity) throws ResponseException {
-        switch (entity.getIdGen()) {
+    private void validateSchemaConfig(@Nonnull String idGen, @Nullable GroupLayoutElement schema) throws ResponseException {
+        if (schema == null) {
+            throw ResponseException.badRequest("Bitte legen Sie ein Datenschema mit mindestens einem Datenfeld fest.");
+        }
+        if (!containsDataField(schema)) {
+            throw ResponseException.badRequest("Das Datenschema muss mindestens ein Datenfeld enthalten.");
+        }
+
+        switch (idGen) {
             case DataObjectItemService.ID_GEN_UUID:
             case DataObjectItemService.ID_GEN_SERIAL:
                 break;
             case DataObjectItemService.ID_GEN_CUSTOM:
-                var children = entity
-                        .getSchema()
-                        .getChildren();
+                var children = schema.getChildren();
 
                 if (children == null || children.isEmpty()) {
                     throw ResponseException.badRequest("Der gewählte ID-Typ setzt ein Element mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ voraus. Stellen Sie sicher, dass das Feld auf der obersten Ebene des Datenmodells definiert ist.");
@@ -115,13 +124,21 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                 }
                 break;
             default:
-                var startPatternPresent = DataObjectItemService.ID_GEN_INC_START_PATTERN.matcher(entity.getIdGen()).matches();
-                var endPatternPresent = DataObjectItemService.ID_GEN_INC_END_PATTERN.matcher(entity.getIdGen()).matches();
+                var startPatternPresent = DataObjectItemService.ID_GEN_INC_START_PATTERN.matcher(idGen).matches();
+                var endPatternPresent = DataObjectItemService.ID_GEN_INC_END_PATTERN.matcher(idGen).matches();
 
                 if (!startPatternPresent && !endPatternPresent) {
                     throw ResponseException.badRequest("Das Format des gewählten ID-Typs ist ungültig. Bitte stellen Sie sicher, dass der ID-Typ mit „%I[0-9]“ beginnt oder endet.");
                 }
                 break;
         }
+    }
+
+    private boolean containsDataField(@Nullable BaseElement element) {
+        // Repeating containers are inputs too, but an empty container does not define a data field.
+        if (element instanceof LayoutElement<?> layout) {
+            return layout.getChildren().stream().anyMatch(this::containsDataField);
+        }
+        return element instanceof BaseInputElement<?>;
     }
 }
