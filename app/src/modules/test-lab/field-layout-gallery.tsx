@@ -26,6 +26,8 @@ import {DomainUserSelectFieldComponent} from '../../components/domain-user-selec
 import type {DomainAndUserSelectOption} from '../../components/domain-user-select-field/domain-user-select-options';
 import {AssignmentContextFieldComponent} from '../../components/assignment-context-field/assignment-context-field-component';
 import {FileUploadComponent} from '../../components/file-upload-field/file-upload-component';
+import {ProcessInstanceAttachmentSetSelect} from '../../components/process-instance-attachment-set-select/process-instance-attachment-set-select';
+import type {ProcessNodeDefinitionMetadataForwardedAttachmentSet} from '../process/entities/process-node-definition-metadata';
 import {SearchInput} from '../../components/search-input/search-input';
 import {AssetSelector} from '../assets/components/asset-selector';
 import {ImageSelector} from '../assets/components/image-selector';
@@ -103,6 +105,47 @@ const fieldGridSx = {
         maxWidth: '100%',
     },
 };
+
+const attachmentSetOptions: ProcessNodeDefinitionMetadataForwardedAttachmentSet[] = [
+    {
+        dataKey: 'summary',
+        label: 'Formularzusammenfassung',
+        subLabel: 'PDF des eingereichten Formulars',
+        isMultifile: false,
+    },
+    {
+        dataKey: 'documents',
+        label: 'Nachweise',
+        subLabel: 'Hochgeladene Unterlagen',
+        isMultifile: true,
+    },
+    {
+        dataKey: 'decision',
+        label: 'Bescheid',
+        subLabel: 'Erzeugtes Dokument',
+        isMultifile: false,
+    },
+].map((attachmentSet) => ({
+    ...attachmentSet,
+    origin: {
+        id: 1,
+        processId: 1,
+        processVersion: 1,
+        processNodeDefinitionKey: 'form',
+        processNodeDefinitionVersion: 1,
+        name: 'Antrag einreichen',
+        description: null,
+        dataKey: 'application',
+        configuration: {},
+        outputMappings: {},
+        timeLimitDays: null,
+        requirements: null,
+        notes: null,
+        savedWithErrors: false,
+        created: '2026-01-01T00:00:00Z',
+        updated: '2026-01-01T00:00:00Z',
+    },
+}));
 
 const domainAndUserOptions: DomainAndUserSelectOption[] = [
     {
@@ -430,6 +473,8 @@ export function FieldLayoutGallery() {
     const [attachments, setAttachments] = useState<File[] | null>(() => [
         new File(['Beispieldokument'], 'antrag.pdf', {type: 'application/pdf'}),
     ]);
+    const [attachmentSet, setAttachmentSet] = useState<string[] | null>(['summary']);
+    const [attachmentSets, setAttachmentSets] = useState<string[] | null>(['summary', 'documents']);
     const [selectedAssetKey, setSelectedAssetKey] = useState<string | null>(null);
     const [selectedImageKey, setSelectedImageKey] = useState<string | null>(null);
     const [accentColor, setAccentColor] = useState('#006E73');
@@ -915,6 +960,30 @@ export function FieldLayoutGallery() {
                     isMultifile
                     maxFiles={3}
                     hint="Fügen Sie bei Bedarf ergänzende Nachweise hinzu."
+                    margin="none"
+                />
+            </Box>
+
+            <Box sx={{...fieldGridSx, mt: 3}}>
+                <ProcessInstanceAttachmentSetSelect
+                    label="Anlagensatz"
+                    attachmentSets={attachmentSetOptions}
+                    value={attachmentSet}
+                    onChange={setAttachmentSet}
+                    maxItems={1}
+                    required
+                    placeholder="Anlagensatz auswählen"
+                    hint="Wählen Sie den Anlagensatz, der gespeichert werden soll."
+                    margin="none"
+                />
+                <ProcessInstanceAttachmentSetSelect
+                    label="Anlagensätze"
+                    attachmentSets={attachmentSetOptions}
+                    value={attachmentSets}
+                    onChange={setAttachmentSets}
+                    maxItems={3}
+                    placeholder="Anlagensätze auswählen"
+                    hint="Wählen Sie bis zu drei Anlagensätze."
                     margin="none"
                 />
             </Box>

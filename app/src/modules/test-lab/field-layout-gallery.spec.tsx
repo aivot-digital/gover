@@ -336,6 +336,14 @@ describe('FieldLayoutGallery accessibility', () => {
         );
         expect(screen.getByRole('button', {name: 'antrag.pdf entfernen'})).toBeInTheDocument();
 
+        const attachmentSet = screen.getByRole('combobox', {name: 'Anlagensatz'});
+        expect(attachmentSet).toHaveValue('Formularzusammenfassung');
+        expect(attachmentSet).toHaveAccessibleDescription(
+            'Wählen Sie den Anlagensatz, der gespeichert werden soll. 1/1',
+        );
+        expect(screen.getByRole('combobox', {name: 'Anlagensätze – optional'}))
+            .toHaveAccessibleDescription('Wählen Sie bis zu drei Anlagensätze. 2/3');
+
         const locationGroup = screen.getByRole('group', {name: 'Veranstaltungsort – optional'});
         expect(locationGroup).toHaveAccessibleDescription(
             'Suchen Sie eine Adresse oder wählen Sie den Punkt direkt auf der Karte.',
