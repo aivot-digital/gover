@@ -1020,7 +1020,6 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
     @ReplicatingContainerLayoutElementElementPOJOBinding(
             id = WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID,
-            allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode},
             properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Konfigurieren Sie alle Anlagensätze, die gespeichert werden sollen."),
