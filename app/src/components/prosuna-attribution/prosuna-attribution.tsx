@@ -1,5 +1,5 @@
 import React from 'react';
-import {Box, Divider, Link, Typography, useTheme} from '@mui/material';
+import {alpha, Box, Divider, Link, Typography, useTheme} from '@mui/material';
 import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {ProsunaLogo} from '../prosuna-logo/prosuna-logo';
 
@@ -24,7 +24,7 @@ export function ProsunaAttribution({placement}: ProsunaAttributionProps): React.
     return (
         <Box
             sx={{
-                backgroundColor: 'action.hover',
+                backgroundColor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.08 : 0.045),
                 px: 2,
                 py: 1,
             }}

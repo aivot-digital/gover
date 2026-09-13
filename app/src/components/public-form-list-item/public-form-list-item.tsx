@@ -4,6 +4,7 @@ import OpenInNewOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/
 import DescriptionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Description';
 import {type FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
+import {getCustomerPageSurfaceColor} from '../../theming/customer-page-surface';
 
 interface PublicFormListItemProps {
     form: FormCitizenListResponseDTO;
@@ -18,11 +19,13 @@ export function PublicFormListItem(props: PublicFormListItemProps) {
                 alignItems: 'stretch',
                 minHeight: 76,
                 overflow: 'hidden',
-                backgroundColor: 'background.paper',
+                backgroundColor: getCustomerPageSurfaceColor,
                 border: '1px solid',
                 borderColor: 'divider',
                 borderRadius: 1,
-                boxShadow: 1,
+                '&:focus-within': {
+                    borderColor: 'primary.main',
+                },
             }}
         >
             <Box

@@ -1,3 +1,4 @@
+import {createTheme as createMuiTheme, ThemeProvider} from '@mui/material';
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
@@ -133,6 +134,14 @@ describe('CustomerFormPage error handling', () => {
         });
         vi.spyOn(CustomerInputService, 'loadCustomerInputDraft').mockReturnValue(null);
         vi.spyOn(CustomerInputService, 'cleanCustomerInput').mockImplementation(() => undefined);
+    });
+
+    it.each(['light', 'dark'] as const)('uses a neutral content surface in %s mode even with tinted surrounding surfaces', async mode => {
+        const theme = createMuiTheme({palette: {mode, background: {default: '#ffeeee', paper: '#eeffee'}}});
+        render(<ThemeProvider theme={theme}><CustomerFormPage/></ThemeProvider>);
+
+        const submit = await screen.findByRole('button', {name: 'Formular absenden'});
+        expect(submit.parentElement).toHaveStyle({backgroundColor: mode === 'light' ? '#ffffff' : '#1c1c1c'});
     });
 
     it('sets a generic shell error when form loading fails unexpectedly', async () => {

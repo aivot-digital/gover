@@ -1,3 +1,4 @@
+import {getCustomerPageSurfaceColor} from '../../theming/customer-page-surface';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import React, {useEffect, useMemo, useState} from 'react';
 import {
@@ -418,7 +419,11 @@ export function CustomerFormPage() {
 
                 <Box
                     sx={{
-                        backgroundColor: 'background.default',
+                        backgroundColor: getCustomerPageSurfaceColor,
+                        color: 'text.primary',
+                        minHeight: '100dvh',
+                        display: 'flex',
+                        flexDirection: 'column',
                     }}
                 >
                     <FormHeaderComponent
@@ -1005,7 +1010,6 @@ function CustomerFormSkeleton() {
                 sx={{
                     mt: 5,
                     mb: 5,
-                    minHeight: '66vh',
                 }}
             >
                 <Stepper

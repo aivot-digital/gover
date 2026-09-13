@@ -1,3 +1,4 @@
+import {getCustomerPageSurfaceColor} from '../../theming/customer-page-surface';
 import {useState} from 'react';
 import {Box, Container, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
 import {Logo} from '../../components/logo/logo';
@@ -28,8 +29,9 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
         >
             <Box
                 sx={{
-                    boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.06)',
-                    backgroundColor: 'background.paper',
+                    backgroundColor: getCustomerPageSurfaceColor,
+                    borderBottom: 1,
+                    borderColor: 'divider',
                 }}
             >
                 <Container>
@@ -79,7 +81,7 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
                                     sx={{
                                         color: resolveAccessibleForeground(
                                             theme.palette.primary.main,
-                                            theme.palette.background.paper,
+                                            getCustomerPageSurfaceColor(theme),
                                         ),
                                         display: 'block',
                                         maxWidth: '640px',

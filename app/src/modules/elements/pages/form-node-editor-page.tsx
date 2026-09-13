@@ -1,3 +1,4 @@
+import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surface';
 import {Box, Dialog, DialogContent, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {showDialog} from '../../../slices/app-slice';
@@ -1260,7 +1261,15 @@ export function FormNodeEditorPage() {
                                         ref={scrollContainerRef}
                                     >
                                         <ThemeProvider theme={previewTheme}>
-                                            <Box>
+                                            <Box
+                                                sx={{
+                                                    backgroundColor: getCustomerPageSurfaceColor,
+                                                    color: 'text.primary',
+                                                    minHeight: '100%',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                }}
+                                            >
                                                 <FormHeaderComponent
                                                     form={formLayout}
                                                     node={node}

@@ -1,3 +1,4 @@
+import {getCustomerPageSurfaceColor} from '../../theming/customer-page-surface';
 import React, {useEffect, useState} from 'react';
 import {
     Box,
@@ -79,8 +80,9 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
         >
             <Box
                 sx={{
-                    boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.06)',
-                    backgroundColor: 'background.paper',
+                    backgroundColor: getCustomerPageSurfaceColor,
+                    borderBottom: 1,
+                    borderColor: 'divider',
                 }}
             >
                 <Container>
@@ -137,7 +139,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                                     sx={{
                                         color: resolveAccessibleForeground(
                                             theme.palette.primary.main,
-                                            theme.palette.background.paper,
+                                            getCustomerPageSurfaceColor(theme),
                                         ),
                                         display: 'block',
                                         maxWidth: '640px',

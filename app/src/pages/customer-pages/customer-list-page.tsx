@@ -1,3 +1,4 @@
+import {getCustomerPageSurfaceColor} from '../../theming/customer-page-surface';
 import React, {useEffect, useState} from 'react';
 import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-placeholder';
 import {Box, Container, List} from '@mui/material';
@@ -115,7 +116,11 @@ export function CustomerListPage() {
         return (
             <Box
                 sx={{
-                    backgroundColor: 'background.default',
+                    backgroundColor: getCustomerPageSurfaceColor,
+                    color: 'text.primary',
+                    minHeight: '100dvh',
+                    display: 'flex',
+                    flexDirection: 'column',
                 }}
             >
                 <MetaElement
@@ -125,12 +130,8 @@ export function CustomerListPage() {
 
                 <CustomerListPageHeader />
 
-                <main role="main">
-                    <Box
-                        sx={{
-                            minHeight: '75vh',
-                        }}
-                    >
+                <Box component="main" sx={{flex: '1 0 auto'}}>
+                    <Box>
                         <Container
                             sx={{
                                 mb: 5,
@@ -190,9 +191,9 @@ export function CustomerListPage() {
                             </Box>
                         </Container>
                     </Box>
+                </Box>
 
-                    <CustomerListPageFooter />
-                </main>
+                <CustomerListPageFooter />
 
                 <PrivacyDialog
                     form={{} as any}
