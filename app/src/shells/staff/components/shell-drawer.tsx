@@ -1,4 +1,4 @@
-import React, {ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
+import React, {ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Badge,
     Box,
@@ -1065,6 +1065,8 @@ function DrawerListItem({
 
     const storageKey = `drawer-item-${item.label}-expanded`;
     const [expanded, setExpanded] = useState<boolean>(() => localStorage.getItem(storageKey) != null);
+    const labelRef = useRef<HTMLSpanElement | null>(null);
+    const [labelTooltipOpen, setLabelTooltipOpen] = useState(false);
 
     useEffect(() => {
         if (expanded) localStorage.setItem(storageKey, 'true');
@@ -1075,6 +1077,11 @@ function DrawerListItem({
 
     const handleClick = () => {
         if (item.children) setExpanded((e) => !e);
+    };
+
+    const handleLabelTooltipOpen = () => {
+        const labelElement = labelRef.current;
+        setLabelTooltipOpen(labelElement != null && labelElement.scrollWidth > labelElement.clientWidth);
     };
 
     const labelSizeScale =
@@ -1221,11 +1228,18 @@ function DrawerListItem({
                         <DrawerNavigationIcon item={item}
                                               active={isActive}/>
                     </ListItemIcon>
-                    <Tooltip title={item.label} placement="right" arrow>
+                    <Tooltip
+                        title={item.label}
+                        placement="right"
+                        arrow
+                        open={labelTooltipOpen}
+                        onOpen={handleLabelTooltipOpen}
+                        onClose={() => setLabelTooltipOpen(false)}
+                    >
                         <ListItemText
                             primary={item.label}
                             sx={{minWidth: 0}}
-                            slotProps={{primary: {noWrap: true}}}
+                            slotProps={{primary: {noWrap: true, ref: labelRef}}}
                         />
                     </Tooltip>
                     {item.chipContent != null && (
