@@ -42,7 +42,6 @@ import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetSer
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.mail.MessagingException;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
@@ -383,30 +382,6 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         taskViewData.putLiteral(STAFF_TASK_CONTENT_FIELD_ID, content);
 
         return taskViewData;
-    }
-
-    @Nullable
-    @Override
-    public AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) {
-        var savedData = ProcessNodeDefinition.super.getAutoSavedStaffTaskViewData(context);
-        if (savedData != null) {
-            return savedData;
-        }
-
-        var runtimeData = context.getThisTask().getRuntimeData();
-        var legacySavedData = new AuthoredElementValues();
-
-        var subject = runtimeData.get(STAFF_TASK_SUBJECT_FIELD_ID);
-        if (subject != null) {
-            legacySavedData.putLiteral(STAFF_TASK_SUBJECT_FIELD_ID, subject);
-        }
-
-        var content = runtimeData.get(STAFF_TASK_CONTENT_FIELD_ID);
-        if (content != null) {
-            legacySavedData.putLiteral(STAFF_TASK_CONTENT_FIELD_ID, content);
-        }
-
-        return legacySavedData.isEmpty() ? null : legacySavedData;
     }
 
     private static final String STAFF_TASK_SEND_EVENT = "send";
