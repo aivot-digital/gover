@@ -47,7 +47,6 @@ import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolv
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -367,23 +366,6 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 context.getThisTask().getProcessData()
         );
         return authoredInputValueService.toLiteralAuthoredElementValues(taskView, effectiveValues);
-    }
-
-    @Nullable
-    @Override
-    public AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) {
-        var savedData = ProcessNodeDefinition.super.getAutoSavedStaffTaskViewData(context);
-        if (savedData != null) {
-            return savedData;
-        }
-
-        var runtimeData = context.getThisTask().getRuntimeData();
-        if (runtimeData.isEmpty()) {
-            return null;
-        }
-
-        // Older draft snapshots contain plain values, including nested rows from the modeled task view.
-        return authoredInputValueService.toLiteralAuthoredElementValues(getStaffTaskView(context), runtimeData);
     }
 
     @Nonnull
