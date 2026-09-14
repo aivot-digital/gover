@@ -727,10 +727,22 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Nonnull
     @Override
     public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
-        return createPaymentView(context);
+        var paymentView = createPaymentView(context);
+        return paymentView == null
+                ? ProcessNodeDefinition.super.getCustomerTaskView(context)
+                : paymentView;
     }
 
     @Nonnull
+    @Override
+    public ProcessNodeCustomerView getCompletedCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
+        var paymentView = createPaymentView(context);
+        return paymentView == null
+                ? ProcessNodeDefinition.super.getCompletedCustomerTaskView(context)
+                : paymentView;
+    }
+
+    @Nullable
     private ProcessNodeCustomerView createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
         var paymentTransactionKey = context
                 .getThisTask()
@@ -738,20 +750,23 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 .get(DATA_KEY_PAYMENT_TRANSACTION_KEY);
 
         if (paymentTransactionKey == null) {
-            return ProcessNodeDefinition.super.getCustomerTaskView(context);
+            return null;
         }
 
         var transaction = paymentTransactionService
                 .retrieve(String.valueOf(paymentTransactionKey));
 
         if (transaction.isEmpty()) {
-            return ProcessNodeDefinition.super.getCustomerTaskView(context);
+            return null;
         }
 
         var paymentPayloadRawData = context
                 .getThisTask()
                 .getRuntimeData()
                 .get(DATA_KEY_PAYMENT_PAYLOAD);
+        if (paymentPayloadRawData == null) {
+            return null;
+        }
         var paymentPayload = jsonMapper
                 .convertValue(paymentPayloadRawData, PaymentPayload.class);
 

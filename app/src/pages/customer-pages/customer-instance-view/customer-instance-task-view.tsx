@@ -68,6 +68,7 @@ export function CustomerInstanceTaskView() {
     const [derivedErrors, setDerivedErrors] = useState<DerivedRuntimeElementData | null>(null);
     const latestAuthoredValuesRef = useRef<AuthoredElementValues>({});
     const taskViewLoadGenerationRef = useRef(0);
+    const previousTaskStateRef = useRef({instanceAccessKey, taskAccessKey, taskIsActive});
 
     useEffect(() => {
         const currentUrl = window.location.href;
@@ -144,6 +145,20 @@ export function CustomerInstanceTaskView() {
             }
         };
     }, [dispatch, retrieveTaskView]);
+
+    useEffect(() => {
+        const previousTaskState = previousTaskStateRef.current;
+        previousTaskStateRef.current = {instanceAccessKey, taskAccessKey, taskIsActive};
+
+        if (
+            previousTaskState.instanceAccessKey === instanceAccessKey &&
+            previousTaskState.taskAccessKey === taskAccessKey &&
+            previousTaskState.taskIsActive &&
+            !taskIsActive
+        ) {
+            void retrieveTaskView();
+        }
+    }, [instanceAccessKey, retrieveTaskView, taskAccessKey, taskIsActive]);
 
     const handleRequiredIdentityAuthentication = useCallback((error: unknown): boolean => {
         if (!isRequiredIdentityAuthenticationError(error)) {

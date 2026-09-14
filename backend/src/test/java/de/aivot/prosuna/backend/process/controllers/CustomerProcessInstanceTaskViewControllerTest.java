@@ -5,10 +5,12 @@ import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.*;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.identity.dtos.EmailIdentityRequestDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentityProviderOptionResponseDTO;
@@ -50,6 +52,7 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -95,7 +98,17 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 null
         );
 
-        assertNotNull(response.layout());
+        assertEquals("test.citizen-noop-completed-customer-task-view", response.layout().getId());
+        var alert = response.layout()
+                .findChild("test.citizen-noop-completed-customer-task-alert", AlertContentElement.class)
+                .orElseThrow();
+        assertEquals("Aufgabe abgeschlossen", alert.getTitle());
+        assertEquals("Sie haben diese Aufgabe erfolgreich abgeschlossen.", alert.getText());
+        assertEquals(AlertType.Success, alert.getAlertType());
+        assertEquals(List.of(), response.events());
+        assertEquals(Map.of(), response.data());
+        assertNull(response.existingIdentitySlot());
+        assertNull(response.newIdentitySlot());
     }
 
     @Test
@@ -236,7 +249,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 .thenReturn(false);
         var servletResponse = new MockHttpServletResponse();
 
-        fixture.controller().update(
+        var response = fixture.controller().update(
                 fixture.procAccess(),
                 fixture.taskAccess(),
                 "{}",
@@ -264,6 +277,11 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 fixture.node()
         );
         assertEquals(0, servletResponse.getCookies()[0].getMaxAge());
+        assertEquals("test.citizen-inline-event-completed-customer-task-view", response.layout().getId());
+        assertEquals(List.of(), response.events());
+        assertEquals(Map.of(), response.data());
+        assertNull(response.existingIdentitySlot());
+        assertNull(response.newIdentitySlot());
     }
 
     @Test
@@ -341,6 +359,37 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 any(ProcessNodeEntity.class),
                 any(ProcessNodeCustomerView.class),
                 eq("identity-session")
+        );
+    }
+
+    @Test
+    void derive_UsesCompletedCustomerTaskView() throws ResponseException {
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(),
+                new AuthoredElementValues()
+        );
+        fixture.task().setStatus(ProcessTaskStatus.Completed);
+
+        fixture.controller().derive(
+                null,
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                new AuthoredElementValues(),
+                List.of(),
+                Map.of(),
+                null
+        );
+
+        var customerViewCaptor = ArgumentCaptor.forClass(ProcessNodeCustomerView.class);
+        verify(fixture.customerTaskIdentityService()).requireAuthenticatedIdentity(
+                any(ProcessInstanceEntity.class),
+                any(ProcessNodeEntity.class),
+                customerViewCaptor.capture(),
+                eq(null)
+        );
+        assertEquals(
+                "test.citizen-noop-completed-customer-task-view",
+                customerViewCaptor.getValue().layout().getId()
         );
     }
 

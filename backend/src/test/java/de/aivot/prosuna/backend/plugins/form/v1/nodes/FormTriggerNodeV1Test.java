@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
@@ -436,7 +437,7 @@ class FormTriggerNodeV1Test {
     }
 
     @Test
-    void getCustomerTaskView_ShouldRenderConfiguredPaymentSuccessMessage() throws Exception {
+    void getCompletedCustomerTaskView_ShouldRenderConfiguredPaymentSuccessMessage() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
         var transactionKey = "tx-1";
         var paymentConfig = new PaymentConfigElementValue(
@@ -472,7 +473,7 @@ class FormTriggerNodeV1Test {
         when(processService.retrieve(PROCESS_ID))
                 .thenReturn(Optional.of(process()));
 
-        var layout = node.getCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+        var layout = node.getCompletedCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
                 mock(ProcessNodeExecutionLogger.class),
                 processNode(),
                 processInstance(Map.of()),
@@ -488,7 +489,7 @@ class FormTriggerNodeV1Test {
     }
 
     @Test
-    void getCustomerTaskView_ShouldRenderPaymentConfirmationDownloadUrl() throws Exception {
+    void getCompletedCustomerTaskView_ShouldRenderPaymentConfirmationDownloadUrl() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
         var transactionKey = "tx-1";
         var paymentConfig = new PaymentConfigElementValue(
@@ -525,7 +526,7 @@ class FormTriggerNodeV1Test {
         when(processService.retrieve(PROCESS_ID))
                 .thenReturn(Optional.of(process()));
 
-        var layout = node.getCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+        var layout = node.getCompletedCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
                 mock(ProcessNodeExecutionLogger.class),
                 processNode(),
                 instance,
@@ -541,6 +542,31 @@ class FormTriggerNodeV1Test {
                 "https://example.test/api/public/form/antrag-prozess/antrag-online/submit/instance-access/task-access/payment-confirmation/",
                 downloadButton.getHref()
         );
+    }
+
+    @Test
+    void getCompletedCustomerTaskView_ShouldFallBackToGenericConfirmationWithoutPaymentData() throws Exception {
+        var configuration = new FormTriggerConfigV1();
+
+        var view = node.getCompletedCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+                mock(ProcessNodeExecutionLogger.class),
+                processNode(),
+                processInstance(Map.of()),
+                task(),
+                null,
+                null,
+                configuration,
+                null
+        ));
+
+        var alert = view.layout()
+                .findChild(
+                        node.getKey() + "-completed-customer-task-alert",
+                        AlertContentElement.class
+                )
+                .orElseThrow();
+        assertEquals("Aufgabe abgeschlossen", alert.getTitle());
+        assertTrue(view.events().isEmpty());
     }
 
     private static FormTriggerConfigV1 configuration(String formSlug, FormLayoutElement formLayout) {

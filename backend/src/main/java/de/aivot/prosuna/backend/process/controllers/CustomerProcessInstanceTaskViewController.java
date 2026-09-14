@@ -157,9 +157,7 @@ public class CustomerProcessInstanceTaskViewController {
 
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
 
-        var customerView = taskViewData
-                .provider
-                .getCustomerTaskView(context);
+        var customerView = resolveCustomerTaskView(taskViewData, context);
         return createTaskViewResponse(taskViewData, customerView, identitySessionId);
     }
 
@@ -182,9 +180,7 @@ public class CustomerProcessInstanceTaskViewController {
                 identitySessionId,
                 withoutIdentityOrigin(queryParameters)
         );
-        var customerView = taskViewData
-                .provider()
-                .getCustomerTaskView(context);
+        var customerView = resolveCustomerTaskView(taskViewData, context);
         var redirectUri = customerTaskIdentityService.createAuthenticationRedirect(
                 taskViewData.instance(),
                 taskViewData.node(),
@@ -217,7 +213,7 @@ public class CustomerProcessInstanceTaskViewController {
                 identitySessionId,
                 withoutIdentityOrigin(queryParameters)
         );
-        var customerView = taskViewData.provider().getCustomerTaskView(context);
+        var customerView = resolveCustomerTaskView(taskViewData, context);
         var slot = customerTaskIdentityService.requireNewIdentitySlot(
                 taskViewData.instance(),
                 customerView,
@@ -247,7 +243,7 @@ public class CustomerProcessInstanceTaskViewController {
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(procAccess, taskAccess);
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
-        var customerView = taskViewData.provider().getCustomerTaskView(context);
+        var customerView = resolveCustomerTaskView(taskViewData, context);
         var slot = customerTaskIdentityService.requireNewIdentitySlot(
                 taskViewData.instance(),
                 customerView,
@@ -276,7 +272,7 @@ public class CustomerProcessInstanceTaskViewController {
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(procAccess, taskAccess);
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
-        var customerView = taskViewData.provider().getCustomerTaskView(context);
+        var customerView = resolveCustomerTaskView(taskViewData, context);
         var slot = customerTaskIdentityService.requireNewIdentitySlot(
                 taskViewData.instance(),
                 customerView,
@@ -306,7 +302,7 @@ public class CustomerProcessInstanceTaskViewController {
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(procAccess, taskAccess);
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
-        var customerView = taskViewData.provider().getCustomerTaskView(context);
+        var customerView = resolveCustomerTaskView(taskViewData, context);
         var slot = customerTaskIdentityService.requireNewIdentitySlot(
                 taskViewData.instance(),
                 customerView,
@@ -334,7 +330,7 @@ public class CustomerProcessInstanceTaskViewController {
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(procAccess, taskAccess);
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
-        var customerView = taskViewData.provider().getCustomerTaskView(context);
+        var customerView = resolveCustomerTaskView(taskViewData, context);
         var slot = customerTaskIdentityService.requireNewIdentitySlot(
                 taskViewData.instance(),
                 customerView,
@@ -363,9 +359,7 @@ public class CustomerProcessInstanceTaskViewController {
                                        @Nonnull HttpServletResponse response) throws ResponseException, IOException {
         var taskViewData = fetchTaskViewData(procAccess, taskAccess);
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
-        var customerView = taskViewData
-                .provider()
-                .getCustomerTaskView(context);
+        var customerView = resolveCustomerTaskView(taskViewData, context);
         customerTaskIdentityService.requireAuthenticatedIdentity(
                 taskViewData.instance(),
                 taskViewData.node(),
@@ -455,9 +449,7 @@ public class CustomerProcessInstanceTaskViewController {
             previousTask = null;
         }
 
-        var customerView = taskViewData
-                .provider
-                .getCustomerTaskView(context);
+        var customerView = resolveCustomerTaskView(taskViewData, context);
         var identityState = customerTaskIdentityService.requireAuthenticatedIdentity(
                 taskViewData.instance(),
                 taskViewData.node(),
@@ -582,11 +574,11 @@ public class CustomerProcessInstanceTaskViewController {
             }
         }
 
-        var updatedView = taskViewData
-                .provider
-                .getCustomerTaskView(context);
+        var updatedView = completingResult
+                ? resolveCompletedCustomerTaskView(taskViewData.provider(), context)
+                : resolveCustomerTaskView(taskViewData, context);
         var updatedIdentityState = completingResult
-                ? identityState
+                ? CustomerTaskIdentityService.CustomerTaskIdentityState.readyWithoutRequirements()
                 : customerTaskIdentityService.resolveIdentityState(
                 taskViewData.instance(),
                 taskViewData.node(),
@@ -665,9 +657,7 @@ public class CustomerProcessInstanceTaskViewController {
 
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
 
-        var customerTaskView = taskViewData
-                .provider
-                .getCustomerTaskView(context);
+        var customerTaskView = resolveCustomerTaskView(taskViewData, context);
         customerTaskIdentityService.requireAuthenticatedIdentity(
                 taskViewData.instance(),
                 taskViewData.node(),
@@ -766,6 +756,32 @@ public class CustomerProcessInstanceTaskViewController {
                 identitySessionId,
                 taskViewData.nodeConfig(),
                 queryParameters
+        );
+    }
+
+    @Nonnull
+    private <NodeConfig> ProcessNodeCustomerView resolveCustomerTaskView(
+            @Nonnull TaskViewData<NodeConfig> taskViewData,
+            @Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context
+    ) throws ResponseException {
+        if (taskViewData.task().getStatus() == ProcessTaskStatus.Completed) {
+            return resolveCompletedCustomerTaskView(taskViewData.provider(), context);
+        }
+        return taskViewData.provider().getCustomerTaskView(context);
+    }
+
+    @Nonnull
+    private <NodeConfig> ProcessNodeCustomerView resolveCompletedCustomerTaskView(
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context
+    ) throws ResponseException {
+        var completedView = provider.getCompletedCustomerTaskView(context);
+        return new ProcessNodeCustomerView(
+                completedView.layout(),
+                List.of(),
+                completedView.data(),
+                null,
+                null
         );
     }
 

@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToA
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElement;
@@ -637,7 +638,7 @@ class PaymentRequestActionNodeV1Test {
     }
 
     @Test
-    void customerTaskView_RendersPaymentConfirmationDownloadUrl() throws Exception {
+    void completedCustomerTaskView_RendersPaymentConfirmationDownloadUrl() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
         var paymentConfig = new PaymentConfigElementValue(
                 paymentProviderKey,
@@ -669,7 +670,7 @@ class PaymentRequestActionNodeV1Test {
                 paymentProvider.getPaymentProviderDefinitionVersion()
         )).thenReturn(Optional.of(paymentProviderDefinition));
 
-        var layout = node.getCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+        var layout = node.getCompletedCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
                 logger(),
                 processNode(),
                 processInstance(recipientIdentity()),
@@ -685,6 +686,31 @@ class PaymentRequestActionNodeV1Test {
                 "https://example.test/api/public/processes/instance-access/tasks/task-access/payment-confirmation/",
                 downloadButton.getHref()
         );
+    }
+
+    @Test
+    void completedCustomerTaskView_FallsBackToGenericConfirmationWithoutPaymentData() throws Exception {
+        var paymentProviderKey = UUID.randomUUID();
+
+        var view = node.getCompletedCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+                logger(),
+                processNode(),
+                processInstance(recipientIdentity()),
+                task(),
+                null,
+                null,
+                nodeConfiguration(paymentConfig(paymentProviderKey), "automatic"),
+                null
+        ));
+
+        var alert = view.layout()
+                .findChild(
+                        node.getKey() + "-completed-customer-task-alert",
+                        AlertContentElement.class
+                )
+                .orElseThrow();
+        assertEquals("Aufgabe abgeschlossen", alert.getTitle());
+        assertTrue(view.events().isEmpty());
     }
 
     @Test

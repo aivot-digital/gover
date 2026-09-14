@@ -508,20 +508,37 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     @Nonnull
     @Override
     public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<PaymentRequestActionNodeConfig> context) throws ResponseException {
+        var paymentView = createPaymentView(context);
+        return paymentView == null
+                ? ProcessNodeDefinition.super.getCustomerTaskView(context)
+                : paymentView;
+    }
+
+    @Nonnull
+    @Override
+    public ProcessNodeCustomerView getCompletedCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<PaymentRequestActionNodeConfig> context) throws ResponseException {
+        var paymentView = createPaymentView(context);
+        return paymentView == null
+                ? ProcessNodeDefinition.super.getCompletedCustomerTaskView(context)
+                : paymentView;
+    }
+
+    @Nullable
+    private ProcessNodeCustomerView createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer<PaymentRequestActionNodeConfig> context) throws ResponseException {
         var paymentTransactionKey = context
                 .getThisTask()
                 .getRuntimeData()
                 .get(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY);
 
         if (paymentTransactionKey == null) {
-            return ProcessNodeDefinition.super.getCustomerTaskView(context);
+            return null;
         }
 
         var transaction = paymentTransactionService
                 .retrieve(String.valueOf(paymentTransactionKey));
 
         if (transaction.isEmpty()) {
-            return ProcessNodeDefinition.super.getCustomerTaskView(context);
+            return null;
         }
 
         var paymentPayloadRawData = context
@@ -529,7 +546,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 .getRuntimeData()
                 .get(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD);
         if (paymentPayloadRawData == null) {
-            return ProcessNodeDefinition.super.getCustomerTaskView(context);
+            return null;
         }
 
         var paymentPayload = jsonMapper

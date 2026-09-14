@@ -476,6 +476,24 @@ describe('CustomerInstanceTaskView', () => {
         expect(mocks.elementDerivationProps.onEvent).toBeUndefined();
         expect(screen.queryByRole('button', {name: 'Daten einreichen'})).not.toBeInTheDocument();
     });
+
+    it('reloads the task view when polling reports that the active task has finished', async () => {
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockResolvedValueOnce(createTaskView({data: {state: 'active'}}))
+            .mockResolvedValueOnce(createTaskView({data: {state: 'completed'}, events: []}));
+        const rendered = render(<CustomerInstanceTaskView/>);
+
+        await waitFor(() => expect(mocks.elementDerivationProps?.authoredElementValues).toEqual({state: 'active'}));
+
+        mocks.taskIsActive = false;
+        rendered.rerender(<CustomerInstanceTaskView/>);
+
+        await waitFor(() => expect(CustomerTaskViewApiService.prototype.getTaskView).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(mocks.elementDerivationProps?.authoredElementValues).toEqual({state: 'completed'}));
+        expect(mocks.elementDerivationProps.readOnly).toBe(true);
+        expect(mocks.elementDerivationProps.onEvent).toBeUndefined();
+        expect(mocks.navigate).not.toHaveBeenCalled();
+    });
 });
 
 function createTaskView(overrides?: Partial<ReadyCustomerTaskView>): ReadyCustomerTaskView {

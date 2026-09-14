@@ -4,8 +4,10 @@ import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugin.enums.PluginComponentType;
 import de.aivot.prosuna.backend.plugin.models.PluginComponent;
@@ -296,6 +298,34 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
         var layout = new GroupLayoutElement();
         layout.setId(getKey() + "-customer-task-view");
         return ProcessNodeCustomerView.of(context, layout, List.of(), new AuthoredElementValues());
+    }
+
+    /**
+     * Build the customer view shown after this task has been completed. Completed views are informational and must not
+     * require another identity authentication or expose task events.
+     *
+     * @param context The context to build the completed task view for.
+     * @return The complete customer task completion view.
+     * @throws ResponseException If an error occurs while generating the view.
+     */
+    @Nonnull
+    default ProcessNodeCustomerView getCompletedCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
+        var alert = new AlertContentElement()
+                .setTitle("Aufgabe abgeschlossen")
+                .setText("Sie haben diese Aufgabe erfolgreich abgeschlossen.")
+                .setAlertType(AlertType.Success);
+        alert.setId(getKey() + "-completed-customer-task-alert");
+
+        var layout = new GroupLayoutElement();
+        layout.setId(getKey() + "-completed-customer-task-view");
+        layout.addChild(alert);
+
+        return new ProcessNodeCustomerView(
+                layout,
+                List.of(),
+                new AuthoredElementValues(),
+                null
+        );
     }
 
     /**
