@@ -10,9 +10,9 @@ import {AccessibilityDialogId} from "../../../dialogs/accessibility-dialog/acces
 import {ColorModePicker} from "../../../components/color-mode-picker/color-mode-picker";
 import {Chip} from "../../../components/chip/chip";
 import {
+    ProcessInstanceStatus,
     ProcessInstanceStatusColor,
-    ProcessInstanceStatusIcons,
-    ProcessInstanceStatusLabels
+    ProcessInstanceStatusIcons
 } from "../../../modules/process/enums/process-instance-status";
 import {HelpDialogId} from "../../../dialogs/help-dialog/help.dialog";
 import HelpOutlineOutlinedIcon from "@aivot/mui-material-symbols-400-n25-outlined/Help";
@@ -31,9 +31,20 @@ export function CustomerInstanceViewHeader(props: CustomerListPageHeaderProps) {
     const [logoStatus, setLogoStatus] = useState<'loading' | 'failed' | 'present'>('loading');
     const hasVisibleLogo = logoStatus === 'present';
 
+    const isRunning = useMemo(() => {
+        return status.status !== ProcessInstanceStatus.Completed;
+    }, [status]);
+
+    const statusLabel = useMemo(() => {
+        return isRunning ? 'Vorgang in Bearbeitung' : 'Vorgang abgeschlossen';
+    }, [isRunning]);
+
     const StatusIcon = useMemo(() => {
-        return ProcessInstanceStatusIcons[status.status];
-    }, [status.status]);
+        return ProcessInstanceStatusIcons[
+            isRunning
+                ? ProcessInstanceStatus.Running
+                : ProcessInstanceStatus.Completed];
+    }, [isRunning]);
 
     return (
         <Box
@@ -108,8 +119,8 @@ export function CustomerInstanceViewHeader(props: CustomerListPageHeaderProps) {
 
                                 <Chip
                                     icon={<StatusIcon fontSize="small"/>}
-                                    label={status.statusOverride || ProcessInstanceStatusLabels[status.status]}
-                                    color={ProcessInstanceStatusColor[status.status]}
+                                    label={statusLabel}
+                                    color={ProcessInstanceStatusColor[ProcessInstanceStatus.Running]}
                                     mode="soft"
                                     sx={{
                                         ml: 2,

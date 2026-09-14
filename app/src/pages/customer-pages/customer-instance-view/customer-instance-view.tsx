@@ -177,6 +177,7 @@ export function CustomerInstanceView() {
                     title={instanceStatus.title}
                     titlePrefix={AppConfig.providerName}
                 />
+
                 <CustomerInstanceViewHeader
                     status={instanceStatus}
                 />
