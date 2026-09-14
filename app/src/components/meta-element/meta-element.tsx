@@ -8,7 +8,11 @@ interface MetaElementProps {
 
 export function MetaElement({faviconUrl, title, titlePrefix}: MetaElementProps) {
     const favicon = useMemo(() => {
-        return faviconUrl === undefined ? AppConfig.faviconUrl : faviconUrl;
+        const configuredFavicon = faviconUrl === undefined ? AppConfig.faviconUrl : faviconUrl;
+        const baseUrl = import.meta.env.BASE_URL;
+        const prosunaFaviconUrl = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}favicon.svg`;
+
+        return configuredFavicon ?? prosunaFaviconUrl;
     }, [faviconUrl]);
 
     return (
@@ -28,7 +32,7 @@ export function MetaElement({faviconUrl, title, titlePrefix}: MetaElementProps) 
 
             <link
                 rel="icon"
-                href={favicon ?? 'data:,'}
+                href={favicon}
             />
         </>
     );
