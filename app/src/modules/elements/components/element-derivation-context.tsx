@@ -41,6 +41,7 @@ import {
     ViewDispatcherMode,
 } from '../../../components/view-dispatcher/view-dispatcher.context';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
+import {deepEquals} from '../../../utils/equality-utils';
 import {type InputVariableSuggestion} from '../../../models/input-mode';
 
 interface ElementDerivationContextProps {
@@ -227,7 +228,14 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
         const normalizedNewData = normalizeReplicatingContainerValues(element, newData);
-        const patchedDerivedData = patchDerivedDataWithAuthoredValues(element, normalizedNewData, baseDerivedData);
+        const changedDynamicElementIds = new Set<string>();
+        const patchedDerivedData = patchDerivedDataWithAuthoredValues(
+            element,
+            normalizedNewData,
+            authoredElementValues,
+            baseDerivedData,
+            changedDynamicElementIds,
+        );
         setInternalDerivedData(patchedDerivedData);
         onDerivedDataChange?.(patchedDerivedData);
         onAuthoredElementValuesChange(normalizedNewData);
@@ -245,7 +253,9 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             ));
         }
 
-        const relevantIds: string[] = [];
+        // Input-mode expressions have no referencedIds contract. Their own edits still require backend derivation,
+        // which remains responsible for deciding whether to evaluate them or defer them in authoring contexts.
+        const relevantIds: string[] = [...changedDynamicElementIds];
         for (const id of triggeringElementIds) {
             for (const element of allElements) {
                 if (checkElementReferencesId(element, id)) {
@@ -433,7 +443,9 @@ function checkElementReferencesId(element: AnyElement, id: string): boolean {
 function patchDerivedDataWithAuthoredValues(
     rootElement: AnyElement,
     authoredElementValues: AuthoredElementValues,
+    previousAuthoredElementValues: AuthoredElementValues,
     derivedData: DerivedRuntimeElementData,
+    changedDynamicElementIds: Set<string>,
 ): DerivedRuntimeElementData {
     const effectiveValues = {
         ...derivedData.effectiveValues,
@@ -442,8 +454,10 @@ function patchDerivedDataWithAuthoredValues(
     const elementStates = patchComputedElementStatesWithAuthoredValues(
         rootElement,
         authoredElementValues,
+        previousAuthoredElementValues,
         derivedData.elementStates,
         effectiveValues,
+        changedDynamicElementIds,
     );
 
     return createDerivedRuntimeElementData({
@@ -456,11 +470,14 @@ function patchDerivedDataWithAuthoredValues(
 function patchComputedElementStatesWithAuthoredValues(
     currentElement: AnyElement,
     authoredElementValues: AuthoredElementValues,
+    previousAuthoredElementValues: AuthoredElementValues,
     currentElementStates: ComputedElementStates,
     effectiveValues: EffectiveElementValues,
+    changedDynamicElementIds: Set<string>,
 ): ComputedElementStates {
     const hasAuthoredValue = Object.prototype.hasOwnProperty.call(authoredElementValues, currentElement.id);
     const authoredValue = authoredElementValues[currentElement.id];
+    const previousAuthoredValue = previousAuthoredElementValues[currentElement.id];
     const currentElementState = currentElementStates[currentElement.id];
     let nextElementStates = currentElementStates;
 
@@ -472,6 +489,16 @@ function patchComputedElementStatesWithAuthoredValues(
         currentElementState?.valueSource !== ComputedElementValueSource.Identity &&
         currentElementState?.disabled !== true
     ) {
+        if (authoredValue != null && authoredValue.type !== InputMode.Literal) {
+            // Editing another field must not erase an existing result or the states of a dynamic container.
+            if (deepEquals(authoredValue, previousAuthoredValue)) {
+                return nextElementStates;
+            }
+            changedDynamicElementIds.add(currentElement.id);
+        } else if (previousAuthoredValue != null && previousAuthoredValue.type !== InputMode.Literal) {
+            // Re-derive mode switches too, so an in-flight expression result cannot replace the new literal.
+            changedDynamicElementIds.add(currentElement.id);
+        }
         nextElementStates = {
             ...nextElementStates,
             [currentElement.id]: {
@@ -486,6 +513,9 @@ function patchComputedElementStatesWithAuthoredValues(
         if (isReplicatingContainerLayout(currentElement)) {
             const previousRows: EffectiveReplicatingContainerElementValue[] = Array.isArray(previousEffectiveValue)
                 ? previousEffectiveValue : [];
+            const previousAuthoredRows: ReplicatingContainerElementValue[] =
+                previousAuthoredValue?.type === InputMode.Literal && Array.isArray(previousAuthoredValue.value)
+                    ? previousAuthoredValue.value : [];
             const rows: ReplicatingContainerElementValue[] | null = Array.isArray(optimisticEffectiveValue)
                 ? optimisticEffectiveValue : null;
             const projectedRows = rows?.map((row, index) => {
@@ -493,6 +523,9 @@ function patchComputedElementStatesWithAuthoredValues(
                 const previousRow = rowId != null
                     ? previousRows.find((candidate) => candidate.id === rowId)
                     : previousRows[index];
+                const previousAuthoredRow = rowId != null
+                    ? previousAuthoredRows.find((candidate) => candidate.id === rowId)
+                    : previousAuthoredRows[index];
                 const previousSubState = resolveComputedElementSubState(currentElementState?.subStates, rowId, index);
                 const rowEffectiveValues = {...previousRow?.values};
                 let rowStates = resolveComputedElementSubStateStates(previousSubState);
@@ -503,8 +536,10 @@ function patchComputedElementStatesWithAuthoredValues(
                     rowStates = patchComputedElementStatesWithAuthoredValues(
                         child,
                         row.values ?? {},
+                        previousAuthoredRow?.values ?? {},
                         rowStates,
                         rowEffectiveValues,
+                        changedDynamicElementIds,
                     );
                 }
 
@@ -530,8 +565,10 @@ function patchComputedElementStatesWithAuthoredValues(
             nextElementStates = patchComputedElementStatesWithAuthoredValues(
                 child,
                 authoredElementValues,
+                previousAuthoredElementValues,
                 nextElementStates,
                 effectiveValues,
+                changedDynamicElementIds,
             );
         }
     }

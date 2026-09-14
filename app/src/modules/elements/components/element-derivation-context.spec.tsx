@@ -1,4 +1,4 @@
-import {InputMode, InputVariableSource} from '../../../models/input-mode';
+import {type AuthoredInputValue, InputMode, InputVariableSource} from '../../../models/input-mode';
 import {describe, expect, it, vi} from 'vitest';
 import React from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
@@ -19,6 +19,24 @@ import {
 import {ElementDerivationContext} from './element-derivation-context';
 
 const observeViewProps = vi.hoisted(() => vi.fn());
+
+const dynamicChanges: Array<[AuthoredInputValue<unknown>, AuthoredInputValue<unknown>, unknown]> = [
+    [
+        {type: InputMode.Variable, reference: {source: InputVariableSource.ProcessData, path: 'amount'}},
+        {type: InputMode.Variable, reference: {source: InputVariableSource.ProcessData, path: 'otherAmount'}},
+        0,
+    ],
+    [
+        {type: InputMode.LowCode, code: 'return 120;'},
+        {type: InputMode.LowCode, code: 'return false;'},
+        false,
+    ],
+    [
+        {type: InputMode.NoCode, operand: {type: 'NoCodeStaticValue', value: '120'}},
+        {type: InputMode.NoCode, operand: {type: 'NoCodeStaticValue', value: '240'}},
+        null,
+    ],
+];
 
 vi.mock('../../../hooks/use-app-dispatch', () => ({
     useAppDispatch: () => vi.fn(),
@@ -143,6 +161,102 @@ vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => (
 }));
 
 describe('ElementDerivationContext', () => {
+    it.each(dynamicChanges)('preserves an unchanged %j result when another field changes', async (value) => {
+        const initial = {field: value, comment: literalAuthoredValue('Before')};
+        const previous = createDerivedRuntimeElementData({
+            effectiveValues: {field: 120, comment: 'Before'},
+            elementStates: {field: {valueSource: ComputedElementValueSource.Authored}},
+        });
+        const harness = await setupOptimisticEdit(initial, previous);
+
+        harness.edit({...structuredClone(initial), comment: literalAuthoredValue('After')}, ['comment']);
+
+        expect(harness.latest().effectiveValues).toEqual({field: 120, comment: 'After'});
+        expect(harness.latest().elementStates.field).toEqual(previous.elementStates.field);
+        expect(harness.derive).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(dynamicChanges)('invalidates an edited %j and derives without referencedIds', async (value, changed, result) => {
+        const previous = createDerivedRuntimeElementData({effectiveValues: {field: 120}});
+        const harness = await setupOptimisticEdit({field: value}, previous);
+        const updated = {field: changed};
+
+        harness.edit(updated, ['field']);
+
+        expect(harness.latest().effectiveValues.field).toBeNull();
+        expect(previous.effectiveValues.field).toBe(120);
+        expect(harness.derive).toHaveBeenLastCalledWith(updated, ['ALL']);
+        expect(harness.derive).toHaveBeenCalledTimes(2);
+        await harness.finish(createDerivedRuntimeElementData({effectiveValues: {field: result}}));
+        // Null is a legitimate backend result, including deliberately deferred authoring evaluation.
+        expect(harness.latest().effectiveValues.field).toBe(result);
+    });
+
+    it('retains the values and child states of an unchanged dynamic container', async () => {
+        const container = {type: InputMode.LowCode, code: 'return $.rows;'} as const;
+        const previous = createDerivedRuntimeElementData({
+            effectiveValues: {field: [{id: 'row-1', values: {name: 'Ada'}}]},
+            elementStates: {field: {subStates: [{id: 'row-1', states: {name: {visible: true}}}]}},
+        });
+        const element = {id: 'root', type: ElementType.GroupLayout, children: [
+            {id: 'field', type: ElementType.ReplicatingContainer, children: [{id: 'name', type: ElementType.Text}]},
+            {id: 'comment', type: ElementType.Text},
+        ]} as AnyElement;
+        const harness = await setupOptimisticEdit({field: container}, previous, element);
+
+        harness.edit({field: {...container}, comment: literalAuthoredValue('After')}, ['comment']);
+
+        expect(harness.latest().effectiveValues.field).toEqual(previous.effectiveValues.field);
+        expect(harness.latest().elementStates.field).toEqual(previous.elementStates.field);
+        expect(harness.derive).toHaveBeenCalledTimes(1);
+    });
+
+    it('matches unchanged nested expressions by row ID and derives edits in a reordered row', async () => {
+        const first = {type: InputMode.LowCode, code: 'return 1;'} as const;
+        const second = {type: InputMode.LowCode, code: 'return 2;'} as const;
+        const rows = [
+            {id: 'row-1', values: {field: first}},
+            {id: 'row-2', values: {field: second}},
+        ];
+        const previous = createDerivedRuntimeElementData({effectiveValues: {rows: [
+            {id: 'row-1', values: {field: 1}},
+            {id: 'row-2', values: {field: 2}},
+        ]}});
+        const element = {id: 'rows', type: ElementType.ReplicatingContainer,
+            children: [{id: 'field', type: ElementType.Text}]} as AnyElement;
+        const harness = await setupOptimisticEdit({rows: literalAuthoredValue(rows)}, previous, element);
+
+        harness.edit({rows: literalAuthoredValue([
+            structuredClone(rows[1]),
+            {id: 'row-1', values: {field: {type: InputMode.LowCode, code: 'return 3;'}}},
+        ])}, ['rows', 'field']);
+
+        expect(harness.latest().effectiveValues.rows).toEqual([
+            {id: 'row-2', values: {field: 2}},
+            {id: 'row-1', values: {field: null}},
+        ]);
+        expect(harness.derive).toHaveBeenCalledTimes(2);
+        await harness.finish(createDerivedRuntimeElementData({effectiveValues: {rows: [
+            {id: 'row-2', values: {field: 2}},
+            {id: 'row-1', values: {field: 3}},
+        ]}}));
+        expect(harness.latest().effectiveValues.rows[1].values.field).toBe(3);
+    });
+
+    it('derives a switch back to literal without clearing the new literal value', async () => {
+        const harness = await setupOptimisticEdit(
+            {field: {type: InputMode.LowCode, code: 'return 120;'}},
+            createDerivedRuntimeElementData({effectiveValues: {field: 120}}),
+        );
+
+        harness.edit({field: literalAuthoredValue(7)}, ['field']);
+
+        expect(harness.latest().effectiveValues.field).toBe(7);
+        expect(harness.derive).toHaveBeenCalledTimes(2);
+        await harness.finish(createDerivedRuntimeElementData({effectiveValues: {field: 7}}));
+        expect(harness.latest().effectiveValues.field).toBe(7);
+    });
+
     it('projects nested container children without unwrapping ordinary object payloads', async () => {
         const objectPayload = {type: 'Literal', value: 'Business data'};
         const children = [{
@@ -489,6 +603,43 @@ async function projectContainerRows(
     expect(authored).toEqual(authoredSnapshot);
     expect(previous).toEqual(previousSnapshot);
     return onDerivedDataChange.mock.lastCall![0];
+}
+
+async function setupOptimisticEdit(
+    initial: AuthoredElementValues,
+    previous: DerivedRuntimeElementData,
+    element = {id: 'root', type: ElementType.GroupLayout, children: [
+        {id: 'field', type: ElementType.Text},
+        {id: 'comment', type: ElementType.Text},
+    ]} as AnyElement,
+) {
+    let resolveDerivation!: (result: DerivedRuntimeElementData) => void;
+    const pending = new Promise<DerivedRuntimeElementData>((resolve) => { resolveDerivation = resolve; });
+    const derive = vi.fn().mockResolvedValueOnce(previous).mockReturnValue(pending);
+    const onDerivedDataChange = vi.fn();
+    render(<ElementDerivationContext
+        element={element}
+        authoredElementValues={initial}
+        onAuthoredElementValuesChange={vi.fn()}
+        onDerivedDataChange={onDerivedDataChange}
+        onDeriveOverride={derive}
+        inputModesEnabled
+    />);
+    await waitFor(() => expect(onDerivedDataChange).toHaveBeenCalled());
+    let editPromise: Promise<void>;
+    return {
+        derive,
+        latest: () => onDerivedDataChange.mock.lastCall![0] as DerivedRuntimeElementData,
+        edit: (values: AuthoredElementValues, ids: string[]) => {
+            act(() => { editPromise = observeViewProps.mock.lastCall![0].onAuthoredElementValuesChange(values, ids); });
+        },
+        finish: async (result: DerivedRuntimeElementData) => {
+            await act(async () => {
+                resolveDerivation(result);
+                await editPromise;
+            });
+        },
+    };
 }
 
 interface ReplicatingContainerDerivationHarnessProps {
