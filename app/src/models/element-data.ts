@@ -18,6 +18,11 @@ export interface ReplicatingContainerElementValue {
 
 export type ReplicatingContainerElementValues = ReplicatingContainerElementValue[];
 
+export interface EffectiveReplicatingContainerElementValue {
+    id?: string | null;
+    values?: EffectiveElementValues | null;
+}
+
 export function literalAuthoredValue<T>(value: T | null): Extract<AuthoredInputValue<T>, {type: InputMode.Literal}> {
     return {type: InputMode.Literal, value};
 }

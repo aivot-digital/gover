@@ -10,8 +10,9 @@ import {
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
     EffectiveElementValues,
+    type EffectiveReplicatingContainerElementValue,
     hasAnyErrorRecursively,
-    isReplicatingContainerElementValue,
+    type ReplicatingContainerElementValue,
     resolveComputedElementSubState,
     resolveComputedElementSubStateStates,
 } from '../../../models/element-data';
@@ -479,18 +480,43 @@ function patchComputedElementStatesWithAuthoredValues(
             },
         };
         const optimisticEffectiveValue = authoredValue?.type === InputMode.Literal ? authoredValue.value : null;
+        const previousEffectiveValue = effectiveValues[currentElement.id];
         effectiveValues[currentElement.id] = optimisticEffectiveValue;
 
         if (isReplicatingContainerLayout(currentElement)) {
+            const previousRows: EffectiveReplicatingContainerElementValue[] = Array.isArray(previousEffectiveValue)
+                ? previousEffectiveValue : [];
+            const rows: ReplicatingContainerElementValue[] | null = Array.isArray(optimisticEffectiveValue)
+                ? optimisticEffectiveValue : null;
+            const projectedRows = rows?.map((row, index) => {
+                const rowId = row.id;
+                const previousRow = rowId != null
+                    ? previousRows.find((candidate) => candidate.id === rowId)
+                    : previousRows[index];
+                const previousSubState = resolveComputedElementSubState(currentElementState?.subStates, rowId, index);
+                const rowEffectiveValues = {...previousRow?.values};
+                let rowStates = resolveComputedElementSubStateStates(previousSubState);
+
+                // Only schema-defined child fields contain authored envelopes. Ordinary object payloads remain opaque.
+                // Match prior values by row ID so reordering cannot move derived or identity values to another row.
+                for (const child of currentElement.children ?? []) {
+                    rowStates = patchComputedElementStatesWithAuthoredValues(
+                        child,
+                        row.values ?? {},
+                        rowStates,
+                        rowEffectiveValues,
+                    );
+                }
+
+                return {
+                    row: {id: rowId, values: rowEffectiveValues},
+                    state: createComputedElementSubState(rowId, rowStates),
+                };
+            });
+            effectiveValues[currentElement.id] = projectedRows?.map(({row}) => row) ?? optimisticEffectiveValue;
             nextElementStates[currentElement.id] = {
                 ...nextElementStates[currentElement.id],
-                subStates: Array.isArray(optimisticEffectiveValue) ?
-                    optimisticEffectiveValue.map((row, index) => {
-                        const rowId = isReplicatingContainerElementValue(row) ? row.id : null;
-                        const previousSubState = resolveComputedElementSubState(currentElementState?.subStates, rowId, index);
-                        return createComputedElementSubState(rowId, resolveComputedElementSubStateStates(previousSubState));
-                    }) :
-                    null,
+                subStates: projectedRows?.map(({state}) => state) ?? null,
             };
         }
     }

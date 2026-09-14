@@ -1,13 +1,15 @@
 import {InputMode, InputVariableSource} from '../../../models/input-mode';
 import {describe, expect, it, vi} from 'vitest';
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {ElementType} from '../../../data/element-type/element-type';
 import type {
     AuthoredElementValues,
     ComputedElementErrors,
     DerivedRuntimeElementData,
+    ReplicatingContainerElementValues,
 } from '../../../models/element-data';
+import type {AnyElement} from '../../../models/elements/any-element';
 import {
     ComputedElementValueSource,
     createDerivedRuntimeElementData,
@@ -16,12 +18,16 @@ import {
 } from '../../../models/element-data';
 import {ElementDerivationContext} from './element-derivation-context';
 
+const observeViewProps = vi.hoisted(() => vi.fn());
+
 vi.mock('../../../hooks/use-app-dispatch', () => ({
     useAppDispatch: () => vi.fn(),
 }));
 
 vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => ({
-    ViewDispatcherComponent: (props: any) => (
+    ViewDispatcherComponent: (props: any) => {
+        observeViewProps(props);
+        return (
         <>
             <button
                 type="button"
@@ -132,10 +138,117 @@ vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => (
                 }
             </output>
         </>
-    ),
+        );
+    },
 }));
 
 describe('ElementDerivationContext', () => {
+    it('projects nested container children without unwrapping ordinary object payloads', async () => {
+        const objectPayload = {type: 'Literal', value: 'Business data'};
+        const children = [{
+            id: 'group', type: ElementType.GroupLayout,
+            children: [
+                {id: 'name', type: ElementType.Text},
+                {id: 'object', type: ElementType.Text},
+                {
+                    id: 'nested', type: ElementType.ReplicatingContainer,
+                    children: [{id: 'note', type: ElementType.Text}],
+                },
+            ],
+        }] as AnyElement[];
+        const rows = [{id: 'row-1', values: {
+            name: literalAuthoredValue('Ada'),
+            object: literalAuthoredValue(objectPayload),
+            nested: literalAuthoredValue([{id: 'nested-1', values: {note: literalAuthoredValue('Note')}}]),
+        }}];
+
+        const result = await projectContainerRows(rows, children);
+
+        expect(result.effectiveValues.rows).toEqual([{id: 'row-1', values: {
+            name: 'Ada',
+            object: objectPayload,
+            nested: [{id: 'nested-1', values: {note: 'Note'}}],
+        }}]);
+        expect(result.elementStates.rows?.subStates?.[0].states?.nested?.subStates?.[0]).toEqual({
+            id: 'nested-1', states: {note: {valueSource: ComputedElementValueSource.Authored}},
+        });
+    });
+
+    it.each([
+        ['reordering', ['row-2', 'row-1'], ['Second', 'First']],
+        ['deleting', ['row-2'], ['Second']],
+        ['adding', ['row-3', 'row-1'], [undefined, 'First']],
+    ] as const)('preserves derived values and states by row ID when %s rows', async (_, ids, names) => {
+        const children = [
+            {id: 'name', type: ElementType.Text},
+            {id: 'locked', type: ElementType.Text, disabled: true},
+            {id: 'identity', type: ElementType.Text},
+        ] as AnyElement[];
+        const previous = createDerivedRuntimeElementData({
+            effectiveValues: {rows: [
+                {id: 'row-1', values: {locked: 'First', identity: 'Verified first'}},
+                {id: 'row-2', values: {locked: 'Second', identity: 'Verified second'}},
+            ]},
+            elementStates: {rows: {subStates: [
+                {id: 'row-1', states: {
+                    locked: {valueSource: ComputedElementValueSource.Derived, error: 'First error'},
+                    identity: {valueSource: ComputedElementValueSource.Identity},
+                }},
+                {id: 'row-2', states: {
+                    locked: {valueSource: ComputedElementValueSource.Derived, error: 'Second error'},
+                    identity: {valueSource: ComputedElementValueSource.Identity},
+                }},
+            ]}},
+        });
+        const rows = ids.map((id) => ({id, values: {
+            name: literalAuthoredValue(id),
+            locked: literalAuthoredValue('Must not override derived data'),
+        }}));
+
+        const result = await projectContainerRows(rows, children, previous);
+
+        expect(result.effectiveValues.rows.map((row: any) => row.id)).toEqual(ids);
+        expect(result.effectiveValues.rows.map((row: any) => row.values.locked)).toEqual(names);
+        expect(result.effectiveValues.rows.map((row: any) => row.values.name)).toEqual(ids);
+        expect(result.effectiveValues.rows.map((row: any) => row.values.identity)).toEqual(
+            names.map((name) => name == null ? undefined : `Verified ${name.toLowerCase()}`),
+        );
+        expect(result.elementStates.rows?.subStates?.map((state) => state.states?.locked?.error)).toEqual(
+            names.map((name) => name == null ? undefined : `${name} error`),
+        );
+    });
+
+    it('keeps identity, technical and computed-disabled child values authoritative', async () => {
+        const children = [
+            {id: 'identity', type: ElementType.Text},
+            {id: 'technical', type: ElementType.Text, technical: true},
+            {id: 'disabled', type: ElementType.Text},
+        ] as AnyElement[];
+        const previous = createDerivedRuntimeElementData({
+            effectiveValues: {rows: [{id: 'row-1', values: {
+                identity: 'Verified', technical: 'Calculated', disabled: 'Locked',
+            }}]},
+            elementStates: {rows: {subStates: [{id: 'row-1', states: {
+                identity: {valueSource: ComputedElementValueSource.Identity},
+                disabled: {disabled: true},
+            }}]}},
+        });
+        const result = await projectContainerRows([{id: 'row-1', values: {
+            identity: literalAuthoredValue('Authored'),
+            technical: literalAuthoredValue('Authored'),
+            disabled: literalAuthoredValue('Authored'),
+        }}], children, previous);
+
+        expect(result.effectiveValues).toEqual(previous.effectiveValues);
+        expect(result.elementStates.rows?.subStates).toEqual(previous.elementStates.rows?.subStates);
+    });
+
+    it.each([null, []])('preserves the empty container value %j', async (rows) => {
+        const result = await projectContainerRows(rows, []);
+        expect(result.effectiveValues.rows).toEqual(rows);
+        expect(result.elementStates.rows?.subStates).toEqual(rows);
+    });
+
     it('should not persist external computed errors when authored values change', async () => {
         const onAuthoredElementValuesChange = vi.fn();
         const onDerivedDataChange = vi.fn();
@@ -348,6 +461,35 @@ describe('ElementDerivationContext', () => {
         expect(screen.getByTestId('row-2-error')).toBeEmptyDOMElement();
     });
 });
+
+async function projectContainerRows(
+    rows: ReplicatingContainerElementValues | null,
+    children: AnyElement[],
+    previous = createDerivedRuntimeElementData(),
+): Promise<DerivedRuntimeElementData> {
+    const authored = {rows: literalAuthoredValue(rows)};
+    const authoredSnapshot = structuredClone(authored);
+    const previousSnapshot = structuredClone(previous);
+    const onDerivedDataChange = vi.fn();
+    render(<ElementDerivationContext
+        element={{id: 'rows', type: ElementType.ReplicatingContainer, children} as AnyElement}
+        authoredElementValues={{}}
+        onAuthoredElementValuesChange={vi.fn()}
+        onDerivedDataChange={onDerivedDataChange}
+        onDeriveOverride={() => Promise.resolve(previous)}
+    />);
+    await waitFor(() => expect(onDerivedDataChange).toHaveBeenCalled());
+    onDerivedDataChange.mockClear();
+
+    await act(async () => {
+        await observeViewProps.mock.lastCall![0].onAuthoredElementValuesChange(authored, ['rows']);
+    });
+
+    expect(onDerivedDataChange).toHaveBeenCalledTimes(1);
+    expect(authored).toEqual(authoredSnapshot);
+    expect(previous).toEqual(previousSnapshot);
+    return onDerivedDataChange.mock.lastCall![0];
+}
 
 interface ReplicatingContainerDerivationHarnessProps {
     onDerivedDataChange: (derivedData: DerivedRuntimeElementData) => void;
