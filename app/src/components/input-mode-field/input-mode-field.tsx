@@ -1,3 +1,4 @@
+import {formatProcessDataPath, parseProcessDataPath} from '../../utils/process-data-path';
 import React, {useEffect, useMemo, useState} from 'react';
 import {
     Box,
@@ -754,29 +755,25 @@ function sourceRequiresNodeDataKey(source: InputVariableSource): boolean {
 
 function toCustomVariablePath(reference: InputVariableReference): string {
     return requiresNodeDataKey(reference)
-        ? [reference.nodeDataKey, reference.path].filter((segment) => segment != null && segment.length > 0).join('.')
+        ? `${reference.nodeDataKey ?? ''}${reference.path.startsWith('[') || reference.path.length === 0 ? '' : '.'}${reference.path}`
         : reference.path;
 }
 
 function parseCustomVariableReference(source: InputVariableSource, path: string): InputVariableReference | null {
-    const normalizedPath = path.trim().split('.').map((segment) => segment.trim()).join('.');
-    if (normalizedPath.length === 0) {
+    const segments = parseProcessDataPath(path);
+    if (segments == null || segments.length === 0 || segments.includes('*')) {
         return null;
     }
-
     if (!sourceRequiresNodeDataKey(source)) {
-        return {source, path: normalizedPath};
+        return {source, path: formatProcessDataPath(segments)};
     }
-
-    const separatorIndex = normalizedPath.indexOf('.');
-    if (separatorIndex <= 0 || separatorIndex === normalizedPath.length - 1) {
+    if (segments.length < 2) {
         return null;
     }
-
     return {
         source,
-        nodeDataKey: normalizedPath.slice(0, separatorIndex),
-        path: normalizedPath.slice(separatorIndex + 1),
+        nodeDataKey: segments[0],
+        path: formatProcessDataPath(segments.slice(1)),
     };
 }
 

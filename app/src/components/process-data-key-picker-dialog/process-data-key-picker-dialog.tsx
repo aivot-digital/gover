@@ -1,3 +1,4 @@
+import {isValidProcessDataPath} from '../../utils/process-data-path';
 import {type ReactNode, useEffect, useMemo, useState} from 'react';
 import {
     Box,
@@ -36,9 +37,6 @@ interface ProcessDataKeyPickerDialogProps {
     value: string | null | undefined;
 }
 
-const PROCESS_DATA_KEY_PATTERN = /^[a-zA-Z0-9.*_]+$/;
-const PROCESS_DATA_KEY_PATTERN_WITHOUT_WILDCARDS = /^[a-zA-Z0-9._]+$/;
-
 function normalizePath(value: string, displayPrefix: string): string {
     const path = value.trim().replace(/^\$\./, '');
     return displayPrefix.length > 0 && path.startsWith(displayPrefix)
@@ -64,9 +62,7 @@ function getOptionText(option: ProcessDataKeyPickerOption, displayPrefix: string
 }
 
 function isValidPath(path: string, disableWildCards: boolean): boolean {
-    return path.length > 0 && (disableWildCards
-        ? PROCESS_DATA_KEY_PATTERN_WITHOUT_WILDCARDS
-        : PROCESS_DATA_KEY_PATTERN).test(path);
+    return isValidProcessDataPath(path, !disableWildCards);
 }
 
 export function ProcessDataKeyPickerDialog(props: ProcessDataKeyPickerDialogProps) {
@@ -195,7 +191,7 @@ export function ProcessDataKeyPickerDialog(props: ProcessDataKeyPickerDialogProp
                 <Stack direction="row" spacing={1}>
                     <Button
                         variant="contained"
-                        disabled={draftPath == null || draftPath.length === 0}
+                        disabled={draftPath == null || !isValidPath(draftPath, props.disableWildCards)}
                         onClick={() => draftPath != null && props.onApply(draftPath)}
                     >
                         Pfad übernehmen

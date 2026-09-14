@@ -1,3 +1,5 @@
+import {isValidProcessDataPath} from './process-data-path';
+import {type ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
 import {InputMode} from '../models/input-mode';
 import {AnyElement} from '../models/elements/any-element';
 import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
@@ -305,7 +307,7 @@ function dynamicSelectFieldToYup(elem: DataModelSelectFieldElement | DataObjectS
     return selectFieldSchema;
 }
 
-function processDataKeyInputFieldToYup(elem: AnyInputElement): Schema {
+function processDataKeyInputFieldToYup(elem: ProcessDataKeyInputFieldElement): Schema {
     let processDataKeySchema: StringSchema<string | undefined | null> = yup
         .string()
         .trim();
@@ -319,9 +321,12 @@ function processDataKeyInputFieldToYup(elem: AnyInputElement): Schema {
     }
 
     return processDataKeySchema
-        .matches(
-            /^[a-zA-Z0-9.*_]+$/,
-            'Der Prozessdaten-Schlüssel darf nur Buchstaben, Zahlen, Punkte, Unterstriche und Sternchen enthalten.',
+        .test(
+            'process-data-path',
+            elem.disableWildCards
+                ? 'Verwenden Sie einen Pfad wie person.name oder items[0].name.'
+                : 'Verwenden Sie einen Pfad wie person.name, items[0].name oder items[*].name.',
+            (value) => value == null || value.length === 0 || isValidProcessDataPath(value, !elem.disableWildCards),
         );
 }
 

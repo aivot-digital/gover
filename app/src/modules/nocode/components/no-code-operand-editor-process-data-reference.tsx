@@ -41,7 +41,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
     const startIcon = isProcessDataReference
         ? '$.'
         : isNodeDataReference
-            ? `_.${value.nodeDataKey}.`
+            ? `_.${value.nodeDataKey}${value.path?.startsWith('[') ? '' : '.'}`
             : '$$.';
 
     const referenceActions = [

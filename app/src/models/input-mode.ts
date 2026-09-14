@@ -69,9 +69,9 @@ export function getInputVariableReference(reference: InputVariableReference): st
         case InputVariableSource.ProcessData:
             return `$.${reference.path}`;
         case InputVariableSource.ElementData:
-            return `_.${reference.nodeDataKey}.${reference.path}`;
+            return `_.${reference.nodeDataKey}${reference.path.startsWith('[') ? '' : '.'}${reference.path}`;
         case InputVariableSource.ElementMetadata:
-            return `$$.taskMetadata.${reference.nodeDataKey}.${reference.path}`;
+            return `$$.taskMetadata.${reference.nodeDataKey}${reference.path.startsWith('[') ? '' : '.'}${reference.path}`;
         case InputVariableSource.ProtectedProcessData:
             return `$$.${reference.path}`;
     }

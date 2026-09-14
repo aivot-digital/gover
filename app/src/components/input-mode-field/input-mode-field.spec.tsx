@@ -299,7 +299,7 @@ describe('InputModeField', () => {
         expect(screen.getByText(/\$\$\.caseNumber/)).toBeInTheDocument();
     });
 
-    it('creates an element-data reference from one source-relative path', async () => {
+    it.each(['previousNode.result.value', 'previousNode[0].value'])('creates an element-data reference from %s', async (path) => {
         const user = userEvent.setup();
         render(<Harness/>);
 
@@ -310,10 +310,11 @@ describe('InputModeField', () => {
 
         const pathInput = screen.getByRole('textbox', {name: /^Variablenpfad/});
         expect(pathInput.parentElement).toHaveTextContent('_.');
-        await user.type(pathInput, 'previousNode.result.value');
+        await user.click(pathInput);
+        await user.paste(path);
         await user.click(screen.getByTestId('use-variable-reference'));
 
-        expect(screen.getByLabelText(/Inkrement: _\.previousNode\.result\.value/)).toBeInTheDocument();
+        expect(screen.getByLabelText((label) => label.startsWith(`Inkrement: _.${path}`))).toBeInTheDocument();
     });
 
     it('propagates required, invalid and read-only state to the literal control', () => {

@@ -12,7 +12,7 @@ describe('createProcessDataKeySuggestions', () => {
         const suggestions = createProcessDataKeySuggestions([
             hint('globalKey'),
             hint('replizierendeListe'),
-            hint('replizierendeListe.*.einzelnachweisOhneDateinameReplList'),
+            hint('replizierendeListe[*].einzelnachweisOhneDateinameReplList'),
         ], {
             disableWildCards: true,
         });
@@ -27,10 +27,10 @@ describe('createProcessDataKeySuggestions', () => {
         const suggestions = createProcessDataKeySuggestions([
             hint('globalKey'),
             hint('replizierendeListe'),
-            hint('replizierendeListe.*.einzelnachweisOhneDateinameReplList'),
+            hint('replizierendeListe[*].einzelnachweisOhneDateinameReplList'),
         ], {
             disableWildCards: true,
-            prefix: 'replizierendeListe.*.',
+            prefix: 'replizierendeListe[*].',
         });
 
         expect(suggestions.map((suggestion) => suggestion.id)).toEqual([
@@ -55,11 +55,11 @@ describe('createProcessDataKeySuggestions', () => {
 
     it('should deduplicate relative keys inside a replicating list', () => {
         const suggestions = createProcessDataKeySuggestions([
-            hint('replizierendeListe.*.einzelnachweisOhneDateinameReplList', 1),
-            hint('replizierendeListe.*.einzelnachweisOhneDateinameReplList', 2),
+            hint('replizierendeListe[*].einzelnachweisOhneDateinameReplList', 1),
+            hint('replizierendeListe[*].einzelnachweisOhneDateinameReplList', 2),
         ], {
             disableWildCards: true,
-            prefix: 'replizierendeListe.*.',
+            prefix: 'replizierendeListe[*].',
         });
 
         expect(suggestions.map((suggestion) => suggestion.id)).toEqual([
@@ -69,9 +69,9 @@ describe('createProcessDataKeySuggestions', () => {
 
     it('should keep scoped process data key suggestions working', () => {
         const suggestions = createProcessDataKeySuggestions([
-            hint('replizierendeListe.*.einzelnachweisOhneDateinameReplList'),
+            hint('replizierendeListe[*].einzelnachweisOhneDateinameReplList'),
             hint('replizierendeListe.nachweisOhneWildcard'),
-            hint('otherList.*.ignored'),
+            hint('otherList[*].ignored'),
         ], {
             disableWildCards: true,
             scopeProcessDataKey: 'replizierendeListe',
@@ -110,7 +110,7 @@ describe('ProcessDataKeyInputComponent', () => {
         expect(onChange).toHaveBeenCalledWith('person.name');
     });
 
-    it.each(['counter.currentValue', 'person.Name'])('accepts the custom path %s without persisting the display prefix', async (path) => {
+    it.each(['counter.currentValue', 'person.Name', 'people[0].name'])('accepts the custom path %s without persisting the display prefix', async (path) => {
         const user = userEvent.setup();
         const onChange = vi.fn();
         render(
@@ -123,10 +123,8 @@ describe('ProcessDataKeyInputComponent', () => {
         );
 
         await user.click(screen.getByLabelText('Vorgangsdatenpfad auswählen'));
-        await user.type(
-            screen.getByRole('textbox', {name: /Vorgangsdatenpfade durchsuchen oder eigenen Pfad eingeben/}),
-            `$.${path}`,
-        );
+        await user.click(screen.getByRole('textbox', {name: /Vorgangsdatenpfade durchsuchen oder eigenen Pfad eingeben/}));
+        await user.paste(`$.${path}`);
         await user.click(screen.getByRole('radio', {name: /Eigenen Pfad verwenden/}));
         await user.click(screen.getByRole('button', {name: 'Pfad übernehmen'}));
 

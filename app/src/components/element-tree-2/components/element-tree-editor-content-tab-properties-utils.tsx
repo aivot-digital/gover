@@ -1,3 +1,4 @@
+import {formatProcessDataPath, parseProcessDataPath} from '../../../utils/process-data-path';
 import {Typography} from '@mui/material';
 import React, {type ReactNode} from 'react';
 import {DefaultTabs} from '../../element-editor/default-tabs';
@@ -104,8 +105,11 @@ export function resolveEffectiveDestinationKey({element, parents}: ElementWithPa
 }
 
 export function destinationKeysOverlap(firstKey: string, secondKey: string): boolean {
-    const firstSegments = firstKey.split('.');
-    const secondSegments = secondKey.split('.');
+    const firstSegments = parseProcessDataPath(firstKey);
+    const secondSegments = parseProcessDataPath(secondKey);
+    if (firstSegments == null || secondSegments == null || firstSegments.length === 0 || secondSegments.length === 0) {
+        return false;
+    }
     const comparedSegmentCount = Math.min(firstSegments.length, secondSegments.length);
 
     for (let index = 0; index < comparedSegmentCount; index++) {
@@ -130,10 +134,10 @@ function resolveReplicatingParentDestinationKeyPrefix(parents: ElementWithParent
             return null;
         }
 
-        segments.push(destinationKey, '*');
+        segments.push(...parseProcessDataPath(destinationKey)!, '*');
     }
 
-    return segments.join('.');
+    return formatProcessDataPath(segments);
 }
 
 function normalizeDestinationKey(destinationKey: string | null | undefined): string | null {
@@ -141,7 +145,8 @@ function normalizeDestinationKey(destinationKey: string | null | undefined): str
         return null;
     }
 
-    return destinationKey!.trim();
+    const segments = parseProcessDataPath(destinationKey!);
+    return segments == null || segments.length === 0 ? null : formatProcessDataPath(segments);
 }
 
 function isReplicatingContainerAncestorPair(first: ElementWithParents, second: ElementWithParents): boolean {
@@ -154,15 +159,17 @@ function isReplicatingContainerAncestor(candidate: ElementWithParents, descendan
 }
 
 function destinationKeySegmentsOverlap(firstSegment: string, secondSegment: string): boolean {
-    return firstSegment === secondSegment || firstSegment === '*' || secondSegment === '*';
+    return firstSegment === secondSegment ||
+        (firstSegment === '*' && /^[0-9]+$/.test(secondSegment)) ||
+        (secondSegment === '*' && /^[0-9]+$/.test(firstSegment));
 }
 
 function describeDestinationKeyOverlap(elementDestinationKey: string, otherElementDestinationKey: string): string {
-    if (otherElementDestinationKey.startsWith(elementDestinationKey + '.')) {
+    if (otherElementDestinationKey.startsWith(elementDestinationKey + '.') || otherElementDestinationKey.startsWith(elementDestinationKey + '[')) {
         return ' Das andere Element schreibt in ein Unterattribut des aktuellen Elements.';
     }
 
-    if (elementDestinationKey.startsWith(otherElementDestinationKey + '.')) {
+    if (elementDestinationKey.startsWith(otherElementDestinationKey + '.') || elementDestinationKey.startsWith(otherElementDestinationKey + '[')) {
         return ' Das aktuelle Element schreibt in ein Unterattribut des anderen Elements.';
     }
 

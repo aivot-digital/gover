@@ -1,3 +1,4 @@
+import {processDataPathPattern} from '../utils/process-data-path';
 import {useEffect, useMemo, useState} from 'react';
 import {BaseViewProps} from './base-view';
 import {ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
@@ -20,13 +21,13 @@ import {
 } from '../modules/process/entities/process-node-definition-metadata';
 
 const processDataKeyPatternWithWildcard = {
-    regex: '^[a-zA-Z0-9.\\*_]+$',
-    message: 'Der Datenschlüssel darf nur Buchstaben (a-z und A-Z), Zahlen, Punkte, Unterstriche und Sternchen enthalten.',
+    regex: processDataPathPattern(true),
+    message: 'Verwenden Sie einen Pfad wie person.name, items[0].name oder items[*].name.',
 };
 
 const processDataKeyPattern = {
-    regex: '^[a-zA-Z0-9._]+$',
-    message: 'Der Datenschlüssel darf nur Buchstaben (a-z und A-Z), Zahlen, Punkte und Unterstriche enthalten.',
+    regex: processDataPathPattern(false),
+    message: 'Verwenden Sie einen Pfad wie person.name oder items[0].name.',
 };
 
 export function ProcessDataKeyInputFieldView(props: BaseViewProps<ProcessDataKeyInputFieldElement, string>) {
@@ -152,7 +153,7 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
     const hasProcessDataKeyMetadata = providedSuggestions != null || opec?.incomingMetadata != null;
     const hasScopeProcessDataKey = !isStringNullOrEmpty(scopeProcessDataKey);
     const effectivePrefix = hasScopeProcessDataKey
-        ? normalizeProcessDataKey(scopeProcessDataKey) + '.*.'
+        ? normalizeProcessDataKey(scopeProcessDataKey) + '[*].'
         : normalizeProcessDataKeyPrefix(prefix) ?? '';
 
     const suggestions = useMemo(() => {
@@ -303,7 +304,7 @@ function resolveSuggestionProcessDataKey(
     }
 
     const scope = normalizeProcessDataKey(scopeProcessDataKey);
-    const wildcardPrefix = `${scope}.*.`;
+    const wildcardPrefix = `${scope}[*].`;
     if (processDataKey.startsWith(wildcardPrefix)) {
         return processDataKey.substring(wildcardPrefix.length);
     }
@@ -317,7 +318,7 @@ function resolveSuggestionProcessDataKey(
 }
 
 function normalizeProcessDataKey(processDataKey: string | null | undefined): string {
-    return (processDataKey ?? '').trim().replace(/\.\*\.?$/, '');
+    return (processDataKey ?? '').trim().replace(/\[\*\]\.?$/, '');
 }
 
 function normalizeProcessDataKeyPrefix(prefix: string | null | undefined): string | null {

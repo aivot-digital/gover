@@ -21,7 +21,7 @@ describe('resolveEffectiveDestinationKey', () => {
         const inner = createReplicatingContainer('innerList', 'inner');
         const field = createTextField('field', 'value');
 
-        expect(resolveEffectiveDestinationKey(withParents(field, [root, outer, inner]))).toBe('outer.*.inner.*.value');
+        expect(resolveEffectiveDestinationKey(withParents(field, [root, outer, inner]))).toBe('outer[*].inner[*].value');
     });
 
     it('should ignore descendants when a replicating parent has no destination key', () => {
@@ -34,8 +34,8 @@ describe('resolveEffectiveDestinationKey', () => {
 
 describe('destinationKeysOverlap', () => {
     it('should treat wildcard and concrete array segments as overlapping', () => {
-        expect(destinationKeysOverlap('list.*.field', 'list.0.field')).toBe(true);
-        expect(destinationKeysOverlap('list.*.field', 'list.0.other')).toBe(false);
+        expect(destinationKeysOverlap('list[*].field', 'list[0].field')).toBe(true);
+        expect(destinationKeysOverlap('list[*].field', 'list[0].other')).toBe(false);
     });
 });
 
@@ -67,7 +67,7 @@ describe('collectHttpMappingProblems', () => {
     });
 
     it('should warn for indexed keys overlapping with list child keys', () => {
-        const indexedField = withParents(createTextField('indexedField', 'replizierendeListe.0.einzelnachweisOhneDateiname'), [root]);
+        const indexedField = withParents(createTextField('indexedField', 'replizierendeListe[0].einzelnachweisOhneDateiname'), [root]);
         const list = createReplicatingContainer('replicatingList', 'replizierendeListe');
         const listField = withParents(createTextField('listField', 'einzelnachweisOhneDateiname'), [root, list]);
 

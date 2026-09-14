@@ -8,6 +8,13 @@ import {
 } from './input-mode';
 
 describe('Input-mode JSON contract', () => {
+    it.each([
+        [InputVariableSource.ElementData, '_.task[0].name'],
+        [InputVariableSource.ElementMetadata, '$$.taskMetadata.task[0].name'],
+    ])('formats array-root references from %s', (source, expected) => {
+        expect(getInputVariableReference({source, path: '[0].name', nodeDataKey: 'task'})).toBe(expected);
+    });
+
     it('preserves the backend mode and source identifiers', () => {
         expect(Object.values(InputMode)).toEqual(['Literal', 'Variable', 'NoCode', 'LowCode']);
         expect(Object.values(InputVariableSource)).toEqual([
