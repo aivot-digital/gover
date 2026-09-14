@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.models;
 import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiCompletionActionNodeV1;
 import de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiProcessDataTransformationActionNodeV1;
@@ -195,7 +196,7 @@ class ProcessNodeInputModePolicyTest {
         var layout = ElementPOJOMapper.createFromPOJO(configurationClass);
 
         for (var fieldId : fieldIds) {
-            var input = assertInstanceOf(BaseInputElement.class, layout.findChild(fieldId).orElseThrow());
+            var input = assertInstanceOf(DynamicTextElement.class, layout.findChild(fieldId).orElseThrow());
             assertEquals(
                     List.of(InputVariableSource.values()),
                     input.getDynamicTextPolicy().variableSuggestionSources(),

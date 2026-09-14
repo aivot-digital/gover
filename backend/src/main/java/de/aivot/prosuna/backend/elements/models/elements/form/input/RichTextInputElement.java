@@ -1,7 +1,9 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
+import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
@@ -13,7 +15,9 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-public class RichTextInputElement extends BaseInputElement<String> implements PrintableElement<String> {
+public class RichTextInputElement extends BaseInputElement<String> implements PrintableElement<String>, DynamicTextElement {
+    @Nullable
+    private DynamicTextPolicy dynamicTextPolicy;
     @Nullable
     private String content;
     @Nullable
@@ -127,17 +131,31 @@ public class RichTextInputElement extends BaseInputElement<String> implements Pr
         if (!super.equals(o)) return false;
         RichTextInputElement that = (RichTextInputElement) o;
         return Objects.equals(content, that.content)
-                && Objects.equals(reducedMode, that.reducedMode);
+                && Objects.equals(reducedMode, that.reducedMode)
+                && Objects.equals(dynamicTextPolicy, that.dynamicTextPolicy);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), content, reducedMode);
+        return Objects.hash(super.hashCode(), content, reducedMode, dynamicTextPolicy);
     }
 
     // endregion
 
     // region Getters & Setters
+
+    @Override
+    @Nullable
+    public DynamicTextPolicy getDynamicTextPolicy() {
+        return dynamicTextPolicy;
+    }
+
+    @Override
+    @Nonnull
+    public RichTextInputElement setDynamicTextPolicy(@Nullable DynamicTextPolicy dynamicTextPolicy) {
+        this.dynamicTextPolicy = dynamicTextPolicy;
+        return this;
+    }
 
     @Nullable
     public String getContent() {

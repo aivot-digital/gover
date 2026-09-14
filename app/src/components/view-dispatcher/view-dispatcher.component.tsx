@@ -218,7 +218,8 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
         InputModeCompatibleElementTypes.has(element.type)
         ? initialElement.inputModePolicy
         : null;
-    const dynamicTextPolicy = inputModesEnabled && isAnyInputElement(initialElement) &&
+    const dynamicTextPolicy = inputModesEnabled &&
+        (initialElement.type === ElementType.Text || initialElement.type === ElementType.RichTextInput) &&
         DynamicTextCompatibleElementTypes.has(element.type)
         ? initialElement.dynamicTextPolicy
         : null;

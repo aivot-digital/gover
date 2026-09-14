@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.elements.exceptions.DerivationException;
 import de.aivot.prosuna.backend.elements.models.*;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.InputElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
@@ -247,7 +248,10 @@ public class ElementDerivationService {
             // Overrides may alter presentation, but the dynamic-input policy is trusted backend configuration.
             if (actualElement instanceof BaseInputElement<?> actualInput && currentElement instanceof BaseInputElement<?> declaredInput) {
                 actualInput.setInputModePolicy(declaredInput.getInputModePolicy());
-                actualInput.setDynamicTextPolicy(declaredInput.getDynamicTextPolicy());
+            }
+            if (actualElement instanceof DynamicTextElement actualText) {
+                actualText.setDynamicTextPolicy(currentElement instanceof DynamicTextElement declaredText
+                        ? declaredText.getDynamicTextPolicy() : null);
             }
             actualElement = codeListElementOptionsService.resolve(actualElement);
             if (actualElement != currentElement) {
@@ -1002,7 +1006,8 @@ public class ElementDerivationService {
             @Nonnull ProcessExecutionData processExecutionData,
             @Nonnull InputModeEvaluationContext inputModeContext
     ) throws DerivationException {
-        if (inputElement == null || inputElement.getDynamicTextPolicy() == null || !(value instanceof String text)) {
+        if (!(inputElement instanceof DynamicTextElement dynamicTextElement) ||
+                dynamicTextElement.getDynamicTextPolicy() == null || !(value instanceof String text)) {
             return value;
         }
 

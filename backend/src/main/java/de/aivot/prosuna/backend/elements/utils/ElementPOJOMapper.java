@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
@@ -414,7 +415,7 @@ public class ElementPOJOMapper {
         if (!enabled) {
             return;
         }
-        if (element.getType() != ElementType.Text && element.getType() != ElementType.RichTextInput) {
+        if (!(element instanceof DynamicTextElement inputElement)) {
             throw new ElementDataConversionException(
                     "Dynamic text is only supported for Text and RichTextInput fields, but field %s of class %s uses %s.",
                     StringUtils.quote(field.getName()),
@@ -422,13 +423,6 @@ public class ElementPOJOMapper {
                     StringUtils.quote(element.getType().name())
             );
         }
-        if (!(element instanceof BaseInputElement<?> inputElement)) {
-            throw new ElementDataConversionException(
-                    "Element %s must be an input element when dynamic text is enabled.",
-                    StringUtils.quote(element.getId())
-            );
-        }
-
         try {
             inputElement.setDynamicTextPolicy(new DynamicTextPolicy(Arrays.asList(variableSuggestionSources)));
         } catch (IllegalArgumentException exception) {

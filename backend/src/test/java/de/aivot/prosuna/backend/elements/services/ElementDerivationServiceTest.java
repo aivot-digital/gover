@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
+import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.ElementOverrideFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
@@ -19,6 +20,7 @@ import de.aivot.prosuna.backend.elements.models.elements.ValidationNoCodeWrapper
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.NumberInputElement;
 import de.aivot.prosuna.backend.elements.models.input.InputModePolicy;
 import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
@@ -237,6 +239,52 @@ class ElementDerivationServiceTest {
 
         assertFalse(result.getEffectiveValues().containsKey("field"));
         assertTrue(result.getElementStates().get("field").getError().contains("dynamische Text"));
+    }
+
+    @Test
+    void shouldPreserveDeclaredDynamicTextPolicyAcrossOverrides() {
+        for (var field : List.of(new TextInputElement(), new RichTextInputElement())) {
+            field.setId("field");
+            var policy = new DynamicTextPolicy(List.of(InputVariableSource.ProcessData));
+            ((DynamicTextElement) field).setDynamicTextPolicy(policy);
+            field.setOverride(new ElementOverrideFunctions().setJavascriptCode(
+                    JavascriptCode.of("({ type: element.type, id: element.id, label: 'Overridden' })")
+            ));
+            var authoredValues = new AuthoredElementValues();
+            authoredValues.putLiteral("field", "Hello {{ $.name }}");
+
+            var result = derive(createRoot(List.of(field)), authoredValues, new ElementDerivationOptions(),
+                    new ProcessExecutionData().addProcessData("name", "Ada"), InputModeEvaluationContext.Runtime);
+
+            assertFalse(result.hasAnyError());
+            assertEquals("Hello Ada", result.getEffectiveValues().get("field"));
+            assertEquals(policy, assertInstanceOf(DynamicTextElement.class,
+                    result.getElementStates().get("field").getOverride()).getDynamicTextPolicy());
+        }
+    }
+
+    @Test
+    void shouldNotEnableDynamicTextThroughOverrides() {
+        for (var field : List.of(new TextInputElement(), new RichTextInputElement())) {
+            field.setId("field");
+            field.setOverride(new ElementOverrideFunctions().setJavascriptCode(JavascriptCode.of("""
+                    ({
+                        type: element.type,
+                        id: element.id,
+                        dynamicTextPolicy: { variableSuggestionSources: ['ProcessData'] }
+                    })
+                    """)));
+            var authoredValues = new AuthoredElementValues();
+            authoredValues.putLiteral("field", "Hello {{ $.name }}");
+
+            var result = derive(createRoot(List.of(field)), authoredValues, new ElementDerivationOptions(),
+                    new ProcessExecutionData().addProcessData("name", "Ada"), InputModeEvaluationContext.Runtime);
+
+            assertFalse(result.hasAnyError());
+            assertEquals("Hello {{ $.name }}", result.getEffectiveValues().get("field"));
+            assertNull(assertInstanceOf(DynamicTextElement.class,
+                    result.getElementStates().get("field").getOverride()).getDynamicTextPolicy());
+        }
     }
 
     @Test

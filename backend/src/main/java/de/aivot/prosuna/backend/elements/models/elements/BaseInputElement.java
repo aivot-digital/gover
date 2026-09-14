@@ -3,7 +3,6 @@ package de.aivot.prosuna.backend.elements.models.elements;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.elements.models.input.InputModePolicy;
-import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -30,9 +29,6 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
 
     @Nullable
     private InputModePolicy inputModePolicy;
-
-    @Nullable
-    private DynamicTextPolicy dynamicTextPolicy;
 
     @Nullable
     private ElementValueFunctions value;
@@ -120,12 +116,12 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         BaseInputElement<?> that = (BaseInputElement<?>) o;
-        return Objects.equals(label, that.label) && Objects.equals(hint, that.hint) && Objects.equals(required, that.required) && Objects.equals(disabled, that.disabled) && Objects.equals(technical, that.technical) && Objects.equals(destinationKey, that.destinationKey) && Objects.equals(inputModePolicy, that.inputModePolicy) && Objects.equals(dynamicTextPolicy, that.dynamicTextPolicy) && Objects.equals(value, that.value) && Objects.equals(validation, that.validation);
+        return Objects.equals(label, that.label) && Objects.equals(hint, that.hint) && Objects.equals(required, that.required) && Objects.equals(disabled, that.disabled) && Objects.equals(technical, that.technical) && Objects.equals(destinationKey, that.destinationKey) && Objects.equals(inputModePolicy, that.inputModePolicy) && Objects.equals(value, that.value) && Objects.equals(validation, that.validation);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), label, hint, required, disabled, technical, destinationKey, inputModePolicy, dynamicTextPolicy, value, validation);
+        return Objects.hash(super.hashCode(), label, hint, required, disabled, technical, destinationKey, inputModePolicy, value, validation);
     }
 
     // endregion
@@ -202,16 +198,6 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
 
     public BaseInputElement<T> setInputModePolicy(@Nullable InputModePolicy inputModePolicy) {
         this.inputModePolicy = inputModePolicy;
-        return this;
-    }
-
-    @Nullable
-    public DynamicTextPolicy getDynamicTextPolicy() {
-        return dynamicTextPolicy;
-    }
-
-    public BaseInputElement<T> setDynamicTextPolicy(@Nullable DynamicTextPolicy dynamicTextPolicy) {
-        this.dynamicTextPolicy = dynamicTextPolicy;
         return this;
     }
 

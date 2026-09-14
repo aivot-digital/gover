@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
@@ -136,7 +137,7 @@ class HttpActionNodeV1Test {
             assertEquals(List.of(InputVariableSource.values()), input.getInputModePolicy().allowedVariableSources(), fieldId);
         }
         for (var fieldId : List.of("url", "username", "bearerToken", "responseFileName")) {
-            var input = assertInstanceOf(BaseInputElement.class, layout.findChild(fieldId).orElseThrow());
+            var input = assertInstanceOf(DynamicTextElement.class, layout.findChild(fieldId).orElseThrow());
             assertEquals(
                     List.of(InputVariableSource.values()),
                     input.getDynamicTextPolicy().variableSuggestionSources(),
@@ -149,7 +150,7 @@ class HttpActionNodeV1Test {
                 layout.findChild("passwordSecretKey").orElseThrow()
         );
         assertNull(passwordSecret.getInputModePolicy());
-        assertNull(passwordSecret.getDynamicTextPolicy());
+        assertFalse(passwordSecret instanceof DynamicTextElement);
     }
 
     @Test
