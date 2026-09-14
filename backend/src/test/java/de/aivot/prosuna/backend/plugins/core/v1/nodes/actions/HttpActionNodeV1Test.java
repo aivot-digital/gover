@@ -131,12 +131,12 @@ class HttpActionNodeV1Test {
         );
 
         var layout = node.getConfigurationLayout(null);
-        for (var fieldId : List.of("url", "username", "bearerToken")) {
+        for (var fieldId : List.of("url", "bearerToken")) {
             var input = assertInstanceOf(BaseInputElement.class, layout.findChild(fieldId).orElseThrow());
             assertEquals(List.of(InputMode.values()), input.getInputModePolicy().allowedModes(), fieldId);
             assertEquals(List.of(InputVariableSource.values()), input.getInputModePolicy().allowedVariableSources(), fieldId);
         }
-        for (var fieldId : List.of("url", "username", "bearerToken", "responseFileName")) {
+        for (var fieldId : List.of("url", "bearerToken", "responseFileName")) {
             var input = assertInstanceOf(DynamicTextElement.class, layout.findChild(fieldId).orElseThrow());
             assertEquals(
                     List.of(InputVariableSource.values()),
@@ -144,6 +144,10 @@ class HttpActionNodeV1Test {
                     fieldId
             );
         }
+
+        var username = layout.findChild("username").orElseThrow();
+        assertNull(assertInstanceOf(BaseInputElement.class, username).getInputModePolicy());
+        assertNull(assertInstanceOf(DynamicTextElement.class, username).getDynamicTextPolicy());
 
         var passwordSecret = assertInstanceOf(
                 BaseInputElement.class,
