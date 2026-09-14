@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.services;
 
-import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
@@ -13,6 +12,9 @@ import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.GotenbergConfig;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
+import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.repositories.PaymentTransactionRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
@@ -25,18 +27,30 @@ import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
+import de.aivot.prosuna.backend.services.pdf.PdfLogoService;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
+import de.aivot.prosuna.backend.utils.MultipartUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.util.MultiValueMap;
 
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -51,6 +65,9 @@ class PdfServiceTest {
     private ProcessVersionRepository processVersionRepository;
     private ElementDerivationService elementDerivationService;
     private ThemeService themeService;
+    private GotenbergConfig gotenbergConfig;
+    private HttpService httpService;
+    private PdfLogoService pdfLogoService;
     private Method injectBaseUrlIntoHTMLMethod;
     private Method resolvePdfDepartmentMethod;
 
@@ -63,20 +80,23 @@ class PdfServiceTest {
         processVersionRepository = mock(ProcessVersionRepository.class);
         elementDerivationService = mock(ElementDerivationService.class);
         themeService = mock(ThemeService.class);
+        gotenbergConfig = mock(GotenbergConfig.class);
+        httpService = mock(HttpService.class);
+        pdfLogoService = mock(PdfLogoService.class);
 
         pdfService = new PdfService(
-                mock(GotenbergConfig.class),
+                gotenbergConfig,
                 mock(SystemConfigService.class),
                 vDepartmentShadowedRepository,
                 processRepository,
                 processVersionRepository,
-                mock(AssetRepository.class),
+                pdfLogoService,
                 prosunaConfig,
                 mock(PaymentTransactionRepository.class),
                 mock(IdentityProviderRepository.class),
                 mock(PaymentProviderRepository.class),
                 mock(PaymentProviderDefinitionsService.class),
-                mock(HttpService.class),
+                httpService,
                 elementDerivationService,
                 themeService
         );
@@ -88,6 +108,59 @@ class PdfServiceTest {
         resolvePdfDepartmentMethod = PdfService.class
                 .getDeclaredMethod("resolvePdfDepartment", FormLayoutElement.class, Integer.class);
         resolvePdfDepartmentMethod.setAccessible(true);
+    }
+
+    @Test
+    void generatePaymentConfirmationEmbedsResolvedLogoInSubmittedHtml() throws Exception {
+        var logoAssetKey = UUID.randomUUID();
+        var logoDataUrl = "data:image/png;base64,bG9nbw==";
+        var expectedPdf = "%PDF".getBytes(StandardCharsets.UTF_8);
+        @SuppressWarnings("unchecked")
+        HttpResponse<byte[]> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn(expectedPdf);
+        when(gotenbergConfig.getHost()).thenReturn("gotenberg");
+        when(gotenbergConfig.getPort()).thenReturn("3000");
+        when(pdfLogoService.resolveDataUrl(logoAssetKey)).thenReturn(Optional.of(logoDataUrl));
+        when(httpService.postMultipart(any(), any())).thenReturn(response);
+
+        var paymentRequest = new XBezahldienstePaymentRequest();
+        paymentRequest.setGrosAmount(BigDecimal.TEN);
+        var paymentInformation = new XBezahldienstePaymentInformation();
+        paymentInformation.setTransactionId("transaction-1");
+        paymentInformation.setTransactionTimestamp("2026-09-14T10:00:00Z");
+        var transaction = new PaymentTransactionEntity()
+                .setPaymentRequest(paymentRequest)
+                .setPaymentInformation(paymentInformation);
+        var department = new VDepartmentShadowedEntity()
+                .setName("Example Department")
+                .setPostalAddress("Example Street 1");
+
+        var result = pdfService.generatePaymentConfirmation(
+                transaction,
+                "CASE-1",
+                logoAssetKey,
+                department
+        );
+
+        assertArrayEquals(expectedPdf, result);
+        verify(pdfLogoService).resolveDataUrl(logoAssetKey);
+
+        var multipartCaptor = ArgumentCaptor.forClass(MultipartUtils.MultipartBodyPublisher.class);
+        verify(httpService).postMultipart(any(), multipartCaptor.capture());
+        @SuppressWarnings("unchecked")
+        var parts = (MultiValueMap<String, Object>) multipartCaptor.getValue().build();
+        var indexHtml = parts.get("files")
+                .stream()
+                .filter(ByteArrayResource.class::isInstance)
+                .map(ByteArrayResource.class::cast)
+                .filter(part -> "index.html".equals(part.getFilename()))
+                .findFirst()
+                .map(part -> new String(part.getByteArray(), StandardCharsets.UTF_8))
+                .orElseThrow();
+
+        assertTrue(indexHtml.contains("src=\"" + logoDataUrl + "\""));
+        assertFalse(indexHtml.contains("/api/public/assets/"));
     }
 
     @Test

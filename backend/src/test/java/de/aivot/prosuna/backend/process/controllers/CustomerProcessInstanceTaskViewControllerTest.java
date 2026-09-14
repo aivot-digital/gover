@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.process.controllers;
 
-import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.*;
@@ -482,7 +481,6 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(PdfService.class),
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
-                mock(AssetService.class),
                 customerTaskIdentityService,
                 mock(IdentitySlotService.class)
         );
@@ -593,7 +591,6 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(PdfService.class),
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
-                mock(AssetService.class),
                 mockCustomerTaskIdentityService(),
                 mock(IdentitySlotService.class)
         );
@@ -715,12 +712,10 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 .thenReturn(Optional.of(department));
         when(fixture.themeService().resolveDepartmentTheme(process.getDepartmentId()))
                 .thenReturn(theme);
-        when(fixture.assetService().createUrl(logoKey))
-                .thenReturn("https://example.test/api/public/assets/" + logoKey + "/");
         when(fixture.pdfService().generatePaymentConfirmation(
                 same(transaction),
                 eq("AZ-123"),
-                eq("https://example.test/api/public/assets/" + logoKey + "/"),
+                eq(logoKey),
                 same(department)
         )).thenReturn(pdfBytes);
 
@@ -739,7 +734,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         verify(fixture.pdfService()).generatePaymentConfirmation(
                 same(transaction),
                 eq("AZ-123"),
-                eq("https://example.test/api/public/assets/" + logoKey + "/"),
+                eq(logoKey),
                 same(department)
         );
     }
@@ -924,7 +919,6 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(PdfService.class),
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
-                mock(AssetService.class),
                 customerTaskIdentityService,
                 identitySlotService
         );
@@ -1013,7 +1007,6 @@ class CustomerProcessInstanceTaskViewControllerTest {
         var prosunaConfig = new ProsunaConfig();
         prosunaConfig.setProsunaHostname("https://example.test/");
         var themeService = mock(ThemeService.class);
-        var assetService = mock(AssetService.class);
         var customerTaskIdentityService = mockCustomerTaskIdentityService();
 
         var controller = new CustomerProcessInstanceTaskViewController(
@@ -1032,7 +1025,6 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 pdfService,
                 prosunaConfig,
                 themeService,
-                assetService,
                 customerTaskIdentityService,
                 mock(IdentitySlotService.class)
         );
@@ -1046,7 +1038,6 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 vDepartmentShadowedService,
                 pdfService,
                 themeService,
-                assetService,
                 customerTaskIdentityService
         );
     }
@@ -1124,7 +1115,6 @@ class CustomerProcessInstanceTaskViewControllerTest {
             VDepartmentShadowedService vDepartmentShadowedService,
             PdfService pdfService,
             ThemeService themeService,
-            AssetService assetService,
             CustomerTaskIdentityService customerTaskIdentityService
     ) {
     }

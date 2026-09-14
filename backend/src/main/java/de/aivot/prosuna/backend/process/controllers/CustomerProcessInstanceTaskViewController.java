@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.process.controllers;
 
-import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
@@ -96,7 +95,6 @@ public class CustomerProcessInstanceTaskViewController {
     private final PdfService pdfService;
     private final ProsunaConfig prosunaConfig;
     private final ThemeService themeService;
-    private final AssetService assetService;
     private final CustomerTaskIdentityService customerTaskIdentityService;
     private final IdentitySlotService identitySlotService;
 
@@ -115,7 +113,6 @@ public class CustomerProcessInstanceTaskViewController {
                                                      PdfService pdfService,
                                                      ProsunaConfig prosunaConfig,
                                                      ThemeService themeService,
-                                                     AssetService assetService,
                                                      CustomerTaskIdentityService customerTaskIdentityService,
                                                      IdentitySlotService identitySlotService) {
         this.processInstanceService = processInstanceService;
@@ -133,7 +130,6 @@ public class CustomerProcessInstanceTaskViewController {
         this.pdfService = pdfService;
         this.prosunaConfig = prosunaConfig;
         this.themeService = themeService;
-        this.assetService = assetService;
         this.customerTaskIdentityService = customerTaskIdentityService;
         this.identitySlotService = identitySlotService;
     }
@@ -378,14 +374,14 @@ public class CustomerProcessInstanceTaskViewController {
         var department = vDepartmentShadowedService
                 .retrieve(process.getDepartmentId())
                 .orElseThrow(() -> ResponseException.internalServerError("Keine zuständige Organisationseinheit für die Zahlungsbestätigung gefunden."));
-        var logoUrl = resolvePaymentConfirmationLogoUrl(department);
+        var logoAssetKey = resolvePaymentConfirmationLogoAssetKey(department);
 
         byte[] pdfBytes;
         try {
             pdfBytes = pdfService.generatePaymentConfirmation(
                     transaction,
                     taskViewData.instance().getCaseNumber(),
-                    logoUrl,
+                    logoAssetKey,
                     department
             );
         } catch (InterruptedException e) {
@@ -867,11 +863,9 @@ public class CustomerProcessInstanceTaskViewController {
     }
 
     @Nullable
-    private String resolvePaymentConfirmationLogoUrl(@Nonnull VDepartmentShadowedEntity department) {
+    private UUID resolvePaymentConfirmationLogoAssetKey(@Nonnull VDepartmentShadowedEntity department) {
         var theme = themeService.resolveDepartmentTheme(department.getId());
-        return theme.getLogoKey() == null
-                ? null
-                : assetService.createUrl(theme.getLogoKey());
+        return theme.getLogoKey();
     }
 
     private record TaskViewData<NodeConfig>(

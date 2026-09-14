@@ -47,11 +47,10 @@
 
     <div
             id="logo"
-            th:if="${ !#strings.isEmpty(base.logoAssetKey) }"
+            th:if="${ base.logoDataUrl != null }"
     >
-        <!-- Die URL des Logos des Betreibers wird aus dem Basis-Kontext abgeleitet und mit der createAssetUrl Methode des Basis-Kontextes abgeleitet -->
         <img
-                th:src="${ base.createAssetUrl(base.logoAssetKey, base.logoAssetName) }"
+                th:src="${ base.logoDataUrl }"
                 th:alt="${ 'Logo ' + base.providerName }"
                 style="height: 100px; width: auto; object-fit: contain;"
         />

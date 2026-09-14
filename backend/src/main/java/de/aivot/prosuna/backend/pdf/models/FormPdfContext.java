@@ -2,11 +2,15 @@ package de.aivot.prosuna.backend.pdf.models;
 
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.pdf.enums.FormPdfScope;
+import jakarta.annotation.Nullable;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-public record FormPdfContext(String providerName, String logoAssetKey, String logoAssetName, ProsunaConfig config, FormPdfScope scope) {
+public record FormPdfContext(String providerName,
+                             @Nullable String logoDataUrl,
+                             ProsunaConfig config,
+                             FormPdfScope scope) {
     public Boolean isStaffPrint() {
         return scope == FormPdfScope.Staff;
     }
@@ -33,10 +37,6 @@ public record FormPdfContext(String providerName, String logoAssetKey, String lo
 
     public Boolean isNotBlankPrint() {
         return !isBlankPrint();
-    }
-
-    public String createAssetUrl(String assetKey, String assetName) {
-        return config.createUrlWithTrailingSlash("/api/public/assets", assetKey);
     }
 
     public String createUrl(String suffix) {

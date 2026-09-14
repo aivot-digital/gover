@@ -1,6 +1,6 @@
 <!--/*@thymesVar id="transaction" type="de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity"*/-->
 <!--/*@thymesVar id="caseNumber" type="java.lang.String"*/-->
-<!--/*@thymesVar id="logoUrl" type="java.lang.String"*/-->
+<!--/*@thymesVar id="logoDataUrl" type="java.lang.String"*/-->
 <!--/*@thymesVar id="department" type="de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity"*/-->
 <!--/*@thymesVar id="generatedAt" type="java.lang.String"*/-->
 <!--/*@thymesVar id="#numberformat" type="de.aivot.prosuna.backend.services.pdf.NumberFormatDialect"*/-->
@@ -76,10 +76,10 @@
     <body>
         <div
                 id="logo"
-                th:if="${logoUrl != null}"
+                th:if="${logoDataUrl != null}"
         >
             <img
-                    th:src="${logoUrl}"
+                    th:src="${logoDataUrl}"
                     th:alt="${department.getName()}"
                     style="height: 100px; width: auto; max-width: 200px; object-fit: contain;"
             />

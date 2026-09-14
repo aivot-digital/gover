@@ -397,16 +397,22 @@ class FormTriggerControllerV1Test {
 
     @Test
     void getPaymentConfirmationShouldStreamPdfForPaidTransactionResolvedByRedirectUrl() throws Exception {
+        var logoKey = UUID.randomUUID();
         var transaction = createPaymentTransaction(
                 XBezahldienstStatus.PAYED,
                 "https://gover.example/process/instance-access-key/tasks/task-access-key"
         );
         var fixture = createPrintFixture(false, transaction, false);
         var pdfBytes = new byte[]{37, 80, 68, 70};
+        when(fixture.themeService().resolveFormTheme(
+                any(ProcessVersionEntity.class),
+                any(FormLayoutElement.class),
+                nullable(Integer.class)
+        )).thenReturn(new ThemeEntity().setLogoKey(logoKey));
         when(fixture.pdfService().generatePaymentConfirmation(
                 same(transaction),
                 eq("CASE-1"),
-                isNull(),
+                eq(logoKey),
                 any(VDepartmentShadowedEntity.class)
         )).thenReturn(pdfBytes);
 
@@ -425,6 +431,12 @@ class FormTriggerControllerV1Test {
         assertArrayEquals(pdfBytes, response.getContentAsByteArray());
         assertTrue(response.getHeader("Content-Disposition").contains("Zahlungsbestaetigung-CASE-1.pdf"));
         verify(fixture.paymentTransactionService()).retrieveByRedirectUrl(fixture.paymentRedirectUrl());
+        verify(fixture.pdfService()).generatePaymentConfirmation(
+                same(transaction),
+                eq("CASE-1"),
+                eq(logoKey),
+                any(VDepartmentShadowedEntity.class)
+        );
     }
 
     @Test
@@ -674,6 +686,7 @@ class FormTriggerControllerV1Test {
                 storageService,
                 paymentTransactionService,
                 pdfService,
+                themeService,
                 paymentRedirectUrl
         );
     }
@@ -975,6 +988,7 @@ class FormTriggerControllerV1Test {
             StorageService storageService,
             PaymentTransactionService paymentTransactionService,
             PdfService pdfService,
+            ThemeService themeService,
             String paymentRedirectUrl
     ) {
     }

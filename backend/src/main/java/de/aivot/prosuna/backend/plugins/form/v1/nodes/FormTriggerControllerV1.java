@@ -837,7 +837,7 @@ public class FormTriggerControllerV1 {
         }
 
         var department = resolvePaymentConfirmationDepartment(context);
-        var logoUrl = resolvePaymentConfirmationLogoUrl(
+        var logoAssetKey = resolvePaymentConfirmationLogoAssetKey(
                 context.processVersion(),
                 context.formLayout(),
                 context.process().getDepartmentId()
@@ -848,7 +848,7 @@ public class FormTriggerControllerV1 {
             pdfBytes = pdfService.generatePaymentConfirmation(
                     transaction,
                     context.instance().getCaseNumber(),
-                    logoUrl,
+                    logoAssetKey,
                     department
             );
         } catch (InterruptedException e) {
@@ -1002,13 +1002,11 @@ public class FormTriggerControllerV1 {
     }
 
     @Nullable
-    private String resolvePaymentConfirmationLogoUrl(@Nonnull ProcessVersionEntity processVersion,
-                                                     @Nonnull FormLayoutElement formLayout,
-                                                     @Nullable Integer processDepartmentId) {
+    private UUID resolvePaymentConfirmationLogoAssetKey(@Nonnull ProcessVersionEntity processVersion,
+                                                        @Nonnull FormLayoutElement formLayout,
+                                                        @Nullable Integer processDepartmentId) {
         var theme = themeService.resolveFormTheme(processVersion, formLayout, processDepartmentId);
-        return theme.getLogoKey() == null
-                ? null
-                : assetService.createUrl(theme.getLogoKey());
+        return theme.getLogoKey();
     }
 
     @Nonnull
