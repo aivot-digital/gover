@@ -27,12 +27,6 @@ public final class TestData {
         );
     }
 
-    public static DerivedRuntimeElementData runtime(AuthoredElementValues values) {
-        var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(values.toLiteralValues());
-        return new DerivedRuntimeElementData(effectiveValues, new ComputedElementStates());
-    }
-
     public static DerivedRuntimeElementData runtime(EffectiveElementValues values) {
         return new DerivedRuntimeElementData(values, new ComputedElementStates());
     }

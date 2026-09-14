@@ -317,7 +317,11 @@ class ApprovalActionNodeV1Test {
     private static ApprovalActionNodeV1.ApprovalConfiguration nodeConfiguration(AuthoredElementValues configuration)
             throws ElementDataConversionException {
         var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(configuration.toLiteralValues());
+        effectiveValues.put("criteria", configuration.getLiteral("criteria"));
+        effectiveValues.put("contentMode", configuration.getLiteral("contentMode"));
+        effectiveValues.put("dataContent", configuration.getLiteral("dataContent"));
+        effectiveValues.put("customContent", configuration.getLiteral("customContent"));
+        effectiveValues.put("assignmentContext", configuration.getLiteral("assignmentContext"));
         return ElementPOJOMapper.mapToPOJO(effectiveValues, ApprovalActionNodeV1.ApprovalConfiguration.class);
     }
 

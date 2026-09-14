@@ -584,7 +584,9 @@ class DataChangeActionNodeV1Test {
     private static DataChangeActionNodeV1.DataChangeActionNodeConfig nodeConfiguration(AuthoredElementValues configuration)
             throws ElementDataConversionException {
         var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(configuration.toLiteralValues());
+        effectiveValues.put("data_definition", configuration.getLiteral("data_definition"));
+        effectiveValues.put("task_description", configuration.getLiteral("task_description"));
+        effectiveValues.put("assignment_context", configuration.getLiteral("assignment_context"));
         return ElementPOJOMapper.mapToPOJO(effectiveValues, DataChangeActionNodeV1.DataChangeActionNodeConfig.class);
     }
 

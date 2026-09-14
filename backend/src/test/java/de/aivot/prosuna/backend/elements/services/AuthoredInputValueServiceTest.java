@@ -47,7 +47,6 @@ class AuthoredInputValueServiceTest {
         ));
 
         assertNull(service.getLiteral(values, "field"));
-        assertThrows(IllegalStateException.class, values::toLiteralValues);
     }
 
     @Test

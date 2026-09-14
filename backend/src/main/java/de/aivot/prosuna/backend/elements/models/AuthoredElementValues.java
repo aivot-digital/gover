@@ -59,20 +59,6 @@ public class AuthoredElementValues extends HashMap<String, AuthoredInputValue> i
         return value instanceof LiteralAuthoredInputValue literal ? literal.value() : null;
     }
 
-    /**
-     * Unwraps one map level and rejects dynamic values. Nested authored rows intentionally remain structured.
-     */
-    public Map<String, Object> toLiteralValues() {
-        var literalValues = new LinkedHashMap<String, Object>();
-        for (var entry : entrySet()) {
-            if (!(entry.getValue() instanceof LiteralAuthoredInputValue literal)) {
-                throw new IllegalStateException("Only literal authored values can be converted without derivation.");
-            }
-            literalValues.put(entry.getKey(), literal.value());
-        }
-        return literalValues;
-    }
-
     @Override
     public AuthoredElementValues clone() {
         var clone = (AuthoredElementValues) super.clone();

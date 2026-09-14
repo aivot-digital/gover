@@ -528,7 +528,9 @@ class ManualActionNodeV1Test {
     private static ManualActionNodeV1.ManualActionNodeConfig nodeConfiguration(AuthoredElementValues configuration)
             throws ElementDataConversionException {
         var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(configuration.toLiteralValues());
+        effectiveValues.put("task_description", configuration.getLiteral("task_description"));
+        effectiveValues.put("ui_definition", configuration.getLiteral("ui_definition"));
+        effectiveValues.put("assignment_context", configuration.getLiteral("assignment_context"));
         return ElementPOJOMapper.mapToPOJO(effectiveValues, ManualActionNodeV1.ManualActionNodeConfig.class);
     }
 

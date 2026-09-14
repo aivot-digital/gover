@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static de.aivot.prosuna.backend.TestData.effective;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -146,7 +147,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 new TestProcessNodeService(node),
                 new ApplyingProcessNodeExecutionResultHandler(),
                 new TestProcessNodeExecutionLoggerFactory(),
-                new TestElementDerivationService(normalizedInputs),
+                new TestElementDerivationService(effective("field", "normalized", "extra", "saved")),
                 new TestTaskViewMultipartInputService(normalizedInputs),
                 mock(ProcessDataService.class),
                 mock(ProcessService.class),
@@ -252,7 +253,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 new TestProcessNodeService(node),
                 new FailingProcessNodeExecutionResultHandler(),
                 new TestProcessNodeExecutionLoggerFactory(),
-                new TestElementDerivationService(normalizedInputs),
+                new TestElementDerivationService(effective("field", "normalized", "attachment", "process-instance-attachment:abc")),
                 new TestTaskViewMultipartInputService(normalizedInputs),
                 mock(ProcessDataService.class),
                 mock(ProcessService.class),
@@ -287,7 +288,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         normalizedInputs.putLiteral("field", "normalized");
 
         var provider = new InlineCustomerTaskProcessNodeDefinition(null);
-        var fixture = createFixture(provider, normalizedInputs);
+        var fixture = createFixture(provider, normalizedInputs, effective("field", "normalized"));
 
         var response = fixture.controller().update(
                 fixture.procAccess(),
@@ -311,7 +312,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         normalizedInputs.putLiteral("field", "normalized");
 
         var provider = new InlineCustomerTaskProcessNodeDefinition("https://example.org");
-        var fixture = createFixture(provider, normalizedInputs);
+        var fixture = createFixture(provider, normalizedInputs, effective("field", "normalized"));
 
         var ex = assertThrows(
                 ResponseException.class,
@@ -426,7 +427,8 @@ class CitizenProcessInstanceTaskViewControllerTest {
     }
 
     private static CitizenTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
-                                                              AuthoredElementValues normalizedInputs) {
+                                                              AuthoredElementValues normalizedInputs,
+                                                              EffectiveElementValues effectiveValues) {
         var procAccess = UUID.randomUUID().toString();
         var taskAccess = UUID.randomUUID().toString();
         var now = Instant.now();
@@ -497,7 +499,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 new TestProcessNodeService(node),
                 new ApplyingProcessNodeExecutionResultHandler(),
                 new TestProcessNodeExecutionLoggerFactory(),
-                new TestElementDerivationService(normalizedInputs),
+                new TestElementDerivationService(effectiveValues),
                 new TestTaskViewMultipartInputService(normalizedInputs),
                 mock(ProcessDataService.class),
                 mock(ProcessService.class),
@@ -593,7 +595,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 new TestProcessNodeService(node),
                 new ApplyingProcessNodeExecutionResultHandler(),
                 new TestProcessNodeExecutionLoggerFactory(),
-                new TestElementDerivationService(new AuthoredElementValues()),
+                new TestElementDerivationService(new EffectiveElementValues()),
                 new TestTaskViewMultipartInputService(new AuthoredElementValues()),
                 mock(ProcessDataService.class),
                 processService,
@@ -745,17 +747,15 @@ class CitizenProcessInstanceTaskViewControllerTest {
     }
 
     private static final class TestElementDerivationService extends ElementDerivationService {
-        private final AuthoredElementValues normalizedInputs;
+        private final EffectiveElementValues effectiveValues;
 
-        private TestElementDerivationService(AuthoredElementValues normalizedInputs) {
+        private TestElementDerivationService(EffectiveElementValues effectiveValues) {
             super(null, null, null, null, null, null);
-            this.normalizedInputs = normalizedInputs;
+            this.effectiveValues = effectiveValues;
         }
 
         @Override
         public DerivedRuntimeElementData derive(ElementDerivationRequest request) {
-            var effectiveValues = new EffectiveElementValues();
-            effectiveValues.putAll(normalizedInputs.toLiteralValues());
             return new DerivedRuntimeElementData(effectiveValues, new ComputedElementStates());
         }
     }
