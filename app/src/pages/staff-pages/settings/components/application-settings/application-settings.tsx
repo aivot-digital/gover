@@ -681,7 +681,6 @@ export function ApplicationSettings() {
                 <Tabs
                     value={currentSettingsTab ?? availableTabs[0] ?? ''}
                     onChange={(_, value) => {
-                        console.log(value);
                         setCurrentSettingsTab(value);
                     }}
                 >
@@ -710,7 +709,6 @@ export function ApplicationSettings() {
                             authoredElementValues={authoredConfig}
                             disabled={inputsDisabled}
                             onAuthoredElementValuesChange={(updated) => {
-                                console.log(updated);
                                 dispatch(setSystemConfigsFromMap(toLiteralElementValues(updated) as SystemConfigMap));
                             }}
                         />
