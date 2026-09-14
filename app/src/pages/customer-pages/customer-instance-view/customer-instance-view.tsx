@@ -25,7 +25,6 @@ import {showDialog} from "../../../slices/app-slice";
 import {ImprintDialog, ImprintDialogId} from "../../../dialogs/imprint-dialog/imprint-dialog";
 import {AccessibilityDialog, AccessibilityDialogId} from "../../../dialogs/accessibility-dialog/accessibility-dialog";
 import {HelpDialog, HelpDialogId} from "../../../dialogs/help-dialog/help.dialog";
-import {MetaElement} from '../../../components/meta-element/meta-element';
 
 const INSTANCE_POLL_INTERVAL_MS = 2000;
 
@@ -172,18 +171,14 @@ export function CustomerInstanceView() {
     return (
         <ThemeProvider theme={resolvedTheme}>
             <SnackbarProvider>
-                <MetaElement
-                    faviconUrl={instanceStatus.theme.faviconUrl}
-                    title={instanceStatus.title}
-                    titlePrefix={AppConfig.providerName}
-                />
-
                 <CustomerInstanceViewHeader
                     status={instanceStatus}
                 />
 
                 <PageWrapper
                     title={instanceStatus.title}
+                    titlePrefix={AppConfig.providerName}
+                    faviconUrl={instanceStatus.theme.faviconUrl}
                 >
                     {
                         instanceStatus.tasks == null &&

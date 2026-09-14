@@ -377,9 +377,9 @@ export function CustomerFormPage() {
         return null;
     }
 
-    const formLogoUrl = theme?.logoUrl ?? AppConfig.logoUrl;
-    const formLogoUrlDark = theme?.logoUrlDark ?? AppConfig.logoUrlDark;
-    const formFaviconUrl = theme?.faviconUrl ?? AppConfig.faviconUrl;
+    const formLogoUrl = theme?.logoUrl ?? null;
+    const formLogoUrlDark = theme?.logoUrlDark ?? null;
+    const formFaviconUrl = theme?.faviconUrl ?? null;
     const customerInputDraft = CustomerInputService.loadCustomerInputDraft(process.slug, resolvedFormSlug, version.processVersion);
     const showFormFlow = data.identitySlots.length === 0 || dismissAuthentication;
 
