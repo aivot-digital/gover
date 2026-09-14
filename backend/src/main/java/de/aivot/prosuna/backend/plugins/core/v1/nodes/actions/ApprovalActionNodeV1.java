@@ -300,7 +300,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
     @Nonnull
     @Override
-    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) throws ResponseException {
+    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) {
         var config = context.getConfigurationOfExecutingNode();
 
         var layout = new GroupLayoutElement();
@@ -382,7 +382,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
             return null;
         }
 
-        return AuthoredElementValues.fromLiteralValues(runtimeData);
+        // Older draft snapshots contain plain values, including nested rows from the modeled task view.
+        return authoredInputValueService.toLiteralAuthoredElementValues(getStaffTaskView(context), runtimeData);
     }
 
     @Nonnull

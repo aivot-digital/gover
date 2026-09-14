@@ -107,11 +107,10 @@ class ProcessNodeDefinitionTest {
         var context = staffContext(
                 Map.of(
                         ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
-                        AuthoredElementValues.fromLiteralValues(Map.of(
-                                "defaultField", "initial",
-                                "sharedField", "saved",
-                                "savedField", "saved"
-                        ))
+                        new AuthoredElementValues()
+                                .putLiteral("defaultField", "initial")
+                                .putLiteral("sharedField", "saved")
+                                .putLiteral("savedField", "saved")
                 ),
                 Map.of(),
                 Map.of()
@@ -371,10 +370,9 @@ class ProcessNodeDefinitionTest {
         var context = customerContext(
                 Map.of(
                         ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY,
-                        AuthoredElementValues.fromLiteralValues(Map.of(
-                                "sharedField", "saved",
-                                "savedField", "saved"
-                        ))
+                        new AuthoredElementValues()
+                                .putLiteral("sharedField", "saved")
+                                .putLiteral("savedField", "saved")
                 ),
                 Map.of(),
                 Map.of()

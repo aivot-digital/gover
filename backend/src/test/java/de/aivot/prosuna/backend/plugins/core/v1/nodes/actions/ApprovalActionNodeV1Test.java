@@ -5,6 +5,8 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.services.InputVariableResolver;
@@ -188,6 +190,54 @@ class ApprovalActionNodeV1Test {
         var data = node.getStaffTaskViewData(context);
         assertEquals("Freizugebender Inhalt", data.getLiteral("approvalValue"));
         assertEquals("<p>Schon geprüft</p>", data.getLiteral("approvalRemark"));
+    }
+
+    @Test
+    void getAutoSavedStaffTaskViewData_RebuildsNestedPlainDraftRowsWithoutWrappingBusinessObjects() throws Exception {
+        var name = new TextInputElement();
+        name.setId("name");
+        var detail = new TextInputElement();
+        detail.setId("detail");
+        var details = new ReplicatingContainerLayoutElement();
+        details.setId("details");
+        details.setChildren(List.of(detail));
+        var people = new ReplicatingContainerLayoutElement();
+        people.setId("people");
+        people.setChildren(List.of(name, details));
+        var configuration = dataModeConfiguration();
+        ((GroupLayoutElement) configuration.getLiteral("dataContent")).setChildren(List.of(people));
+
+        var businessObject = Map.of("type", "Variable", "values", Map.of("name", "ordinary data"));
+        var detailValues = new java.util.LinkedHashMap<String, Object>();
+        detailValues.put("detail", null);
+        var plainDraft = Map.<String, Object>of(
+                "people", List.of(Map.of("id", "person-1", "values", Map.of(
+                        "name", "Ada",
+                        "details", List.of(Map.of("id", "detail-1", "values", detailValues))
+                ))),
+                "businessObject", businessObject,
+                "approvalRemark", "Saved remark"
+        );
+        var context = new ProcessNodeExecutionContextUIStaff(
+                logger(), processNode(configuration), processInstance("process-owner"),
+                task(77, plainDraft, Map.of(), Map.of()), null, user("staff-1"),
+                nodeConfiguration(configuration), currentProcessData(Map.of())
+        );
+
+        var restored = node.getAutoSavedStaffTaskViewData(context);
+        var row = assertInstanceOf(ReplicatingContainerLayoutElementValue.class,
+                ((List<?>) restored.getLiteral("people")).getFirst());
+        assertEquals("person-1", row.getId());
+        assertEquals("Ada", row.getValues().getLiteral("name"));
+        var nestedRow = assertInstanceOf(ReplicatingContainerLayoutElementValue.class,
+                ((List<?>) row.getValues().getLiteral("details")).getFirst());
+        assertEquals("detail-1", nestedRow.getId());
+        assertTrue(nestedRow.getValues().containsKey("detail"));
+        assertNull(nestedRow.getValues().getLiteral("detail"));
+        assertEquals(businessObject, restored.getLiteral("businessObject"));
+        assertEquals("Saved remark", restored.getLiteral("approvalRemark"));
+        assertEquals("Ada", ((Map<?, ?>) ((Map<?, ?>) ((List<?>) plainDraft.get("people")).getFirst())
+                .get("values")).get("name"));
     }
 
     @Test

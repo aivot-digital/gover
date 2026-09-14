@@ -22,16 +22,6 @@ public class AuthoredElementValues extends HashMap<String, AuthoredInputValue> i
     public static final String LITERAL_VALUE_PROPERTY = "value";
 
     /**
-     * Wraps one map level. Replicating-container rows require the element-tree-aware conversion in
-     * {@code AuthoredInputValueService} when their nested values are effective values.
-     */
-    public static AuthoredElementValues fromLiteralValues(Map<String, ?> values) {
-        var authoredValues = new AuthoredElementValues();
-        values.forEach(authoredValues::putLiteral);
-        return authoredValues;
-    }
-
-    /**
      * Maps a domain path to the persisted payload of its top-level literal input-mode envelope.
      */
     public static List<String> literalValueJsonPath(String... domainPath) {
