@@ -238,7 +238,7 @@ export function CommunicationProviderDetailsPageIndex() {
             confirmationText: provider.name,
             confirmButtonText: 'Ja, endgültig löschen',
             isDestructive: true,
-            children: <Typography>Möchten Sie „{provider.name}“ endgültig löschen?</Typography>,
+            children: <Typography>Möchten Sie diesen Kommunikationsanbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</Typography>,
         });
         if (!confirmed) return;
 
