@@ -1,6 +1,6 @@
 import {describe, expect, it, vi} from 'vitest';
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {ElementType} from '../../../data/element-type/element-type';
 import type {
     AuthoredElementValues,
@@ -11,7 +11,10 @@ import {
     ComputedElementValueSource,
     createDerivedRuntimeElementData,
 } from '../../../models/element-data';
-import {ElementDerivationContext} from './element-derivation-context';
+import {
+    ElementDerivationContext,
+    type ElementDerivationContextHandle,
+} from './element-derivation-context';
 
 vi.mock('../../../hooks/use-app-dispatch', () => ({
     useAppDispatch: () => vi.fn(),
@@ -119,6 +122,56 @@ vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => (
 }));
 
 describe('ElementDerivationContext', () => {
+    it('should replace imported authored values and derive them unconditionally', async () => {
+        const contextRef = React.createRef<ElementDerivationContextHandle>();
+        const onAuthoredElementValuesChange = vi.fn();
+        const onDerivedDataChange = vi.fn();
+        const importedDerivedData = createDerivedRuntimeElementData({
+            effectiveValues: {
+                field: 'derived import',
+            },
+            elementStates: {
+                field: {
+                    error: null,
+                    valueSource: ComputedElementValueSource.Derived,
+                },
+            },
+        });
+        const onDeriveOverride = vi.fn().mockResolvedValue(importedDerivedData);
+
+        render(
+            <ElementDerivationContext
+                ref={contextRef}
+                element={createRootElement()}
+                authoredElementValues={{field: 'previous'}}
+                derivedData={createDerivedRuntimeElementData({
+                    effectiveValues: {
+                        field: 'previous',
+                    },
+                    elementStates: {
+                        field: {
+                            error: 'Previous error',
+                        },
+                    },
+                })}
+                onAuthoredElementValuesChange={onAuthoredElementValuesChange}
+                onDerivedDataChange={onDerivedDataChange}
+                onDeriveOverride={onDeriveOverride}
+                deriveOnMount={false}
+            />,
+        );
+
+        await act(async () => {
+            await contextRef.current?.replaceAuthoredElementValues({field: 'imported'});
+        });
+
+        expect(onAuthoredElementValuesChange).toHaveBeenCalledWith({field: 'imported'});
+        expect(onDeriveOverride).toHaveBeenCalledOnce();
+        expect(onDeriveOverride).toHaveBeenCalledWith({field: 'imported'}, ['ALL']);
+        expect(onDerivedDataChange.mock.calls[0][0].elementStates.field?.error).toBeNull();
+        expect(onDerivedDataChange).toHaveBeenLastCalledWith(importedDerivedData);
+    });
+
     it('can use supplied derived data without deriving again on mount', async () => {
         const onDeriveOverride = vi.fn().mockResolvedValue(createDerivedRuntimeElementData());
 

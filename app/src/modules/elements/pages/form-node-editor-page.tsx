@@ -74,7 +74,10 @@ import {
     FormDetailsPageMoreMenu,
     FormDetailsPageMoreMenuItem,
 } from '../../forms/pages/details/components/form-details-page-more-menu';
-import {ElementDerivationContext} from '../components/element-derivation-context';
+import {
+    ElementDerivationContext,
+    type ElementDerivationContextHandle,
+} from '../components/element-derivation-context';
 import {useChangeBlocker} from '../../../hooks/use-change-blocker-2';
 import {AddElementDialog} from '../../../dialogs/add-element-dialog/add-element-dialog';
 import {ProcessEntity} from '../../process/entities/process-entity';
@@ -543,6 +546,7 @@ export function FormNodeEditorPage() {
 
     const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
     const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
+    const elementDerivationContextRef = useRef<ElementDerivationContextHandle>(null);
     const [disableVisibility, setDisableVisibility] = useState(false);
     const [disableValidation, setDisableValidation] = useState(false);
 
@@ -1366,6 +1370,7 @@ export function FormNodeEditorPage() {
                                                         }}
                                                     >
                                                         <ElementDerivationContext
+                                                            ref={elementDerivationContextRef}
                                                             element={formLayout}
                                                             authoredElementValues={authoredElementValues}
                                                             onAuthoredElementValuesChange={setAuthoredElementValues}
@@ -1486,38 +1491,7 @@ export function FormNodeEditorPage() {
                                     rootElement={formLayout!}
                                     elementData={authoredElementValues}
                                     onElementDataChange={(elementData) => {
-                                        /*dispatch(setLoadingMessage({
-                                            message: 'Element-Daten werden importiert',
-                                            blocking: true,
-                                            estimatedTime: 500,
-                                        }));
-                                         */
-
-                                        setAuthoredElementValues(elementData);
-                                        /*
-                                        withDelay(
-                                            formService
-                                                .deriveForm(
-                                                    loadedForm.form.slug,
-                                                    loadedForm.version.version,
-                                                    elementData,
-                                                    {
-                                                        skipErrorsFor: ['ALL'],
-                                                        skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
-                                                        skipValuesFor: [],
-                                                        skipOverridesFor: [],
-                                                    },
-                                                ), 500)
-                                            .then((state) => {
-                                                setAuthoredElementValues(elementData);
-                                                setDerivedData(state.elementData);
-                                                dispatch(addDerivationLogItems(state.logItems));
-                                            })
-                                            .finally(() => {
-                                                dispatch(setLoadingMessage(undefined));
-                                            });
-
-                                         */
+                                        void elementDerivationContextRef.current?.replaceAuthoredElementValues(elementData);
                                     }}
                                     derivedData={derivedData}
                                 />
