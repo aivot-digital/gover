@@ -1,5 +1,12 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Box, useTheme} from '@mui/material';
+
+type LogoStatus = 'loading' | 'failed' | 'present';
+
+interface ImageResult {
+    url: string;
+    status: Exclude<LogoStatus, 'loading'>;
+}
 
 interface LogoProps {
     updated?: string | null | undefined;
@@ -7,7 +14,7 @@ interface LogoProps {
     srcDark?: string | null;
     width?: number;
     height?: number;
-    onStatusChange?: (status: 'loading' | 'failed' | 'present') => void;
+    onStatusChange?: (status: LogoStatus) => void;
 }
 
 export function Logo(props: LogoProps) {
@@ -21,7 +28,8 @@ export function Logo(props: LogoProps) {
     } = props;
     const theme = useTheme();
 
-    const [imageStatus, setImageStatus] = useState<'loading' | 'failed' | 'present'>('loading');
+    const imageRef = useRef<HTMLImageElement>(null);
+    const [imageResult, setImageResult] = useState<ImageResult | null>(null);
 
     const url = useMemo(() => {
         const useSystemTheme = src === undefined && srcDark === undefined;
@@ -41,15 +49,21 @@ export function Logo(props: LogoProps) {
         return `${resolvedSrc}?t=${t}`;
     }, [src, srcDark, theme.palette.mode, updated]);
 
-    const resolvedImageStatus = url == null ? 'failed' : imageStatus;
+    const imageStatus: LogoStatus = url == null ?
+        'failed' :
+        imageResult?.url === url ? imageResult.status : 'loading';
 
     useEffect(() => {
-        onStatusChange?.(resolvedImageStatus);
-    }, [onStatusChange, resolvedImageStatus]);
+        onStatusChange?.(imageStatus);
+    }, [imageStatus, onStatusChange]);
 
     useEffect(() => {
-        if (url != null) {
-            setImageStatus('loading');
+        const image = imageRef.current;
+        if (url != null && image?.complete) {
+            setImageResult({
+                url,
+                status: image.naturalWidth > 0 ? 'present' : 'failed',
+            });
         }
     }, [url]);
 
@@ -83,6 +97,8 @@ export function Logo(props: LogoProps) {
             }
 
             <img
+                key={url}
+                ref={imageRef}
                 src={url}
                 alt={'Logo ' + AppConfig.providerName}
                 style={{
@@ -91,10 +107,10 @@ export function Logo(props: LogoProps) {
                     maxHeight: height ?? 100,
                 }}
                 onLoad={() => {
-                    setImageStatus('present');
+                    setImageResult({url, status: 'present'});
                 }}
                 onError={() => {
-                    setImageStatus('failed');
+                    setImageResult({url, status: 'failed'});
                 }}
             />
         </Box>

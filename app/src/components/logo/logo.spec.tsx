@@ -1,7 +1,7 @@
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material';
-import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {Logo} from './logo';
 
 describe('Logo', () => {
@@ -16,6 +16,7 @@ describe('Logo', () => {
     });
 
     afterEach(() => {
+        vi.restoreAllMocks();
         AppConfig.logoUrl = originalLogoUrl;
         AppConfig.logoUrlDark = originalLogoUrlDark;
     });
@@ -42,5 +43,30 @@ describe('Logo', () => {
         );
 
         expect(screen.getByRole('img')).toHaveAttribute('src', '/theme-light.svg');
+    });
+
+    it('reports an already loaded logo as present when its URL is supplied after mounting', async () => {
+        vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true);
+        vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(200);
+        const onStatusChange = vi.fn();
+        const {rerender} = render(
+            <Logo
+                src={null}
+                srcDark={null}
+                onStatusChange={onStatusChange}
+            />,
+        );
+
+        rerender(
+            <Logo
+                src="/theme-light.svg"
+                srcDark={null}
+                onStatusChange={onStatusChange}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(onStatusChange).toHaveBeenLastCalledWith('present');
+        });
     });
 });

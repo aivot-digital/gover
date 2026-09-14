@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {
     Box,
     Container,
@@ -62,15 +62,15 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
 
     const hasManualLineBreaks = formTitle.includes('\n');
 
-    const [logoStatus, setLogoStatus] = useState<'loading' | 'failed' | 'present'>('loading');
+    const [visibleLogoUrl, setVisibleLogoUrl] = useState<string | null>(null);
 
     const resolvedLogoUrl = theme.palette.mode === 'dark' ? logoUrlDark ?? logoUrl : logoUrl;
 
-    useEffect(() => {
-        setLogoStatus(resolvedLogoUrl == null ? 'failed' : 'loading');
+    const handleLogoStatusChange = useCallback((status: 'loading' | 'failed' | 'present') => {
+        setVisibleLogoUrl(status === 'present' ? resolvedLogoUrl : null);
     }, [resolvedLogoUrl]);
 
-    const hasVisibleLogo = resolvedLogoUrl != null && logoStatus === 'present';
+    const hasVisibleLogo = resolvedLogoUrl != null && visibleLogoUrl === resolvedLogoUrl;
 
     return (
         <Box
@@ -115,7 +115,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                                     srcDark={logoUrlDark}
                                     width={200}
                                     height={100}
-                                    onStatusChange={setLogoStatus}
+                                    onStatusChange={handleLogoStatusChange}
                                 />
                             }
 
