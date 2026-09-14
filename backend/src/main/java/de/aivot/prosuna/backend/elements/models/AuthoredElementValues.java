@@ -2,17 +2,20 @@ package de.aivot.prosuna.backend.elements.models;
 
 import de.aivot.prosuna.backend.elements.models.input.AuthoredInputValue;
 import de.aivot.prosuna.backend.elements.models.input.LiteralAuthoredInputValue;
+import de.aivot.prosuna.backend.elements.models.input.LowCodeAuthoredInputValue;
+import de.aivot.prosuna.backend.elements.models.input.NoCodeAuthoredInputValue;
+import de.aivot.prosuna.backend.elements.models.input.VariableAuthoredInputValue;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.nocode.models.NoCodeOperand;
+import de.aivot.prosuna.backend.utils.MapUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Values persisted or transported for an authored element structure. Every entry has an explicit input-mode envelope;
@@ -60,97 +63,38 @@ public class AuthoredElementValues extends HashMap<String, AuthoredInputValue> i
     }
 
     @Override
+    @Nonnull
     public AuthoredElementValues clone() {
         var clone = (AuthoredElementValues) super.clone();
         for (var entry : entrySet()) {
-            clone.put(entry.getKey(), cloneValue(entry.getValue()));
+            clone.put(entry.getKey(), copyInputValue(entry.getValue()));
         }
         return clone;
     }
 
-    private static AuthoredInputValue cloneValue(AuthoredInputValue value) {
-        if (value instanceof LiteralAuthoredInputValue literal) {
-            return new LiteralAuthoredInputValue(cloneLiteralValue(literal.value()));
-        }
-
-        return value;
+    @Nonnull
+    private static AuthoredInputValue copyInputValue(@Nonnull AuthoredInputValue value) {
+        return switch (value) {
+            case LiteralAuthoredInputValue literal -> new LiteralAuthoredInputValue(copyValue(literal.value()));
+            case NoCodeAuthoredInputValue noCode -> new NoCodeAuthoredInputValue(noCode.operand().copy(AuthoredElementValues::copyValue));
+            // These records contain only immutable strings, enums and references composed of those types.
+            case VariableAuthoredInputValue variable -> variable;
+            case LowCodeAuthoredInputValue lowCode -> lowCode;
+        };
     }
 
-    private static Object cloneLiteralValue(Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        if (value instanceof AuthoredElementValues authoredElementValues) {
-            return authoredElementValues.clone();
-        }
-
-        if (value instanceof Map<?, ?> map) {
-            var clone = new LinkedHashMap<Object, Object>();
-            for (var entry : map.entrySet()) {
-                clone.put(cloneLiteralValue(entry.getKey()), cloneLiteralValue(entry.getValue()));
-            }
-            return clone;
-        }
-
-        if (value instanceof List<?> list) {
-            var clone = new ArrayList<>(list.size());
-            for (var item : list) {
-                clone.add(cloneLiteralValue(item));
-            }
-            return clone;
-        }
-
-        if (value instanceof Set<?> set) {
-            var clone = new LinkedHashSet<>();
-            for (var item : set) {
-                clone.add(cloneLiteralValue(item));
-            }
-            return clone;
-        }
-
-        if (value instanceof Collection<?> collection) {
-            var clone = new ArrayList<>(collection.size());
-            for (var item : collection) {
-                clone.add(cloneLiteralValue(item));
-            }
-            return clone;
-        }
-
-        if (value.getClass().isArray()) {
-            return cloneArray(value);
-        }
-
-        return value;
-    }
-
-    private static Object cloneArray(Object value) {
-        var length = Array.getLength(value);
-        var componentType = value.getClass().getComponentType();
-
-        if (componentType.isPrimitive()) {
-            var clone = Array.newInstance(componentType, length);
-            for (var i = 0; i < length; i++) {
-                Array.set(clone, i, Array.get(value, i));
-            }
-            return clone;
-        }
-
-        var clonedItems = new Object[length];
-        var canPreserveComponentType = true;
-
-        for (var i = 0; i < length; i++) {
-            var clonedItem = cloneLiteralValue(Array.get(value, i));
-            clonedItems[i] = clonedItem;
-            if (clonedItem != null && !componentType.isInstance(clonedItem)) {
-                canPreserveComponentType = false;
-            }
-        }
-
-        var clone = Array.newInstance(canPreserveComponentType ? componentType : Object.class, length);
-        for (var i = 0; i < length; i++) {
-            Array.set(clone, i, clonedItems[i]);
-        }
-        return clone;
+    @Nullable
+    private static Object copyValue(@Nullable Object value) {
+        // Handle typed containers before MapUtils turns maps into generic maps. The hook is applied
+        // at every depth, including operands and authored rows nested in literal collections.
+        return MapUtils.deepCopyValue(value, item -> switch (item) {
+            case AuthoredElementValues values -> values.clone();
+            case AuthoredInputValue input -> copyInputValue(input);
+            case NoCodeOperand operand -> operand.copy(AuthoredElementValues::copyValue);
+            case ReplicatingContainerLayoutElementValue row -> new ReplicatingContainerLayoutElementValue()
+                    .setId(row.getId())
+                    .setValues(row.getValues() == null ? null : row.getValues().clone());
+            default -> item;
+        });
     }
 }

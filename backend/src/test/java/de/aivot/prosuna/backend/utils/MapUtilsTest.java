@@ -9,6 +9,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.ArrayDeque;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,6 +17,36 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MapUtilsTest {
+    @Test
+    void deepCopyAppliesSpecialHandlerAtEveryContainerDepth() {
+        var leaf = new StringBuilder("original");
+        var source = Map.of("nested", List.of(
+                Set.of(leaf), new ArrayDeque<>(List.of(leaf)), new StringBuilder[]{leaf}));
+        var copy = (Map<?, ?>) MapUtils.deepCopyValue(source,
+                value -> value instanceof StringBuilder text ? new StringBuilder(text) : value);
+        var items = (List<?>) copy.get("nested");
+        var copiedSetLeaf = (StringBuilder) ((Set<?>) items.get(0)).iterator().next();
+        var copiedQueueLeaf = (StringBuilder) ((List<?>) items.get(1)).getFirst();
+        var copiedArrayLeaf = ((StringBuilder[]) items.get(2))[0];
+        copiedSetLeaf.append("-set");
+        copiedQueueLeaf.append("-queue");
+        copiedArrayLeaf.append("-array");
+        assertEquals("original", leaf.toString());
+        assertEquals("original-set", copiedSetLeaf.toString());
+        assertEquals("original-queue", copiedQueueLeaf.toString());
+        assertEquals("original-array", copiedArrayLeaf.toString());
+    }
+
+    @Test
+    void deepCopyWidensArraysWhenSpecialCopiesHaveAnotherType() {
+        var original = new StringBuilder[]{new StringBuilder("value")};
+        var copy = (Object[]) MapUtils.deepCopyValue(original,
+                value -> value instanceof StringBuilder text ? text.toString() : value);
+        assertEquals(Object[].class, copy.getClass());
+        assertArrayEquals(new Object[]{"value"}, copy);
+        assertEquals(StringBuilder[].class, original.getClass());
+    }
+
     @Test
     void deepCopyShouldCopyNestedMapsAndCollections() {
         var nestedMap = new LinkedHashMap<String, Object>();
