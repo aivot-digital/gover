@@ -1,7 +1,8 @@
+import {InputMode, InputVariableSource} from '../../models/input-mode';
 import {useState} from 'react';
 import {Box, ToggleButton, ToggleButtonGroup, Typography} from '@mui/material';
 import {InputModeField, type InputModeValue, type InputModeVariable} from '../../components/input-mode-field/input-mode-field';
-import {InputModeDefinitions, InputModes, type InputMode} from '../../components/input-mode-selector';
+import {InputModeDefinitions, InputModes} from '../../components/input-mode-selector';
 import {NumberFieldComponent} from '../../components/number-field/number-field-component';
 import {ElementType} from '../../data/element-type/element-type';
 import {NoCodeDataType} from '../../data/no-code-data-type';
@@ -12,9 +13,9 @@ type ComparisonValues = Record<InputMode, InputModeValue<number>>;
 
 function createComparisonValues(empty: boolean): ComparisonValues {
     return {
-        Literal: {type: 'Literal', value: empty ? null : 13},
-        Variable: {type: 'Variable', reference: {source: 'ProcessData', path: empty ? '' : 'warenkorb.positionen.anzahl'}},
-        NoCode: {type: 'NoCode', operand: empty ? {type: 'NoCodeStaticValue', value: null} : {
+        Literal: {type: InputMode.Literal, value: empty ? null : 13},
+        Variable: {type: InputMode.Variable, reference: {source: InputVariableSource.ProcessData, path: empty ? '' : 'warenkorb.positionen.anzahl'}},
+        NoCode: {type: InputMode.NoCode, operand: empty ? {type: 'NoCodeStaticValue', value: null} : {
             type: 'NoCodeExpression',
             operatorIdentifier: 'add',
             operands: [
@@ -22,7 +23,7 @@ function createComparisonValues(empty: boolean): ComparisonValues {
                 {type: 'NoCodeStaticValue', value: '1'},
             ],
         }},
-        LowCode: {type: 'LowCode', code: empty ? '' : [
+        LowCode: {type: InputMode.LowCode, code: empty ? '' : [
             'const anzahl = $.warenkorb?.positionen?.anzahl ?? 0;',
             'const standardInkrement = $.konfiguration?.standardInkrement ?? 1;',
             '',

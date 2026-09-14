@@ -1,3 +1,4 @@
+import {InputMode} from '../../models/input-mode';
 import {Box, Button, Dialog, DialogActions, DialogContent, Divider, Grid, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -74,7 +75,7 @@ function buildPrefillValues(elementData: AuthoredElementValues): Record<string, 
 
     for (const key of Object.keys(elementData)) {
         const dataObject = elementData[key];
-        if (dataObject?.type === 'Literal' && dataObject.value != null) {
+        if (dataObject?.type === InputMode.Literal && dataObject.value != null) {
             inputs[key] = dataObject.value;
         }
     }

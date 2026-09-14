@@ -1,3 +1,4 @@
+import {InputMode} from '../models/input-mode';
 import {AnyElement} from '../models/elements/any-element';
 import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {ElementType} from '../data/element-type/element-type';
@@ -95,7 +96,7 @@ export function prosunaSchemaToYup(elem: AnyElement, states: ComputedElementStat
 }
 
 function authoredInputValueToYup(element: AnyInputElement, literalValueSchema: Schema): Schema {
-    const allowedModes = element.inputModePolicy?.allowedModes ?? ['Literal'];
+    const allowedModes = element.inputModePolicy?.allowedModes ?? [InputMode.Literal];
     const requiredMessage = `${element.label || 'Dieses Feld'} ist ein Pflichtfeld.`;
 
     return yup.lazy((value: unknown) => {
@@ -121,13 +122,13 @@ function authoredInputValueToYup(element: AnyInputElement, literalValueSchema: S
             );
         }
 
-        if (value.type !== 'Literal') {
+        if (value.type !== InputMode.Literal) {
             // Dynamic payloads are structurally validated by the backend against the trusted element policy.
             return yup.mixed().defined();
         }
 
         return yup.object({
-            type: yup.string().oneOf(['Literal']).required(),
+            type: yup.string().oneOf([InputMode.Literal]).required(),
             value: literalValueSchema,
         });
     }) as unknown as Schema;

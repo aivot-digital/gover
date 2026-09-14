@@ -3,14 +3,9 @@ import {render, screen, within} from '@testing-library/react';
 import {ThemeProvider} from '@mui/material';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
-import {
-    InputModeField,
-    type InputMode,
-    type InputModeValue,
-    type InputModeVariable,
-} from './input-mode-field';
+import {InputModeField, type InputModeValue, type InputModeVariable} from './input-mode-field';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {type InputVariableSource} from '../../models/input-mode';
+import {InputMode, InputVariableSource} from '../../models/input-mode';
 import {BaseTheme} from '../../theming/base-theme';
 import {createDefaultAppTheme} from '../../theming/themes';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
@@ -35,26 +30,26 @@ const variables: InputModeVariable[] = [
         label: 'Anzahl der Positionen',
         path: 'warenkorb.anzahl',
         origin: 'Warenkorb laden',
-        source: 'ProcessData',
+        source: InputVariableSource.ProcessData,
     },
     {
         id: 'total',
         label: 'Gesamtbetrag',
         path: 'warenkorb.gesamtbetrag',
         origin: 'Warenkorb laden',
-        source: 'ProcessData',
+        source: InputVariableSource.ProcessData,
     },
     {
         id: 'case-number',
         label: 'Aktenzeichen des Vorgangs',
         path: 'caseNumber',
         origin: 'Vorgang',
-        source: 'ProtectedProcessData',
+        source: InputVariableSource.ProtectedProcessData,
     },
 ];
 
 function createInitialValue(): InputModeValue<string> {
-    return {type: 'Literal', value: '42'};
+    return {type: InputMode.Literal, value: '42'};
 }
 
 function Harness(props: {
@@ -141,7 +136,7 @@ describe('InputModeField', () => {
     it.each(['light', 'dark'] as const)('distinguishes the script preview from its label in %s mode', (mode) => {
         const theme = createDefaultAppTheme(BaseTheme, mode);
         render(<ThemeProvider theme={theme}>
-            <Harness initialValue={{type: 'LowCode', code: '\n  4 + 9\n'}}/>
+            <Harness initialValue={{type: InputMode.LowCode, code: '\n  4 + 9\n'}}/>
         </ThemeProvider>);
 
         const summary = screen.getByRole('button', {name: /Inkrement: Skript definiert/});
@@ -156,7 +151,7 @@ describe('InputModeField', () => {
     it.each(['light', 'dark'] as const)('shows a humanized no-code preview on a secondary line in %s mode', (mode) => {
         const theme = createDefaultAppTheme(BaseTheme, mode);
         render(<ThemeProvider theme={theme}>
-            <Harness initialValue={{type: 'NoCode', operand: {type: 'NoCodeProcessDataReference', path: 'warenkorb.anzahl'}}}/>
+            <Harness initialValue={{type: InputMode.NoCode, operand: {type: 'NoCodeProcessDataReference', path: 'warenkorb.anzahl'}}}/>
         </ThemeProvider>);
 
         const summary = screen.getByRole('button', {name: /Inkrement: Ausdruck definiert/});
@@ -168,7 +163,7 @@ describe('InputModeField', () => {
     });
 
     it('does not repeat a custom reference when no suggestion supplies a label', () => {
-        render(<Harness initialValue={{type: 'Variable', reference: {source: 'ProcessData', path: 'neuerWert'}}}/>);
+        render(<Harness initialValue={{type: InputMode.Variable, reference: {source: InputVariableSource.ProcessData, path: 'neuerWert'}}}/>);
 
         const summary = screen.getByRole('button', {name: /Inkrement: \$\.neuerWert/});
         expect(within(summary).getAllByText('$.neuerWert')).toHaveLength(1);
@@ -177,7 +172,7 @@ describe('InputModeField', () => {
 
     it.each(['disabled', 'readOnly'] as const)('keeps %s scripts available for inspection', async (state) => {
         const user = userEvent.setup();
-        render(<Harness {...{[state]: true}} initialValue={{type: 'LowCode', code: '4 + 9'}}/>);
+        render(<Harness {...{[state]: true}} initialValue={{type: InputMode.LowCode, code: '4 + 9'}}/>);
 
         const summary = screen.getByRole('button', {name: /Inkrement: Skript definiert. Skript ansehen/});
         expect(summary).toBeEnabled();
@@ -192,7 +187,7 @@ describe('InputModeField', () => {
     });
 
     it('prevents opening a script while the field is busy', () => {
-        render(<Harness busy initialValue={{type: 'LowCode', code: '4 + 9'}}/>);
+        render(<Harness busy initialValue={{type: InputMode.LowCode, code: '4 + 9'}}/>);
 
         expect(screen.getByRole('button', {name: /Inkrement: Skript definiert/})).toBeDisabled();
     });
@@ -280,8 +275,8 @@ describe('InputModeField', () => {
         const user = userEvent.setup();
         render(<Harness
             onInsertVariable={vi.fn()}
-            allowedVariableSources={['ProcessData']}
-            dynamicTextVariableSources={['ProtectedProcessData']}
+            allowedVariableSources={[InputVariableSource.ProcessData]}
+            dynamicTextVariableSources={[InputVariableSource.ProtectedProcessData]}
         />);
 
         await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
@@ -333,7 +328,7 @@ describe('InputModeField', () => {
     });
 
     it('omits the selector when the policy exposes only one mode', () => {
-        render(<Harness allowedModes={['Literal']}/>);
+        render(<Harness allowedModes={[InputMode.Literal]}/>);
 
         expect(screen.queryByRole('button', {name: /Eingabemodus für Inkrement ändern/})).not.toBeInTheDocument();
         expect(screen.getByRole('textbox', {name: /^Inkrement/})).toBeInTheDocument();
@@ -345,7 +340,7 @@ describe('InputModeField', () => {
         render(<InputModeField
             label="Inkrement"
             variables={[]}
-            value={{type: 'Literal', value: '1'}}
+            value={{type: InputMode.Literal, value: '1'}}
             onChange={onChange}
             renderLiteral={({onChange: changeLiteral}) => (
                 <button onClick={() => changeLiteral('2', ['dependency'])}>Ändern</button>
@@ -354,7 +349,7 @@ describe('InputModeField', () => {
 
         await user.click(screen.getByRole('button', {name: 'Ändern'}));
 
-        expect(onChange).toHaveBeenCalledWith({type: 'Literal', value: '2'}, ['dependency']);
+        expect(onChange).toHaveBeenCalledWith({type: InputMode.Literal, value: '2'}, ['dependency']);
     });
 
     it('uses the first policy-approved source when entering variable mode', async () => {
@@ -363,9 +358,9 @@ describe('InputModeField', () => {
         render(<InputModeField
             label="Inkrement"
             variables={variables}
-            allowedModes={['Literal', 'Variable']}
-            allowedVariableSources={['ProtectedProcessData']}
-            value={{type: 'Literal', value: '1'}}
+            allowedModes={[InputMode.Literal, InputMode.Variable]}
+            allowedVariableSources={[InputVariableSource.ProtectedProcessData]}
+            value={{type: InputMode.Literal, value: '1'}}
             onChange={onChange}
             renderLiteral={({value, fieldProps}) => <TextFieldComponent
                 {...fieldProps}
@@ -377,8 +372,8 @@ describe('InputModeField', () => {
         await selectMode(user, 'Variable');
 
         expect(onChange).toHaveBeenCalledWith({
-            type: 'Variable',
-            reference: {source: 'ProtectedProcessData', path: ''},
+            type: InputMode.Variable,
+            reference: {source: InputVariableSource.ProtectedProcessData, path: ''},
         });
     });
 });

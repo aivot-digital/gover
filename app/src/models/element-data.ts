@@ -3,6 +3,7 @@ import {isAnyElementWithChildren} from './elements/any-element-with-children';
 import {isReplicatingContainerLayout} from './elements/form/layout/replicating-container-layout';
 import {
     type AuthoredInputValue,
+    InputMode,
     isAuthoredInputValue,
 } from './input-mode';
 
@@ -17,12 +18,12 @@ export interface ReplicatingContainerElementValue {
 
 export type ReplicatingContainerElementValues = ReplicatingContainerElementValue[];
 
-export function literalAuthoredValue<T>(value: T | null): Extract<AuthoredInputValue<T>, {type: 'Literal'}> {
-    return {type: 'Literal', value};
+export function literalAuthoredValue<T>(value: T | null): Extract<AuthoredInputValue<T>, {type: InputMode.Literal}> {
+    return {type: InputMode.Literal, value};
 }
 
 export function getLiteralAuthoredValue<T = unknown>(value: AuthoredInputValue<unknown> | null | undefined): T | null | undefined {
-    return value?.type === 'Literal' ? value.value as T | null : undefined;
+    return value?.type === InputMode.Literal ? value.value as T | null : undefined;
 }
 
 export function getLiteralElementValue<T = unknown>(values: AuthoredElementValues, key: string): T | null | undefined {
@@ -38,7 +39,7 @@ export function toLiteralAuthoredElementValues(values: Record<string, unknown>):
 export function toLiteralElementValues(values: AuthoredElementValues): Record<string, unknown> {
     return Object.fromEntries(
         Object.entries(values).map(([key, value]) => {
-            if (value?.type !== 'Literal') {
+            if (value?.type !== InputMode.Literal) {
                 throw new Error(`Cannot read dynamic authored value '${key}' without derivation.`);
             }
             return [key, value.value];

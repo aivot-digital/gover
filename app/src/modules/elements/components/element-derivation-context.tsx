@@ -1,3 +1,4 @@
+import {InputMode} from '../../../models/input-mode';
 import {
     applyComputedErrors,
     AuthoredElementValues,
@@ -477,7 +478,7 @@ function patchComputedElementStatesWithAuthoredValues(
                 valueSource: ComputedElementValueSource.Authored,
             },
         };
-        const optimisticEffectiveValue = authoredValue?.type === 'Literal' ? authoredValue.value : null;
+        const optimisticEffectiveValue = authoredValue?.type === InputMode.Literal ? authoredValue.value : null;
         effectiveValues[currentElement.id] = optimisticEffectiveValue;
 
         if (isReplicatingContainerLayout(currentElement)) {

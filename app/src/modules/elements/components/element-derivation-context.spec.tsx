@@ -1,3 +1,4 @@
+import {InputMode, InputVariableSource} from '../../../models/input-mode';
 import {describe, expect, it, vi} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
@@ -32,8 +33,8 @@ vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => (
                 type="button"
                 onClick={() => props.onAuthoredElementValuesChange({
                     field: {
-                        type: 'Variable',
-                        reference: {source: 'ProcessData', path: 'person.name'},
+                        type: InputMode.Variable,
+                        reference: {source: InputVariableSource.ProcessData, path: 'person.name'},
                     },
                 }, ['field'])}
             >
@@ -172,8 +173,8 @@ describe('ElementDerivationContext', () => {
         const onDerivedDataChange = vi.fn();
         const rootElement = createRootElement();
         rootElement.children[0].inputModePolicy = {
-            allowedModes: ['Literal', 'Variable'],
-            allowedVariableSources: ['ProcessData'],
+            allowedModes: [InputMode.Literal, InputMode.Variable],
+            allowedVariableSources: [InputVariableSource.ProcessData],
         };
 
         render(
@@ -192,8 +193,8 @@ describe('ElementDerivationContext', () => {
 
         expect(onAuthoredElementValuesChange).toHaveBeenCalledWith({
             field: {
-                type: 'Variable',
-                reference: {source: 'ProcessData', path: 'person.name'},
+                type: InputMode.Variable,
+                reference: {source: InputVariableSource.ProcessData, path: 'person.name'},
             },
         });
         expect(screen.getByTestId('field-effective-value')).toHaveTextContent('null');

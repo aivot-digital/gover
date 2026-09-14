@@ -1,3 +1,4 @@
+import {InputVariableSource} from '../../models/input-mode';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
@@ -15,7 +16,7 @@ vi.mock('../../hooks/use-api', () => {
 const variables = [{
     label: 'Anzahl der Positionen',
     path: 'warenkorb.positionen.anzahl',
-    source: 'ProcessData' as const,
+    source: InputVariableSource.ProcessData as const,
     origin: 'Warenkorb laden',
 }];
 

@@ -15,7 +15,7 @@ import TextFields from '@aivot/mui-material-symbols-400-n25-outlined/TextFields'
 import {FormFieldTokens} from '../../theming/form-field-tokens';
 import {mergeAriaIds} from '../form-field';
 import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
-import {type InputMode} from '../../models/input-mode';
+import {InputMode} from '../../models/input-mode';
 
 export type {InputMode} from '../../models/input-mode';
 
@@ -43,7 +43,7 @@ export const InputModeDefinitions: Record<InputMode, InputModeDefinition> = {
     },
 };
 
-export const InputModes: InputMode[] = ['Literal', 'Variable', 'NoCode', 'LowCode'];
+export const InputModes: InputMode[] = [InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode];
 
 function renderModeIcon(mode: InputMode) {
     const iconProps = {
@@ -52,13 +52,13 @@ function renderModeIcon(mode: InputMode) {
     };
 
     switch (mode) {
-        case 'Variable':
+        case InputMode.Variable:
             return <DataObject {...iconProps}/>;
-        case 'NoCode':
+        case InputMode.NoCode:
             return <NoCodeIcon {...iconProps}/>;
-        case 'LowCode':
+        case InputMode.LowCode:
             return <Code {...iconProps}/>;
-        case 'Literal':
+        case InputMode.Literal:
         default:
             return <TextFields {...iconProps}/>;
     }

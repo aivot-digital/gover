@@ -1,3 +1,4 @@
+import {InputMode, InputVariableSource} from '../../models/input-mode';
 import React, {ComponentType, useCallback, useMemo, useRef, useState} from 'react';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
@@ -284,7 +285,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
                     required={resolvedInputElement.required ?? undefined}
                     readOnly={baseIsBusy || disabled}
                     busy={baseIsDeriving && isBusy}
-                    allowedModes={inputModePolicy?.allowedModes ?? ['Literal']}
+                    allowedModes={inputModePolicy?.allowedModes ?? [InputMode.Literal]}
                     allowedVariableSources={inputModePolicy?.allowedVariableSources}
                     dynamicTextVariableSources={dynamicTextPolicy?.variableSuggestionSources}
                     variables={inputModeVariables ?? []}
@@ -318,7 +319,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
 function isUnchangedAuthoredValue(previous: AuthoredInputValue<unknown> | undefined, next: AuthoredInputValue<unknown>): boolean {
     // Controls create a new Literal wrapper even on an unchanged blur. Compare payload identity as before the
     // wrapper conversion; deep comparison would incorrectly consider different File instances equal.
-    return previous === next || previous?.type === 'Literal' && next.type === 'Literal' && previous.value === next.value;
+    return previous === next || previous?.type === InputMode.Literal && next.type === InputMode.Literal && previous.value === next.value;
 }
 
 function resolveNoCodeReturnType(elementType: ElementType): NoCodeDataType {
@@ -337,20 +338,20 @@ function resolveInitialInputModeValue(
         return authoredValue;
     }
 
-    switch (policy.defaultMode ?? 'Literal') {
-        case 'Variable':
+    switch (policy.defaultMode ?? InputMode.Literal) {
+        case InputMode.Variable:
             return {
-                type: 'Variable',
-                reference: {source: policy.allowedVariableSources?.[0] ?? 'ProcessData', path: ''},
+                type: InputMode.Variable,
+                reference: {source: policy.allowedVariableSources?.[0] ?? InputVariableSource.ProcessData, path: ''},
             } satisfies AuthoredInputValue<unknown>;
-        case 'NoCode':
+        case InputMode.NoCode:
             return {
-                type: 'NoCode',
+                type: InputMode.NoCode,
                 operand: {type: 'NoCodeStaticValue', value: null},
             } satisfies AuthoredInputValue<unknown>;
-        case 'LowCode':
-            return {type: 'LowCode', code: ''} satisfies AuthoredInputValue<unknown>;
-        case 'Literal':
+        case InputMode.LowCode:
+            return {type: InputMode.LowCode, code: ''} satisfies AuthoredInputValue<unknown>;
+        case InputMode.Literal:
             return literalAuthoredValue(effectiveValue);
     }
 }

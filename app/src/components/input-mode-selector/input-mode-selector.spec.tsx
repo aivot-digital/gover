@@ -1,3 +1,4 @@
+import {InputMode} from '../../models/input-mode';
 import {describe, expect, it, vi} from 'vitest';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {DynamicTextIndicator, DynamicTextIndicatorLabel} from './dynamic-text-indicator';
@@ -11,7 +12,7 @@ describe('InputModeSelector', () => {
             <InputModeSelector
                 fieldLabel="Bezeichnung"
                 controlledFieldId="field-name"
-                value="Literal"
+                value={InputMode.Literal}
                 onChange={onChange}
             />,
         );
@@ -33,8 +34,8 @@ describe('InputModeSelector', () => {
         render(
             <InputModeSelector
                 fieldLabel="Bezeichnung"
-                value="Literal"
-                allowedModes={['Literal']}
+                value={InputMode.Literal}
+                allowedModes={[InputMode.Literal]}
                 onChange={vi.fn()}
             />,
         );

@@ -2,7 +2,7 @@ import {describe, expect, it} from 'vitest';
 import {ElementType} from '../../../data/element-type/element-type';
 import type {GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {getLiteralElementValue, literalAuthoredValue, type ReplicatingContainerElementValues} from '../../../models/element-data';
-import type {AuthoredInputValue} from '../../../models/input-mode';
+import {type AuthoredInputValue, InputMode, InputVariableSource} from '../../../models/input-mode';
 import type {DataObjectItem} from '../models/data-object-item';
 import {fromDataObjectItemDraft, toDataObjectItemDraft} from './data-object-editor-values';
 
@@ -64,9 +64,9 @@ describe('Data-object editor boundary', () => {
     });
 
     it.each<AuthoredInputValue<unknown>>([
-        {type: 'Variable', reference: {source: 'ProcessData', path: 'name'}},
-        {type: 'LowCode', code: 'return 1;'},
-        {type: 'NoCode', operand: {type: 'NoCodeStaticValue', value: '1'}},
+        {type: InputMode.Variable, reference: {source: InputVariableSource.ProcessData, path: 'name'}},
+        {type: InputMode.LowCode, code: 'return 1;'},
+        {type: InputMode.NoCode, operand: {type: 'NoCodeStaticValue', value: '1'}},
     ])('rejects mode $type at both top-level and nested element positions', (value) => {
         const top = toDataObjectItemDraft(item({}), schema);
         top.data.name = value;

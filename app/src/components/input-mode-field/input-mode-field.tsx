@@ -36,9 +36,9 @@ import {
     type AuthoredInputValue,
     getInputVariableKey,
     getInputVariableReference,
-    type InputMode,
+    InputMode,
     type InputVariableReference,
-    type InputVariableSource,
+    InputVariableSource,
     type InputVariableSuggestion,
     normalizeAuthoredInputValue,
 } from '../../models/input-mode';
@@ -129,37 +129,37 @@ export function getInputModeVariableCategoryLabel(source: InputVariableSource): 
 }
 
 interface ModeDrafts<T> {
-    Literal: T | null;
-    Variable: InputVariableReference;
-    NoCode: NoCodeOperand;
-    LowCode: string;
+    [InputMode.Literal]: T | null;
+    [InputMode.Variable]: InputVariableReference;
+    [InputMode.NoCode]: NoCodeOperand;
+    [InputMode.LowCode]: string;
 }
 
 const EMPTY_NO_CODE: NoCodeOperand = {type: 'NoCodeStaticValue', value: null};
 
 function emptyVariableReference(allowedSources: InputVariableSource[]): InputVariableReference {
-    return {source: allowedSources[0] ?? 'ProcessData', path: ''};
+    return {source: allowedSources[0] ?? InputVariableSource.ProcessData, path: ''};
 }
 
 function createModeDrafts<T>(value: AuthoredInputValue<T>, allowedSources: InputVariableSource[]): ModeDrafts<T> {
     return {
-        Literal: value.type === 'Literal' ? value.value : null,
-        Variable: value.type === 'Variable' ? value.reference : emptyVariableReference(allowedSources),
-        NoCode: value.type === 'NoCode' ? value.operand : EMPTY_NO_CODE,
-        LowCode: value.type === 'LowCode' ? value.code : '',
+        Literal: value.type === InputMode.Literal ? value.value : null,
+        Variable: value.type === InputMode.Variable ? value.reference : emptyVariableReference(allowedSources),
+        NoCode: value.type === InputMode.NoCode ? value.operand : EMPTY_NO_CODE,
+        LowCode: value.type === InputMode.LowCode ? value.code : '',
     };
 }
 
 function valueForMode<T>(mode: InputMode, drafts: ModeDrafts<T>): AuthoredInputValue<T> {
     switch (mode) {
-        case 'Variable':
-            return {type: 'Variable', reference: drafts.Variable};
-        case 'NoCode':
-            return {type: 'NoCode', operand: drafts.NoCode};
-        case 'LowCode':
-            return {type: 'LowCode', code: drafts.LowCode};
-        case 'Literal':
-            return {type: 'Literal', value: drafts.Literal};
+        case InputMode.Variable:
+            return {type: InputMode.Variable, reference: drafts.Variable};
+        case InputMode.NoCode:
+            return {type: InputMode.NoCode, operand: drafts.NoCode};
+        case InputMode.LowCode:
+            return {type: InputMode.LowCode, code: drafts.LowCode};
+        case InputMode.Literal:
+            return {type: InputMode.Literal, value: drafts.Literal};
     }
 }
 
@@ -180,15 +180,15 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
     useEffect(() => {
         setDrafts((current) => ({
             ...current,
-            ...(value.type === 'Literal' ? {Literal: value.value} : {}),
-            ...(value.type === 'Variable' ? {Variable: value.reference} : {}),
-            ...(value.type === 'NoCode' ? {NoCode: value.operand} : {}),
-            ...(value.type === 'LowCode' ? {LowCode: value.code} : {}),
+            ...(value.type === InputMode.Literal ? {Literal: value.value} : {}),
+            ...(value.type === InputMode.Variable ? {Variable: value.reference} : {}),
+            ...(value.type === InputMode.NoCode ? {NoCode: value.operand} : {}),
+            ...(value.type === InputMode.LowCode ? {LowCode: value.code} : {}),
         }));
     }, [props.value]);
 
     const selectedVariable = useMemo(() => {
-        if (value.type !== 'Variable') return null;
+        if (value.type !== InputMode.Variable) return null;
         const key = getInputVariableKey(value.reference);
         return variables.find((variable) => getInputVariableKey(toVariableReference(variable)) === key) ?? null;
     }, [value, variables]);
@@ -212,7 +212,7 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
     const changeMode = (mode: InputMode) => {
         if (mode === value.type) return;
 
-        if (mode === 'Variable' && !allowedVariableSources.includes(drafts.Variable.source)) {
+        if (mode === InputMode.Variable && !allowedVariableSources.includes(drafts.Variable.source)) {
             const nextDrafts = {
                 ...drafts,
                 Variable: emptyVariableReference(allowedVariableSources),
@@ -226,7 +226,7 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
     };
 
     const renderModeContent = (control: FormFieldControlContext) => {
-        if (value.type === 'Variable') {
+        if (value.type === InputMode.Variable) {
             const hasReference = value.reference.path.length > 0;
             const reference = getInputVariableReference(value.reference);
             const variablePrimary = selectedVariable?.label ??
@@ -252,7 +252,7 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
             />;
         }
 
-        if (value.type === 'NoCode') {
+        if (value.type === InputMode.NoCode) {
             const hasExpression = !isNoCodeStaticValue(value.operand) || value.operand.value != null;
             const primary = hasExpression ? 'Ausdruck definiert' : 'Kein Ausdruck definiert';
             return <NoCodeSummaryField
@@ -271,7 +271,7 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
             />;
         }
 
-        if (value.type === 'LowCode') {
+        if (value.type === InputMode.LowCode) {
             const hasCode = value.code.trim().length > 0;
             const primary = hasCode ? 'Skript definiert' : 'Kein Skript definiert';
             return <SourceSummaryField
@@ -293,9 +293,9 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
     };
 
     const showsModeSelector = (props.allowedModes?.length ?? 4) > 1;
-    const labelAction = (onInsertVariable != null && value.type === 'Literal') || showsModeSelector
+    const labelAction = (onInsertVariable != null && value.type === InputMode.Literal) || showsModeSelector
         ? <Stack direction="row" spacing={0.5} sx={{alignItems: 'center'}}>
-            {onInsertVariable != null && value.type === 'Literal' && <DynamicTextIndicator/>}
+            {onInsertVariable != null && value.type === InputMode.Literal && <DynamicTextIndicator/>}
             {showsModeSelector && <InputModeSelector
                 fieldLabel={label}
                 controlledFieldId={controlId}
@@ -328,9 +328,9 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
         : allowedVariableSources;
 
     return <Box data-input-mode={value.type}>
-        {value.type === 'Literal' ? renderLiteral({
+        {value.type === InputMode.Literal ? renderLiteral({
             value: value.value,
-            onChange: (literal, triggeringElementIds) => updateDraft('Literal', literal, triggeringElementIds),
+            onChange: (literal, triggeringElementIds) => updateDraft(InputMode.Literal, literal, triggeringElementIds),
             variableInsertAction,
             fieldProps,
         }) : <FormField {...fieldProps}>{renderModeContent}</FormField>}
@@ -339,20 +339,20 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
             open={variablePickerPurpose != null}
             variables={variables}
             allowedSources={variablePickerSources}
-            selectedReference={variablePickerPurpose === 'mapping' && value.type === 'Variable' ? value.reference : null}
+            selectedReference={variablePickerPurpose === 'mapping' && value.type === InputMode.Variable ? value.reference : null}
             allowClear={variablePickerPurpose === 'mapping'}
             readOnly={editingDisabled}
             title="Variable referenzieren"
             onClose={() => setVariablePickerPurpose(null)}
             onClear={() => {
-                updateDraft('Variable', emptyVariableReference(allowedVariableSources));
+                updateDraft(InputMode.Variable, emptyVariableReference(allowedVariableSources));
                 setVariablePickerPurpose(null);
             }}
             onSelect={(reference, suggestion) => {
                 if (variablePickerPurpose === 'placeholder') {
                     onInsertVariable?.(suggestion ?? {...reference, label: getInputVariableReference(reference)});
                 } else {
-                    updateDraft('Variable', reference);
+                    updateDraft(InputMode.Variable, reference);
                 }
                 setVariablePickerPurpose(null);
             }}
@@ -367,7 +367,7 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
             readOnly={editingDisabled}
             onClose={() => setNoCodeEditorOpen(false)}
             onApply={(noCode) => {
-                updateDraft('NoCode', noCode);
+                updateDraft(InputMode.NoCode, noCode);
                 setNoCodeEditorOpen(false);
             }}
         />
@@ -379,7 +379,7 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
             readOnly={editingDisabled}
             onClose={() => setLowCodeEditorOpen(false)}
             onApply={(lowCode) => {
-                updateDraft('LowCode', lowCode);
+                updateDraft(InputMode.LowCode, lowCode);
                 setLowCodeEditorOpen(false);
             }}
         />
@@ -496,7 +496,7 @@ function VariablePickerDialog(props: VariablePickerDialogProps) {
     const [search, setSearch] = useState('');
     const [selectedSource, setSelectedSource] = useState<InputVariableSource | 'all'>('all');
     const [draftSelectedKey, setDraftSelectedKey] = useState<string | null>(null);
-    const [customSource, setCustomSource] = useState<InputVariableSource>('ProcessData');
+    const [customSource, setCustomSource] = useState<InputVariableSource>(InputVariableSource.ProcessData);
     const [customPath, setCustomPath] = useState('');
     const tabsId = useNormalizedReactId();
     const panelId = `${tabsId}-panel`;
@@ -749,7 +749,7 @@ function requiresNodeDataKey(reference: InputVariableReference): boolean {
 }
 
 function sourceRequiresNodeDataKey(source: InputVariableSource): boolean {
-    return source === 'ElementData' || source === 'ElementMetadata';
+    return source === InputVariableSource.ElementData || source === InputVariableSource.ElementMetadata;
 }
 
 function toCustomVariablePath(reference: InputVariableReference): string {

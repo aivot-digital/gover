@@ -1,3 +1,4 @@
+import {InputMode} from '../models/input-mode';
 import {
     AuthoredElementValues,
     ComputedElementState,
@@ -63,7 +64,7 @@ export function resolveValueForResolvedOverride(
     }
 
     if (hasAuthoredValue) {
-        return authoredValue?.type === 'Literal'
+        return authoredValue?.type === InputMode.Literal
             ? getLiteralAuthoredValue(authoredValue)
             : effectiveValue;
     }
@@ -460,7 +461,7 @@ export function mapAuthoredElementValues(
 
     // Structural mappers operate on literal payloads. Dynamic values have no editable payload at authoring time and
     // must remain untouched instead of being mistaken for an absent value.
-    if (currentAuthoredValue != null && currentAuthoredValue.type !== 'Literal') {
+    if (currentAuthoredValue != null && currentAuthoredValue.type !== InputMode.Literal) {
         return currentElementValues;
     }
 
@@ -471,7 +472,7 @@ export function mapAuthoredElementValues(
     if (mappedValue === undefined) {
         delete mappedElementValues[currentElement.id];
     } else {
-        mappedElementValues[currentElement.id] = {type: 'Literal', value: mappedValue};
+        mappedElementValues[currentElement.id] = {type: InputMode.Literal, value: mappedValue};
     }
 
     const nextCurrentValue = mappedValue === undefined ? currentValue : mappedValue;
@@ -497,7 +498,7 @@ export function mapAuthoredElementValues(
 
             mappedElementValues = {
                 ...mappedElementValues,
-                [currentElement.id]: {type: 'Literal', value: mappedChildValues},
+                [currentElement.id]: {type: InputMode.Literal, value: mappedChildValues},
             };
         }
 
@@ -553,7 +554,7 @@ export function filterAuthoredElementValues(
                 .filter((childValues): childValues is ReplicatingContainerElementValue => childValues != null);
 
             if (filteredChildValues.length > 0) {
-                filteredValues[currentElement.id] = {type: 'Literal', value: filteredChildValues};
+                filteredValues[currentElement.id] = {type: InputMode.Literal, value: filteredChildValues};
             } else {
                 delete filteredValues[currentElement.id];
             }

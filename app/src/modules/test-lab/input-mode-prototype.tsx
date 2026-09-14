@@ -1,3 +1,4 @@
+import {InputVariableSource, InputMode} from '../../models/input-mode';
 import React, {useRef, useState} from 'react';
 import {
     Box,
@@ -39,7 +40,7 @@ const VARIABLES: InputModeVariable[] = [
         label: 'Vorname der antragstellenden Person',
         path: 'antragsteller.vorname',
         origin: 'Antrag eingereicht',
-        source: 'ProcessData',
+        source: InputVariableSource.ProcessData,
         description: 'Aus dem Antragsformular',
     },
     {
@@ -47,7 +48,7 @@ const VARIABLES: InputModeVariable[] = [
         label: 'Nachname der antragstellenden Person',
         path: 'antragsteller.nachname',
         origin: 'Antrag eingereicht',
-        source: 'ProcessData',
+        source: InputVariableSource.ProcessData,
         description: 'Aus dem Antragsformular',
     },
     {
@@ -55,14 +56,14 @@ const VARIABLES: InputModeVariable[] = [
         label: 'Eingangsdatum',
         path: 'antrag.eingangsdatum',
         origin: 'Antrag eingereicht',
-        source: 'ProcessData',
+        source: InputVariableSource.ProcessData,
     },
     {
         id: 'cart-item-count',
         label: 'Anzahl der Positionen',
         path: 'warenkorb.positionen.anzahl',
         origin: 'Warenkorb laden',
-        source: 'ProcessData',
+        source: InputVariableSource.ProcessData,
         description: 'Anzahl aller geladenen Warenkorbpositionen',
     },
     {
@@ -70,21 +71,21 @@ const VARIABLES: InputModeVariable[] = [
         label: 'Gesamtbetrag',
         path: 'warenkorb.gesamtbetrag',
         origin: 'Warenkorb laden',
-        source: 'ProcessData',
+        source: InputVariableSource.ProcessData,
     },
     {
         id: 'default-increment',
         label: 'Standardinkrement',
         path: 'konfiguration.standardInkrement',
         origin: 'Grenzwerte bestimmen',
-        source: 'ProcessData',
+        source: InputVariableSource.ProcessData,
     },
     {
         id: 'missing-value-behavior',
         label: 'Verhalten bei fehlendem Wert',
         path: 'konfiguration.fehlerbehandlung',
         origin: 'Grenzwerte bestimmen',
-        source: 'ProcessData',
+        source: InputVariableSource.ProcessData,
     },
     {
         id: 'element-cart-item-count',
@@ -92,7 +93,7 @@ const VARIABLES: InputModeVariable[] = [
         path: 'anzahlPositionen',
         nodeDataKey: 'warenkorbLaden',
         origin: 'Warenkorb laden',
-        source: 'ElementData',
+        source: InputVariableSource.ElementData,
         description: 'Ausgangsdaten des Prozesselements',
     },
     {
@@ -101,7 +102,7 @@ const VARIABLES: InputModeVariable[] = [
         path: 'ergebnis',
         nodeDataKey: 'antragPruefen',
         origin: 'Antrag prüfen',
-        source: 'ElementData',
+        source: InputVariableSource.ElementData,
     },
     {
         id: 'element-finished',
@@ -109,7 +110,7 @@ const VARIABLES: InputModeVariable[] = [
         path: 'finished',
         nodeDataKey: 'warenkorbLaden',
         origin: 'Warenkorb laden',
-        source: 'ElementMetadata',
+        source: InputVariableSource.ElementMetadata,
     },
     {
         id: 'element-runtime',
@@ -117,28 +118,28 @@ const VARIABLES: InputModeVariable[] = [
         path: 'runtime',
         nodeDataKey: 'antragPruefen',
         origin: 'Antrag prüfen',
-        source: 'ElementMetadata',
+        source: InputVariableSource.ElementMetadata,
     },
     {
         id: 'protected-case-number',
         label: 'Aktenzeichen des Vorgangs',
         path: 'caseNumber',
         origin: 'Vorgang',
-        source: 'ProtectedProcessData',
+        source: InputVariableSource.ProtectedProcessData,
     },
     {
         id: 'protected-assigned-file-numbers',
         label: 'Zugewiesene Geschäftszeichen',
         path: 'assignedFileNumbers',
         origin: 'Vorgang',
-        source: 'ProtectedProcessData',
+        source: InputVariableSource.ProtectedProcessData,
     },
     {
         id: 'protected-current-task',
         label: 'ID der aktuellen Aufgabe',
         path: 'currentTaskId',
         origin: 'Aktuelle Aufgabe',
-        source: 'ProtectedProcessData',
+        source: InputVariableSource.ProtectedProcessData,
     },
 ];
 
@@ -167,7 +168,7 @@ const DESTINATION_SUGGESTIONS: ProcessDataKeySuggestion[] = [
         subLabel: 'Antrag eingereicht',
     },
     ...VARIABLES
-        .filter((variable) => variable.source === 'ProcessData')
+        .filter((variable) => variable.source === InputVariableSource.ProcessData)
         .map((variable) => ({
             id: variable.path,
             label: variable.label,
@@ -188,12 +189,12 @@ const LOGGING_SCOPE_OPTIONS = [
 ];
 
 function createInitialIncrementValue(): InputModeValue<number> {
-    return {type: 'Literal', value: 1};
+    return {type: InputMode.Literal, value: 1};
 }
 
 function createInitialLogMessageValue(): InputModeValue<string> {
     return {
-        type: 'Literal',
+        type: InputMode.Literal,
         value: [
             '{% if $.warenkorb.positionen.anzahl > 0 %}',
             'Der Zähler wurde um {{ $.warenkorb.positionen.anzahl }} erhöht.',
@@ -205,23 +206,23 @@ function createInitialLogMessageValue(): InputModeValue<string> {
 }
 
 function createInitialLogTitleValue(): InputModeValue<string> {
-    return {type: 'Literal', value: 'Zähler für {{ $.antragsteller.nachname }} aktualisiert'};
+    return {type: InputMode.Literal, value: 'Zähler für {{ $.antragsteller.nachname }} aktualisiert'};
 }
 
 function createInitialMissingValueBehavior(): InputModeValue<string> {
-    return {type: 'Literal', value: 'zero'};
+    return {type: InputMode.Literal, value: 'zero'};
 }
 
 function createInitialRichTextValue(): InputModeValue<string> {
     return {
-        type: 'Literal',
+        type: InputMode.Literal,
         value: '**Zähler aktualisiert**\n\nDer Zähler für {{ $.antragsteller.nachname }} wurde auf ' +
             '{{ $.warenkorb.positionen.anzahl }} gesetzt.',
     };
 }
 
 function createInitialLoggingScope(): InputModeValue<string> {
-    return {type: 'Literal', value: 'changed'};
+    return {type: InputMode.Literal, value: 'changed'};
 }
 
 export function InputModePrototype() {

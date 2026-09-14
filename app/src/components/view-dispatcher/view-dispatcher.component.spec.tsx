@@ -1,3 +1,4 @@
+import {InputVariableSource, InputMode} from '../../models/input-mode';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
@@ -48,7 +49,7 @@ describe('ViewDispatcherComponent authored values', () => {
             ...generateElementWithDefaultValues(type),
             id: 'field',
             label: 'Test value',
-            dynamicTextPolicy: {variableSuggestionSources: ['ProcessData' as const]},
+            dynamicTextPolicy: {variableSuggestionSources: [InputVariableSource.ProcessData as const]},
         };
         const authoredElementValues = {field: literalAuthoredValue('existing')};
         const derivedData = createDerivedRuntimeElementData();
@@ -88,7 +89,7 @@ describe('ViewDispatcherComponent authored values', () => {
             id: 'field',
             type: ElementType.Text,
             label: 'Test value',
-            inputModePolicy: {allowedModes: ['Literal']},
+            inputModePolicy: {allowedModes: [InputMode.Literal]},
         };
         const authoredElementValues = {field: literalAuthoredValue('existing')};
         const derivedData = createDerivedRuntimeElementData();

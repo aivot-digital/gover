@@ -1,3 +1,4 @@
+import {InputMode} from '../../models/input-mode';
 import {useState} from 'react';
 import {
     Box,
@@ -51,12 +52,7 @@ import {
     type FormFieldControlContext,
     getNativeInputAriaProps,
 } from '../../components/form-field';
-import {
-    DynamicTextIndicator,
-    DynamicTextIndicatorLabel,
-    type InputMode,
-    InputModeSelector,
-} from '../../components/input-mode-selector';
+import {DynamicTextIndicator, DynamicTextIndicatorLabel, InputModeSelector} from '../../components/input-mode-selector';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
 import {DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
 import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
@@ -176,7 +172,7 @@ const domainAndUserOptions: DomainAndUserSelectOption[] = [
     },
 ];
 
-const inputModeSummaries: Record<Exclude<InputMode, 'Literal'>, {primary: string; secondary: string}> = {
+const inputModeSummaries: Record<Exclude<InputMode, InputMode.Literal>, {primary: string; secondary: string}> = {
     Variable: {
         primary: 'Nachname der antragstellenden Person',
         secondary: 'Vorgangsdaten - $.applicant.lastName',
@@ -326,14 +322,14 @@ function ExternalActionGallery() {
 
 function InputModeGalleryField(props: InputModeGalleryFieldProps) {
     const label = 'Bezeichnung';
-    const [mode, setMode] = useState<InputMode>('Literal');
+    const [mode, setMode] = useState<InputMode>(InputMode.Literal);
 
     return (
         <FormField
             label={label}
             labelAction={(field) => (
                 <Stack direction="row" spacing={0.5} sx={{height: '100%', alignItems: 'center'}}>
-                    {mode === 'Literal' && <DynamicTextIndicator decorative/>}
+                    {mode === InputMode.Literal && <DynamicTextIndicator decorative/>}
                     <InputModeSelector
                         fieldLabel={label}
                         controlledFieldId={field.controlId}
@@ -343,11 +339,11 @@ function InputModeGalleryField(props: InputModeGalleryFieldProps) {
                 </Stack>
             )}
             hint="Eine eindeutige Bezeichnung hilft bei der späteren Zuordnung."
-            assistiveText={mode === 'Literal' ? DynamicTextIndicatorLabel : undefined}
+            assistiveText={mode === InputMode.Literal ? DynamicTextIndicatorLabel : undefined}
             required
             margin="none"
         >
-            {(field) => mode === 'Literal' ? (
+            {(field) => mode === InputMode.Literal ? (
                 <TextField
                     id={field.controlId}
                     value={props.value ?? ''}
@@ -371,7 +367,7 @@ function InputModeGalleryField(props: InputModeGalleryFieldProps) {
 }
 
 function InputModeSummary(props: {
-    mode: Exclude<InputMode, 'Literal'>;
+    mode: Exclude<InputMode, InputMode.Literal>;
     field: FormFieldControlContext;
 }) {
     const summary = inputModeSummaries[props.mode];
