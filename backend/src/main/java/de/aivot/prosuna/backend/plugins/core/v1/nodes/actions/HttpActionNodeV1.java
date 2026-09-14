@@ -206,7 +206,6 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         // Keep dynamic execution opt-in in Java so the trusted policy remains visible next to the node behavior.
         for (var fieldId : List.of(
                 HttpActionNodeV1Config.URL_FIELD_ID,
-                HttpActionNodeV1Config.BasicAuthConfig.USERNAME_FIELD_ID,
                 HttpActionNodeV1Config.BearerAuthConfig.BEARER_TOKEN_FIELD_ID
         )) {
             layout.findChild(fieldId, TextInputElement.class)
@@ -215,7 +214,6 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
         for (var fieldId : List.of(
                 HttpActionNodeV1Config.URL_FIELD_ID,
-                HttpActionNodeV1Config.BasicAuthConfig.USERNAME_FIELD_ID,
                 HttpActionNodeV1Config.BearerAuthConfig.BEARER_TOKEN_FIELD_ID,
                 HttpActionNodeV1Config.ResponseConfig.RESPONSE_FILE_NAME_FIELD_ID
         )) {
