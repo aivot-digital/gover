@@ -121,7 +121,7 @@ export function ProcessDataKeyPickerDialog(props: ProcessDataKeyPickerDialogProp
                 Vorgangsdatenpfad wählen
             </DialogTitleWithClose>
             <DialogContent sx={{p: 0}}>
-                <Box sx={{p: 2}}>
+                <Box sx={{p: 2, px: 2.8}}>
                     <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
                         Die Vorschläge basieren auf Vorgangsdaten, die vorherige Prozesselemente bereitstellen können.
                         Abhängig vom ausgeführten Prozesspfad müssen sie zur Laufzeit nicht vorhanden sein. Sie können
