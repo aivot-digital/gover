@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -79,53 +80,57 @@ class ThemeServiceTest {
     }
 
     @Test
-    void resolveThemeChainShouldInheritMissingMediaAndKeepSpecificColors() {
-        var lightLogoKey = UUID.randomUUID();
-        var darkLogoKey = UUID.randomUUID();
-        var faviconKey = UUID.randomUUID();
+    void resolveProcessThemeShouldNotInheritMissingMediaFromSystemTheme() throws ResponseException {
+        var themeRepository = mock(ThemeRepository.class);
+        var systemService = mock(SystemService.class);
         var specificTheme = new ThemeEntity(
                 1, "Specific", "#111111", "#222222", "#333333", "#444444",
                 null, null, null
         );
         var defaultTheme = new ThemeEntity(
                 2, "Default", "#AAAAAA", "#BBBBBB", null, null,
-                lightLogoKey, darkLogoKey, faviconKey
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()
         );
+        when(themeRepository.findById(specificTheme.getId())).thenReturn(Optional.of(specificTheme));
+        when(systemService.retrieveDefaultTheme()).thenReturn(defaultTheme);
         var service = new ThemeService(
-                mock(ThemeRepository.class),
+                themeRepository,
                 mock(DepartmentRepository.class),
                 mock(VStorageIndexItemWithAssetRepository.class),
                 mock(VDepartmentShadowedRepository.class),
-                mock(SystemService.class)
+                systemService
         );
 
-        var result = service.resolveThemeChain(List.of(specificTheme, defaultTheme));
+        var result = service.resolveProcessTheme(
+                new ProcessVersionEntity().setThemeId(specificTheme.getId()),
+                null
+        );
 
-        assertEquals("#111111", result.getPrimaryColor());
-        assertEquals("#222222", result.getSecondaryColor());
-        assertEquals(lightLogoKey, result.getLogoKey());
-        assertEquals(darkLogoKey, result.getLogoKeyDark());
-        assertEquals(faviconKey, result.getFaviconKey());
+        assertSame(specificTheme, result);
+        assertNull(result.getLogoKey());
+        assertNull(result.getLogoKeyDark());
+        assertNull(result.getFaviconKey());
     }
 
     @Test
-    void resolveThemeChainShouldUseSpecificLightLogoAsDarkFallback() {
-        var specificLogoKey = UUID.randomUUID();
-        var defaultDarkLogoKey = UUID.randomUUID();
+    void resolveProcessThemeShouldUseSystemThemeWhenNoSpecificThemeIsAssigned() throws ResponseException {
+        var systemService = mock(SystemService.class);
+        var defaultTheme = new ThemeEntity()
+                .setLogoKey(UUID.randomUUID())
+                .setLogoKeyDark(UUID.randomUUID())
+                .setFaviconKey(UUID.randomUUID());
+        when(systemService.retrieveDefaultTheme()).thenReturn(defaultTheme);
         var service = new ThemeService(
                 mock(ThemeRepository.class),
                 mock(DepartmentRepository.class),
                 mock(VStorageIndexItemWithAssetRepository.class),
                 mock(VDepartmentShadowedRepository.class),
-                mock(SystemService.class)
+                systemService
         );
 
-        var result = service.resolveThemeChain(List.of(
-                new ThemeEntity().setLogoKey(specificLogoKey),
-                new ThemeEntity().setLogoKeyDark(defaultDarkLogoKey)
-        ));
+        var result = service.resolveProcessTheme(new ProcessVersionEntity(), null);
 
-        assertEquals(specificLogoKey, result.getLogoKeyDark());
+        assertSame(defaultTheme, result);
     }
 
     @Test

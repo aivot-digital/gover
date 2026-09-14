@@ -74,9 +74,11 @@
         </style>
     </head>
     <body>
-        <div id="logo">
+        <div
+                id="logo"
+                th:if="${logoUrl != null}"
+        >
             <img
-                    th:if="${logoUrl != null}"
                     th:src="${logoUrl}"
                     th:alt="${department.getName()}"
                     style="height: 100px; width: auto; max-width: 200px; object-fit: contain;"

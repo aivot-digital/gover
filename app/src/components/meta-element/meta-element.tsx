@@ -1,15 +1,15 @@
 import React, {useMemo} from 'react';
 
 interface MetaElementProps {
-    faviconUrl?: string;
+    faviconUrl?: string | null;
     title?: string;
     titlePrefix?: string;
 }
 
 export function MetaElement({faviconUrl, title, titlePrefix}: MetaElementProps) {
     const favicon = useMemo(() => {
-        return faviconUrl ?? AppConfig.faviconUrl;
-    }, [faviconUrl])
+        return faviconUrl === undefined ? AppConfig.faviconUrl : faviconUrl;
+    }, [faviconUrl]);
 
     return (
         <>
@@ -27,22 +27,8 @@ export function MetaElement({faviconUrl, title, titlePrefix}: MetaElementProps) 
             />
 
             <link
-                key="apple-touch-icon"
-                rel="apple-touch-icon"
-                sizes="180x180"
-                href={`${import.meta.env.BASE_URL}/apple-touch-icon.png`}
-            />
-
-            <link
-                key="icon-svg"
                 rel="icon"
-                type="image/svg+xml"
-                href={`${import.meta.env.BASE_URL}/favicon.svg`}
-            />
-
-            <link
-                rel="icon"
-                href={favicon}
+                href={favicon ?? 'data:,'}
             />
         </>
     );

@@ -14,7 +14,6 @@ import de.aivot.prosuna.backend.mail.enums.MailTemplate;
 import de.aivot.prosuna.backend.mail.models.MailSendOptions;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
-import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.mail.BodyPart;
 import jakarta.mail.Multipart;
@@ -63,7 +62,6 @@ class MailServiceTest {
                 mock(VDepartmentShadowedService.class),
                 mock(DepartmentMembershipService.class),
                 mailLogoService,
-                passThroughThemeService(),
                 mock(UserService.class),
                 mock(UserConfigService.class)
         );
@@ -124,6 +122,7 @@ class MailServiceTest {
         assertTrue(html.contains("background:#005ea8"));
         assertTrue(html.contains("color:#ffffff"));
         assertTrue(html.indexOf("Open portal") < html.indexOf("Show status"));
+        assertFalse(html.contains("cid:sender-logo"));
         assertFalse(html.contains("th:href"));
         assertFalse(html.contains("th:text"));
         assertFalse(html.contains("th:block"));
@@ -153,7 +152,6 @@ class MailServiceTest {
                 mock(VDepartmentShadowedService.class),
                 mock(DepartmentMembershipService.class),
                 mailLogoService,
-                passThroughThemeService(),
                 mock(UserService.class),
                 mock(UserConfigService.class)
         );
@@ -230,10 +228,7 @@ class MailServiceTest {
                         "sender-logo.png"
                 )
         ));
-        var themeService = mock(ThemeService.class);
-        var theme = new ThemeEntity();
-        when(themeService.resolveThemeWithSystemFallback(theme))
-                .thenReturn(new ThemeEntity().setLogoKey(logoKey));
+        var theme = new ThemeEntity().setLogoKey(logoKey);
         var service = new MailService(
                 prosunaConfig,
                 mailSender,
@@ -242,7 +237,6 @@ class MailServiceTest {
                 mock(VDepartmentShadowedService.class),
                 mock(DepartmentMembershipService.class),
                 mailLogoService,
-                themeService,
                 mock(UserService.class),
                 mock(UserConfigService.class)
         );
@@ -262,7 +256,7 @@ class MailServiceTest {
         );
 
         verify(mailSender).send(message);
-        verify(themeService).resolveThemeWithSystemFallback(theme);
+        verify(mailLogoService).createSenderLogo(logoKey);
         message.saveChanges();
         var parts = collectParts(message.getContent());
         assertTrue(parts.stream().anyMatch(part -> contentTypeStartsWith(part, "text/plain")));
@@ -335,7 +329,6 @@ class MailServiceTest {
                 shadowedDepartmentService,
                 mock(DepartmentMembershipService.class),
                 mock(MailLogoService.class),
-                passThroughThemeService(),
                 mock(UserService.class),
                 mock(UserConfigService.class)
         );
@@ -359,13 +352,6 @@ class MailServiceTest {
         verify(mailSender).send(message);
         message.saveChanges();
         return message;
-    }
-
-    private ThemeService passThroughThemeService() {
-        var themeService = mock(ThemeService.class);
-        when(themeService.resolveThemeWithSystemFallback(any(ThemeEntity.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        return themeService;
     }
 
     private List<BodyPart> collectParts(Object content) throws Exception {

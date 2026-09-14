@@ -866,11 +866,11 @@ public class CustomerProcessInstanceTaskViewController {
         return transaction;
     }
 
-    @Nonnull
+    @Nullable
     private String resolvePaymentConfirmationLogoUrl(@Nonnull VDepartmentShadowedEntity department) {
         var theme = themeService.resolveDepartmentTheme(department.getId());
         return theme.getLogoKey() == null
-                ? prosunaConfig.getDefaultLogoUrl()
+                ? null
                 : assetService.createUrl(theme.getLogoKey());
     }
 

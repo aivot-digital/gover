@@ -140,7 +140,7 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
     public ThemeEntity resolveFormTheme(@Nonnull ProcessVersionEntity processVersion,
                                         @Nonnull FormLayoutElement form,
                                         @Nullable Integer processDepartmentId) {
-        return resolveThemeChain(getFormThemesInOrderOfImportance(processVersion, form, processDepartmentId));
+        return selectTheme(getFormThemesInOrderOfImportance(processVersion, form, processDepartmentId));
     }
 
     @Nonnull
@@ -150,7 +150,7 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
         addTheme(themes, processVersion.getThemeId());
         addDepartmentTheme(themes, processDepartmentId);
         themes.add(systemService.retrieveDefaultTheme());
-        return resolveThemeChain(themes);
+        return selectTheme(themes);
     }
 
     @Nonnull
@@ -158,32 +158,15 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
         var themes = new LinkedList<ThemeEntity>();
         addDepartmentTheme(themes, departmentId);
         themes.add(systemService.retrieveDefaultTheme());
-        return resolveThemeChain(themes);
+        return selectTheme(themes);
     }
 
     @Nonnull
-    public ThemeEntity resolveThemeWithSystemFallback(@Nonnull ThemeEntity theme) {
-        return resolveThemeChain(List.of(theme, systemService.retrieveDefaultTheme()));
-    }
-
-    @Nonnull
-    public ThemeEntity resolveThemeChain(@Nonnull List<ThemeEntity> themes) {
+    private static ThemeEntity selectTheme(@Nonnull List<ThemeEntity> themes) {
         if (themes.isEmpty()) {
             throw new IllegalArgumentException("A theme chain must contain at least one theme.");
         }
-
-        var appearanceTheme = themes.getFirst();
-        return new ThemeEntity(
-                appearanceTheme.getId(),
-                appearanceTheme.getName(),
-                appearanceTheme.getPrimaryColor(),
-                appearanceTheme.getSecondaryColor(),
-                appearanceTheme.getPrimaryColorDark(),
-                appearanceTheme.getSecondaryColorDark(),
-                resolveLightLogoKey(themes),
-                resolveDarkLogoKey(themes),
-                resolveFaviconKey(themes)
-        );
+        return themes.getFirst();
     }
 
     private void addTheme(@Nonnull List<ThemeEntity> themes, @Nullable Integer themeId) {
@@ -201,37 +184,6 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
                 .findById(departmentId)
                 .map(department -> department.getThemeId())
                 .ifPresent(themeId -> addTheme(themes, themeId));
-    }
-
-    @Nullable
-    private static UUID resolveLightLogoKey(@Nonnull List<ThemeEntity> themes) {
-        return themes.stream()
-                .map(ThemeEntity::getLogoKey)
-                .filter(java.util.Objects::nonNull)
-                .findFirst()
-                .orElse(null);
-    }
-
-    @Nullable
-    private static UUID resolveDarkLogoKey(@Nonnull List<ThemeEntity> themes) {
-        for (var theme : themes) {
-            if (theme.getLogoKeyDark() != null) {
-                return theme.getLogoKeyDark();
-            }
-            if (theme.getLogoKey() != null) {
-                return theme.getLogoKey();
-            }
-        }
-        return null;
-    }
-
-    @Nullable
-    private static UUID resolveFaviconKey(@Nonnull List<ThemeEntity> themes) {
-        return themes.stream()
-                .map(ThemeEntity::getFaviconKey)
-                .filter(java.util.Objects::nonNull)
-                .findFirst()
-                .orElse(null);
     }
 
     private void validateMediaAssets(@Nonnull ThemeEntity theme) throws ResponseException {

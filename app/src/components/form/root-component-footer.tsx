@@ -81,8 +81,8 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                             <Logo
                                 key={'logo-' + resolvedLogoUrl}
                                 updated={version.updated}
-                                src={logoUrl ?? undefined}
-                                srcDark={logoUrlDark ?? undefined}
+                                src={logoUrl}
+                                srcDark={logoUrlDark}
                                 width={200}
                                 height={100}
                             /> :

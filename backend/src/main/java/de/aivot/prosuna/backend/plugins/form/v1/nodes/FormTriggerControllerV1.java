@@ -767,7 +767,7 @@ public class FormTriggerControllerV1 {
                 context.formLayout(),
                 context.process().getDepartmentId()
         );
-        return ResolvedThemeDTO.fromResolvedTheme(theme, assetService, prosunaConfig);
+        return ResolvedThemeDTO.fromResolvedTheme(theme, assetService);
     }
 
     @GetMapping("submit/{instanceAccessKey}/{taskAccessKey}/print/")
@@ -1007,7 +1007,7 @@ public class FormTriggerControllerV1 {
                                                      @Nullable Integer processDepartmentId) {
         var theme = themeService.resolveFormTheme(processVersion, formLayout, processDepartmentId);
         return theme.getLogoKey() == null
-                ? prosunaConfig.getDefaultLogoUrl()
+                ? null
                 : assetService.createUrl(theme.getLogoKey());
     }
 

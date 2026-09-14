@@ -97,20 +97,14 @@ public class AppConfigController {
         }
 
 
-        String faviconUrl;
-        if (systemTheme.getFaviconKey() == null) {
-            faviconUrl = prosunaConfig.getDefaultFaviconUrl();
-        } else {
-            faviconUrl = assetService.createUrl(systemTheme.getFaviconKey());
-        }
+        var faviconUrl = systemTheme.getFaviconKey() == null
+                ? null
+                : assetService.createUrl(systemTheme.getFaviconKey());
         appConfig.put(FAVICON_URL_CONFIG_KEY, faviconUrl);
 
-        String logoURL;
-        if (systemTheme.getLogoKey() == null) {
-            logoURL = prosunaConfig.getDefaultLogoUrl();
-        } else {
-            logoURL = assetService.createUrl(systemTheme.getLogoKey());
-        }
+        var logoURL = systemTheme.getLogoKey() == null
+                ? null
+                : assetService.createUrl(systemTheme.getLogoKey());
         appConfig.put(LOGO_URL_CONFIG_KEY, logoURL);
 
         var darkLogoKey = systemTheme.getLogoKeyDark();

@@ -73,6 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -739,6 +740,45 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 same(transaction),
                 eq("AZ-123"),
                 eq("https://example.test/api/public/assets/" + logoKey + "/"),
+                same(department)
+        );
+    }
+
+    @Test
+    void getPaymentConfirmation_OmitsLogoWhenDepartmentThemeHasNoLogo() throws Exception {
+        var fixture = createPaymentConfirmationFixture(Map.of(
+                PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY, "tx-1"
+        ));
+        var transaction = paymentTransaction(XBezahldienstStatus.PAYED, expectedPaymentRedirectUrl(fixture));
+        var process = processEntity();
+        var department = new VDepartmentShadowedEntity()
+                .setId(process.getDepartmentId())
+                .setThemeId(5);
+        var pdfBytes = "pdf".getBytes();
+
+        when(fixture.paymentTransactionService().retrieve("tx-1"))
+                .thenReturn(Optional.of(transaction));
+        when(fixture.processService().retrieve(process.getId()))
+                .thenReturn(Optional.of(process));
+        when(fixture.vDepartmentShadowedService().retrieve(process.getDepartmentId()))
+                .thenReturn(Optional.of(department));
+        when(fixture.themeService().resolveDepartmentTheme(process.getDepartmentId()))
+                .thenReturn(new ThemeEntity().setId(5));
+        when(fixture.pdfService().generatePaymentConfirmation(
+                same(transaction),
+                eq("AZ-123"),
+                isNull(),
+                same(department)
+        )).thenReturn(pdfBytes);
+
+        var response = new MockHttpServletResponse();
+        fixture.controller().getPaymentConfirmation(fixture.procAccess(), fixture.taskAccess(), null, null, response);
+
+        assertArrayEquals(pdfBytes, response.getContentAsByteArray());
+        verify(fixture.pdfService()).generatePaymentConfirmation(
+                same(transaction),
+                eq("AZ-123"),
+                isNull(),
                 same(department)
         );
     }

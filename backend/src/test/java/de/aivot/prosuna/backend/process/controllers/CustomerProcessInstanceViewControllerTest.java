@@ -2,7 +2,6 @@ package de.aivot.prosuna.backend.process.controllers;
 
 import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -121,16 +120,13 @@ class CustomerProcessInstanceViewControllerTest {
         var assetService = mock(AssetService.class);
         when(assetService.createUrl(logoKey)).thenReturn("https://assets.example/logo");
         when(assetService.createUrl(faviconKey)).thenReturn("https://assets.example/favicon");
-        var prosunaConfig = mock(ProsunaConfig.class);
-
         var controller = new CustomerProcessInstanceViewController(
                 processInstanceService,
                 processInstanceTaskService,
                 processVersionService,
                 processService,
                 themeService,
-                assetService,
-                prosunaConfig
+                assetService
         );
 
         var response = controller.retrieve(instanceAccessKey);

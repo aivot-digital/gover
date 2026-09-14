@@ -21,7 +21,7 @@ export type ThemeColors = Pick<
 >;
 
 export interface ResolvedThemeDTO extends ThemeColors {
-    logoUrl: string;
-    logoUrlDark: string;
-    faviconUrl: string;
+    logoUrl: string | null;
+    logoUrlDark: string | null;
+    faviconUrl: string | null;
 }

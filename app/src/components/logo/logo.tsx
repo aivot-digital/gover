@@ -3,8 +3,8 @@ import {Box, useTheme} from '@mui/material';
 
 interface LogoProps {
     updated?: string | null | undefined;
-    src?: string;
-    srcDark?: string;
+    src?: string | null;
+    srcDark?: string | null;
     width?: number;
     height?: number;
     onStatusChange?: (status: 'loading' | 'failed' | 'present') => void;
@@ -23,29 +23,39 @@ export function Logo(props: LogoProps) {
 
     const [imageStatus, setImageStatus] = useState<'loading' | 'failed' | 'present'>('loading');
 
-    useEffect(() => {
-        onStatusChange?.(imageStatus);
-    }, [imageStatus, onStatusChange]);
-
     const url = useMemo(() => {
-        const resolvedSrc = theme.palette.mode === 'dark' ? srcDark ?? src : src;
-        let url = resolvedSrc ?? (theme.palette.mode === 'dark' ? AppConfig.logoUrlDark : AppConfig.logoUrl);
+        const useSystemTheme = src === undefined && srcDark === undefined;
+        const lightSrc = useSystemTheme ? AppConfig.logoUrl : src ?? null;
+        const darkSrc = useSystemTheme ? AppConfig.logoUrlDark : srcDark ?? lightSrc;
+        const resolvedSrc = theme.palette.mode === 'dark' ? darkSrc ?? lightSrc : lightSrc;
 
-        if (updated == null) {
-            return url;
+        if (resolvedSrc == null || updated == null) {
+            return resolvedSrc;
         }
 
         const t = new Date(updated).getTime();
 
-        if (url.includes('?')) {
-            return `${url}&t=${t}`;
+        if (resolvedSrc.includes('?')) {
+            return `${resolvedSrc}&t=${t}`;
         }
-        return `${url}?t=${t}`;
+        return `${resolvedSrc}?t=${t}`;
     }, [src, srcDark, theme.palette.mode, updated]);
 
+    const resolvedImageStatus = url == null ? 'failed' : imageStatus;
+
     useEffect(() => {
-        setImageStatus('loading');
+        onStatusChange?.(resolvedImageStatus);
+    }, [onStatusChange, resolvedImageStatus]);
+
+    useEffect(() => {
+        if (url != null) {
+            setImageStatus('loading');
+        }
     }, [url]);
+
+    if (url == null) {
+        return null;
+    }
 
     if (imageStatus === 'failed') {
         // empty Box is required so that the space is reserved in the footer

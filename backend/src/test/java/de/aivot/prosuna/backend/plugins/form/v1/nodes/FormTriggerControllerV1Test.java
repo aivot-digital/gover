@@ -318,13 +318,9 @@ class FormTriggerControllerV1Test {
     }
 
     @Test
-    void getThemeShouldExposeResolvedFallbackMediaUrls() throws Exception {
-        var inheritedLogoKey = UUID.randomUUID();
-        var inheritedDarkLogoKey = UUID.randomUUID();
-        var inheritedFaviconKey = UUID.randomUUID();
+    void getThemeShouldExposeMissingMediaAsNull() throws Exception {
         var fixture = createFixture(baseFormLayout());
-        var resolvedTheme = createTheme(11, "Resolved Theme", inheritedLogoKey, inheritedFaviconKey)
-                .setLogoKeyDark(inheritedDarkLogoKey);
+        var resolvedTheme = createTheme(11, "Resolved Theme", null, null);
         when(fixture.themeService().resolveFormTheme(
                 fixture.processVersion(),
                 fixture.triggerConfig().formLayout,
@@ -333,9 +329,9 @@ class FormTriggerControllerV1Test {
 
         var result = fixture.controller().getTheme(null, fixture.processSlug(), fixture.formSlug(), null, null);
 
-        assertEquals("https://assets.example/" + inheritedLogoKey, result.logoUrl());
-        assertEquals("https://assets.example/" + inheritedDarkLogoKey, result.logoUrlDark());
-        assertEquals("https://assets.example/" + inheritedFaviconKey, result.faviconUrl());
+        assertNull(result.logoUrl());
+        assertNull(result.logoUrlDark());
+        assertNull(result.faviconUrl());
     }
 
     @Test
@@ -410,7 +406,7 @@ class FormTriggerControllerV1Test {
         when(fixture.pdfService().generatePaymentConfirmation(
                 same(transaction),
                 eq("CASE-1"),
-                eq("https://gover.example/assets/default-logo.png"),
+                isNull(),
                 any(VDepartmentShadowedEntity.class)
         )).thenReturn(pdfBytes);
 
@@ -609,7 +605,6 @@ class FormTriggerControllerV1Test {
         var prosunaConfig = mock(ProsunaConfig.class);
         when(prosunaConfig.createUrl(eq("/process/"), eq(instanceAccessKey), eq("tasks"), eq(taskAccessKey)))
                 .thenReturn(paymentRedirectUrl);
-        when(prosunaConfig.getDefaultLogoUrl()).thenReturn("https://gover.example/assets/default-logo.png");
 
         var assetService = mock(AssetService.class);
         when(assetService.createUrl(any(UUID.class))).thenAnswer(invocation -> "https://assets.example/" + invocation.getArgument(0, UUID.class));
@@ -749,9 +744,6 @@ class FormTriggerControllerV1Test {
         var formSlug = "example-form";
 
         var prosunaConfig = mock(ProsunaConfig.class);
-        when(prosunaConfig.getDefaultLogoUrl()).thenReturn("https://prosuna.example/assets/default-logo.png");
-        when(prosunaConfig.getDefaultFaviconUrl()).thenReturn("https://prosuna.example/assets/default-favicon.ico");
-
         var assetService = mock(AssetService.class);
         when(assetService.createUrl(any(UUID.class))).thenAnswer(invocation -> "https://assets.example/" + invocation.getArgument(0, UUID.class));
 

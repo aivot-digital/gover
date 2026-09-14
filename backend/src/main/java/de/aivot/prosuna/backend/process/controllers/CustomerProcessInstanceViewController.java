@@ -2,7 +2,6 @@ package de.aivot.prosuna.backend.process.controllers;
 
 import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
@@ -41,22 +40,19 @@ public class CustomerProcessInstanceViewController {
     private final ProcessService processService;
     private final ThemeService themeService;
     private final AssetService assetService;
-    private final ProsunaConfig prosunaConfig;
 
     public CustomerProcessInstanceViewController(ProcessInstanceService processInstanceService,
                                                  ProcessInstanceTaskService processInstanceTaskService,
                                                  ProcessVersionService processVersionService,
                                                  ProcessService processService,
                                                  ThemeService themeService,
-                                                 AssetService assetService,
-                                                 ProsunaConfig prosunaConfig) {
+                                                 AssetService assetService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processVersionService = processVersionService;
         this.processService = processService;
         this.themeService = themeService;
         this.assetService = assetService;
-        this.prosunaConfig = prosunaConfig;
     }
 
     @GetMapping("")
@@ -101,7 +97,7 @@ public class CustomerProcessInstanceViewController {
                 processVersion.getImprintDepartmentId(),
                 processVersion.getLegalSupportDepartmentId(),
                 processVersion.getTechnicalSupportDepartmentId(),
-                ResolvedThemeDTO.fromResolvedTheme(resolvedTheme, assetService, prosunaConfig)
+                ResolvedThemeDTO.fromResolvedTheme(resolvedTheme, assetService)
         );
     }
 

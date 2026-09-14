@@ -130,7 +130,7 @@ import {Chip} from '../../../components/chip/chip';
 import {quoteString} from '../../../utils/string-utils';
 import {PaymentRequestOverview} from '../../payment/components/payment-request-overview';
 import {isApiError} from '../../../models/api-error';
-import {resolveThemeChainLogoKey} from '../../../theming/resolve-theme-logo';
+import {resolveThemeLogoKey} from '../../../theming/resolve-theme-logo';
 import {RichtextComponent} from '../../../components/richtext/richtext.component';
 
 export const DialogSearchParam = 'dialog';
@@ -1085,15 +1085,20 @@ export function FormNodeEditorPage() {
     const resolveDraftLogoUrl = (colorScheme: 'light' | 'dark'): string | null => {
         if (draftPreviewThemeChain == null) {
             return colorScheme === 'dark'
-                ? formTheme?.logoUrlDark ?? AppConfig.logoUrlDark
-                : formTheme?.logoUrl ?? AppConfig.logoUrl;
+                ? formTheme?.logoUrlDark ?? null
+                : formTheme?.logoUrl ?? null;
         }
 
-        const logoKey = resolveThemeChainLogoKey(draftPreviewThemeChain, colorScheme);
+        const activeTheme = draftPreviewThemeChain[0];
+        if (activeTheme == null) {
+            return null;
+        }
+
+        const logoKey = resolveThemeLogoKey(activeTheme, colorScheme);
         if (logoKey != null) {
             return AssetsApiService.useAssetLink(logoKey);
         }
-        return colorScheme === 'dark' ? AppConfig.logoUrlDark : AppConfig.logoUrl;
+        return null;
     };
     const formLogoUrl = resolveDraftLogoUrl('light');
     const formLogoUrlDark = resolveDraftLogoUrl('dark');
