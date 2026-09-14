@@ -7,8 +7,10 @@ import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefini
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderBindingRepository;
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderRepository;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -152,17 +154,18 @@ public class CommunicationProviderManagementService {
         return definition.getTestingLayout();
     }
 
-    public void testProvider(@Nonnull Integer providerId,
-                             @Nonnull AuthoredElementValues inputs) throws ResponseException {
+    @Nonnull
+    public GroupLayoutElement testProvider(@Nonnull Integer providerId,
+                                           @Nonnull AuthoredElementValues inputs) throws ResponseException {
         var provider = getProvider(providerId);
         var definition = getDefinition(
                 provider.getCommunicationProviderDefinitionKey(),
                 provider.getCommunicationProviderDefinitionVersion()
         );
         try {
-            testProviderTyped(provider, definition, inputs);
+            return testProviderTyped(provider, definition, inputs);
         } catch (CommunicationException e) {
-            throw ResponseException.badRequest(e.getMessage());
+            return createFailedTestResult(e.getMessage());
         } catch (RuntimeException e) {
             throw ResponseException.internalServerError(
                     "Der Kommunikationsanbieter %s konnte nicht getestet werden.".formatted(provider.getName()),
@@ -244,13 +247,28 @@ public class CommunicationProviderManagementService {
         configurationService.mapProviderConfiguration(provider, definition);
     }
 
-    private <C> void testProviderTyped(
+    @Nonnull
+    private <C> GroupLayoutElement testProviderTyped(
             @Nonnull CommunicationProviderEntity provider,
             @Nonnull CommunicationProviderDefinition<C, ?> definition,
             @Nonnull AuthoredElementValues inputs
     ) throws CommunicationException {
         var configuration = configurationService.mapProviderConfiguration(provider, definition);
-        definition.handleTest(provider, configuration, inputs);
+        return definition.handleTest(provider, configuration, inputs);
+    }
+
+    @Nonnull
+    private static GroupLayoutElement createFailedTestResult(@Nullable String message) {
+        var alert = new AlertContentElement();
+        alert.setId("communication-provider-test-result-alert");
+        alert.setAlertType(AlertType.Error);
+        alert.setTitle("Test fehlgeschlagen");
+        alert.setText(message);
+
+        var layout = new GroupLayoutElement();
+        layout.setId("communication-provider-test-result");
+        layout.setChildren(List.of(alert));
+        return layout;
     }
 
     private <I> void validateBindingConfigurationTyped(

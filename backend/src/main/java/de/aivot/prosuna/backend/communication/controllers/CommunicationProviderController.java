@@ -74,12 +74,13 @@ public class CommunicationProviderController {
         return managementService.getProviderTestingLayout(id);
     }
 
+    @Nonnull
     @PostMapping("{id}/test/")
-    public void test(@Nullable @AuthenticationPrincipal Jwt jwt,
-                     @Nonnull @PathVariable Integer id,
-                     @Nonnull @Valid @RequestBody AuthoredElementValues inputs) throws ResponseException {
+    public GroupLayoutElement test(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                   @Nonnull @PathVariable Integer id,
+                                   @Nonnull @Valid @RequestBody AuthoredElementValues inputs) throws ResponseException {
         permissionService.requireSystemPermission(jwt, CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_UPDATE);
-        managementService.testProvider(id, inputs);
+        return managementService.testProvider(id, inputs);
     }
 
     @PostMapping("")

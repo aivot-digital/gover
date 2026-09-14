@@ -293,7 +293,7 @@ class MailCommunicationProviderV1Test {
         config.senderMode = MailCommunicationProviderV1.SENDER_MODE_DEFAULT;
         var messageCaptor = ArgumentCaptor.forClass(CommunicationMessage.class);
 
-        definition.handleTest(provider(), config, testInputs("  customer@example.test  "));
+        var result = definition.handleTest(provider(), config, testInputs("  customer@example.test  "));
 
         verify(mailService).sendMessage(
                 eq("customer@example.test"),
@@ -306,6 +306,11 @@ class MailCommunicationProviderV1Test {
         assertEquals("<p>Dies ist eine Testnachricht.</p>", message.htmlBody());
         assertNotNull(message.timestamp());
         assertEquals(List.of(), message.attachments());
+        var alert = result.findChild("mail-testing-result-alert", AlertContentElement.class).orElseThrow();
+        assertEquals("mail-testing-result", result.getId());
+        assertEquals(AlertType.Success, alert.getAlertType());
+        assertEquals("Testnachricht erfolgreich versendet", alert.getTitle());
+        assertEquals("Empfänger: customer@example.test\nBetreff: Testnachricht", alert.getText());
     }
 
     @Test

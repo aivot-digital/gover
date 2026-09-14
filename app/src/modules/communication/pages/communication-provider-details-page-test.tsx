@@ -14,12 +14,15 @@ import {
 import {
     showApiErrorSnackbar,
     showErrorSnackbar,
-    showSuccessSnackbar,
 } from '../../../slices/snackbar-slice';
 import {ElementDerivationContext} from '../../elements/components/element-derivation-context';
 import {ElementsApiService} from '../../elements/elements-api-service';
 import {CommunicationProvidersApiService} from '../communication-providers-api-service';
-import {type CommunicationProvider, type CommunicationTestingLayout} from '../models';
+import {
+    type CommunicationProvider,
+    type CommunicationTestingLayout,
+    type CommunicationTestResultLayout,
+} from '../models';
 import {type CommunicationProviderAdditionalData} from './communication-provider-details-page-additional-data';
 
 const EMPTY_TEST_INPUTS: AuthoredElementValues = {};
@@ -38,6 +41,7 @@ export function CommunicationProviderDetailsPageTest() {
     const [layoutState, setLayoutState] = useState<TestingLayoutState>({status: 'loading'});
     const [inputs, setInputs] = useState<AuthoredElementValues>(EMPTY_TEST_INPUTS);
     const [computedErrors, setComputedErrors] = useState<ComputedElementErrors | null>(null);
+    const [testResult, setTestResult] = useState<CommunicationTestResultLayout | null>(null);
     const [isTesting, setIsTesting] = useState(false);
     const [loadAttempt, setLoadAttempt] = useState(0);
 
@@ -46,6 +50,7 @@ export function CommunicationProviderDetailsPageTest() {
 
         setInputs(EMPTY_TEST_INPUTS);
         setComputedErrors(null);
+        setTestResult(null);
         setLayoutState({status: 'loading'});
 
         if (provider == null || provider.id === 0) {
@@ -104,6 +109,7 @@ export function CommunicationProviderDetailsPageTest() {
         }
 
         setIsTesting(true);
+        setTestResult(null);
         try {
             if (layoutState.layout != null) {
                 const derivedData = await new ElementsApiService().derive({
@@ -130,8 +136,8 @@ export function CommunicationProviderDetailsPageTest() {
             }
 
             setComputedErrors(null);
-            await new CommunicationProvidersApiService().testProvider(provider.id, inputs);
-            dispatch(showSuccessSnackbar('Kommunikationsanbieter wurde erfolgreich getestet.'));
+            const result = await new CommunicationProvidersApiService().testProvider(provider.id, inputs);
+            setTestResult(result);
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Kommunikationsanbieter konnte nicht getestet werden.'));
         } finally {
@@ -182,7 +188,10 @@ export function CommunicationProviderDetailsPageTest() {
                             <ElementDerivationContext
                                 element={layoutState.layout}
                                 authoredElementValues={inputs}
-                                onAuthoredElementValuesChange={setInputs}
+                                onAuthoredElementValuesChange={(values) => {
+                                    setInputs(values);
+                                    setTestResult(null);
+                                }}
                                 computedErrors={computedErrors}
                                 disabled={isTesting}
                             />
@@ -198,6 +207,16 @@ export function CommunicationProviderDetailsPageTest() {
                             Kommunikationsanbieter testen
                         </Button>
                     </Box>
+
+                    {testResult != null && (
+                        <ElementDerivationContext
+                            element={testResult}
+                            authoredElementValues={EMPTY_TEST_INPUTS}
+                            onAuthoredElementValuesChange={() => undefined}
+                            readOnly
+                            deriveOnMount={false}
+                        />
+                    )}
                 </>
             )}
 

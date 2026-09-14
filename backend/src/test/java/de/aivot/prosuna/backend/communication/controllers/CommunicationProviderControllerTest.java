@@ -61,9 +61,12 @@ class CommunicationProviderControllerTest {
     void testRequiresUpdatePermissionAndPassesInputsToService() throws Exception {
         var inputs = new AuthoredElementValues();
         inputs.put("test-recipient", "customer@example.test");
+        var layout = new GroupLayoutElement();
+        when(managementService.testProvider(7, inputs)).thenReturn(layout);
 
-        controller.test(jwt, 7, inputs);
+        var result = controller.test(jwt, 7, inputs);
 
+        assertSame(layout, result);
         verify(permissionService).requireSystemPermission(
                 jwt,
                 CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_UPDATE

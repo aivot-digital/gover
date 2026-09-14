@@ -3,7 +3,11 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../../data/element-type/element-type';
 import {type ComputedElementErrors} from '../../../models/element-data';
 import {CommunicationProvidersApiService} from '../communication-providers-api-service';
-import {type CommunicationProvider, type CommunicationTestingLayout} from '../models';
+import {
+    type CommunicationProvider,
+    type CommunicationTestingLayout,
+    type CommunicationTestResultLayout,
+} from '../models';
 import {ElementsApiService} from '../../elements/elements-api-service';
 import {CommunicationProviderDetailsPageTest} from './communication-provider-details-page-test';
 
@@ -11,11 +15,10 @@ const testState = vi.hoisted(() => ({
     provider: undefined as CommunicationProvider | undefined,
     isNewItem: false,
     dispatch: vi.fn(),
-    derivationContextProps: null as Record<string, any> | null,
+    derivationContextProps: {} as Record<string, Record<string, any>>,
     changeBlockerProps: null as Record<string, any> | null,
     showApiErrorSnackbar: vi.fn((error: unknown, message: string) => ({type: 'api-error', error, message})),
     showErrorSnackbar: vi.fn((message: string) => ({type: 'error', message})),
-    showSuccessSnackbar: vi.fn((message: string) => ({type: 'success', message})),
 }));
 
 vi.mock('../../../components/generic-details-page/generic-details-page-context', () => ({
@@ -39,22 +42,23 @@ vi.mock('../../../hooks/use-change-blocker-2', () => ({
 vi.mock('../../../slices/snackbar-slice', () => ({
     showApiErrorSnackbar: testState.showApiErrorSnackbar,
     showErrorSnackbar: testState.showErrorSnackbar,
-    showSuccessSnackbar: testState.showSuccessSnackbar,
 }));
 
 vi.mock('../../elements/components/element-derivation-context', () => ({
     ElementDerivationContext: (props: Record<string, any>) => {
-        testState.derivationContextProps = props;
+        testState.derivationContextProps[props.element.id] = props;
         return (
-            <div data-testid="element-derivation-context">
-                <button
-                    type="button"
-                    onClick={() => props.onAuthoredElementValuesChange({
-                        'test-recipient': 'test@example.com',
-                    })}
-                >
-                    Testeingaben setzen
-                </button>
+            <div data-testid={`element-derivation-context-${props.element.id}`}>
+                {props.element.id === testingLayout.id && (
+                    <button
+                        type="button"
+                        onClick={() => props.onAuthoredElementValuesChange({
+                            'test-recipient': 'test@example.com',
+                        })}
+                    >
+                        Testeingaben setzen
+                    </button>
+                )}
             </div>
         );
     },
@@ -69,29 +73,51 @@ const testingLayout = {
     }],
 } as CommunicationTestingLayout;
 
+const testResultLayout = {
+    type: ElementType.GroupLayout,
+    id: 'communication-provider-test-result',
+    children: [{
+        type: ElementType.Alert,
+        id: 'communication-provider-test-result-alert',
+        alertType: 'success',
+        title: 'Test erfolgreich',
+        text: 'Die Nachricht wurde versendet.',
+    }],
+} as CommunicationTestResultLayout;
+
+const failedTestResultLayout = {
+    ...testResultLayout,
+    children: [{
+        type: ElementType.Alert,
+        id: 'communication-provider-test-result-alert',
+        alertType: 'error',
+        title: 'Test fehlgeschlagen',
+        text: 'Versand fehlgeschlagen',
+    }],
+} as CommunicationTestResultLayout;
+
 describe('CommunicationProviderDetailsPageTest', () => {
     beforeEach(() => {
         testState.provider = createProvider();
         testState.isNewItem = false;
         testState.dispatch.mockReset();
-        testState.derivationContextProps = null;
+        testState.derivationContextProps = {};
         testState.changeBlockerProps = null;
         testState.showApiErrorSnackbar.mockClear();
         testState.showErrorSnackbar.mockClear();
-        testState.showSuccessSnackbar.mockClear();
     });
 
     it('renders the testing layout, validates the inputs and starts the provider test', async () => {
         vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderTestingLayout')
             .mockResolvedValue(testingLayout);
         const testProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'testProvider')
-            .mockResolvedValue();
+            .mockResolvedValue(testResultLayout);
         const derive = vi.spyOn(ElementsApiService.prototype, 'derive')
             .mockResolvedValue({effectiveValues: {}, elementStates: {}});
 
         render(<CommunicationProviderDetailsPageTest/>);
 
-        await screen.findByTestId('element-derivation-context');
+        await screen.findByTestId(`element-derivation-context-${testingLayout.id}`);
         fireEvent.click(screen.getByRole('button', {name: 'Testeingaben setzen'}));
         fireEvent.click(screen.getByRole('button', {name: 'Kommunikationsanbieter testen'}));
 
@@ -112,17 +138,28 @@ describe('CommunicationProviderDetailsPageTest', () => {
                 _: {},
             },
         });
-        expect(testState.showSuccessSnackbar)
-            .toHaveBeenCalledWith('Kommunikationsanbieter wurde erfolgreich getestet.');
+        await screen.findByTestId(`element-derivation-context-${testResultLayout.id}`);
+        expect(testState.derivationContextProps[testResultLayout.id]).toMatchObject({
+            element: testResultLayout,
+            authoredElementValues: {},
+            readOnly: true,
+            deriveOnMount: false,
+        });
         expect(testState.changeBlockerProps?.edited).toEqual(expectedInputs);
         expect(testState.changeBlockerProps?.customTitle).toBe('Testeingaben verwerfen?');
+
+        fireEvent.click(screen.getByRole('button', {name: 'Testeingaben setzen'}));
+        await waitFor(() => {
+            expect(screen.queryByTestId(`element-derivation-context-${testResultLayout.id}`))
+                .not.toBeInTheDocument();
+        });
     });
 
     it('shows derived field errors and does not start an invalid test', async () => {
         vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderTestingLayout')
             .mockResolvedValue(testingLayout);
         const testProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'testProvider')
-            .mockResolvedValue();
+            .mockResolvedValue(testResultLayout);
         const elementStates: ComputedElementErrors = {
             'test-recipient': {error: 'Die Testempfängeradresse ist erforderlich.'},
         };
@@ -131,31 +168,49 @@ describe('CommunicationProviderDetailsPageTest', () => {
 
         render(<CommunicationProviderDetailsPageTest/>);
 
-        await screen.findByTestId('element-derivation-context');
+        await screen.findByTestId(`element-derivation-context-${testingLayout.id}`);
         fireEvent.click(screen.getByRole('button', {name: 'Kommunikationsanbieter testen'}));
 
         await waitFor(() => {
             expect(testState.showErrorSnackbar).toHaveBeenCalledWith('Bitte überprüfen Sie Ihre Eingaben.');
         });
         expect(testProvider).not.toHaveBeenCalled();
-        expect(testState.derivationContextProps?.computedErrors).toEqual(elementStates);
+        expect(testState.derivationContextProps[testingLayout.id]?.computedErrors).toEqual(elementStates);
     });
 
     it('allows an input-free test when no testing layout exists', async () => {
         vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderTestingLayout')
             .mockResolvedValue(null);
         const testProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'testProvider')
-            .mockResolvedValue();
+            .mockResolvedValue(testResultLayout);
         const derive = vi.spyOn(ElementsApiService.prototype, 'derive');
 
         render(<CommunicationProviderDetailsPageTest/>);
 
         await screen.findByText('Für diesen Kommunikationsanbieter sind keine zusätzlichen Testeingaben erforderlich.');
-        expect(screen.queryByTestId('element-derivation-context')).not.toBeInTheDocument();
+        expect(screen.queryByTestId(`element-derivation-context-${testingLayout.id}`)).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', {name: 'Kommunikationsanbieter testen'}));
 
         await waitFor(() => expect(testProvider).toHaveBeenCalledWith(7, {}));
+        await screen.findByTestId(`element-derivation-context-${testResultLayout.id}`);
         expect(derive).not.toHaveBeenCalled();
+    });
+
+    it('renders an expected test failure as a result layout', async () => {
+        vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderTestingLayout')
+            .mockResolvedValue(null);
+        vi.spyOn(CommunicationProvidersApiService.prototype, 'testProvider')
+            .mockResolvedValue(failedTestResultLayout);
+
+        render(<CommunicationProviderDetailsPageTest/>);
+
+        await screen.findByText('Für diesen Kommunikationsanbieter sind keine zusätzlichen Testeingaben erforderlich.');
+        fireEvent.click(screen.getByRole('button', {name: 'Kommunikationsanbieter testen'}));
+
+        await screen.findByTestId(`element-derivation-context-${failedTestResultLayout.id}`);
+        expect(testState.derivationContextProps[failedTestResultLayout.id]?.element)
+            .toBe(failedTestResultLayout);
+        expect(testState.showApiErrorSnackbar).not.toHaveBeenCalled();
     });
 
     it('does not load or test an unsaved provider', () => {
@@ -189,7 +244,7 @@ describe('CommunicationProviderDetailsPageTest', () => {
 
         fireEvent.click(screen.getByRole('button', {name: 'Erneut laden'}));
 
-        await screen.findByTestId('element-derivation-context');
+        await screen.findByTestId(`element-derivation-context-${testingLayout.id}`);
         expect(getLayout).toHaveBeenCalledTimes(2);
     });
 

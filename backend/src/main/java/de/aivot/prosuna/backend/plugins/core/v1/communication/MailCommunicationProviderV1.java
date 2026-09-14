@@ -269,10 +269,11 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         return layout;
     }
 
+    @Nonnull
     @Override
-    public void handleTest(@Nonnull CommunicationProviderEntity providerEntity,
-                           @Nonnull Config config,
-                           @Nonnull AuthoredElementValues inputs) throws CommunicationException {
+    public GroupLayoutElement handleTest(@Nonnull CommunicationProviderEntity providerEntity,
+                                         @Nonnull Config config,
+                                         @Nonnull AuthoredElementValues inputs) throws CommunicationException {
         var input = inputs.get(TEST_RECIPIENT_FIELD_ID);
         if (!(input instanceof String rawRecipient) || StringUtils.isNullOrEmpty(rawRecipient)) {
             throw new CommunicationException("Die Testempfängeradresse ist erforderlich.");
@@ -336,7 +337,21 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
                 "<p>Dies ist eine Testnachricht.</p>"
         );
 
-        sendMessage(testContext, testIdentity, testMessage);
+        var result = sendMessage(testContext, testIdentity, testMessage);
+
+        var alert = new AlertContentElement();
+        alert.setId("mail-testing-result-alert");
+        alert.setAlertType(AlertType.Success);
+        alert.setTitle("Testnachricht erfolgreich versendet");
+        alert.setText("Empfänger: %s\nBetreff: %s".formatted(
+                result.get("recipient"),
+                result.get("subject")
+        ));
+
+        var layout = new GroupLayoutElement();
+        layout.setId("mail-testing-result");
+        layout.setChildren(List.of(alert));
+        return layout;
     }
 
     @Override

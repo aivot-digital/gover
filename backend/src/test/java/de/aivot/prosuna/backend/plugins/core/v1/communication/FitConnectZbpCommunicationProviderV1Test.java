@@ -10,10 +10,12 @@ import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
 import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
+import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
@@ -206,9 +208,18 @@ class FitConnectZbpCommunicationProviderV1Test {
         var provider = provider();
         var config = config("sender-client", UUID.randomUUID().toString());
         var postfachId = UUID.randomUUID();
-        doReturn(Map.of()).when(testDefinition).sendMessage(any(), any(), any());
+        var submissionId = UUID.randomUUID();
+        doReturn(Map.of(
+                "postfachId", postfachId.toString(),
+                "submissionId", submissionId.toString(),
+                "status", "ACCEPTED"
+        )).when(testDefinition).sendMessage(any(), any(), any());
 
-        testDefinition.handleTest(provider, config, testInputs("  " + postfachId.toString().toUpperCase() + "  "));
+        var result = testDefinition.handleTest(
+                provider,
+                config,
+                testInputs("  " + postfachId.toString().toUpperCase() + "  ")
+        );
 
         var contextCaptor = ArgumentCaptor.forClass(CommunicationProviderContext.class);
         var identityCaptor = ArgumentCaptor.forClass(IdentityData.class);
@@ -243,6 +254,16 @@ class FitConnectZbpCommunicationProviderV1Test {
         assertEquals("<p>Dies ist eine Testnachricht.</p>", message.htmlBody());
         assertNotNull(message.timestamp());
         assertEquals(List.of(), message.attachments());
+        var alert = result
+                .findChild("fit-connect-zbp-testing-result-alert", AlertContentElement.class)
+                .orElseThrow();
+        assertEquals("fit-connect-zbp-testing-result", result.getId());
+        assertEquals(AlertType.Success, alert.getAlertType());
+        assertEquals("Testnachricht erfolgreich übermittelt", alert.getTitle());
+        assertEquals(
+                "Postfach-ID: %s\nSubmission-ID: %s\nStatus: ACCEPTED".formatted(postfachId, submissionId),
+                alert.getText()
+        );
     }
 
     @Test

@@ -48,9 +48,10 @@ public interface CommunicationProviderDefinition<C, I> extends PluginComponent {
         return null;
     }
 
-    default void handleTest(@Nonnull CommunicationProviderEntity providerEntity,
-                            @Nonnull C config,
-                            @Nonnull AuthoredElementValues inputs) throws CommunicationException {
+    @Nonnull
+    default GroupLayoutElement handleTest(@Nonnull CommunicationProviderEntity providerEntity,
+                                          @Nonnull C config,
+                                          @Nonnull AuthoredElementValues inputs) throws CommunicationException {
         throw new CommunicationException("Testing is not supported for this communication provider.");
     }
 

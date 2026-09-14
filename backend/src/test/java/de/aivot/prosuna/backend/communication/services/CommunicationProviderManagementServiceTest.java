@@ -7,7 +7,9 @@ import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefini
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderBindingRepository;
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderRepository;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository;
@@ -147,33 +149,32 @@ class CommunicationProviderManagementServiceTest {
         var inputs = new AuthoredElementValues();
         inputs.put("recipient", "customer@example.test");
         var configuration = new Object();
+        var expectedResult = new GroupLayoutElement();
         when(configurationService.mapProviderConfiguration(provider, definition)).thenReturn(configuration);
+        when(definition.handleTest(provider, configuration, inputs)).thenReturn(expectedResult);
 
-        service.testProvider(provider.getId(), inputs);
+        var result = service.testProvider(provider.getId(), inputs);
 
+        assertSame(expectedResult, result);
         verify(configurationService).mapProviderConfiguration(provider, definition);
         verify(definition).handleTest(provider, configuration, inputs);
     }
 
     @Test
-    void invalidStoredConfigurationPreventsTheTest() throws Exception {
+    void invalidStoredConfigurationProducesAnErrorLayout() throws Exception {
         var inputs = new AuthoredElementValues();
         doThrow(new CommunicationException("Konfiguration ungültig"))
                 .when(configurationService)
                 .mapProviderConfiguration(provider, definition);
 
-        var exception = assertThrows(
-                ResponseException.class,
-                () -> service.testProvider(provider.getId(), inputs)
-        );
+        var result = service.testProvider(provider.getId(), inputs);
 
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-        assertEquals("Konfiguration ungültig", exception.getTitle());
+        assertFailedTestResult(result, "Konfiguration ungültig");
         verify(definition, never()).handleTest(any(), any(), any());
     }
 
     @Test
-    void communicationFailureDuringTestBecomesBadRequest() throws Exception {
+    void communicationFailureDuringTestProducesAnErrorLayout() throws Exception {
         var inputs = new AuthoredElementValues();
         var configuration = new Object();
         when(configurationService.mapProviderConfiguration(provider, definition)).thenReturn(configuration);
@@ -181,13 +182,9 @@ class CommunicationProviderManagementServiceTest {
                 .when(definition)
                 .handleTest(provider, configuration, inputs);
 
-        var exception = assertThrows(
-                ResponseException.class,
-                () -> service.testProvider(provider.getId(), inputs)
-        );
+        var result = service.testProvider(provider.getId(), inputs);
 
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-        assertEquals("Versand fehlgeschlagen", exception.getTitle());
+        assertFailedTestResult(result, "Versand fehlgeschlagen");
     }
 
     @Test
@@ -232,6 +229,16 @@ class CommunicationProviderManagementServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals("Die Kommunikationsanbieter-Definition ist nicht verfügbar.", exception.getTitle());
+    }
+
+    private static void assertFailedTestResult(GroupLayoutElement result, String expectedMessage) {
+        assertEquals("communication-provider-test-result", result.getId());
+        var alert = result
+                .findChild("communication-provider-test-result-alert", AlertContentElement.class)
+                .orElseThrow();
+        assertEquals(AlertType.Error, alert.getAlertType());
+        assertEquals("Test fehlgeschlagen", alert.getTitle());
+        assertEquals(expectedMessage, alert.getText());
     }
 
     private CommunicationProviderBindingEntity binding(String name) {

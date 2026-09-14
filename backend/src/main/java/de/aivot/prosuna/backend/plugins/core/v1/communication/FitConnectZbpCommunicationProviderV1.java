@@ -13,10 +13,12 @@ import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
+import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
@@ -225,10 +227,11 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         return layout;
     }
 
+    @Nonnull
     @Override
-    public void handleTest(@Nonnull CommunicationProviderEntity providerEntity,
-                           @Nonnull Config config,
-                           @Nonnull AuthoredElementValues inputs) throws CommunicationException {
+    public GroupLayoutElement handleTest(@Nonnull CommunicationProviderEntity providerEntity,
+                                         @Nonnull Config config,
+                                         @Nonnull AuthoredElementValues inputs) throws CommunicationException {
         var input = inputs.get(TEST_POSTFACH_ID_FIELD_ID);
         if (!(input instanceof String rawPostfachId) || rawPostfachId.isBlank()) {
             throw new CommunicationException("Die Postfach-ID des Testnutzers ist erforderlich.");
@@ -298,7 +301,22 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                 "<p>Dies ist eine Testnachricht.</p>"
         );
 
-        sendMessage(testContext, testIdentity, testMessage);
+        var result = sendMessage(testContext, testIdentity, testMessage);
+
+        var alert = new AlertContentElement();
+        alert.setId("fit-connect-zbp-testing-result-alert");
+        alert.setAlertType(AlertType.Success);
+        alert.setTitle("Testnachricht erfolgreich übermittelt");
+        alert.setText("Postfach-ID: %s\nSubmission-ID: %s\nStatus: %s".formatted(
+                result.get("postfachId"),
+                result.get("submissionId"),
+                result.get("status")
+        ));
+
+        var layout = new GroupLayoutElement();
+        layout.setId("fit-connect-zbp-testing-result");
+        layout.setChildren(List.of(alert));
+        return layout;
     }
 
     @Override

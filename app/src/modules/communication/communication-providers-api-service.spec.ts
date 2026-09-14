@@ -1,7 +1,7 @@
 import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
 import {CommunicationProvidersApiService} from './communication-providers-api-service';
-import {type CommunicationTestingLayout} from './models';
+import {type CommunicationTestingLayout, type CommunicationTestResultLayout} from './models';
 
 const testingLayout = {
     type: ElementType.GroupLayout,
@@ -15,6 +15,11 @@ const testingLayout = {
     children: [],
     marketplaceLink: null,
 } satisfies CommunicationTestingLayout;
+
+const testResultLayout = {
+    ...testingLayout,
+    id: 'communication-provider-test-result',
+} satisfies CommunicationTestResultLayout;
 
 describe('CommunicationProvidersApiService', () => {
     it('loads and parses the provider testing layout', async () => {
@@ -32,16 +37,17 @@ describe('CommunicationProvidersApiService', () => {
         await expect(service.getProviderTestingLayout(7)).resolves.toBeNull();
     });
 
-    it('posts the test inputs without parsing the empty response body', async () => {
+    it('posts the test inputs and parses the result layout', async () => {
         const service = new CommunicationProvidersApiService();
-        const fetchMock = vi.spyOn(service, 'fetch').mockResolvedValue({} as Response);
+        const fetchMock = vi.spyOn(service, 'fetch').mockResolvedValue(responseWithJson(testResultLayout));
         const inputs = {'test-recipient': 'test@example.com'};
 
-        await expect(service.testProvider(7, inputs)).resolves.toBeUndefined();
+        await expect(service.testProvider(7, inputs)).resolves.toEqual(testResultLayout);
         expect(fetchMock).toHaveBeenCalledWith(
             'POST',
             '/api/communication-providers/7/test/',
             JSON.stringify(inputs),
+            undefined,
         );
     });
 });
@@ -49,5 +55,11 @@ describe('CommunicationProvidersApiService', () => {
 function responseWithText(body: string): Response {
     return {
         text: vi.fn().mockResolvedValue(body),
+    } as unknown as Response;
+}
+
+function responseWithJson(body: unknown): Response {
+    return {
+        json: vi.fn().mockResolvedValue(body),
     } as unknown as Response;
 }

@@ -9,6 +9,7 @@ import {
     CommunicationProviderBindingRequest,
     CommunicationProviderDefinition,
     CommunicationProviderRequest,
+    CommunicationTestResultLayout,
     CommunicationTestingLayout,
 } from './models';
 
@@ -103,8 +104,8 @@ export class CommunicationProvidersApiService extends BaseApiService {
         return JSON.parse(body) as CommunicationTestingLayout | null;
     }
 
-    public async testProvider(id: number, inputs: AuthoredElementValues): Promise<void> {
-        await this.fetch('POST', `${this.path}${id}/test/`, JSON.stringify(inputs));
+    public testProvider(id: number, inputs: AuthoredElementValues): Promise<CommunicationTestResultLayout> {
+        return this.post(`${this.path}${id}/test/`, inputs);
     }
 
     public listBindings(identityProviderKey: string): Promise<CommunicationProviderBinding[]> {
