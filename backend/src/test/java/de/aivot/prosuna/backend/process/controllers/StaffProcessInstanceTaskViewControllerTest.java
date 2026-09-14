@@ -683,7 +683,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class TestProcessDataService extends ProcessDataService {
         private TestProcessDataService() {
-            super(null, null, null, null);
+            super(null, null, null, null, JsonMapperTestUtils.createMapper());
         }
 
         @Override

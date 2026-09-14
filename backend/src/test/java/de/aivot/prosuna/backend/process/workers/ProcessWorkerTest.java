@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -124,7 +125,8 @@ class ProcessWorkerTest {
                         processInstanceTaskRepository,
                         processNodeRepository,
                         processInstanceAttachmentRepository,
-                        processInstanceAttachmentSetRepository
+                        processInstanceAttachmentSetRepository,
+                        JsonMapperTestUtils.createMapper()
                 ),
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestProcessNodeService()
@@ -257,7 +259,8 @@ class ProcessWorkerTest {
                         processInstanceTaskRepository,
                         processNodeRepository,
                         processInstanceAttachmentRepository,
-                        processInstanceAttachmentSetRepository
+                        processInstanceAttachmentSetRepository,
+                        JsonMapperTestUtils.createMapper()
                 ),
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestProcessNodeService()
