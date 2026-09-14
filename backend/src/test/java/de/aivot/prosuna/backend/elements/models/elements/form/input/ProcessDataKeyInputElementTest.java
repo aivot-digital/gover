@@ -15,8 +15,8 @@ class ProcessDataKeyInputElementTest {
     void validateShouldAcceptSupportedProcessDataKeys() {
         var element = new ProcessDataKeyInputElement();
 
-        assertDoesNotThrow(() -> element.validate(" applicant.person_* "));
-        assertEquals("applicant.person_*", element.formatValue(" applicant.person_* "));
+        assertDoesNotThrow(() -> element.validate(" applicant.person_[*] "));
+        assertEquals("applicant.person_[*]", element.formatValue(" applicant.person_[*] "));
     }
 
     @Test
@@ -25,7 +25,7 @@ class ProcessDataKeyInputElementTest {
 
         var exception = assertThrows(ValidationException.class, () -> element.validate("applicant-name"));
 
-        assertEquals("Der Prozessdaten-Schlüssel darf nur Buchstaben (A-Z), Zahlen, Punkte, Unterstriche und Sternchen enthalten.", exception.getMessage());
+        assertEquals("Verwenden Sie einen Vorgangsdatenpfad wie person.name, items[0].name oder items[*].name.", exception.getMessage());
     }
 
     @Test

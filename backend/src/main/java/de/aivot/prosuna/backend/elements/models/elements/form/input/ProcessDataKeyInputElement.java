@@ -7,15 +7,13 @@ import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 public class ProcessDataKeyInputElement extends BaseInputElement<String> implements PrintableElement<String> {
-    private static final String PROCESS_DATA_KEY_REGEX = "[a-zA-Z0-9\\.\\*_]+";
-    private static final Pattern PROCESS_DATA_KEY_PATTERN = Pattern.compile(PROCESS_DATA_KEY_REGEX);
 
     private Boolean disableWildCards;
     @Nullable
@@ -41,8 +39,8 @@ public class ProcessDataKeyInputElement extends BaseInputElement<String> impleme
             return;
         }
 
-        if (!PROCESS_DATA_KEY_PATTERN.matcher(value).matches()) {
-            throw new ValidationException(this, "Der Prozessdaten-Schlüssel darf nur Buchstaben (A-Z), Zahlen, Punkte, Unterstriche und Sternchen enthalten.");
+        if (!ProcessDataValueUtils.isValidDestinationKey(value, false, true)) {
+            throw new ValidationException(this, "Verwenden Sie einen Vorgangsdatenpfad wie person.name, items[0].name oder items[*].name.");
         }
 
         if (Boolean.TRUE.equals(disableWildCards)) {

@@ -27,7 +27,7 @@ class InputVariableResolverTest {
                 ));
         processData.getNodeData().put("review", Map.of("score", 7));
 
-        assertEquals("Ada", resolve(processData, InputVariableSource.ProcessData, "people.0.name", null).value());
+        assertEquals("Ada", resolve(processData, InputVariableSource.ProcessData, "people[0].name", null).value());
         assertEquals("A-42", resolve(processData, InputVariableSource.ProtectedProcessData, "caseNumber", null).value());
         assertEquals(7, resolve(processData, InputVariableSource.ElementData, "score", "review").value());
         assertEquals(true, resolve(processData, InputVariableSource.ElementMetadata, "finished", "review").value());
@@ -55,7 +55,7 @@ class InputVariableResolverTest {
         )));
         assertThrows(IllegalArgumentException.class, () -> resolver.validate(reference(
                 InputVariableSource.ProcessData,
-                "items.*.name",
+                "items[*].name",
                 null
         )));
         assertThrows(IllegalArgumentException.class, () -> resolver.validate(reference(
@@ -69,10 +69,20 @@ class InputVariableResolverTest {
     void shouldNormalizeReferenceWhitespaceBeforeResolution() {
         var processData = new ProcessExecutionData()
                 .addProcessData("people", List.of(Map.of("name", "Ada")));
-        var reference = reference(InputVariableSource.ProcessData, " people . 0 . name ", null);
+        var reference = reference(InputVariableSource.ProcessData, " people [ 0 ] . name ", null);
 
-        assertEquals("people.0.name", reference.path());
+        assertEquals("people [ 0 ] . name", reference.path());
         assertEquals("Ada", resolver.resolve(reference, processData).value());
+    }
+
+    @Test
+    void shouldResolveArrayRootElementDataAndPreserveMissingValues() {
+        var data = new ProcessExecutionData();
+        data.getNodeData().put("previous", java.util.Arrays.asList(null, Map.of("name", "Ada")));
+        assertTrue(resolve(data, InputVariableSource.ElementData, "[0]", "previous").found());
+        assertNull(resolve(data, InputVariableSource.ElementData, "[0]", "previous").value());
+        assertEquals("Ada", resolve(data, InputVariableSource.ElementData, "[1].name", "previous").value());
+        assertFalse(resolve(data, InputVariableSource.ElementData, "[2].name", "previous").found());
     }
 
     private InputVariableResolver.Resolution resolve(ProcessExecutionData data,

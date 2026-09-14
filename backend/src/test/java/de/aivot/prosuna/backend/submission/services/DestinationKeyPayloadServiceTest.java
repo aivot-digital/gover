@@ -336,11 +336,11 @@ class DestinationKeyPayloadServiceTest {
     void shouldWriteDestinationKeysWithExplicitArrayIndexes() {
         var firstMemberName = new TextInputElement();
         firstMemberName.setId("firstMemberName");
-        firstMemberName.setDestinationKey("members.0.first_name");
+        firstMemberName.setDestinationKey("members[0].first_name");
 
         var secondTag = new TextInputElement();
         secondTag.setId("secondTag");
-        secondTag.setDestinationKey("tags.1");
+        secondTag.setDestinationKey("tags[1]");
 
         var group = new GroupLayoutElement();
         group.setChildren(new LinkedList<>(List.of(firstMemberName, secondTag)));
@@ -364,7 +364,7 @@ class DestinationKeyPayloadServiceTest {
     void shouldResolveWildcardDestinationKeysInsideReplicatingContainers() {
         var firstName = new TextInputElement();
         firstName.setId("rowFirstName");
-        firstName.setDestinationKey("members.*.first_name");
+        firstName.setDestinationKey("members[*].first_name");
 
         var people = new ReplicatingContainerLayoutElement();
         people.setId("people");
@@ -405,7 +405,7 @@ class DestinationKeyPayloadServiceTest {
 
         var sharedFirstName = new TextInputElement();
         sharedFirstName.setId("sharedFirstName");
-        sharedFirstName.setDestinationKey("members.*.first_name");
+        sharedFirstName.setDestinationKey("members[*].first_name");
 
         var group = new GroupLayoutElement();
         group.setChildren(new LinkedList<>(List.of(people, sharedFirstName)));
@@ -517,11 +517,11 @@ class DestinationKeyPayloadServiceTest {
     void shouldBuildEffectiveValuesForWildcardReplicatingContainersWithoutDestinationKey() {
         var firstName = new TextInputElement();
         firstName.setId("rowFirstName");
-        firstName.setDestinationKey("members.*.first_name");
+        firstName.setDestinationKey("members[*].first_name");
 
         var tag = new TextInputElement();
         tag.setId("rowTag");
-        tag.setDestinationKey("members.*.tags.1");
+        tag.setDestinationKey("members[*].tags[1]");
 
         var people = new ReplicatingContainerLayoutElement();
         people.setId("people");

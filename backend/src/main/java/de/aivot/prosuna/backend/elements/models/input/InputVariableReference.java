@@ -20,13 +20,8 @@ public record InputVariableReference(
             throw new IllegalArgumentException("A variable reference requires a path.");
         }
 
-        path = normalizePath(path);
+        // Keep invalid drafts representable; the resolver validates path syntax before any data access.
+        path = path.trim();
         nodeDataKey = nodeDataKey == null ? null : nodeDataKey.trim();
-    }
-
-    private static String normalizePath(String path) {
-        return String.join(".", java.util.Arrays.stream(path.trim().split("\\.", -1))
-                .map(String::trim)
-                .toList());
     }
 }

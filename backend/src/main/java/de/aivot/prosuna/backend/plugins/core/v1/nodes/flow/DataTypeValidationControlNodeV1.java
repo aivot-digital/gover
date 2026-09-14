@@ -26,6 +26,7 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
+import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
@@ -48,6 +49,7 @@ import java.util.Map;
 public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<DataTypeValidationControlNodeV1.DataTypeValidationControlNodeConfig> {
     public static final String NODE_KEY = "data_type_validation";
 
+    private static final int MAX_EXAMPLE_ARRAY_LENGTH = 1000;
     private static final String PORT_NAME_VALID = "valid";
     private static final String PORT_NAME_INVALID = "invalid";
 
@@ -343,80 +345,24 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
             var rowIndex = i + 1;
             var rule = rules.get(i);
             var pathParts = parsePath(rule.path(), rowIndex);
+            // Preview generation must not allocate enormous sparse arrays merely to display a valid read path.
+            if (pathParts.stream().anyMatch(part -> part instanceof IndexPathPart index && index.index() >= MAX_EXAMPLE_ARRAY_LENGTH)) {
+                throw new IllegalArgumentException(
+                        "Die Beispiel-JSON ist auf 1000 Einträge pro Array begrenzt. Die Validierungsregel bleibt unverändert.");
+            }
             var exampleValue = createExampleValueForType(rule.expectedType());
-            mergeExampleValue(root, pathParts, 0, exampleValue);
+            // A wildcard needs one representative row; concrete indices keep their configured position.
+            var segments = pathParts.stream().map(part -> switch (part) {
+                case ObjectPathPart object -> object.key();
+                case IndexPathPart index -> Integer.toString(index.index());
+                case WildcardPathPart ignored -> "0";
+            }).toList();
+            var examplePath = ProcessDataValueUtils.formatDestinationKeySegments(segments);
+            if (ProcessDataValueUtils.resolveDestinationKeyValue(root, examplePath) == null) {
+                ProcessDataValueUtils.writeDestinationKeyValue(root, examplePath, exampleValue);
+            }
         }
         return root;
-    }
-
-    private static void mergeExampleValue(@Nonnull Map<String, Object> root,
-                                          @Nonnull List<PathPart> pathParts,
-                                          int partIndex,
-                                          Object leafValue) {
-        var currentPart = pathParts.get(partIndex);
-        var isLast = partIndex == pathParts.size() - 1;
-
-        if (!(currentPart instanceof ObjectPathPart objectPathPart)) {
-            return;
-        }
-
-        if (isLast) {
-            root.putIfAbsent(objectPathPart.key(), leafValue);
-            return;
-        }
-
-        var nextPart = pathParts.get(partIndex + 1);
-        var existing = root.get(objectPathPart.key());
-
-        if (nextPart instanceof WildcardPathPart) {
-            List<Object> list;
-            if (existing instanceof List<?> existingList) {
-                @SuppressWarnings("unchecked")
-                var typed = (List<Object>) existingList;
-                list = typed;
-            } else {
-                list = new ArrayList<>();
-                root.put(objectPathPart.key(), list);
-            }
-
-            if (isLastSegmentAfterWildcard(pathParts, partIndex + 1)) {
-                if (list.isEmpty()) {
-                    list.add(leafValue);
-                }
-                return;
-            }
-
-            Object item = list.isEmpty() ? null : list.getFirst();
-            if (!(item instanceof Map<?, ?>)) {
-                item = new LinkedHashMap<String, Object>();
-                if (list.isEmpty()) {
-                    list.add(item);
-                } else {
-                    list.set(0, item);
-                }
-            }
-
-            @SuppressWarnings("unchecked")
-            var itemMap = (Map<String, Object>) item;
-            mergeExampleValue(itemMap, pathParts, partIndex + 2, leafValue);
-            return;
-        }
-
-        Map<String, Object> childMap;
-        if (existing instanceof Map<?, ?> existingMap) {
-            @SuppressWarnings("unchecked")
-            var typed = (Map<String, Object>) existingMap;
-            childMap = typed;
-        } else {
-            childMap = new LinkedHashMap<>();
-            root.put(objectPathPart.key(), childMap);
-        }
-
-        mergeExampleValue(childMap, pathParts, partIndex + 1, leafValue);
-    }
-
-    private static boolean isLastSegmentAfterWildcard(@Nonnull List<PathPart> pathParts, int wildcardIndex) {
-        return wildcardIndex == pathParts.size() - 1;
     }
 
     @Nonnull
@@ -443,51 +389,21 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
             );
         }
 
-        var parts = new ArrayList<PathPart>();
-        var segmentBuilder = new StringBuilder();
-
-        for (int i = 0; i < trimmedPath.length(); i++) {
-            var c = trimmedPath.charAt(i);
-            if (c == '.') {
-                appendPathSegment(segmentBuilder, parts, trimmedPath, rowIndex);
-                continue;
-            }
-            segmentBuilder.append(c);
+        try {
+            return ProcessDataValueUtils.parseDestinationKeySegments(trimmedPath, false).stream()
+                    .<PathPart>map(segment -> {
+                        if ("*".equals(segment)) {
+                            return new WildcardPathPart();
+                        }
+                        if (Character.isDigit(segment.charAt(0))) {
+                            return new IndexPathPart(Integer.parseInt(segment));
+                        }
+                        return new ObjectPathPart(segment);
+                    }).toList();
+        } catch (IllegalArgumentException exception) {
+            throw invalidPathException(trimmedPath, rowIndex,
+                    "Verwenden Sie einen Pfad wie person.name, items[0].name oder items[*].name.");
         }
-        appendPathSegment(segmentBuilder, parts, trimmedPath, rowIndex);
-
-        if (parts.isEmpty()) {
-            throw invalidPathException(trimmedPath, rowIndex, "Pfad enthält keine Segmente.");
-        }
-
-        if (parts.getFirst() instanceof WildcardPathPart) {
-            throw invalidPathException(trimmedPath, rowIndex, "Pfad darf nicht mit * beginnen.");
-        }
-
-        return parts;
-    }
-
-    private static void appendPathSegment(@Nonnull StringBuilder segmentBuilder,
-                                          @Nonnull List<PathPart> target,
-                                          @Nonnull String path,
-                                          int rowIndex) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var rawSegment = segmentBuilder.toString().trim();
-        segmentBuilder.setLength(0);
-
-        if (rawSegment.isEmpty()) {
-            throw invalidPathException(path, rowIndex, "Leere Segmente sind nicht erlaubt.");
-        }
-
-        if ("*".equals(rawSegment)) {
-            target.add(new WildcardPathPart());
-            return;
-        }
-
-        if (rawSegment.contains("*")) {
-            throw invalidPathException(path, rowIndex, "Wildcard * darf nur als eigenes Segment verwendet werden.");
-        }
-
-        target.add(new ObjectPathPart(rawSegment));
     }
 
     private static void collectMatchedValues(Object currentValue,
@@ -538,14 +454,22 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
 
         if (!(currentValue instanceof List<?> currentList)) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
-                    "Der Pfad %s in Zeile %d kann nicht aufgelöst werden. Segment * erwartet ein Array in %s.",
+                    "Der Pfad %s in Zeile %d kann nicht aufgelöst werden. Das Segment erwartet ein Array in %s.",
                     StringUtils.quote(configuredPath),
                     rowIndex,
                     StringUtils.quote(currentPath)
             );
         }
 
-        for (int i = 0; i < currentList.size(); i++) {
+        if (currentPart instanceof IndexPathPart index && index.index() >= currentList.size()) {
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Der Pfad %s in Zeile %d fehlt. Index %d ist in %s nicht vorhanden.",
+                    StringUtils.quote(configuredPath), rowIndex, index.index(), StringUtils.quote(currentPath)
+            );
+        }
+        var firstIndex = currentPart instanceof IndexPathPart index ? index.index() : 0;
+        var endIndex = currentPart instanceof IndexPathPart ? firstIndex + 1 : currentList.size();
+        for (int i = firstIndex; i < endIndex; i++) {
             collectMatchedValues(
                     currentList.get(i),
                     pathParts,
@@ -662,10 +586,13 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
     private record MatchedValue(@Nonnull String path, Object value) {
     }
 
-    private sealed interface PathPart permits ObjectPathPart, WildcardPathPart {
+    private sealed interface PathPart permits ObjectPathPart, IndexPathPart, WildcardPathPart {
     }
 
     private record ObjectPathPart(@Nonnull String key) implements PathPart {
+    }
+
+    private record IndexPathPart(int index) implements PathPart {
     }
 
     private record WildcardPathPart() implements PathPart {
@@ -681,7 +608,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
             allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode},
             properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "Validierungsregeln"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Beispiele: person.name, person.address.street, tags.*, items.*.name"),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Beispiele: person.name, person.address.street, tags[*], items[*].name"),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
             @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "Regel #"),
             @ElementPOJOBindingProperty(key = "addLabel", strValue = "Regel hinzufügen"),
@@ -692,7 +619,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Pfad"),
                 @ElementPOJOBindingProperty(key = "prefix", strValue = "$."),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Dot-Notation mit * für Arrays, z. B. addresses.*.street"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Pfad mit [*] für Arrays, z. B. addresses[*].street"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0)
         })

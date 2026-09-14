@@ -8,7 +8,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -22,8 +21,10 @@ public class InputVariableResolver {
         if (reference.path().isBlank()) {
             throw new IllegalArgumentException("Der Variablenpfad darf nicht leer sein.");
         }
-        ProcessDataValueUtils.validateDestinationKey(reference.path(), false);
-        if (ProcessDataValueUtils.hasWildcardSegment(reference.path())) {
+        var allowArrayRoot = reference.source() == InputVariableSource.ElementData ||
+                reference.source() == InputVariableSource.ElementMetadata;
+        ProcessDataValueUtils.validateDestinationKey(reference.path(), allowArrayRoot);
+        if (ProcessDataValueUtils.hasWildcardSegment(reference.path(), allowArrayRoot)) {
             throw new IllegalArgumentException("Variablenreferenzen dürfen keine Platzhaltersegmente enthalten.");
         }
 
@@ -62,7 +63,7 @@ public class InputVariableResolver {
             return new Resolution(false, null);
         }
 
-        return resolvePath(root, Arrays.asList(reference.path().split("\\.")));
+        return resolvePath(root, ProcessDataValueUtils.parseDestinationKeySegments(reference.path(), true));
     }
 
     @Nonnull

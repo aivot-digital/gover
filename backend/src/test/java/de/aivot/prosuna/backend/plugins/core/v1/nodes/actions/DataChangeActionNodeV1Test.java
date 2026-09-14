@@ -277,7 +277,7 @@ class DataChangeActionNodeV1Test {
                 ),
                 "untouched", "value"
         );
-        var configuration = configuration("members.0.name", null);
+        var configuration = configuration("members[0].name", null);
 
         var result = node.onEventFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(

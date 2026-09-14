@@ -125,14 +125,16 @@ public class JavascriptCode implements Serializable {
             return new HashSet<>();
         }
 
+        // Best-effort static dependencies: follow literal indices, but leave computed JavaScript access to the engine.
         var processDataReferencePattern = Pattern
-                .compile("(?<![$\\w])\\$((?:\\.[a-zA-Z_$][a-zA-Z0-9_$]*)+)");
+                .compile("(?<![$\\w])\\$((?:\\.[a-zA-Z_$][a-zA-Z0-9_$]*|\\[\\s*(?:0|[1-9][0-9]*)\\s*])+)");
 
         var paths = new HashSet<String>();
 
         var matcher = processDataReferencePattern.matcher(code);
         while (matcher.find()) {
-            paths.add(matcher.group(1).substring(1));
+            var path = matcher.group(1);
+            paths.add(path.startsWith(".") ? path.substring(1) : path);
         }
 
         return paths;

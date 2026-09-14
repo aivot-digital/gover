@@ -95,7 +95,7 @@ class NoCodeActionNodeV1Test {
                 variable(" result.date ", null),
                 variable("result..invalid", null),
                 variable("result.total", null),
-                variable("items.0.name", null),
+                variable("items[0].name", null),
                 variable("items[0].name", null),
                 variable("items[*].name", null),
                 variable(" ", null),
@@ -117,7 +117,7 @@ class NoCodeActionNodeV1Test {
                         new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("result.date", "result.date", null, processNode),
                         new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("result..invalid", "result..invalid", null, processNode),
                         new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("result.total", "result.total", null, processNode),
-                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("items.0.name", "items.0.name", null, processNode),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("items[0].name", "items[0].name", null, processNode),
                         new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("items[0].name", "items[0].name", null, processNode),
                         new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("items[*].name", "items[*].name", null, processNode)
                 ),
@@ -146,8 +146,8 @@ class NoCodeActionNodeV1Test {
                         processData,
                         configuration(
                                 variable(
-                                        "personen.*.alterNeu",
-                                        new NoCodeProcessDataReference("personen.*.alter")
+                                        "personen[*].alterNeu",
+                                        new NoCodeProcessDataReference("personen[*].alter")
                                 )
                         )
                 ))
@@ -161,11 +161,11 @@ class NoCodeActionNodeV1Test {
         @SuppressWarnings("unchecked")
         var variables = (List<Map<String, Object>>) result.getNodeData().get("variables");
         assertEquals(2, variables.size());
-        assertEquals("personen.*.alterNeu", variables.getFirst().get("configuredPath"));
-        assertEquals("personen.0.alterNeu", variables.getFirst().get("resolvedPath"));
+        assertEquals("personen[*].alterNeu", variables.getFirst().get("configuredPath"));
+        assertEquals("personen[0].alterNeu", variables.getFirst().get("resolvedPath"));
         assertEquals(List.of(0), variables.getFirst().get("wildcardIndices"));
         assertEquals(22, variables.getFirst().get("value"));
-        assertEquals("personen.1.alterNeu", variables.get(1).get("resolvedPath"));
+        assertEquals("personen[1].alterNeu", variables.get(1).get("resolvedPath"));
         assertEquals(List.of(1), variables.get(1).get("wildcardIndices"));
         assertEquals(41, variables.get(1).get("value"));
         assertEquals(2, result.getNodeData().get("variableCount"));
@@ -192,7 +192,7 @@ class NoCodeActionNodeV1Test {
                         configuration(
                                 variable(
                                         "result.alter",
-                                        new NoCodeProcessDataReference("personen.*.alter")
+                                        new NoCodeProcessDataReference("personen[*].alter")
                                 )
                         )
                 ))

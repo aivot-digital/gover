@@ -446,53 +446,17 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         }
 
         try {
-            ProcessDataValueUtils.validateDestinationKey(normalizedPath);
-            validateNumericArraySegments(normalizedPath, rowIndex, fieldLabel);
+            return ProcessDataValueUtils.formatDestinationKeySegments(
+                    ProcessDataValueUtils.parseDestinationKeySegments(normalizedPath, false));
         } catch (IllegalArgumentException e) {
             throw invalidPathException(
                     rawPath,
                     rowIndex,
                     fieldLabel,
-                    describePathValidationError(normalizedPath, e)
+                    "Verwenden Sie einen Pfad wie person.name, items[0].name oder items[*].name."
             );
         }
 
-        return normalizedPath;
-    }
-
-    private static void validateNumericArraySegments(@Nonnull String destinationKey,
-                                                     int rowIndex,
-                                                     @Nonnull String fieldLabel) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        for (var segment : splitDestinationKeySegments(destinationKey)) {
-            if ("*".equals(segment) || !segment.chars().allMatch(Character::isDigit)) {
-                continue;
-            }
-
-            try {
-                Integer.parseInt(segment);
-            } catch (NumberFormatException e) {
-                throw invalidPathException(
-                        destinationKey,
-                        rowIndex,
-                        fieldLabel,
-                        "Array-Indizes müssen gültige 32-Bit-Ganzzahlen sein."
-                );
-            }
-        }
-    }
-
-    @Nonnull
-    private static String describePathValidationError(@Nonnull String path,
-                                                      @Nonnull IllegalArgumentException exception) {
-        if (path.contains("[*]")) {
-            return "Array-Wildcards müssen als eigenes Segment '*' angegeben werden; [*] ist nicht erlaubt.";
-        }
-        if (path.contains("[") || path.contains("]")) {
-            return "Array-Indizes müssen als numerische Segmente angegeben werden, z. B. items.0.name. Die Klammer-Schreibweise ist nicht erlaubt.";
-        }
-        return exception.getMessage() != null
-                ? exception.getMessage()
-                : "Der Pfad ist ungültig.";
     }
 
     @Nonnull
@@ -528,13 +492,6 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                     e.getMessage()
             );
         }
-    }
-
-    @Nonnull
-    private static List<String> splitDestinationKeySegments(@Nonnull String destinationKey) {
-        return Arrays.stream(destinationKey.split("\\.", -1))
-                .map(String::trim)
-                .toList();
     }
 
     private static void validateTargetType(@Nonnull String targetType,
@@ -866,7 +823,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
     public static class NoCodeActionNodeVariableConfiguration {
         @InputElementPOJOBinding(id = VARIABLE_NAME_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Variablenname"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Name wird als Zielpfad in den Vorgangsdaten gespeichert. Pfade verwenden Datenvariablen-Syntax mit Punktnotation und numerischen Array-Segmenten, z. B. person.name oder items.0.name. Klammer-Schreibweisen wie [0], [*] oder * sind nicht erlaubt."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Name wird als Zielpfad in den Vorgangsdaten gespeichert. Pfade verwenden Datenvariablen-Syntax mit Punktnotation und Array-Indizes, z. B. person.name oder items[0].name."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0),
                 @ElementPOJOBindingProperty(key = "disableWildCards", boolValue = true)

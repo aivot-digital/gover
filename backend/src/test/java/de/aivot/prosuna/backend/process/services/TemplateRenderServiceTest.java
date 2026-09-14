@@ -13,6 +13,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TemplateRenderServiceTest {
     @Test
+    void shouldRenderDataWrittenWithTheSameDestinationKeySyntax() {
+        var data = new ProcessExecutionData();
+        de.aivot.prosuna.backend.process.models.ProcessDataValueUtils
+                .writeProcessDataValue(data, "people[0].name", "Ada");
+        assertEquals("Ada", createService().interpolate(data, "{{ $.people[0].name }}"));
+    }
+
+    @Test
     void shouldEscapeHtmlAndJsInPrintTags() {
         var result = createService().interpolate(
                 createProcessData(),

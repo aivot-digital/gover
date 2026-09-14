@@ -54,7 +54,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new TestProcessNodeDefinition("Fallback task", List.of(
                         new ProcessNodeOutput("result", "Result", "Mapped result", "string")
                 )),
-                processNode("Pruefung", Map.of("result", "items.0.status")),
+                processNode("Pruefung", Map.of("result", "items[0].status")),
                 processInstance(),
                 task,
                 null,
@@ -86,7 +86,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new TestProcessNodeDefinition("Fallback task", List.of(
                         new ProcessNodeOutput("result", "Result", "Mapped result", "string")
                 )),
-                processNode("Pruefung", Map.of("result", "items.*.status")),
+                processNode("Pruefung", Map.of("result", "items[*].status")),
                 processInstance(),
                 task,
                 null,

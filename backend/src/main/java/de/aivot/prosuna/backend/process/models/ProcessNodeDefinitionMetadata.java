@@ -183,9 +183,9 @@ public record ProcessNodeDefinitionMetadata(
                         .map(p -> (ReplicatingContainerLayoutElement) p)
                         .map(ReplicatingContainerLayoutElement::getDestinationKey)
                         .filter(StringUtils::isNotNullOrEmpty)
-                        .collect(Collectors.joining(".*."));
+                        .collect(Collectors.joining("[*]."));
                 if (StringUtils.isNotNullOrEmpty(parentDestinationKey)) {
-                    parentDestinationKey += ".*.";
+                    parentDestinationKey += "[*].";
                 }
 
                 this.addForwardedProcessDataKey(

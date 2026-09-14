@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import jakarta.annotation.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 public record PaymentConfigElementValueRequestorMapping(
         @Nullable
@@ -42,7 +42,6 @@ public record PaymentConfigElementValueRequestorMapping(
         @Nullable
         String countryDestinationKey
 ) {
-    private static final Pattern PROCESS_DATA_KEY_PATTERN = Pattern.compile("[a-zA-Z0-9._]+");
 
     public Map<String, Object> performValidation() {
         var errors = new HashMap<String, Object>();
@@ -80,7 +79,7 @@ public record PaymentConfigElementValueRequestorMapping(
             return;
         }
 
-        if (!PROCESS_DATA_KEY_PATTERN.matcher(destinationKey).matches()) {
+        if (!ProcessDataValueUtils.isValidDestinationKey(destinationKey, false, false)) {
             errors.put(fieldKey, label + " muss ein gültiger Prozessdaten-Schlüssel sein.");
         }
     }

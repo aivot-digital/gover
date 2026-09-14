@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,7 @@ import java.util.*;
  * exist in the effective value map.
  * <p>
  * In addition to regular dotted object paths, destination keys may address arrays. Numeric path
- * segments such as {@code members.0.first_name} target a concrete array slot, while {@code *}
+ * segments such as {@code members[0].first_name} target a concrete array slot, while {@code *}
  * behaves as a contextual wildcard:
  * <ul>
  *     <li>inside a replicating container it resolves to the current row index so repeated form
@@ -216,7 +217,7 @@ public class ElementDataTransformService {
      * Each item in the source list may become a payload object on its own, but the item index is
      * also relevant for descendant destination keys that use {@code *}. By propagating the current
      * item index to child traversal, the service can support destination keys such as
-     * {@code members.*.first_name} without requiring child elements to know anything about their
+     * {@code members[*].first_name} without requiring child elements to know anything about their
      * surrounding container.
      * <p>
      * When the container itself has no destination key, its children still participate in payload
@@ -827,10 +828,8 @@ public class ElementDataTransformService {
     /**
      * Normalizes destination keys before any structural reasoning happens.
      * <p>
-     * The transformation layer accepts author-entered dotted paths, but every downstream operation
-     * assumes a clean segment model. Centralizing that cleanup prevents path reporting, payload
-     * writes and payload reads from drifting apart when whitespace or empty path fragments appear in
-     * the configuration.
+     * Use the same property/index grammar as runtime references. Replication and broadcast operate
+     * on parsed segments, so neither traversal needs to interpret the external bracket notation.
      */
     @Nonnull
     private List<String> parseDestinationKeySegments(@Nullable String destinationKey) {
@@ -838,10 +837,7 @@ public class ElementDataTransformService {
             return List.of();
         }
 
-        return Arrays.stream(destinationKey.split("\\."))
-                .map(String::trim)
-                .filter(StringUtils::isNotNullOrEmpty)
-                .toList();
+        return ProcessDataValueUtils.parseDestinationKeySegments(destinationKey, true);
     }
 
     /**

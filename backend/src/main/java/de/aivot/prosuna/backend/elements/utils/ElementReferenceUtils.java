@@ -10,10 +10,10 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeOperand;
 import de.aivot.prosuna.backend.nocode.models.NoCodeProcessDataReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -128,8 +128,9 @@ public class ElementReferenceUtils {
                 return;
             }
 
-            var lastSeparatorIndex = normalizedPath.lastIndexOf('.');
-            normalizedPath = lastSeparatorIndex < 0 ? null : normalizedPath.substring(0, lastSeparatorIndex);
+            var segments = ProcessDataValueUtils.parseDestinationKeySegments(normalizedPath, true);
+            normalizedPath = segments.size() <= 1 ? null :
+                    ProcessDataValueUtils.formatDestinationKeySegments(segments.subList(0, segments.size() - 1));
         }
     }
 
@@ -139,14 +140,10 @@ public class ElementReferenceUtils {
             return null;
         }
 
-        var normalizedPath = String.join(
-                ".",
-                Arrays.stream(path.split("\\."))
-                        .map(String::trim)
-                        .filter(StringUtils::isNotNullOrEmpty)
-                        .toList()
-        );
-
-        return StringUtils.isNullOrEmpty(normalizedPath) ? null : normalizedPath;
+        // Invalid draft keys must not prevent opening an element editor; field validation reports them separately.
+        if (!ProcessDataValueUtils.isValidDestinationKey(path, true, true)) {
+            return null;
+        }
+        return ProcessDataValueUtils.formatDestinationKeySegments(ProcessDataValueUtils.parseDestinationKeySegments(path, true));
     }
 }

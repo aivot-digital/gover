@@ -164,16 +164,16 @@ class DataMappingActionNodeV1Test {
                 node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
-                                "target", "personen.*.alterNeu"
+                                "source", "personen[*].alter",
+                                "target", "personen[*].alterNeu"
                         )), false)),
                         processInstance(),
                         task(Map.of()),
                         null,
                         processData,
                         nodeConfiguration(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
-                                "target", "personen.*.alterNeu"
+                                "source", "personen[*].alter",
+                                "target", "personen[*].alterNeu"
                         )), false))
                 ))
         );
@@ -204,7 +204,7 @@ class DataMappingActionNodeV1Test {
                 node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
+                                "source", "personen[*].alter",
                                 "deleteOnly", true
                         )), true)),
                         processInstance(),
@@ -212,7 +212,7 @@ class DataMappingActionNodeV1Test {
                         null,
                         processData,
                         nodeConfiguration(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
+                                "source", "personen[*].alter",
                                 "deleteOnly", true
                         )), true))
                 ))
@@ -236,8 +236,8 @@ class DataMappingActionNodeV1Test {
                 node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
-                                "target", "personen.*.alterNeu",
+                                "source", "personen[*].alter",
+                                "target", "personen[*].alterNeu",
                                 "cleanupSource", true
                         )), true)),
                         processInstance(),
@@ -245,8 +245,8 @@ class DataMappingActionNodeV1Test {
                         null,
                         processData,
                         nodeConfiguration(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
-                                "target", "personen.*.alterNeu",
+                                "source", "personen[*].alter",
+                                "target", "personen[*].alterNeu",
                                 "cleanupSource", true
                         )), true))
                 ))
@@ -316,16 +316,16 @@ class DataMappingActionNodeV1Test {
                 () -> node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
-                                "source", "personen[0].alter",
-                                "target", "personen.0.alterNeu"
+                                "source", "personen.0.alter",
+                                "target", "personen[0].alterNeu"
                         )), false)),
                         processInstance(),
                         task(Map.of()),
                         null,
                         processData,
                         nodeConfiguration(configuration(List.of(Map.of(
-                                "source", "personen[0].alter",
-                                "target", "personen.0.alterNeu"
+                                "source", "personen.0.alter",
+                                "target", "personen[0].alterNeu"
                         )), false))
                 ))
         );
@@ -348,7 +348,7 @@ class DataMappingActionNodeV1Test {
                 () -> node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
+                                "source", "personen[*].alter",
                                 "target", "personen.alterNeu"
                         )), false)),
                         processInstance(),
@@ -356,7 +356,7 @@ class DataMappingActionNodeV1Test {
                         null,
                         processData,
                         nodeConfiguration(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
+                                "source", "personen[*].alter",
                                 "target", "personen.alterNeu"
                         )), false))
                 ))

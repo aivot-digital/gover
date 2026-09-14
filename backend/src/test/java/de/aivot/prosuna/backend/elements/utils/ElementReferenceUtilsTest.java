@@ -22,6 +22,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ElementReferenceUtilsTest {
     @Test
+    void shouldResolveIndexedPathsAndTheirContainerDependencies() {
+        var code = JavascriptCode.of("return $.people[0].name;");
+        assertEquals(java.util.Set.of("nameField"), ElementReferenceUtils.getReferencedIds(
+                code, null, null, java.util.Map.of("people[0].name", java.util.Set.of("nameField"))));
+        assertEquals(java.util.Set.of("peopleField"), ElementReferenceUtils.getReferencedIds(
+                code, null, null, java.util.Map.of("people", java.util.Set.of("peopleField"))));
+    }
+
+    @Test
     void shouldResolveJavascriptProcessDataReferencesFromDestinationKeys() {
         var destinationKeyIndex = Map.of("person.vorname", Set.of("tx_123"));
         var javascriptCode = JavascriptCode.of("""
