@@ -16,11 +16,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.UnaryOperator;
 
 /**
- * Provides the explicit boundary between authored envelopes and ordinary literal values. Dynamic values are resolved
- * by the derivation service; structural consumers may only read or update literal payloads through this service.
+ * Converts ordinary values into authored envelopes using the element tree to identify nested container rows.
+ * Dynamic values are resolved by the derivation service, not by these structural conversions.
  */
 @Service
 public class AuthoredInputValueService {
@@ -30,29 +29,9 @@ public class AuthoredInputValueService {
         this.jsonMapper = jsonMapper;
     }
 
-    @Nonnull
-    public LiteralAuthoredInputValue literal(@Nullable Object value) {
-        return new LiteralAuthoredInputValue(value);
-    }
-
-    @Nullable
-    public Object getLiteral(@Nonnull AuthoredElementValues values, @Nonnull String key) {
-        return unwrapLiteral(values.get(key));
-    }
-
     @Nullable
     public Object unwrapLiteral(@Nullable AuthoredInputValue value) {
         return value instanceof LiteralAuthoredInputValue literal ? literal.value() : null;
-    }
-
-    @Nullable
-    public <T> T getLiteral(@Nonnull AuthoredElementValues values, @Nonnull String key, @Nonnull Class<T> type) {
-        var value = getLiteral(values, key);
-        return value == null ? null : jsonMapper.convertValue(value, type);
-    }
-
-    public void putLiteral(@Nonnull AuthoredElementValues values, @Nonnull String key, @Nullable Object value) {
-        values.put(key, literal(value));
     }
 
     // Only wrap the current level here; callers must normalize container children using the element tree.
@@ -66,7 +45,7 @@ public class AuthoredInputValueService {
         var result = new AuthoredElementValues();
         for (var entry : rawValues.entrySet()) {
             if (entry.getKey() instanceof String key) {
-                putLiteral(result, key, entry.getValue());
+                result.putLiteral(key, entry.getValue());
             }
         }
         return result;
@@ -157,16 +136,5 @@ public class AuthoredInputValueService {
     @Nonnull
     private Map<?, ?> toMap(@Nonnull Object value) {
         return value instanceof Map<?, ?> map ? map : jsonMapper.convertValue(value, Map.class);
-    }
-
-    public void mapLiteral(
-            @Nonnull AuthoredElementValues values,
-            @Nonnull String key,
-            @Nonnull UnaryOperator<Object> mapper
-    ) {
-        if (!values.containsKey(key)) {
-            return;
-        }
-        values.put(key, literal(mapper.apply(getLiteral(values, key))));
     }
 }

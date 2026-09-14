@@ -28,15 +28,10 @@ class AuthoredInputValueServiceTest {
     private final AuthoredInputValueService service = new AuthoredInputValueService(jsonMapper);
 
     @Test
-    void shouldReadAndUpdateLiteralValues() {
-        var values = new AuthoredElementValues();
-        service.putLiteral(values, "field", Map.of("nested", 3));
-
-        assertEquals(Map.of("nested", 3), service.getLiteral(values, "field"));
-
-        service.mapLiteral(values, "field", ignored -> "updated");
-
-        assertEquals("updated", service.getLiteral(values, "field"));
+    void shouldUnwrapLiteralPayloadsAndNulls() {
+        assertEquals(Map.of("nested", 3), service.unwrapLiteral(new LiteralAuthoredInputValue(Map.of("nested", 3))));
+        assertNull(service.unwrapLiteral(new LiteralAuthoredInputValue(null)));
+        assertNull(service.unwrapLiteral(null));
     }
 
     @Test
@@ -46,7 +41,7 @@ class AuthoredInputValueServiceTest {
                 new InputVariableReference(InputVariableSource.ProcessData, "person.name", null)
         ));
 
-        assertNull(service.getLiteral(values, "field"));
+        assertNull(service.unwrapLiteral(values.get("field")));
     }
 
     @Test
