@@ -58,7 +58,6 @@ class ProcessNodeInputModePolicyTest {
         assertDynamicFields(CounterActionNodeV1.CounterActionNodeV1Configuration.class, "increment");
         assertDynamicFields(
                 WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.class,
-                "attachment_sets",
                 "file_name"
         );
         assertDynamicFields(
@@ -86,6 +85,7 @@ class ProcessNodeInputModePolicyTest {
         assertLiteralOnlyFields(CounterActionNodeV1.CounterActionNodeV1Configuration.class, "variable");
         assertLiteralOnlyFields(
                 WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.class,
+                "attachment_sets",
                 "attachment_set_data_keys",
                 "storage_path"
         );
