@@ -55,8 +55,9 @@ public class AuthoredInputValueService {
         values.put(key, literal(value));
     }
 
+    // Only wrap the current level here; callers must normalize container children using the element tree.
     @Nonnull
-    public AuthoredElementValues toLiteralAuthoredElementValues(@Nullable Object value) {
+    private AuthoredElementValues wrapLiteralLevel(@Nullable Object value) {
         if (value == null) {
             return new AuthoredElementValues();
         }
@@ -81,7 +82,7 @@ public class AuthoredInputValueService {
             @Nullable Object effectiveValues
     ) {
         var rawValues = effectiveValues == null ? Map.of() : toMap(effectiveValues);
-        var result = toLiteralAuthoredElementValues(rawValues);
+        var result = wrapLiteralLevel(rawValues);
         normalizeReplicatingContainers(rootElement, rawValues, result);
         return result;
     }
@@ -140,7 +141,7 @@ public class AuthoredInputValueService {
 
             var row = toMap(rawRow);
             var rawRowValues = row.containsKey("values") ? row.get("values") : row;
-            var rowValues = toLiteralAuthoredElementValues(rawRowValues);
+            var rowValues = wrapLiteralLevel(rawRowValues);
             var effectiveRowValues = rawRowValues == null ? Map.of() : toMap(rawRowValues);
             for (var child : element.getChildren()) {
                 normalizeReplicatingContainers(child, effectiveRowValues, rowValues);
@@ -154,7 +155,7 @@ public class AuthoredInputValueService {
     }
 
     @Nonnull
-    public Map<?, ?> toMap(@Nonnull Object value) {
+    private Map<?, ?> toMap(@Nonnull Object value) {
         return value instanceof Map<?, ?> map ? map : jsonMapper.convertValue(value, Map.class);
     }
 

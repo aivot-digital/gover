@@ -51,7 +51,9 @@ class AuthoredInputValueServiceTest {
 
     @Test
     void shouldTreatWrapperShapedRuntimeObjectsAsLiteralData() {
-        var values = service.toLiteralAuthoredElementValues(Map.of(
+        var field = new TextInputElement();
+        field.setId("field");
+        var values = service.toLiteralAuthoredElementValues(field, Map.of(
                 "field", Map.of("type", "Variable", "reference", Map.of("path", "untrusted"))
         ));
 
