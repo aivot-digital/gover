@@ -1,13 +1,11 @@
 import {describe, expect, it} from 'vitest';
 import {ElementType} from '../../../../data/element-type/element-type';
-import {literalAuthoredValue} from '../../../../models/element-data';
-import {type AuthoredInputValue} from '../../../../models/input-mode';
 import {type GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {type DataObjectSchema} from '../../models/data-object-schema';
 import {type DataObjectItem} from '../../models/data-object-item';
 import {dataObjectSchemaExtractDisplayFields} from './data-object-item-list-page';
 
-function displayValue(type: ElementType, value: AuthoredInputValue<unknown> | undefined, properties = {}) {
+function displayValue(type: ElementType, value: unknown, properties = {}) {
     const schema: DataObjectSchema = {
         key: 'children', name: 'Kinder', description: '', idGen: '__SERIAL__',
         created: '', updated: '', displayFields: ['field'],
@@ -33,23 +31,20 @@ describe('Data-object display columns', () => {
         [ElementType.ChipInput, ['A', 'B'], 'A, B'],
         [ElementType.DateRange, {start: '2021-05-17', end: '2021-05-20'}, '17.05.2021 bis 20.05.2021'],
         [ElementType.MapPoint, {address: 'Musterstraße 1'}, 'Musterstraße 1'],
-    ])('formats literal values for element type %s', (type, value, expected) => {
-        expect(displayValue(type as ElementType, literalAuthoredValue(value))).toEqual(expected);
+    ])('formats plain values for element type %s', (type, value, expected) => {
+        expect(displayValue(type as ElementType, value)).toEqual(expected);
     });
 
-    it.each([ElementType.Select, ElementType.Radio, ElementType.MultiCheckbox])('resolves option labels after unwrapping type %s', (type) => {
+    it.each([ElementType.Select, ElementType.Radio, ElementType.MultiCheckbox])('resolves option labels for type %s', (type) => {
         const value = type === ElementType.MultiCheckbox ? ['kita-1'] : 'kita-1';
-        expect(displayValue(type, literalAuthoredValue(value), {
+        expect(displayValue(type, value, {
             options: [{value: 'kita-1', label: 'Kita Sonnenschein'}],
         })).toBe('Kita Sonnenschein');
     });
 
     it.each([ElementType.Text, ElementType.Date, ElementType.MultiCheckbox])('keeps missing and null values empty for type %s', (type) => {
         expect(displayValue(type, undefined)).toBeNull();
-        expect(displayValue(type, literalAuthoredValue(null))).toBeNull();
+        expect(displayValue(type, null)).toBeNull();
     });
 
-    it('does not expose an unexpected dynamic wrapper as a display value', () => {
-        expect(displayValue(ElementType.Text, {type: 'LowCode', code: 'return 1;'})).toBeNull();
-    });
 });

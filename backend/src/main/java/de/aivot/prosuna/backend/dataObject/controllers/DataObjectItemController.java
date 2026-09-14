@@ -11,7 +11,6 @@ import de.aivot.prosuna.backend.dataObject.filters.DataObjectItemFilter;
 import de.aivot.prosuna.backend.dataObject.permissions.DataObjectPermissionProvider;
 import de.aivot.prosuna.backend.dataObject.services.DataObjectItemService;
 import de.aivot.prosuna.backend.dataObject.services.DataObjectSchemaService;
-import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
@@ -48,21 +47,18 @@ public class DataObjectItemController {
     private final DataObjectSchemaService schemaService;
     private final UserService userService;
     private final PermissionService permissionService;
-    private final AuthoredInputValueService authoredInputValueService;
 
     @Autowired
     public DataObjectItemController(AuditService auditService,
                                     DataObjectItemService service,
                                     DataObjectSchemaService schemaService,
                                     UserService userService,
-                                    PermissionService permissionService,
-                                    AuthoredInputValueService authoredInputValueService) {
+                                    PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(DataObjectItemController.class, "Datenobjekte");
         this.service = service;
         this.schemaService = schemaService;
         this.userService = userService;
         this.permissionService = permissionService;
-        this.authoredInputValueService = authoredInputValueService;
     }
 
     @GetMapping("")
@@ -82,19 +78,21 @@ public class DataObjectItemController {
 
         filter.setSchemaKey(schemaKey);
 
-        var schema = schemaService
+        schemaService
                 .retrieve(schemaKey)
                 .orElseThrow(ResponseException::notFound);
 
         return service
                 .list(pageable, filter)
-                .map(i -> DataObjectItemResponseDTO.fromEntity(i, schema, authoredInputValueService));
+                .map(DataObjectItemResponseDTO::fromEntity);
     }
 
     @PostMapping("")
     @Operation(
             summary = "Create Data Object Item",
             description = "Create a new data object item under a specific schema. " +
+                    "Data contains plain values, including nested row values, not authored input-mode envelopes. " +
+                    "The backend derives and validates these values before storing and returning them. " +
                     "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_ITEM_CREATE + "`."
     )
     public DataObjectItemResponseDTO create(
@@ -137,7 +135,7 @@ public class DataObjectItemController {
                 .log();
 
         return DataObjectItemResponseDTO
-                .fromEntity(created, schema, authoredInputValueService);
+                .fromEntity(created);
     }
 
     @GetMapping("{itemId}/")
@@ -154,7 +152,7 @@ public class DataObjectItemController {
         permissionService
                 .requireSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_ITEM_READ);
 
-        var schema = schemaService
+        schemaService
                 .retrieve(schemaKey)
                 .orElseThrow(ResponseException::notFound);
 
@@ -163,7 +161,7 @@ public class DataObjectItemController {
         return service
                 .retrieve(id)
                 .filter(entity -> entity.getDeleted() == null)
-                .map(i -> DataObjectItemResponseDTO.fromEntity(i, schema, authoredInputValueService))
+                .map(DataObjectItemResponseDTO::fromEntity)
                 .orElseThrow(ResponseException::notFound);
     }
 
@@ -171,6 +169,8 @@ public class DataObjectItemController {
     @Operation(
             summary = "Update Data Object Item",
             description = "Update an existing data object item under a specific schema. " +
+                    "Data contains plain values, including nested row values, not authored input-mode envelopes. " +
+                    "The backend derives and validates these values before storing and returning them. " +
                     "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_ITEM_UPDATE + "`."
     )
     public DataObjectItemResponseDTO update(
@@ -217,7 +217,7 @@ public class DataObjectItemController {
                 .log(); // TODO: Add Diff
 
         return DataObjectItemResponseDTO
-                .fromEntity(updated, schema, authoredInputValueService);
+                .fromEntity(updated);
     }
 
     @DeleteMapping("{itemId}/")

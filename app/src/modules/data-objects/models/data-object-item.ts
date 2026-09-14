@@ -1,9 +1,7 @@
-import {AuthoredElementValues} from '../../../models/element-data';
-
 export interface DataObjectItem {
     id: string;
     schemaKey: string;
-    data: AuthoredElementValues;
+    data: Record<string, unknown>;
     created: string;
     updated: string;
 }

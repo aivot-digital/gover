@@ -33,6 +33,7 @@ import {formatMissingPermissionTooltip} from '../../../permissions/utils/permiss
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
+import {type DataObjectItemDraft, fromDataObjectItemDraft, toDataObjectItemDraft} from '../../utils/data-object-editor-values';
 
 export function DataObjectItemDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -88,6 +89,13 @@ export function DataObjectItemDetailsPageIndex() {
         isEditable,
     } = useContext<GenericDetailsPageContextType<DataObjectItem, void>>(GenericDetailsPageContext);
 
+    // The API model remains plain data; only this editor's draft participates in authored-value derivation.
+    const originalDraft = useMemo(() => (
+        originalDataObjectItem != null && dataObjectSchema != null
+            ? toDataObjectItemDraft(originalDataObjectItem, dataObjectSchema.schema)
+            : undefined
+    ), [originalDataObjectItem, dataObjectSchema]);
+
     const {
         currentItem: currentDataObjectItem,
         errors,
@@ -95,10 +103,10 @@ export function DataObjectItemDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<DataObjectItem>(originalDataObjectItem, yupSchema as any, true);
+    } = useFormManager<DataObjectItemDraft>(originalDraft, yupSchema as any, true);
 
     const changeBlocker = useChangeBlocker({
-        original: originalDataObjectItem,
+        original: originalDraft,
         edited: currentDataObjectItem,
         useDeepEquals: true,
     });
@@ -166,11 +174,20 @@ export function DataObjectItemDetailsPageIndex() {
             return;
         }
 
+        let requestItem: DataObjectItem;
+        try {
+            requestItem = fromDataObjectItemDraft(currentDataObjectItem, dataObjectSchema.schema);
+        } catch (error) {
+            console.error('Invalid data-object editor values:', error);
+            dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
+            return;
+        }
+
         setIsBusy(true);
 
         if (isNewItem) {
             new DataObjectItemsApiService(api, dataObjectKey)
-                .create(currentDataObjectItem)
+                .create(requestItem)
                 .then(newDataObjectItem => {
                     setItem(newDataObjectItem);
                     setDerivedData(createDerivedRuntimeElementData());
@@ -197,7 +214,7 @@ export function DataObjectItemDetailsPageIndex() {
                 });
         } else {
             new DataObjectItemsApiService(api, dataObjectKey)
-                .update(currentDataObjectItem.id, currentDataObjectItem)
+                .update(currentDataObjectItem.id, requestItem)
                 .then(updatedDataObjectItem => {
                     setItem(updatedDataObjectItem);
                     setDerivedData(createDerivedRuntimeElementData());

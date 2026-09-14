@@ -2,11 +2,6 @@ package de.aivot.prosuna.backend.dataObject.dtos;
 
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntity;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectSchemaEntity;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
-import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -15,43 +10,35 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 class DataObjectItemResponseDTOTest {
     @Test
-    void shouldWrapEffectiveReplicatingRowsForAuthoring() {
-        var name = new TextInputElement();
-        name.setId("name");
-        var rows = new ReplicatingContainerLayoutElement();
-        rows.setId("rows");
-        rows.setChildren(List.of(name));
-        var schemaElement = new GroupLayoutElement();
-        schemaElement.setId("root");
-        schemaElement.setChildren(List.of(rows));
-
-        var schema = new DataObjectSchemaEntity()
-                .setKey("contacts")
-                .setSchema(schemaElement);
+    void shouldTransportPlainValuesInBothDirectionsIncludingNestedRows() {
+        var mapper = JsonMapper.builder().build();
+        var data = Map.<String, Object>of(
+                "name", "Ada",
+                "rows", List.of(Map.of(
+                        "id", "row-1",
+                        "values", Map.of("details", List.of(Map.of(
+                                "id", "row-2", "values", Map.of("name", "Nested")
+                        )))
+                )),
+                "object", Map.of("type", "Literal", "value", "Business data")
+        );
         var entity = new DataObjectItemEntity()
                 .setSchemaKey("contacts")
                 .setId("1")
-                .setData(Map.of(
-                        "rows", List.of(Map.of(
-                                "id", "row-1",
-                                "values", Map.of("name", "Ada")
-                        ))
-                ))
+                .setData(data)
                 .setCreated(Instant.EPOCH)
                 .setUpdated(Instant.EPOCH);
 
-        var response = DataObjectItemResponseDTO.fromEntity(
-                entity,
-                schema,
-                new AuthoredInputValueService(JsonMapper.builder().build())
-        );
+        var response = DataObjectItemResponseDTO.fromEntity(entity);
+        var json = mapper.readTree(mapper.writeValueAsString(response));
+        assertEquals(mapper.valueToTree(data), json.get("data"));
 
-        var authoredRows = assertInstanceOf(List.class, response.data().getLiteral("rows"));
-        var authoredRow = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, authoredRows.getFirst());
-        assertEquals("Ada", authoredRow.getValues().getLiteral("name"));
+        var request = mapper.readValue(mapper.writeValueAsString(Map.of("id", "1", "data", data)), DataObjectItemRequestDTO.class);
+        var incoming = request.toEntity(new DataObjectSchemaEntity().setKey("contacts"));
+        assertEquals(data, incoming.getData());
+        assertEquals("contacts", incoming.getSchemaKey());
     }
 }

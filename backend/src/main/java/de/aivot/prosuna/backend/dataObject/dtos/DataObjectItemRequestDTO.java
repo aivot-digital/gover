@@ -2,20 +2,24 @@ package de.aivot.prosuna.backend.dataObject.dtos;
 
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntity;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectSchemaEntity;
-import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 
 import jakarta.annotation.Nonnull;
+import jakarta.validation.constraints.NotNull;
+
+import java.util.Map;
 
 public record DataObjectItemRequestDTO(
         @Nonnull
         String id,
         @Nonnull
-        AuthoredElementValues data
+        @NotNull
+        Map<String, Object> data
 ) {
-    public DataObjectItemEntity toEntity(DataObjectSchemaEntity schema) {
+    @Nonnull
+    public DataObjectItemEntity toEntity(@Nonnull DataObjectSchemaEntity schema) {
         return new DataObjectItemEntity()
                 .setSchemaKey(schema.getKey())
                 .setId(id)
-                .setData(data.toLiteralValues());
+                .setData(data);
     }
 }

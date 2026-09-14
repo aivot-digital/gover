@@ -21,7 +21,6 @@ import {GridColDef} from '@mui/x-data-grid';
 import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
 import {ElementToMuiDataGridType} from '../../../../data/element-type/element-to-mui-data-grid-type';
 import {DataObjectItem} from '../../models/data-object-item';
-import {getLiteralElementValue} from '../../../../models/element-data';
 import {flattenElements} from '../../../../utils/flatten-elements';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {ElementType} from '../../../../data/element-type/element-type';
@@ -263,9 +262,7 @@ export function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjec
                 flex: 1,
                 type: ElementToMuiDataGridType[element.type] ?? 'string',
                 valueGetter: (_, row) => {
-                    // Data-object responses wrap persisted effective values as editable literals.
-                    // Unwrap once before applying schema-specific formatting, including the fallback.
-                    const value = getLiteralElementValue<any>(row.data, element.id);
+                    const value: any = row.data[element.id];
 
                     if (value == null) {
                         return null;

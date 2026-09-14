@@ -1,5 +1,4 @@
 import {describe, expect, it, vi} from 'vitest';
-import {literalAuthoredValue} from '../../models/element-data';
 import {listAllPages} from '../../utils/page-utils';
 import {loadDataObjectSelectOptions} from './data-object-select-options';
 
@@ -14,10 +13,10 @@ describe('Data-object option labels', () => {
         [null, 'object-1'],
         ['', 'object-1'],
         [{name: 'Structured value'}, 'object-1'],
-    ])('reads the configured label from the literal payload %j', async (value, expected) => {
+    ])('reads the configured label from the plain value %j', async (value, expected) => {
         vi.mocked(listAllPages).mockResolvedValue([{
             id: 'object-1', schemaKey: 'kitas', created: '', updated: '',
-            data: {name: literalAuthoredValue(value)},
+            data: {name: value},
         }]);
         const options = await loadDataObjectSelectOptions('kitas', 'name', true);
         expect(options).toEqual([expect.objectContaining({
