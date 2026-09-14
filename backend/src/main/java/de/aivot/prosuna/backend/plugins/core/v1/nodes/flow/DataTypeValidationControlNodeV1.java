@@ -20,7 +20,6 @@ import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
-import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
@@ -244,12 +243,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         return groupLayout;
     }
 
-    @Override
-    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                           @Nonnull DataTypeValidationControlNodeConfig configuration) throws ResponseException {
-        // TODO: validate
-        return null;
-    }
+    // TODO: Add node-specific authoring checks through validateConfiguration(context).
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<DataTypeValidationControlNodeConfig> context) throws ProcessNodeExecutionException {

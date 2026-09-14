@@ -487,7 +487,9 @@ class WriteExternalStorageActionNodeV1Test {
     void validateConfiguration_ValidatesTemplateSyntaxInStoragePath() {
         var configuration = configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{"));
 
-        var errors = node.validateConfiguration(processNode(), configuration);
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(), configuration, DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNotNull(errors);
         assertTrue(errors.get(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID).getFirst().contains("Zeile"));
@@ -558,7 +560,10 @@ class WriteExternalStorageActionNodeV1Test {
         var authoredAttachmentSet = new AuthoredElementValues();
         authoredAttachmentSet.putLiteral(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), "{{");
 
-        var errors = node.validateConfiguration(processNode(authoredConfiguration(authoredAttachmentSet)), configuration);
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(authoredConfiguration(authoredAttachmentSet)), configuration,
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNull(errors);
     }

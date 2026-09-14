@@ -285,30 +285,15 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
     @Nullable
     @Override
-    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                           @Nonnull WriteExternalStorageActionNodeConfig configuration) {
-        return validateConfiguration(processNodeEntity, configuration, null);
-    }
-
-    @Nullable
-    @Override
     public Map<String, List<String>> validateConfiguration(
             @Nonnull ProcessNodeConfigurationValidationContext<WriteExternalStorageActionNodeConfig> context
     ) {
-        return validateConfiguration(context.thisNode(), context.configuration(), context);
-    }
-
-    @Nullable
-    private Map<String, List<String>> validateConfiguration(
-            @Nonnull ProcessNodeEntity processNodeEntity,
-            @Nonnull WriteExternalStorageActionNodeConfig configuration,
-            @Nullable ProcessNodeConfigurationValidationContext<WriteExternalStorageActionNodeConfig> context
-    ) {
+        var configuration = context.configuration();
         var errors = new HashMap<String, List<String>>();
 
         // A dynamic container has no authoring rows to inspect. Its shape and all row values are validated after the
         // container resolves at runtime.
-        if (context != null && context.isDeferred(WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID)) {
+        if (context.isDeferred(WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID)) {
             return null;
         }
 
@@ -356,11 +341,11 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 }
             }
 
-            if (Boolean.TRUE.equals(attachmentSetConfig.customizeFileName) && (context == null || !context.isDeferred(
+            if (Boolean.TRUE.equals(attachmentSetConfig.customizeFileName) && !context.isDeferred(
                     WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID,
                     i,
                     WriteExternalStorageConfig.FILE_NAME_FIELD_ID
-            ))) {
+            )) {
                 var fileNameTemplate = StringUtils.toNullableTrimmedString(attachmentSetConfig.fileName);
                 if (fileNameTemplate == null) {
                     addError(errors, WriteExternalStorageConfig.FILE_NAME_FIELD_ID, "Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));

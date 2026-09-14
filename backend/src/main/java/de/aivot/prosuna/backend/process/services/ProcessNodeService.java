@@ -280,8 +280,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 derivedData
         );
 
-        // Legacy providers remain authoring-only. Providers that override the context-based validation hook can
-        // validate the concrete result here after every dynamic value has been resolved and type-checked.
+        // Validate concrete results only after successful derivation. Each provider explicitly guards any checks
+        // that belong exclusively to authoring, such as uniqueness within the process definition.
         if (inputModeContext == InputModeEvaluationContext.Runtime && !skipErrors && !derivedData.hasAnyError()) {
             var validationErrors = provider.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                     entity,

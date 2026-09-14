@@ -310,15 +310,16 @@ class AiHubCompletionActionNodeV1Test {
         var secretId = UUID.randomUUID();
         when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(Map.of("completion", "ai.text")),
                 configuration(
                         "https://aihub.example/api/completions",
                         secretId,
                         "meta-llama/Llama-3.3-70B-Instruct",
                         "Prompt"
-                )
-        );
+                ),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNull(errors);
     }

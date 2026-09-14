@@ -41,6 +41,9 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
@@ -75,6 +78,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class FormTriggerNodeV1Test {
@@ -113,12 +117,24 @@ class FormTriggerNodeV1Test {
     void validateConfiguration_ShouldAllowValidLayoutAndUniqueSlug() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(false);
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
-                configuration("antrag-online", validFormLayout())
-        );
+                configuration("antrag-online", validFormLayout()),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNull(errors);
+    }
+
+    @Test
+    void validateConfiguration_ShouldSkipDefinitionChecksAtRuntime() throws Exception {
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(), configuration("Invalid Slug", new FormLayoutElement()),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Runtime
+        ));
+
+        assertNull(errors);
+        verifyNoInteractions(processNodeRepository);
     }
 
     @Test
@@ -222,10 +238,11 @@ class FormTriggerNodeV1Test {
     void validateConfiguration_ShouldReportMissingPublicTitleFromFormLayout() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(false);
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
-                configuration("antrag-online", new FormLayoutElement())
-        );
+                configuration("antrag-online", new FormLayoutElement()),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNotNull(errors);
         assertEquals(1, errors.size());
@@ -248,10 +265,11 @@ class FormTriggerNodeV1Test {
         var layout = validFormLayout();
         layout.setChildren(List.of(step));
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
-                configuration("antrag-online", layout)
-        );
+                configuration("antrag-online", layout),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNotNull(errors);
         assertEquals(
@@ -264,10 +282,11 @@ class FormTriggerNodeV1Test {
     void validateConfiguration_ShouldRejectDuplicateSlug() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(true);
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
-                configuration("antrag-online", validFormLayout())
-        );
+                configuration("antrag-online", validFormLayout()),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNotNull(errors);
         assertEquals(
@@ -280,10 +299,11 @@ class FormTriggerNodeV1Test {
     void validateConfiguration_ShouldReturnMultipleSlugErrors() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(true);
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
-                configuration("Antrag Online", validFormLayout())
-        );
+                configuration("Antrag Online", validFormLayout()),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNotNull(errors);
         assertEquals(
@@ -299,10 +319,11 @@ class FormTriggerNodeV1Test {
     void validateConfiguration_ShouldReturnSlugAndLayoutErrorsTogether() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(true);
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
-                configuration("antrag-online", new FormLayoutElement())
-        );
+                configuration("antrag-online", new FormLayoutElement()),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNotNull(errors);
         assertEquals(2, errors.size());

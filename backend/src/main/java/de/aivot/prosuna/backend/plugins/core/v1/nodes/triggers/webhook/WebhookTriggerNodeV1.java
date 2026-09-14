@@ -35,6 +35,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
@@ -456,8 +457,15 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
 
     @Nullable
     @Override
-    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                           @Nonnull WebhookTriggerConfigV1 configuration) throws ResponseException {
+    public Map<String, List<String>> validateConfiguration(
+            @Nonnull ProcessNodeConfigurationValidationContext<WebhookTriggerConfigV1> context
+    ) throws ResponseException {
+        // Definition-level checks belong to authoring, not to each execution of a published process.
+        if (!context.isAuthoring()) {
+            return null;
+        }
+        var processNodeEntity = context.thisNode();
+        var configuration = context.configuration();
         var errors = new LinkedHashMap<String, List<String>>();
         var webhookSlug = configuration.slug;
 

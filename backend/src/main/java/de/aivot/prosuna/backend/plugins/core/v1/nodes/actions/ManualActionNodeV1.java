@@ -249,12 +249,6 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     }
 
     @Override
-    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                           @Nonnull ManualActionNodeConfig configuration) throws ResponseException {
-        return null;
-    }
-
-    @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<ManualActionNodeConfig> context) throws ProcessNodeExecutionException {
         var config = loadConfiguration(context.getConfigurationOfExecutingNode());
         var workingProcessData = extractWorkingProcessData(context.getCurrentProcessExecutionData());

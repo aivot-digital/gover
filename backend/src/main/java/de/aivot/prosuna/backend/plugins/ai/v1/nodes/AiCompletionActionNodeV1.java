@@ -24,7 +24,6 @@ import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.ai.AiPlugin;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
-import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
@@ -57,7 +56,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Predicate;
 
 /**
  * Executes a prompt against the AI Completions API and exposes the response as node outputs.
@@ -255,27 +253,13 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
     @Nullable
     @Override
-    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                           @Nonnull AiCompletionActionNodeConfig configuration) throws ResponseException {
-        return validateConfiguration(configuration, ignored -> false);
-    }
-
-    @Nullable
-    @Override
     public Map<String, List<String>> validateConfiguration(
             @Nonnull ProcessNodeConfigurationValidationContext<AiCompletionActionNodeConfig> context
     ) throws ResponseException {
-        return validateConfiguration(context.configuration(), context::isDeferred);
-    }
-
-    @Nullable
-    private Map<String, List<String>> validateConfiguration(
-            @Nonnull AiCompletionActionNodeConfig configuration,
-            @Nonnull Predicate<String> isDeferred
-    ) throws ResponseException {
+        var configuration = context.configuration();
         var errors = new LinkedHashMap<String, List<String>>();
 
-        if (!isDeferred.test(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID)) {
+        if (!context.isDeferred(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
                 errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpoint-URL muss angegeben werden."));
             } else {
@@ -287,7 +271,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
             }
         }
 
-        if (!isDeferred.test(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID)) {
+        if (!context.isDeferred(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
                 errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das Secret für den API-Schlüssel muss ausgewählt werden."));
             } else {
@@ -302,11 +286,11 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
             }
         }
 
-        if (!isDeferred.test(AiCompletionActionNodeConfig.MODEL_FIELD_ID) && StringUtils.isNullOrEmpty(configuration.model)) {
+        if (!context.isDeferred(AiCompletionActionNodeConfig.MODEL_FIELD_ID) && StringUtils.isNullOrEmpty(configuration.model)) {
             errors.put(AiCompletionActionNodeConfig.MODEL_FIELD_ID, List.of("Das Modell muss angegeben werden."));
         }
 
-        if (!isDeferred.test(AiCompletionActionNodeConfig.PROMPT_FIELD_ID)) {
+        if (!context.isDeferred(AiCompletionActionNodeConfig.PROMPT_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.prompt)) {
                 errors.put(AiCompletionActionNodeConfig.PROMPT_FIELD_ID, List.of("Das Prompt muss angegeben werden."));
             }

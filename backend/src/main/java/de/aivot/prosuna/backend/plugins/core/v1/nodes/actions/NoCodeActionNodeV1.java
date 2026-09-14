@@ -243,15 +243,8 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         return metadata;
     }
 
-    @Override
-    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                           @Nonnull NoCodeActionNodeConfiguration configuration) throws ResponseException {
-        // TODO: Check validity of this node configuration.
-        //       - All variables need to be unique.
-        //       - No-Code expressions should be checked for syntax errors (if possible).
-        //       - All types are correct
-        return null;
-    }
+    // TODO: Add authoring checks through validateConfiguration(context) for unique variables,
+    //       No-Code expression syntax and compatible types.
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<NoCodeActionNodeConfiguration> context) throws ProcessNodeExecutionException {

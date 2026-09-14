@@ -375,7 +375,7 @@ class ProcessNodeServiceTest {
     }
 
     @Test
-    void deriveRuntimeConfiguration_ShouldKeepLegacyProviderValidationAuthoringOnly() throws Exception {
+    void deriveRuntimeConfiguration_ShouldRespectProviderAuthoringOnlyChecks() throws Exception {
         var result = service.deriveRuntimeConfiguration(
                 createNode(1, "a"),
                 new FieldValidationTestNodeDefinition(),
@@ -709,8 +709,12 @@ class ProcessNodeServiceTest {
         }
 
         @Override
-        public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                               @Nonnull TestNodeConfig configuration) {
+        public Map<String, List<String>> validateConfiguration(
+                @Nonnull ProcessNodeConfigurationValidationContext<TestNodeConfig> context
+        ) {
+            if (!context.isAuthoring()) {
+                return null;
+            }
             return Map.of(FIELD_ID, List.of("First error.", "Second error."));
         }
 

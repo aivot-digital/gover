@@ -25,7 +25,6 @@ import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.ai.AiPlugin;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
-import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
@@ -54,7 +53,6 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
@@ -267,27 +265,13 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
     @Nullable
     @Override
-    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                           @Nonnull AiProcessDataTransformationActionNodeConfig configuration) throws ResponseException {
-        return validateConfiguration(configuration, ignored -> false);
-    }
-
-    @Nullable
-    @Override
     public Map<String, List<String>> validateConfiguration(
             @Nonnull ProcessNodeConfigurationValidationContext<AiProcessDataTransformationActionNodeConfig> context
     ) throws ResponseException {
-        return validateConfiguration(context.configuration(), context::isDeferred);
-    }
-
-    @Nullable
-    private Map<String, List<String>> validateConfiguration(
-            @Nonnull AiProcessDataTransformationActionNodeConfig configuration,
-            @Nonnull Predicate<String> isDeferred
-    ) throws ResponseException {
+        var configuration = context.configuration();
         var errors = new LinkedHashMap<String, List<String>>();
 
-        if (!isDeferred.test(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID)) {
+        if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
                 errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpoint-URL muss angegeben werden."));
             } else {
@@ -299,7 +283,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
             }
         }
 
-        if (!isDeferred.test(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID)) {
+        if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
                 errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das Secret für den API-Schlüssel muss ausgewählt werden."));
             } else {
@@ -314,11 +298,11 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
             }
         }
 
-        if (!isDeferred.test(AiProcessDataTransformationActionNodeConfig.MODEL_FIELD_ID) && StringUtils.isNullOrEmpty(configuration.model)) {
+        if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.MODEL_FIELD_ID) && StringUtils.isNullOrEmpty(configuration.model)) {
             errors.put(AiProcessDataTransformationActionNodeConfig.MODEL_FIELD_ID, List.of("Das Modell muss angegeben werden."));
         }
 
-        if (!isDeferred.test(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID)) {
+        if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.prompt)) {
                 errors.put(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID, List.of("Das Prompt muss angegeben werden."));
             }

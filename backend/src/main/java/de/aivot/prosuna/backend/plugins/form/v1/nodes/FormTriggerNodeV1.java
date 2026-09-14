@@ -53,6 +53,7 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
@@ -358,8 +359,15 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     @Nullable
     @Override
-    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                           @Nonnull FormTriggerConfigV1 configuration) throws ResponseException {
+    public Map<String, List<String>> validateConfiguration(
+            @Nonnull ProcessNodeConfigurationValidationContext<FormTriggerConfigV1> context
+    ) throws ResponseException {
+        // Definition-level checks belong to authoring, not to each execution of a published process.
+        if (!context.isAuthoring()) {
+            return null;
+        }
+        var processNodeEntity = context.thisNode();
+        var configuration = context.configuration();
         var errors = new LinkedHashMap<String, List<String>>();
         var formSlug = configuration.formSlug;
 
