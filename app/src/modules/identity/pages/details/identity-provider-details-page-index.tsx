@@ -1,42 +1,44 @@
 import {Box, Button, Divider, Grid, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
+import React, {useContext, useMemo, useState} from 'react';
+import {
+    GenericDetailsPageContext,
+    GenericDetailsPageContextType,
+} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
-import {Api, useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
-import HelpIconOutlined from '@mui/icons-material/HelpOutline';
 import Tooltip from '@mui/material/Tooltip';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
-import {FormsApiService} from '../../../forms/forms-api-service';
-import {SecretEntityResponseDTO} from '../../../secrets/dtos/secret-entity-response-dto';
-import {SecretsApiService} from '../../../secrets/secrets-api-service';
-import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
+import {SecretSelectComponent} from '../../../secrets/components/secret-select-component';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
-import {Asset} from '../../../assets/models/asset';
-import {AssetsApiService} from '../../../assets/assets-api-service';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
 import {IdentityAdditionalParameter} from '../../models/identity-additional-parameter';
 import {IdentityAttributeMapping} from '../../models/identity-attribute-mapping';
 import {TableFieldComponent2} from '../../../../components/table-field/table-field-component-2';
-import {StringListInput2} from '../../../../components/string-list-input/string-list-input-2';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
+import {StringListInput} from '../../../../components/string-list-input/string-list-input';
 import {IdentityProviderIcon} from '../../components/identity-provider-icon/identity-provider-icon';
 import {AlertComponent} from '../../../../components/alert/alert-component';
+import {ImageSelector} from '../../../assets/components/image-selector';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import {Page} from '../../../../models/dtos/page';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 
 // allows absolute and relative URLs
 const urlRegex = /^(https?:\/\/[^\s]+|\/[^\s]*)$/;
@@ -44,20 +46,34 @@ const urlRegex = /^(https?:\/\/[^\s]+|\/[^\s]*)$/;
 export const formSchema = yup.object({
     name: yup.string()
         .trim()
-        .min(3, 'Der Name des Nutzerkontenanbieters muss mindestens 3 Zeichen lang sein.')
-        .max(64, 'Der Name des Nutzerkontenanbieters darf maximal 96 Zeichen lang sein.')
-        .required('Der Name des Nutzerkontenanbieters ist ein Pflichtfeld.'),
+        .min(3, 'Der Name des Identitätsanbieters muss mindestens 3 Zeichen lang sein.')
+        .max(64, 'Der Name des Identitätsanbieters darf maximal 96 Zeichen lang sein.')
+        .required('Der Name des Identitätsanbieters ist ein Pflichtfeld.'),
     description: yup.string()
         .trim()
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
         .max(255, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
-        .required('Die Beschreibung des Nutzerkontenanbieters ist ein Pflichtfeld.'),
+        .required('Die Beschreibung des Identitätsanbieters ist ein Pflichtfeld.'),
     iconAssetKey: yup.string(),
     metadataIdentifier: yup.string()
         .trim()
         .min(1, 'Der Metadaten-Identifikator ist ein Pflichtfeld.')
         .max(64, 'Der Metadaten-Identifikator darf maximal 64 Zeichen lang sein.')
         .required('Der Metadaten-Identifikator ist ein Pflichtfeld.'),
+    uniqueIdAttribute: yup.string()
+        .trim()
+        .max(255, 'Die Identitätenkennung darf maximal 255 Zeichen lang sein.')
+        .required('Die Identitätenkennung ist ein Pflichtfeld.')
+        .test(
+            'mapped-attribute',
+            'Die Identitätenkennung muss in den Attributszuweisungen enthalten sein.',
+            function (value) {
+                if (value == null || value.length === 0) return true;
+
+                const attributes = this.parent.attributes as IdentityAttributeMapping[] | undefined;
+                return attributes?.some(attribute => attribute?.keyInData === value) === true;
+            },
+        ),
     authorizationEndpoint: yup.string()
         .trim()
         .min(1, 'Der Autorisierungsendpunkt ist ein Pflichtfeld.')
@@ -95,21 +111,21 @@ export const formSchema = yup.object({
             }).test('row-completeness', 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.', function (row) {
                 if (!row) return true;
 
-                const { label, description, keyInData } = row;
+                const {label, description, keyInData} = row;
 
                 const isAnyFilled = !!label?.trim() || !!description?.trim() || !!keyInData?.trim();
                 const areAllFilled = !!label?.trim() && !!description?.trim() && !!keyInData?.trim();
 
                 if (!isAnyFilled) {
-                    return this.createError({ message: 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.' });
+                    return this.createError({message: 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.'});
                 }
 
                 if (!areAllFilled) {
-                    return this.createError({ message: 'Bitte füllen Sie alle Felder vollständig aus.' });
+                    return this.createError({message: 'Bitte füllen Sie alle Felder vollständig aus.'});
                 }
 
                 return true;
-            })
+            }),
         ),
     defaultScopes: yup.array()
         .of(
@@ -117,7 +133,7 @@ export const formSchema = yup.object({
                 .trim()
                 .test('not-empty-if-present', 'Ein Scope darf nicht leer sein.', val => {
                     return val == null || val.trim().length > 0;
-                })
+                }),
         ),
     additionalParams: yup.array()
         .of(
@@ -127,28 +143,28 @@ export const formSchema = yup.object({
             }).test('row-completeness', 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.', function (row) {
                 if (!row) return true;
 
-                const { key, value } = row;
+                const {key, value} = row;
 
                 const isAnyFilled = !!key?.trim() || !!value?.trim();
                 const areAllFilled = !!key?.trim() && !!value?.trim();
 
                 if (!isAnyFilled) {
-                    return this.createError({ message: 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.' });
+                    return this.createError({message: 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.'});
                 }
 
                 if (!areAllFilled) {
-                    return this.createError({ message: 'Bitte füllen Sie Schlüssel und Wert vollständig aus.' });
+                    return this.createError({message: 'Bitte füllen Sie Schlüssel und Wert vollständig aus.'});
                 }
 
                 return true;
-            })
-        )
+            }),
+        ),
 });
 
 function getIndexedFieldError(
     errors: Record<string, any> | undefined,
     fieldName: string,
-    message: string
+    message: string,
 ): string | undefined {
     if (!errors) return undefined;
 
@@ -158,22 +174,18 @@ function getIndexedFieldError(
 }
 
 export function IdentityProviderDetailsPageIndex() {
-    useAdminGuard();
-
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const api = useApi();
     const showConfirm = useConfirm();
-
-    const [assets, setAssets] = useState<Asset[]>();
-    const [secrets, setSecrets] = useState<SecretEntityResponseDTO[]>();
+    const canDeleteIdentityProvider = useHasSystemPermission(Permission.IDENTITY_PROVIDER_DELETE);
+    const canReadSecrets = useHasSystemPermission(Permission.SECRET_READ);
 
     const [endpointConfigUrl, setEndpointConfigUrl] = useState('');
     const [endpointConfigUrlError, setEndpointConfigUrlError] = useState<string>();
 
     const apiService = useMemo(() => {
-        return new IdentityProvidersApiService(api);
-    }, [api]);
+        return new IdentityProvidersApiService();
+    }, []);
 
     const {
         item: originalIdentityProvider,
@@ -181,6 +193,7 @@ export function IdentityProviderDetailsPageIndex() {
         isNewItem,
         isBusy,
         setIsBusy,
+        isEditable,
     } = useContext<GenericDetailsPageContextType<IdentityProviderDetailsDTO, void>>(GenericDetailsPageContext);
 
     const isSystemProvider = useMemo(() => (
@@ -205,32 +218,39 @@ export function IdentityProviderDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<IdentityProviderDetailsDTO>(originalIdentityProvider, dynamicFormSchema as any);
+    } = useFormManager<IdentityProviderDetailsDTO>(originalIdentityProvider, dynamicFormSchema as any, true);
 
-    const changeBlocker = useChangeBlocker(originalIdentityProvider, identityProvider);
+    const changeBlocker = useChangeBlocker(originalIdentityProvider, identityProvider, undefined, undefined, true);
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
     const [relatedEntities, setRelatedEntities] = useState<ConstraintLinkProps[] | null>(null);
-
-    useEffect(() => {
-        fetchRelatedEntities(api)
-            .then(({assets, secrets}) => {
-                setAssets(assets);
-                setSecrets(secrets);
-            })
-            .catch((err) => {
-                console.error(err);
-            });
-    }, [api]);
+    const editPermission = isNewItem ? Permission.IDENTITY_PROVIDER_CREATE : Permission.IDENTITY_PROVIDER_UPDATE;
+    const editDisabledTooltip = !isEditable
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledTooltip = !canDeleteIdentityProvider
+        ? formatMissingPermissionTooltip(Permission.IDENTITY_PROVIDER_DELETE)
+        : undefined;
 
     const inputsDisabled = useMemo(() => (
-        isBusy || identityProvider == null
-    ), [isBusy, identityProvider]);
+        isBusy || identityProvider == null || !isEditable
+    ), [isBusy, identityProvider, isEditable]);
+    const configurationTablesReadOnly = isSystemProvider || !isEditable;
 
-    if (identityProvider == null || assets == null || secrets == null) {
+    const uniqueIdAttributeOptions = useMemo(() => (
+        (identityProvider?.attributes ?? [])
+            .filter(attribute => isStringNotNullOrEmpty(attribute.keyInData))
+            .map(attribute => ({
+                label: isStringNotNullOrEmpty(attribute.label) ? attribute.label : attribute.keyInData,
+                subLabel: attribute.keyInData,
+                value: attribute.keyInData,
+            }))
+    ), [identityProvider?.attributes]);
+
+    if (identityProvider == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
@@ -269,25 +289,6 @@ export function IdentityProviderDetailsPageIndex() {
             });
     };
 
-    const handleRefreshRelatedEntities = () => {
-        setIsBusy(true);
-        fetchRelatedEntities(api)
-            .then(({assets, secrets}) => {
-                setAssets(assets);
-                setSecrets(secrets);
-            })
-            .then(() => {
-                dispatch(showSuccessSnackbar('Auswahllisten wurden erfolgreich neu geladen.'));
-            })
-            .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Aktualisieren der Auswahllisten.'));
-            })
-            .finally(() => {
-                setIsBusy(false);
-            });
-    };
-
     const handleSave = () => {
         if (identityProvider == null) {
             return;
@@ -309,7 +310,7 @@ export function IdentityProviderDetailsPageIndex() {
                     setItem(newPaymentProvider);
                     reset();
 
-                    dispatch(showSuccessSnackbar('Neuer Nutzerkontenanbieter erfolgreich angelegt.'));
+                    dispatch(showSuccessSnackbar('Neuer Identitätsanbieter erfolgreich angelegt.'));
 
                     // use setTimeout instead of useEffect to prevent unnecessary rerender
                     setTimeout(() => {
@@ -318,7 +319,7 @@ export function IdentityProviderDetailsPageIndex() {
                 })
                 .catch(err => {
                     if (err.status === 409) {
-                        dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Nutzerkontenanbieter verwenden'));
+                        dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Identitätsanbieter verwenden'));
                     } else {
                         console.error(err);
                         dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
@@ -334,11 +335,11 @@ export function IdentityProviderDetailsPageIndex() {
                     setItem(updatedPaymentProvider);
                     reset();
 
-                    dispatch(showSuccessSnackbar('Änderungen am Nutzerkontenanbieter erfolgreich gespeichert.'));
+                    dispatch(showSuccessSnackbar('Änderungen am Identitätsanbieter erfolgreich gespeichert.'));
                 })
                 .catch(err => {
                     if (err.status === 409) {
-                        dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Nutzerkontenanbieter verwenden'));
+                        dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Identitätsanbieter verwenden'));
                     } else {
                         console.error(err);
                         dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
@@ -358,15 +359,20 @@ export function IdentityProviderDetailsPageIndex() {
         setIsBusy(true);
 
         try {
-            const relatedForms = await new FormsApiService(api)
-                .listAll({
-                    identityProviderKey: identityProvider.key,
-                });
+            const relatedForms: Page<any> = {
+                content: [],
+                page: {
+                    size: 0,
+                    number: 0,
+                    totalElements: 0,
+                    totalPages: 0,
+                },
+            };
 
             if (relatedForms.content.length > 0) {
                 const maxVisibleLinks = 5;
                 let processedLinks = relatedForms.content.slice(0, maxVisibleLinks).map(f => ({
-                    label: f.title,
+                    label: f.internalTitle,
                     to: `/forms/${f.id}`,
                 }));
 
@@ -392,7 +398,7 @@ export function IdentityProviderDetailsPageIndex() {
 
     const handleDelete = () => {
         if (isStringNullOrEmpty(identityProvider.key)) {
-            dispatch(showErrorSnackbar('Der Nutzerkontenanbieter konnte nicht gelöscht werden.'));
+            dispatch(showErrorSnackbar('Der Identitätsanbieter konnte nicht gelöscht werden.'));
             return;
         }
 
@@ -402,14 +408,14 @@ export function IdentityProviderDetailsPageIndex() {
             .destroy(identityProvider.key)
             .then(() => {
                 reset(); // prevent change blocker by resetting unsaved changes
-                dispatch(showSuccessSnackbar('Der Nutzerkontenanbieter wurde erfolgreich gelöscht.'));
+                dispatch(showSuccessSnackbar('Der Identitätsanbieter wurde erfolgreich gelöscht.'));
                 navigate('/identity-providers', {
                     replace: true,
                 });
             })
             .catch(err => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Beim Löschen des Nutzerkontenanbieters ist ein Fehler aufgetreten.'));
+                dispatch(showErrorSnackbar('Beim Löschen des Identitätsanbieters ist ein Fehler aufgetreten.'));
                 setIsBusy(false);
             });
     };
@@ -423,7 +429,8 @@ export function IdentityProviderDetailsPageIndex() {
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Nutzerkontos gelesen und umgesetzt haben.
+                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Nutzerkontos
+                            gelesen und umgesetzt haben.
                         </Typography>
                         <Typography gutterBottom>
                             Diese Hinweise finden Sie im Reiter <strong>Einrichtung</strong>.
@@ -441,14 +448,16 @@ export function IdentityProviderDetailsPageIndex() {
         if (newValue === false) {
             const confirmed = await showConfirm({
                 title: 'Deaktivierung bestätigen',
-                confirmButtonText: 'Ja, Nutzerkontenanbieter deaktivieren',
+                confirmButtonText: 'Ja, Identitätsanbieter deaktivieren',
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Wenn Sie den Nutzerkontenanbieter deaktivieren, wird das Nutzerkonto automatisch aus Formularen mit dem Status "In Bearbeitung" entfernt.
+                            Wenn Sie den Identitätsanbieter deaktivieren, wird das Nutzerkonto automatisch aus
+                            Formularen mit dem Status "In Bearbeitung" entfernt.
                         </Typography>
                         <Typography gutterBottom>
-                            Bitte beachten Sie, dass Sie den Nutzerkontenanbieter speichern müssen, um diese Änderung zu übernehmen.
+                            Bitte beachten Sie, dass Sie den Identitätsanbieter speichern müssen, um diese Änderung zu
+                            übernehmen.
                         </Typography>
                     </>
                 ),
@@ -465,20 +474,24 @@ export function IdentityProviderDetailsPageIndex() {
     const defaultScopesError = getIndexedFieldError(
         errors,
         'defaultScopes',
-        'Bitte entfernen Sie leere Scopes.'
+        'Bitte entfernen Sie leere Scopes.',
     );
 
     const attributesError = getIndexedFieldError(
         errors,
         'attributes',
-        'Bitte füllen Sie alle Attributszuweisungen vollständig aus.'
+        'Bitte füllen Sie alle Attributszuweisungen vollständig aus.',
     );
 
     const additionalParamsError = getIndexedFieldError(
         errors,
         'additionalParams',
-        'Bitte füllen Sie alle Schlüssel/Wert-Paare vollständig aus.'
+        'Bitte füllen Sie alle Schlüssel/Wert-Paare vollständig aus.',
     );
+
+    const secretSelectionHint = canReadSecrets
+        ? 'Nur notwendig, wenn der Identitätsanbieter dies erfordert.'
+        : formatMissingPermissionTooltip(Permission.SECRET_READ);
 
     return (
         <Box>
@@ -493,60 +506,51 @@ export function IdentityProviderDetailsPageIndex() {
                     </Typography>
 
                     <Typography sx={{mb: 3, maxWidth: 900}}>
-                        Wenn Ihr Nutzerkontenanbieter dies anbietet, können Sie die Konfiguration automatisch laden. Bitte geben Sie hierfür den Link zur OpenID Endpoint Konfiguration ein und klicken Sie auf "Konfiguration laden".
+                        Wenn Ihr Identitätsanbieter dies anbietet, können Sie die Konfiguration automatisch laden.
+                        Bitte geben Sie hierfür den Link zur OpenID Endpoint Konfiguration ein und klicken Sie auf
+                        "Konfiguration laden".
                     </Typography>
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            gap: '1rem',
-                            alignItems: 'start',
-                        }}
-                    >
-                        <TextFieldComponent
-                            label="Link zu OpenID Endpoint Konfiguration"
-                            placeholder="https://example.com/.well-known/openid-configuration"
-                            value={endpointConfigUrl}
-                            onChange={val => setEndpointConfigUrl(val ?? '')}
-                            error={endpointConfigUrlError}
-                            size={'small'}
-                        />
+                    <TextFieldComponent
+                        label="Link zu OpenID Endpoint Konfiguration"
+                        placeholder="https://example.com/.well-known/openid-configuration"
+                        value={endpointConfigUrl}
+                        onChange={val => setEndpointConfigUrl(val ?? '')}
+                        error={endpointConfigUrlError}
+                        size={'small'}
+                        externalAction={
+                            <Button
+                                onClick={handlePrepareEntity}
+                                variant={'contained'}
+                            >
+                                Konfiguration laden
+                            </Button>
+                        }
+                    />
 
-                        <Button
-                            onClick={handlePrepareEntity}
-                            sx={{
-                                flexShrink: 0,
-                                mt: 2,
-                            }}
-                            variant={'contained'}
-                        >
-                            Konfiguration laden
-                        </Button>
-                    </Box>
-
-                    <Divider sx={{my: 4}} />
+                    <Divider sx={{my: 4}}/>
                 </>
             }
-
             <Typography
                 variant="h5"
                 sx={{mt: 1.5, mb: 1}}
             >
-                Nutzerkontenanbieter konfigurieren
+                Identitätsanbieter konfigurieren
             </Typography>
-
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Konfigurieren Sie den Nutzerkontenanbieter, um Nutzerkonten dieses Anbieters zur Authentifizierung in Formularen verwenden zu können. Sie können die Einstellungen jederzeit anpassen, auch wenn die Konfiguration bereits für
+                Konfigurieren Sie den Identitätsanbieter, um Nutzerkonten dieses Anbieters zur Authentifizierung in
+                Formularen verwenden zu können. Sie können die Einstellungen jederzeit anpassen, auch wenn die
+                Konfiguration bereits für
                 Formulare verwendet wird.
             </Typography>
-
             <Grid
                 container
                 spacing={2}
             >
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     <TextFieldComponent
                         label="Name"
@@ -557,45 +561,54 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('name')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.name}
-                        hint="Name des Nutzerkontenanbieters. Sichtbar auch für Antragsteller:innen im Formular."
+                        hint="Name des Identitätsanbieters. Sichtbar auch für Antragsteller:innen im Formular."
                     />
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
                     sx={{
                         display: 'flex',
                         justifyContent: 'center',
-                        alignItems: 'center',
-                        transform: 'translateY(-10px)',
+                        alignItems: isSystemProvider ? 'center' : 'stretch',
+                    }}
+                    size={{
+                        xs: 12,
+                        md: 6,
                     }}
                 >
                     {
-                        identityProvider.iconAssetKey &&
-                        <Box
-                            sx={{
-                                display: 'inline-block',
-                                py: 1,
-                                px: 2,
-                                border: '1px solid #ccc',
-                                borderRadius: '4px',
-                            }}
-                        >
-                            <IdentityProviderIcon
+                        isSystemProvider
+                            ? <IdentityProviderIcon
                                 name={identityProvider.name}
                                 type={identityProvider.type}
                                 iconAssetKey={identityProvider.iconAssetKey}
                             />
-                        </Box>
+                            : <ImageSelector
+                                label="Logo-Grafik"
+                                hint="Das Logo dient im Formular als Erkennungsmerkmal und wird dort auf einer hellen Schutzfläche dargestellt. Nutzen Sie am besten eine Vektordatei (z.B. SVG) für eine optimale Darstellung. Die Datei muss den öffentlichen Zugriff zulassen."
+                                selectLabel="Logo-Grafik auswählen"
+                                value={identityProvider.iconAssetKey ?? null}
+                                onChange={(value) => {
+                                    handleInputChange('iconAssetKey')(value ?? undefined);
+                                }}
+                                size={{
+                                    aspectRatio: 3,
+                                }}
+                                previewBackgroundColor="#fff"
+                                previewBorderColor="rgba(0, 0, 0, 0.16)"
+                                previewImageFilter="drop-shadow(0 0 1px rgba(0, 0, 0, 0.45))"
+                                disabled={inputsDisabled}
+                                required
+                                error={errors.iconAssetKey}
+                            />
                     }
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     <TextFieldComponent
                         label="Interne Beschreibung"
@@ -607,80 +620,51 @@ export function IdentityProviderDetailsPageIndex() {
                         multiline={true}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.description}
-                        hint="Interne Beschreibung des Nutzerkontenanbieters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
+                        hint="Interne Beschreibung des Identitätsanbieters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
                     />
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    sx={{display: 'flex', alignItems: 'center'}}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     {
                         identityProvider.type != IdentityProviderType.Custom &&
                         <AlertComponent
                             color="info"
-                            sx={{mt: 2}}
+                            sx={{width: '100%'}}
                         >
-                            <strong>Hinweis:</strong> Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
+                            <strong>Hinweis:</strong>{' '}
+                            Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Prosuna
+                            bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
-                >
-                    <SelectFieldComponent
-                        label="Logo-Grafik"
-                        value={identityProvider.iconAssetKey ?? undefined}
-                        onChange={(value) => {
-                            if (isStringNullOrEmpty(value)) {
-                                handleInputChange('iconAssetKey')(undefined);
-                            } else {
-                                handleInputChange('iconAssetKey')(value);
-                            }
-                        }}
-                        disabled={inputsDisabled || isSystemProvider}
-                        required
-                        options={
-                            assets
-                                .map((secret) => ({
-                                    value: secret.key,
-                                    label: secret.filename,
-                                }))
-                        }
-                        error={errors.iconAssetKey}
-                        hint={'Das Logo dient im Formular als Erkennungsmerkmal. Nutzen Sie am besten eine Vektordatei (z.B. SVG) für eine optimale Darstellung. Die Datei muss den öffentlichen Zugriff zulassen.'}
-                    />
-                </Grid>
-
-                <Grid
-                    item
-                    xs={12}
-                    md={6}
-                />
-
-                <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     <CheckboxFieldComponent
-                        label="Aktiv (kann in konfigurierten Formularen genutzt werden)"
+                        label="Aktiv"
                         value={identityProvider.isEnabled}
                         onChange={handleStatusChange}
                         variant="switch"
                         error={errors.isEnabled}
-                        hint="Gibt an, ob dieser Nutzerkontenanbieter aktiviert ist. Bei temporären technischen Problemen o.Ä. kann der Anbieter deaktiviert werden, ohne die Konfiguration zu verlieren."
+                        hint="Gibt an, ob diese Konfiguration aktiviert ist. Bei temporären technischen Problemen o. Ä. kann der Identitätsanbieter deaktiviert werden, ohne die Konfiguration zu verlieren."
                         disabled={inputsDisabled}
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     <CheckboxFieldComponent
                         label="Es handelt sich um eine vorproduktive Konfiguration"
@@ -692,11 +676,26 @@ export function IdentityProviderDetailsPageIndex() {
                         disabled={inputsDisabled || isSystemProvider}
                     />
                 </Grid>
-
                 <Grid
-                    item
-                    xs={12}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
+                    <CheckboxFieldComponent
+                        label="PKCE S256 (Proof Key for Code Exchange) verwenden"
+                        value={identityProvider.pkceMethod === 'S256'}
+                        onChange={(value) => {
+                            handleInputChange('pkceMethod')(value ? 'S256' : null);
+                        }}
+                        variant="switch"
+                        error={errors.pkceMethod}
+                        hint="Gibt an, ob bei der Authorisierung das PKCE-Verfahren mit dem S256-Hashalgorithmus verwendet werden soll. Dies erhöht die Sicherheit bei der Authorisierung, insbesondere bei öffentlichen Clients."
+                        disabled={inputsDisabled || isSystemProvider}
+                    />
+                </Grid>
+
+                <Grid size={12}>
                     <Typography
                         variant="h6"
                         sx={{mt: 4, mb: 0}}
@@ -704,10 +703,7 @@ export function IdentityProviderDetailsPageIndex() {
                         Technische Konfiguration
                     </Typography>
                 </Grid>
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Metadaten-Identifikator"
                         required
@@ -720,10 +716,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zur Authorisierung"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
@@ -737,10 +730,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zum Erstellen des Tokens"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
@@ -754,10 +744,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt für Informationen über die Nutzer:in"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
@@ -772,10 +759,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zum Beenden der Session"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
@@ -791,9 +775,10 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     <TextFieldComponent
                         label="Client ID"
@@ -803,39 +788,33 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('clientId')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.clientId}
-                        hint="ID des Clients unter dem der Nutzerkontenanbieter erreichbar ist."
+                        hint="ID des Clients, unter der der Identitätsanbieter erreichbar ist."
                     />
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
-                    <SelectFieldComponent
+                    <SecretSelectComponent
                         label="Client Secret"
-                        value={identityProvider.clientSecretKey ?? undefined}
+                        value={canReadSecrets ? identityProvider.clientSecretKey ?? undefined : undefined}
                         onChange={(value) => {
-                            if (isStringNullOrEmpty(value)) {
-                                handleInputChange('clientSecretKey')(undefined);
-                            } else {
-                                handleInputChange('clientSecretKey')(value);
-                            }
+                            handleInputChange('clientSecretKey')(value ?? undefined);
                         }}
-                        disabled={inputsDisabled || isSystemProvider}
-                        options={
-                            secrets
-                                .map((secret) => ({
-                                    value: secret.key,
-                                    label: secret.name,
-                                }))
+                        disabled={inputsDisabled || isSystemProvider || !canReadSecrets}
+                        placeholder={
+                            !canReadSecrets && identityProvider.clientSecretKey != null
+                                ? 'Keine Berechtigung zur Einsicht'
+                                : undefined
                         }
-                        hint={'Nur notwendig, wenn der Nutzerkontenanbieter dies erfordert.'}
+                        hint={secretSelectionHint}
                     />
                 </Grid>
             </Grid>
-
-            <StringListInput2
+            <StringListInput
                 label="Scopes"
                 hint=""
                 addLabel="Scope hinzufügen"
@@ -845,11 +824,11 @@ export function IdentityProviderDetailsPageIndex() {
                     handleInputChange('defaultScopes')(value ?? []);
                 }}
                 allowEmpty={true}
-                disabled={inputsDisabled || isSystemProvider}
+                busy={isBusy}
+                readOnly={configurationTablesReadOnly}
                 error={defaultScopesError}
                 sx={{my: 4}}
             />
-
             <TableFieldComponent2<IdentityAdditionalParameter>
                 label="Zusätzliche Parameter"
                 fields={[
@@ -857,13 +836,11 @@ export function IdentityProviderDetailsPageIndex() {
                         key: 'key',
                         label: 'Schlüssel',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'value',
                         label: 'Wert',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                 ]}
                 createDefaultRow={() => ({key: '', value: ''})}
@@ -871,15 +848,12 @@ export function IdentityProviderDetailsPageIndex() {
                 onChange={(value) => {
                     handleInputChange('additionalParams')(value ?? []);
                 }}
-                disabled={inputsDisabled || isSystemProvider}
+                busy={isBusy}
+                readOnly={configurationTablesReadOnly}
                 error={additionalParamsError}
                 sx={{my: 4}}
             />
-
-            <Grid
-                item
-                xs={12}
-            >
+            <Grid size={12}>
                 <Typography
                     variant="h6"
                     sx={{mt: 4, mb: 0}}
@@ -887,7 +861,6 @@ export function IdentityProviderDetailsPageIndex() {
                     Attributszuweisungen
                 </Typography>
             </Grid>
-
             <TableFieldComponent2<IdentityAttributeMapping>
                 label="Attributszuweisungen"
                 fields={[
@@ -895,28 +868,24 @@ export function IdentityProviderDetailsPageIndex() {
                         key: 'label',
                         label: 'Titel',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'description',
                         label: 'Beschreibung',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'keyInData',
                         label: 'Feldname',
                         type: 'string',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'displayAttribute',
                         label: 'Anzeigeattribut',
                         type: 'boolean',
-                        disabled: inputsDisabled || isSystemProvider,
                     },
                 ]}
-                hint="Geben Sie hier die Attributszuweisungen an, die für den Nutzerkontenanbieter gelten sollen."
+                hint="Geben Sie hier die Attributszuweisungen an, die für den Identitätsanbieter gelten sollen."
                 createDefaultRow={() => ({
                     label: '',
                     description: '',
@@ -927,7 +896,8 @@ export function IdentityProviderDetailsPageIndex() {
                 onChange={(value) => {
                     handleInputChange('attributes')(value ?? []);
                 }}
-                disabled={inputsDisabled || isSystemProvider}
+                busy={isBusy}
+                readOnly={configurationTablesReadOnly}
                 addTooltip="Attributszuweisung hinzufügen"
                 deleteTooltip="Attributszuweisung löschen"
                 noRowsPlaceholder="Keine Attributszuweisungen vorhanden"
@@ -936,27 +906,36 @@ export function IdentityProviderDetailsPageIndex() {
                     content: (
                         <Box>
                             <Typography>
-                                Hier können Sie die Attributszuweisungen (Claim-Zuordnung) für den Nutzerkontenanbieter hinterlegen. Bitte beachten Sie, dass diese Einstellungen nur für den ausgewählten Anbieter gelten.
+                                Hier können Sie die Attributszuweisungen (Claim-Zuordnung) für den Identitätsanbieter
+                                hinterlegen. Bitte beachten Sie, dass diese Einstellungen nur für den ausgewählten
+                                Anbieter gelten.
                             </Typography>
                             <ul style={{marginTop: '1rem', paddingLeft: '1.1rem'}}>
                                 <li>
-                                    <strong>Titel</strong> – Anzeigename, der später in der Gover-Oberfläche
+                                    <strong>Titel</strong>
+                                    – Anzeigename, der später in der Prosuna-Oberfläche
                                     erscheint (z.&nbsp;B. „E-Mail“ oder „Nachname“).
                                 </li>
 
                                 <li>
-                                    <strong>Beschreibung</strong> – Kurze Erklärung, wofür das Attribut
+                                    <strong>Beschreibung</strong>
+                                    – Kurze Erklärung, wofür das Attribut
                                     verwendet wird bzw. welche Daten es enthält.
                                 </li>
 
                                 <li>
-                                    <strong>Feldname</strong> – Schlüssel in den Daten / Claim-Name
-                                    (<code>email</code>, <code>given_name</code>, …), so wie er im <em>userinfo</em>-Response bzw. ID-Token vorkommt.
+                                    <strong>Feldname</strong>
+                                    – Schlüssel in den Daten / Claim-Name
+                                    (
+                                    <code>email</code>
+                                    , <code>given_name</code>, …), so wie er im <em>userinfo</em>-Response bzw. ID-Token
+                                    vorkommt.
                                 </li>
 
                                 <li>
-                                    <strong>Anzeigeattribut</strong> – Steuert, ob der Wert später
-                                    zur Identifikation in Übersichten von Gover (z. B. in Anträgen) angezeigt wird.
+                                    <strong>Anzeigeattribut</strong>
+                                    – Steuert, ob der Wert später
+                                    zur Identifikation in Übersichten von Prosuna (z. B. in Anträgen) angezeigt wird.
                                 </li>
                             </ul>
                         </Box>
@@ -965,7 +944,20 @@ export function IdentityProviderDetailsPageIndex() {
                 error={attributesError}
                 sx={{my: 4}}
             />
-
+            <SelectFieldComponent
+                label="Identitätenkennung"
+                required
+                value={identityProvider.uniqueIdAttribute || null}
+                onChange={(value) => {
+                    handleInputChange('uniqueIdAttribute')(value ?? '');
+                }}
+                options={uniqueIdAttributeOptions}
+                disabled={inputsDisabled || isSystemProvider}
+                error={errors.uniqueIdAttribute}
+                emptyStatePlaceholder="Keine Attributszuweisungen vorhanden"
+                hint="Wählen Sie das Attribut, dessen Wert eine Identität bei ihrem Identitätsanbieter eindeutig kennzeichnet."
+                sx={{my: 4}}
+            />
             <Box
                 sx={{
                     display: 'flex',
@@ -973,30 +965,20 @@ export function IdentityProviderDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
-                    disabled={isBusy || hasNotChanged}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon />}
+                <DisabledTooltip
+                    title={editDisabledTooltip}
+                    disabled={isBusy || hasNotChanged || !isEditable}
                 >
-                    Speichern
-                </Button>
-
-                {
-                    !isSystemProvider &&
-                    <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Dateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
-                        <Button
-                            onClick={handleRefreshRelatedEntities}
-                            disabled={isBusy}
-                        >
-                            Auswahllisten neu laden <HelpIconOutlined
-                            fontSize="small"
-                            sx={{ml: 1}}
-                        />
-                        </Button>
-                    </Tooltip>
-                }
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon/>}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
                     isStringNotNullOrEmpty(identityProvider.key) &&
@@ -1009,27 +991,32 @@ export function IdentityProviderDetailsPageIndex() {
                     >
                         {
                             !originalIdentityProvider.isEnabled &&
-                            <Button
-                                variant="outlined"
-                                onClick={checkAndHandleDelete}
-                                disabled={isBusy}
-                                color="error"
-
-                                startIcon={<DeleteOutlinedIcon />}
+                            <DisabledTooltip
+                                title={deleteDisabledTooltip}
+                                disabled={isBusy || !canDeleteIdentityProvider}
                             >
-                                Löschen
-                            </Button>
+                                <Button
+                                    variant="outlined"
+                                    onClick={checkAndHandleDelete}
+                                    disabled={isBusy || !canDeleteIdentityProvider}
+                                    color="error"
+
+                                    startIcon={<Delete/>}
+                                >
+                                    Löschen
+                                </Button>
+                            </DisabledTooltip>
                         }
 
                         {
                             originalIdentityProvider.isEnabled &&
-                            <Tooltip title="Zum Löschen muss der Nutzerkontenanbieter zuerst deaktiviert und gespeichert werden.">
+                            <Tooltip title="Zum Löschen muss der Identitätsanbieter zuerst deaktiviert und gespeichert werden." arrow>
                                 <span>
                                     <Button
                                         variant="outlined"
                                         disabled={true}
                                         color="error"
-                                        startIcon={<DeleteOutlinedIcon />}
+                                        startIcon={<Delete/>}
                                     >
                                         Löschen
                                     </Button>
@@ -1039,11 +1026,9 @@ export function IdentityProviderDetailsPageIndex() {
                     </Box>
                 }
             </Box>
-
             {changeBlocker.dialog}
-
             <ConfirmDialog
-                title="Nutzerkontenanbieter löschen"
+                title="Identitätsanbieter löschen"
                 onCancel={() => setShowConfirmDialog(false)}
                 onConfirm={showConfirmDialog ? handleDelete : undefined}
                 confirmationText={identityProvider.name}
@@ -1051,37 +1036,17 @@ export function IdentityProviderDetailsPageIndex() {
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Möchten Sie diesen Nutzerkontenanbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Möchten Sie diesen Identitätsanbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht
+                    werden.
                 </Typography>
             </ConfirmDialog>
-
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
-                message="Dieser Nutzerkontenanbieter kann nicht gelöscht werden, da er noch in Formularen verwendet wird."
+                message="Dieser Identitätsanbieter kann nicht gelöscht werden, da er noch in Formularen verwendet wird."
                 solutionText="Bitte ändern Sie die Einstellungen zur Einbindung von Nutzerkonten in diesen Formularen und versuchen Sie es erneut:"
                 links={relatedEntities ?? undefined}
             />
         </Box>
     );
-}
-
-async function fetchRelatedEntities(api: Api): Promise<{
-    assets: Asset[];
-    secrets: SecretEntityResponseDTO[];
-}> {
-    const [assets, secrets] = await Promise
-        .all([
-            new AssetsApiService(api)
-                .listAll({
-                    contentType: 'image/',
-                    isPrivate: false,
-                }),
-            new SecretsApiService(api)
-                .listAll(),
-        ]);
-    return {
-        assets: assets.content,
-        secrets: secrets.content,
-    };
 }

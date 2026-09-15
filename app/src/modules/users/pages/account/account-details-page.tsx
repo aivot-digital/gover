@@ -1,7 +1,7 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
-import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
+import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 
 export function AccountDetailsPage() {
     return (
@@ -20,7 +20,7 @@ export function AccountDetailsPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Ihr Konto ist die zentrale Anlaufstelle für Ihre persönlichen Informationen und Einstellungen. Hier können Sie Ihre Kontoinformationen einsehen und bearbeiten, Ihre Fachbereichs-Mitgliedschaften verwalten und Benachrichtigungseinstellungen anpassen.
+                                    Ihr Konto ist die zentrale Anlaufstelle für Ihre persönlichen Informationen und Einstellungen. Hier können Sie Ihre Kontoinformationen einsehen und bearbeiten, Ihre Mitgliedschaften in Organisationseinheiten verwalten und Benachrichtigungseinstellungen anpassen.
                                 </Typography>
                                 <Typography sx={{ mt: 2 }}>
                                     Wenn Sie Fragen zur Kontoverwaltung haben, wenden Sie sich bitte an den Administrator.
@@ -36,7 +36,7 @@ export function AccountDetailsPage() {
                     },
                     {
                         path: '/account/memberships-and-roles',
-                        label: 'Fachbereiche und Rollen',
+                        label: 'Organisationseinheiten und Rollen',
                     },
                     {
                         path: '/account/notifications',

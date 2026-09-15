@@ -1,28 +1,7 @@
-import React, { useState, useEffect, ReactNode } from "react";
-import {
-    Box,
-    Button,
-    Divider,
-    List,
-    Typography,
-    SxProps,
-    Theme, useTheme,
-} from "@mui/material";
-import UnfoldLessOutlinedIcon from "@mui/icons-material/UnfoldLessOutlined";
-import UnfoldMoreOutlinedIcon from "@mui/icons-material/UnfoldMoreOutlined";
-
-const srOnly: SxProps<Theme> = {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    margin: -1,
-    padding: 0,
-    border: 0,
-    overflow: 'hidden',
-    clip: 'rect(0 0 0 0)',
-    whiteSpace: 'nowrap',
-    clipPath: 'inset(50%)',
-};
+import React, {ReactNode, useEffect, useState} from 'react';
+import {Box, Button, Divider, List, Typography, useTheme} from '@mui/material';
+import UnfoldLessOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldLess';
+import UnfoldMoreOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldMore';
 
 interface ExpandableListProps<T> {
     title?: string;
@@ -34,7 +13,7 @@ interface ExpandableListProps<T> {
     listId?: string;
 }
 
-const ExpandableList = <T,>({
+export const ExpandableList = <T,>({
                                 title,
                                 items = [],
                                 initialVisible = 3,
@@ -84,7 +63,6 @@ const ExpandableList = <T,>({
                 <Typography
                     component="h3"
                     variant="h5"
-                    color="primary"
                 >
                     {title}
                 </Typography>
@@ -146,12 +124,10 @@ const ExpandableList = <T,>({
             <Box
                 aria-live="polite"
                 role="status"
-                sx={srOnly}
+                className="visually-hidden"
             >
                 {announceText}
             </Box>
         </Box>
     );
 };
-
-export default ExpandableList;

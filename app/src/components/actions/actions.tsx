@@ -1,38 +1,75 @@
-import {Action, ActionsProps} from './actions-props';
+import {type Action, type ActionColor, type ActionsProps, type ActionTooltipPlacement} from './actions-props';
 import {Box, Button, IconButton, Tooltip} from '@mui/material';
-import React from 'react';
+import React, {type ReactNode} from 'react';
 import {Link} from 'react-router-dom';
+import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
 
-export function Actions(props: ActionsProps) {
+export function Actions(props: ActionsProps): ReactNode {
     return (
         <Box
             sx={{
-                ...props.sx,
                 display: 'flex',
+                flexDirection: props.direction ?? 'row',
                 alignItems: 'center',
+                height: props.direction == null || props.direction === 'row' || props.direction === 'row-reverse' ? '100%' : undefined,
+                width: props.direction === 'column' || props.direction === 'column-reverse' ? '100%' : undefined,
+                gap: (props.dense === true) ? 1 : 2,
+                ...props.sx,
             }}
         >
             {
-                props.actions != null &&
-                props.actions
-                    .map((action, index) => dispatchToolbarAction(action, index, props.isBusy ?? false, props.dense ??  false))
+                props
+                    .actions
+                    ?.map((action, index) => (
+                        <ToolbarActionDispatcher
+                            key={action === 'separator' ? index : (action.label ?? action.tooltip ?? index)}
+                            action={action}
+                            color={props.color ?? 'primary'}
+                            index={index}
+                            isBusy={props.isBusy ?? false}
+                            isFirst={index === 0}
+                            isLast={index === ((props.actions?.length ?? 0) - 1)}
+                            tooltipPlacement={props.tooltipPlacement ?? 'bottom'}
+                            size={props.size ?? 'small'}
+                        />
+                    ))
             }
         </Box>
     );
 }
 
-function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, dense: boolean) {
-    // Check if this action is a separator and render a simple separator div
+interface ToolbarActionDispatcherProps {
+    action: Action;
+    color: ActionColor;
+    index: number;
+    isBusy: boolean;
+    isFirst: boolean;
+    isLast: boolean;
+    tooltipPlacement: ActionTooltipPlacement;
+    size: 'small' | 'medium' | 'large';
+}
+
+function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode {
+    const {
+        action,
+        color,
+        index,
+        isBusy,
+        isFirst,
+        isLast,
+        tooltipPlacement,
+        size,
+    } = props;
+
     if (action === 'separator') {
         return (
             <Box
-                key={action + index}
+                key={action + index.toString()}
                 sx={{
-                    ml: dense ? 1 : 2,
                     width: '1px',
                     height: '2em',
-                    backgroundColor: 'black',
-                    opacity: '.15',
+                    backgroundColor: 'divider',
+                    m: 0,
                 }}
             />
         );
@@ -43,33 +80,43 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, d
         return null;
     }
 
+    const actionColor = action.color ?? color;
+
     // Determine the component to render, either a button or a link
-    const component = 'onClick' in action ? 'button' : ('to' in action ? Link : 'a');
+    const isHashLink = 'to' in action && action.to.startsWith('#');
+    const component = 'onClick' in action ? 'button' : ('to' in action ? (isHashLink ? 'a' : Link) : 'a');
 
     // Determine shared properties
     const href = 'href' in action ? action.href : undefined;
     const to = 'to' in action ? action.to : undefined;
+    const resolvedHref = isHashLink ? to : href;
     const target = 'href' in action ? '_blank' : undefined;
+    const rel = 'href' in action ? 'noopener noreferrer' : undefined;
     const onClick = 'onClick' in action ? action.onClick : undefined;
     const shouldDisable = action.ignoreBusy ? action.disabled : (action.disabled || isBusy);
+    const activeStyle = 'activeStyle' in action ? action.activeStyle : undefined;
 
     // Build the element for this action which will then be encapsulated in a tooltip
     let element;
     if (action.label != null) {
         element = (
             <Button
-                size="small"
-                color="primary"
-                variant={action.variant}
+                size={size}
+                color={actionColor}
                 sx={{
-                    ml: dense ? 0.5 : 1,
+                    m: 0,
+                    ...(activeStyle != null ? activeStyle : {}),
                 }}
+                variant={action.variant}
                 onClick={onClick}
                 component={component}
-                href={href}
-                to={to}
+                href={resolvedHref}
+                to={isHashLink ? undefined : to}
                 target={target}
-                endIcon={action.icon}
+                rel={rel}
+                aria-label={action.ariaLabel}
+                startIcon={action.iconPosition === 'start' ? action.icon : undefined}
+                endIcon={action.iconPosition === 'start' ? undefined : action.icon}
                 disabled={shouldDisable}
             >
                 {action.label}
@@ -78,27 +125,51 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, d
     } else {
         element = (
             <IconButton
-                size="small"
-                color="primary"
+                size={size}
+                color={actionColor}
                 sx={{
-                    ml: dense ? 0.5 : 1,
+                    m: 0,
+                    ...(activeStyle != null ? activeStyle : {}),
                 }}
                 onClick={onClick}
                 component={component}
-                href={href}
-                to={to}
+                href={resolvedHref}
+                to={isHashLink ? undefined : to}
                 target={target}
+                rel={rel}
+                aria-label={action.ariaLabel ?? action.tooltip}
                 disabled={shouldDisable}
+                edge={isFirst ? 'start' : isLast ? 'end' : false}
             >
                 {action.icon}
             </IconButton>
         );
     }
 
-    if (action.tooltip) {
+    if (shouldDisable === true && action.disabledTooltip != null) {
         return (
-            <Tooltip key={index} title={action.tooltip} arrow>
-                <span>{element}</span>
+            <DisabledTooltip
+                key={index}
+                disabled
+                title={action.disabledTooltip}
+                placement={tooltipPlacement}
+            >
+                {element}
+            </DisabledTooltip>
+        );
+    }
+
+    if (action.tooltip != null) {
+        return (
+            <Tooltip
+                key={index}
+                title={action.tooltip}
+                arrow
+                placement={tooltipPlacement}
+            >
+                <span>
+                    {element}
+                </span>
             </Tooltip>
         );
     }

@@ -3,6 +3,7 @@ import {IdentityAdditionalParameter} from './identity-additional-parameter';
 
 export interface IdentityProviderRequestDTO {
     metadataIdentifier: string;
+    uniqueIdAttribute: string;
     name: string;
     description: string;
     iconAssetKey?: string | null;

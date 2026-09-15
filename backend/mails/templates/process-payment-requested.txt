@@ -1,0 +1,19 @@
+Hallo,
+
+für den Vorgang [(${process.internalTitle})] wurde eine Zahlung angefordert.
+
+Aufgabe: [(${taskName})]
+Aktenzeichen: [(${processInstance.caseNumber})]
+Zahlungsanbieter: [(${paymentProvider.name})]
+Buchungszweck: [(${paymentPayload.purpose})]
+Beschreibung: [(${paymentPayload.description})]
+Gesamtbetrag: [(${paymentTotalLabel})]
+
+Positionen:
+[# th:each="itemLine : ${paymentItemLines}"]- [(${itemLine})]
+[/]
+
+Sie können die Zahlung über den nachfolgenden Link durchführen:
+[(${paymentUrl})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

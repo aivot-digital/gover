@@ -1,8 +1,3 @@
-/**
- * @deprecated Use withAsyncWrapper instead
- * @param promise
- * @param delay
- */
 export async function delayPromise<T>(promise: Promise<T>, delay?: number): Promise<T> {
     const _delay = delay ?? 500;
     const start = new Date().getMilliseconds();
@@ -22,3 +17,5 @@ export async function delayPromise<T>(promise: Promise<T>, delay?: number): Prom
 
     return res;
 }
+
+export const withDelay = delayPromise;
