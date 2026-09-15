@@ -78,7 +78,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         return replicatingParents
             .map((p) => p.destinationKey)
             .filter((key): key is string => !isStringNullOrEmpty(key))
-            .join('.') + '.*.';
+            .join('[*].') + '[*].';
     }, [replicatingParentDestinationKeyError, replicatingParents]);
 
     const tabDescription = useMemo(() => {

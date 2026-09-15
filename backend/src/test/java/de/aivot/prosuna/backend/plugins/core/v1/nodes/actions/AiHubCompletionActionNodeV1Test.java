@@ -4,6 +4,8 @@ import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.ComputedElementState;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
 import de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiCompletionActionNodeV1;
@@ -11,16 +13,16 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,29 +63,22 @@ class AiHubCompletionActionNodeV1Test {
     private static final int CONFIGURED_COMPLETION_MAX_TOKENS = 1337;
 
     private HttpService httpService;
-    private SecretRepository secretRepository;
     private SecretService secretService;
-    private RecordingTemplateRenderService templateRenderService;
     private AiCompletionActionNodeV1 node;
 
     @BeforeEach
     void setUp() {
         httpService = mock(HttpService.class);
-        secretRepository = mock(SecretRepository.class);
         secretService = mock(SecretService.class);
-        templateRenderService = new RecordingTemplateRenderService();
-
         node = new AiCompletionActionNodeV1(
                 httpService,
-                templateRenderService,
-                secretRepository,
                 secretService,
                 createAiPluginProperties(1000, CONFIGURED_COMPLETION_MAX_TOKENS, 4000)
         );
     }
 
     @Test
-    void init_ShouldRenderPromptSendBearerTokenAndExposeOutputs() throws Exception {
+    void init_ShouldUseDerivedPromptSendBearerTokenAndExposeOutputs() throws Exception {
         var secretId = UUID.randomUUID();
         when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
         when(secretService.decrypt(any(SecretEntity.class))).thenReturn("secret-token");
@@ -120,15 +115,13 @@ class AiHubCompletionActionNodeV1Test {
                         }
                         """.getBytes(StandardCharsets.UTF_8)));
 
-        templateRenderService.nextInterpolationResult = "Rendered prompt";
-
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
                 node.init(context(configuration(
                         "https://aihub.example/api/completions",
                         secretId,
                         "meta-llama/Llama-3.3-70B-Instruct",
-                        "Hello {{ $.person.name }}"
+                        "Rendered prompt"
                 )))
         );
 
@@ -161,8 +154,6 @@ class AiHubCompletionActionNodeV1Test {
         verify(httpService).request(eq(HttpMethod.POST), uriCaptor.capture(), bodyCaptor.capture(), headersCaptor.capture());
 
         assertEquals(URI.create("https://aihub.example/api/completions/chat/completions"), uriCaptor.getValue());
-        assertEquals("Hello {{ $.person.name }}", templateRenderService.lastTemplate);
-
         var requestBody = JsonMapperFactory.getInstance().readValue(bodyCaptor.getValue(), Map.class);
         assertEquals("meta-llama/Llama-3.3-70B-Instruct", requestBody.get("model"));
         @SuppressWarnings("unchecked")
@@ -291,8 +282,6 @@ class AiHubCompletionActionNodeV1Test {
 
         var defaultOnlyNode = new AiCompletionActionNodeV1(
                 httpService,
-                templateRenderService,
-                secretRepository,
                 secretService,
                 createAiPluginProperties(2222, null, 4000)
         );
@@ -316,29 +305,64 @@ class AiHubCompletionActionNodeV1Test {
         var secretId = UUID.randomUUID();
         when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(Map.of("completion", "ai.text")),
                 configuration(
                         "https://aihub.example/api/completions",
                         secretId,
                         "meta-llama/Llama-3.3-70B-Instruct",
                         "Prompt"
-                )
-        );
+                ),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNull(errors);
     }
 
     @Test
+    void validateConfiguration_ShouldDeferPromptChecksOnlyDuringAuthoring() throws Exception {
+        var secretId = UUID.randomUUID();
+        when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
+        var configuration = configuration(
+                "https://aihub.example/api/completions",
+                secretId,
+                "meta-llama/Llama-3.3-70B-Instruct",
+                null
+        );
+        var derivedData = new DerivedRuntimeElementData();
+        derivedData.getElementStates().put(
+                AiCompletionActionNodeV1.AiCompletionActionNodeConfig.PROMPT_FIELD_ID,
+                new ComputedElementState().setInputValueDeferred(true)
+        );
+
+        var authoringErrors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(Map.of()),
+                configuration,
+                derivedData,
+                ProcessNodeConfigurationValidationPhase.Authoring
+        ));
+        var runtimeErrors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(Map.of()),
+                configuration,
+                derivedData,
+                ProcessNodeConfigurationValidationPhase.Runtime
+        ));
+
+        assertNull(authoringErrors);
+        assertNotNull(runtimeErrors);
+        assertTrue(runtimeErrors.containsKey(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.PROMPT_FIELD_ID));
+    }
+
+    @Test
     void cleanConfigurationForExport_ShouldRemoveSecretReference() {
         var configuration = new AuthoredElementValues();
-        configuration.put(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, "https://aihub.example/api/completions");
-        configuration.put(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, UUID.randomUUID().toString());
+        configuration.putLiteral(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, "https://aihub.example/api/completions");
+        configuration.putLiteral(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, UUID.randomUUID().toString());
 
         var cleaned = node.cleanConfigurationForExport(configuration);
 
         assertEquals("https://aihub.example/api/completions",
-                cleaned.get(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID));
+                cleaned.getLiteral(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID));
         assertTrue(!cleaned.containsKey(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID));
     }
 
@@ -463,21 +487,6 @@ class AiHubCompletionActionNodeV1Test {
         properties.setProcessDataTransformation(processDataTransformation);
 
         return properties;
-    }
-
-    private static class RecordingTemplateRenderService extends TemplateRenderService {
-        private String nextInterpolationResult = "";
-        private String lastTemplate;
-
-        private RecordingTemplateRenderService() {
-            super(null);
-        }
-
-        @Override
-        public String interpolate(ProcessExecutionData foldedProcessData, String template) {
-            lastTemplate = template;
-            return nextInterpolationResult.isEmpty() ? template : nextInterpolationResult;
-        }
     }
 
     @SuppressWarnings("unchecked")

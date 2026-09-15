@@ -195,7 +195,6 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
                 sx={{
                     mt: 5,
                     mb: 5,
-                    minHeight: '66vh',
                     /* Remove spacing for richtext components that are immediately preceded by a headline component */
                     '& .MuiGrid-item:has(.headline-component-content) + .MuiGrid-item.MuiGrid-grid-md-12:has(.richtext-component-content)': {
                         paddingTop: 0,

@@ -26,6 +26,7 @@ import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {AlertComponent} from '../../../../components/alert/alert-component';
 
 function selectCsvFile(): Promise<File | null> {
     return new Promise((resolve) => {
@@ -395,20 +396,17 @@ export function CodeListDetailsPageItems() {
                 Prüfen und verwalten Sie die Auswahlwerte dieser Codeliste.
             </Typography>
 
-            <Alert
-                severity="info"
-                sx={{mb: 2}}
+            <AlertComponent
+                title={isManual ? 'Öffentliche Auswahlwerte' : 'Synchronisierte Auswahlwerte'}
+                color="info"
+                sx={{mt: 2, mb: 3}}
             >
-                <AlertTitle>
-                    {isManual ? 'Öffentliche Auswahlwerte' : 'Synchronisierte Auswahlwerte'}
-                </AlertTitle>
-
                 {
                     isManual
                         ? 'Die Auswahlwerte dieser Codeliste können in öffentlichen Formularen verwendet und über die öffentliche Codelisten-API ohne Anmeldung abgerufen werden. Erfassen Sie keine vertraulichen Informationen.'
                         : 'Diese Auswahlwerte werden aus der Quelle synchronisiert und können hier nicht direkt bearbeitet werden. Nach der Synchronisierung sind sie in öffentlichen Formularen und über die öffentliche Codelisten-API ohne Anmeldung abrufbar. Die Quelle darf daher keine vertraulichen Informationen enthalten.'
                 }
-            </Alert>
+            </AlertComponent>
 
             <GenericList<CodeListItem>
                 controlRef={listControlRef}

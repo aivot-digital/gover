@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.elements.annotations;
 
+import de.aivot.prosuna.backend.elements.enums.InputMode;
+import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import jakarta.annotation.Nonnull;
 
 import java.lang.annotation.Retention;
@@ -14,4 +16,19 @@ public @interface ReplicatingContainerLayoutElementElementPOJOBinding {
 
     @Nonnull
     ElementPOJOBindingProperty[] properties() default {};
+
+    @Nonnull
+    InputMode[] allowedInputModes() default {};
+
+    @Nonnull
+    InputMode defaultInputMode() default InputMode.Literal;
+
+    /** Omitting the property allows every variable source when Variable is enabled. */
+    @Nonnull
+    InputVariableSource[] allowedVariableSources() default {
+            InputVariableSource.ProcessData,
+            InputVariableSource.ElementData,
+            InputVariableSource.ElementMetadata,
+            InputVariableSource.ProtectedProcessData
+    };
 }

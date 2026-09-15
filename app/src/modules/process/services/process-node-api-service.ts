@@ -5,6 +5,8 @@ import {type GroupLayout} from '../../../models/elements/form/layout/group-layou
 import {generateId} from '../../../utils/id-utils';
 import {ProcessNodeProblems} from '../entities/process-node-problems';
 import {type ProcessNodeDefinitionMetadata} from '../entities/process-node-definition-metadata';
+import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../../../models/element-data';
+import {type ElementDerivationOptions} from '../../elements/elements-api-service';
 
 interface ProcessDefinitionNodeFilter {
     id: number;
@@ -58,6 +60,14 @@ ProcessDefinitionNodeFilter
 
     public getIncomingMetadata(id: number): Promise<ProcessNodeDefinitionMetadata> {
         return this.get(`${this.path}${id}/incoming-metadata/`);
+    }
+
+    public deriveConfiguration(
+        id: number,
+        authoredElementValues: AuthoredElementValues,
+        derivationOptions: ElementDerivationOptions,
+    ): Promise<DerivedRuntimeElementData> {
+        return this.post(`${this.path}${id}/derive-configuration/`, {authoredElementValues, derivationOptions});
     }
 
     public async getTesting(id: number): Promise<GroupLayout | null> {

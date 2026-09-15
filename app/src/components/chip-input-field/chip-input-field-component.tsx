@@ -187,17 +187,7 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
                     </Box>
                     <Box
                         component="span"
-                        sx={{
-                            position: 'absolute',
-                            width: 1,
-                            height: 1,
-                            p: 0,
-                            m: -1,
-                            overflow: 'hidden',
-                            clip: 'rect(0 0 0 0)',
-                            whiteSpace: 'nowrap',
-                            border: 0,
-                        }}
+                        className="visually-hidden"
                     >
                         {`${selectedValues.length} von ${effectiveMaxItems} Einträgen verwendet`}
                     </Box>
@@ -212,6 +202,7 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
             label={label}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             hint={!hasError ? helperContent : undefined}
             error={hasError ? helperContent : undefined}

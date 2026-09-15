@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 public class MapUtils {
     @Nonnull
@@ -35,18 +36,35 @@ public class MapUtils {
 
     @Nullable
     public static Object deepCopyValue(@Nullable Object value) {
+        return deepCopyValue(value, UnaryOperator.identity());
+    }
+
+    /**
+     * Copies acyclic container structures with optional domain-specific handling at every level.
+     * The handler returns the original instance to use the default traversal, or a completed copy
+     * to bypass it. Unknown leaves and map keys remain shared; mutable leaves need explicit handling.
+     */
+    @Nullable
+    public static Object deepCopyValue(@Nullable Object value, @Nonnull UnaryOperator<Object> copySpecialValue) {
         if (value == null) {
             return null;
         }
 
+        var specialCopy = copySpecialValue.apply(value);
+        if (specialCopy != value) {
+            return specialCopy;
+        }
+
         if (value instanceof Map<?, ?> map) {
-            return deepCopy(map);
+            var result = new LinkedHashMap<Object, Object>();
+            map.forEach((key, item) -> result.put(key, deepCopyValue(item, copySpecialValue)));
+            return result;
         }
 
         if (value instanceof List<?> list) {
             var result = new ArrayList<>(list.size());
             for (var item : list) {
-                result.add(deepCopyValue(item));
+                result.add(deepCopyValue(item, copySpecialValue));
             }
             return result;
         }
@@ -54,7 +72,7 @@ public class MapUtils {
         if (value instanceof Set<?> set) {
             var result = new LinkedHashSet<>();
             for (var item : set) {
-                result.add(deepCopyValue(item));
+                result.add(deepCopyValue(item, copySpecialValue));
             }
             return result;
         }
@@ -62,20 +80,20 @@ public class MapUtils {
         if (value instanceof Collection<?> collection) {
             var result = new ArrayList<>(collection.size());
             for (var item : collection) {
-                result.add(deepCopyValue(item));
+                result.add(deepCopyValue(item, copySpecialValue));
             }
             return result;
         }
 
         if (value.getClass().isArray()) {
-            return deepCopyArray(value);
+            return deepCopyArray(value, copySpecialValue);
         }
 
         return value;
     }
 
     @Nonnull
-    private static Object deepCopyArray(@Nonnull Object array) {
+    private static Object deepCopyArray(@Nonnull Object array, @Nonnull UnaryOperator<Object> copySpecialValue) {
         var length = Array.getLength(array);
         var componentType = array.getClass().getComponentType();
 
@@ -88,7 +106,7 @@ public class MapUtils {
         var copiedItems = new Object[length];
         var canPreserveComponentType = true;
         for (var i = 0; i < length; i++) {
-            var copiedItem = deepCopyValue(Array.get(array, i));
+            var copiedItem = deepCopyValue(Array.get(array, i), copySpecialValue);
             copiedItems[i] = copiedItem;
             if (copiedItem != null && !componentType.isInstance(copiedItem)) {
                 canPreserveComponentType = false;

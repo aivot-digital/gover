@@ -1,7 +1,9 @@
 package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
+import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
@@ -18,8 +20,11 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-public class TextInputElement extends BaseInputElement<String> implements PrintableElement<String> {
+public class TextInputElement extends BaseInputElement<String> implements PrintableElement<String>, DynamicTextElement {
     public static final String COPY_VALUE_TEMPLATE_PLACEHOLDER = "{value}";
+
+    @Nullable
+    private DynamicTextPolicy dynamicTextPolicy;
 
     @Nullable
     private String placeholder;
@@ -192,7 +197,8 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
                 && Objects.equals(copyable, textField.copyable)
                 && Objects.equals(copyValueTemplate, textField.copyValueTemplate)
                 && Objects.equals(pattern, textField.pattern)
-                && Objects.equals(suggestions, textField.suggestions);
+                && Objects.equals(suggestions, textField.suggestions)
+                && Objects.equals(dynamicTextPolicy, textField.dynamicTextPolicy);
     }
 
     @Override
@@ -208,6 +214,7 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         result = 31 * result + Objects.hashCode(copyValueTemplate);
         result = 31 * result + Objects.hashCode(pattern);
         result = 31 * result + Objects.hashCode(suggestions);
+        result = 31 * result + Objects.hashCode(dynamicTextPolicy);
         return result;
     }
 
@@ -215,6 +222,19 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
     // endregion
 
     // region Getters & Setters
+
+    @Override
+    @Nullable
+    public DynamicTextPolicy getDynamicTextPolicy() {
+        return dynamicTextPolicy;
+    }
+
+    @Override
+    @Nonnull
+    public TextInputElement setDynamicTextPolicy(@Nullable DynamicTextPolicy dynamicTextPolicy) {
+        this.dynamicTextPolicy = dynamicTextPolicy;
+        return this;
+    }
 
     @Nullable
     public String getPlaceholder() {

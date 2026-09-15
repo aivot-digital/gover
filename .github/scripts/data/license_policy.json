@@ -456,6 +456,30 @@
       "versions": ["*"],
       "_comment": "Prosuna internal package under Sustainable Use License."
     },
+    "sdk-client": {
+      "versions": ["4.0.0-rc.1"],
+      "_comment": "Reviewed under EUPL-1.2; the upstream legal notice permits unmodified SDK integration without licensing the application under EUPL."
+    },
+    "core": {
+      "versions": ["4.0.0-rc.1"],
+      "_comment": "Reviewed under EUPL-1.2; the upstream legal notice permits unmodified SDK integration without licensing the application under EUPL."
+    },
+    "rest-clients": {
+      "versions": ["4.0.0-rc.1"],
+      "_comment": "Reviewed under EUPL-1.2; the upstream legal notice permits unmodified SDK integration without licensing the application under EUPL."
+    },
+    "virus-scanner": {
+      "versions": ["4.0.0-rc.1"],
+      "_comment": "Reviewed under EUPL-1.2; the upstream legal notice permits unmodified SDK integration without licensing the application under EUPL."
+    },
+    "jwkvalidator": {
+      "versions": ["3.0.0-beta.1"],
+      "_comment": "Reviewed under EUPL-1.2; transitive FIT-Connect SDK dependency, used but not modified."
+    },
+    "zbp-client": {
+      "versions": ["4.0.0-rc.1"],
+      "_comment": "Reviewed under EUPL-1.2; the upstream legal notice permits unmodified SDK integration without licensing the application under EUPL."
+    },
     "h2": {
       "versions": ["2.4.240"],
       "_comment": "Reviewed under MPL-2.0; weak copyleft, used but not modified."
@@ -537,6 +561,14 @@
       "license": "LicenseRef-scancode-bsd-3-clause-no-nuclear-warranty"
     },
     "bcprov-jdk18on@1.84": {
+      "license": "MIT",
+      "_comment": "Normalize the upstream Bouncy Castle Licence label to MIT."
+    },
+    "bcpkix-jdk18on@1.85": {
+      "license": "MIT",
+      "_comment": "Normalize the upstream Bouncy Castle Licence label to MIT."
+    },
+    "bcutil-jdk18on@1.85": {
       "license": "MIT",
       "_comment": "Normalize the upstream Bouncy Castle Licence label to MIT."
     },

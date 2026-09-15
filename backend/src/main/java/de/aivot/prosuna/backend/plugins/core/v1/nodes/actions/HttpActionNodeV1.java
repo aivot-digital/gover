@@ -5,9 +5,11 @@ import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.models.input.InputModePolicy;
+import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -24,7 +26,6 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.services.*;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.MultipartUtils;
@@ -98,6 +99,11 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     );
 
     private static final String MULTIPART_ATTACHMENT_FIELD_NAME = "files";
+    private static final InputModePolicy DYNAMIC_TEXT_INPUT_MODE_POLICY = new InputModePolicy(
+            List.of(InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode),
+            InputMode.Literal
+    );
+    private static final DynamicTextPolicy DYNAMIC_TEXT_POLICY = new DynamicTextPolicy();
 
     @Value("classpath:/nodes/configs/HttpActionNodeV1Config.json")
     private Resource configResource;
@@ -108,7 +114,6 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final StorageService storageService;
-    private final SecretRepository secretRepository;
     private final SecretService secretService;
 
     public HttpActionNodeV1(HttpService httpService,
@@ -117,7 +122,6 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                             ProcessInstanceAttachmentService processInstanceAttachmentService,
                             ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
                             StorageService storageService,
-                            SecretRepository secretRepository,
                             SecretService secretService) {
         this.httpService = httpService;
         this.templateRenderService = templateRenderService;
@@ -125,7 +129,6 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.storageService = storageService;
-        this.secretRepository = secretRepository;
         this.secretService = secretService;
     }
 
@@ -193,12 +196,24 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         var layout = loadConfigLayoutFromResource(configResource);
 
-        layout.findChild(HttpActionNodeV1Config.BasicAuthConfig.PASSWORD_SECRET_KEY_FIELD_ID, SelectInputElement.class)
-                .ifPresent(field -> field.setOptions(secretRepository
-                        .findAll()
-                        .stream()
-                        .map(secret -> SelectInputElementOption.of(secret.getKey().toString(), secret.getName()))
-                        .toList()));
+        // This legacy node loads its layout from a static resource instead of its annotated configuration class.
+        // Keep dynamic execution opt-in in Java so the trusted policy remains visible next to the node behavior.
+        for (var fieldId : List.of(
+                HttpActionNodeV1Config.URL_FIELD_ID,
+                HttpActionNodeV1Config.BearerAuthConfig.BEARER_TOKEN_FIELD_ID
+        )) {
+            layout.findChild(fieldId, TextInputElement.class)
+                    .ifPresent(field -> field.setInputModePolicy(DYNAMIC_TEXT_INPUT_MODE_POLICY));
+        }
+
+        for (var fieldId : List.of(
+                HttpActionNodeV1Config.URL_FIELD_ID,
+                HttpActionNodeV1Config.BearerAuthConfig.BEARER_TOKEN_FIELD_ID,
+                HttpActionNodeV1Config.ResponseConfig.RESPONSE_FILE_NAME_FIELD_ID
+        )) {
+            layout.findChild(fieldId, TextInputElement.class)
+                    .ifPresent(field -> field.setDynamicTextPolicy(DYNAMIC_TEXT_POLICY));
+        }
 
         return layout;
     }
@@ -439,7 +454,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     @Nonnull
     private URI buildUri(@Nonnull ProcessNodeExecutionInitContext<HttpActionNodeV1Config> context,
                          @Nullable String url) throws ProcessNodeExecutionException {
-        var renderedUrl = interpolateNullable(context, url);
+        var renderedUrl = url;
         if (StringUtils.isNullOrEmpty(renderedUrl)) {
             throw new ProcessNodeExecutionExceptionMissingValue("Die URL für den HTTP-Request wurde nicht angegeben.");
         }
@@ -504,7 +519,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Basic-Authentifizierung ist nicht vollständig konfiguriert.");
                 }
 
-                var username = interpolateNullable(context, basicAuthConfig.username);
+                var username = basicAuthConfig.username;
                 if (StringUtils.isNullOrEmpty(username)) {
                     throw new ProcessNodeExecutionExceptionMissingValue("Der Nutzername für die Basic-Authentifizierung wurde nicht angegeben.");
                 }
@@ -518,7 +533,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Bearer-Authentifizierung ist nicht vollständig konfiguriert.");
                 }
 
-                var bearerToken = interpolateNullable(context, bearerAuthConfig.bearerToken);
+                var bearerToken = bearerAuthConfig.bearerToken;
                 if (StringUtils.isNullOrEmpty(bearerToken)) {
                     throw new ProcessNodeExecutionExceptionMissingValue("Der Bearer-Token wurde nicht angegeben.");
                 }
@@ -816,7 +831,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                                            @Nonnull URI requestUri) {
         var configuredFileName = context.getConfigurationOfExecutingNode().responseConfig == null
                 ? null
-                : interpolateNullable(context, context.getConfigurationOfExecutingNode().responseConfig.responseFileName);
+                : context.getConfigurationOfExecutingNode().responseConfig.responseFileName;
         if (StringUtils.isNotNullOrEmpty(configuredFileName)) {
             return configuredFileName.trim();
         }

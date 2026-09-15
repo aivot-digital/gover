@@ -55,7 +55,7 @@ export function UiDefinitionInputFieldView(
             value={value}
             expectedRootType={element.elementType}
             onChange={setValue}
-            displayContext={element.displayContext ?? ElementDisplayContext.CitizenFacing}
+            displayContext={element.displayContext ?? ElementDisplayContext.CustomerFacing}
             openOverride={element.openExternalEditor ? openOverride : undefined}
         />
     );

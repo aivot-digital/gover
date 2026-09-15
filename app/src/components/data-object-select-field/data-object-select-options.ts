@@ -147,5 +147,3 @@ async function loadDataObjectItems(
     cachedItemsPromises.set(dataModelKey, promise);
     return promise;
 }
-
-

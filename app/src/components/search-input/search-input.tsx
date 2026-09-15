@@ -113,6 +113,7 @@ export function SearchInput(props: SearchInputProps) {
             label={hideLabel ? '' : props.label}
             ariaLabel={props.ariaLabel ?? props.label}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             disabled={props.disabled}
             margin={props.margin ?? 'none'}

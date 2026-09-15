@@ -34,6 +34,7 @@ export function TableFieldLayout(props: TableFieldLayoutProps) {
             id={props.id}
             label={props.label}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={(context) => {
                 const suppliedLabelAction = typeof props.labelAction === 'function'
                     ? props.labelAction(context)

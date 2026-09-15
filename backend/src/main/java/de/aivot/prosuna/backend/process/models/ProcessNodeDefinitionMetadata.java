@@ -32,15 +32,27 @@ public record ProcessNodeDefinitionMetadata(
         @Nonnull
         List<ForwardedProcessDataKey> forwardedProcessDataKeys,
         @Nonnull
-        List<ForwardedIdentity> forwardedIdentities
+        List<ForwardedIdentity> forwardedIdentities,
+        @Nonnull
+        List<InputVariableSuggestion> inputVariables
 ) {
     private static final String COMPLETE_FORM_LABEL = "Gesamtes Formular";
     private static final String FALLBACK_UI_DEFINITION_LABEL = "UI-Definition";
     private static final int MAX_ATTACHMENT_SET_DATA_KEY_LENGTH = 255;
     private static final Pattern ELEMENT_ID_PATTERN = Pattern.compile("^[a-z][a-zA-Z0-9_]*$");
 
+    public ProcessNodeDefinitionMetadata(
+            @Nonnull List<ReusableUiDefinition> reusableUiDefinitions,
+            @Nonnull List<ForwardedAttachmentSet> forwardedAttachmentSets,
+            @Nonnull List<ForwardedProcessDataKey> forwardedProcessDataKeys,
+            @Nonnull List<ForwardedIdentity> forwardedIdentities
+    ) {
+        this(reusableUiDefinitions, forwardedAttachmentSets, forwardedProcessDataKeys, forwardedIdentities, new LinkedList<>());
+    }
+
     public static ProcessNodeDefinitionMetadata empty() {
         return new ProcessNodeDefinitionMetadata(
+                new LinkedList<>(),
                 new LinkedList<>(),
                 new LinkedList<>(),
                 new LinkedList<>(),
@@ -53,7 +65,8 @@ public record ProcessNodeDefinitionMetadata(
                 new LinkedList<>(previous.reusableUiDefinitions()),
                 new LinkedList<>(previous.forwardedAttachmentSets()),
                 new LinkedList<>(previous.forwardedProcessDataKeys()),
-                new LinkedList<>(previous.forwardedIdentities())
+                new LinkedList<>(previous.forwardedIdentities()),
+                new LinkedList<>(previous.inputVariables())
         );
     }
 
@@ -127,13 +140,27 @@ public record ProcessNodeDefinitionMetadata(
                                                               @Nullable
                                                               String subLabel,
                                                               @Nonnull
+                                                              List<UUID> identityProviderKeys,
+                                                              @Nonnull
                                                               ProcessNodeEntity origin) {
-        return addForwardedIdentity(new ForwardedIdentity(identityId, label, subLabel, origin));
+        return addForwardedIdentity(new ForwardedIdentity(identityId, label, subLabel, identityProviderKeys, origin));
     }
 
 
     public ProcessNodeDefinitionMetadata addForwardedIdentity(ForwardedIdentity forwardedIdentity) {
         forwardedIdentities.add(forwardedIdentity);
+        return this;
+    }
+
+    public ProcessNodeDefinitionMetadata addInputVariable(@Nonnull InputVariableSuggestion suggestion) {
+        var alreadyPresent = inputVariables.stream().anyMatch(existing ->
+                existing.source() == suggestion.source() &&
+                        java.util.Objects.equals(existing.path(), suggestion.path()) &&
+                        java.util.Objects.equals(existing.nodeDataKey(), suggestion.nodeDataKey())
+        );
+        if (!alreadyPresent) {
+            inputVariables.add(suggestion);
+        }
         return this;
     }
 
@@ -158,9 +185,9 @@ public record ProcessNodeDefinitionMetadata(
                         .map(p -> (ReplicatingContainerLayoutElement) p)
                         .map(ReplicatingContainerLayoutElement::getDestinationKey)
                         .filter(StringUtils::isNotNullOrEmpty)
-                        .collect(Collectors.joining(".*."));
+                        .collect(Collectors.joining("[*]."));
                 if (StringUtils.isNotNullOrEmpty(parentDestinationKey)) {
-                    parentDestinationKey += ".*.";
+                    parentDestinationKey += "[*].";
                 }
 
                 this.addForwardedProcessDataKey(
@@ -376,6 +403,8 @@ public record ProcessNodeDefinitionMetadata(
             String label,
             @Nullable
             String subLabel,
+            @Nonnull
+            List<UUID> identityProviderKeys,
             @Nonnull
             ProcessNodeEntity origin
     ) {

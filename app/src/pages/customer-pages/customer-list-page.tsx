@@ -1,3 +1,4 @@
+import {getCustomerPageSurfaceColor} from '../../theming/customer-page-surface';
 import React, {useEffect, useState} from 'react';
 import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-placeholder';
 import {Box, Container, List} from '@mui/material';
@@ -15,7 +16,7 @@ import {EmptySearchDataListPlaceholder} from '../../components/empty-search-data
 import {PrivacyDialog, PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialog, ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {AccessibilityDialog, AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
-import {FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
+import {FormCustomerListResponseDTO} from '../../modules/forms/dtos/form-customer-list-response-d-t-o';
 import {setIdentityId} from '../../slices/identity-slice';
 import {PublicFormListItem} from '../../components/public-form-list-item/public-form-list-item';
 import {CustomerListPageHeader} from './customer-list-page-header';
@@ -24,14 +25,16 @@ import {isApiError} from '../../models/api-error';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {FormTriggerApiService, FormTriggerListItem} from '../../modules/forms/services/form-trigger-api-service';
 import {resolveFormNodeName} from '../../models/elements/form-layout-element';
+import {getLiteralElementValue} from '../../models/element-data';
+import type {FormLayoutElement} from '../../models/elements/form-layout-element';
 
-function mapPublicFormListItem(form: FormTriggerListItem): FormCitizenListResponseDTO | null {
-    const formLayout = form.node.configuration.formLayout;
+function mapPublicFormListItem(form: FormTriggerListItem): FormCustomerListResponseDTO | null {
+    const formLayout = getLiteralElementValue<FormLayoutElement>(form.node.configuration, 'formLayout');
     if (formLayout?.showOnFormIndexPage === false) {
         return null;
     }
 
-    const formSlug = form.node.configuration.formSlug;
+    const formSlug = getLiteralElementValue<string>(form.node.configuration, 'formSlug');
     if (formSlug == null || formSlug.length === 0) {
         return null;
     }
@@ -48,7 +51,7 @@ export function CustomerListPage() {
     const dispatch = useAppDispatch();
 
     const [failedToLoad, setFailedToLoad] = useState(false);
-    const [forms, setForms] = useState<FormCitizenListResponseDTO[]>();
+    const [forms, setForms] = useState<FormCustomerListResponseDTO[]>();
     const [search, setSearch] = useState('');
 
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
@@ -60,7 +63,7 @@ export function CustomerListPage() {
             .listPublicAll()
             .then((page) => page.content
                 .map(mapPublicFormListItem)
-                .filter((form): form is FormCitizenListResponseDTO => form != null)
+                .filter((form): form is FormCustomerListResponseDTO => form != null)
                 .sort((a, b) => a.title.localeCompare(b.title, 'de')))
             .then(setForms)
             .catch((err) => {
@@ -113,7 +116,11 @@ export function CustomerListPage() {
         return (
             <Box
                 sx={{
-                    backgroundColor: 'background.default',
+                    backgroundColor: getCustomerPageSurfaceColor,
+                    color: 'text.primary',
+                    minHeight: '100dvh',
+                    display: 'flex',
+                    flexDirection: 'column',
                 }}
             >
                 <MetaElement
@@ -123,12 +130,8 @@ export function CustomerListPage() {
 
                 <CustomerListPageHeader />
 
-                <main role="main">
-                    <Box
-                        sx={{
-                            minHeight: '75vh',
-                        }}
-                    >
+                <Box component="main" sx={{flex: '1 0 auto'}}>
+                    <Box>
                         <Container
                             sx={{
                                 mb: 5,
@@ -188,12 +191,11 @@ export function CustomerListPage() {
                             </Box>
                         </Container>
                     </Box>
+                </Box>
 
-                    <CustomerListPageFooter />
-                </main>
+                <CustomerListPageFooter />
 
                 <PrivacyDialog
-                    form={{} as any}
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === PrivacyDialogId}
                     isListingPage
@@ -203,14 +205,12 @@ export function CustomerListPage() {
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === ImprintDialogId}
                     isListingPage
-                    form={{} as any}
                 />
 
                 <AccessibilityDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === AccessibilityDialogId}
                     isListingPage
-                    form={{} as any}
                 />
             </Box>
         );

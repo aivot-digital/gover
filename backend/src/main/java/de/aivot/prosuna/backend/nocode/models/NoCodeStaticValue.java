@@ -5,6 +5,7 @@ import jakarta.annotation.Nullable;
 import de.aivot.prosuna.backend.utils.StringUtils;
 
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 
 /**
  * Represents a static value in the NoCode language.
@@ -26,6 +27,14 @@ public class NoCodeStaticValue extends NoCodeOperand {
 
     public static NoCodeStaticValue of(@Nullable Object value) {
         return new NoCodeStaticValue(value);
+    }
+
+    @Nonnull
+    @Override
+    public NoCodeStaticValue copy(@Nonnull UnaryOperator<Object> copyValue) {
+        var copy = (NoCodeStaticValue) super.copy(copyValue);
+        copy.value = copyValue.apply(value);
+        return copy;
     }
 
     @Nonnull

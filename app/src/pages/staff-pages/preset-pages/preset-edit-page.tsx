@@ -572,7 +572,7 @@ export function PresetEditPage() {
                                         }}
                                         editable={presetVersion.status == FormStatus.Drafted && canUpdatePreset}
                                         openRootAddElementSignal={openAddSectionSignal}
-                                        displayContext={ElementDisplayContext.CitizenFacing}
+                                        displayContext={ElementDisplayContext.CustomerFacing}
                                         allowElementIdEditing={false}
                                     />
                                 </Paper>

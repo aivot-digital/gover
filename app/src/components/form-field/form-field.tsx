@@ -5,12 +5,11 @@ import {
     formFieldLabelActionSx,
     formFieldLabelRowSx,
     formFieldLabelSx,
-    formFieldRootSx,
-    getFormFieldMarginSx,
     type FormFieldMargin,
 } from '../../theming/form-field-tokens';
 import {FormFieldLabelContent} from './form-field-label-content';
 import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
+import {FormFieldFrame, hasExternalAction} from './form-field-frame';
 
 export type {FormFieldMargin} from '../../theming/form-field-tokens';
 
@@ -44,6 +43,8 @@ export type FormFieldLabelAction = ReactNode | ((context: FormFieldControlContex
  * `sx` styles the field wrapper; an adapter-specific `controlSx` prop styles its primary control.
  */
 export interface FormFieldLayoutProps {
+    /** Independent action beside the control, or below its helper when the field is narrow. */
+    externalAction?: ReactNode;
     id?: string;
     ariaLabel?: string;
     ariaDescribedBy?: string;
@@ -54,6 +55,7 @@ export interface FormFieldLayoutProps {
 }
 
 export interface FormFieldProps {
+    externalAction?: ReactNode;
     id?: string;
     label: ReactNode;
     ariaLabel?: string;
@@ -181,82 +183,74 @@ export function FormField(props: FormFieldProps) {
         ? props.labelAction(controlContext)
         : props.labelAction;
     const hasLabelAction = hasContent(labelAction);
+    const control = typeof props.children === 'function' ? props.children(controlContext) : props.children;
 
     return (
-        <Box
-            data-form-field
-            data-disabled={disabled || undefined}
-            data-readonly={readOnly || undefined}
-            data-busy={busy || undefined}
-            data-invalid={hasError || undefined}
-            sx={[
-                formFieldRootSx,
-                getFormFieldMarginSx(margin),
-                ...(Array.isArray(props.sx) ? props.sx : [props.sx]),
-            ]}
-        >
-            {hasLabel && (
-                <Box sx={formFieldLabelRowSx}>
-                    <FormLabel
-                        id={labelId}
-                        htmlFor={controlId}
-                        title={typeof props.label === 'string' ? props.label : undefined}
-                        disabled={disabled || busy}
-                        error={hasError}
-                        sx={formFieldLabelSx}
-                    >
-                        <FormFieldLabelContent
-                            required={required}
-                            showOptionalIndicator={props.showOptionalIndicator}
-                        >
-                            {props.label}
-                        </FormFieldLabelContent>
-                    </FormLabel>
+        <FormFieldFrame externalAction={props.externalAction} margin={margin} sx={props.sx}>
+            {(frameSx) => (
+                <Box
+                    data-form-field
+                    data-form-field-control-id={controlId}
+                    data-disabled={disabled || undefined}
+                    data-readonly={readOnly || undefined}
+                    data-busy={busy || undefined}
+                    data-invalid={hasError || undefined}
+                    sx={frameSx}
+                >
+                    {hasLabel && (
+                        <Box data-form-field-label sx={formFieldLabelRowSx}>
+                            <FormLabel
+                                id={labelId}
+                                htmlFor={controlId}
+                                title={typeof props.label === 'string' ? props.label : undefined}
+                                disabled={disabled || busy}
+                                error={hasError}
+                                sx={formFieldLabelSx}
+                            >
+                                <FormFieldLabelContent
+                                    required={required}
+                                    showOptionalIndicator={props.showOptionalIndicator}
+                                >
+                                    {props.label}
+                                </FormFieldLabelContent>
+                            </FormLabel>
 
-                    {hasLabelAction && (
-                        <Box data-form-field-label-action sx={formFieldLabelActionSx}>
-                            {labelAction}
+                            {hasLabelAction && (
+                                <Box data-form-field-label-action sx={formFieldLabelActionSx}>
+                                    {labelAction}
+                                </Box>
+                            )}
                         </Box>
+                    )}
+
+                    {hasExternalAction(props.externalAction)
+                        ? <Box data-form-field-control>{control}</Box>
+                        : control}
+
+                    {hasAssistiveText && (
+                        <Box
+                            component="span"
+                            id={assistiveTextId}
+                            className="visually-hidden"
+                        >
+                            {props.assistiveText}
+                        </Box>
+                    )}
+
+                    {hasHelperText && (
+                        <FormHelperText
+                            id={helperTextId}
+                            component="div"
+                            error={hasError}
+                            disabled={disabled || busy}
+                            role={hasError ? 'alert' : undefined}
+                            sx={formFieldHelperTextSx}
+                        >
+                            {helperText}
+                        </FormHelperText>
                     )}
                 </Box>
             )}
-
-            {typeof props.children === 'function'
-                ? props.children(controlContext)
-                : props.children}
-
-            {hasAssistiveText && (
-                <Box
-                    component="span"
-                    id={assistiveTextId}
-                    sx={{
-                        position: 'absolute',
-                        width: 1,
-                        height: 1,
-                        p: 0,
-                        m: -1,
-                        overflow: 'hidden',
-                        clip: 'rect(0 0 0 0)',
-                        whiteSpace: 'nowrap',
-                        border: 0,
-                    }}
-                >
-                    {props.assistiveText}
-                </Box>
-            )}
-
-            {hasHelperText && (
-                <FormHelperText
-                    id={helperTextId}
-                    component="div"
-                    error={hasError}
-                    disabled={disabled || busy}
-                    role={hasError ? 'alert' : undefined}
-                    sx={formFieldHelperTextSx}
-                >
-                    {helperText}
-                </FormHelperText>
-            )}
-        </Box>
+        </FormFieldFrame>
     );
 }

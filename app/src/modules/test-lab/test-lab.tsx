@@ -8,8 +8,9 @@ import {GenericPageHeader} from '../../components/generic-page-header/generic-pa
 import {useState} from 'react';
 import {TextFieldComponent} from '../../components/text-field/text-field-component';
 import {FieldLayoutGallery} from './field-layout-gallery';
+import {InputModePrototype} from './input-mode-prototype';
 
-type TestLabArea = 'components' | 'system-states';
+type TestLabArea = 'components' | 'input-modes' | 'system-states';
 
 interface TestAction {
     label: string;
@@ -150,12 +151,28 @@ export function TestLab() {
                                 aria-controls="test-lab-panel-components"
                             />
                             <Tab
+                                id="test-lab-tab-input-modes"
+                                value="input-modes"
+                                label="Eingabemodi"
+                                aria-controls="test-lab-panel-input-modes"
+                            />
+                            <Tab
                                 id="test-lab-tab-system-states"
                                 value="system-states"
                                 label="Systemzustände"
                                 aria-controls="test-lab-panel-system-states"
                             />
                         </Tabs>
+                    </Box>
+
+                    <Box
+                        id="test-lab-panel-input-modes"
+                        role="tabpanel"
+                        aria-labelledby="test-lab-tab-input-modes"
+                        hidden={activeArea !== 'input-modes'}
+                        sx={{p: {xs: 2, sm: 3, md: 4}, minWidth: 0, maxWidth: '100%'}}
+                    >
+                        <InputModePrototype/>
                     </Box>
 
                     <Box

@@ -197,7 +197,7 @@
           "suggestions": null
         },
         {
-          "type": 12,
+          "type": 52,
           "id": "passwordSecretKey",
           "name": "passwordSecretKey",
           "visibility": null,
@@ -212,10 +212,7 @@
           "destinationKey": null,
           "value": null,
           "validation": null,
-          "placeholder": null,
-          "autocomplete": null,
-          "options": [],
-          "dependsOnSelectFieldId": null
+          "placeholder": null
         }
       ],
       "marketplaceLink": null

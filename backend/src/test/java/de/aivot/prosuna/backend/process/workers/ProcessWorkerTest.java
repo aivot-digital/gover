@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -13,6 +14,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
@@ -123,7 +125,8 @@ class ProcessWorkerTest {
                         processInstanceTaskRepository,
                         processNodeRepository,
                         processInstanceAttachmentRepository,
-                        processInstanceAttachmentSetRepository
+                        processInstanceAttachmentSetRepository,
+                        JsonMapperTestUtils.createMapper()
                 ),
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestProcessNodeService()
@@ -201,6 +204,7 @@ class ProcessWorkerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -256,7 +260,8 @@ class ProcessWorkerTest {
                         processInstanceTaskRepository,
                         processNodeRepository,
                         processInstanceAttachmentRepository,
-                        processInstanceAttachmentSetRepository
+                        processInstanceAttachmentSetRepository,
+                        JsonMapperTestUtils.createMapper()
                 ),
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestProcessNodeService()
@@ -371,15 +376,18 @@ class ProcessWorkerTest {
 
     private static final class TestProcessNodeService extends ProcessNodeService {
         private TestProcessNodeService() {
-            super(null, null, null, null, null, null, null, new ProsunaConfig());
+            super(null, null, null, null, null, null, null, new ProsunaConfig(), null);
         }
 
         @Nonnull
         @Override
-        public <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveConfiguration(@Nonnull ProcessNodeEntity entity,
-                                                                                        @Nonnull ProcessNodeDefinition<NodeConfig> provider,
-                                                                                        UserEntity user,
-                                                                                        @Nonnull Boolean skipErrors) {
+        public <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveRuntimeConfiguration(
+                @Nonnull ProcessNodeEntity entity,
+                @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                UserEntity user,
+                @Nonnull Boolean skipErrors,
+                @Nonnull ProcessExecutionData processExecutionData
+        ) {
             @SuppressWarnings("unchecked")
             var configuration = (NodeConfig) new AuthoredElementValues();
             return new ProcessConfigurationDetails<>(configuration, new DerivedRuntimeElementData());
@@ -442,7 +450,7 @@ class ProcessWorkerTest {
         private boolean handleResultCalled;
 
         private TestProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override

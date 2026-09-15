@@ -206,6 +206,7 @@ export function DataObjectSelectFieldComponent(props: DataObjectSelectFieldCompo
             label={label}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             hint={hint}
             error={effectiveError}

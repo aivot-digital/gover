@@ -237,7 +237,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     @Nonnull
     private static Optional<Path> getConfiguredRootPath(@Nonnull StorageProviderEntity provider) {
-        var rawRoot = provider.getConfiguration().get("root");
+        var rawRoot = provider.getConfiguration().getLiteral("root");
         if (!(rawRoot instanceof String root) || root.isBlank()) {
             return Optional.empty();
         }

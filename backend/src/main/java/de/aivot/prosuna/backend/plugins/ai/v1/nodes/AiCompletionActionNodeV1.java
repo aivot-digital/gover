@@ -10,20 +10,15 @@ import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
-import de.aivot.prosuna.backend.elements.enums.OverrideFunctionType;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
-import de.aivot.prosuna.backend.elements.models.elements.ElementOverrideFunctions;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
-import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.ai.AiPlugin;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
-import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
@@ -35,11 +30,10 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -79,23 +73,16 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     private static final int DEFAULT_N = 1;
     private static final boolean DEFAULT_STREAM = false;
 
-    private static final String apiModelsPathSuffix = "/models";
     private static final String apiChatCompletionsPathSuffix = "/chat/completions";
 
     private final HttpService httpService;
-    private final TemplateRenderService templateRenderService;
-    private final SecretRepository secretRepository;
     private final SecretService secretService;
     private final AiPluginProperties aiPluginProperties;
 
     public AiCompletionActionNodeV1(HttpService httpService,
-                                    TemplateRenderService templateRenderService,
-                                    SecretRepository secretRepository,
                                     SecretService secretService,
                                     AiPluginProperties aiPluginProperties) {
         this.httpService = httpService;
-        this.templateRenderService = templateRenderService;
-        this.secretRepository = secretRepository;
         this.secretService = secretService;
         this.aiPluginProperties = aiPluginProperties;
     }
@@ -162,9 +149,8 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Override
     @JsonIgnore
     public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
-        ConfigLayoutElement layout;
         try {
-            layout = ElementPOJOMapper.createFromPOJO(AiCompletionActionNodeConfig.class);
+            return ElementPOJOMapper.createFromPOJO(AiCompletionActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
                     e,
@@ -172,62 +158,6 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                     e.getMessage()
             );
         }
-
-        layout.findChild(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, SelectInputElement.class)
-                .ifPresent(field -> field.setOptions(secretRepository
-                        .findAll()
-                        .stream()
-                        .map(secret -> SelectInputElementOption.of(secret.getKey().toString(), secret.getName()))
-                        .toList()));
-
-        var modelSelectOverride = new ElementOverrideFunctions();
-        modelSelectOverride.setType(OverrideFunctionType.Javascript);
-        modelSelectOverride.setJavascriptCode(JavascriptCode.of("""
-                (function() {
-                    const endpointUrl = ctx.effectiveValues.%s;
-                    if (endpointUrl == null) {
-                        return element;
-                    }
-                
-                    const secretKey = ctx.effectiveValues.%s;
-                    if (secretKey == null) {
-                        return element;
-                    }
-
-                    const apiToken = _secrets_v1.get(secretKey);
-
-                    const fullUrl = endpointUrl + '%s';
-
-                    const response = _http_v1.get(fullUrl, {
-                        Authorization: 'Bearer ' + apiToken,
-                    });
-
-                    availableModels = JSON.parse(response.body);
-
-                    const options = availableModels.data.map(d => ({
-                        label: d.id,
-                        value: d.id,
-                    }));
-
-                    return {
-                        ...element,
-                        options: options,
-                    };
-                })()
-                """,
-                AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID,
-                AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID,
-                apiModelsPathSuffix
-        ));
-        modelSelectOverride.setReferencedIds(List.of(
-                AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID,
-                AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID
-        ));
-
-        layout.findChild(AiCompletionActionNodeConfig.MODEL_FIELD_ID, SelectInputElement.class)
-                .ifPresent(field -> field.setOverride(modelSelectOverride));
-
-        return layout;
     }
 
     @Nonnull
@@ -256,48 +186,46 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
     @Nullable
     @Override
-    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                           @Nonnull AiCompletionActionNodeConfig configuration) throws ResponseException {
+    public Map<String, List<String>> validateConfiguration(
+            @Nonnull ProcessNodeConfigurationValidationContext<AiCompletionActionNodeConfig> context
+    ) throws ResponseException {
+        var configuration = context.configuration();
         var errors = new LinkedHashMap<String, List<String>>();
 
-        if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-            errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpoint-URL muss angegeben werden."));
-        } else {
-            try {
-                parseEndpointUri(configuration.endpointUrl);
-            } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-                errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of(e.getMessage()));
-            }
-        }
-
-        if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
-            errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das Secret für den API-Schlüssel muss ausgewählt werden."));
-        } else {
-            try {
-                var secretId = UUID.fromString(configuration.apiKeySecret.trim());
-                if (secretService.retrieve(secretId).isEmpty()) {
-                    errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Secret für den API-Schlüssel wurde nicht gefunden."));
+        if (!context.isDeferred(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID)) {
+            if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
+                errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpoint-URL muss angegeben werden."));
+            } else {
+                try {
+                    parseEndpointUri(configuration.endpointUrl);
+                } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
+                    errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of(e.getMessage()));
                 }
-            } catch (IllegalArgumentException e) {
-                errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Secret für den API-Schlüssel ist ungültig."));
             }
         }
 
-        if (StringUtils.isNullOrEmpty(configuration.model)) {
+        if (!context.isDeferred(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID)) {
+            if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
+                errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das Secret für den API-Schlüssel muss ausgewählt werden."));
+            } else {
+                try {
+                    var secretId = UUID.fromString(configuration.apiKeySecret.trim());
+                    if (secretService.retrieve(secretId).isEmpty()) {
+                        errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Secret für den API-Schlüssel wurde nicht gefunden."));
+                    }
+                } catch (IllegalArgumentException e) {
+                    errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Secret für den API-Schlüssel ist ungültig."));
+                }
+            }
+        }
+
+        if (!context.isDeferred(AiCompletionActionNodeConfig.MODEL_FIELD_ID) && StringUtils.isNullOrEmpty(configuration.model)) {
             errors.put(AiCompletionActionNodeConfig.MODEL_FIELD_ID, List.of("Das Modell muss angegeben werden."));
         }
 
-        if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-            errors.put(AiCompletionActionNodeConfig.PROMPT_FIELD_ID, List.of("Das Prompt muss angegeben werden."));
-        } else {
-            var diagnostics = templateRenderService.validateInterpolationSyntax(configuration.prompt);
-            if (!diagnostics.isEmpty()) {
-                errors.put(
-                        AiCompletionActionNodeConfig.PROMPT_FIELD_ID,
-                        diagnostics.stream()
-                                .map(diagnostic -> "Zeile %d: %s".formatted(diagnostic.lineNumber(), diagnostic.message()))
-                                .toList()
-                );
+        if (!context.isDeferred(AiCompletionActionNodeConfig.PROMPT_FIELD_ID)) {
+            if (StringUtils.isNullOrEmpty(configuration.prompt)) {
+                errors.put(AiCompletionActionNodeConfig.PROMPT_FIELD_ID, List.of("Das Prompt muss angegeben werden."));
             }
         }
 
@@ -330,7 +258,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
         var endpointUri = parseEndpointUri(configuration.endpointUrl);
         var apiKey = resolveApiKey(configuration.apiKeySecret);
-        var renderedPrompt = renderPrompt(context, configuration.prompt);
+        var renderedPrompt = configuration.prompt;
 
         if (StringUtils.isNullOrEmpty(renderedPrompt)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -447,20 +375,6 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
                     "Der API-Schlüssel konnte nicht aus dem ausgewählten Secret entschlüsselt werden: %s",
-                    e.getMessage()
-            );
-        }
-    }
-
-    @Nonnull
-    private String renderPrompt(@Nonnull ProcessNodeExecutionInitContext<AiCompletionActionNodeConfig> context,
-                                @Nonnull String promptTemplate) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        try {
-            return templateRenderService.interpolate(context.getCurrentProcessExecutionData(), promptTemplate);
-        } catch (RuntimeException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Das Prompt-Template konnte nicht gerendert werden: %s",
                     e.getMessage()
             );
         }
@@ -586,7 +500,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         /**
          * Reference to a stored secret that contains the bearer token for the AI request. The selected secret is decrypted only during execution.
          */
-        @InputElementPOJOBinding(id = API_KEY_SECRET_FIELD_ID, type = ElementType.Select, properties = {
+        @InputElementPOJOBinding(id = API_KEY_SECRET_FIELD_ID, type = ElementType.SecretSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "API-Schlüssel"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie ein hinterlegtes Geheimnis aus, das den Bearer-Token für die KI enthält."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
@@ -597,7 +511,8 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         /**
          * Identifier of the AI model that should generate the completion.
          */
-        @InputElementPOJOBinding(id = MODEL_FIELD_ID, type = ElementType.Select, properties = {
+        @InputElementPOJOBinding(id = MODEL_FIELD_ID, type = ElementType.Text,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Modellname"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
@@ -607,7 +522,9 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         /**
          * Template-based prompt text that is rendered against the current process data before the API request is sent.
          */
-        @InputElementPOJOBinding(id = PROMPT_FIELD_ID, type = ElementType.RichTextInput, properties = {
+        @InputElementPOJOBinding(id = PROMPT_FIELD_ID, type = ElementType.RichTextInput,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Prompt"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Prompt-Vorlage mit Template-Ausdrücken. Die Vorlage wird vor dem API-Aufruf mit den aktuellen Vorgangsdaten gerendert."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)

@@ -15,6 +15,8 @@ import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.services.PublicUrlService;
@@ -25,13 +27,51 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.ArgumentMatchers.any;
+import org.springframework.data.jpa.domain.Specification;
 
 class WebhookTriggerNodeV1Test {
     private static final Integer PROCESS_ID = 42;
     private static final Integer PROCESS_VERSION = 3;
     private static final Integer NODE_ID = 123;
+
+    @Test
+    void validateConfiguration_ShouldCheckSlugSyntaxAndUniquenessDuringAuthoring() throws Exception {
+        var repository = mock(ProcessNodeRepository.class);
+        when(repository.exists(any(Specification.class))).thenReturn(true);
+        var node = new WebhookTriggerNodeV1(new PublicUrlService(prosunaConfig()), repository);
+        var configuration = new WebhookTriggerConfigV1();
+        configuration.slug = "Invalid Slug";
+
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(), configuration, DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
+
+        assertNotNull(errors);
+        assertEquals(2, errors.get(WebhookTriggerConfigV1.SLUG_CONFIG_KEY).size());
+        verify(repository).exists(any(Specification.class));
+    }
+
+    @Test
+    void validateConfiguration_ShouldSkipDefinitionChecksAtRuntime() throws Exception {
+        var repository = mock(ProcessNodeRepository.class);
+        var node = new WebhookTriggerNodeV1(new PublicUrlService(prosunaConfig()), repository);
+        var configuration = new WebhookTriggerConfigV1();
+        configuration.slug = "Invalid Slug";
+
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(), configuration, DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Runtime
+        ));
+
+        assertNull(errors);
+        verifyNoInteractions(repository);
+    }
 
     @Test
     void getConfigurationLayout_ShouldExposeCopyableSlugUrlTemplateAndDynamicOverride() throws Exception {

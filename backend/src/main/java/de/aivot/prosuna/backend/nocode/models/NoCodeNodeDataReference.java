@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.nocode.models;
 
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -13,8 +14,6 @@ public class NoCodeNodeDataReference extends NoCodeOperand {
     private static final String NODE_KEY_REGEX = "[a-zA-Z0-9_]+";
     private static final Pattern NODE_KEY_PATTERN = Pattern.compile(NODE_KEY_REGEX);
 
-    private static final String PROCESS_DATA_KEY_REGEX = "[a-zA-Z0-9\\.\\[\\]_]+";
-    private static final Pattern PROCESS_DATA_KEY_PATTERN = Pattern.compile(PROCESS_DATA_KEY_REGEX);
 
     @Nullable
     private String nodeDataKey;
@@ -47,8 +46,8 @@ public class NoCodeNodeDataReference extends NoCodeOperand {
             return new NoCodeOperandError(this, "Der Pfad darf nicht leer sein.", null);
         }
 
-        if  (!PROCESS_DATA_KEY_PATTERN.matcher(path).matches()) {
-            return new NoCodeOperandError(this, "Der Pfad darf nur Buchstaben (A-Z), Zahlen, Punkte, Unterstriche und eckigen Klammern enthalten.", null);
+        if (!ProcessDataValueUtils.isValidDestinationKey(path, true, false)) {
+            return new NoCodeOperandError(this, "Verwenden Sie einen Pfad wie person.name oder items[0].name.", null);
         }
 
         return NoCodeOperandError.NO_ERROR(this);

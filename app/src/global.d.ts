@@ -22,8 +22,9 @@ declare var AppConfig: {
         'dashboard.activity.enabled'?: boolean;
         'dashboard.activity.period'?: string;
     };
-    faviconUrl: string;
-    logoUrl: string;
+    faviconUrl: string | null;
+    logoUrl: string | null;
+    logoUrlDark: string | null;
     apiHostname: string;
     registryHostname: string;
     supportUrl: string | null;

@@ -1,6 +1,9 @@
+import {InputMode} from '../../models/input-mode';
+import {ResourceInputGallery} from './resource-input-gallery';
 import {useState} from 'react';
 import {
     Box,
+    Button,
     Stack,
     TextField,
     Typography,
@@ -25,6 +28,8 @@ import {DomainUserSelectFieldComponent} from '../../components/domain-user-selec
 import type {DomainAndUserSelectOption} from '../../components/domain-user-select-field/domain-user-select-options';
 import {AssignmentContextFieldComponent} from '../../components/assignment-context-field/assignment-context-field-component';
 import {FileUploadComponent} from '../../components/file-upload-field/file-upload-component';
+import {ProcessInstanceAttachmentSetSelect} from '../../components/process-instance-attachment-set-select/process-instance-attachment-set-select';
+import type {ProcessNodeDefinitionMetadataForwardedAttachmentSet} from '../process/entities/process-node-definition-metadata';
 import {SearchInput} from '../../components/search-input/search-input';
 import {AssetSelector} from '../assets/components/asset-selector';
 import {ImageSelector} from '../assets/components/image-selector';
@@ -48,12 +53,7 @@ import {
     type FormFieldControlContext,
     getNativeInputAriaProps,
 } from '../../components/form-field';
-import {
-    DynamicTextIndicator,
-    DynamicTextIndicatorLabel,
-    type InputMode,
-    InputModeSelector,
-} from '../../components/input-mode-selector';
+import {DynamicTextIndicator, DynamicTextIndicatorLabel, InputModeSelector} from '../../components/input-mode-selector';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
 import {DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
 import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
@@ -76,6 +76,7 @@ import {ElementDisplayContext} from '../../data/element-type/element-child-optio
 import type {StoragePathSelectorInputElementValue} from '../../models/elements/form/input/storage-path-selector-input-element';
 import {
     createDerivedRuntimeElementData,
+    literalAuthoredValue,
     type ReplicatingContainerElementValues,
 } from '../../models/element-data';
 import {
@@ -85,6 +86,8 @@ import {
 import {getDepartmentTypeIcons} from '../departments/utils/department-utils';
 import {ModuleIcons} from '../../shells/staff/data/module-icons';
 import Person from '@aivot/mui-material-symbols-400-n25-outlined/Person';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
 import {SelectFieldPresentation} from '../../models/elements/form/input/select-field-presentation';
 
 const fieldGridSx = {
@@ -99,6 +102,47 @@ const fieldGridSx = {
         maxWidth: '100%',
     },
 };
+
+const attachmentSetOptions: ProcessNodeDefinitionMetadataForwardedAttachmentSet[] = [
+    {
+        dataKey: 'summary',
+        label: 'Formularzusammenfassung',
+        subLabel: 'PDF des eingereichten Formulars',
+        isMultifile: false,
+    },
+    {
+        dataKey: 'documents',
+        label: 'Nachweise',
+        subLabel: 'Hochgeladene Unterlagen',
+        isMultifile: true,
+    },
+    {
+        dataKey: 'decision',
+        label: 'Bescheid',
+        subLabel: 'Erzeugtes Dokument',
+        isMultifile: false,
+    },
+].map((attachmentSet) => ({
+    ...attachmentSet,
+    origin: {
+        id: 1,
+        processId: 1,
+        processVersion: 1,
+        processNodeDefinitionKey: 'form',
+        processNodeDefinitionVersion: 1,
+        name: 'Antrag einreichen',
+        description: null,
+        dataKey: 'application',
+        configuration: {},
+        outputMappings: {},
+        timeLimitDays: null,
+        requirements: null,
+        notes: null,
+        savedWithErrors: false,
+        created: '2026-01-01T00:00:00Z',
+        updated: '2026-01-01T00:00:00Z',
+    },
+}));
 
 const domainAndUserOptions: DomainAndUserSelectOption[] = [
     {
@@ -129,18 +173,18 @@ const domainAndUserOptions: DomainAndUserSelectOption[] = [
     },
 ];
 
-const inputModeSummaries: Record<Exclude<InputMode, 'literal'>, {primary: string; secondary: string}> = {
-    variable: {
+const inputModeSummaries: Record<Exclude<InputMode, InputMode.Literal>, {primary: string; secondary: string}> = {
+    Variable: {
         primary: 'Nachname der antragstellenden Person',
         secondary: 'Vorgangsdaten - $.applicant.lastName',
     },
-    noCode: {
+    NoCode: {
         primary: 'Vorname + " " + Nachname',
         secondary: 'Ausdruck (No-Code)',
     },
-    lowCode: {
+    LowCode: {
         primary: 'Benutzerdefiniertes Skript',
-        secondary: 'return `${$.applicant.firstName} ${$.applicant.lastName}`;',
+        secondary: '`${$.applicant.firstName} ${$.applicant.lastName}`',
     },
 };
 
@@ -232,16 +276,61 @@ interface InputModeGalleryFieldProps {
     onChange: (value: string | null) => void;
 }
 
+function ExternalActionGallery() {
+    const [title, setTitle] = useState<string | null>('Hundesteuer');
+    const [locked, setLocked] = useState(true);
+    const [delivery, setDelivery] = useState<string | null>('digital');
+    return (
+        <>
+            <Typography variant="h6" sx={{mt: 5, mb: 2}}>Externe Feldaktionen</Typography>
+            <Stack spacing={2} data-external-action-gallery>
+                {[undefined, 480, 360].map((width, index) => (
+                    <TextFieldComponent
+                        key={index}
+                        label="Öffentliche Bezeichnung des Prozesses"
+                        value={title}
+                        onChange={setTitle}
+                        required
+                        margin="none"
+                        sx={{width}}
+                        hint="Diese Bezeichnung erscheint in den zugehörigen Formularen."
+                        error={title ? undefined : 'Geben Sie eine öffentliche Bezeichnung ein.'}
+                        externalAction={(
+                            <Button variant="outlined" startIcon={<Refresh/>} onClick={() => setTitle('Hundesteuer')}>
+                                Vorschlag übernehmen
+                            </Button>
+                        )}
+                    />
+                ))}
+                <RadioFieldComponent
+                    label="Zustellung des Bescheids"
+                    value={delivery}
+                    onChange={setDelivery}
+                    options={[{value: 'digital', label: 'Digital'}, {value: 'post', label: 'Per Post'}]}
+                    disabled={locked}
+                    hint="Die Auswahl gilt für die Zustellung des Bescheids."
+                    margin="none"
+                    externalAction={(
+                        <Button startIcon={<Edit/>} onClick={() => setLocked(!locked)}>
+                            {locked ? 'Auswahl freigeben' : 'Auswahl sperren'}
+                        </Button>
+                    )}
+                />
+            </Stack>
+        </>
+    );
+}
+
 function InputModeGalleryField(props: InputModeGalleryFieldProps) {
     const label = 'Bezeichnung';
-    const [mode, setMode] = useState<InputMode>('literal');
+    const [mode, setMode] = useState<InputMode>(InputMode.Literal);
 
     return (
         <FormField
             label={label}
             labelAction={(field) => (
                 <Stack direction="row" spacing={0.5} sx={{height: '100%', alignItems: 'center'}}>
-                    {mode === 'literal' && <DynamicTextIndicator decorative/>}
+                    {mode === InputMode.Literal && <DynamicTextIndicator decorative/>}
                     <InputModeSelector
                         fieldLabel={label}
                         controlledFieldId={field.controlId}
@@ -251,11 +340,11 @@ function InputModeGalleryField(props: InputModeGalleryFieldProps) {
                 </Stack>
             )}
             hint="Eine eindeutige Bezeichnung hilft bei der späteren Zuordnung."
-            assistiveText={mode === 'literal' ? DynamicTextIndicatorLabel : undefined}
+            assistiveText={mode === InputMode.Literal ? DynamicTextIndicatorLabel : undefined}
             required
             margin="none"
         >
-            {(field) => mode === 'literal' ? (
+            {(field) => mode === InputMode.Literal ? (
                 <TextField
                     id={field.controlId}
                     value={props.value ?? ''}
@@ -279,7 +368,7 @@ function InputModeGalleryField(props: InputModeGalleryFieldProps) {
 }
 
 function InputModeSummary(props: {
-    mode: Exclude<InputMode, 'literal'>;
+    mode: Exclude<InputMode, InputMode.Literal>;
     field: FormFieldControlContext;
 }) {
     const summary = inputModeSummaries[props.mode];
@@ -381,6 +470,8 @@ export function FieldLayoutGallery() {
     const [attachments, setAttachments] = useState<File[] | null>(() => [
         new File(['Beispieldokument'], 'antrag.pdf', {type: 'application/pdf'}),
     ]);
+    const [attachmentSet, setAttachmentSet] = useState<string[] | null>(['summary']);
+    const [attachmentSets, setAttachmentSets] = useState<string[] | null>(['summary', 'documents']);
     const [selectedAssetKey, setSelectedAssetKey] = useState<string | null>(null);
     const [selectedImageKey, setSelectedImageKey] = useState<string | null>(null);
     const [accentColor, setAccentColor] = useState('#006E73');
@@ -410,8 +501,8 @@ export function FieldLayoutGallery() {
         {
             id: 'field-layout-gallery-address-1',
             values: {
-                [addressStreetElement.id]: 'Musterstraße 1',
-                [addressCityElement.id]: 'Musterstadt',
+                [addressStreetElement.id]: literalAuthoredValue('Musterstraße 1'),
+                [addressCityElement.id]: literalAuthoredValue('Musterstadt'),
             },
         },
     ]);
@@ -870,6 +961,30 @@ export function FieldLayoutGallery() {
                 />
             </Box>
 
+            <Box sx={{...fieldGridSx, mt: 3}}>
+                <ProcessInstanceAttachmentSetSelect
+                    label="Anlagensatz"
+                    attachmentSets={attachmentSetOptions}
+                    value={attachmentSet}
+                    onChange={setAttachmentSet}
+                    maxItems={1}
+                    required
+                    placeholder="Anlagensatz auswählen"
+                    hint="Wählen Sie den Anlagensatz, der gespeichert werden soll."
+                    margin="none"
+                />
+                <ProcessInstanceAttachmentSetSelect
+                    label="Anlagensätze"
+                    attachmentSets={attachmentSetOptions}
+                    value={attachmentSets}
+                    onChange={setAttachmentSets}
+                    maxItems={3}
+                    placeholder="Anlagensätze auswählen"
+                    hint="Wählen Sie bis zu drei Anlagensätze."
+                    margin="none"
+                />
+            </Box>
+
             <Typography
                 component="h3"
                 variant="subtitle1"
@@ -1048,7 +1163,7 @@ export function FieldLayoutGallery() {
                     rootElement: addressListElement,
                     allElements: [addressListElement, addressStreetElement, addressCityElement],
                     rootAuthoredElementValues: {
-                        [addressListElement.id]: additionalAddresses,
+                        [addressListElement.id]: literalAuthoredValue(additionalAddresses),
                     },
                     rootDerivedData: fieldLayoutGalleryDerivedData,
                 }}
@@ -1071,6 +1186,8 @@ export function FieldLayoutGallery() {
                     derivationTriggerIdQueue={[]}
                 />
             </ViewDispatcherContextProvider>
+            <ResourceInputGallery/>
+            <ExternalActionGallery/>
         </Box>
     );
 }

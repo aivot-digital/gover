@@ -6,6 +6,12 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JavascriptCodeTest {
+    @Test
+    void shouldRecognizeConcreteArrayReferencesWithoutConfusingOtherSources() {
+        var code = JavascriptCode.of("return $.people[0].name + $.matrix[1][2].value + $$.people[0].name;");
+        assertEquals(java.util.Set.of("people[0].name", "matrix[1][2].value"), code.getReferencedProcessDataPaths());
+    }
+
 
     @Test
     void readValue() {

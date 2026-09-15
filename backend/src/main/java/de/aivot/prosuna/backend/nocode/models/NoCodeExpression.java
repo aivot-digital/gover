@@ -8,6 +8,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.*;
+import java.util.function.UnaryOperator;
 
 /**
  * Represents an expression in the NoCode language. An expression consists of an operator and a list of operands.
@@ -33,6 +34,19 @@ public class NoCodeExpression extends NoCodeOperand {
 
     public static NoCodeExpression of(@Nonnull String operatorIdentifier, @Nonnull NoCodeOperand... operands) {
         return new NoCodeExpression(operatorIdentifier, operands);
+    }
+
+    @Nonnull
+    @Override
+    public NoCodeExpression copy(@Nonnull UnaryOperator<Object> copyValue) {
+        var copy = (NoCodeExpression) super.copy(copyValue);
+        if (operands != null) {
+            copy.operands = new ArrayList<>(operands.size());
+            for (var operand : operands) {
+                copy.operands.add((NoCodeOperand) copyValue.apply(operand));
+            }
+        }
+        return copy;
     }
 
     public boolean isEmpty() {

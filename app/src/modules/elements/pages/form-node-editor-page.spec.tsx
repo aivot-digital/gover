@@ -1,3 +1,4 @@
+import {createTheme as createMuiTheme, ThemeProvider} from '@mui/material';
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
@@ -12,12 +13,15 @@ import {FormTriggerApiService} from '../../forms/services/form-trigger-api-servi
 import {XdfApiService} from '../../xdf/v1/xdf-api-service';
 import {ElementType} from '../../../data/element-type/element-type';
 import {ProcessStatus} from '../../process/enums/process-status';
+import {literalAuthoredValue} from '../../../models/element-data';
 
 const mocks = vi.hoisted(() => ({
     confirm: vi.fn(),
+    devToolsTab: undefined as number | undefined,
     dispatch: vi.fn(),
     downloadBlobFile: vi.fn(),
     hasChanged: false,
+    replaceAuthoredElementValues: vi.fn(),
     submitValues: {} as Record<string, unknown>,
     uploadTextFile: vi.fn(),
 }));
@@ -36,7 +40,7 @@ vi.mock('../../../hooks/use-app-dispatch', () => ({
 vi.mock('../../../hooks/use-app-selector', () => ({
     useAppSelector: (selector: (state: unknown) => unknown) => selector({
         adminSettings: {
-            devToolsTab: undefined,
+            devToolsTab: mocks.devToolsTab,
             disableAutoScrollForSteps: false,
             disableElementContextMenu: false,
             hideComponentTree: true,
@@ -136,16 +140,25 @@ vi.mock('../../forms/pages/details/components/form-details-page-more-menu', () =
 }));
 
 vi.mock('../components/element-derivation-context', () => ({
-    ElementDerivationContext: ({onEvent}: {onEvent: (values: Record<string, unknown>, event: string) => Promise<void>}) => (
-        <button
-            type="button"
-            onClick={() => {
-                void onEvent(mocks.submitValues, 'submit');
-            }}
-        >
-            Testformular absenden
-        </button>
-    ),
+    ElementDerivationContext: React.forwardRef((
+        {onEvent}: {onEvent: (values: Record<string, unknown>, event: string) => Promise<void>},
+        ref,
+    ) => {
+        React.useImperativeHandle(ref, () => ({
+            replaceAuthoredElementValues: mocks.replaceAuthoredElementValues,
+        }));
+
+        return (
+            <button
+                type="button"
+                onClick={() => {
+                    void onEvent(mocks.submitValues, 'submit');
+                }}
+            >
+                Testformular absenden
+            </button>
+        );
+    }),
 }));
 
 vi.mock('../../../components/submitted/submitted', () => ({
@@ -155,7 +168,18 @@ vi.mock('../../../components/submitted/submitted', () => ({
 }));
 
 vi.mock('../../../components/element-tree-2/element-tree', () => ({ElementTree: () => null}));
-vi.mock('../../../components/developer-tools/developer-tools', () => ({DeveloperTools: () => null}));
+vi.mock('../../../components/developer-tools/developer-tools', () => ({
+    DeveloperTools: ({onElementDataChange}: {
+        onElementDataChange: (elementData: Record<string, unknown>) => void;
+    }) => (
+        <button
+            type="button"
+            onClick={() => onElementDataChange({field: 'imported'})}
+        >
+            Element-Daten importieren
+        </button>
+    ),
+}));
 vi.mock('../../../components/form/form-header-component', () => ({FormHeaderComponent: () => null}));
 vi.mock('../../../components/form/root-component-footer', () => ({RootComponentFooter: () => null}));
 vi.mock('../../../components/element-tree-2/components/element-tree-inline-editor-context', () => ({
@@ -181,9 +205,11 @@ describe('FormNodeEditorPage error handling', () => {
 
     beforeEach(() => {
         mocks.confirm.mockReset().mockResolvedValue(true);
+        mocks.devToolsTab = undefined;
         mocks.dispatch.mockReset();
         mocks.downloadBlobFile.mockReset();
         mocks.hasChanged = false;
+        mocks.replaceAuthoredElementValues.mockReset().mockResolvedValue(undefined);
         mocks.submitValues = {};
         mocks.uploadTextFile.mockReset().mockResolvedValue('<xdf/>');
 
@@ -215,6 +241,14 @@ describe('FormNodeEditorPage error handling', () => {
             startedProcessAccessKey: 'started-process',
         });
         vi.spyOn(XdfApiService.prototype, 'xdfTransform').mockResolvedValue(createFormLayout());
+    });
+
+    it.each(['light', 'dark'] as const)('uses a neutral content surface in %s mode even with tinted surrounding surfaces', async mode => {
+        const theme = createMuiTheme({palette: {mode, background: {default: '#ffeeee', paper: '#eeffee'}}});
+        render(<ThemeProvider theme={theme}><FormNodeEditorPage/></ThemeProvider>);
+
+        const submit = await screen.findByRole('button', {name: 'Testformular absenden'});
+        expect(submit.parentElement).toHaveStyle({backgroundColor: mode === 'light' ? '#ffffff' : '#1c1c1c'});
     });
 
     it('sets a generic shell error when essential editor loading fails unexpectedly', async () => {
@@ -286,6 +320,16 @@ describe('FormNodeEditorPage error handling', () => {
         expectActionTypeDispatched('shell/clearLoadingMessage');
     });
 
+    it('derives element data imported through the developer tools', async () => {
+        mocks.devToolsTab = 0;
+        await renderLoadedEditor();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Element-Daten importieren'}));
+
+        expect(mocks.replaceAuthoredElementValues).toHaveBeenCalledOnce();
+        expect(mocks.replaceAuthoredElementValues).toHaveBeenCalledWith({field: 'imported'});
+    });
+
     it('uses the localized fallback for a non-displayable cost API error and aborts submission', async () => {
         vi.mocked(FormTriggerApiService.prototype.calculateCosts).mockRejectedValue({
             status: 500,
@@ -326,11 +370,11 @@ describe('FormNodeEditorPage error handling', () => {
         ]);
         vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(createNode(fileLayout));
         mocks.submitValues = {
-            attachment: [{
+            attachment: literalAuthoredValue([{
                 name: 'attachment.pdf',
                 size: 100,
                 uri: 'blob:missing',
-            }],
+            }]),
         };
         vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
         await renderLoadedEditor();
@@ -405,8 +449,8 @@ function createFormLayout(children: any[] = []): any {
 function createNode(formLayout = createFormLayout()): any {
     return {
         configuration: {
-            formLayout,
-            formSlug: 'test-form',
+            formLayout: literalAuthoredValue(formLayout),
+            formSlug: literalAuthoredValue('test-form'),
         },
         id: 1,
         name: 'Formulareingang',

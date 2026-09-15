@@ -1,16 +1,20 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
@@ -40,6 +44,9 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
@@ -74,6 +81,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class FormTriggerNodeV1Test {
@@ -112,12 +120,24 @@ class FormTriggerNodeV1Test {
     void validateConfiguration_ShouldAllowValidLayoutAndUniqueSlug() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(false);
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
-                configuration("antrag-online", validFormLayout())
-        );
+                configuration("antrag-online", validFormLayout()),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNull(errors);
+    }
+
+    @Test
+    void validateConfiguration_ShouldSkipDefinitionChecksAtRuntime() throws Exception {
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(), configuration("Invalid Slug", new FormLayoutElement()),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Runtime
+        ));
+
+        assertNull(errors);
+        verifyNoInteractions(processNodeRepository);
     }
 
     @Test
@@ -191,6 +211,37 @@ class FormTriggerNodeV1Test {
     }
 
     @Test
+    void getMetadata_ShouldForwardIdentityProviderKeys() {
+        var firstProviderKey = UUID.randomUUID();
+        var secondProviderKey = UUID.randomUUID();
+        var configuration = configuration("antrag-online", validFormLayout());
+        configuration.identities = List.of(new IdentityConfigElementSlot(
+                "applicant",
+                "Antragsteller:in",
+                null,
+                true,
+                false,
+                List.of(
+                        new IdentityConfigElementOption(firstProviderKey, List.of()),
+                        new IdentityConfigElementOption(firstProviderKey, List.of()),
+                        new IdentityConfigElementOption(secondProviderKey, List.of())
+                )
+        ));
+
+        var metadata = node.getMetadata(
+                processNode(),
+                configuration,
+                ProcessNodeDefinitionMetadata.empty()
+        );
+
+        assertEquals(1, metadata.forwardedIdentities().size());
+        assertEquals(
+                List.of(firstProviderKey, secondProviderKey),
+                metadata.forwardedIdentities().getFirst().identityProviderKeys()
+        );
+    }
+
+    @Test
     void getConfigurationLayout_ShouldExposeCopyableSlugUrlTemplate() throws Exception {
         var publicUrlService = new PublicUrlService(prosunaConfig());
         var node = createNode(publicUrlService);
@@ -221,10 +272,11 @@ class FormTriggerNodeV1Test {
     void validateConfiguration_ShouldReportMissingPublicTitleFromFormLayout() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(false);
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
-                configuration("antrag-online", new FormLayoutElement())
-        );
+                configuration("antrag-online", new FormLayoutElement()),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNotNull(errors);
         assertEquals(1, errors.size());
@@ -247,10 +299,11 @@ class FormTriggerNodeV1Test {
         var layout = validFormLayout();
         layout.setChildren(List.of(step));
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
-                configuration("antrag-online", layout)
-        );
+                configuration("antrag-online", layout),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNotNull(errors);
         assertEquals(
@@ -263,10 +316,11 @@ class FormTriggerNodeV1Test {
     void validateConfiguration_ShouldRejectDuplicateSlug() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(true);
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
-                configuration("antrag-online", validFormLayout())
-        );
+                configuration("antrag-online", validFormLayout()),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNotNull(errors);
         assertEquals(
@@ -279,10 +333,11 @@ class FormTriggerNodeV1Test {
     void validateConfiguration_ShouldReturnMultipleSlugErrors() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(true);
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
-                configuration("Antrag Online", validFormLayout())
-        );
+                configuration("Antrag Online", validFormLayout()),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNotNull(errors);
         assertEquals(
@@ -298,10 +353,11 @@ class FormTriggerNodeV1Test {
     void validateConfiguration_ShouldReturnSlugAndLayoutErrorsTogether() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(true);
 
-        var errors = node.validateConfiguration(
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
-                configuration("antrag-online", new FormLayoutElement())
-        );
+                configuration("antrag-online", new FormLayoutElement()),
+                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
+        ));
 
         assertNotNull(errors);
         assertEquals(2, errors.size());
@@ -317,7 +373,7 @@ class FormTriggerNodeV1Test {
         when(pdfService.generateCustomerSummary(
                 same(formLayout),
                 any(AuthoredElementValues.class),
-                eq(FormPdfScope.Citizen),
+                eq(FormPdfScope.Customer),
                 any(ProcessInstanceEntity.class),
                 same(configuration),
                 any(ProcessNodeEntity.class)
@@ -357,12 +413,12 @@ class FormTriggerNodeV1Test {
         verify(pdfService).generateCustomerSummary(
                 same(formLayout),
                 submissionCaptor.capture(),
-                eq(FormPdfScope.Citizen),
+                eq(FormPdfScope.Customer),
                 processInstanceCaptor.capture(),
                 same(configuration),
                 processNodeCaptor.capture()
         );
-        assertEquals("Ada", submissionCaptor.getValue().get("nameField"));
+        assertEquals("Ada", submissionCaptor.getValue().getLiteral("nameField"));
         assertEquals(PROCESS_INSTANCE_ID, processInstanceCaptor.getValue().getId());
         assertEquals(PROCESS_ID, processInstanceCaptor.getValue().getProcessId());
         assertEquals("formNode", processNodeCaptor.getValue().getDataKey());
@@ -392,9 +448,9 @@ class FormTriggerNodeV1Test {
     @Test
     void cleanConfigurationForExport_ShouldRemoveSystemLocalIdentityAndPaymentConfiguration() {
         var configuration = new AuthoredElementValues();
-        configuration.put(FormTriggerConfigV1.FORM_LAYOUT, validFormLayout());
-        configuration.put(FormTriggerConfigV1.IDENTITIES, List.of(Map.of("id", "identity")));
-        configuration.put(FormTriggerConfigV1.PAYMENT, Map.of("paymentProviderKey", UUID.randomUUID()));
+        configuration.putLiteral(FormTriggerConfigV1.FORM_LAYOUT, validFormLayout());
+        configuration.putLiteral(FormTriggerConfigV1.IDENTITIES, List.of(Map.of("id", "identity")));
+        configuration.putLiteral(FormTriggerConfigV1.PAYMENT, Map.of("paymentProviderKey", UUID.randomUUID()));
 
         var cleaned = node.cleanConfigurationForExport(configuration);
 
@@ -403,7 +459,7 @@ class FormTriggerNodeV1Test {
     }
 
     @Test
-    void getCustomerTaskView_ShouldRenderConfiguredPaymentSuccessMessage() throws Exception {
+    void getCompletedCustomerTaskView_ShouldRenderConfiguredPaymentSuccessMessage() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
         var transactionKey = "tx-1";
         var paymentConfig = new PaymentConfigElementValue(
@@ -439,7 +495,7 @@ class FormTriggerNodeV1Test {
         when(processService.retrieve(PROCESS_ID))
                 .thenReturn(Optional.of(process()));
 
-        var layout = node.getCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+        var layout = node.getCompletedCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
                 mock(ProcessNodeExecutionLogger.class),
                 processNode(),
                 processInstance(Map.of()),
@@ -448,14 +504,14 @@ class FormTriggerNodeV1Test {
                 null,
                 nodeConfiguration,
                 null
-        ));
+        )).layout();
 
         var richText = layout.findChild("rtx", RichTextContentElement.class).orElseThrow();
         assertTrue(richText.getContent().contains("# Zahlung erfolgreich\n# Zahlung erhalten\nDanke **Ada**."));
     }
 
     @Test
-    void getCustomerTaskView_ShouldRenderPaymentConfirmationDownloadUrl() throws Exception {
+    void getCompletedCustomerTaskView_ShouldRenderPaymentConfirmationDownloadUrl() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
         var transactionKey = "tx-1";
         var paymentConfig = new PaymentConfigElementValue(
@@ -492,7 +548,7 @@ class FormTriggerNodeV1Test {
         when(processService.retrieve(PROCESS_ID))
                 .thenReturn(Optional.of(process()));
 
-        var layout = node.getCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+        var layout = node.getCompletedCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
                 mock(ProcessNodeExecutionLogger.class),
                 processNode(),
                 instance,
@@ -501,13 +557,38 @@ class FormTriggerNodeV1Test {
                 null,
                 nodeConfiguration,
                 null
-        ));
+        )).layout();
 
         var downloadButton = layout.findChild("download", LinkButtonContentElement.class).orElseThrow();
         assertEquals(
                 "https://example.test/api/public/form/antrag-prozess/antrag-online/submit/instance-access/task-access/payment-confirmation/",
                 downloadButton.getHref()
         );
+    }
+
+    @Test
+    void getCompletedCustomerTaskView_ShouldFallBackToGenericConfirmationWithoutPaymentData() throws Exception {
+        var configuration = new FormTriggerConfigV1();
+
+        var view = node.getCompletedCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+                mock(ProcessNodeExecutionLogger.class),
+                processNode(),
+                processInstance(Map.of()),
+                task(),
+                null,
+                null,
+                configuration,
+                null
+        ));
+
+        var alert = view.layout()
+                .findChild(
+                        node.getKey() + "-completed-customer-task-alert",
+                        AlertContentElement.class
+                )
+                .orElseThrow();
+        assertEquals("Aufgabe abgeschlossen", alert.getTitle());
+        assertTrue(view.events().isEmpty());
     }
 
     private static FormTriggerConfigV1 configuration(String formSlug, FormLayoutElement formLayout) {
@@ -649,7 +730,8 @@ class FormTriggerNodeV1Test {
                 pdfService,
                 processInstanceAttachmentService,
                 processInstanceAttachmentSetService,
-                JsonMapperTestUtils.createMapper()
+                JsonMapperTestUtils.createMapper(),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper())
         );
     }
 

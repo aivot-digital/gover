@@ -30,6 +30,7 @@ import {isApiError} from '../../models/api-error';
 import {SelectFieldComponent} from '../../components/select-field/select-field-component';
 import {FormField} from '../../components/form-field';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
+import {AssetVisibility} from '../../modules/assets/models/asset-visibility';
 
 type ProviderLoadError = 'permission' | 'generic';
 
@@ -38,7 +39,7 @@ export interface AssetPickerDialogProps {
     title: string;
     show: boolean;
     mimeType?: string | string[];
-    mode?: 'public' | 'all';
+    visibility?: AssetVisibility;
     onSelectAsset: (assetKey: string, storagePathFromRoot: string, storageProviderId: number) => void;
     onCancel: () => void;
 }
@@ -49,7 +50,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
         title,
         show,
         mimeType,
-        mode = 'all',
+        visibility = AssetVisibility.All,
         onSelectAsset,
         onCancel,
         children,
@@ -162,7 +163,10 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
     }, [mimeType]);
 
     const mimeTypeFilterLabel = useMemo(() => getFileTypeFilterSummary(normalizedMimeTypes), [normalizedMimeTypes]);
-    const hasSelectionCriteria = normalizedMimeTypes.length > 0 || mode === 'public';
+    const hasSelectionCriteria = normalizedMimeTypes.length > 0 || visibility !== AssetVisibility.All;
+    const explorerVisibility = visibility === AssetVisibility.Private
+        ? AssetVisibility.Private
+        : AssetVisibility.All;
 
     const handleDialogClose = useCallback(() => {
         if (isProcessingSelection) {
@@ -221,7 +225,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
         try {
             startSelectionProcessing('Datei wird geprüft…');
 
-            if (assetKey.length === 0 || (mode === 'public' && assetIsPrivate == null)) {
+            if (assetKey.length === 0 || (visibility !== AssetVisibility.All && assetIsPrivate == null)) {
                 resolvedAsset = await loadAssetForSelection(item);
                 if (resolvedAsset == null) {
                     return;
@@ -236,7 +240,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                 return;
             }
 
-            if (mode === 'public' && assetIsPrivate === true) {
+            if (visibility === AssetVisibility.Public && assetIsPrivate === true) {
                 stopSelectionProcessing();
                 if (!canUpdateAssets) {
                     dispatch(showErrorSnackbar(
@@ -324,6 +328,11 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                 }
             }
 
+            if (visibility === AssetVisibility.Private && assetIsPrivate !== true) {
+                dispatch(showErrorSnackbar('Die ausgewählte Datei ist öffentlich erreichbar und kann hier nicht ausgewählt werden.'));
+                return;
+            }
+
             if (resolvedAsset != null) {
                 onSelectAsset(resolvedAsset.key, resolvedAsset.storagePathFromRoot, resolvedAsset.storageProviderId);
                 return;
@@ -339,7 +348,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
         confirm,
         dispatch,
         loadAssetForSelection,
-        mode,
+        visibility,
         onSelectAsset,
         providers,
         startSelectionProcessing,
@@ -442,12 +451,20 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                                                         label={`Dateityp: ${mimeTypeFilterLabel}`}
                                                     />
                                                 )}
-                                                {mode === 'public' && (
+                                                {visibility === AssetVisibility.Public && (
                                                     <Chip
                                                         size="small"
                                                         variant="outlined"
                                                         color="info"
                                                         label="Öffentlicher Zugriff erforderlich"
+                                                    />
+                                                )}
+                                                {visibility === AssetVisibility.Private && (
+                                                    <Chip
+                                                        size="small"
+                                                        variant="outlined"
+                                                        color="info"
+                                                        label="Nur private Dateien"
                                                     />
                                                 )}
                                             </Stack>
@@ -524,6 +541,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                                 providerId={selectedProviderId}
                                 onFileSelect={handleSelectFile}
                                 filterMimeTypes={normalizedMimeTypes}
+                                filterVisibility={explorerVisibility}
                                 disableMissingFiles={true}
                                 showTopNavigationBar={true}
                                 minGridHeight={460}

@@ -25,6 +25,27 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProcessNodeDefinitionMetadataTest {
+    @Test
+    void withLayout_ShouldUseBracketWildcardsForNestedReplicatingContainers() {
+        var field = textInput("name");
+        field.setDestinationKey("value");
+        var inner = new ReplicatingContainerLayoutElement();
+        inner.setId("inner");
+        inner.setDestinationKey("addresses");
+        inner.setChildren(List.of(field));
+        var outer = new ReplicatingContainerLayoutElement();
+        outer.setId("outer");
+        outer.setDestinationKey("people");
+        outer.setChildren(List.of(inner));
+        var root = new GroupLayoutElement();
+        root.setId("root");
+        root.setChildren(List.of(outer));
+
+        var keys = ProcessNodeDefinitionMetadata.empty().withLayout(root, origin())
+                .forwardedProcessDataKeys().stream().map(ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey).toList();
+        assertTrue(keys.contains("people[*].addresses[*].value"));
+    }
+
     private static final Pattern ELEMENT_ID_PATTERN = Pattern.compile("^[a-z][a-zA-Z0-9_]*$");
 
     @Test

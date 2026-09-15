@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.dataObject.services;
 
-import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntity;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntityId;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectSchemaEntity;
@@ -9,6 +8,7 @@ import de.aivot.prosuna.backend.dataObject.repositories.DataObjectSchemaReposito
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
@@ -21,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -49,16 +50,19 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
     private final DataObjectItemRepository dataObjectItemRepository;
     private final DataObjectSchemaRepository dataObjectSchemaRepository;
     private final ElementDerivationService elementDerivationService;
+    private final AuthoredInputValueService authoredInputValueService;
 
     @Autowired
     public DataObjectItemService(
             DataObjectItemRepository dataObjectItemRepository,
             DataObjectSchemaRepository dataObjectSchemaRepository,
-            ElementDerivationService elementDerivationService
+            ElementDerivationService elementDerivationService,
+            AuthoredInputValueService authoredInputValueService
     ) {
         this.dataObjectItemRepository = dataObjectItemRepository;
         this.dataObjectSchemaRepository = dataObjectSchemaRepository;
         this.elementDerivationService = elementDerivationService;
+        this.authoredInputValueService = authoredInputValueService;
     }
 
     @Nonnull
@@ -200,9 +204,15 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
     @Nonnull
     private Map<String, Object> deriveDataObjectItemData(@Nonnull DataObjectItemEntity entity,
                                                          @Nonnull DataObjectSchemaEntity schema) throws ResponseException {
-        var entityElementData = JsonMapperFactory
-                .getInstance()
-                .convertValue(entity.getData(), AuthoredElementValues.class);
+        // The data-object API and persistence use plain data. Only the derivation boundary introduces envelopes;
+        // the schema distinguishes repeated rows from ordinary business objects and wraps every row recursively.
+        AuthoredElementValues entityElementData;
+        try {
+            entityElementData = authoredInputValueService.toLiteralAuthoredElementValues(schema.getSchema(), entity.getData());
+        } catch (JacksonException | IllegalArgumentException exception) {
+            // Malformed row structures are request errors, not internal failures. Do not expose mapper details.
+            throw ResponseException.badRequest("Die Struktur der Datenobjektwerte ist ungültig.");
+        }
         var edo = new ElementDerivationOptions();
         var edr = new ElementDerivationRequest(
                 schema.getSchema(),
@@ -216,7 +226,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                     .badRequest(derivedData);
         }
 
-        return entityElementData;
+        return derivedData.getEffectiveValues();
     }
 
     @Nonnull

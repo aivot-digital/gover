@@ -10,7 +10,7 @@ public final class TestData {
 
     public static AuthoredElementValues authored(Object... keyValuePairs) {
         var values = new AuthoredElementValues();
-        putAll(values, keyValuePairs);
+        putAllAuthored(values, keyValuePairs);
         return values;
     }
 
@@ -25,12 +25,6 @@ public final class TestData {
                 effective(keyValuePairs),
                 new ComputedElementStates()
         );
-    }
-
-    public static DerivedRuntimeElementData runtime(AuthoredElementValues values) {
-        var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(values);
-        return new DerivedRuntimeElementData(effectiveValues, new ComputedElementStates());
     }
 
     public static DerivedRuntimeElementData runtime(EffectiveElementValues values) {
@@ -52,6 +46,16 @@ public final class TestData {
 
         for (var i = 0; i < keyValuePairs.length; i += 2) {
             target.put((String) keyValuePairs[i], keyValuePairs[i + 1]);
+        }
+    }
+
+    private static void putAllAuthored(AuthoredElementValues target, Object... keyValuePairs) {
+        if (keyValuePairs.length % 2 != 0) {
+            throw new IllegalArgumentException("Expected an even number of key/value arguments");
+        }
+
+        for (var i = 0; i < keyValuePairs.length; i += 2) {
+            target.putLiteral((String) keyValuePairs[i], keyValuePairs[i + 1]);
         }
     }
 }

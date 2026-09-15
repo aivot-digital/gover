@@ -2,15 +2,12 @@ package de.aivot.prosuna.backend.process.models;
 
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
@@ -33,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProcessNodeDefinitionTest {
     @Test
-    void getStaffTaskViewData_DefaultReturnsSavedSnapshotWhenPresent() throws Exception {
+    void getStaffTaskView_ReturnsSavedStaffSnapshotWhenPresent() throws Exception {
         ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
             @Override
             public String getParentPluginKey() {
@@ -90,11 +87,11 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) {
+            public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
                 var initialData = new AuthoredElementValues();
-                initialData.put("defaultField", "initial");
-                initialData.put("sharedField", "initial");
-                return initialData;
+                initialData.putLiteral("defaultField", "initial");
+                initialData.putLiteral("sharedField", "initial");
+                return ProcessNodeStaffView.of(context, new GroupLayoutElement(), List.of(), initialData);
             }
 
             @Nonnull
@@ -107,25 +104,24 @@ class ProcessNodeDefinitionTest {
         var context = staffContext(
                 Map.of(
                         ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
-                        Map.of(
-                                "defaultField", "initial",
-                                "sharedField", "saved",
-                                "savedField", "saved"
-                        )
+                        new AuthoredElementValues()
+                                .putLiteral("defaultField", "initial")
+                                .putLiteral("sharedField", "saved")
+                                .putLiteral("savedField", "saved")
                 ),
                 Map.of(),
                 Map.of()
         );
 
-        var data = definition.getStaffTaskViewData(context);
+        var data = definition.getStaffTaskView(context).data();
 
-        assertEquals("initial", data.get("defaultField"));
-        assertEquals("saved", data.get("sharedField"));
-        assertEquals("saved", data.get("savedField"));
+        assertEquals("initial", data.getLiteral("defaultField"));
+        assertEquals("saved", data.getLiteral("sharedField"));
+        assertEquals("saved", data.getLiteral("savedField"));
     }
 
     @Test
-    void getStaffTaskViewData_DefaultPreservesSavedNullValues() throws Exception {
+    void getStaffTaskView_PreservesSavedNullValues() throws Exception {
         ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
             @Override
             public String getParentPluginKey() {
@@ -182,10 +178,10 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) {
+            public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
                 var initialData = new AuthoredElementValues();
-                initialData.put("defaultField", "initial");
-                return initialData;
+                initialData.putLiteral("defaultField", "initial");
+                return ProcessNodeStaffView.of(context, new GroupLayoutElement(), List.of(), initialData);
             }
 
             @Nonnull
@@ -196,8 +192,8 @@ class ProcessNodeDefinitionTest {
         };
 
         var runtimeData = new HashMap<String, Object>();
-        var savedData = new HashMap<String, Object>();
-        savedData.put("defaultField", null);
+        var savedData = new AuthoredElementValues();
+        savedData.putLiteral("defaultField", null);
         runtimeData.put(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY, savedData);
 
         var context = staffContext(
@@ -206,10 +202,10 @@ class ProcessNodeDefinitionTest {
                 Map.of()
         );
 
-        var data = definition.getStaffTaskViewData(context);
+        var data = definition.getStaffTaskView(context).data();
 
         assertTrue(data.containsKey("defaultField"));
-        assertNull(data.get("defaultField"));
+        assertNull(data.getLiteral("defaultField"));
     }
 
     @Test
@@ -276,7 +272,7 @@ class ProcessNodeDefinitionTest {
         };
 
         var update = new AuthoredElementValues();
-        update.put("field", "value");
+        update.putLiteral("field", "value");
 
         var context = staffContext(
                 Map.of("keep", "value"),
@@ -292,12 +288,12 @@ class ProcessNodeDefinitionTest {
         assertEquals(Map.of("existing", "node-data"), updated.getNodeData());
         assertEquals(Map.of("applicant", Map.of("name", "Ada")), updated.getProcessData());
 
-        var savedData = updated.getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY);
-        assertEquals("value", ((Map<?, ?>) savedData).get("field"));
+        var savedData = assertInstanceOf(AuthoredElementValues.class, updated.getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
+        assertEquals("value", savedData.getLiteral("field"));
     }
 
     @Test
-    void getCustomerTaskViewData_DefaultMergesSavedDataOntoInitialData() throws Exception {
+    void getCustomerTaskView_MergesSavedDataOntoInitialData() throws Exception {
         ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
             @Override
             public String getParentPluginKey() {
@@ -354,11 +350,11 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+            public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
                 var initialData = new AuthoredElementValues();
-                initialData.put("defaultField", "initial");
-                initialData.put("sharedField", "initial");
-                return initialData;
+                initialData.putLiteral("defaultField", "initial");
+                initialData.putLiteral("sharedField", "initial");
+                return ProcessNodeCustomerView.of(context, new GroupLayoutElement(), List.of(), initialData);
             }
 
             @Nonnull
@@ -371,24 +367,48 @@ class ProcessNodeDefinitionTest {
         var context = customerContext(
                 Map.of(
                         ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY,
-                        Map.of(
-                                "sharedField", "saved",
-                                "savedField", "saved"
-                        )
+                        new AuthoredElementValues()
+                                .putLiteral("sharedField", "saved")
+                                .putLiteral("savedField", "saved")
                 ),
                 Map.of(),
                 Map.of()
         );
 
-        var data = definition.getCustomerTaskViewData(context);
+        var data = definition.getCustomerTaskView(context).data();
 
-        assertEquals("initial", data.get("defaultField"));
-        assertEquals("saved", data.get("sharedField"));
-        assertEquals("saved", data.get("savedField"));
+        assertEquals("initial", data.getLiteral("defaultField"));
+        assertEquals("saved", data.getLiteral("sharedField"));
+        assertEquals("saved", data.getLiteral("savedField"));
     }
 
     @Test
-    void getCustomerTaskViewData_DefaultTreatsSavedNullAsExplicitDeletion() throws Exception {
+    void customerViewOf_PreservesRequiredIdentityWhenMergingSavedData() {
+        var context = customerContext(
+                Map.of(
+                        ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY,
+                        new AuthoredElementValues().putLiteral("field", "saved")
+                ),
+                Map.of(),
+                Map.of()
+        );
+        var initialData = new AuthoredElementValues();
+        initialData.putLiteral("field", "initial");
+
+        var view = ProcessNodeCustomerView.of(
+                context,
+                new GroupLayoutElement(),
+                List.of(),
+                initialData,
+                "applicant"
+        );
+
+        assertEquals("saved", view.data().getLiteral("field"));
+        assertEquals("applicant", view.requiredExistingIdentityId());
+    }
+
+    @Test
+    void getCustomerTaskView_TreatsSavedNullAsExplicitDeletion() throws Exception {
         ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
             @Override
             public String getParentPluginKey() {
@@ -445,10 +465,10 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+            public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
                 var initialData = new AuthoredElementValues();
-                initialData.put("defaultField", "initial");
-                return initialData;
+                initialData.putLiteral("defaultField", "initial");
+                return ProcessNodeCustomerView.of(context, new GroupLayoutElement(), List.of(), initialData);
             }
 
             @Nonnull
@@ -459,8 +479,8 @@ class ProcessNodeDefinitionTest {
         };
 
         var runtimeData = new HashMap<String, Object>();
-        var savedData = new HashMap<String, Object>();
-        savedData.put("defaultField", null);
+        var savedData = new AuthoredElementValues();
+        savedData.putLiteral("defaultField", null);
         runtimeData.put(ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY, savedData);
 
         var context = customerContext(
@@ -469,10 +489,10 @@ class ProcessNodeDefinitionTest {
                 Map.of()
         );
 
-        var data = definition.getCustomerTaskViewData(context);
+        var data = definition.getCustomerTaskView(context).data();
 
         assertTrue(data.containsKey("defaultField"));
-        assertNull(data.get("defaultField"));
+        assertNull(data.getLiteral("defaultField"));
     }
 
     @Test
@@ -539,7 +559,7 @@ class ProcessNodeDefinitionTest {
         };
 
         var update = new AuthoredElementValues();
-        update.put("field", "value");
+        update.putLiteral("field", "value");
 
         var context = customerContext(
                 Map.of("keep", "value"),
@@ -555,8 +575,8 @@ class ProcessNodeDefinitionTest {
         assertEquals(Map.of("existing", "node-data"), updated.getNodeData());
         assertEquals(Map.of("applicant", Map.of("name", "Ada")), updated.getProcessData());
 
-        var savedData = updated.getRuntimeData().get(ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY);
-        assertEquals("value", ((Map<?, ?>) savedData).get("field"));
+        var savedData = assertInstanceOf(AuthoredElementValues.class, updated.getRuntimeData().get(ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY));
+        assertEquals("value", savedData.getLiteral("field"));
     }
 
     private static ProcessNodeExecutionContextUIStaff staffContext(Map<String, Object> runtimeData,

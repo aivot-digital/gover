@@ -7,6 +7,7 @@ import jakarta.annotation.Nonnull;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 
 /**
  * Represents an operand in the NoCode language.
@@ -26,12 +27,25 @@ import java.util.Objects;
         @JsonSubTypes.Type(value = NoCodeNodeDataReference.class, name = NoCodeNodeDataReference.TYPE_ID),
         @JsonSubTypes.Type(value = NoCodeStaticValue.class, name = NoCodeStaticValue.TYPE_ID),
 })
-public abstract class NoCodeOperand implements Serializable {
+public abstract class NoCodeOperand implements Serializable, Cloneable {
     @Nonnull
     private String type;
 
     public NoCodeOperand(@Nonnull String type) {
         this.type = type;
+    }
+
+    /**
+     * Copies this operand without normalizing its stored fields through getters or JSON.
+     * Subclasses with mutable payloads must copy them with the supplied recursive value copier.
+     */
+    @Nonnull
+    public NoCodeOperand copy(@Nonnull UnaryOperator<Object> copyValue) {
+        try {
+            return (NoCodeOperand) super.clone();
+        } catch (CloneNotSupportedException exception) {
+            throw new AssertionError(exception);
+        }
     }
 
     @Override

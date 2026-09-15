@@ -43,6 +43,7 @@ export function OptionListInput(props: OptionListInputProps) {
                 margin={props.margin}
                 showOptionalIndicator={props.showOptionalIndicator}
                 sx={props.sx}
+                externalAction={props.externalAction}
                 labelAction={(group) => {
                     const suppliedLabelAction = typeof props.labelAction === 'function'
                         ? props.labelAction(group)
@@ -145,6 +146,7 @@ export function OptionListInput(props: OptionListInputProps) {
             required={!props.allowEmpty}
             addLabel={props.addLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             margin={props.margin}
             sx={props.sx}

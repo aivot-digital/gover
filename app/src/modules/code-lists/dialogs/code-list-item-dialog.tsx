@@ -45,6 +45,7 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
     } = props;
 
     const [columns, setColumns] = useState<string[]>([]);
+    const [showValidationErrors, setShowValidationErrors] = useState(false);
 
     useEffect(() => {
         if (!open) {
@@ -52,6 +53,7 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
         }
 
         setColumns(item?.columns ?? codeList.columns.map(() => ''));
+        setShowValidationErrors(false);
     }, [codeList.columns, item, open]);
 
     const handleColumnChange = (index: number) => (value: string | null) => {
@@ -64,6 +66,20 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
 
     const hasColumns = codeList.columns.length > 0;
     const handleClose = isBusy ? () => undefined : onClose;
+    const isRequiredColumn = (index: number) => index === codeList.labelColumnIndex || index === codeList.valueColumnIndex;
+    const columnErrors = codeList.columns.map((column, index) => (
+        isRequiredColumn(index) && !columns[index]?.trim()
+            ? `Bitte geben Sie für „${column}“ einen Wert ein.`
+            : undefined
+    ));
+    const handleSave = () => {
+        setShowValidationErrors(true);
+        if (isBusy || !hasColumns || columns.length !== codeList.columns.length || columnErrors.some(error => error != null)) {
+            return;
+        }
+
+        onSave(columns);
+    };
 
     return (
         <Dialog
@@ -100,6 +116,8 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
                                         label={column}
                                         value={columns[index] ?? ''}
                                         onChange={handleColumnChange(index)}
+                                        required={isRequiredColumn(index)}
+                                        error={showValidationErrors ? columnErrors[index] : undefined}
                                         hint={getCodeListColumnHint(
                                             index,
                                             codeList.labelColumnIndex,
@@ -115,7 +133,7 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
             </DialogContent>
             <DialogActions sx={{justifyContent: 'flex-start'}}>
                 <Button
-                    onClick={() => onSave(columns)}
+                    onClick={handleSave}
                     disabled={isBusy || !hasColumns || columns.length !== codeList.columns.length}
                     variant="contained"
                     startIcon={<Save/>}

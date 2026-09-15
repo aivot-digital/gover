@@ -22,6 +22,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInpu
 import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
@@ -75,12 +76,16 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ElementDataTransformService elementDataTransformService;
     private final ElementDerivationService elementDerivationService;
+    private final AuthoredInputValueService authoredInputValueService;
 
     public DataChangeActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService,
-                                  ElementDataTransformService elementDataTransformService, ElementDerivationService elementDerivationService) {
+                                  ElementDataTransformService elementDataTransformService,
+                                  ElementDerivationService elementDerivationService,
+                                  AuthoredInputValueService authoredInputValueService) {
         this.assigneeResolverService = assigneeResolverService;
         this.elementDataTransformService = elementDataTransformService;
         this.elementDerivationService = elementDerivationService;
+        this.authoredInputValueService = authoredInputValueService;
     }
 
     @Nonnull
@@ -268,7 +273,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
     @Nonnull
     @Override
-    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) throws ResponseException {
+    public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) throws ResponseException {
         var config = context.getConfigurationOfExecutingNode();
 
         var layout = new GroupLayoutElement();
@@ -296,28 +301,15 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         children.add(remarkField);
 
         layout.setChildren(children);
-        return layout;
-    }
-
-    @Nonnull
-    @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) {
-        return List.of(
-                new TaskViewEvent(
-                        "Aufgabe abschließen",
-                        EVENT_COMPLETE
-                )
+        var effectiveValues = elementDataTransformService
+                .buildEffectiveValues(config.dataDefinition, context.getThisTask().getProcessData());
+        var initialData = authoredInputValueService.toLiteralAuthoredElementValues(config.dataDefinition, effectiveValues);
+        return ProcessNodeStaffView.of(
+                context,
+                layout,
+                List.of(new TaskViewEvent("Aufgabe abschließen", EVENT_COMPLETE)),
+                initialData
         );
-    }
-
-    @Nonnull
-    @Override
-    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) throws ResponseException {
-        var config = context.getConfigurationOfExecutingNode();
-
-        return elementDataTransformService
-                .buildEffectiveValues(config.dataDefinition, context.getThisTask().getProcessData())
-                .toAuthoredElementValues();
     }
 
     @Nonnull
@@ -359,7 +351,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 derivedRuntimeData.getElementStates(),
                 JsonMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData)
         );
-        var remark = normalizeRemark(authoredUpdate.get(TASK_VIEW_REMARK_FIELD_ID));
+        var remark = normalizeRemark(authoredUpdate.getLiteral(TASK_VIEW_REMARK_FIELD_ID));
 
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(OUTPUT_DATA, payloadUpdate);

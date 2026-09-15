@@ -10,8 +10,8 @@ import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TableInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.IntroductionStepElement;
 import jakarta.annotation.Nonnull;
@@ -63,31 +63,34 @@ public class PdfElementsGenerator {
 
     @Nullable
     private static EffectiveElementValues resolveReplicatingContainerRowValues(@Nullable Object row) {
-        if (!(row instanceof ReplicatingContainerLayoutElementValue) && !(row instanceof Map<?, ?>)) {
+        if (row instanceof EffectiveReplicatingContainerLayoutElementValue effectiveRow) {
+            return effectiveRow.getValues();
+        }
+
+        if (!(row instanceof Map<?, ?> rowMap)) {
             return null;
         }
 
-        var rows = ReplicatingContainerLayoutElement._formatValue(List.of(row));
-        if (rows == null || rows.isEmpty()) {
+        var rawValues = rowMap.containsKey("values") ? rowMap.get("values") : rowMap;
+        if (!(rawValues instanceof Map<?, ?> valueMap)) {
             return null;
         }
 
-        var authoredValues = rows.getFirst().getValues();
         var effectiveValues = new EffectiveElementValues();
-        if (authoredValues != null) {
-            effectiveValues.putAll(authoredValues);
+        for (var entry : valueMap.entrySet()) {
+            if (entry.getKey() instanceof String key) {
+                effectiveValues.put(key, entry.getValue());
+            }
         }
         return effectiveValues;
     }
 
     @Nullable
     private static String resolveReplicatingContainerRowId(@Nullable Object row) {
-        if (row == null) {
-            return null;
+        if (row instanceof EffectiveReplicatingContainerLayoutElementValue effectiveRow) {
+            return effectiveRow.getId();
         }
-
-        var rows = ReplicatingContainerLayoutElement._formatValue(List.of(row));
-        return rows == null || rows.isEmpty() ? null : rows.getFirst().getId();
+        return row instanceof Map<?, ?> rowMap && rowMap.get("id") instanceof String id ? id : null;
     }
 
     @Nonnull
@@ -156,7 +159,9 @@ public class PdfElementsGenerator {
         Object value = null;
         if (customerInput != null && currentElement instanceof BaseInputElement<?> inputElement) {
             Object rawValue = customerInput.getEffectiveValues().getOrDefault(currentElement.getId(), null);
-            value = inputElement.formatValue(rawValue);
+            // Replicating rows are already effective values here. Formatting them again would deserialize their
+            // unwrapped child values as AuthoredElementValues.
+            value = currentElement instanceof ReplicatingContainerLayoutElement ? rawValue : inputElement.formatValue(rawValue);
         }
 
         if (currentElement instanceof FormLayoutElement rootElement) {

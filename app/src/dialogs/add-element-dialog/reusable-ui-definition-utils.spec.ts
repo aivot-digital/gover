@@ -35,7 +35,7 @@ describe('reusable UI definition utilities', () => {
             parentType: parent.type,
             parentElement: parent,
             allParents: [parent],
-            displayContext: ElementDisplayContext.CitizenFacing,
+            displayContext: ElementDisplayContext.CustomerFacing,
         });
 
         expect(bothModes).toHaveLength(1);
@@ -46,7 +46,7 @@ describe('reusable UI definition utilities', () => {
             parentType: parent.type,
             parentElement: parent,
             allParents: [parent],
-            displayContext: ElementDisplayContext.CitizenFacing,
+            displayContext: ElementDisplayContext.CustomerFacing,
             limitElementTypes: [ElementType.Headline, ElementType.Text],
         });
 
@@ -66,7 +66,7 @@ describe('reusable UI definition utilities', () => {
             parentType: form.type,
             parentElement: form,
             allParents: [form],
-            displayContext: ElementDisplayContext.CitizenFacing,
+            displayContext: ElementDisplayContext.CustomerFacing,
         })).toEqual([]);
     });
 

@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
-import {createDerivedRuntimeElementData} from '../../models/element-data';
+import {createDerivedRuntimeElementData, literalAuthoredValue} from '../../models/element-data';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {collectErrors} from './error-alert';
 
@@ -82,14 +82,14 @@ describe('collectErrors', () => {
         });
 
         expect(collectErrors(element, {
-            rows: [
+            rows: literalAuthoredValue([
                 {
                     id: 'row-1',
                     values: {
-                        street: '',
+                        street: literalAuthoredValue(''),
                     },
                 },
-            ],
+            ]),
         }, derivedData)).toEqual([
             {
                 id: 'street',

@@ -8,6 +8,7 @@ import AccessibilityNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/A
 import ImageSearchOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ImageSearch';
 import {SelectAssetDialog} from '../../dialogs/select-asset-dialog/select-asset-dialog';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
+import {AssetVisibility} from '../../modules/assets/models/asset-visibility';
 
 export function ImageEditor(props: BaseEditorProps<ImageElement>) {
     const [showImageSearch, setShowImageSearch] = useState(false);
@@ -122,7 +123,7 @@ export function ImageEditor(props: BaseEditorProps<ImageElement>) {
                 onCancel={() => {
                     setShowImageSearch(false);
                 }}
-                mode="public"
+                visibility={AssetVisibility.Public}
             />
         </>
     );

@@ -1,9 +1,8 @@
 import Article from '@aivot/mui-material-symbols-400-n25-outlined/Article';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
-import {Autocomplete, Box, InputAdornment, TextField, createFilterOptions} from '@mui/material';
+import {Autocomplete, Box, createFilterOptions} from '@mui/material';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
-import {renderIconButton} from '../../../components/text-field/text-field-component';
 import {NoCodeOperandError, NoCodeStaticValue} from '../../../models/functions/no-code-expression';
 import {NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
@@ -241,7 +240,8 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
         const currentValue = props.value.value;
 
         if (currentValue == null || currentValue.length === 0) {
-            return undefined;
+            // Keep the free-solo input controlled when its authored literal is cleared.
+            return '';
         }
 
         return props.options.find((option) => option.value === currentValue) ?? currentValue;
@@ -299,43 +299,16 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
                 </Box>
             )}
             renderInput={(params) => (
-                <TextField
-                    {...params}
+                <TextFieldComponent
+                    muiPassTroughProps={params}
                     label={getStaticValueLabel(props.label)}
-                    helperText={props.hint}
+                    hint={props.hint}
+                    value={props.value.value}
+                    onChange={(value) => updateStaticValue(props, value)}
                     margin="none"
-                    fullWidth
-                    slotProps={{
-                        ...params.slotProps,
-
-                        input: {
-                            ...params.slotProps.input,
-                            startAdornment: (
-                                <>
-                                    <InputAdornment position="start">
-                                        <Article/>
-                                    </InputAdornment>
-                                    {params.slotProps.input.startAdornment}
-                                </>
-                            ),
-                            endAdornment: (
-                                <>
-                                    <InputAdornment
-                                        position="end"
-                                        sx={{mr: 1}}
-                                    >
-                                        {getStaticValueActions(props).map(renderIconButton)}
-                                    </InputAdornment>
-                                    {params.slotProps.input.endAdornment}
-                                </>
-                            ),
-                        },
-
-                        inputLabel: {
-                            ...params.slotProps.inputLabel,
-                            title: getStaticValueLabel(props.label),
-                        }
-                    }} />
+                    startIcon={<Article/>}
+                    endAction={getStaticValueActions(props)}
+                />
             )}
         />
     );

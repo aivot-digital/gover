@@ -7,7 +7,7 @@ const defaultIntervalMs = 16;
 const particlesPerBurst = 2;
 const staffShellConfettiContainerSelector = '[data-confetti-container="staff-shell-content"]';
 
-export const prosunaConfettiColors = ['#FF613A', '#A0C9CB', '#733635', '#351E1C'];
+const prosunaConfettiColors = ['#FF613A', '#A0C9CB', '#733635', '#351E1C'];
 
 interface CanvasBounds {
     top: number;
@@ -38,7 +38,7 @@ function resolveCanvasBounds(): CanvasBounds {
 
 export interface CanvasConfettiOverlayProps {
     playKey: number | null;
-    colors: string[];
+    colors?: string[];
     startDelay?: number;
     duration?: number;
 }
@@ -46,7 +46,7 @@ export interface CanvasConfettiOverlayProps {
 export function CanvasConfettiOverlay(props: CanvasConfettiOverlayProps) {
     const {
         playKey,
-        colors,
+        colors = prosunaConfettiColors,
         startDelay = defaultStartDelay,
         duration = defaultDuration,
     } = props;

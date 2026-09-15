@@ -4,6 +4,7 @@ import {IdentityProviderDetailsPage} from './pages/details/identity-provider-det
 import {IdentityProviderDetailsPageIndex} from './pages/details/identity-provider-details-page-index';
 import {IdentityProviderDetailsPageTest} from './pages/details/identity-provider-details-page-test';
 import {IdentityProviderDetailsPageSetup} from './pages/details/identity-provider-details-page-setup';
+import {IdentityProviderDetailsPageCommunication} from './pages/details/identity-provider-details-page-communication';
 import {
     duplicatePageWarningRouteHandle,
 } from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
@@ -25,6 +26,10 @@ export const identityRoutes: RouteObject[] = [
             {
                 path: '/identity-providers/:key/test',
                 element: <IdentityProviderDetailsPageTest/>,
+            },
+            {
+                path: '/identity-providers/:key/communication',
+                element: <IdentityProviderDetailsPageCommunication/>,
             },
             {
                 path: '/identity-providers/:key/setup',

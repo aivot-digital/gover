@@ -1,4 +1,4 @@
-import {Box, Button, Grid, Stack, Tooltip, Typography} from '@mui/material';
+import {Box, Button, Grid, Stack, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {alpha} from '@mui/material/styles';
 import {BaseViewProps} from './base-view';
@@ -234,7 +234,7 @@ function wrapIdentityConfigSlot(providers: IdentityProviderListDTO[]): DialogLis
 
 function getIdentityConfigSubtitle(item: IdentityConfigElementSlot, isReadonly: boolean): string {
     const optionCount = item.options?.length ?? 0;
-    const providerText = optionCount === 1 ? '1 Nutzerkontenanbieter' : `${optionCount} Nutzerkontenanbieter`;
+    const providerText = optionCount === 1 ? '1 Identitätsanbieter' : `${optionCount} Identitätsanbieter`;
 
     return [
         item.isOptional === true ? 'Optional' : 'Verpflichtend',
@@ -398,36 +398,29 @@ function IdentityConfigSlot(props: {
                             md: 6,
                         }}
                     >
-                        <Tooltip
-                            title="Eine alternative Nutzung von E-Mail als Kommunikationskanal wird in einer zukünftigen Version ermöglicht."
-                            arrow
-                        >
-                            <span>
-                                <CheckboxFieldComponent
-                                    label="E-Mail"
-                                    hint="Statt einer Anmeldung mittels Identitätsanbieter kann auch lediglich eine E-Mail-Adresse angegeben werden."
-                                    variant="switch"
-                                    value={item.allowsMail ?? false}
-                                    onChange={(val) => {
-                                        onChange({
-                                            ...item,
-                                            allowsMail: val,
-                                        });
-                                    }}
-                                    sx={{
-                                        my: 0,
-                                    }}
-                                    disabled={true}
-                                />
-                            </span>
-                        </Tooltip>
+                        <CheckboxFieldComponent
+                            label="E-Mail-Adresse zulassen"
+                            hint="Statt einer Anmeldung über einen Identitätsanbieter kann lediglich eine E-Mail-Adresse angegeben werden. Nachrichten werden dann direkt per E-Mail versendet."
+                            variant="switch"
+                            value={item.allowsMail ?? false}
+                            onChange={(val) => {
+                                onChange({
+                                    ...item,
+                                    allowsMail: val,
+                                });
+                            }}
+                            sx={{
+                                my: 0,
+                            }}
+                            disabled={disabled}
+                        />
                     </Grid>
                 </Grid>
             </Box>
 
             <Box>
                 <ElementEditorSectionHeader
-                    title="Aktive Nutzerkontenanbieter"
+                    title="Aktive Identitätsanbieter"
                     variant={"h5"}
                     disableMarginTop
                 >

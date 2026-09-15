@@ -1,3 +1,4 @@
+import {InputMode} from '../../models/input-mode';
 import {Box, Button, Dialog, DialogActions, DialogContent, Divider, Grid, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -69,13 +70,13 @@ export function canPrefillElement(e: AnyElement): boolean {
     );
 }
 
-function buildPrefillValues(elementData: AuthoredElementValues): AuthoredElementValues {
-    const inputs: AuthoredElementValues = {};
+function buildPrefillValues(elementData: AuthoredElementValues): Record<string, unknown> {
+    const inputs: Record<string, unknown> = {};
 
     for (const key of Object.keys(elementData)) {
         const dataObject = elementData[key];
-        if (dataObject != null) {
-            inputs[key] = dataObject;
+        if (dataObject?.type === InputMode.Literal && dataObject.value != null) {
+            inputs[key] = dataObject.value;
         }
     }
 

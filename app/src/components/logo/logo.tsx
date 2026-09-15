@@ -1,14 +1,20 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Box, useTheme} from '@mui/material';
-import {createApiPath} from '../../utils/url-path-utils';
+
+type LogoStatus = 'loading' | 'failed' | 'present';
+
+interface ImageResult {
+    url: string;
+    status: Exclude<LogoStatus, 'loading'>;
+}
 
 interface LogoProps {
     updated?: string | null | undefined;
-    src?: string;
-    srcDark?: string;
+    src?: string | null;
+    srcDark?: string | null;
     width?: number;
     height?: number;
-    onStatusChange?: (status: 'loading' | 'failed' | 'present') => void;
+    onStatusChange?: (status: LogoStatus) => void;
 }
 
 export function Logo(props: LogoProps) {
@@ -22,33 +28,48 @@ export function Logo(props: LogoProps) {
     } = props;
     const theme = useTheme();
 
-    const [imageStatus, setImageStatus] = useState<'loading' | 'failed' | 'present'>('loading');
+    const imageRef = useRef<HTMLImageElement>(null);
+    const [imageResult, setImageResult] = useState<ImageResult | null>(null);
+
+    const url = useMemo(() => {
+        const useSystemTheme = src === undefined && srcDark === undefined;
+        const lightSrc = useSystemTheme ? AppConfig.logoUrl : src ?? null;
+        const darkSrc = useSystemTheme ? AppConfig.logoUrlDark : srcDark ?? lightSrc;
+        const resolvedSrc = theme.palette.mode === 'dark' ? darkSrc ?? lightSrc : lightSrc;
+
+        if (resolvedSrc == null || updated == null) {
+            return resolvedSrc;
+        }
+
+        const t = new Date(updated).getTime();
+
+        if (resolvedSrc.includes('?')) {
+            return `${resolvedSrc}&t=${t}`;
+        }
+        return `${resolvedSrc}?t=${t}`;
+    }, [src, srcDark, theme.palette.mode, updated]);
+
+    const imageStatus: LogoStatus = url == null ?
+        'failed' :
+        imageResult?.url === url ? imageResult.status : 'loading';
 
     useEffect(() => {
         onStatusChange?.(imageStatus);
     }, [imageStatus, onStatusChange]);
 
-    const url = useMemo(() => {
-        const resolvedSrc = theme.palette.mode === 'dark' ? srcDark ?? src : src;
-        let url = resolvedSrc ?? createApiPath(
-            `/api/public/system/logo/${theme.palette.mode === 'dark' ? '?color-scheme=dark' : ''}`,
-        );
-
-        if (updated == null) {
-            return url;
-        }
-
-        const t = new Date(updated).getTime();
-
-        if (url.includes('?')) {
-            return `${url}&t=${t}`;
-        }
-        return `${url}?t=${t}`;
-    }, [src, srcDark, theme.palette.mode, updated]);
-
     useEffect(() => {
-        setImageStatus('loading');
+        const image = imageRef.current;
+        if (url != null && image?.complete) {
+            setImageResult({
+                url,
+                status: image.naturalWidth > 0 ? 'present' : 'failed',
+            });
+        }
     }, [url]);
+
+    if (url == null) {
+        return null;
+    }
 
     if (imageStatus === 'failed') {
         // empty Box is required so that the space is reserved in the footer
@@ -76,6 +97,8 @@ export function Logo(props: LogoProps) {
             }
 
             <img
+                key={url}
+                ref={imageRef}
                 src={url}
                 alt={'Logo ' + AppConfig.providerName}
                 style={{
@@ -84,10 +107,10 @@ export function Logo(props: LogoProps) {
                     maxHeight: height ?? 100,
                 }}
                 onLoad={() => {
-                    setImageStatus('present');
+                    setImageResult({url, status: 'present'});
                 }}
                 onError={() => {
-                    setImageStatus('failed');
+                    setImageResult({url, status: 'failed'});
                 }}
             />
         </Box>

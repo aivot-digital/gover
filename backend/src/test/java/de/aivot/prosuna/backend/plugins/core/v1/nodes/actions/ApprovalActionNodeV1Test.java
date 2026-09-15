@@ -1,10 +1,13 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
+import de.aivot.prosuna.backend.elements.services.InputVariableResolver;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
@@ -32,7 +35,6 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEvent
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.repositories.VPotentialProcessInstanceAccessRepository;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +49,7 @@ import java.util.UUID;
 
 import static de.aivot.prosuna.backend.TestData.authored;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -68,8 +71,8 @@ class ApprovalActionNodeV1Test {
         node = new ApprovalActionNodeV1(
                 assigneeResolverService,
                 new ElementDataTransformService(),
-                new PassthroughTemplateRenderService(),
-                derivationService()
+                derivationService(),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper())
         );
     }
 
@@ -124,7 +127,7 @@ class ApprovalActionNodeV1Test {
     }
 
     @Test
-    void getStaffTaskViewData_RendersConfiguredDataSummaryUi() throws Exception {
+    void getStaffTaskView_RendersConfiguredDataSummaryUi() throws Exception {
         var processData = Map.<String, Object>of("approvalValue", "Freizugebender Inhalt");
 
         var context = new ProcessNodeExecutionContextUIStaff(
@@ -138,27 +141,28 @@ class ApprovalActionNodeV1Test {
                 currentProcessData(processData)
         );
 
-        var layout = node.getStaffTaskView(context);
+        var view = node.getStaffTaskView(context);
+        var layout = (GroupLayoutElement) view.layout();
         var dataSummary = layout.findChild("approval-data-root", GroupLayoutElement.class).orElseThrow();
         var remarkField = layout.findChild("approvalRemark", RichTextInputElement.class).orElseThrow();
         assertTrue(dataSummary.findChild("approvalValue", TextInputElement.class).isPresent());
         assertEquals(6.0, remarkField.getWeight());
         assertTrue(layout.findChild("approval-actions-spacer").isPresent());
 
-        var data = node.getStaffTaskViewData(context);
-        assertEquals("Freizugebender Inhalt", data.get("approvalValue"));
-        assertNull(data.get("approvalRemark"));
+        var data = view.data();
+        assertEquals("Freizugebender Inhalt", data.getLiteral("approvalValue"));
+        assertNull(data.getLiteral("approvalRemark"));
         assertEquals(
                 List.of(
                         new TaskViewEvent("Freigeben", "approve"),
                         new TaskViewEvent("Ablehnen", "reject")
                 ),
-                node.getStaffTaskViewEvents(context)
+                view.events()
         );
     }
 
     @Test
-    void getStaffTaskViewData_LoadsSavedDraftSnapshotFromRuntimeData() throws Exception {
+    void getStaffTaskView_LoadsSavedDraftSnapshotFromRuntimeData() throws Exception {
         var processData = Map.<String, Object>of("approvalValue", "Freizugebender Inhalt");
 
         var context = new ProcessNodeExecutionContextUIStaff(
@@ -183,9 +187,24 @@ class ApprovalActionNodeV1Test {
                 currentProcessData(processData)
         );
 
-        var data = node.getStaffTaskViewData(context);
-        assertEquals("Freizugebender Inhalt", data.get("approvalValue"));
-        assertEquals("<p>Schon geprüft</p>", data.get("approvalRemark"));
+        var data = node.getStaffTaskView(context).data();
+        assertEquals("Freizugebender Inhalt", data.getLiteral("approvalValue"));
+        assertEquals("<p>Schon geprüft</p>", data.getLiteral("approvalRemark"));
+    }
+
+    @Test
+    void getStaffTaskViewData_DoesNotTreatOtherRuntimeDataAsASavedDraft() throws Exception {
+        var configuration = dataModeConfiguration();
+        var processData = Map.<String, Object>of("approvalValue", "Current process value");
+        var context = new ProcessNodeExecutionContextUIStaff(
+                logger(), processNode(configuration), processInstance("process-owner"),
+                task(77, Map.of("approvalValue", "Not a draft", "internalState", "waiting"), Map.of(), processData),
+                null, user("staff-1"), nodeConfiguration(configuration), currentProcessData(processData)
+        );
+
+        var data = node.getStaffTaskView(context).data();
+        assertEquals("Current process value", data.getLiteral("approvalValue"));
+        assertFalse(data.containsKey("internalState"));
     }
 
     @Test
@@ -245,7 +264,9 @@ class ApprovalActionNodeV1Test {
                 new JavascriptEngineFactoryService(List.of()),
                 new NoCodeEvaluationService(List.of()),
                 new ElementDataTransformService(),
-                new CodeListElementOptionsService(null, null)
+                new CodeListElementOptionsService(null, null),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
+                new InputVariableResolver()
         );
     }
 
@@ -263,7 +284,11 @@ class ApprovalActionNodeV1Test {
     private static ApprovalActionNodeV1.ApprovalConfiguration nodeConfiguration(AuthoredElementValues configuration)
             throws ElementDataConversionException {
         var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(configuration);
+        effectiveValues.put("criteria", configuration.getLiteral("criteria"));
+        effectiveValues.put("contentMode", configuration.getLiteral("contentMode"));
+        effectiveValues.put("dataContent", configuration.getLiteral("dataContent"));
+        effectiveValues.put("customContent", configuration.getLiteral("customContent"));
+        effectiveValues.put("assignmentContext", configuration.getLiteral("assignmentContext"));
         return ElementPOJOMapper.mapToPOJO(effectiveValues, ApprovalActionNodeV1.ApprovalConfiguration.class);
     }
 
@@ -397,17 +422,6 @@ class ApprovalActionNodeV1Test {
             this.assignmentContext = assignmentContext;
             this.requiredPermissions = requiredPermissions;
             return result;
-        }
-    }
-
-    private static class PassthroughTemplateRenderService extends TemplateRenderService {
-        private PassthroughTemplateRenderService() {
-            super(null);
-        }
-
-        @Override
-        public String interpolate(ProcessExecutionData foldedProcessData, String template) {
-            return template;
         }
     }
 

@@ -1,3 +1,6 @@
+import {isValidProcessDataPath} from './process-data-path';
+import {type ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
+import {InputMode} from '../models/input-mode';
 import {AnyElement} from '../models/elements/any-element';
 import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {ElementType} from '../data/element-type/element-type';
@@ -22,6 +25,7 @@ import {
     isReplicatingContainerElementValue,
     resolveComputedElementSubState,
     resolveComputedElementSubStateStates,
+    getLiteralElementValue,
     resolveReplicatingContainerElementValues,
 } from '../models/element-data';
 import {ChipInputFieldElement} from '../models/elements/form/input/chip-input-field-element';
@@ -53,6 +57,7 @@ import {
     localTimeIsoToDateTime,
 } from './temporal-utils';
 import {DateFieldComponentModelMode} from '../models/elements/form/input/date-field-element';
+import {isAuthoredInputValue} from '../models/input-mode';
 
 
 export function prosunaSchemaToYup(elem: AnyElement, states: ComputedElementStates): Record<string, Schema> {
@@ -68,7 +73,7 @@ export function prosunaSchemaToYup(elem: AnyElement, states: ComputedElementStat
         const schemaMapper = YupSchemaMap[elem.type] ?? genericFieldToYup;
 
         // Generate schema for the element
-        const elementSchema = schemaMapper(elem, states);
+        const elementSchema = authoredInputValueToYup(elem, schemaMapper(elem, states));
 
         // Extend the existing shape with the new element schema
         elementDataShape = {
@@ -90,6 +95,45 @@ export function prosunaSchemaToYup(elem: AnyElement, states: ComputedElementStat
     }
 
     return elementDataShape;
+}
+
+function authoredInputValueToYup(element: AnyInputElement, literalValueSchema: Schema): Schema {
+    const allowedModes = element.inputModePolicy?.allowedModes ?? [InputMode.Literal];
+    const requiredMessage = `${element.label || 'Dieses Feld'} ist ein Pflichtfeld.`;
+
+    return yup.lazy((value: unknown) => {
+        if (value === undefined) {
+            return element.required ?
+                yup.mixed().required(requiredMessage) :
+                yup.mixed().notRequired();
+        }
+
+        if (!isAuthoredInputValue(value)) {
+            return yup.mixed().nullable().test(
+                'authored-input-value',
+                'Der Eingabewert ist ungültig.',
+                () => false,
+            );
+        }
+
+        if (!allowedModes.includes(value.type)) {
+            return yup.mixed().test(
+                'allowed-input-mode',
+                'Der gewählte Eingabemodus ist für dieses Feld nicht erlaubt.',
+                () => false,
+            );
+        }
+
+        if (value.type !== InputMode.Literal) {
+            // Dynamic payloads are structurally validated by the backend against the trusted element policy.
+            return yup.mixed().defined();
+        }
+
+        return yup.object({
+            type: yup.string().oneOf([InputMode.Literal]).required(),
+            value: literalValueSchema,
+        });
+    }) as unknown as Schema;
 }
 
 const YupSchemaMap: {
@@ -114,7 +158,9 @@ const YupSchemaMap: {
     [ElementType.StoragePathSelector]: storagePathSelectorInputFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
     [ElementType.ProcessInstanceAttachmentSetSelect]: chipInputFieldToYup,
-    [ElementType.ProcessIdentityIdInput]: chipInputFieldToYup,
+    [ElementType.ProcessIdentityIdInput]: dynamicSelectFieldToYup,
+    [ElementType.SecretSelectInput]: dynamicSelectFieldToYup,
+    [ElementType.AssetSelectInput]: dynamicSelectFieldToYup,
 };
 
 function genericFieldToYup(elem: AnyInputElement): Schema {
@@ -263,7 +309,7 @@ function dynamicSelectFieldToYup(elem: DataModelSelectFieldElement | DataObjectS
     return selectFieldSchema;
 }
 
-function processDataKeyInputFieldToYup(elem: AnyInputElement): Schema {
+function processDataKeyInputFieldToYup(elem: ProcessDataKeyInputFieldElement): Schema {
     let processDataKeySchema: StringSchema<string | undefined | null> = yup
         .string()
         .trim();
@@ -277,9 +323,12 @@ function processDataKeyInputFieldToYup(elem: AnyInputElement): Schema {
     }
 
     return processDataKeySchema
-        .matches(
-            /^[a-zA-Z0-9.*_]+$/,
-            'Der Prozessdaten-Schlüssel darf nur Buchstaben, Zahlen, Punkte, Unterstriche und Sternchen enthalten.',
+        .test(
+            'process-data-path',
+            elem.disableWildCards
+                ? 'Verwenden Sie einen Pfad wie person.name oder items[0].name.'
+                : 'Verwenden Sie einen Pfad wie person.name, items[0].name oder items[*].name.',
+            (value) => value == null || value.length === 0 || isValidProcessDataPath(value, !elem.disableWildCards),
         );
 }
 
@@ -724,7 +773,7 @@ export function mapFormManagerErrorsToComputedErrors(
             if (typeof parent === 'number') {
                 path += `[${parent}].values`;
             } else if (isAnyInputElement(parent)) {
-                path += `.${parent.id}`;
+                path += `.${parent.id}.value`;
             }
         }
 
@@ -738,7 +787,7 @@ export function mapFormManagerErrorsToComputedErrors(
         }
 
         if (!includeDescendants) {
-            return null;
+            return normalizedErrors.find(([errorPath]) => errorPath === `${path}.value`)?.[1] ?? null;
         }
 
         const descendantMatch = normalizedErrors.find(([errorPath]) => (
@@ -783,7 +832,7 @@ export function mapFormManagerErrorsToComputedErrors(
             const elementError = findErrorForPath(elementPath, !isReplicatingContainerLayout(element));
 
             if (isReplicatingContainerLayout(element)) {
-                const childValues = currentAuthoredElementValues[element.id];
+                const childValues = getLiteralElementValue<unknown[]>(currentAuthoredElementValues, element.id);
                 const rowErrors = Array.isArray(childValues) ?
                     childValues.map((childValue, index) => {
                         const rowValues = resolveReplicatingContainerElementValues(childValue);

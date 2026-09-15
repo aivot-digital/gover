@@ -1,7 +1,5 @@
 package de.aivot.prosuna.backend.services;
 
-import de.aivot.prosuna.backend.asset.entities.AssetEntity;
-import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
@@ -41,6 +39,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.services.pdf.PdfElementsGenerator;
+import de.aivot.prosuna.backend.services.pdf.PdfLogoService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.utils.MultipartUtils;
@@ -69,7 +68,7 @@ public class PdfService {
 
     private final GotenbergConfig gotenbergConfig;
     private final SystemConfigService systemConfigService;
-    private final AssetRepository assetRepository;
+    private final PdfLogoService pdfLogoService;
     private final ProsunaConfig prosunaConfig;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final IdentityProviderRepository identityProviderRepository;
@@ -88,7 +87,7 @@ public class PdfService {
                       VDepartmentShadowedRepository vDepartmentShadowedRepository,
                       ProcessRepository processRepository,
                       ProcessVersionRepository processVersionRepository,
-                      AssetRepository assetRepository,
+                      PdfLogoService pdfLogoService,
                       ProsunaConfig prosunaConfig,
                       PaymentTransactionRepository paymentTransactionRepository,
                       IdentityProviderRepository identityProviderRepository,
@@ -98,7 +97,7 @@ public class PdfService {
                       ElementDerivationService elementDerivationService, ThemeService themeService) {
         this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
-        this.assetRepository = assetRepository;
+        this.pdfLogoService = pdfLogoService;
         this.prosunaConfig = prosunaConfig;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.identityProviderRepository = identityProviderRepository;
@@ -257,12 +256,12 @@ public class PdfService {
 
     public byte[] generatePaymentConfirmation(@Nonnull PaymentTransactionEntity transaction,
                                               @Nonnull String caseNumber,
-                                              @Nullable String logoUrl,
+                                              @Nullable UUID logoAssetKey,
                                               @Nonnull VDepartmentShadowedEntity department) throws IOException, InterruptedException, URISyntaxException {
         var dto = new HashMap<String, Object>();
         dto.put("transaction", transaction);
         dto.put("caseNumber", caseNumber);
-        dto.put("logoUrl", logoUrl);
+        dto.put("logoDataUrl", pdfLogoService.resolveDataUrl(logoAssetKey).orElse(null));
         dto.put("department", department);
         dto.put("generatedAt", Instant.now().toString());
 
@@ -309,7 +308,7 @@ public class PdfService {
                     rows.add(new ReplicatingContainerLayoutElementValue()
                             .setValues(createBlankPrintableElementValues(replicatingContainer.getChildren())));
                 }
-                values.put(replicatingContainer.getId(), rows);
+                values.putLiteral(replicatingContainer.getId(), rows);
             }
             return;
         }
@@ -333,9 +332,11 @@ public class PdfService {
                         processVersion,
                         processId
                 ));
-        var formTheme = themeService
-                .getFormThemesInOrderOfImportance(processVersionEntity, form)
-                .getFirst();
+        var processDepartmentId = processRepository
+                .findById(processId)
+                .map(ProcessEntity::getDepartmentId)
+                .orElse(null);
+        var formTheme = themeService.resolveFormTheme(processVersionEntity, form, processDepartmentId);
 
         dto.put("base", createBaseContext(formTheme, scope));
         dto.put("department", resolvePdfDepartment(form, processId));
@@ -493,27 +494,13 @@ public class PdfService {
                 );
     }
 
-    // TODO: This is a copy from the MailService. Needs unification!
     private FormPdfContext createBaseContext(ThemeEntity theme, FormPdfScope scope) throws ResponseException {
         var providerName = systemConfigService
                 .retrieve(ProviderNameSystemConfigDefinition.KEY)
                 .getValue();
+        var logoDataUrl = pdfLogoService.resolveDataUrl(theme.getLogoKey()).orElse(null);
 
-        var logoAssetKey = theme.getLogoKey();
-        var logoAssetName = "";
-        try {
-            if (logoAssetKey != null) {
-                logoAssetName = assetRepository
-                        .findById(logoAssetKey)
-                        .map(AssetEntity::getKey)
-                        .map(UUID::toString)
-                        .orElse("");
-            }
-        } catch (Exception e) {
-            // Ignore
-        }
-
-        return new FormPdfContext(providerName, logoAssetKey != null ? logoAssetKey.toString() : "", logoAssetName, prosunaConfig, scope);
+        return new FormPdfContext(providerName, logoDataUrl, prosunaConfig, scope);
     }
 
     /**

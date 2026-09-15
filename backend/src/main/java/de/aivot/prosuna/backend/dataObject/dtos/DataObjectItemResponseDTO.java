@@ -1,12 +1,10 @@
 package de.aivot.prosuna.backend.dataObject.dtos;
 
-import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntity;
-import de.aivot.prosuna.backend.dataObject.entities.DataObjectSchemaEntity;
-import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 
 import jakarta.annotation.Nonnull;
 import java.time.Instant;
+import java.util.Map;
 
 public record DataObjectItemResponseDTO(
         @Nonnull
@@ -14,21 +12,20 @@ public record DataObjectItemResponseDTO(
         @Nonnull
         String id,
         @Nonnull
-        AuthoredElementValues data,
+        Map<String, Object> data,
         @Nonnull
         Instant created,
         @Nonnull
         Instant updated
 ) {
-    public static DataObjectItemResponseDTO fromEntity(DataObjectItemEntity entity, DataObjectSchemaEntity schema) {
-        var elementData = JsonMapperFactory
-                .getInstance()
-                .convertValue(entity.getData(), AuthoredElementValues.class);
-
+    @Nonnull
+    public static DataObjectItemResponseDTO fromEntity(
+            @Nonnull DataObjectItemEntity entity
+    ) {
         return new DataObjectItemResponseDTO(
                 entity.getSchemaKey(),
                 entity.getId(),
-                elementData,
+                entity.getData(),
                 entity.getCreated(),
                 entity.getUpdated()
         );

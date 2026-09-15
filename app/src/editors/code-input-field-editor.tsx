@@ -75,7 +75,7 @@ export function CodeInputFieldEditor(props: BaseEditorProps<CodeInputElement>) {
             >
                 <NumberFieldComponent
                     label="Editor-Höhe"
-                    value={element.editorHeight ?? 320}
+                    value={element.editorHeight ?? 240}
                     onChange={(value) => {
                         const normalizedValue = value == null
                             ? undefined

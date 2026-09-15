@@ -12,7 +12,7 @@ function getProcessLink(process: DashboardRecentProcess): string {
     return version == null ? '/processes' : `/processes/${process.id}/versions/${version}`;
 }
 
-export function DashboardRecentProcessesPanel({processes}: {processes: DashboardRecentProcess[]}) {
+export function DashboardRecentProcessesPanel({processes, previewOnly = false}: {processes: DashboardRecentProcess[]; previewOnly?: boolean}) {
     return (
         <DashboardPanel sx={{width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
             <Box sx={{px: 2.25, pt: 2.5, pb: 2}}>
@@ -28,7 +28,14 @@ export function DashboardRecentProcessesPanel({processes}: {processes: Dashboard
                 {processes.map((process, index) => (
                     <Box key={process.id}>
                         {index > 0 && <Divider component="li"/>}
-                        <ListItemButton component={Link} to={getProcessLink(process)} sx={{px: 2.25, py: 1.75, gap: 1.5}}>
+                        <ListItemButton
+                            component={previewOnly ? 'div' : Link}
+                            to={previewOnly ? undefined : getProcessLink(process)}
+                            role={previewOnly ? 'listitem' : undefined}
+                            tabIndex={previewOnly ? -1 : undefined}
+                            disableRipple={previewOnly}
+                            sx={{px: 2.25, py: 1.75, gap: 1.5}}
+                        >
                             <Route sx={{color: 'text.secondary', flexShrink: 0}}/>
                             <Box sx={{minWidth: 0}}>
                                 <Typography variant="body2" noWrap sx={{

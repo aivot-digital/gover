@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.SandboxPolicy;
+import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyObject;
@@ -119,6 +120,21 @@ public class JavascriptEngine implements AutoCloseable {
             return new JavascriptResult(value, out, err);
         } catch (PolyglotException e) {
             throw new JavascriptException(e);
+        }
+    }
+
+    /**
+     * Parses code without executing it. Authoring validation uses this path so configuration previews cannot cause side effects.
+     */
+    public void validateCode(JavascriptCode code) throws JavascriptException {
+        if (code == null || code.isEmpty() || code.getCode() == null) {
+            throw new JavascriptException(new IllegalArgumentException("JavaScript code must not be empty."));
+        }
+
+        try {
+            graalContext.parse(Source.newBuilder(JS_ENGINE_NAME, code.getCode(), "input-mode.js").buildLiteral());
+        } catch (PolyglotException exception) {
+            throw new JavascriptException(exception);
         }
     }
 

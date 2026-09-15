@@ -2,7 +2,7 @@ import {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/ele
 import {AnyElement} from '../../models/elements/any-element';
 import {BaseApiService, RequestOptions} from '../../services/base-api-service';
 
-interface ElementDerivationOptions {
+export interface ElementDerivationOptions {
     skipErrorsForElementIds: string[];
     skipVisibilitiesForElementIds: string[];
     skipOverridesForElementIds: string[];

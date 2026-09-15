@@ -306,6 +306,7 @@ export function FileUploadFieldLayout(props: FileUploadFieldLayoutProps) {
             label={props.label}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             hint={!hasError ? helperContent : undefined}
             error={hasError ? helperContent : undefined}

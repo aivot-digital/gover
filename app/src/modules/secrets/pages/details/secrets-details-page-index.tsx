@@ -16,7 +16,6 @@ import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
 import {Permission} from '../../../../data/permissions/permission';
@@ -82,7 +81,7 @@ export function SecretsDetailsPageIndex() {
 
     if (secret == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
@@ -178,7 +177,7 @@ export function SecretsDetailsPageIndex() {
                     endAction={
                         [
                             {
-                                icon: <ContentPasteOutlinedIcon />,
+                                icon: <ContentPasteOutlinedIcon/>,
                                 tooltip: 'Schlüssel (ID) in Zwischenablage kopieren',
                                 onClick: async () => {
                                     const success = await copyToClipboardText(secret.key);
@@ -245,7 +244,7 @@ export function SecretsDetailsPageIndex() {
                         disabled={isBusy || hasNotChanged || !isEditable}
                         variant="contained"
                         color="primary"
-                        startIcon={<SaveOutlinedIcon />}
+                        startIcon={<SaveOutlinedIcon/>}
                     >
                         Speichern
                     </Button>
@@ -281,7 +280,7 @@ export function SecretsDetailsPageIndex() {
                             onClick={() => setShowConfirmDialog(true)}
                             disabled={isBusy || !canDeleteSecret}
                             color="error"
-                            startIcon={<Delete />}
+                            startIcon={<Delete/>}
                         >
                             Löschen
                         </Button>
@@ -303,7 +302,9 @@ export function SecretsDetailsPageIndex() {
                     Möchten Sie dieses Geheimnis wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
                 <AlertComponent color={'warning'}>
-                    Vergewissern Sie sich, dass dieses Geheimnis nicht mehr benötigt wird, bevor Sie fortfahren. Wir können nicht prüfen, ob es noch an Stellen wie Low-Code-Funktionen oder Konfigurationen von Zahlungsdienstleistern
+                    Vergewissern Sie sich, dass dieses Geheimnis nicht mehr benötigt wird, bevor Sie fortfahren. Wir
+                    können nicht prüfen, ob es noch an Stellen wie Low-Code-Funktionen oder Konfigurationen von
+                    Zahlungsdienstleistern
                     verwendet wird.
                 </AlertComponent>
             </ConfirmDialog>

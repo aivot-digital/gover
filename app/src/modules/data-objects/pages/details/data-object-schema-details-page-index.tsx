@@ -1,5 +1,5 @@
 import {Box, Button, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo} from 'react';
+import React, {useContext, useEffect, useMemo, useRef} from 'react';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType,
@@ -41,6 +41,7 @@ import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {deepEquals} from '../../../../utils/equality-utils';
 
 const ID_FIELD_ID = '$id';
 
@@ -55,7 +56,7 @@ const AllowedDisplayFieldTypes = [
     ElementType.MultiCheckbox,
 ];
 
-export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'schema' | 'created' | 'updated' | 'displayFields'>> = yup.object({
+export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'created' | 'updated' | 'displayFields'>> = yup.object({
     key: yup.string()
         .trim()
         .min(3, 'Der Schlüssel des Datenmodells muss mindestens 3 Zeichen lang sein.')
@@ -76,6 +77,12 @@ export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'schema' | 'created'
         .trim()
         .max(64, 'Die ID Formatvorlage darf maximal 64 Zeichen lang sein.')
         .required('Die Angabe des ID Typs ist ein Pflichtfeld.'),
+    schema: yup.mixed<GroupLayout>()
+        .required('Bitte legen Sie ein Datenschema mit mindestens einem Datenfeld fest.')
+        .test('has-data-field', 'Das Datenschema muss mindestens ein Datenfeld enthalten.', schema => (
+            schema != null && schema.type === ElementType.GroupLayout &&
+            flattenElements(schema).some(element => isAnyInputElement(element) && element.type !== ElementType.ReplicatingContainer)
+        )),
 });
 
 const IdGenOptions = [
@@ -126,9 +133,15 @@ export function DataObjectSchemaDetailsPageIndex() {
         handleInputPatch,
         handleInputBlur,
         handleInputChange,
+        handleInputChangeWithValidation,
         validate,
         reset,
     } = useFormManager<DataObjectSchema>(originalDataObject, YupSchema as any, true);
+    const generatedIdFieldRef = useRef<TextFieldElement | null>(null);
+
+    useEffect(() => {
+        generatedIdFieldRef.current = null;
+    }, [originalDataObject, isNewItem]);
 
     const changeBlocker = useChangeBlocker(originalDataObject, currentDataObject, undefined, undefined, true);
 
@@ -148,7 +161,7 @@ export function DataObjectSchemaDetailsPageIndex() {
         : undefined;
 
     const availableDisplayFields: MultiCheckboxOptions[] = useMemo(() => {
-        if (currentDataObject == null) {
+        if (currentDataObject?.schema == null) {
             return [];
         }
 
@@ -166,6 +179,12 @@ export function DataObjectSchemaDetailsPageIndex() {
             <GenericDetailsSkeleton/>
         );
     }
+
+    const isUnchangedGeneratedIdField = (field: GroupLayout['children'][number] | undefined) => (
+        generatedIdFieldRef.current != null && field != null &&
+        // The schema editor clones via JSON, dropping undefined properties even without an edit.
+        deepEquals(generatedIdFieldRef.current, JSON.parse(JSON.stringify(field)))
+    );
 
     const handleSave = () => {
         if (currentDataObject == null) {
@@ -341,28 +360,44 @@ export function DataObjectSchemaDetailsPageIndex() {
                     value={(currentDataObject.idGen !== ID_GEN_UUID && currentDataObject.idGen !== ID_GEN_SERIAL && currentDataObject.idGen !== ID_GEN_CUSTOM) ? '' : currentDataObject.idGen}
                     onChange={(val) => {
                         if (val === ID_GEN_CUSTOM) {
-                            const hasIdField = (currentDataObject?.schema.children ?? []).some(c => c.id === ID_FIELD_ID);
-                            if (!hasIdField) {
-                                handleInputPatch({
-                                    idGen: ID_GEN_CUSTOM,
-                                    schema: {
-                                        ...currentDataObject.schema,
-                                        children: [
-                                            {
-                                                ...generateElementWithDefaultValues(ElementType.Text),
-                                                id: ID_FIELD_ID,
-                                                name: 'ID',
-                                                label: 'ID',
-                                                hint: 'Eindeutige ID des Datenobjekts',
-                                                required: true,
-                                            } as TextFieldElement,
-                                            ...(currentDataObject.schema.children ?? []),
-                                        ],
-                                    },
-                                });
+                            const schema = currentDataObject.schema ?? generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
+                            const hasIdField = (schema.children ?? []).some(c => c.id === ID_FIELD_ID);
+                            if (hasIdField) {
+                                handleInputChange('idGen')(ID_GEN_CUSTOM);
+                                return;
                             }
+
+                            const idField = {
+                                ...generateElementWithDefaultValues(ElementType.Text),
+                                id: ID_FIELD_ID,
+                                name: 'ID',
+                                label: 'ID',
+                                hint: 'Eindeutige ID des Datenobjekts',
+                                required: true,
+                            } as TextFieldElement;
+                            generatedIdFieldRef.current = JSON.parse(JSON.stringify(idField)) as TextFieldElement;
+                            handleInputPatch({
+                                idGen: ID_GEN_CUSTOM,
+                                schema: {
+                                    ...schema,
+                                    children: [
+                                        idField,
+                                        ...(schema.children ?? []),
+                                    ],
+                                },
+                            });
                         } else {
-                            handleInputChange('idGen')(val ?? '');
+                            const schema = currentDataObject.schema;
+                            const idField = schema?.children?.find(c => c.id === ID_FIELD_ID);
+                            if (schema != null && isUnchangedGeneratedIdField(idField)) {
+                                handleInputPatch({
+                                    idGen: val ?? '',
+                                    schema: {...schema, children: schema.children.filter(c => c !== idField)},
+                                });
+                            } else {
+                                handleInputChange('idGen')(val ?? '');
+                            }
+                            generatedIdFieldRef.current = null;
                         }
                     }}
                     options={IdGenOptions}
@@ -391,14 +426,21 @@ export function DataObjectSchemaDetailsPageIndex() {
             <Box sx={{my: 3}}>
                 <UiDefinitionInputFieldComponent
                     label="Datenschema"
+                    required
+                    error={errors.schema}
                     hint="Das Datenschema beschreibt die Struktur der Daten, die in den Datenobjekten gespeichert werden. Es definiert die Felder und deren Typen."
                     value={currentDataObject.schema}
                     expectedRootType={ElementType.GroupLayout}
                     onChange={(schema) => {
+                        const idField = (schema as GroupLayout | null)?.children?.find(c => c.id === ID_FIELD_ID);
+                        if (!isUnchangedGeneratedIdField(idField)) {
+                            // Once changed or removed by the user, the field is no longer ours to remove.
+                            generatedIdFieldRef.current = null;
+                        }
                         if (schema == null) {
-                            handleInputChange('schema')(undefined);
+                            handleInputChangeWithValidation('schema')(undefined);
                         } else {
-                            handleInputChange('schema')(schema as GroupLayout);
+                            handleInputChangeWithValidation('schema')(schema as GroupLayout);
                         }
                     }}
                     displayContext={ElementDisplayContext.DataObjectSchema}

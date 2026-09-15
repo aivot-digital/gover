@@ -37,7 +37,7 @@ class ProcessExecutionDataTest {
                         Map.of("vorname", "Ada"),
                         Map.of("vorname", "Grace")
                 ),
-                "1.vorname"
+                "[1].vorname"
         );
 
         assertEquals("Grace", result);
@@ -56,7 +56,7 @@ class ProcessExecutionDataTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen.*.vorname")
+                () -> ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen[*].vorname")
         );
     }
 
@@ -71,7 +71,7 @@ class ProcessExecutionDataTest {
                 )
         ));
 
-        var result = ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen.1.vorname");
+        var result = ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen[1].vorname");
 
         assertEquals("Grace", result);
     }
@@ -95,7 +95,7 @@ class ProcessExecutionDataTest {
 
         var result = ProcessDataValueUtils.resolveProcessDataValue(
                 processExecutionData,
-                "personen.*.adressen.*.strasse",
+                "personen[*].adressen[*].strasse",
                 List.of(1, 0)
         );
 
@@ -121,7 +121,7 @@ class ProcessExecutionDataTest {
 
         var result = ProcessDataValueUtils.resolveProcessDataValue(
                 processExecutionData,
-                "personen.1.adressen.*.strasse",
+                "personen[1].adressen[*].strasse",
                 List.of(1)
         );
 
@@ -141,11 +141,11 @@ class ProcessExecutionDataTest {
 
         var result = ProcessDataValueUtils.resolveMatchingProcessDataValues(
                 processExecutionData,
-                "personen.*.vorname"
+                "personen[*].vorname"
         );
 
         assertEquals(
-                List.of("personen.0.vorname", "personen.1.vorname"),
+                List.of("personen[0].vorname", "personen[1].vorname"),
                 result.stream().map(ProcessDataValueUtils.ResolvedProcessDataValue::destinationKey).toList()
         );
         assertEquals(
@@ -165,11 +165,11 @@ class ProcessExecutionDataTest {
                         Map.of("vorname", "Ada"),
                         Map.of("vorname", "Grace")
                 ),
-                "*.vorname"
+                "[*].vorname"
         );
 
         assertEquals(
-                List.of("0.vorname", "1.vorname"),
+                List.of("[0].vorname", "[1].vorname"),
                 result.stream().map(ProcessDataValueUtils.ResolvedDestinationKeyValue::destinationKey).toList()
         );
         assertEquals(
@@ -195,7 +195,7 @@ class ProcessExecutionDataTest {
 
         var result = ProcessDataValueUtils.resolveMatchingProcessDataValues(
                 processExecutionData,
-                "personen.*.alter"
+                "personen[*].alter"
         );
 
         assertEquals(
@@ -218,8 +218,8 @@ class ProcessExecutionDataTest {
                 )
         ));
 
-        assertNull(ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen.1.vorname"));
-        assertNull(ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen.0.nachname"));
+        assertNull(ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen[1].vorname"));
+        assertNull(ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen[0].nachname"));
     }
 
     @Test
@@ -234,7 +234,7 @@ class ProcessExecutionDataTest {
 
         var result = ProcessDataValueUtils.resolveProcessDataValue(
                 processExecutionData,
-                "personen.*.vorname",
+                "personen[*].vorname",
                 List.of(1)
         );
 
@@ -256,11 +256,11 @@ class ProcessExecutionDataTest {
     @Test
     void shouldMaterializeWildcardDestinationKeyFromIndices() {
         var result = ProcessDataValueUtils.materializeDestinationKey(
-                "personen.*.adressen.*.strasse",
+                "personen[*].adressen[*].strasse",
                 List.of(1, 0)
         );
 
-        assertEquals("personen.1.adressen.0.strasse", result);
+        assertEquals("personen[1].adressen[0].strasse", result);
     }
 
     @Test
@@ -269,15 +269,15 @@ class ProcessExecutionDataTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen.*.vorname", List.of())
+                () -> ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen[*].vorname", List.of())
         );
         assertThrows(
                 IllegalArgumentException.class,
-                () -> ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen.*.vorname", List.of(0, 1))
+                () -> ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen[*].vorname", List.of(0, 1))
         );
         assertThrows(
                 IllegalArgumentException.class,
-                () -> ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen.*.vorname", List.of(-1))
+                () -> ProcessDataValueUtils.resolveProcessDataValue(processExecutionData, "personen[*].vorname", List.of(-1))
         );
         assertThrows(
                 IllegalArgumentException.class,
@@ -303,7 +303,7 @@ class ProcessExecutionDataTest {
 
     @Test
     void shouldWriteDestinationKeyValueIntoArrayRoot() {
-        var result = ProcessDataValueUtils.writeDestinationKeyValue(null, "1.vorname", "Grace");
+        var result = ProcessDataValueUtils.writeDestinationKeyValue(null, "[1].vorname", "Grace");
 
         assertEquals(
                 java.util.Arrays.asList(
@@ -318,7 +318,7 @@ class ProcessExecutionDataTest {
     void shouldWriteExplicitArrayIndexAndGrowSparseArray() {
         var processExecutionData = new ProcessExecutionData();
 
-        ProcessDataValueUtils.writeProcessDataValue(processExecutionData, "personen.1.vorname", "Grace");
+        ProcessDataValueUtils.writeProcessDataValue(processExecutionData, "personen[1].vorname", "Grace");
 
         assertEquals(2, ((List<?>) processExecutionData.getProcessData().get("personen")).size());
 
@@ -341,7 +341,7 @@ class ProcessExecutionDataTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> ProcessDataValueUtils.writeProcessDataValue(processExecutionData, "personen.*.vorname", "Ada")
+                () -> ProcessDataValueUtils.writeProcessDataValue(processExecutionData, "personen[*].vorname", "Ada")
         );
     }
 
@@ -358,7 +358,7 @@ class ProcessExecutionDataTest {
 
         ProcessDataValueUtils.writeProcessDataValue(
                 processExecutionData,
-                "personen.*.vorname",
+                "personen[*].vorname",
                 "Updated",
                 List.of(1)
         );
@@ -378,7 +378,7 @@ class ProcessExecutionDataTest {
 
         ProcessDataValueUtils.writeProcessDataValue(
                 processExecutionData,
-                "personen.*.adressen.*.strasse",
+                "personen[*].adressen[*].strasse",
                 "Updated",
                 List.of(1, 2)
         );
@@ -460,7 +460,7 @@ class ProcessExecutionDataTest {
 
         var removed = ProcessDataValueUtils.removeProcessDataValue(
                 processExecutionData,
-                "personen.1",
+                "personen[1]",
                 false
         );
 
@@ -486,7 +486,7 @@ class ProcessExecutionDataTest {
 
         var removed = ProcessDataValueUtils.removeProcessDataValue(
                 processExecutionData,
-                "personen.*.alter",
+                "personen[*].alter",
                 false
         );
 
@@ -515,7 +515,7 @@ class ProcessExecutionDataTest {
 
         var removed = ProcessDataValueUtils.removeProcessDataValue(
                 processExecutionData,
-                "personen.*.alter",
+                "personen[*].alter",
                 true
         );
 
@@ -539,7 +539,7 @@ class ProcessExecutionDataTest {
 
         var removed = ProcessDataValueUtils.removeProcessDataValue(
                 processExecutionData,
-                "personen.*",
+                "personen[*]",
                 true
         );
 
@@ -563,7 +563,7 @@ class ProcessExecutionDataTest {
 
         var removed = ProcessDataValueUtils.removeProcessDataValue(
                 processExecutionData,
-                "personen.*.alter",
+                "personen[*].alter",
                 true,
                 List.of(1)
         );
@@ -613,7 +613,7 @@ class ProcessExecutionDataTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> ProcessDataValueUtils.writeProcessDataValue(processExecutionData, "personen[0].vorname", "Ada")
+                () -> ProcessDataValueUtils.writeProcessDataValue(processExecutionData, "personen.0.vorname", "Ada")
         );
         assertThrows(
                 IllegalStateException.class,
@@ -621,7 +621,7 @@ class ProcessExecutionDataTest {
         );
         assertThrows(
                 IllegalStateException.class,
-                () -> ProcessDataValueUtils.writeProcessDataValue(processExecutionData, "personen.0.vorname", "Ada")
+                () -> ProcessDataValueUtils.writeProcessDataValue(processExecutionData, "personen[0].vorname", "Ada")
         );
         assertThrows(
                 IllegalArgumentException.class,
@@ -629,15 +629,15 @@ class ProcessExecutionDataTest {
         );
         assertThrows(
                 IllegalArgumentException.class,
-                () -> ProcessDataValueUtils.writeProcessDataValue(processExecutionData, "personen.*.vorname", "Ada", List.of())
+                () -> ProcessDataValueUtils.writeProcessDataValue(processExecutionData, "personen[*].vorname", "Ada", List.of())
         );
         assertThrows(
                 IllegalArgumentException.class,
-                () -> ProcessDataValueUtils.removeProcessDataValue(processExecutionData, "personen[0].vorname", true)
+                () -> ProcessDataValueUtils.removeProcessDataValue(processExecutionData, "personen.0.vorname", true)
         );
         assertThrows(
                 IllegalArgumentException.class,
-                () -> ProcessDataValueUtils.removeProcessDataValue(processExecutionData, "personen.*.vorname", true, List.of())
+                () -> ProcessDataValueUtils.removeProcessDataValue(processExecutionData, "personen[*].vorname", true, List.of())
         );
     }
 }

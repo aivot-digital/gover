@@ -29,11 +29,12 @@ import AssignmentIndOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outli
 import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import CodeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code';
-import FunctionsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
+import {NoCodeIcon} from '../../modules/nocode/data/no-code-icon';
 import AttachFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
 import PaymentsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Payments';
 import FolderOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Folder';
 import LinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
+import KeyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Key';
 
 import {type AnyElement} from '../../models/elements/any-element';
 import {type SvgIconComponent} from '../../types/svg-icon-component';
@@ -84,11 +85,13 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.AssignmentContext]: AssignmentIndOutlinedIcon,
     [ElementType.DataModelSelect]: FolderData,
     [ElementType.DataObjectSelect]: DataObject,
-    [ElementType.NoCodeInput]: FunctionsOutlinedIcon,
+    [ElementType.NoCodeInput]: NoCodeIcon,
     [ElementType.SummaryLayout]: Segment,
     [ElementType.ProcessDataKeyInput]: DataObject,
     [ElementType.ProcessInstanceAttachmentSetSelect]: AttachFileOutlinedIcon,
     [ElementType.ProcessIdentityIdInput]: LocalOfferOutlinedIcon,
+    [ElementType.SecretSelectInput]: KeyOutlinedIcon,
+    [ElementType.AssetSelectInput]: InsertDriveFileOutlinedIcon,
     [ElementType.HtmlTemplateInput]: DescriptionOutlinedIcon,
     [ElementType.StoragePathSelector]: FolderOutlinedIcon,
     [ElementType.ProcessAttachmentDisplay]: AttachFileOutlinedIcon,

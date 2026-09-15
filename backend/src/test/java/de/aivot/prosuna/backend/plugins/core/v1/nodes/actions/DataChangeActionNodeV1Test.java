@@ -1,9 +1,12 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
+import de.aivot.prosuna.backend.elements.services.InputVariableResolver;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
@@ -75,7 +78,8 @@ class DataChangeActionNodeV1Test {
         node = new DataChangeActionNodeV1(
                 assigneeResolverService,
                 new ElementDataTransformService(),
-                derivationService()
+                derivationService(),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper())
         );
     }
 
@@ -112,7 +116,7 @@ class DataChangeActionNodeV1Test {
     }
 
     @Test
-    void getStaffTaskViewData_LoadsSavedDraftFromRuntimeData() throws Exception {
+    void getStaffTaskView_LoadsSavedDraftFromRuntimeData() throws Exception {
         var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada"));
 
         var context = new ProcessNodeExecutionContextUIStaff(
@@ -134,17 +138,18 @@ class DataChangeActionNodeV1Test {
                 currentProcessData(processData)
         );
 
-        var layout = node.getStaffTaskView(context);
+        var view = node.getStaffTaskView(context);
+        var layout = (GroupLayoutElement) view.layout();
         var dataField = layout.findChild("applicantName", TextInputElement.class).orElseThrow();
 
         assertFalse(Boolean.TRUE.equals(dataField.getDisabled()));
         assertEquals(
                 List.of(new TaskViewEvent("Aufgabe abschließen", "complete")),
-                node.getStaffTaskViewEvents(context)
+                view.events()
         );
 
-        var data = node.getStaffTaskViewData(context);
-        assertEquals("Grace", data.get("applicantName"));
+        var data = view.data();
+        assertEquals("Grace", data.getLiteral("applicantName"));
     }
 
     @Test
@@ -207,9 +212,11 @@ class DataChangeActionNodeV1Test {
         assertEquals(Map.of("existing", "node-data"), updated.getNodeData());
         assertEquals(Map.of("applicant", Map.of("name", "Ada")), updated.getProcessData());
 
-        var draftData = updated.getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY);
-        assertNotNull(draftData);
-        assertEquals("Grace", ((Map<?, ?>) draftData).get("applicantName"));
+        var draftData = assertInstanceOf(
+                AuthoredElementValues.class,
+                updated.getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY)
+        );
+        assertEquals("Grace", draftData.getLiteral("applicantName"));
     }
 
     @Test
@@ -271,7 +278,7 @@ class DataChangeActionNodeV1Test {
                 ),
                 "untouched", "value"
         );
-        var configuration = configuration("members.0.name", null);
+        var configuration = configuration("members[0].name", null);
 
         var result = node.onEventFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
@@ -515,10 +522,10 @@ class DataChangeActionNodeV1Test {
         contentRoot.setChildren(new java.util.ArrayList<BaseFormElement>(children));
 
         var configuration = new AuthoredElementValues();
-        configuration.put("data_definition", contentRoot);
-        configuration.put("assignment_context", assignmentContext());
+        configuration.putLiteral("data_definition", contentRoot);
+        configuration.putLiteral("assignment_context", assignmentContext());
         if (taskDescription != null) {
-            configuration.put("task_description", taskDescription);
+            configuration.putLiteral("task_description", taskDescription);
         }
 
         return configuration;
@@ -541,8 +548,8 @@ class DataChangeActionNodeV1Test {
         contentRoot.setChildren(List.of(dateField, dateTimeField));
 
         var configuration = new AuthoredElementValues();
-        configuration.put("data_definition", contentRoot);
-        configuration.put("assignment_context", assignmentContext());
+        configuration.putLiteral("data_definition", contentRoot);
+        configuration.putLiteral("assignment_context", assignmentContext());
         return configuration;
     }
 
@@ -556,7 +563,9 @@ class DataChangeActionNodeV1Test {
                 new JavascriptEngineFactoryService(List.of()),
                 new NoCodeEvaluationService(List.of()),
                 new ElementDataTransformService(),
-                new CodeListElementOptionsService(null, null)
+                new CodeListElementOptionsService(null, null),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
+                new InputVariableResolver()
         );
     }
 
@@ -576,7 +585,9 @@ class DataChangeActionNodeV1Test {
     private static DataChangeActionNodeV1.DataChangeActionNodeConfig nodeConfiguration(AuthoredElementValues configuration)
             throws ElementDataConversionException {
         var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(configuration);
+        effectiveValues.put("data_definition", configuration.getLiteral("data_definition"));
+        effectiveValues.put("task_description", configuration.getLiteral("task_description"));
+        effectiveValues.put("assignment_context", configuration.getLiteral("assignment_context"));
         return ElementPOJOMapper.mapToPOJO(effectiveValues, DataChangeActionNodeV1.DataChangeActionNodeConfig.class);
     }
 

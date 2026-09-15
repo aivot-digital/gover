@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.Map;
+
 public class ResponseException extends Exception {
     @Nonnull
     private final HttpStatus status;
@@ -55,6 +57,17 @@ public class ResponseException extends Exception {
         this.status = status;
         this.title = title;
         this.details = elementData;
+    }
+
+    private ResponseException(
+            @Nonnull HttpStatus status,
+            @Nonnull String title,
+            @Nonnull Map<String, ?> details
+    ) {
+        super(title);
+        this.status = status;
+        this.title = title;
+        this.details = details;
     }
 
     public ResponseException(
@@ -125,6 +138,10 @@ public class ResponseException extends Exception {
 
     public static ResponseException unauthorized(String message) {
         return new ResponseException(HttpStatus.UNAUTHORIZED, message);
+    }
+
+    public static ResponseException unauthorizedWithDetails(String message, Map<String, ?> details) {
+        return new ResponseException(HttpStatus.UNAUTHORIZED, message, details);
     }
 
     public static ResponseException forbidden() {

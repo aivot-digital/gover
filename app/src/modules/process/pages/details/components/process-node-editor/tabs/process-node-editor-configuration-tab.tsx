@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import {useCallback, useRef} from 'react';
 import {useProcessDetailsPageContext} from '../../../process-details-page-context';
 import {AuthoredElementValues} from '../../../../../../../models/element-data';
+import {ProcessNodeApiService} from '../../../../../services/process-node-api-service';
 
 export function ProcessNodeEditorConfigurationTab() {
     const {
@@ -14,6 +15,7 @@ export function ProcessNodeEditorConfigurationTab() {
         setNode: setLocalNode,
         problems,
         isEditable,
+        incomingMetadata,
     } = useProcessNodeEditorContext();
 
     const {
@@ -96,6 +98,15 @@ export function ProcessNodeEditorConfigurationTab() {
                 computedErrors={problems?.derivedRuntimeElementData.elementStates}
                 suppressErrors={!localNode.savedWithErrors && !showNodeProblemsForNodes[localNode.id]}
                 disabled={!isEditable}
+                inputModesEnabled
+                inputModeVariables={incomingMetadata?.inputVariables ?? []}
+                onDeriveOverride={(authoredElementValues, skipErrorsForElementIds) => new ProcessNodeApiService()
+                    .deriveConfiguration(localNode.id, authoredElementValues, {
+                        skipErrorsForElementIds,
+                        skipVisibilitiesForElementIds: [],
+                        skipOverridesForElementIds: [],
+                        skipValuesForElementIds: [],
+                    })}
             />
         </Box>
     );

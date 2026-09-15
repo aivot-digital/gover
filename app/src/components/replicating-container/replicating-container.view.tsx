@@ -15,7 +15,7 @@ import {flattenElements} from '../../utils/flatten-elements';
 import {
     type ReplicatingContainerElementValue,
     type ReplicatingContainerElementValues,
-    resolveReplicatingContainerElementValues,
+    resolveAuthoredReplicatingContainerElementValues,
     updateReplicatingContainerElementValues,
 } from '../../models/element-data';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
@@ -44,11 +44,11 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
     } = element;
 
     const isDisabled = useMemo(() => {
-        if (element.disabled) {
+        if (element.disabled || props.inputModeLiteralContext?.fieldProps.disabled || props.inputModeLiteralContext?.fieldProps.readOnly) {
             return true;
         }
 
-        if (isBusy) {
+        if (isBusy || props.inputModeLiteralContext?.fieldProps.busy) {
             return true;
         }
 
@@ -57,7 +57,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         }
 
         return false;
-    }, [element, isBusy, isDeriving]);
+    }, [element, isBusy, isDeriving, props.inputModeLiteralContext?.fieldProps]);
 
     const minRequiredSets = element.required === true ? (element.minimumRequiredSets ?? 1) : 0;
     const hasEntries = (value?.length ?? 0) > 0;
@@ -65,6 +65,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
     const shouldShowEmptyState = !hasEntries;
     const isContainerBusy = isDeriving && hasDerivableAspects(element);
     const fieldError = errors != null && errors.length > 0 ? errors.join(' ') : undefined;
+    const inputModeFieldProps = props.inputModeLiteralContext?.fieldProps;
 
     const handleAdd = useCallback(() => {
         const updatedValue: ReplicatingContainerElementValues = [
@@ -95,12 +96,18 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
     return (
         <>
             <FormFieldGroup
-                label={element.label ?? ''}
-                hint={element.hint ?? undefined}
-                error={fieldError}
-                required={element.required ?? undefined}
-                disabled={Boolean(element.disabled || isBusy)}
-                busy={isContainerBusy}
+                id={inputModeFieldProps?.id}
+                label={inputModeFieldProps?.label ?? element.label ?? ''}
+                hint={inputModeFieldProps?.hint ?? element.hint ?? undefined}
+                error={inputModeFieldProps?.error ?? fieldError}
+                required={inputModeFieldProps?.required ?? element.required ?? undefined}
+                disabled={inputModeFieldProps?.disabled ?? Boolean(element.disabled || isBusy)}
+                readOnly={inputModeFieldProps?.readOnly}
+                busy={inputModeFieldProps?.busy ?? isContainerBusy}
+                externalAction={inputModeFieldProps?.externalAction}
+                labelAction={inputModeFieldProps?.labelAction}
+                margin={inputModeFieldProps?.margin}
+                sx={inputModeFieldProps?.sx}
                 showOptionalIndicator={element.label != null && element.label.trim().length > 0}
             >
                 {(fieldContext: FormFieldGroupContext) => (
@@ -115,7 +122,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                         }}
                     >
                         {(value ?? []).map((val: ReplicatingContainerElementValue, valueIndex: number) => {
-                            const rowValues = resolveReplicatingContainerElementValues(val) ?? {};
+                            const rowValues = resolveAuthoredReplicatingContainerElementValues(val) ?? {};
                             const rowKey = val.id ?? valueIndex;
                             const itemLabelId = `${fieldContext.groupId}-item-${valueIndex}-label`;
                             const itemLabel = stringOrDefault(element.headlineTemplate, 'Datensatz #')

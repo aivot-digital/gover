@@ -4,7 +4,7 @@ import {Box, Typography} from '@mui/material';
 import React, {useMemo, useState} from 'react';
 import {ExpandableCodeBlock} from '../../expandable-code-block/expandable-code-block';
 import {SearchInput} from '../../search-input/search-input';
-import {filterAuthoredElementValues} from '../../../utils/element-data-utils';
+import {filterComputedElementStates, filterEffectiveElementValues} from '../../../utils/element-data-utils';
 
 interface ElementDataDebuggerProps {
     rootElement: AnyElement;
@@ -35,7 +35,7 @@ export function DerivedDataDebugger(props: ElementDataDebuggerProps) {
             return effectiveValues;
         }
 
-        return filterAuthoredElementValues(rootElement, effectiveValues, (e) => e.id.toLowerCase().includes(search));
+        return filterEffectiveElementValues(rootElement, effectiveValues, (e) => e.id.toLowerCase().includes(search));
     }, [rootElement, effectiveValues, elementIdSearch]);
 
     const effectiveValuesJsonString = useMemo(() => {
@@ -51,7 +51,7 @@ export function DerivedDataDebugger(props: ElementDataDebuggerProps) {
             return elementStates;
         }
 
-        return filterAuthoredElementValues(rootElement, elementStates, (e) => e.id.toLowerCase().includes(search));
+        return filterComputedElementStates(rootElement, elementStates, (e) => e.id.toLowerCase().includes(search));
     }, [rootElement, elementStates, elementIdSearch]);
 
     const elementStatesJsonString = useMemo(() => {

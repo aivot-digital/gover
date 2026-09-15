@@ -8,7 +8,7 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {Typography} from '@mui/material';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
@@ -88,7 +88,7 @@ export function DataObjectItemListPage() {
             });
     }, [schemaKey]);
 
-    const columns = useCallback((permissions: GenericListPagePermissionState<DataObjectItem>): GridColDef[] => {
+    const columns = useCallback((permissions: GenericListPagePermissionState<DataObjectItem>): GridColDef<DataObjectItem>[] => {
         if (dataObjectSchema == null) {
             return [];
         }
@@ -243,8 +243,8 @@ export function DataObjectItemListPage() {
     );
 }
 
-function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema): GridColDef[] {
-    const cols: GridColDef[] = [];
+export function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema): GridColDef<DataObjectItem>[] {
+    const cols: GridColDef<DataObjectItem>[] = [];
     const allElements = flattenElements(dataObjectSchema.schema, true);
 
     for (const elementId of dataObjectSchema.displayFields ?? []) {
@@ -261,8 +261,8 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                 headerName: generateComponentTitle(element),
                 flex: 1,
                 type: ElementToMuiDataGridType[element.type] ?? 'string',
-                valueGetter: (_: any, row: any) => {
-                    const value = row.data[element.id];
+                valueGetter: (_, row) => {
+                    const value: any = row.data[element.id];
 
                     if (value == null) {
                         return null;
@@ -374,7 +374,7 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                             return value;
                     }
 
-                    return row.data[element.id];
+                    return value;
                 },
                 sortable: false,
             });

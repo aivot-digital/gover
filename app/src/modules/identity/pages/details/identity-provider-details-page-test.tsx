@@ -90,7 +90,7 @@ export function IdentityProviderDetailsPageTest() {
                 );
             window.location.href = redirectUrl;
         } catch (error) {
-            dispatch(showApiErrorSnackbar(error, 'Der Test des Nutzerkontenanbieters konnte nicht gestartet werden.'));
+            dispatch(showApiErrorSnackbar(error, 'Der Test des Identitätsanbieters konnte nicht gestartet werden.'));
             setIsStartingTest(false);
         }
     };
@@ -101,7 +101,7 @@ export function IdentityProviderDetailsPageTest() {
                 variant="h5"
                 sx={{mt: 1.5, mb: 1}}
             >
-                Test des Nutzerkontenanbieters
+                Test des Identitätsanbieters
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
@@ -155,7 +155,7 @@ export function IdentityProviderDetailsPageTest() {
                             maxWidth: 900,
                         }}
                     >
-                        Hier sehen Sie die Daten, die von dem Nutzerkontenanbieter an Prosuna übermittelt wurden.
+                        Hier sehen Sie die Daten, die von dem Identitätsanbieter an Prosuna übermittelt wurden.
                         Bitte beachten Sie, dass nur die Attribute angezeigt werden, die auch in der Konfiguration des Anbieters zugewiesen worden sind.
                     </Typography>
 
@@ -226,9 +226,9 @@ export function IdentityProviderDetailsPageTest() {
                             maxWidth: 900,
                         }}
                     >
-                        Hier sehen Sie, im Gegensatz zu den obigen Testergebnissen, den vollständigen Datensatz, welcher vom Nutzerkontenanbieter an Prosuna übermittelt wurde.
-                        Dieser kann auch Attribute enthalten, welche Sie in der Konfiguration des Nutzerkontenanbieters nicht zugewiesen haben.
-                        Bitte beachten Sie, dass ausschließlich im Nutzerkontenanbieter zugewiesene Attribute auch innerhalb von Prosuna verwendbar sind.
+                        Hier sehen Sie, im Gegensatz zu den obigen Testergebnissen, den vollständigen Datensatz, welcher vom Identitätsanbieter an Prosuna übermittelt wurde.
+                        Dieser kann auch Attribute enthalten, welche Sie in der Konfiguration des Identitätsanbieters nicht zugewiesen haben.
+                        Bitte beachten Sie, dass ausschließlich im Identitätsanbieter zugewiesene Attribute auch innerhalb von Prosuna verwendbar sind.
                     </Typography>
 
                     <ExpandableCodeBlock

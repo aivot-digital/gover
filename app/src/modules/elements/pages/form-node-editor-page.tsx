@@ -1,4 +1,5 @@
-import {Box, Dialog, DialogContent, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surface';
+import {Alert, Box, CircularProgress, Dialog, DialogContent, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {showDialog} from '../../../slices/app-slice';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
@@ -34,6 +35,8 @@ import {
     AuthoredElementValues,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
+    getLiteralElementValue,
+    literalAuthoredValue,
 } from '../../../models/element-data';
 import {RootState} from '../../../store.staff';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
@@ -74,7 +77,10 @@ import {
     FormDetailsPageMoreMenu,
     FormDetailsPageMoreMenuItem,
 } from '../../forms/pages/details/components/form-details-page-more-menu';
-import {ElementDerivationContext} from '../components/element-derivation-context';
+import {
+    ElementDerivationContext,
+    type ElementDerivationContextHandle,
+} from '../components/element-derivation-context';
 import {useChangeBlocker} from '../../../hooks/use-change-blocker-2';
 import {AddElementDialog} from '../../../dialogs/add-element-dialog/add-element-dialog';
 import {ProcessEntity} from '../../process/entities/process-entity';
@@ -91,14 +97,14 @@ import {walkAuthoredElementValues} from '../../../utils/element-data-utils';
 import {FileUploadElementItem, isFileUploadElementItem} from '../../../models/elements/form/input/file-upload-element';
 import {Submitted} from '../../../components/submitted/submitted';
 import {setCurrentStep} from '../../../slices/stepper-slice';
-import {createApiPath, createCustomerPath} from '../../../utils/url-path-utils';
+import {createCustomerPath} from '../../../utils/url-path-utils';
 import {ProcessTestClaimEntity} from '../../process/entities/process-test-claim-entity';
 import {downloadQrCode} from '../../../utils/download-qrcode';
 import {downloadBlobFile, uploadTextFile} from '../../../utils/download-utils';
 import {useNotImplemented} from '../../../hooks/use-not-implemented';
 import {ViewDispatcherMode} from '../../../components/view-dispatcher/view-dispatcher.context';
 import {ProcessStatus} from '../../process/enums/process-status';
-import type {Theme as AppTheme} from '../../themes/models/theme';
+import type {ResolvedThemeDTO, Theme as AppTheme} from '../../themes/models/theme';
 import {FormTriggerApiService} from '../../forms/services/form-trigger-api-service';
 import {createAppTheme} from '../../../theming/themes';
 import {BaseTheme} from '../../../theming/base-theme';
@@ -112,9 +118,12 @@ import {
     IdentityConfigElementSlotWithProviders,
 } from '../../../models/elements/form/input/identity-config-element';
 import IdentityPlatform from '@aivot/mui-material-symbols-400-n25-outlined/IdentityPlatform';
-import {SearchItemService} from '../../search/search-item-service';
+import {useRecordRecentSearchItem} from '../../search/hooks/use-record-recent-search-item';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
-import {IdentityButton} from '../../identity/components/identity-button/identity-button';
+import {
+    FormIdentitySelectionControls,
+} from '../../identity/components/form-identity-selection-controls/form-identity-selection-controls';
+import type {IdentitySlot} from '../../identity/models/identity-slot';
 import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';
 import {useApi} from '../../../hooks/use-api';
 import {ThemesApiService} from '../../themes/themes-api-service';
@@ -124,7 +133,8 @@ import {Chip} from '../../../components/chip/chip';
 import {quoteString} from '../../../utils/string-utils';
 import {PaymentRequestOverview} from '../../payment/components/payment-request-overview';
 import {isApiError} from '../../../models/api-error';
-import {resolveThemeChainLogoKey} from '../../../theming/resolve-theme-logo';
+import {resolveThemeLogoKey} from '../../../theming/resolve-theme-logo';
+import {RichtextComponent} from '../../../components/richtext/richtext.component';
 
 export const DialogSearchParam = 'dialog';
 
@@ -209,25 +219,45 @@ export function FormNodeEditorPage() {
 
     const [node, setNode] = useState<ProcessNodeEntity | null>(null);
     const [formLayout, setFormLayout] = useState<FormLayoutElement | null>(null);
+    const configuredFormSlug = node == null ? undefined : getLiteralElementValue<string>(node.configuration, 'formSlug');
 
     const [process, setProcess] = useState<ProcessEntity | null>(null);
     const [processVersion, setProcessVersion] = useState<ProcessVersionEntity | null>(null);
     const [testClaim, setTestClaim] = useState<ProcessTestClaimEntity | null>(null);
     const testClaimRef = useRef<ProcessTestClaimEntity | null>(null);
-    const [formTheme, setFormTheme] = useState<AppTheme>();
+    const [formTheme, setFormTheme] = useState<ResolvedThemeDTO>();
     const [draftPreviewThemeChain, setDraftPreviewThemeChain] = useState<AppTheme[] | null>(null);
 
     const [identityMappingInformation, setIdentityMappingInformation] = useState<IdentityConfigElementSlotWithProviders[]>([]);
     const [showIdentityDialog, setShowIdentityDialog] = useState(false);
-    const sortedIdentityMappingInformation = useMemo(() => {
-        return identityMappingInformation
-            .map((identity, index) => ({
-                identity,
+    const [identitySlots, setIdentitySlots] = useState<IdentitySlot[]>([]);
+    const [isLoadingIdentitySlots, setIsLoadingIdentitySlots] = useState(false);
+    const [identitySlotsLoadFailed, setIdentitySlotsLoadFailed] = useState(false);
+    const configuredIdentitySlots = useMemo(() => (
+        node == null ? undefined : getLiteralElementValue<IdentityConfigElementSlot[]>(node.configuration, IdentitiesFieldKey)
+    ) ?? [], [node]);
+    const sortedIdentitySlots = useMemo(() => {
+        return identitySlots
+            .map((slot, index) => ({
+                slot,
                 index,
             }))
-            .sort((a, b) => Number(a.identity.isOptional === true) - Number(b.identity.isOptional === true) || a.index - b.index)
-            .map(({identity}) => identity);
-    }, [identityMappingInformation]);
+            .sort((a, b) => Number(a.slot.isOptional) - Number(b.slot.isOptional) || a.index - b.index)
+            .map(({slot}) => slot);
+    }, [identitySlots]);
+    const identitySelectionApi = useMemo(() => {
+        const formSlug = node == null ? undefined : getLiteralElementValue<string>(node.configuration, 'formSlug');
+        if (process == null || node == null || formSlug == null) {
+            return null;
+        }
+
+        return new FormTriggerApiService().createIdentitySelectionApi(
+            process.slug,
+            formSlug,
+            node.id,
+            testClaim?.accessKey,
+        );
+    }, [node, process, testClaim]);
 
     const [startedProcessAccessInfo, setStartedProcessAccessInfo] = useState<{
         processInstanceAccessKey: string;
@@ -238,22 +268,13 @@ export function FormNodeEditorPage() {
         dialog: changeBlockerDialog,
         hasChanged,
     } = useChangeBlocker({
-        original: normalizeUiDefinitionForStorage(node?.configuration[FormLayoutFieldKey] as FormLayoutElement | null | undefined),
+        original: normalizeUiDefinitionForStorage(node == null
+            ? null
+            : getLiteralElementValue<FormLayoutElement>(node.configuration, FormLayoutFieldKey)),
         edited: normalizeUiDefinitionForStorage(formLayout),
     });
 
-    useEffect(() => {
-        if (node == null) {
-            return;
-        }
-        new SearchItemService()
-            .recordRecentSearchItem({
-                id: node.id.toString(),
-                originTable: ServerEntityType.ProcessNodes,
-            })
-            .catch(() => {
-            });
-    }, [node]);
+    useRecordRecentSearchItem(ServerEntityType.ProcessNodes, node?.id.toString());
 
     useEffect(() => {
         if (node == null) {
@@ -263,7 +284,7 @@ export function FormNodeEditorPage() {
         new IdentityProvidersApiService()
             .listAll()
             .then((page) => {
-                const mappedIdentities = node.configuration[IdentitiesFieldKey] as IdentityConfigElementSlot[] | null | undefined;
+                const mappedIdentities = getLiteralElementValue<IdentityConfigElementSlot[]>(node.configuration, IdentitiesFieldKey);
 
                 if (mappedIdentities == null || mappedIdentities.length === 0) {
                     return [];
@@ -295,12 +316,57 @@ export function FormNodeEditorPage() {
     }, [node]);
 
     useEffect(() => {
+        if (!showIdentityDialog) {
+            return;
+        }
+
+        const formSlug = node == null ? undefined : getLiteralElementValue<string>(node.configuration, 'formSlug');
+        if (node == null || process == null || testClaim == null || typeof formSlug !== 'string' || formSlug.length === 0) {
+            setIdentitySlots([]);
+            setIsLoadingIdentitySlots(false);
+            setIdentitySlotsLoadFailed(false);
+            return;
+        }
+
+        let isCancelled = false;
+        setIdentitySlots([]);
+        setIsLoadingIdentitySlots(true);
+        setIdentitySlotsLoadFailed(false);
+
+        new FormTriggerApiService()
+            .getIdentitySlots(process.slug, formSlug, testClaim.accessKey)
+            .then((slots) => {
+                if (!isCancelled) {
+                    setIdentitySlots(slots);
+                }
+            })
+            .catch((error) => {
+                if (!isCancelled) {
+                    setIdentitySlotsLoadFailed(true);
+                    dispatch(showApiErrorSnackbar(
+                        error,
+                        'Die Identitäten für den Formulartest konnten nicht geladen werden.',
+                    ));
+                }
+            })
+            .finally(() => {
+                if (!isCancelled) {
+                    setIsLoadingIdentitySlots(false);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [dispatch, node, process, showIdentityDialog, testClaim]);
+
+    useEffect(() => {
         const nodeIdInt = parseInt(nodeId);
         dispatch(setCurrentStep(0));
         new ProcessNodeApiService()
             .retrieve(nodeIdInt)
             .then((node) => {
-                let uiElement = node.configuration[FormLayoutFieldKey];
+                let uiElement = getLiteralElementValue<FormLayoutElement>(node.configuration, FormLayoutFieldKey);
                 if (uiElement == null) {
                     uiElement = generateElementWithDefaultValues(ElementType.FormLayout);
                 }
@@ -355,7 +421,7 @@ export function FormNodeEditorPage() {
     }, [node]);
 
     useEffect(() => {
-        if (process == null || processVersion == null || node?.configuration.formSlug == null) {
+        if (process == null || processVersion == null || configuredFormSlug == null) {
             setFormTheme(undefined);
             return;
         }
@@ -365,7 +431,7 @@ export function FormNodeEditorPage() {
         new FormTriggerApiService()
             .getFormTheme(
                 process.slug,
-                node.configuration.formSlug,
+                configuredFormSlug,
                 processVersion.processVersion,
                 testClaim?.accessKey,
             )
@@ -384,12 +450,13 @@ export function FormNodeEditorPage() {
         return () => {
             isCancelled = true;
         };
-    }, [node, process, processVersion, testClaim]);
+    }, [configuredFormSlug, node, process, processVersion, testClaim]);
 
     const hasFormLayout = formLayout != null;
     const selectedProcessVersionThemeId = processVersion?.themeId ?? null;
     const selectedResponsibleDepartmentId = formLayout?.responsibleDepartmentId ?? null;
     const selectedManagingDepartmentId = formLayout?.managingDepartmentId ?? null;
+    const processDepartmentId = process?.departmentId ?? null;
 
     useEffect(() => {
         if (!hasFormLayout) {
@@ -437,6 +504,8 @@ export function FormNodeEditorPage() {
             await appendTheme(themeChain, selectedProcessVersionThemeId);
             await appendDepartmentTheme(themeChain, selectedResponsibleDepartmentId);
             await appendDepartmentTheme(themeChain, selectedManagingDepartmentId);
+            await appendDepartmentTheme(themeChain, processDepartmentId);
+            themeChain.push(AppConfig.systemTheme);
 
             if (!isCancelled) {
                 setDraftPreviewThemeChain(themeChain);
@@ -452,6 +521,7 @@ export function FormNodeEditorPage() {
         selectedProcessVersionThemeId,
         selectedResponsibleDepartmentId,
         selectedManagingDepartmentId,
+        processDepartmentId,
     ]);
 
     const [searchParams] = useSearchParams();
@@ -471,6 +541,7 @@ export function FormNodeEditorPage() {
 
     const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
     const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
+    const elementDerivationContextRef = useRef<ElementDerivationContextHandle>(null);
     const [disableVisibility, setDisableVisibility] = useState(false);
     const [disableValidation, setDisableValidation] = useState(false);
 
@@ -560,7 +631,7 @@ export function FormNodeEditorPage() {
                 ...node,
                 configuration: {
                     ...node.configuration,
-                    [FormLayoutFieldKey]: formLayoutForStorage,
+                    [FormLayoutFieldKey]: literalAuthoredValue(formLayoutForStorage),
                 },
             }, {
                 query: {
@@ -570,7 +641,7 @@ export function FormNodeEditorPage() {
 
         setNode(updated);
         setFormLayout(
-            updated.configuration[FormLayoutFieldKey] ??
+            getLiteralElementValue<FormLayoutElement>(updated.configuration, FormLayoutFieldKey) ??
             generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement,
         );
     };
@@ -593,7 +664,7 @@ export function FormNodeEditorPage() {
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    const publicFormLink = createCustomerPath(`/form/${process?.slug}/${node?.configuration.formSlug}${testClaim != null ? `?test-claim=${testClaim.accessKey}` : ''}`);
+    const publicFormLink = createCustomerPath(`/form/${process?.slug}/${configuredFormSlug}${testClaim != null ? `?test-claim=${testClaim.accessKey}` : ''}`);
 
     const handleImportFromXDF = async () => {
         if (!isEditable) {
@@ -842,6 +913,19 @@ export function FormNodeEditorPage() {
         navigateToElementEditor(element.id, null);
     };
 
+    const openIdentityDialog = () => {
+        setIdentitySlots([]);
+        setIdentitySlotsLoadFailed(false);
+        setShowIdentityDialog(true);
+    };
+
+    const closeIdentityDialog = () => {
+        setShowIdentityDialog(false);
+        setIdentitySlots([]);
+        setIsLoadingIdentitySlots(false);
+        setIdentitySlotsLoadFailed(false);
+    };
+
     const moreMenuItems: FormDetailsPageMoreMenuItem[] = [
         {
             label: 'Öffentl. Link in Zwischenablage kopieren',
@@ -908,12 +992,12 @@ export function FormNodeEditorPage() {
             },
         },
         {
-            label: 'Mit Identitätsanbieter anmelden',
+            label: 'Testidentitäten auswählen',
             icon: <IdentityPlatform/>,
-            onClick: () => {
-                setShowIdentityDialog(true);
-            },
-            visible: identityMappingInformation.length > 0,
+            onClick: openIdentityDialog,
+            visible: configuredIdentitySlots.length > 0,
+            disabled: testClaim == null,
+            disabledTooltip: 'Um Identitäten für den Formulartest auszuwählen, muss sich der Prozess im Testmodus befinden.',
         },
         {
             label: 'Entwicklerwerkzeuge öffnen',
@@ -992,33 +1076,24 @@ export function FormNodeEditorPage() {
         return;
     }
 
-    const formAssetQueryParams = new URLSearchParams({
-        version: processVersion.processVersion.toString(),
-    });
-    formAssetQueryParams.set('theme-id', processVersion.themeId?.toString() ?? 'default');
-    if (testClaim != null) {
-        formAssetQueryParams.set('test-claim', testClaim.accessKey);
-    }
-
-    // Use the locally resolved draft chain for logos as well. The public form logo endpoint is based
-    // on the persisted form and the system logo should only appear when no custom theme is resolved.
+    // Use the locally resolved draft chain so unsaved theme assignments are reflected immediately.
     const resolveDraftLogoUrl = (colorScheme: 'light' | 'dark'): string | null => {
         if (draftPreviewThemeChain == null) {
-            const queryParams = new URLSearchParams(formAssetQueryParams);
-            if (colorScheme === 'dark') {
-                queryParams.set('color-scheme', 'dark');
-            }
-            return `/api/public/form/${process.slug}/${node.configuration.formSlug}/logo/?${queryParams.toString()}`;
+            return colorScheme === 'dark'
+                ? formTheme?.logoUrlDark ?? null
+                : formTheme?.logoUrl ?? null;
         }
 
-        if (draftPreviewThemeChain.length === 0) {
-            return createApiPath(
-                `/api/public/system/logo/${colorScheme === 'dark' ? '?color-scheme=dark' : ''}`,
-            );
+        const activeTheme = draftPreviewThemeChain[0];
+        if (activeTheme == null) {
+            return null;
         }
 
-        const logoKey = resolveThemeChainLogoKey(draftPreviewThemeChain, colorScheme);
-        return logoKey == null ? null : AssetsApiService.useAssetLink(logoKey);
+        const logoKey = resolveThemeLogoKey(activeTheme, colorScheme);
+        if (logoKey != null) {
+            return AssetsApiService.useAssetLink(logoKey);
+        }
+        return null;
     };
     const formLogoUrl = resolveDraftLogoUrl('light');
     const formLogoUrlDark = resolveDraftLogoUrl('dark');
@@ -1061,7 +1136,7 @@ export function FormNodeEditorPage() {
             }
 
             // Check if a slug is configured and break if no slug is present because we cannot submit data without a slug
-            if (node.configuration.formSlug == null || node.configuration.formSlug === '') {
+            if (configuredFormSlug == null || configuredFormSlug === '') {
                 await confirm({
                     title: 'Keine Formular-URL vergeben',
                     children: (
@@ -1142,7 +1217,7 @@ export function FormNodeEditorPage() {
 
             errorMessage = 'Beim Berechnen der Kosten ist ein unbekannter Fehler aufgetreten.';
             const costs = await new FormTriggerApiService()
-                .calculateCosts(process.slug, node.configuration.formSlug, values, {
+                .calculateCosts(process.slug, configuredFormSlug, values, {
                     testClaim: testClaim.accessKey,
                 });
             const paymentRequired = costs.totalCost > 0;
@@ -1194,7 +1269,7 @@ export function FormNodeEditorPage() {
             errorMessage = 'Beim Absenden des Formulars ist ein Fehler aufgetreten';
 
             const startRes = await new FormTriggerApiService()
-                .submitForm(process.slug, node.configuration.formSlug, formData, {
+                .submitForm(process.slug, configuredFormSlug, formData, {
                     testClaim: testClaim.accessKey,
                 });
 
@@ -1266,7 +1341,15 @@ export function FormNodeEditorPage() {
                                         ref={scrollContainerRef}
                                     >
                                         <ThemeProvider theme={previewTheme}>
-                                            <Box>
+                                            <Box
+                                                sx={{
+                                                    backgroundColor: getCustomerPageSurfaceColor,
+                                                    color: 'text.primary',
+                                                    minHeight: '100%',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                }}
+                                            >
                                                 <FormHeaderComponent
                                                     form={formLayout}
                                                     node={node}
@@ -1278,6 +1361,7 @@ export function FormNodeEditorPage() {
                                                         dispatch(setCurrentStep(0));
                                                         setAuthoredElementValues({});
                                                         setStartedProcessAccessInfo(null);
+                                                        setIdentitySlots([]);
                                                         IdentityProvidersApiService.clearIdentity(node.id);
                                                     }}
                                                 />
@@ -1294,6 +1378,7 @@ export function FormNodeEditorPage() {
                                                         }}
                                                     >
                                                         <ElementDerivationContext
+                                                            ref={elementDerivationContextRef}
                                                             element={formLayout}
                                                             authoredElementValues={authoredElementValues}
                                                             onAuthoredElementValuesChange={setAuthoredElementValues}
@@ -1382,7 +1467,7 @@ export function FormNodeEditorPage() {
                                                 value={formLayout}
                                                 onChange={handlePatch}
                                                 editable={isEditable}
-                                                displayContext={ElementDisplayContext.CitizenFacing}
+                                                displayContext={ElementDisplayContext.CustomerFacing}
                                                 allowElementIdEditing={false}
                                                 highlightElementId={highlightElementId}
                                                 highlightElementSignal={highlightElementSignal}
@@ -1414,38 +1499,7 @@ export function FormNodeEditorPage() {
                                     rootElement={formLayout!}
                                     elementData={authoredElementValues}
                                     onElementDataChange={(elementData) => {
-                                        /*dispatch(setLoadingMessage({
-                                            message: 'Element-Daten werden importiert',
-                                            blocking: true,
-                                            estimatedTime: 500,
-                                        }));
-                                         */
-
-                                        setAuthoredElementValues(elementData);
-                                        /*
-                                        withDelay(
-                                            formService
-                                                .deriveForm(
-                                                    loadedForm.form.slug,
-                                                    loadedForm.version.version,
-                                                    elementData,
-                                                    {
-                                                        skipErrorsFor: ['ALL'],
-                                                        skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
-                                                        skipValuesFor: [],
-                                                        skipOverridesFor: [],
-                                                    },
-                                                ), 500)
-                                            .then((state) => {
-                                                setAuthoredElementValues(elementData);
-                                                setDerivedData(state.elementData);
-                                                dispatch(addDerivationLogItems(state.logItems));
-                                            })
-                                            .finally(() => {
-                                                dispatch(setLoadingMessage(undefined));
-                                            });
-
-                                         */
+                                        void elementDerivationContextRef.current?.replaceAuthoredElementValues(elementData);
                                     }}
                                     derivedData={derivedData}
                                 />
@@ -1493,23 +1547,17 @@ export function FormNodeEditorPage() {
                 onClose={() => {
                     setShowRootAddElementDialog(false);
                 }}
-                displayContext={ElementDisplayContext.CitizenFacing}
+                displayContext={ElementDisplayContext.CustomerFacing}
             />
 
             <Dialog
                 open={showIdentityDialog}
-                onClose={() => {
-                    setShowIdentityDialog(false);
-                }}
+                onClose={closeIdentityDialog}
                 fullWidth={true}
                 maxWidth="md"
             >
-                <DialogTitleWithClose
-                    onClose={() => {
-                        setShowIdentityDialog(false);
-                    }}
-                >
-                    Mit Identitätsanbieter anmelden
+                <DialogTitleWithClose onClose={closeIdentityDialog}>
+                    Identitäten für den Formulartest auswählen
                 </DialogTitleWithClose>
                 <DialogContent>
                     <Typography
@@ -1519,9 +1567,9 @@ export function FormNodeEditorPage() {
                             maxWidth: 600
                         }}
                     >
-                        Diese Anmeldung dient nur zum Testen im Formulareditor. Sie können das Formular damit in einem
-                        authentifizierten Zustand prüfen; Nutzer:innen sehen später die normale Anmeldeseite des
-                        Formulars, nicht diesen Dialog.
+                        Diese Auswahl dient nur zum Testen im Formulareditor. Sie können Identitäten und den zugehörigen
+                        Kommunikationsweg festlegen; Nutzer:innen sehen später die normale Identitätsauswahl des
+                        Formulars und nicht diesen Dialog.
                     </Typography>
                     <Typography
                         variant="body2"
@@ -1531,68 +1579,81 @@ export function FormNodeEditorPage() {
                             marginTop: 2,
                             marginBottom: 4
                         }}>
-                        Um Ihren Authentifizierungsstatus zurückzusetzen, können Sie das formularspezifische
+                        Um die Auswahl vollständig zurückzusetzen, können Sie das formularspezifische
                         Drei-Punkte-Menü verwenden und {quoteString('Alle Formulardaten löschen')} auswählen.
                     </Typography>
 
-                    {
-                        sortedIdentityMappingInformation
-                            .map((idm) => (
+                    {isLoadingIdentitySlots &&
+                        <Box sx={{display: 'flex', justifyContent: 'center', py: 6}}>
+                            <CircularProgress size={32}/>
+                        </Box>}
+
+                    {!isLoadingIdentitySlots && identitySlotsLoadFailed &&
+                        <Alert severity="error">
+                            Die Identitäten für den Formulartest konnten nicht geladen werden. Schließen Sie den Dialog
+                            und versuchen Sie es erneut.
+                        </Alert>}
+
+                    {!isLoadingIdentitySlots && !identitySlotsLoadFailed && sortedIdentitySlots.length === 0 &&
+                        <Alert severity="info">
+                            Für diesen Formulartest sind keine Identitäten konfiguriert.
+                        </Alert>}
+
+                    {!isLoadingIdentitySlots && !identitySlotsLoadFailed && sortedIdentitySlots.map((slot) => (
+                        <Box
+                            key={slot.id}
+                            sx={{mb: 4}}
+                        >
+                            <Box>
+                                <Typography variant="caption">
+                                    Identität
+                                </Typography>
                                 <Box
-                                    key={idm.id}
                                     sx={{
-                                        mb: 4,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        flexWrap: 'wrap',
+                                        columnGap: 1.25,
+                                        rowGap: 0.5,
+                                        mt: 0.25,
                                     }}
                                 >
-                                    <Box sx={{mb: 2}}>
-                                        <Typography variant="caption">
-                                            Anmelden als
-                                        </Typography>
-                                        <Box
-                                            sx={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                flexWrap: 'wrap',
-                                                columnGap: 1.25,
-                                                rowGap: 0.5,
-                                                mt: 0.25,
-                                            }}
-                                        >
-                                            <Typography
-                                                variant="h5"
-                                                component="h3"
-                                            >
-                                                {getIdentityDisplayName(idm)}
-                                            </Typography>
+                                    <Typography
+                                        variant="h5"
+                                        component="h3"
+                                    >
+                                        {getIdentityDisplayName(slot)}
+                                    </Typography>
 
-                                            <Chip
-                                                mode="soft"
-                                                label={idm.isOptional ? 'Optional' : 'Verpflichtend'}
-                                                color={idm.isOptional ? 'info' : 'warning'}
-                                                size="small"
-                                            />
-                                        </Box>
-                                    </Box>
-
-                                    {
-                                        (idm.options ?? [])
-                                            .map((opt) => (
-                                                <IdentityButton
-                                                    key={`${idm.id}-${opt.provider.key}`}
-                                                    isAuthenticated={false}
-                                                    relatedProcessNodeId={node.id}
-                                                    identityId={idm.id ?? ''}
-                                                    identityProviderKey={opt.provider.key}
-                                                    identityProviderAssetKey={opt.provider.iconAssetKey}
-                                                    additionalScopes={opt.additionalScopes ?? []}
-                                                    identityProviderName={opt.provider.name}
-                                                    identityProviderType={opt.provider.type}
-                                                />
-                                            ))
-                                    }
+                                    <Chip
+                                        mode="soft"
+                                        label={slot.isRequired ? 'Verpflichtend' : 'Optional'}
+                                        color={slot.isRequired ? 'warning' : 'info'}
+                                        size="small"
+                                    />
                                 </Box>
-                            ))
-                    }
+                            </Box>
+
+                            {slot.description != null && slot.description.trim().length > 0 &&
+                                <RichtextComponent
+                                    content={slot.description}
+                                    sx={{mt: 2}}
+                                />}
+
+                            {
+                                identitySelectionApi != null &&
+                                <FormIdentitySelectionControls
+                                    slot={slot}
+                                    api={identitySelectionApi}
+                                    onChange={(nextSlot) => {
+                                        setIdentitySlots(currentSlots => currentSlots.map(currentSlot => (
+                                            currentSlot.id === nextSlot.id ? nextSlot : currentSlot
+                                        )));
+                                    }}
+                                />
+                            }
+                        </Box>
+                    ))}
                 </DialogContent>
             </Dialog>
 

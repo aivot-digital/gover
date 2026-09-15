@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {ElementType} from '../data/element-type/element-type';
-import {ComputedElementValueSource, createDerivedRuntimeElementData} from '../models/element-data';
+import {ComputedElementValueSource, createDerivedRuntimeElementData, literalAuthoredValue} from '../models/element-data';
 import {
     applyElementErrorSuppressions,
     collectChangedElementErrorSuppressionTargets,
@@ -33,8 +33,8 @@ describe('resolveValueForResolvedOverride', () => {
             },
         });
 
-        expect(resolveValueForResolvedOverride(field, {field: 'authored'}, derivedData)).toBe('authored');
-        expect(resolveValueForResolvedOverride(field, {field: null}, derivedData)).toBeNull();
+        expect(resolveValueForResolvedOverride(field, {field: literalAuthoredValue('authored')}, derivedData)).toBe('authored');
+        expect(resolveValueForResolvedOverride(field, {field: literalAuthoredValue(null)}, derivedData)).toBeNull();
     });
 
     it('should use derived values while no authored override exists', () => {
@@ -64,7 +64,7 @@ describe('resolveValueForResolvedOverride', () => {
             },
         });
 
-        expect(resolveValueForResolvedOverride(field, {field: 'authored'}, derivedData)).toBe('identity');
+        expect(resolveValueForResolvedOverride(field, {field: literalAuthoredValue('authored')}, derivedData)).toBe('identity');
     });
 });
 
@@ -306,23 +306,23 @@ describe('replicating container error suppression', () => {
 
     it('should treat an appended row as a container change without suppressing existing row children', () => {
         const previousValues = {
-            rows: [
+            rows: literalAuthoredValue([
                 {
                     id: 'row-1',
                     values: {
-                        rowField: 'existing',
+                        rowField: literalAuthoredValue('existing'),
                     },
                 },
-            ],
+            ]),
         };
         const nextValues = {
-            rows: [
-                ...previousValues.rows,
+            rows: literalAuthoredValue([
+                ...(previousValues.rows.value ?? []),
                 {
                     id: 'row-2',
                     values: {},
                 },
-            ],
+            ]),
         };
 
         expect(collectChangedElementErrorSuppressionTargets(root, previousValues, nextValues)).toEqual([
@@ -337,22 +337,22 @@ describe('replicating container error suppression', () => {
         const retainedRow = {
             id: 'row-2',
             values: {
-                rowField: 'retained',
+                rowField: literalAuthoredValue('retained'),
             },
         };
         const previousValues = {
-            rows: [
+            rows: literalAuthoredValue([
                 {
                     id: 'row-1',
                     values: {
-                        rowField: 'deleted',
+                        rowField: literalAuthoredValue('deleted'),
                     },
                 },
                 retainedRow,
-            ],
+            ]),
         };
         const nextValues = {
-            rows: [retainedRow],
+            rows: literalAuthoredValue([retainedRow]),
         };
 
         expect(collectChangedElementErrorSuppressionTargets(root, previousValues, nextValues)).toEqual([
@@ -365,31 +365,31 @@ describe('replicating container error suppression', () => {
 
     it('should suppress only the changed row field and follow its stable row id after reordering', () => {
         const previousValues = {
-            rows: [
+            rows: literalAuthoredValue([
                 {
                     id: 'row-1',
                     values: {
-                        rowField: 'previous',
+                        rowField: literalAuthoredValue('previous'),
                     },
                 },
                 {
                     id: 'row-2',
                     values: {
-                        rowField: 'unchanged',
+                        rowField: literalAuthoredValue('unchanged'),
                     },
                 },
-            ],
+            ]),
         };
         const nextValues = {
-            rows: [
+            rows: literalAuthoredValue([
                 {
                     id: 'row-1',
                     values: {
-                        rowField: 'changed',
+                        rowField: literalAuthoredValue('changed'),
                     },
                 },
-                previousValues.rows[1],
-            ],
+                previousValues.rows.value?.[1],
+            ]),
         };
         const targets = collectChangedElementErrorSuppressionTargets(root, previousValues, nextValues);
         const derivedData = createDerivedRuntimeElementData({
@@ -496,37 +496,37 @@ describe('replicating container error suppression', () => {
             ],
         } as AnyElement;
         const previousValues = {
-            outerRows: [
+            outerRows: literalAuthoredValue([
                 {
                     id: 'outer-1',
                     values: {
-                        nestedRows: [
+                        nestedRows: literalAuthoredValue([
                             {
                                 id: 'nested-1',
                                 values: {
-                                    nestedField: 'unchanged',
+                                    nestedField: literalAuthoredValue('unchanged'),
                                 },
                             },
-                        ],
+                        ]),
                     },
                 },
-            ],
+            ]),
         };
         const nextValues = {
-            outerRows: [
+            outerRows: literalAuthoredValue([
                 {
                     id: 'outer-1',
                     values: {
-                        nestedRows: [
-                            ...previousValues.outerRows[0].values.nestedRows,
+                        nestedRows: literalAuthoredValue([
+                            ...(previousValues.outerRows.value?.[0].values.nestedRows.value ?? []),
                             {
                                 id: 'nested-2',
                                 values: {},
                             },
-                        ],
+                        ]),
                     },
                 },
-            ],
+            ]),
         };
 
         expect(collectChangedElementErrorSuppressionTargets(nestedRoot, previousValues, nextValues)).toEqual([
@@ -633,14 +633,14 @@ describe('replicating container row values', () => {
 
     it('should walk and map nested row values', () => {
         const authoredValues = {
-            rows: [
+            rows: literalAuthoredValue([
                 {
                     id: 'row-1',
                     values: {
-                        rowField: 'Ada',
+                        rowField: literalAuthoredValue('Ada'),
                     },
                 },
-            ],
+            ]),
         };
         const visitedValues: unknown[] = [];
 
@@ -654,14 +654,14 @@ describe('replicating container row values', () => {
         expect(mapAuthoredElementValues(root, authoredValues, (element, value) => {
             return element.id === 'rowField' ? 'Grace' : value;
         })).toEqual({
-            rows: [
+            rows: literalAuthoredValue([
                 {
                     id: 'row-1',
                     values: {
-                        rowField: 'Grace',
+                        rowField: literalAuthoredValue('Grace'),
                     },
                 },
-            ],
+            ]),
         });
     });
 
@@ -836,21 +836,42 @@ describe('replicating container row values', () => {
         });
     });
 
-    it('should normalize legacy bare row values', () => {
-        expect(normalizeReplicatingContainerValues(root, {
-            rows: [
+    it('should preserve canonical authored row values', () => {
+        const values = {
+            rows: literalAuthoredValue([
                 {
-                    rowField: 'legacy',
-                },
-            ],
-        })).toEqual({
-            rows: [
-                {
+                    id: 'row-1',
                     values: {
-                        rowField: 'legacy',
+                        rowField: literalAuthoredValue('value'),
                     },
                 },
-            ],
+            ]),
+        };
+
+        expect(normalizeReplicatingContainerValues(root, values)).toEqual(values);
+    });
+
+    it('should wrap raw effective values in editable rows', () => {
+        const values = {
+            rows: literalAuthoredValue([
+                {
+                    id: 'row-1',
+                    values: {
+                        rowField: 'derived value',
+                    },
+                },
+            ]),
+        };
+
+        expect(normalizeReplicatingContainerValues(root, values)).toEqual({
+            rows: literalAuthoredValue([
+                {
+                    id: 'row-1',
+                    values: {
+                        rowField: literalAuthoredValue('derived value'),
+                    },
+                },
+            ]),
         });
     });
 });

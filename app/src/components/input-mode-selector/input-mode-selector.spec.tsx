@@ -1,3 +1,4 @@
+import {InputMode} from '../../models/input-mode';
 import {describe, expect, it, vi} from 'vitest';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {DynamicTextIndicator, DynamicTextIndicatorLabel} from './dynamic-text-indicator';
@@ -11,7 +12,7 @@ describe('InputModeSelector', () => {
             <InputModeSelector
                 fieldLabel="Bezeichnung"
                 controlledFieldId="field-name"
-                value="literal"
+                value={InputMode.Literal}
                 onChange={onChange}
             />,
         );
@@ -26,15 +27,15 @@ describe('InputModeSelector', () => {
         expect(variableOption).toHaveAttribute('aria-checked', 'false');
         fireEvent.click(variableOption!);
 
-        expect(onChange).toHaveBeenCalledWith('variable');
+        expect(onChange).toHaveBeenCalledWith('Variable');
     });
 
     it('disables mode selection when only one mode is allowed', () => {
         render(
             <InputModeSelector
                 fieldLabel="Bezeichnung"
-                value="literal"
-                allowedModes={['literal']}
+                value={InputMode.Literal}
+                allowedModes={[InputMode.Literal]}
                 onChange={vi.fn()}
             />,
         );

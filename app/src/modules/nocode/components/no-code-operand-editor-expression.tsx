@@ -40,6 +40,7 @@ import {BOOL_DEFAULT_OPTIONS} from './no-code-operand-editor-static-value';
 import {NoCodeOperandEditorContextType} from './no-code-operand-editor';
 import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
 import {Stack} from '@mui/material';
+import {NoCodeTreeRow} from './no-code-tree-row';
 
 interface NoCodeOperandEditorExpressionProps {
     allElements: ElementWithParents[];
@@ -56,70 +57,6 @@ interface NoCodeOperandEditorExpressionProps {
 interface ResolvedParameter {
     parameter: NoCodeParameter;
     operand: NoCodeOperand | undefined | null;
-}
-
-interface TreeConnectorProps {
-    up: boolean;
-    down: boolean;
-}
-
-function TreeConnector(props: TreeConnectorProps) {
-    const {
-        up,
-        down,
-    } = props;
-
-    return (
-        <Box
-            sx={{
-                position: 'relative',
-                width: '1.5rem',
-                flexShrink: 0,
-            }}
-        >
-            {
-                up &&
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        left: '50%',
-                        transform: 'translateX(-0.5px)',
-                        top: 0,
-                        bottom: '50%',
-                        width: '1px',
-                        bgcolor: 'divider',
-                    }}
-                />
-            }
-
-            {
-                down &&
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        left: '50%',
-                        transform: 'translateX(-0.5px)',
-                        top: '50%',
-                        bottom: 0,
-                        width: '1px',
-                        bgcolor: 'divider',
-                    }}
-                />
-            }
-
-            <Box
-                sx={{
-                    position: 'absolute',
-                    left: '50%',
-                    right: 0,
-                    top: '50%',
-                    transform: 'translateY(-0.5px)',
-                    height: '1px',
-                    bgcolor: 'divider',
-                }}
-            />
-        </Box>
-    );
 }
 
 export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressionProps) {
@@ -273,59 +210,31 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
 
     return (
         <>
-            <Box>
+            <Box data-no-code-expression>
                 {
                     leadingParameter != null &&
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'stretch',
-                            paddingLeft: '0.25rem',
-                        }}
-                    >
-                        <TreeConnector up={false}
-                                       down={true}/>
-
-                        <Box
-                            sx={{
-                                pb: 2,
-                                pl: 1,
-                                flex: 1,
+                    <NoCodeTreeRow up={false} down contentSx={{pb: 2, pl: 1}}>
+                        <NoCodeOperandEditor
+                            parameter={leadingParameter.parameter}
+                            operand={leadingParameter.operand}
+                            onChange={(updatedOperand) => {
+                                onChange({
+                                    ...operand,
+                                    operands: [
+                                        updatedOperand ?? null,
+                                        ...(operand.operands?.slice(1) ?? []),
+                                    ],
+                                });
                             }}
-                        >
-                            <NoCodeOperandEditor
-                                parameter={leadingParameter.parameter}
-                                operand={leadingParameter.operand}
-                                onChange={(updatedOperand) => {
-                                    onChange({
-                                        ...operand,
-                                        operands: [
-                                            updatedOperand ?? null,
-                                            ...(operand.operands?.slice(1) ?? []),
-                                        ],
-                                    });
-                                }}
-                                allOperators={allOperators}
-                                allElements={allElements}
-                                contextType={contextType}
-                                operandError={operandError?.subErrors?.[0] ?? undefined}
-                            />
-                        </Box>
-                    </Box>
+                            allOperators={allOperators}
+                            allElements={allElements}
+                            contextType={contextType}
+                            operandError={operandError?.subErrors?.[0] ?? undefined}
+                        />
+                    </NoCodeTreeRow>
                 }
 
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'stretch',
-                        paddingLeft: '0.25rem',
-                    }}
-                >
-                    <TreeConnector
-                        up={leadingParameter != null}
-                        down={trailingParameters.length > 0}
-                    />
-
+                <NoCodeTreeRow operator up={leadingParameter != null} down={trailingParameters.length > 0}>
                     <Box
                         sx={{
                             display: 'flex',
@@ -468,51 +377,38 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                             ]}
                         />
                     </Box>
-                </Box>
+                </NoCodeTreeRow>
 
                 {
                     trailingParameters.map((p, index, all) => (
-                        <Box
+                        <NoCodeTreeRow
                             key={index}
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'stretch',
-                                paddingLeft: '0.25rem',
-                            }}
+                            up
+                            down={index < all.length - 1}
+                            contentSx={{pt: 2, pl: 1}}
                         >
-                            <TreeConnector up={true}
-                                           down={index < all.length - 1}/>
-
-                            <Box
-                                sx={{
-                                    paddingTop: 2,
-                                    flex: 1,
-                                    pl: 1,
+                            <NoCodeOperandEditor
+                                parameter={p.parameter}
+                                operand={p.operand}
+                                onChange={(updatedOperand) => {
+                                    const updatedOperands = operand.operands ? [...operand.operands] : [];
+                                    updatedOperands[index + (leadingParameter != null ? 1 : 0)] = updatedOperand ?? null;
+                                    onChange({
+                                        ...operand,
+                                        operands: updatedOperands,
+                                    });
                                 }}
-                            >
-                                <NoCodeOperandEditor
-                                    parameter={p.parameter}
-                                    operand={p.operand}
-                                    onChange={(updatedOperand) => {
-                                        const updatedOperands = operand.operands ? [...operand.operands] : [];
-                                        updatedOperands[index + (leadingParameter != null ? 1 : 0)] = updatedOperand ?? null;
-                                        onChange({
-                                            ...operand,
-                                            operands: updatedOperands,
-                                        });
-                                    }}
-                                    allOperators={allOperators}
-                                    allElements={allElements}
-                                    contextType={contextType}
-                                    operandError={
-                                        operandError != null &&
-                                        operandError.subErrors != null
-                                            ? operandError.subErrors[index + 1]
-                                            : undefined
-                                    }
-                                />
-                            </Box>
-                        </Box>
+                                allOperators={allOperators}
+                                allElements={allElements}
+                                contextType={contextType}
+                                operandError={
+                                    operandError != null &&
+                                    operandError.subErrors != null
+                                        ? operandError.subErrors[index + 1]
+                                        : undefined
+                                }
+                            />
+                        </NoCodeTreeRow>
                     ))
                 }
             </Box>

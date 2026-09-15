@@ -1,6 +1,11 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
+import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.input.InputVariableReference;
+import de.aivot.prosuna.backend.elements.services.InputVariableResolver;
+import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
@@ -15,6 +20,7 @@ import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +29,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -141,7 +148,8 @@ class ProcessDataServiceTest {
                 taskRepository,
                 nodeRepository,
                 attachmentRepository,
-                attachmentSetRepository
+                attachmentSetRepository,
+                JsonMapperTestUtils.createMapper()
         ).foldProcessInstanceData(instance, null, currentTask);
 
         var metadata = data.getProcessMetadata();
@@ -179,5 +187,49 @@ class ProcessDataServiceTest {
         assertEquals("uploaded-first.pdf", firstSetAttachments.get(0).get("originalFilename"));
         assertEquals("person-1", firstSetAttachments.get(0).get("group"));
         assertEquals("second.pdf", firstSetAttachments.get(1).get("filename"));
+    }
+
+    @Test
+    void foldProcessInstanceData_NormalizesIdentitiesForNestedVariableResolution() {
+        var providerKey = UUID.randomUUID();
+        var attributes = new HashMap<String, String>();
+        attributes.put("vorname", "Ada");
+        attributes.put("zusatz", null);
+        var identity = new IdentityData("session", "identity", de.aivot.prosuna.backend.identity.enums.IdentityType.IdentityProvider, providerKey, "metadata", "provider-user-1", null, attributes, null, Map.of());
+        var identities = new IdentityDataMap();
+        identities.put("antragsteller", identity);
+        var instance = new ProcessInstanceEntity(
+                42L, "CASE-42", "access-key", 7, 1, ProcessInstanceStatus.Running,
+                null, null, List.of(), identities, Instant.now(), Instant.now(),
+                null, null, Map.of(), 11, null, null
+        );
+        var initialNode = new ProcessNodeEntity(
+                11, 7, 1, "Start", null, "start", "test/start", 1,
+                new AuthoredElementValues(), Map.of(), null, null, null, false
+        );
+        var nodeRepository = mock(ProcessNodeRepository.class);
+        when(nodeRepository.findAllByProcessId(7)).thenReturn(List.of(initialNode));
+        when(nodeRepository.findById(11)).thenReturn(Optional.of(initialNode));
+
+        var data = new ProcessDataService(
+                mock(ProcessInstanceTaskRepository.class), nodeRepository,
+                mock(ProcessInstanceAttachmentRepository.class),
+                mock(ProcessInstanceAttachmentSetRepository.class), JsonMapperTestUtils.createMapper()
+        ).foldProcessInstanceData(instance, null, new ProcessInstanceTaskEntity().setId(99L));
+
+        var resolver = new InputVariableResolver();
+        assertEquals(new InputVariableResolver.Resolution(true, "Ada"), resolver.resolve(
+                new InputVariableReference(InputVariableSource.ProtectedProcessData,
+                        "identities.antragsteller.attributes.vorname", null), data));
+        assertEquals(new InputVariableResolver.Resolution(true, providerKey.toString()), resolver.resolve(
+                new InputVariableReference(InputVariableSource.ProtectedProcessData,
+                        "identities.antragsteller.providerKey", null), data));
+        assertEquals(new InputVariableResolver.Resolution(true, null), resolver.resolve(
+                new InputVariableReference(InputVariableSource.ProtectedProcessData,
+                        "identities.antragsteller.attributes.zusatz", null), data));
+        assertEquals(new InputVariableResolver.Resolution(false, null), resolver.resolve(
+                new InputVariableReference(InputVariableSource.ProtectedProcessData,
+                        "identities.antragsteller.attributes.missing", null), data));
+        assertSame(identity, instance.getIdentities().get("antragsteller"));
     }
 }

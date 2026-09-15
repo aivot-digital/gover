@@ -1,3 +1,4 @@
+import {getCustomerPageSurfaceColor} from '../../theming/customer-page-surface';
 import React from 'react';
 import {Box, Button, Container, type SxProps, Typography, useTheme} from '@mui/material';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -56,23 +57,26 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
             component="footer"
             role="contentinfo"
             sx={{
-                boxShadow: 'inset 0px 10px 20px rgba(0, 0, 0, 0.06)',
-                backgroundColor: 'background.paper',
+                mt: 'auto',
+                flexShrink: 0,
+                backgroundColor: getCustomerPageSurfaceColor,
+                borderTop: 1,
+                borderColor: 'divider',
             }}
         >
             <Container>
                 <Box
                     sx={{
                         display: 'flex',
-                        pt: 8,
-                        pb: 10,
+                        pt: 4,
+                        pb: 6,
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         [theme.breakpoints.down('md')]: {
                             flexDirection: 'column',
                             alignItems: 'flex-start',
-                            pt: 4,
-                            pb: 7,
+                            pt: 3,
+                            pb: 4,
                         },
                     }}
                 >
@@ -81,8 +85,8 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                             <Logo
                                 key={'logo-' + resolvedLogoUrl}
                                 updated={version.updated}
-                                src={logoUrl ?? undefined}
-                                srcDark={logoUrlDark ?? undefined}
+                                src={logoUrl}
+                                srcDark={logoUrlDark}
                                 width={200}
                                 height={100}
                             /> :

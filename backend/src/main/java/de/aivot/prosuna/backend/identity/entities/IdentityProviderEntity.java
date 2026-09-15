@@ -43,6 +43,10 @@ public class IdentityProviderEntity {
     private String metadataIdentifier;
 
     @Nonnull
+    @Column(length = 255, nullable = false)
+    private String uniqueIdAttribute;
+
+    @Nonnull
     @Column(columnDefinition = "smallint")
     private IdentityProviderType type;
 
@@ -112,13 +116,14 @@ public class IdentityProviderEntity {
         if (o == null || getClass() != o.getClass()) return false;
 
         IdentityProviderEntity that = (IdentityProviderEntity) o;
-        return key.equals(that.key) && metadataIdentifier.equals(that.metadataIdentifier) && type == that.type && name.equals(that.name) && description.equals(that.description) && Objects.equals(iconAssetKey, that.iconAssetKey) && authorizationEndpoint.equals(that.authorizationEndpoint) && tokenEndpoint.equals(that.tokenEndpoint) && Objects.equals(userinfoEndpoint, that.userinfoEndpoint) && Objects.equals(endSessionEndpoint, that.endSessionEndpoint) && clientId.equals(that.clientId) && Objects.equals(clientSecretKey, that.clientSecretKey) && Objects.equals(attributes, that.attributes) && defaultScopes.equals(that.defaultScopes) && additionalParams.equals(that.additionalParams) && isEnabled.equals(that.isEnabled) && isTestProvider.equals(that.isTestProvider) && Objects.equals(pkceMethod, that.pkceMethod);
+        return key.equals(that.key) && metadataIdentifier.equals(that.metadataIdentifier) && Objects.equals(uniqueIdAttribute, that.uniqueIdAttribute) && type == that.type && name.equals(that.name) && description.equals(that.description) && Objects.equals(iconAssetKey, that.iconAssetKey) && authorizationEndpoint.equals(that.authorizationEndpoint) && tokenEndpoint.equals(that.tokenEndpoint) && Objects.equals(userinfoEndpoint, that.userinfoEndpoint) && Objects.equals(endSessionEndpoint, that.endSessionEndpoint) && clientId.equals(that.clientId) && Objects.equals(clientSecretKey, that.clientSecretKey) && Objects.equals(attributes, that.attributes) && defaultScopes.equals(that.defaultScopes) && additionalParams.equals(that.additionalParams) && isEnabled.equals(that.isEnabled) && isTestProvider.equals(that.isTestProvider) && Objects.equals(pkceMethod, that.pkceMethod);
     }
 
     @Override
     public int hashCode() {
         int result = key.hashCode();
         result = 31 * result + metadataIdentifier.hashCode();
+        result = 31 * result + Objects.hashCode(uniqueIdAttribute);
         result = 31 * result + type.hashCode();
         result = 31 * result + name.hashCode();
         result = 31 * result + description.hashCode();
@@ -159,6 +164,16 @@ public class IdentityProviderEntity {
 
     public IdentityProviderEntity setMetadataIdentifier(@Nonnull String metadataIdentifier) {
         this.metadataIdentifier = metadataIdentifier;
+        return this;
+    }
+
+    @Nonnull
+    public String getUniqueIdAttribute() {
+        return uniqueIdAttribute;
+    }
+
+    public IdentityProviderEntity setUniqueIdAttribute(@Nonnull String uniqueIdAttribute) {
+        this.uniqueIdAttribute = uniqueIdAttribute;
         return this;
     }
 

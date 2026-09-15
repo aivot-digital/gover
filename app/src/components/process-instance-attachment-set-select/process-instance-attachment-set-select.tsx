@@ -4,6 +4,7 @@ import type {
     ProcessNodeDefinitionMetadataForwardedAttachmentSet,
 } from '../../modules/process/entities/process-node-definition-metadata';
 import {FormField, type FormFieldLayoutProps, getNativeInputAriaProps} from '../form-field';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
 
 interface AttachmentSetOption {
     dataKey: string;
@@ -90,6 +91,11 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
         : undefined;
 
     const isSingleSelect = effectiveMaxItems === 1;
+    const errorText = errors?.filter((error) => error.trim().length > 0).join(' ');
+    const controlSx: SxProps<Theme> = [
+        {'& .MuiInputBase-root': {minHeight: FormFieldTokens.controlMinHeight}},
+        ...(Array.isArray(props.controlSx) ? props.controlSx : [props.controlSx]),
+    ];
 
     const updateSelectedOptions = (updatedOptions: AttachmentSetOption[]) => {
         if (readOnly) {
@@ -131,7 +137,6 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
                 }}
             >
                 <Box
-                    component="span"
                     sx={{
                         color: isError ? 'error.main' : 'text.secondary',
                     }}
@@ -142,7 +147,6 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
                 {
                     effectiveMaxItems != null &&
                     <Box
-                        component="span"
                         sx={{
                             color: 'text.secondary',
                             fontVariantNumeric: 'tabular-nums',
@@ -172,6 +176,9 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
         <TextField
             {...params}
             size="small"
+            // FormField owns the spacing; do not inherit the theme's TextField margins.
+            margin="none"
+            fullWidth
             placeholder={selectedOptions.length > 0 ? undefined : placeholder ?? undefined}
             error={field.invalid}
             slotProps={{
@@ -190,13 +197,14 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
             id={props.id}
             label={label}
             hint={renderHelperText(hint)}
-            error={errors != null ? renderHelperText(errors.join(' '), true) : undefined}
+            error={errorText ? renderHelperText(errorText, true) : undefined}
             required={Boolean(required)}
             disabled={Boolean(disabled)}
             readOnly={Boolean(readOnly)}
             busy={Boolean(busy)}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             margin={props.margin}
             showOptionalIndicator={props.showOptionalIndicator}
@@ -205,6 +213,7 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
             {(field) => isSingleSelect ? (
                 <Autocomplete<AttachmentSetOption, false, false, false>
                     id={field.controlId}
+                    size="small"
                     fullWidth
                     options={options}
                     value={selectedOptions[0] ?? null}
@@ -216,11 +225,12 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
                     onChange={(_, updatedOption) => updateSelectedOptions(updatedOption == null ? [] : [updatedOption])}
                     renderOption={renderOption}
                     renderInput={(params) => renderInput(params, field)}
-                    sx={props.controlSx}
+                    sx={controlSx}
                 />
             ) : (
                 <Autocomplete<AttachmentSetOption, true, false, false>
                     id={field.controlId}
+                    size="small"
                     multiple
                     fullWidth
                     filterSelectedOptions
@@ -239,7 +249,7 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
                     onChange={(_, updatedOptions) => updateSelectedOptions(updatedOptions)}
                     renderOption={renderOption}
                     renderInput={(params) => renderInput(params, field)}
-                    sx={props.controlSx}
+                    sx={controlSx}
                 />
             )}
         </FormField>

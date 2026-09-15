@@ -1,3 +1,4 @@
+import {InputMode} from '../../../models/input-mode';
 import {
     applyComputedErrors,
     AuthoredElementValues,
@@ -8,13 +9,25 @@ import {
     createComputedElementSubState,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
+    EffectiveElementValues,
+    type EffectiveReplicatingContainerElementValue,
     hasAnyErrorRecursively,
-    isReplicatingContainerElementValue,
+    type ReplicatingContainerElementValue,
     resolveComputedElementSubState,
     resolveComputedElementSubStateStates,
 } from '../../../models/element-data';
 import {AnyElement} from '../../../models/elements/any-element';
-import React, {createContext, RefObject, useContext, useEffect, useMemo, useRef, useState} from 'react';
+import React, {
+    createContext,
+    forwardRef,
+    RefObject,
+    useContext,
+    useEffect,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../../../utils/flatten-elements';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {isAnyElementWithChildren} from '../../../models/elements/any-element-with-children';
@@ -38,6 +51,8 @@ import {
     ViewDispatcherMode,
 } from '../../../components/view-dispatcher/view-dispatcher.context';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
+import {deepEquals} from '../../../utils/equality-utils';
+import {type InputVariableSuggestion} from '../../../models/input-mode';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
@@ -47,6 +62,7 @@ interface ElementDerivationContextProps {
     computedErrors?: ComputedElementErrors | null;
     onDerivedDataChange?: (newData: DerivedRuntimeElementData) => void;
     disabled?: boolean;
+    readOnly?: boolean;
     onDerivationStarted?: (triggeringElementData: AuthoredElementValues) => void;
     onDerivationFinished?: (derivedElementData: DerivedRuntimeElementData) => void;
     suppressErrors?: boolean;
@@ -57,6 +73,13 @@ interface ElementDerivationContextProps {
     disableVisibilities?: boolean;
     highlightedElementId?: string | null;
     taskViewMode?: TaskViewMode | null;
+    inputModesEnabled?: boolean;
+    inputModeVariables?: InputVariableSuggestion[];
+    deriveOnMount?: boolean;
+}
+
+export interface ElementDerivationContextHandle {
+    replaceAuthoredElementValues: (newData: AuthoredElementValues) => Promise<DerivedRuntimeElementData>;
 }
 
 interface ElementDerivationContextType {
@@ -102,7 +125,10 @@ export function useElementDerivationContext(): ElementDerivationContextType {
 }
 
 
-export function ElementDerivationContext(props: ElementDerivationContextProps) {
+export const ElementDerivationContext = forwardRef<
+    ElementDerivationContextHandle,
+    ElementDerivationContextProps
+>(function ElementDerivationContext(props, ref) {
     const {
         element,
         authoredElementValues,
@@ -111,6 +137,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         computedErrors,
         onDerivedDataChange,
         disabled,
+        readOnly,
         onDerivationStarted,
         onDerivationFinished,
         suppressErrors,
@@ -121,6 +148,9 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         disableVisibilities = false,
         highlightedElementId,
         taskViewMode = null,
+        inputModesEnabled = false,
+        inputModeVariables = [],
+        deriveOnMount = true,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -163,7 +193,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
         return {
             renderMode: renderMode,
-            isEditable: !disabled,
+            isEditable: !disabled && !readOnly,
             showInvisible: false,
             showTechnical: true,
             scrollContainerRef: null,
@@ -179,6 +209,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         };
     }, [
         disabled,
+        readOnly,
         element,
         authoredElementValues,
         derivedData,
@@ -199,6 +230,10 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     }, [computedErrors]);
 
     useEffect(() => {
+        if (!deriveOnMount) {
+            return;
+        }
+
         const controller = new AbortController();
         let isActive = true;
 
@@ -215,11 +250,18 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             isActive = false;
             controller.abort();
         };
-    }, [element, disableValidation, disableVisibilities, renderMode]);
+    }, [element, disableValidation, disableVisibilities, renderMode, deriveOnMount]);
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
         const normalizedNewData = normalizeReplicatingContainerValues(element, newData);
-        const patchedDerivedData = patchDerivedDataWithAuthoredValues(element, normalizedNewData, baseDerivedData);
+        const changedDynamicElementIds = new Set<string>();
+        const patchedDerivedData = patchDerivedDataWithAuthoredValues(
+            element,
+            normalizedNewData,
+            authoredElementValues,
+            baseDerivedData,
+            changedDynamicElementIds,
+        );
         setInternalDerivedData(patchedDerivedData);
         onDerivedDataChange?.(patchedDerivedData);
         onAuthoredElementValuesChange(normalizedNewData);
@@ -237,7 +279,9 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             ));
         }
 
-        const relevantIds: string[] = [];
+        // Input-mode expressions have no referencedIds contract. Their own edits still require backend derivation,
+        // which remains responsible for deciding whether to evaluate them or defer them in authoring contexts.
+        const relevantIds: string[] = [...changedDynamicElementIds];
         for (const id of triggeringElementIds) {
             for (const element of allElements) {
                 if (checkElementReferencesId(element, id)) {
@@ -349,6 +393,24 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         });
     };
 
+    const replaceAuthoredElementValues = async (newData: AuthoredElementValues) => {
+        const normalizedNewData = normalizeReplicatingContainerValues(element, newData);
+        const patchedDerivedData = clearDerivedErrorsRecursively(
+            patchDerivedDataWithAuthoredValues(element, normalizedNewData, authoredElementValues, baseDerivedData, new Set()),
+        );
+
+        setErrorSuppressionTargets([]);
+        setInternalDerivedData(patchedDerivedData);
+        onDerivedDataChange?.(patchedDerivedData);
+        onAuthoredElementValuesChange(normalizedNewData);
+
+        return await deriveWithMinimumVisibleDuration(normalizedNewData, ['ALL']);
+    };
+
+    useImperativeHandle(ref, () => ({
+        replaceAuthoredElementValues,
+    }));
+
     return (
         <ElementDerivationContextProvider
             value={contextValue}
@@ -363,6 +425,9 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                     showInvisibleElements: disableVisibilities && renderMode === ViewDispatcherMode.Editor,
                     highlightedElementId: highlightedElementId,
                     taskViewMode,
+                    inputModesEnabled,
+                    inputModeVariables,
+                    readOnly,
                 }}
             >
                 <ViewDispatcherComponent
@@ -403,7 +468,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             </ViewDispatcherContextProvider>
         </ElementDerivationContextProvider>
     );
-}
+});
 
 function checkElementReferencesId(element: AnyElement, id: string): boolean {
     if (element.visibility?.referencedIds?.includes(id)) {
@@ -423,7 +488,9 @@ function checkElementReferencesId(element: AnyElement, id: string): boolean {
 function patchDerivedDataWithAuthoredValues(
     rootElement: AnyElement,
     authoredElementValues: AuthoredElementValues,
+    previousAuthoredElementValues: AuthoredElementValues,
     derivedData: DerivedRuntimeElementData,
+    changedDynamicElementIds: Set<string>,
 ): DerivedRuntimeElementData {
     const effectiveValues = {
         ...derivedData.effectiveValues,
@@ -432,8 +499,10 @@ function patchDerivedDataWithAuthoredValues(
     const elementStates = patchComputedElementStatesWithAuthoredValues(
         rootElement,
         authoredElementValues,
+        previousAuthoredElementValues,
         derivedData.elementStates,
         effectiveValues,
+        changedDynamicElementIds,
     );
 
     return createDerivedRuntimeElementData({
@@ -446,11 +515,14 @@ function patchDerivedDataWithAuthoredValues(
 function patchComputedElementStatesWithAuthoredValues(
     currentElement: AnyElement,
     authoredElementValues: AuthoredElementValues,
+    previousAuthoredElementValues: AuthoredElementValues,
     currentElementStates: ComputedElementStates,
-    effectiveValues: AuthoredElementValues,
+    effectiveValues: EffectiveElementValues,
+    changedDynamicElementIds: Set<string>,
 ): ComputedElementStates {
     const hasAuthoredValue = Object.prototype.hasOwnProperty.call(authoredElementValues, currentElement.id);
     const authoredValue = authoredElementValues[currentElement.id];
+    const previousAuthoredValue = previousAuthoredElementValues[currentElement.id];
     const currentElementState = currentElementStates[currentElement.id];
     let nextElementStates = currentElementStates;
 
@@ -462,6 +534,16 @@ function patchComputedElementStatesWithAuthoredValues(
         currentElementState?.valueSource !== ComputedElementValueSource.Identity &&
         currentElementState?.disabled !== true
     ) {
+        if (authoredValue != null && authoredValue.type !== InputMode.Literal) {
+            // Editing another field must not erase an existing result or the states of a dynamic container.
+            if (deepEquals(authoredValue, previousAuthoredValue)) {
+                return nextElementStates;
+            }
+            changedDynamicElementIds.add(currentElement.id);
+        } else if (previousAuthoredValue != null && previousAuthoredValue.type !== InputMode.Literal) {
+            // Re-derive mode switches too, so an in-flight expression result cannot replace the new literal.
+            changedDynamicElementIds.add(currentElement.id);
+        }
         nextElementStates = {
             ...nextElementStates,
             [currentElement.id]: {
@@ -469,18 +551,52 @@ function patchComputedElementStatesWithAuthoredValues(
                 valueSource: ComputedElementValueSource.Authored,
             },
         };
-        effectiveValues[currentElement.id] = authoredValue;
+        const optimisticEffectiveValue = authoredValue?.type === InputMode.Literal ? authoredValue.value : null;
+        const previousEffectiveValue = effectiveValues[currentElement.id];
+        effectiveValues[currentElement.id] = optimisticEffectiveValue;
 
         if (isReplicatingContainerLayout(currentElement)) {
+            const previousRows: EffectiveReplicatingContainerElementValue[] = Array.isArray(previousEffectiveValue)
+                ? previousEffectiveValue : [];
+            const previousAuthoredRows: ReplicatingContainerElementValue[] =
+                previousAuthoredValue?.type === InputMode.Literal && Array.isArray(previousAuthoredValue.value)
+                    ? previousAuthoredValue.value : [];
+            const rows: ReplicatingContainerElementValue[] | null = Array.isArray(optimisticEffectiveValue)
+                ? optimisticEffectiveValue : null;
+            const projectedRows = rows?.map((row, index) => {
+                const rowId = row.id;
+                const previousRow = rowId != null
+                    ? previousRows.find((candidate) => candidate.id === rowId)
+                    : previousRows[index];
+                const previousAuthoredRow = rowId != null
+                    ? previousAuthoredRows.find((candidate) => candidate.id === rowId)
+                    : previousAuthoredRows[index];
+                const previousSubState = resolveComputedElementSubState(currentElementState?.subStates, rowId, index);
+                const rowEffectiveValues = {...previousRow?.values};
+                let rowStates = resolveComputedElementSubStateStates(previousSubState);
+
+                // Only schema-defined child fields contain authored envelopes. Ordinary object payloads remain opaque.
+                // Match prior values by row ID so reordering cannot move derived or identity values to another row.
+                for (const child of currentElement.children ?? []) {
+                    rowStates = patchComputedElementStatesWithAuthoredValues(
+                        child,
+                        row.values ?? {},
+                        previousAuthoredRow?.values ?? {},
+                        rowStates,
+                        rowEffectiveValues,
+                        changedDynamicElementIds,
+                    );
+                }
+
+                return {
+                    row: {id: rowId, values: rowEffectiveValues},
+                    state: createComputedElementSubState(rowId, rowStates),
+                };
+            });
+            effectiveValues[currentElement.id] = projectedRows?.map(({row}) => row) ?? optimisticEffectiveValue;
             nextElementStates[currentElement.id] = {
                 ...nextElementStates[currentElement.id],
-                subStates: Array.isArray(authoredValue) ?
-                    authoredValue.map((row, index) => {
-                        const rowId = isReplicatingContainerElementValue(row) ? row.id : null;
-                        const previousSubState = resolveComputedElementSubState(currentElementState?.subStates, rowId, index);
-                        return createComputedElementSubState(rowId, resolveComputedElementSubStateStates(previousSubState));
-                    }) :
-                    null,
+                subStates: projectedRows?.map(({state}) => state) ?? null,
             };
         }
     }
@@ -494,8 +610,10 @@ function patchComputedElementStatesWithAuthoredValues(
             nextElementStates = patchComputedElementStatesWithAuthoredValues(
                 child,
                 authoredElementValues,
+                previousAuthoredElementValues,
                 nextElementStates,
                 effectiveValues,
+                changedDynamicElementIds,
             );
         }
     }

@@ -5,12 +5,11 @@ import {
     formFieldLabelActionSx,
     formFieldLabelRowSx,
     formFieldLabelSx,
-    formFieldRootSx,
-    getFormFieldMarginSx,
 } from '../../theming/form-field-tokens';
 import {type FormFieldMargin, mergeAriaIds} from './form-field';
 import {FormFieldLabelContent} from './form-field-label-content';
 import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
+import {FormFieldFrame, hasExternalAction} from './form-field-frame';
 
 export interface FormFieldGroupContext {
     groupId: string;
@@ -27,6 +26,8 @@ export interface FormFieldGroupContext {
 export type FormFieldGroupLabelAction = ReactNode | ((context: FormFieldGroupContext) => ReactNode);
 
 export interface FormFieldGroupLayoutProps {
+    /** Independent action outside the disabled fieldset, stacked after its helper in narrow containers. */
+    externalAction?: ReactNode;
     id?: string;
     ariaDescribedBy?: string;
     labelAction?: FormFieldGroupLabelAction;
@@ -36,6 +37,7 @@ export interface FormFieldGroupLayoutProps {
 }
 
 export interface FormFieldGroupProps {
+    externalAction?: ReactNode;
     id?: string;
     label: ReactNode;
     ariaDescribedBy?: string;
@@ -92,75 +94,80 @@ export function FormFieldGroup(props: FormFieldGroupProps) {
     const labelAction = typeof props.labelAction === 'function'
         ? props.labelAction(groupContext)
         : props.labelAction;
+    const control = typeof props.children === 'function' ? props.children(groupContext) : props.children;
 
     return (
-        <Box
-            component="fieldset"
-            id={groupId}
-            disabled={disabled || undefined}
-            data-form-field-group
-            data-readonly={readOnly || undefined}
-            data-busy={busy || undefined}
-            data-invalid={hasError || undefined}
-            aria-labelledby={labelId}
-            aria-describedby={describedBy}
-            aria-disabled={disabled || busy ? true : undefined}
-            aria-readonly={readOnly || busy ? true : undefined}
-            aria-busy={busy ? true : undefined}
-            aria-required={required ? true : undefined}
-            aria-invalid={hasError ? true : undefined}
-            sx={[
-                formFieldRootSx,
-                {border: 0, p: 0, minInlineSize: 0},
-                getFormFieldMarginSx(margin),
-                ...(Array.isArray(props.sx) ? props.sx : [props.sx]),
-            ]}
-        >
-            <Box
-                component="legend"
-                sx={{float: 'none', width: '100%', maxWidth: '100%', p: 0}}
-            >
-                <Box component="span" sx={formFieldLabelRowSx}>
-                    <FormLabel
-                        component="span"
-                        id={labelId}
-                        title={typeof props.label === 'string' ? props.label : undefined}
-                        disabled={disabled || busy}
-                        error={hasError}
-                        sx={formFieldLabelSx}
+        <FormFieldFrame externalAction={props.externalAction} margin={margin} sx={props.sx}>
+            {(frameSx) => (
+                <Box
+                    component="fieldset"
+                    id={groupId}
+                    disabled={disabled || undefined}
+                    data-form-field-group
+                    data-readonly={readOnly || undefined}
+                    data-busy={busy || undefined}
+                    data-invalid={hasError || undefined}
+                    aria-labelledby={labelId}
+                    aria-describedby={describedBy}
+                    aria-disabled={disabled || busy ? true : undefined}
+                    aria-readonly={readOnly || busy ? true : undefined}
+                    aria-busy={busy ? true : undefined}
+                    aria-required={required ? true : undefined}
+                    aria-invalid={hasError ? true : undefined}
+                    sx={[
+                        ...(Array.isArray(frameSx) ? frameSx : [frameSx]),
+                        // Native fieldsets must shrink inside Grid/Flex just like a single control.
+                        {border: 0, p: 0, minInlineSize: 0},
+                    ]}
+                >
+                    <Box
+                        component="legend"
+                        data-form-field-label
+                        sx={{float: 'none', width: '100%', maxWidth: '100%', p: 0}}
                     >
-                        <FormFieldLabelContent
-                            required={required}
-                            showOptionalIndicator={props.showOptionalIndicator}
-                        >
-                            {props.label}
-                        </FormFieldLabelContent>
-                    </FormLabel>
+                        <Box component="span" sx={formFieldLabelRowSx}>
+                            <FormLabel
+                                component="span"
+                                id={labelId}
+                                title={typeof props.label === 'string' ? props.label : undefined}
+                                disabled={disabled || busy}
+                                error={hasError}
+                                sx={formFieldLabelSx}
+                            >
+                                <FormFieldLabelContent
+                                    required={required}
+                                    showOptionalIndicator={props.showOptionalIndicator}
+                                >
+                                    {props.label}
+                                </FormFieldLabelContent>
+                            </FormLabel>
 
-                    {hasContent(labelAction) && (
-                        <Box data-form-field-label-action sx={formFieldLabelActionSx}>
-                            {labelAction}
+                            {hasContent(labelAction) && (
+                                <Box data-form-field-label-action sx={formFieldLabelActionSx}>
+                                    {labelAction}
+                                </Box>
+                            )}
                         </Box>
+                    </Box>
+
+                    {hasExternalAction(props.externalAction)
+                        ? <Box data-form-field-control>{control}</Box>
+                        : control}
+
+                    {hasHelperText && (
+                        <FormHelperText
+                            id={helperTextId}
+                            component="div"
+                            error={hasError}
+                            disabled={disabled || busy}
+                            role={hasError ? 'alert' : undefined}
+                            sx={formFieldHelperTextSx}
+                        >
+                            {helperText}
+                        </FormHelperText>
                     )}
                 </Box>
-            </Box>
-
-            {typeof props.children === 'function'
-                ? props.children(groupContext)
-                : props.children}
-
-            {hasHelperText && (
-                <FormHelperText
-                    id={helperTextId}
-                    component="div"
-                    error={hasError}
-                    disabled={disabled || busy}
-                    role={hasError ? 'alert' : undefined}
-                    sx={formFieldHelperTextSx}
-                >
-                    {helperText}
-                </FormHelperText>
             )}
-        </Box>
+        </FormFieldFrame>
     );
 }

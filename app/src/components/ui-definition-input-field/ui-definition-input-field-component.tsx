@@ -433,6 +433,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                 margin={props.margin}
                 showOptionalIndicator={props.showOptionalIndicator}
                 sx={props.sx}
+                externalAction={props.externalAction}
                 labelAction={(field) => {
                     const suppliedLabelAction = typeof props.labelAction === 'function'
                         ? props.labelAction(field)
@@ -624,6 +625,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                             onClick: handleSettingsMenuOpen,
                         },
                     ]}
+                    bordered
                 >
                     {label}
                 </DialogTitleWithClose>
@@ -650,6 +652,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                 <Box
                                     sx={{
                                         p: 2,
+                                        px: 2.8,
                                         height: '100%',
                                         overflowY: 'auto',
                                     }}

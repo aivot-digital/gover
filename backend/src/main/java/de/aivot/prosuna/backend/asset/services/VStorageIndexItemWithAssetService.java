@@ -80,11 +80,14 @@ public class VStorageIndexItemWithAssetService implements ReadEntityService<VSto
             );
         }
 
-        return builder.and(
-                builder.isFalse(directoryPath),
-                builder.or(
-                        builder.isTrue(assetIsPrivatePath),
-                        builder.isNull(assetIsPrivatePath)
+        return builder.or(
+                builder.isTrue(directoryPath),
+                builder.and(
+                        builder.isFalse(directoryPath),
+                        builder.or(
+                                builder.isTrue(assetIsPrivatePath),
+                                builder.isNull(assetIsPrivatePath)
+                        )
                 )
         );
     }

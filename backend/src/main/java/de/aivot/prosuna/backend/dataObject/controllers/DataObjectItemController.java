@@ -78,19 +78,21 @@ public class DataObjectItemController {
 
         filter.setSchemaKey(schemaKey);
 
-        var schema = schemaService
+        schemaService
                 .retrieve(schemaKey)
                 .orElseThrow(ResponseException::notFound);
 
         return service
                 .list(pageable, filter)
-                .map(i -> DataObjectItemResponseDTO.fromEntity(i, schema));
+                .map(DataObjectItemResponseDTO::fromEntity);
     }
 
     @PostMapping("")
     @Operation(
             summary = "Create Data Object Item",
             description = "Create a new data object item under a specific schema. " +
+                    "Data contains plain values, including nested row values, not authored input-mode envelopes. " +
+                    "The backend derives and validates these values before storing and returning them. " +
                     "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_ITEM_CREATE + "`."
     )
     public DataObjectItemResponseDTO create(
@@ -133,7 +135,7 @@ public class DataObjectItemController {
                 .log();
 
         return DataObjectItemResponseDTO
-                .fromEntity(created, schema);
+                .fromEntity(created);
     }
 
     @GetMapping("{itemId}/")
@@ -150,7 +152,7 @@ public class DataObjectItemController {
         permissionService
                 .requireSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_ITEM_READ);
 
-        var schema = schemaService
+        schemaService
                 .retrieve(schemaKey)
                 .orElseThrow(ResponseException::notFound);
 
@@ -159,7 +161,7 @@ public class DataObjectItemController {
         return service
                 .retrieve(id)
                 .filter(entity -> entity.getDeleted() == null)
-                .map(i -> DataObjectItemResponseDTO.fromEntity(i, schema))
+                .map(DataObjectItemResponseDTO::fromEntity)
                 .orElseThrow(ResponseException::notFound);
     }
 
@@ -167,6 +169,8 @@ public class DataObjectItemController {
     @Operation(
             summary = "Update Data Object Item",
             description = "Update an existing data object item under a specific schema. " +
+                    "Data contains plain values, including nested row values, not authored input-mode envelopes. " +
+                    "The backend derives and validates these values before storing and returning them. " +
                     "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_ITEM_UPDATE + "`."
     )
     public DataObjectItemResponseDTO update(
@@ -213,7 +217,7 @@ public class DataObjectItemController {
                 .log(); // TODO: Add Diff
 
         return DataObjectItemResponseDTO
-                .fromEntity(updated, schema);
+                .fromEntity(updated);
     }
 
     @DeleteMapping("{itemId}/")

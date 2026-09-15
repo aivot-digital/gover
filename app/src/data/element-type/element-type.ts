@@ -51,4 +51,6 @@ export enum ElementType {
     StoragePathSelector = 49,
     PaymentConfigElement = 50,
     LinkButton = 51,
+    SecretSelectInput = 52,
+    AssetSelectInput = 53,
 }

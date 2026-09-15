@@ -174,6 +174,7 @@ export function ElementWidthSelector(props: ElementWidthSelectorProps) {
             disabled={disabled}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             margin={props.margin}
             showOptionalIndicator={props.showOptionalIndicator ?? false}

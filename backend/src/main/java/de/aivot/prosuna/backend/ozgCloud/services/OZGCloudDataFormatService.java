@@ -13,7 +13,9 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElemen
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
+import de.aivot.prosuna.backend.elements.models.input.LiteralAuthoredInputValue;
 import de.aivot.prosuna.backend.enums.TableColumnDataType;
 import de.aivot.prosuna.backend.ozgCloud.models.OZGCloudFormDataItem;
 import jakarta.annotation.Nonnull;
@@ -22,6 +24,7 @@ import jakarta.annotation.Nullable;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class OZGCloudDataFormatService {
@@ -836,8 +839,8 @@ public class OZGCloudDataFormatService {
         }
 
         private int getReplicatingRowCount(@Nonnull ReplicatingContainerLayoutElement element) {
-            var authoredRows = ReplicatingContainerLayoutElement._formatValue(authoredElementValues.get(element.getId()));
-            var effectiveRows = ReplicatingContainerLayoutElement._formatValue(runtimeElementData.getEffectiveValues().get(element.getId()));
+            var authoredRows = ReplicatingContainerLayoutElement._formatValue(authoredElementValues.getLiteral(element.getId()));
+            var effectiveRows = getEffectiveRows(runtimeElementData.getEffectiveValues().get(element.getId()));
             var subStates = runtimeElementData
                     .getElementStates()
                     .getOrDefault(element.getId(), ComputedElementState.create())
@@ -850,8 +853,8 @@ public class OZGCloudDataFormatService {
         }
 
         private FormattingContext createRowContext(@Nonnull ReplicatingContainerLayoutElement element, int index) {
-            var authoredRows = ReplicatingContainerLayoutElement._formatValue(authoredElementValues.get(element.getId()));
-            var effectiveRows = ReplicatingContainerLayoutElement._formatValue(runtimeElementData.getEffectiveValues().get(element.getId()));
+            var authoredRows = ReplicatingContainerLayoutElement._formatValue(authoredElementValues.getLiteral(element.getId()));
+            var effectiveRows = getEffectiveRows(runtimeElementData.getEffectiveValues().get(element.getId()));
             var subStates = runtimeElementData
                     .getElementStates()
                     .getOrDefault(element.getId(), ComputedElementState.create())
@@ -861,7 +864,7 @@ public class OZGCloudDataFormatService {
                     ? getRowValues(authoredRows.get(index))
                     : new AuthoredElementValues();
             var rowEffectiveValues = effectiveRows != null && index < effectiveRows.size()
-                    ? toEffectiveElementValues(getRowValues(effectiveRows.get(index)))
+                    ? getRowValues(effectiveRows.get(index))
                     : toEffectiveElementValues(rowAuthoredValues);
             var rowElementStates = resolveRowElementStates(
                     subStates,
@@ -883,7 +886,7 @@ public class OZGCloudDataFormatService {
 
         @Nonnull
         private ComputedElementStates resolveRowElementStates(@Nullable List<ComputedElementSubState> subStates,
-                                                              @Nullable ReplicatingContainerLayoutElementValue effectiveRow,
+                                                              @Nullable EffectiveReplicatingContainerLayoutElementValue effectiveRow,
                                                               @Nullable ReplicatingContainerLayoutElementValue authoredRow,
                                                               int index) {
             if (subStates == null) {
@@ -905,8 +908,41 @@ public class OZGCloudDataFormatService {
         @Nonnull
         private EffectiveElementValues toEffectiveElementValues(@Nonnull AuthoredElementValues values) {
             var effectiveValues = new EffectiveElementValues();
-            effectiveValues.putAll(values);
+            for (var entry : values.entrySet()) {
+                var literal = entry.getValue();
+                if (literal instanceof LiteralAuthoredInputValue literalValue) {
+                    effectiveValues.put(entry.getKey(), literalValue.value());
+                }
+            }
             return effectiveValues;
+        }
+
+        @Nullable
+        private List<EffectiveReplicatingContainerLayoutElementValue> getEffectiveRows(@Nullable Object value) {
+            if (!(value instanceof Collection<?> rows)) {
+                return null;
+            }
+            var result = new LinkedList<EffectiveReplicatingContainerLayoutElementValue>();
+            for (var rawRow : rows) {
+                if (rawRow instanceof EffectiveReplicatingContainerLayoutElementValue row) {
+                    result.add(row);
+                } else if (rawRow instanceof Map<?, ?> map) {
+                    var values = new EffectiveElementValues();
+                    var rawValues = map.containsKey("values") ? map.get("values") : map;
+                    if (rawValues instanceof Map<?, ?> valueMap) {
+                        valueMap.forEach((key, item) -> values.put(String.valueOf(key), item));
+                    }
+                    result.add(new EffectiveReplicatingContainerLayoutElementValue()
+                            .setId(map.get("id") instanceof String id ? id : null)
+                            .setValues(values));
+                }
+            }
+            return result.isEmpty() ? null : result;
+        }
+
+        @Nonnull
+        private EffectiveElementValues getRowValues(@Nullable EffectiveReplicatingContainerLayoutElementValue row) {
+            return row != null && row.getValues() != null ? row.getValues() : new EffectiveElementValues();
         }
     }
 
@@ -942,8 +978,8 @@ public class OZGCloudDataFormatService {
 
         private Object getValue() {
             var authoredValue = authoredElementValues.get(element.getId());
-            if (authoredValue != null) {
-                return authoredValue;
+            if (authoredValue instanceof LiteralAuthoredInputValue literal) {
+                return literal.value();
             }
             return runtimeElementData.getEffectiveValues().get(element.getId());
         }

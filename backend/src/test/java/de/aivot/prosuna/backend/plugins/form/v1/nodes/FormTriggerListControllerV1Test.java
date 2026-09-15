@@ -97,8 +97,8 @@ class FormTriggerListControllerV1Test {
                 .setPublicTitle("Hundesteuer online beantragen")
                 .setShowOnFormIndexPage(false);
         var configuration = new AuthoredElementValues();
-        configuration.put(FormTriggerConfigV1.FORM_SLUG, "antrag");
-        configuration.put(FormTriggerConfigV1.FORM_LAYOUT, formLayout);
+        configuration.putLiteral(FormTriggerConfigV1.FORM_SLUG, "antrag");
+        configuration.putLiteral(FormTriggerConfigV1.FORM_LAYOUT, formLayout);
         var node = new ProcessNodeEntity(
                 7,
                 42,
@@ -198,7 +198,7 @@ class FormTriggerListControllerV1Test {
                 null
         );
         var configuration = new AuthoredElementValues();
-        configuration.put(FormTriggerConfigV1.FORM_SLUG, "antrag");
+        configuration.putLiteral(FormTriggerConfigV1.FORM_SLUG, "antrag");
         var node = new ProcessNodeEntity(
                 8,
                 42,

@@ -17,6 +17,12 @@ export const FormFieldTokens = {
 } as const;
 
 export const formFieldRootSx = {
+    // Match MUI FormControl's layout and keep absolutely positioned assistive content local to the field.
+    display: 'inline-flex',
+    flexDirection: 'column',
+    position: 'relative',
+    verticalAlign: 'top',
+    m: 0,
     minWidth: 0,
     width: '100%',
     maxWidth: '100%',

@@ -4,7 +4,6 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {StringListInput} from '../string-list-input/string-list-input';
 import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
-import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import { Grid } from '@mui/material';
 
 export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>) {
@@ -92,24 +91,6 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                         allowEmpty
                         addLabel="Dokument hinzufügen"
                         noItemsHint="Keine Dokumente angegeben"
-                    />
-                </Grid>
-                <Grid
-                    size={{
-                        xs: 12,
-                    }}
-                    sx={{mb: 2}}
-                >
-                    <CheckboxFieldComponent
-                        label="Konfetti nach der Einreichung deaktivieren"
-                        value={props.element.disableConfetti ?? false}
-                        onChange={(val) => {
-                            props.onPatch({
-                                disableConfetti: val,
-                            });
-                        }}
-                        disabled={!props.editable}
-                        hint="Wenn aktiviert, wird nach erfolgreicher Einreichung keine Konfetti-Animation angezeigt."
                     />
                 </Grid>
             </Grid>

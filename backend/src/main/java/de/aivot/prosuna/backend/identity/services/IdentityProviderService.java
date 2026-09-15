@@ -313,7 +313,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
     public void performDelete(@Nonnull IdentityProviderEntity entity) throws ResponseException {
         if (entity.getType() != IdentityProviderType.Custom) {
             throw ResponseException.conflict(
-                    "Der Nutzerkontenanbieter %s (%s) ist ein Systemanbieter und kann nicht gelöscht werden.",
+                    "Der Identitätsanbieter %s (%s) ist ein Systemanbieter und kann nicht gelöscht werden.",
                     entity.getName(),
                     entity.getKey()
             );
@@ -321,7 +321,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
 
         if (entity.getIsEnabled()) {
             throw ResponseException.conflict(
-                    "Der Nutzerkontenanbieter %s (%s) ist noch aktiviert. Bitte deaktivieren Sie den Anbieter, bevor Sie ihn löschen.",
+                    "Der Identitätsanbieter %s (%s) ist noch aktiviert. Bitte deaktivieren Sie den Anbieter, bevor Sie ihn löschen.",
                     entity.getName(),
                     entity.getKey()
             );

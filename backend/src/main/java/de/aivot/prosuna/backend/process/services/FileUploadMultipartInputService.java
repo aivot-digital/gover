@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadIn
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.models.input.LiteralAuthoredInputValue;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
@@ -116,11 +117,16 @@ public class FileUploadMultipartInputService {
                 return;
             }
 
-            values.put(
+            var authoredValue = values.get(fileUploadElement.getId());
+            if (!(authoredValue instanceof LiteralAuthoredInputValue literal)) {
+                return;
+            }
+
+            values.putLiteral(
                     fileUploadElement.getId(),
                     normalizeFileUploadValue(
                             fileUploadElement,
-                            values.get(fileUploadElement.getId()),
+                            literal.value(),
                             remainingFiles,
                             filesByUri,
                             processInstanceId,
@@ -138,7 +144,7 @@ public class FileUploadMultipartInputService {
         }
 
         if (element instanceof ReplicatingContainerLayoutElement replicatingContainer) {
-            var rawValue = values.get(replicatingContainer.getId());
+            var rawValue = values.getLiteral(replicatingContainer.getId());
             if (!(rawValue instanceof List<?> rawRows)) {
                 return;
             }
@@ -176,7 +182,7 @@ public class FileUploadMultipartInputService {
                 normalizedRows.add(rowValue.setValues(rowValues));
             }
 
-            values.put(replicatingContainer.getId(), normalizedRows);
+            values.putLiteral(replicatingContainer.getId(), normalizedRows);
             return;
         }
 

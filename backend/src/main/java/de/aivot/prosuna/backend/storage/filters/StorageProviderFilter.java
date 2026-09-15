@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.storage.filters;
 
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.enums.StorageProviderType;
@@ -8,7 +9,6 @@ import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class StorageProviderFilter implements Filter<StorageProviderEntity> {
@@ -40,7 +40,11 @@ public class StorageProviderFilter implements Filter<StorageProviderEntity> {
                 .withEquals("storageProviderDefinitionVersion", storageProviderDefinitionVersion);
 
         for (var entry : additionalProperties.entrySet()) {
-            filter.withJsonEquals("configuration", List.of(entry.getKey()), entry.getValue());
+            filter.withJsonEquals(
+                    "configuration",
+                    AuthoredElementValues.literalValueJsonPath(entry.getKey()),
+                    entry.getValue()
+            );
         }
 
         return filter.build();

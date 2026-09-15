@@ -36,15 +36,6 @@ public class ProsunaConfig {
     private Map<ProcessNodeType, Integer> processNodeLimits;
     private List<ModuleFlags> moduleFlags;
 
-
-    public String getDefaultLogoUrl() {
-        return createUrl("/assets/default-logo.png");
-    }
-
-    public String getDefaultFaviconUrl() {
-        return createUrl("/assets/default-favicon.ico");
-    }
-
     public String createUrl(String path) {
         var uri = URI.create(prosunaHostname);
         return uri.resolve(path).toString();

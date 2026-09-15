@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
@@ -116,6 +117,7 @@ public class FormTriggerListControllerV1 {
                             String.class,
                             root.get("configuration"),
                             builder.literal(FormTriggerConfigV1.FORM_LAYOUT),
+                            builder.literal(AuthoredElementValues.LITERAL_VALUE_PROPERTY),
                             builder.literal("showOnFormIndexPage")
                     );
 
@@ -161,13 +163,15 @@ public class FormTriggerListControllerV1 {
                     String.class,
                     root.get("configuration"),
                     builder.literal(FormTriggerConfigV1.FORM_LAYOUT),
+                    builder.literal(AuthoredElementValues.LITERAL_VALUE_PROPERTY),
                     builder.literal("publicTitle")
             );
             var formSlug = builder.function(
                     "jsonb_extract_path_text",
                     String.class,
                     root.get("configuration"),
-                    builder.literal(FormTriggerConfigV1.FORM_SLUG)
+                    builder.literal(FormTriggerConfigV1.FORM_SLUG),
+                    builder.literal(AuthoredElementValues.LITERAL_VALUE_PROPERTY)
             );
 
             var processSubquery = query.subquery(ProcessEntity.class);
@@ -195,7 +199,7 @@ public class FormTriggerListControllerV1 {
             var process = retrieveProcess(node, processCache);
             var version = retrieveProcessVersion(node, processVersionCache);
             var formSlug = StringUtils.toNullableTrimmedString(
-                    node.getConfiguration().get(FormTriggerConfigV1.FORM_SLUG)
+                    node.getConfiguration().getLiteral(FormTriggerConfigV1.FORM_SLUG)
             );
             var formLayout = resolveFormLayout(node);
             var formTitle = formLayout != null && StringUtils.isNotNullOrEmpty(formLayout.getPublicTitle())
@@ -228,7 +232,7 @@ public class FormTriggerListControllerV1 {
 
     @Nullable
     private FormLayoutElement resolveFormLayout(@Nonnull ProcessNodeEntity node) {
-        var rawLayout = node.getConfiguration().get(FormTriggerConfigV1.FORM_LAYOUT);
+        var rawLayout = node.getConfiguration().getLiteral(FormTriggerConfigV1.FORM_LAYOUT);
         if (rawLayout == null) {
             return null;
         }

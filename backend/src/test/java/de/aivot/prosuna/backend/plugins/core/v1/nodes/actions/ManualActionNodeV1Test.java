@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
@@ -8,6 +9,8 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
+import de.aivot.prosuna.backend.elements.services.InputVariableResolver;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
@@ -31,7 +34,6 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEvent
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.repositories.VPotentialProcessInstanceAccessRepository;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +63,7 @@ class ManualActionNodeV1Test {
                 assigneeResolverService,
                 new ElementDataTransformService(),
                 derivationService(),
-                new TemplateRenderService(new JavascriptEngineFactoryService(List.of()))
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper())
         );
     }
 
@@ -105,7 +107,7 @@ class ManualActionNodeV1Test {
     }
 
     @Test
-    void getStaffTaskViewData_LoadsSavedDraftFromRuntimeData() throws Exception {
+    void getStaffTaskView_LoadsSavedDraftFromRuntimeData() throws Exception {
         var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada"));
 
         var context = new ProcessNodeExecutionContextUIStaff(
@@ -130,7 +132,8 @@ class ManualActionNodeV1Test {
                 currentProcessData(processData)
         );
 
-        var layout = node.getStaffTaskView(context);
+        var view = node.getStaffTaskView(context);
+        var layout = (GroupLayoutElement) view.layout();
         var description = layout.findChild("manual-action-description-content", RichTextContentElement.class).orElseThrow();
         var dataField = layout.findChild("applicantName", TextInputElement.class).orElseThrow();
         var remarkField = layout.findChild("manualActionRemark", RichTextInputElement.class).orElseThrow();
@@ -142,12 +145,12 @@ class ManualActionNodeV1Test {
         assertTrue(layout.findChild("manual-action-actions-spacer").isPresent());
         assertEquals(
                 List.of(new TaskViewEvent("Aufgabe abschließen", "complete")),
-                node.getStaffTaskViewEvents(context)
+                view.events()
         );
 
-        var data = node.getStaffTaskViewData(context);
-        assertEquals("Grace", data.get("applicantName"));
-        assertEquals("<p>Entwurf gespeichert.</p>", data.get("manualActionRemark"));
+        var data = view.data();
+        assertEquals("Grace", data.getLiteral("applicantName"));
+        assertEquals("<p>Entwurf gespeichert.</p>", data.getLiteral("manualActionRemark"));
     }
 
     @Test
@@ -170,7 +173,7 @@ class ManualActionNodeV1Test {
                 currentProcessData(processData)
         );
 
-        var layout = node.getStaffTaskView(context);
+        var layout = (GroupLayoutElement) node.getStaffTaskView(context).layout();
         var description = layout.findChild("manual-action-description-content", RichTextContentElement.class).orElseThrow();
         var dataField = layout.findChild("applicantName", TextInputElement.class).orElseThrow();
         var remarkField = layout.findChild("manualActionRemark", RichTextInputElement.class).orElseThrow();
@@ -248,10 +251,12 @@ class ManualActionNodeV1Test {
         assertEquals(Map.of("existing", "node-data"), updated.getNodeData());
         assertEquals(Map.of("applicant", Map.of("name", "Ada")), updated.getProcessData());
 
-        var draftData = updated.getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY);
-        assertNotNull(draftData);
-        assertEquals("Grace", ((Map<?, ?>) draftData).get("applicantName"));
-        assertEquals("<p>Entwurf gespeichert.</p>", ((Map<?, ?>) draftData).get("manualActionRemark"));
+        var draftData = assertInstanceOf(
+                AuthoredElementValues.class,
+                updated.getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY)
+        );
+        assertEquals("Grace", draftData.getLiteral("applicantName"));
+        assertEquals("<p>Entwurf gespeichert.</p>", draftData.getLiteral("manualActionRemark"));
     }
 
     @Test
@@ -502,7 +507,9 @@ class ManualActionNodeV1Test {
                 new JavascriptEngineFactoryService(List.of()),
                 new NoCodeEvaluationService(List.of()),
                 new ElementDataTransformService(),
-                new CodeListElementOptionsService(null, null)
+                new CodeListElementOptionsService(null, null),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
+                new InputVariableResolver()
         );
     }
 
@@ -522,7 +529,9 @@ class ManualActionNodeV1Test {
     private static ManualActionNodeV1.ManualActionNodeConfig nodeConfiguration(AuthoredElementValues configuration)
             throws ElementDataConversionException {
         var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(configuration);
+        effectiveValues.put("task_description", configuration.getLiteral("task_description"));
+        effectiveValues.put("ui_definition", configuration.getLiteral("ui_definition"));
+        effectiveValues.put("assignment_context", configuration.getLiteral("assignment_context"));
         return ElementPOJOMapper.mapToPOJO(effectiveValues, ManualActionNodeV1.ManualActionNodeConfig.class);
     }
 

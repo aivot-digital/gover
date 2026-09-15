@@ -23,6 +23,7 @@ describe('ChipInputFieldComponent', () => {
         expect(input).toHaveAttribute('aria-expanded', 'false');
         expect(input).toHaveAccessibleDescription(/Ordnen Sie passende Begriffe zu/);
         expect(input).toHaveAccessibleDescription(/1 von 3 Einträgen verwendet/);
+        expect(screen.getByText('1 von 3 Einträgen verwendet')).toHaveClass('visually-hidden');
     });
 
     it('renders one externally associated error message', () => {

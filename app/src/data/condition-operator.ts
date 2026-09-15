@@ -202,6 +202,8 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
     [ElementType.ProcessDataKeyInput]: null,
     [ElementType.ProcessInstanceAttachmentSetSelect]: null,
     [ElementType.ProcessIdentityIdInput]: null,
+    [ElementType.SecretSelectInput]: null,
+    [ElementType.AssetSelectInput]: null,
     [ElementType.HtmlTemplateInput]: null,
     [ElementType.StoragePathSelector]: 'Für Gleichheitsprüfungen kann der ausgewählte Pfad angegeben werden.',
     [ElementType.ProcessAttachmentDisplay]: null,

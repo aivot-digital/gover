@@ -274,7 +274,7 @@ class NoCodeEvaluationServiceHardeningTest {
         var nodeListIndexResult = service.evaluate(
                 new NoCodeNodeDataReference()
                         .setNodeDataKey("nodeB")
-                        .setPath("1"),
+                        .setPath("[1]"),
                 new DerivedRuntimeElementData(),
                 context
         );
@@ -294,7 +294,7 @@ class NoCodeEvaluationServiceHardeningTest {
         ));
 
         var result = service.evaluate(
-                new NoCodeProcessDataReference().setPath("personen.*.alter"),
+                new NoCodeProcessDataReference().setPath("personen[*].alter"),
                 new DerivedRuntimeElementData(),
                 context,
                 List.of(1)
@@ -317,7 +317,7 @@ class NoCodeEvaluationServiceHardeningTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> service.evaluate(
-                        new NoCodeProcessDataReference().setPath("personen.*.alter"),
+                        new NoCodeProcessDataReference().setPath("personen[*].alter"),
                         new DerivedRuntimeElementData(),
                         context
                 )

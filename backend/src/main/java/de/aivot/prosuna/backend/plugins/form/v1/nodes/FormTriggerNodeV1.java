@@ -8,12 +8,14 @@ import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.uiPresets.PaymentGroupPreset;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
@@ -42,16 +44,13 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
-import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
-import de.aivot.prosuna.backend.process.models.ProcessNodePort;
+import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultNoop;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
@@ -117,6 +116,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final JsonMapper jsonMapper;
+    private final AuthoredInputValueService authoredInputValueService;
 
     public FormTriggerNodeV1(PublicUrlService publicUrlService,
                              ProcessNodeRepository processNodeRepository,
@@ -129,7 +129,9 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                              ProsunaConfig prosunaConfig,
                              PdfService pdfService,
                              ProcessInstanceAttachmentService processInstanceAttachmentService,
-                             ProcessInstanceAttachmentSetService processInstanceAttachmentSetService, JsonMapper jsonMapper) {
+                             ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
+                             JsonMapper jsonMapper,
+                             AuthoredInputValueService authoredInputValueService) {
         this.publicUrlService = publicUrlService;
         this.processNodeRepository = processNodeRepository;
         this.pdfService = pdfService;
@@ -143,6 +145,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         this.processService = processService;
         this.prosunaConfig = prosunaConfig;
         this.jsonMapper = jsonMapper;
+        this.authoredInputValueService = authoredInputValueService;
     }
 
     @Nonnull
@@ -271,6 +274,15 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                         identity.getId(),
                         identity.getTitle(),
                         identity.getDescription(),
+                        identity.getOptions() == null
+                                ? List.of()
+                                : identity.getOptions()
+                                        .stream()
+                                        .filter(Objects::nonNull)
+                                        .map(IdentityConfigElementOption::getIdentityProviderKey)
+                                        .filter(Objects::nonNull)
+                                        .distinct()
+                                        .toList(),
                         processNodeEntity
                 );
             }
@@ -315,7 +327,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 .findChild(FormTriggerConfigV1.FORM_LAYOUT, UiDefinitionInputElement.class)
                 .ifPresent(uid -> {
                     uid.setElementType(ElementType.FormLayout);
-                    uid.setDisplayContext(ElementDisplayContext.CitizenFacing);
+                    uid.setDisplayContext(ElementDisplayContext.CustomerFacing);
                 });
 
 
@@ -353,8 +365,15 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     @Nullable
     @Override
-    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                           @Nonnull FormTriggerConfigV1 configuration) throws ResponseException {
+    public Map<String, List<String>> validateConfiguration(
+            @Nonnull ProcessNodeConfigurationValidationContext<FormTriggerConfigV1> context
+    ) throws ResponseException {
+        // Definition-level checks belong to authoring, not to each execution of a published process.
+        if (!context.isAuthoring()) {
+            return null;
+        }
+        var processNodeEntity = context.thisNode();
+        var configuration = context.configuration();
         var errors = new LinkedHashMap<String, List<String>>();
         var formSlug = configuration.formSlug;
 
@@ -430,12 +449,12 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         // Clean the form layout because it has references to system specific resources like department ids.
-        var rawLayout = configuration.get(FormTriggerConfigV1.FORM_LAYOUT);
+        var rawLayout = configuration.getLiteral(FormTriggerConfigV1.FORM_LAYOUT);
         var layout = JsonMapperFactory
                 .getInstance()
                 .convertValue(rawLayout, FormLayoutElement.class);
         var cleanedLayout = FormLayoutCleanerService.clean(layout);
-        configuration.put(FormTriggerConfigV1.FORM_LAYOUT, cleanedLayout);
+        configuration.putLiteral(FormTriggerConfigV1.FORM_LAYOUT, cleanedLayout);
 
         // Clean the identities for they are not the same on every system.
         configuration.remove(FormTriggerConfigV1.IDENTITIES);
@@ -641,14 +660,14 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     private List<?> createCustomerSummaryFiles(@Nonnull ProcessNodeExecutionInitContext<FormTriggerConfigV1> context,
                                                @Nonnull FormTriggerConfigV1 configuration,
                                                @Nonnull Map<String, Object> initialPayload) throws ProcessNodeExecutionException {
-        var submission = readSubmission(initialPayload);
+        var submission = readSubmission(initialPayload, configuration.formLayout);
 
         byte[] pdfBytes;
         try {
             pdfBytes = pdfService.generateCustomerSummary(
                     configuration.formLayout,
                     submission,
-                    FormPdfScope.Citizen,
+                    FormPdfScope.Customer,
                     context.getThisProcessInstance(),
                     context.getConfigurationOfExecutingNode(),
                     context.getThisNode()
@@ -698,7 +717,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     }
 
     @Nonnull
-    private AuthoredElementValues readSubmission(@Nonnull Map<String, Object> initialPayload) throws ProcessNodeExecutionException {
+    private AuthoredElementValues readSubmission(@Nonnull Map<String, Object> initialPayload,
+                                                 @Nonnull FormLayoutElement formLayout) throws ProcessNodeExecutionException {
         var rawSubmission = initialPayload.get(DATA_KEY_UNMAPPED);
         if (rawSubmission == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -707,9 +727,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         }
 
         try {
-            return JsonMapperFactory
-                    .getNullPreservingInstance()
-                    .convertValue(rawSubmission, AuthoredElementValues.class);
+            return authoredInputValueService.toLiteralAuthoredElementValues(formLayout, rawSubmission);
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     e,
@@ -720,32 +738,47 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     @Nonnull
     @Override
-    public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
-        return createPaymentView(context);
+    public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
+        var paymentView = createPaymentView(context);
+        return paymentView == null
+                ? ProcessNodeDefinition.super.getCustomerTaskView(context)
+                : paymentView;
     }
 
     @Nonnull
-    private GroupLayoutElement createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
+    @Override
+    public ProcessNodeCustomerView getCompletedCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
+        var paymentView = createPaymentView(context);
+        return paymentView == null
+                ? ProcessNodeDefinition.super.getCompletedCustomerTaskView(context)
+                : paymentView;
+    }
+
+    @Nullable
+    private ProcessNodeCustomerView createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
         var paymentTransactionKey = context
                 .getThisTask()
                 .getRuntimeData()
                 .get(DATA_KEY_PAYMENT_TRANSACTION_KEY);
 
         if (paymentTransactionKey == null) {
-            return ProcessNodeDefinition.super.getCustomerTaskView(context);
+            return null;
         }
 
         var transaction = paymentTransactionService
                 .retrieve(String.valueOf(paymentTransactionKey));
 
         if (transaction.isEmpty()) {
-            return ProcessNodeDefinition.super.getCustomerTaskView(context);
+            return null;
         }
 
         var paymentPayloadRawData = context
                 .getThisTask()
                 .getRuntimeData()
                 .get(DATA_KEY_PAYMENT_PAYLOAD);
+        if (paymentPayloadRawData == null) {
+            return null;
+        }
         var paymentPayload = jsonMapper
                 .convertValue(paymentPayloadRawData, PaymentPayload.class);
 
@@ -796,7 +829,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         );
 
         try {
-            return new PaymentGroupPreset(
+            var layout = new PaymentGroupPreset(
                     paymentProvider,
                     paymentProviderDefinition,
                     paymentPayload,
@@ -805,6 +838,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                     failureMessage,
                     downloadUrl
             );
+            return ProcessNodeCustomerView.of(context, layout, List.of(), new AuthoredElementValues());
         } catch (IOException | WriterException e) {
             throw ResponseException.internalServerError(e);
         }

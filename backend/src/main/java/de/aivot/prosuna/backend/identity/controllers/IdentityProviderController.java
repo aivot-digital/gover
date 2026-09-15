@@ -261,7 +261,7 @@ public class IdentityProviderController {
 
         if (entity.getIsEnabled()) {
             throw ResponseException.conflict(
-                    "Der Nutzerkontenanbieter %s kann nicht gelöscht werden, da er aktiviert ist.",
+                    "Der Identitätsanbieter %s kann nicht gelöscht werden, da er aktiviert ist.",
                     key
             );
         }

@@ -105,7 +105,7 @@ COPY container/healthcheck.sh /app/healthcheck.sh
 
 # Install locale, nginx, configure nginx and entrypoint script
 RUN apk upgrade --no-cache && \
-    apk add curl tzdata musl musl-utils musl-locales nginx && \
+    apk add curl tzdata musl musl-utils musl-locales nginx nginx-mod-http-brotli && \
     chmod +x /app/entrypoint.sh /app/healthcheck.sh && \
     mkdir -p /app/default-assets
 

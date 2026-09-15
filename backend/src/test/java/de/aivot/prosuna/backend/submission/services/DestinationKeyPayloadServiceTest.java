@@ -16,7 +16,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.TimeRangeInp
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
@@ -336,11 +336,11 @@ class DestinationKeyPayloadServiceTest {
     void shouldWriteDestinationKeysWithExplicitArrayIndexes() {
         var firstMemberName = new TextInputElement();
         firstMemberName.setId("firstMemberName");
-        firstMemberName.setDestinationKey("members.0.first_name");
+        firstMemberName.setDestinationKey("members[0].first_name");
 
         var secondTag = new TextInputElement();
         secondTag.setId("secondTag");
-        secondTag.setDestinationKey("tags.1");
+        secondTag.setDestinationKey("tags[1]");
 
         var group = new GroupLayoutElement();
         group.setChildren(new LinkedList<>(List.of(firstMemberName, secondTag)));
@@ -364,7 +364,7 @@ class DestinationKeyPayloadServiceTest {
     void shouldResolveWildcardDestinationKeysInsideReplicatingContainers() {
         var firstName = new TextInputElement();
         firstName.setId("rowFirstName");
-        firstName.setDestinationKey("members.*.first_name");
+        firstName.setDestinationKey("members[*].first_name");
 
         var people = new ReplicatingContainerLayoutElement();
         people.setId("people");
@@ -405,7 +405,7 @@ class DestinationKeyPayloadServiceTest {
 
         var sharedFirstName = new TextInputElement();
         sharedFirstName.setId("sharedFirstName");
-        sharedFirstName.setDestinationKey("members.*.first_name");
+        sharedFirstName.setDestinationKey("members[*].first_name");
 
         var group = new GroupLayoutElement();
         group.setChildren(new LinkedList<>(List.of(people, sharedFirstName)));
@@ -517,11 +517,11 @@ class DestinationKeyPayloadServiceTest {
     void shouldBuildEffectiveValuesForWildcardReplicatingContainersWithoutDestinationKey() {
         var firstName = new TextInputElement();
         firstName.setId("rowFirstName");
-        firstName.setDestinationKey("members.*.first_name");
+        firstName.setDestinationKey("members[*].first_name");
 
         var tag = new TextInputElement();
         tag.setId("rowTag");
-        tag.setDestinationKey("members.*.tags.1");
+        tag.setDestinationKey("members[*].tags[1]");
 
         var people = new ReplicatingContainerLayoutElement();
         people.setId("people");
@@ -554,8 +554,8 @@ class DestinationKeyPayloadServiceTest {
         ));
     }
 
-    private static ReplicatingContainerLayoutElementValue assertReplicatingRowValues(Object row, Map<?, ?> expectedValues) {
-        var rowValue = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, row);
+    private static EffectiveReplicatingContainerLayoutElementValue assertReplicatingRowValues(Object row, Map<?, ?> expectedValues) {
+        var rowValue = assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, row);
         assertNotNull(rowValue.getId());
         assertEquals(expectedValues, rowValue.getValues());
         return rowValue;

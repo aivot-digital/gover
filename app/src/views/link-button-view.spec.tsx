@@ -2,7 +2,7 @@ import {describe, expect, it, vi} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {ElementType} from '../data/element-type/element-type';
-import {createDerivedRuntimeElementData, type AuthoredElementValues} from '../models/element-data';
+import {createDerivedRuntimeElementData, type AuthoredElementValues, literalAuthoredValue} from '../models/element-data';
 import type {BaseViewProps} from './base-view';
 import type {LinkButtonElement} from '../models/elements/form/content/link-button-element';
 import {LinkButtonView} from './link-button-view';
@@ -20,7 +20,7 @@ describe('LinkButtonView', () => {
             openInNewTab: true,
             variant: 'outlined',
             color: 'secondary',
-        });
+        }, null, undefined, true);
 
         const link = screen.getByRole('link', {name: /Mehr erfahren/});
         expect(link).toHaveAttribute('href', 'https://example.org');
@@ -32,7 +32,7 @@ describe('LinkButtonView', () => {
     it('should trigger staff task events in staff task views', () => {
         const onEvent = vi.fn().mockResolvedValue(undefined);
         const authoredElementValues = {
-            requiredField: 'value',
+            requiredField: literalAuthoredValue('value'),
         };
 
         renderLinkButton(
@@ -73,12 +73,32 @@ describe('LinkButtonView', () => {
 
         expect(onEvent).not.toHaveBeenCalled();
     });
+
+    it('should disable customer task events in read-only task views', () => {
+        const onEvent = vi.fn().mockResolvedValue(undefined);
+
+        renderLinkButton(
+            {
+                label: 'Absenden',
+                customerTaskEvent: 'submit',
+            },
+            'customer',
+            {onEvent},
+            true,
+        );
+
+        const button = screen.getByRole('button', {name: 'Absenden'});
+        expect(button).toBeDisabled();
+        fireEvent.click(button);
+        expect(onEvent).not.toHaveBeenCalled();
+    });
 });
 
 function renderLinkButton(
     overrides: Partial<LinkButtonElement>,
     taskViewMode: TaskViewMode | null = null,
     propOverrides?: Partial<BaseViewProps<LinkButtonElement, void>>,
+    readOnly = false,
 ) {
     const element = createElement(overrides);
     const authoredElementValues = propOverrides?.authoredElementValues ?? {};
@@ -93,6 +113,7 @@ function renderLinkButton(
                 rootAuthoredElementValues: authoredElementValues,
                 rootDerivedData: derivedData,
                 taskViewMode,
+                readOnly,
             }}
         >
             <LinkButtonView

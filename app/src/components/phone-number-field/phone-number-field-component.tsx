@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Box} from '@mui/material';
-import {MuiTelInput, type MuiTelInputCountry, type MuiTelInputInfo} from 'mui-tel-input';
+import {MuiTelInput, type MuiTelInputCountry} from 'mui-tel-input';
+import {AsYouType} from 'libphonenumber-js/max';
 import {PhoneNumberFieldComponentProps} from './phone-number-field-component-props';
 import {isBlankPhoneNumber, normalizePhoneNumber} from '../../utils/phone-number-utils';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
@@ -14,17 +15,18 @@ function cleanPhoneNumberValue(value: string | null | undefined): string | null 
         return null;
     }
 
-    return value!.trim();
+    const trimmedValue = value!.trim();
+    const parser = new AsYouType();
+    parser.input(trimmedValue);
+    const callingCode = parser.getCallingCode();
+
+    // A calling code alone is an editing preference, not a telephone number.
+    return callingCode != null && trimmedValue.replace(/\s/g, '') === `+${callingCode}` ? null : trimmedValue;
 }
 
-function getCanonicalPhoneNumber(value: string, info?: MuiTelInputInfo): string | null {
-    if (info != null && isBlankPhoneNumber(info.nationalNumber)) {
-        return null;
-    }
-
-    const normalizedInfoValue = cleanPhoneNumberValue(info?.numberValue);
+function getCanonicalPhoneNumber(value: string): string | null {
     // Canonicalize plausible input; form-level validation decides whether the value is accepted.
-    const normalizedValue = normalizePhoneNumber(normalizedInfoValue ?? value);
+    const normalizedValue = normalizePhoneNumber(value);
 
     return normalizedValue ?? cleanPhoneNumberValue(value);
 }
@@ -71,10 +73,15 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
     } = props;
 
     const [inputValue, setInputValue] = useState(value ?? '');
-    const lastInputInfoRef = useRef<MuiTelInputInfo | undefined>(undefined);
+    const lastPropagatedValueRef = useRef(value?.trim() || null);
 
     useEffect(() => {
-        setInputValue(value ?? '');
+        const nextValue = value?.trim() || null;
+        // Keep the selected calling code when the parent echoes our empty value (null or '').
+        if (nextValue !== lastPropagatedValueRef.current) {
+            lastPropagatedValueRef.current = nextValue;
+            setInputValue(value ?? '');
+        }
     }, [value]);
 
     const errorMessages = useMemo(() => {
@@ -108,28 +115,24 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
         ? undefined
         : passThroughSlotProps?.htmlInput;
 
-    const handleChange = (newValue: string, info: MuiTelInputInfo) => {
+    const handleChange = (newValue: string) => {
         if (readonly || busy) {
             return;
         }
 
-        lastInputInfoRef.current = info;
+        // With disableFormatting, country changes can carry stale number metadata.
+        const nextValue = cleanPhoneNumberValue(newValue);
         setInputValue(newValue);
-        onChange(isBlankPhoneNumber(info.nationalNumber) ? null : cleanPhoneNumberValue(newValue));
+        lastPropagatedValueRef.current = nextValue;
+        onChange(nextValue);
     };
 
-    const handleBlur = (
-        _event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
-        info?: MuiTelInputInfo,
-    ) => {
-        if (info != null) {
-            lastInputInfoRef.current = info;
-        }
-
-        const canonicalValue = getCanonicalPhoneNumber(inputValue, info ?? lastInputInfoRef.current);
+    const handleBlur = () => {
+        const canonicalValue = getCanonicalPhoneNumber(inputValue);
 
         if (canonicalValue !== cleanPhoneNumberValue(inputValue)) {
             setInputValue(canonicalValue ?? '');
+            lastPropagatedValueRef.current = canonicalValue;
             onChange(canonicalValue);
         }
 
@@ -142,6 +145,7 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
             label={label}
             ariaLabel={props.ariaLabel}
             ariaDescribedBy={props.ariaDescribedBy}
+            externalAction={props.externalAction}
             labelAction={props.labelAction}
             hint={!hasError ? helperText : undefined}
             error={hasError ? helperText : undefined}

@@ -13,7 +13,7 @@ export function PaymentProviderDetailsPage() {
     return (
         <>
             <PageWrapper
-                title="Zahlungsdienstleister bearbeiten"
+                title="Zahlungsanbieter bearbeiten"
                 fullWidth
                 background
             >
@@ -28,9 +28,9 @@ export function PaymentProviderDetailsPage() {
                     }}
                     header={{
                         icon: ModuleIcons.payment,
-                        title: 'Zahlungsdienstleister bearbeiten',
+                        title: 'Zahlungsanbieter bearbeiten',
                         helpDialog: {
-                            title: 'Hilfe zu Zahlungsdienstleistern',
+                            title: 'Hilfe zu Zahlungsanbietern',
                             tooltip: 'Hilfe anzeigen',
                             content: (
                                 <>
@@ -40,7 +40,7 @@ export function PaymentProviderDetailsPage() {
                                             marginBottom: "16px"
                                         }}
                                     >
-                                        Konfigurieren Sie hier Zahlungsdienstleister, die in Ihrer Prosuna-Instanz global
+                                        Konfigurieren Sie hier Zahlungsanbieter, die in Ihrer Prosuna-Instanz global
                                         verfügbar sein sollen.
                                         Die erforderlichen Konfigurationsdaten erhalten Sie vom Zahlungsdienstleister
                                         oder finden Sie in dessen Dokumentation.
@@ -51,7 +51,7 @@ export function PaymentProviderDetailsPage() {
                                             marginBottom: "16px"
                                         }}
                                     >
-                                        Es wird empfohlen, für jeden Zahlungsdienstleister sowohl eine produktive als
+                                        Es wird empfohlen, für jeden Zahlungsanbieter sowohl eine produktive als
                                         auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
                                     </Typography>
                                 </>
@@ -83,18 +83,18 @@ export function PaymentProviderDetailsPage() {
                     }}
                     getTabTitle={(item: PaymentProviderResponseDTO) => {
                         if (item.key === '') {
-                            return 'Neuer Zahlungsdienstleister';
+                            return 'Neuer Zahlungsanbieter';
                         } else {
                             return item.name;
                         }
                     }}
                     getHeaderTitle={(item, isNewItem, notFound) => {
-                        if (notFound) return 'Zahlungsdienstleister nicht gefunden';
-                        if (isNewItem) return 'Neuen Zahlungsdienstleister anlegen';
-                        return `Zahlungsdienstleister: ${item?.name ?? 'Unbenannt'}`;
+                        if (notFound) return 'Zahlungsanbieter nicht gefunden';
+                        if (isNewItem) return 'Neuen Zahlungsanbieter anlegen';
+                        return `Zahlungsanbieter: ${item?.name ?? 'Unbenannt'}`;
                     }}
                     parentLink={{
-                        label: 'Liste der Zahlungsdienstleister',
+                        label: 'Liste der Zahlungsanbieter',
                         to: '/payment-providers',
                     }}
                     entityType={ServerEntityType.PaymentProviders}

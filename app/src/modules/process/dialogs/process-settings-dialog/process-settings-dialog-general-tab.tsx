@@ -232,99 +232,70 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                     hint="Nur intern sichtbar; dient zur Wiedererkennung des Prozesses in der Verwaltung."
                 />
 
-                <Box
-                    sx={{
-                        display: 'flex',
-                        flexDirection: {
-                            xs: 'column',
-                            sm: 'row',
-                        },
-                        alignItems: {
-                            xs: 'stretch',
-                            sm: 'flex-start',
-                        },
-                        gap: 2,
+                <TextFieldComponent
+                    label="URL-Namespace des Prozesses"
+                    value={draft.slug}
+                    onChange={(val) => {
+                        const nextSlug = normalizeProcessSlugInput(val) ?? '';
+                        setDraft({
+                            ...draft,
+                            slug: nextSlug,
+                        });
+                        setSlugAvailabilityError(undefined);
                     }}
-                >
-                    <Box
-                        sx={{
-                            flex: 1,
-                            minWidth: 0,
-                        }}
-                    >
-                        <TextFieldComponent
-                            label="URL-Namespace des Prozesses"
-                            value={draft.slug}
-                            onChange={(val) => {
-                                const nextSlug = normalizeProcessSlugInput(val) ?? '';
-                                setDraft({
-                                    ...draft,
-                                    slug: nextSlug,
-                                });
-                                setSlugAvailabilityError(undefined);
-                            }}
-                            required
-                            error={slugError}
-                            minCharacters={3}
-                            maxCharacters={PROCESS_SLUG_MAX_LENGTH}
-                            hint="Wenn Sie den Namespace ändern, wird der bisherige Namespace automatisch umgeleitet, bis Sie die Historie leeren."
-                            pattern={{
-                                regex: '^[a-z0-9-]+$',
-                                message: 'Der URL-Namespace darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.',
-                            }}
-                            muiPassTroughProps={{
-                                slotProps: {
-                                    input: {
-                                        startAdornment: (
-                                            <InputAdornment position="start" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
-                                                <Box component="span" sx={{whiteSpace: 'nowrap'}}>
-                                                    /element-typ/
-                                                </Box>
-                                            </InputAdornment>
-                                        ),
-                                        endAdornment: (
-                                            <InputAdornment position="end" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
-                                                <Box
-                                                    component="span"
-                                                    sx={{
-                                                        display: 'inline-flex',
-                                                        alignItems: 'center',
-                                                        gap: 0.75,
-                                                        whiteSpace: 'nowrap',
-                                                    }}
-                                                >
-                                                    {
-                                                        isCheckingSlugAvailability &&
-                                                        <CircularProgress size={16} color="inherit"/>
-                                                    }
-                                                    /element-slug
-                                                </Box>
-                                            </InputAdornment>
-                                        ),
-                                    },
-                                },
-                            }}
-                        />
-                    </Box>
-
-                    <Button
-                        variant="outlined"
-                        startIcon={<History/>}
-                        onClick={() => {
-                            setShowSlugHistoryDialog(true);
-                        }}
-                        sx={{
-                            mt: 3,
-                            alignSelf: {
-                                xs: 'stretch',
-                                sm: 'flex-start',
+                    required
+                    error={slugError}
+                    minCharacters={3}
+                    maxCharacters={PROCESS_SLUG_MAX_LENGTH}
+                    hint="Wenn Sie den Namespace ändern, wird der bisherige Namespace automatisch umgeleitet, bis Sie die Historie leeren."
+                    pattern={{
+                        regex: '^[a-z0-9-]+$',
+                        message: 'Der URL-Namespace darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.',
+                    }}
+                    muiPassTroughProps={{
+                        slotProps: {
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
+                                        <Box component="span" sx={{whiteSpace: 'nowrap'}}>
+                                            /element-typ/
+                                        </Box>
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
+                                        <Box
+                                            component="span"
+                                            sx={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 0.75,
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            {
+                                                isCheckingSlugAvailability &&
+                                                <CircularProgress size={16} color="inherit"/>
+                                            }
+                                            /element-slug
+                                        </Box>
+                                    </InputAdornment>
+                                ),
                             },
-                            whiteSpace: 'nowrap',
-                        }}
-                    >
-                        URL-Namespace-Historie anzeigen
-                    </Button>
-                </Box>
+                        },
+                    }}
+                    externalAction={
+                        <Button
+                            variant="outlined"
+                            startIcon={<History/>}
+                            onClick={() => {
+                                setShowSlugHistoryDialog(true);
+                            }}
+                        >
+                            URL-Namespace-Historie anzeigen
+                        </Button>
+                    }
+                />
 
                 <ElementEditorSectionHeader
                     title="Verwaltende Organisationseinheit"
@@ -334,63 +305,34 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                     Die verwaltende Organisationseinheit ist für diesen Prozess zuständig und bildet die Grundlage für prozessbezogene Berechtigungen.
                 </ElementEditorSectionHeader>
 
-                <Box
-                    sx={{
-                        display: 'flex',
-                        flexDirection: {
-                            xs: 'column',
-                            sm: 'row',
-                        },
-                        alignItems: {
-                            xs: 'stretch',
-                            sm: 'flex-start',
-                        },
-                        gap: 2,
-                    }}
-                >
-                    <Box
-                        sx={{
-                            flex: 1,
-                            minWidth: 0,
-                        }}
-                    >
-                        <DepartmentSelectField
-                            label="Aktuell verwaltende Organisationseinheit"
-                            value={managingDepartment ?? null}
-                            onChange={() => undefined}
-                            disabled
-                            placeholder={
-                                departments.length === 0
-                                    ? 'Organisationseinheit wird geladen...'
-                                    : `Unbekannte Organisationseinheit (${process.departmentId})`
-                            }
-                            hint={
-                                'Versionsunabhängig. Eine Übertragung kann die Sichtbarkeit des Prozesses und Ihre eigenen Berechtigungen verändern.' +
-                                (hasUnsavedChanges ? ' Speichern Sie zuerst die allgemeinen Einstellungen.' : '')
-                            }
-                        />
-                    </Box>
-
-                    <Button
-                        variant="outlined"
-                        startIcon={<MoveGroup/>}
-                        disabled={hasUnsavedChanges || isSaving}
-                        onClick={() => {
-                            // Moving the process changes its permission boundary, so keep it separate from unsaved metadata edits.
-                            setShowMoveDialog(true);
-                        }}
-                        sx={{
-                            mt: 3,
-                            alignSelf: {
-                                xs: 'stretch',
-                                sm: 'flex-start',
-                            },
-                            whiteSpace: 'nowrap',
-                        }}
-                    >
-                        Prozess übertragen
-                    </Button>
-                </Box>
+                <DepartmentSelectField
+                    label="Aktuell verwaltende Organisationseinheit"
+                    value={managingDepartment ?? null}
+                    onChange={() => undefined}
+                    disabled
+                    placeholder={
+                        departments.length === 0
+                            ? 'Organisationseinheit wird geladen...'
+                            : `Unbekannte Organisationseinheit (${process.departmentId})`
+                    }
+                    hint={
+                        'Versionsunabhängig. Eine Übertragung kann die Sichtbarkeit des Prozesses und Ihre eigenen Berechtigungen verändern.' +
+                        (hasUnsavedChanges ? ' Speichern Sie zuerst die allgemeinen Einstellungen.' : '')
+                    }
+                    externalAction={
+                        <Button
+                            variant="outlined"
+                            startIcon={<MoveGroup/>}
+                            disabled={hasUnsavedChanges || isSaving}
+                            onClick={() => {
+                                // Moving the process changes its permission boundary, so keep it separate from unsaved metadata edits.
+                                setShowMoveDialog(true);
+                            }}
+                        >
+                            Prozess übertragen
+                        </Button>
+                    }
+                />
 
                 <ElementEditorSectionHeader
                     title="Prozess löschen"

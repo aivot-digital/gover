@@ -14,6 +14,7 @@ export interface IdentityProvidersFilter {
     type: IdentityProviderType;
     isEnabled: boolean;
     isTestProvider: boolean;
+    communicationProviderId: number;
 }
 
 export interface IdentityProviderTestStartResponseDTO {
@@ -37,6 +38,7 @@ export class IdentityProvidersApiService extends BaseCrudApiService<
             key: '',
             type: IdentityProviderType.Custom,
             metadataIdentifier: '',
+            uniqueIdAttribute: '',
             additionalParams: [],
             attributes: [],
             clientId: '',
@@ -67,27 +69,6 @@ export class IdentityProvidersApiService extends BaseCrudApiService<
             {},
         );
         return response.redirectUrl;
-    }
-
-    public static createLink(key: string,
-                             identityId: string,
-                             relatedProcessNodeId: number,
-                             additionalScopes?: string[],
-                             origin?: string): string {
-        const path = createApiPath('/api/public/identity/' + key + '/' + identityId + '/start/');
-
-        const resolvedOrigin = origin ?? `${window.location.origin}${window.location.pathname}`;
-        const additionalScopesParam = additionalScopes != null ? additionalScopes.join(' ') : '';
-
-        const searchParams = new URLSearchParams();
-        searchParams.set('origin', resolvedOrigin);
-        if (additionalScopesParam) {
-            searchParams.set('additionalScopes', additionalScopesParam);
-        }
-
-        searchParams.set('relatedProcessNodeId', relatedProcessNodeId.toString());
-
-        return path + '?' + searchParams.toString();
     }
 
     public static async fetchIdentity(clear: boolean, relatedNodeId: number | undefined): Promise<IdentityDataMap> {

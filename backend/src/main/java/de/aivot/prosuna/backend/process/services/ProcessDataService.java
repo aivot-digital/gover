@@ -14,6 +14,8 @@ import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,15 +36,18 @@ public class ProcessDataService {
     private final ProcessNodeRepository processDefinitionNodeRepository;
     private final ProcessInstanceAttachmentRepository processInstanceAttachmentRepository;
     private final ProcessInstanceAttachmentSetRepository processInstanceAttachmentSetRepository;
+    private final JsonMapper jsonMapper;
 
     public ProcessDataService(ProcessInstanceTaskRepository processInstanceTaskRepository,
                               ProcessNodeRepository processDefinitionNodeRepository,
                               ProcessInstanceAttachmentRepository processInstanceAttachmentRepository,
-                              ProcessInstanceAttachmentSetRepository processInstanceAttachmentSetRepository) {
+                              ProcessInstanceAttachmentSetRepository processInstanceAttachmentSetRepository,
+                              JsonMapper jsonMapper) {
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
         this.processInstanceAttachmentRepository = processInstanceAttachmentRepository;
         this.processInstanceAttachmentSetRepository = processInstanceAttachmentSetRepository;
+        this.jsonMapper = jsonMapper;
     }
 
     /**
@@ -129,7 +134,10 @@ public class ProcessDataService {
         instanceData.put("started", instance.getStarted());
         instanceData.put("initialPayload", instance.getInitialPayload());
         instanceData.put("assignedFileNumbers", instance.getAssignedFileNumbers());
-        instanceData.put("identities", instance.getIdentities());
+        // Keep the snapshot traversable by both the Java variable resolver and JavaScript.
+        // Persisted identities remain typed records; only their execution representation is normalized.
+        instanceData.put("identities", jsonMapper.convertValue(
+                instance.getIdentities(), new TypeReference<Map<String, Object>>() {}));
         instanceData.put("assignedUserId", instance.getAssignedUserId());
         instanceData.put("initialNodeDataKey", initialNode.getDataKey());
         instanceData.put("previousNodeDataKey", previousNode != null ? previousNode.getDataKey() : null);

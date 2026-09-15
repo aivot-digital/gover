@@ -3,6 +3,8 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.DataMappingActionNodeV1;
@@ -22,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -161,16 +164,16 @@ class DataMappingActionNodeV1Test {
                 node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
-                                "target", "personen.*.alterNeu"
+                                "source", "personen[*].alter",
+                                "target", "personen[*].alterNeu"
                         )), false)),
                         processInstance(),
                         task(Map.of()),
                         null,
                         processData,
                         nodeConfiguration(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
-                                "target", "personen.*.alterNeu"
+                                "source", "personen[*].alter",
+                                "target", "personen[*].alterNeu"
                         )), false))
                 ))
         );
@@ -201,7 +204,7 @@ class DataMappingActionNodeV1Test {
                 node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
+                                "source", "personen[*].alter",
                                 "deleteOnly", true
                         )), true)),
                         processInstance(),
@@ -209,7 +212,7 @@ class DataMappingActionNodeV1Test {
                         null,
                         processData,
                         nodeConfiguration(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
+                                "source", "personen[*].alter",
                                 "deleteOnly", true
                         )), true))
                 ))
@@ -233,8 +236,8 @@ class DataMappingActionNodeV1Test {
                 node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
-                                "target", "personen.*.alterNeu",
+                                "source", "personen[*].alter",
+                                "target", "personen[*].alterNeu",
                                 "cleanupSource", true
                         )), true)),
                         processInstance(),
@@ -242,8 +245,8 @@ class DataMappingActionNodeV1Test {
                         null,
                         processData,
                         nodeConfiguration(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
-                                "target", "personen.*.alterNeu",
+                                "source", "personen[*].alter",
+                                "target", "personen[*].alterNeu",
                                 "cleanupSource", true
                         )), true))
                 ))
@@ -313,16 +316,16 @@ class DataMappingActionNodeV1Test {
                 () -> node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
-                                "source", "personen[0].alter",
-                                "target", "personen.0.alterNeu"
+                                "source", "personen.0.alter",
+                                "target", "personen[0].alterNeu"
                         )), false)),
                         processInstance(),
                         task(Map.of()),
                         null,
                         processData,
                         nodeConfiguration(configuration(List.of(Map.of(
-                                "source", "personen[0].alter",
-                                "target", "personen.0.alterNeu"
+                                "source", "personen.0.alter",
+                                "target", "personen[0].alterNeu"
                         )), false))
                 ))
         );
@@ -345,7 +348,7 @@ class DataMappingActionNodeV1Test {
                 () -> node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
+                                "source", "personen[*].alter",
                                 "target", "personen.alterNeu"
                         )), false)),
                         processInstance(),
@@ -353,7 +356,7 @@ class DataMappingActionNodeV1Test {
                         null,
                         processData,
                         nodeConfiguration(configuration(List.of(Map.of(
-                                "source", "personen.*.alter",
+                                "source", "personen[*].alter",
                                 "target", "personen.alterNeu"
                         )), false))
                 ))
@@ -362,21 +365,38 @@ class DataMappingActionNodeV1Test {
         assertTrue(exception.getMessage().contains("Zeile 1"));
     }
 
-    private static AuthoredElementValues configuration(List<Map<String, Object>> rules, boolean cleanupEmptyContainers) {
-        var config = new AuthoredElementValues();
-        config.put("rules", rules);
-        config.put("cleanupEmptyContainers", cleanupEmptyContainers);
-        return config;
+    private record ConfigurationFixture(AuthoredElementValues authored, EffectiveElementValues effective) {}
+
+    private static ConfigurationFixture configuration(List<Map<String, Object>> rules, boolean cleanupEmptyContainers) {
+        var authoredRows = new ArrayList<ReplicatingContainerLayoutElementValue>();
+        var effectiveRows = new ArrayList<EffectiveReplicatingContainerLayoutElementValue>();
+        for (var index = 0; index < rules.size(); index++) {
+            var rowId = "rule-" + index;
+            var authoredValues = new AuthoredElementValues();
+            var effectiveValues = new EffectiveElementValues();
+            rules.get(index).forEach((key, value) -> {
+                authoredValues.putLiteral(key, value);
+                effectiveValues.put(key, value);
+            });
+            // Both fixtures describe the same row, but only authored child fields carry envelopes.
+            authoredRows.add(new ReplicatingContainerLayoutElementValue().setId(rowId).setValues(authoredValues));
+            effectiveRows.add(new EffectiveReplicatingContainerLayoutElementValue().setId(rowId).setValues(effectiveValues));
+        }
+        var authored = new AuthoredElementValues()
+                .putLiteral("rules", authoredRows)
+                .putLiteral("cleanupEmptyContainers", cleanupEmptyContainers);
+        var effective = new EffectiveElementValues();
+        effective.put("rules", effectiveRows);
+        effective.put("cleanupEmptyContainers", cleanupEmptyContainers);
+        return new ConfigurationFixture(authored, effective);
     }
 
-    private static DataMappingActionNodeV1.DataMappingActionNodeV1Config nodeConfiguration(AuthoredElementValues configuration)
+    private static DataMappingActionNodeV1.DataMappingActionNodeV1Config nodeConfiguration(ConfigurationFixture configuration)
             throws ElementDataConversionException {
-        var effectiveValues = new EffectiveElementValues();
-        effectiveValues.putAll(configuration);
-        return ElementPOJOMapper.mapToPOJO(effectiveValues, DataMappingActionNodeV1.DataMappingActionNodeV1Config.class);
+        return ElementPOJOMapper.mapToPOJO(configuration.effective(), DataMappingActionNodeV1.DataMappingActionNodeV1Config.class);
     }
 
-    private static ProcessNodeEntity processNode(AuthoredElementValues configuration) {
+    private static ProcessNodeEntity processNode(ConfigurationFixture configuration) {
         return new ProcessNodeEntity()
                 .setId(NODE_ID)
                 .setProcessId(PROCESS_ID)
@@ -385,7 +405,7 @@ class DataMappingActionNodeV1Test {
                 .setDataKey("dataMappingNode")
                 .setProcessNodeDefinitionKey("de.aivot.core.data_mapping")
                 .setProcessNodeDefinitionVersion(1)
-                .setConfiguration(configuration)
+                .setConfiguration(configuration.authored())
                 .setOutputMappings(Map.of());
     }
 

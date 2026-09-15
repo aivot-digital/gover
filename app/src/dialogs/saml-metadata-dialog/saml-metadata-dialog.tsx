@@ -38,7 +38,7 @@ export function SamlMetadataDialog({ open, loading, fields, error, onClose }: Sa
                     <AlertComponent sx={{my: 1}} color="error">{error}</AlertComponent>
                 ) : <>
                         <DialogContentText sx={{mb: 2}}>
-                            Nachfolgend finden Sie die für die Einrichtung des Nutzerkontenanbieters notwendigen Metadaten. Diese benötigen Sie, um sie dem Anbieter mitzuteilen oder selbst in einem Self Service Portal (SSP) zu hinterlegen. Bitte lesen Sie hierzu den Leitfaden zur Anbindung des jeweiligen Nutzerkontos.
+                            Nachfolgend finden Sie die für die Einrichtung des Identitätsanbieters notwendigen Metadaten. Diese benötigen Sie, um sie dem Anbieter mitzuteilen oder selbst in einem Self Service Portal (SSP) zu hinterlegen. Bitte lesen Sie hierzu den Leitfaden zur Anbindung des jeweiligen Nutzerkontos.
                         </DialogContentText>
                         {
                             (

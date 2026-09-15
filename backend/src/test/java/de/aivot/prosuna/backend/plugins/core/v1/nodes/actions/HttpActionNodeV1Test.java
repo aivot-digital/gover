@@ -1,8 +1,13 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.prosuna.backend.core.services.HttpService;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
+import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.HttpActionNodeV1;
@@ -23,18 +28,19 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEvent
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.MultipartUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
@@ -62,7 +68,6 @@ class HttpActionNodeV1Test {
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
     private ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private StorageService storageService;
-    private SecretRepository secretRepository;
     private SecretService secretService;
     private HttpActionNodeV1 node;
 
@@ -72,7 +77,6 @@ class HttpActionNodeV1Test {
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
         processInstanceAttachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
         storageService = mock(StorageService.class);
-        secretRepository = mock(SecretRepository.class);
         secretService = mock(SecretService.class);
 
         node = new HttpActionNodeV1(
@@ -82,9 +86,20 @@ class HttpActionNodeV1Test {
                 processInstanceAttachmentService,
                 processInstanceAttachmentSetService,
                 storageService,
-                secretRepository,
                 secretService
         );
+    }
+
+    @Test
+    void configurationLayout_ShouldDeserializeBasicAuthPasswordAsSecretSelection() throws Exception {
+        var layout = node.loadConfigLayoutFromResource(
+                new ClassPathResource("nodes/configs/HttpActionNodeV1Config.json")
+        );
+
+        assertTrue(layout.findChild(
+                HttpActionNodeV1Config.BasicAuthConfig.PASSWORD_SECRET_KEY_FIELD_ID,
+                SecretSelectInputElement.class
+        ).isPresent());
     }
 
     @Test
@@ -114,6 +129,41 @@ class HttpActionNodeV1Test {
                 "Array<{ name: string; originalFileName: string; uri: string; size: number; }>",
                 filesOutput.typeDefinition()
         );
+    }
+
+    @Test
+    void getConfigurationLayout_ShouldEnableDynamicRuntimeValuesOnly() throws Exception {
+        ReflectionTestUtils.setField(
+                node,
+                "configResource",
+                new ClassPathResource("nodes/configs/HttpActionNodeV1Config.json")
+        );
+
+        var layout = node.getConfigurationLayout(null);
+        for (var fieldId : List.of("url", "bearerToken")) {
+            var input = assertInstanceOf(BaseInputElement.class, layout.findChild(fieldId).orElseThrow());
+            assertEquals(List.of(InputMode.values()), input.getInputModePolicy().allowedModes(), fieldId);
+            assertEquals(List.of(InputVariableSource.values()), input.getInputModePolicy().allowedVariableSources(), fieldId);
+        }
+        for (var fieldId : List.of("url", "bearerToken", "responseFileName")) {
+            var input = assertInstanceOf(DynamicTextElement.class, layout.findChild(fieldId).orElseThrow());
+            assertEquals(
+                    List.of(InputVariableSource.values()),
+                    input.getDynamicTextPolicy().variableSuggestionSources(),
+                    fieldId
+            );
+        }
+
+        var username = layout.findChild("username").orElseThrow();
+        assertNull(assertInstanceOf(BaseInputElement.class, username).getInputModePolicy());
+        assertNull(assertInstanceOf(DynamicTextElement.class, username).getDynamicTextPolicy());
+
+        var passwordSecret = assertInstanceOf(
+                BaseInputElement.class,
+                layout.findChild("passwordSecretKey").orElseThrow()
+        );
+        assertNull(passwordSecret.getInputModePolicy());
+        assertFalse(passwordSecret instanceof DynamicTextElement);
     }
 
     @Test

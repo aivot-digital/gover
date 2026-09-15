@@ -6,8 +6,7 @@ import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -137,21 +136,12 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
         clientIdInput.setWeight(6.0d);
         list.add(clientIdInput);
 
-        var clientSecretInput = new SelectInputElement();
+        var clientSecretInput = new SecretSelectInputElement();
         clientSecretInput.setId(CLIENT_SECRET_FIELD);
         clientSecretInput.setRequired(true);
         clientSecretInput.setLabel("OAuth Client Secret");
         clientSecretInput.setPlaceholder("Client Secret");
         clientSecretInput.setHint("Das OAuth Client Secret aus dem pmPayment-System. Es muss zuvor unter \"Geheimnisse\" hinterlegt werden, um hier auswählbar zu sein.");
-        var clientSecretInputOptions = secretService
-                .list()
-                .stream()
-                .map(secret -> new SelectInputElementOption()
-                        .setValue(secret.getKey().toString())
-                        .setLabel(secret.getName())
-                )
-                .toList();
-        clientSecretInput.setOptions(clientSecretInputOptions);
         clientSecretInput.setWeight(6.0d);
         list.add(clientSecretInput);
 

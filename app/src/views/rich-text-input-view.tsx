@@ -31,18 +31,25 @@ export function RichTextView(props: BaseViewProps<RichTextInputElement, string>)
     const isProcessConfigRoot = useMemo(() => {
         return (rootElement as { type: ElementType }).type === ElementType.ConfigLayout;
     }, [rootElement]);
+    const inputModeFieldProps = props.inputModeLiteralContext?.fieldProps;
+    const dynamicTextContext = props.inputModeLiteralContext?.dynamicText;
 
     return (
         <RichTextInputComponent
-            label={element.label ?? ''}
-            hint={element.hint}
-            error={errors != null ? errors.join(' ') : undefined}
-            required={element.required}
-            disabled={isDisabled}
-            readOnly={isBusy}
+            ref={dynamicTextContext?.inputRef}
+            {...inputModeFieldProps}
+            label={inputModeFieldProps?.label ?? element.label ?? ''}
+            hint={inputModeFieldProps?.hint ?? element.hint}
+            error={inputModeFieldProps?.error ?? (errors != null ? errors.join(' ') : undefined)}
+            required={inputModeFieldProps?.required ?? element.required}
+            disabled={inputModeFieldProps?.disabled ?? isDisabled}
+            readOnly={inputModeFieldProps?.readOnly ?? isBusy}
             reducedMode={isProcessConfigRoot ? true : element.reducedMode}
             value={value}
             onChange={setValue}
+            endAction={props.inputModeLiteralContext?.variableInsertAction}
+            dynamicText={dynamicTextContext != null}
+            dynamicTextVariableMetadata={dynamicTextContext?.variableMetadata}
         />
     );
 }

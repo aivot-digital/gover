@@ -27,8 +27,6 @@ public class SubmitStepElement extends BaseStepElement implements InputElement<M
     private String textProcessingTime;
     @Nullable
     private Collection<String> documentsToReceive;
-    @Nullable
-    private Boolean disableConfetti;
 
     public SubmitStepElement() {
         super(ElementType.SubmitStep);
@@ -155,12 +153,12 @@ public class SubmitStepElement extends BaseStepElement implements InputElement<M
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         SubmitStepElement that = (SubmitStepElement) o;
-        return Objects.equals(textPreSubmit, that.textPreSubmit) && Objects.equals(textPostSubmit, that.textPostSubmit) && Objects.equals(textProcessingTime, that.textProcessingTime) && Objects.equals(documentsToReceive, that.documentsToReceive) && Objects.equals(disableConfetti, that.disableConfetti);
+        return Objects.equals(textPreSubmit, that.textPreSubmit) && Objects.equals(textPostSubmit, that.textPostSubmit) && Objects.equals(textProcessingTime, that.textProcessingTime) && Objects.equals(documentsToReceive, that.documentsToReceive);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), textPreSubmit, textPostSubmit, textProcessingTime, documentsToReceive, disableConfetti);
+        return Objects.hash(super.hashCode(), textPreSubmit, textPostSubmit, textProcessingTime, documentsToReceive);
     }
 
     // endregion
@@ -204,16 +202,6 @@ public class SubmitStepElement extends BaseStepElement implements InputElement<M
 
     public SubmitStepElement setDocumentsToReceive(@Nullable Collection<String> documentsToReceive) {
         this.documentsToReceive = documentsToReceive;
-        return this;
-    }
-
-    @Nullable
-    public Boolean getDisableConfetti() {
-        return disableConfetti;
-    }
-
-    public SubmitStepElement setDisableConfetti(@Nullable Boolean disableConfetti) {
-        this.disableConfetti = disableConfetti;
         return this;
     }
 

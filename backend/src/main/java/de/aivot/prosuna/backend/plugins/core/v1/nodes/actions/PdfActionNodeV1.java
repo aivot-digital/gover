@@ -284,8 +284,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<PdfActionNodeConfig> context) throws ProcessNodeExecutionException {
         var configuration = context.getConfigurationOfExecutingNode();
 
-        var fileName = templateRenderService
-                .interpolate(context.getCurrentProcessExecutionData(), configuration.fileName);
+        var fileName = configuration.fileName;
         if (StringUtils.isNullOrEmpty(fileName)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
                     "Der Dateiname für das PDF wurde nicht angegeben."
@@ -561,7 +560,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         public static final String CONTENT_HTML_CODE_FIELD_ID = "content_html_code";
         public static final String CONTENT_HTML_ASSET_KEY_FIELD_ID = "content_html_asset_key";
 
-        @InputElementPOJOBinding(id = FILE_NAME_FIELD_ID, type = ElementType.Text, properties = {
+        @InputElementPOJOBinding(id = FILE_NAME_FIELD_ID, type = ElementType.Text, dynamicText = true, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dateiname"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Sie können den Dateinamen ohne Dateiendung oder mit der Dateiendung .pdf angeben."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)

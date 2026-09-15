@@ -4,6 +4,7 @@ import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
 import {
     createDerivedRuntimeElementData,
+    literalAuthoredValue,
     type ReplicatingContainerElementValues,
 } from '../../models/element-data';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
@@ -50,7 +51,7 @@ const element = {
 function renderView(overrides: Partial<BaseViewProps<ReplicatingContainerLayout, ReplicatingContainerElementValues>> = {}) {
     const props: BaseViewProps<ReplicatingContainerLayout, ReplicatingContainerElementValues> = {
         element,
-        value: [{id: 'address-1', values: {street: 'Musterstraße 1'}}],
+        value: [{id: 'address-1', values: {street: literalAuthoredValue('Musterstraße 1')}}],
         setValue: vi.fn(),
         onBlur: vi.fn(),
         isBusy: false,
@@ -74,6 +75,22 @@ function renderView(overrides: Partial<BaseViewProps<ReplicatingContainerLayout,
 }
 
 describe('ReplicatingContainerView', () => {
+    it('forwards external actions from the input-mode context without disabling them', () => {
+        renderView({
+            inputModeLiteralContext: {
+                fieldProps: {
+                    label: 'Adressen',
+                    disabled: true,
+                    externalAction: <button>Adressen ansehen</button>,
+                },
+            },
+        });
+        const action = screen.getByRole('button', {name: 'Adressen ansehen'});
+        expect(action).toBeEnabled();
+        expect(screen.getByRole('group', {name: 'Adressen – optional'})).not.toContainElement(action);
+        expect(screen.getByRole('button', {name: 'Datensatz hinzufügen'})).toBeDisabled();
+    });
+
     it('exposes the collection and every data set as labelled groups', () => {
         renderView();
 

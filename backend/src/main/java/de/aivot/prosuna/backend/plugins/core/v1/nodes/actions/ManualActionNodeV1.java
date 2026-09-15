@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.enums.ElementDisplayContext;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -19,6 +20,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.content.SpacerCont
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
@@ -39,7 +41,6 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -75,17 +76,15 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ElementDataTransformService elementDataTransformService;
     private final ElementDerivationService elementDerivationService;
-    private final TemplateRenderService templateRenderService;
-
-
+    private final AuthoredInputValueService authoredInputValueService;
     public ManualActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService,
                               ElementDataTransformService elementDataTransformService,
                               ElementDerivationService elementDerivationService,
-                              TemplateRenderService templateRenderService) {
+                              AuthoredInputValueService authoredInputValueService) {
         this.assigneeResolverService = assigneeResolverService;
         this.elementDataTransformService = elementDataTransformService;
         this.elementDerivationService = elementDerivationService;
-        this.templateRenderService = templateRenderService;
+        this.authoredInputValueService = authoredInputValueService;
     }
 
     @Nonnull
@@ -250,12 +249,6 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     }
 
     @Override
-    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                           @Nonnull ManualActionNodeConfig configuration) throws ResponseException {
-        return null;
-    }
-
-    @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<ManualActionNodeConfig> context) throws ProcessNodeExecutionException {
         var config = loadConfiguration(context.getConfigurationOfExecutingNode());
         var workingProcessData = extractWorkingProcessData(context.getCurrentProcessExecutionData());
@@ -285,30 +278,21 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
     @Nonnull
     @Override
-    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context) throws ResponseException {
-        return buildStaffTaskView(loadConfigurationForUi(context), context);
-    }
-
-    @Nonnull
-    @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context) {
-        return List.of(
-                new TaskViewEvent(
-                        "Aufgabe abschließen",
-                        EVENT_COMPLETE
-                )
-        );
-    }
-
-    @Nonnull
-    @Override
-    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context) throws ResponseException {
+    public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context) throws ResponseException {
         var config = loadConfigurationForUi(context);
-        return config.uiDefinition() != null
-                ? elementDataTransformService
-                .buildEffectiveValues(config.uiDefinition(), context.getThisTask().getProcessData())
-                .toAuthoredElementValues()
+        var layout = buildStaffTaskView(config, context);
+        var initialData = config.uiDefinition() != null
+                ? authoredInputValueService.toLiteralAuthoredElementValues(
+                        config.uiDefinition(),
+                        elementDataTransformService.buildEffectiveValues(config.uiDefinition(), context.getThisTask().getProcessData())
+                )
                 : new AuthoredElementValues();
+        return ProcessNodeStaffView.of(
+                context,
+                layout,
+                List.of(new TaskViewEvent("Aufgabe abschließen", EVENT_COMPLETE)),
+                initialData
+        );
     }
 
     @Nonnull
@@ -337,9 +321,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
         var descriptionContent = new RichTextContentElement();
         descriptionContent.setId(TASK_VIEW_DESCRIPTION_CONTENT_ID);
-        var renderedDescription = templateRenderService
-                .interpolate(context.getCurrentProcessExecutionData(), config.taskDescription());
-        descriptionContent.setContent(renderedDescription);
+        descriptionContent.setContent(config.taskDescription());
 
         var children = new java.util.ArrayList<BaseFormElement>();
         children.add(descriptionHeadline);
@@ -504,7 +486,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                         JsonMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData)
                 )
                 : JsonMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData);
-        var remark = normalizeRemark(update.get(TASK_VIEW_REMARK_FIELD_ID));
+        var remark = normalizeRemark(update.getLiteral(TASK_VIEW_REMARK_FIELD_ID));
 
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(OUTPUT_DATA, payloadUpdate);
@@ -549,7 +531,9 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         public static final String UI_DEFINITION_FIELD_ID = "ui_definition";
         public static final String ASSIGNMENT_CONTEXT_FIELD_ID = "assignment_context";
 
-        @InputElementPOJOBinding(id = TASK_DESCRIPTION_FIELD_ID, type = ElementType.RichTextInput, properties = {
+        @InputElementPOJOBinding(id = TASK_DESCRIPTION_FIELD_ID, type = ElementType.RichTextInput,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Aufgabenbeschreibung"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die manuelle Handlung, die außerhalb des Systems ausgeführt und bestätigt werden soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)

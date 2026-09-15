@@ -45,10 +45,12 @@
         </div>
     </th:block>
 
-    <div id="logo">
-        <!-- Die URL des Logos des Betreibers wird aus dem Basis-Kontext abgeleitet und mit der createAssetUrl Methode des Basis-Kontextes abgeleitet -->
+    <div
+            id="logo"
+            th:if="${ base.logoDataUrl != null }"
+    >
         <img
-                th:src="${ base.createAssetUrl(base.logoAssetKey, base.logoAssetName) }"
+                th:src="${ base.logoDataUrl }"
                 th:alt="${ 'Logo ' + base.providerName }"
                 style="height: 100px; width: auto; object-fit: contain;"
         />

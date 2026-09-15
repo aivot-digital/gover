@@ -9,7 +9,8 @@ body {
   box-sizing: border-box;
 }
 
-/* Class to hide elements as an alternative to opacity, hidden, etc. */
+/* Keep content available to assistive technology without affecting scrollable bounds.
+   Use explicit pixels: the same numeric sizes in MUI sx would become percentages. */
 .visually-hidden {
   position: absolute;
   width: 1px;

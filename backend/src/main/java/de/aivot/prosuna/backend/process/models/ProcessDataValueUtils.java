@@ -5,15 +5,20 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Utility methods for destination-key based access to process execution data and compatible object graphs.
  */
 public final class ProcessDataValueUtils {
+    private static final String PROPERTY = "[a-zA-Z_$][a-zA-Z0-9_$]*";
+    private static final Pattern FIRST_PROPERTY = Pattern.compile(PROPERTY);
+    private static final Pattern NEXT_PROPERTY = Pattern.compile("\\.\\s*(" + PROPERTY + ")");
+    private static final Pattern ARRAY_SEGMENT = Pattern.compile("\\[\\s*(0|[1-9][0-9]*|\\*)\\s*]");
+
     private ProcessDataValueUtils() {
     }
 
@@ -45,7 +50,7 @@ public final class ProcessDataValueUtils {
      * <p>Wildcard paths require explicit indices. Use
      * {@link #resolveProcessDataValue(ProcessExecutionData, String, List)} to resolve one concrete wildcard binding,
      * or {@link #resolveMatchingProcessDataValues(ProcessExecutionData, String)} to enumerate all existing wildcard
-     * bindings. Bracket notation is not supported.
+     * bindings. Array indices use brackets, for example {@code personen[0].name}.
      */
     @Nullable
     public static Object resolveProcessDataValue(@Nonnull ProcessExecutionData processExecutionData,
@@ -60,8 +65,8 @@ public final class ProcessDataValueUtils {
      * indices.
      *
      * <p>Each {@code *} segment consumes one entry from {@code wildcardIndices} from left to right. For example,
-     * {@code personen.*.adressen.*.strasse} with {@code [1, 2]} resolves
-     * {@code personen.1.adressen.2.strasse}.
+     * {@code personen[*].adressen[*].strasse} with {@code [1, 2]} resolves
+     * {@code personen[1].adressen[2].strasse}.
      */
     @Nullable
     public static Object resolveProcessDataValue(@Nonnull ProcessExecutionData processExecutionData,
@@ -74,7 +79,7 @@ public final class ProcessDataValueUtils {
     /**
      * Resolves all currently addressable wildcard bindings for the given destination key.
      *
-     * <p>For example, {@code personen.*.alter} returns one entry for every existing person array index. Each result
+     * <p>For example, {@code personen[*].alter} returns one entry for every existing person array index. Each result
      * contains the concrete destination key, the wildcard index tuple used for that concrete key, and the resolved
      * value, which may be {@code null}.
      */
@@ -146,7 +151,7 @@ public final class ProcessDataValueUtils {
         var wildcardCount = countWildcardSegments(segments);
         if (wildcardCount == 0) {
             return List.of(new ResolvedDestinationKeyValue(
-                    destinationKey != null ? destinationKey.trim() : "",
+                    formatDestinationKeySegments(segments),
                     List.of(),
                     resolveDestinationKeyValue(root, destinationKey)
             ));
@@ -203,7 +208,7 @@ public final class ProcessDataValueUtils {
                 concreteSegments.add(segment);
             }
         }
-        return String.join(".", concreteSegments);
+        return formatDestinationKeySegments(concreteSegments);
     }
 
     public static void validateDestinationKey(@Nullable String destinationKey) {
@@ -213,6 +218,15 @@ public final class ProcessDataValueUtils {
     public static void validateDestinationKey(@Nullable String destinationKey,
                                               boolean allowArrayRoot) {
         parseDestinationKeySegments(destinationKey, allowArrayRoot);
+    }
+
+    public static boolean isValidDestinationKey(@Nullable String path, boolean allowArrayRoot, boolean allowWildcards) {
+        try {
+            var segments = parseDestinationKeySegments(path, allowArrayRoot);
+            return !segments.isEmpty() && (allowWildcards || !segments.contains("*"));
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
     }
 
     public static int countWildcardSegments(@Nullable String destinationKey) {
@@ -404,36 +418,63 @@ public final class ProcessDataValueUtils {
         return mutableRoot;
     }
 
+    /**
+     * Parses source-relative paths, not JavaScript expressions. Numeric indices and mapping wildcards use brackets;
+     * dotted properties remain identifier-only so a concrete path can also be used in scripts and templates.
+     * Empty paths denote the root for readers; field validators separately require a non-empty path.
+     */
     @Nonnull
-    private static List<String> parseDestinationKeySegments(@Nullable String destinationKey,
-                                                            boolean allowArrayRoot) {
+    public static List<String> parseDestinationKeySegments(@Nullable String destinationKey,
+                                                           boolean allowArrayRoot) {
         if (StringUtils.isNullOrEmpty(destinationKey)) {
             return List.of();
         }
 
         var normalizedKey = destinationKey.trim();
-        var segments = Arrays.stream(normalizedKey.split("\\.", -1))
-                .map(String::trim)
-                .toList();
-
-        if (segments.stream().anyMatch(StringUtils::isNullOrEmpty)) {
-            throw new IllegalArgumentException("Destination key contains an empty path segment.");
+        var segments = new ArrayList<String>();
+        int offset = 0;
+        while (offset < normalizedKey.length()) {
+            if (Character.isWhitespace(normalizedKey.charAt(offset))) {
+                offset++;
+                continue;
+            }
+            var array = ARRAY_SEGMENT.matcher(normalizedKey).region(offset, normalizedKey.length());
+            if ((allowArrayRoot || !segments.isEmpty()) && array.lookingAt()) {
+                var segment = array.group(1);
+                if (!"*".equals(segment)) {
+                    // The readers and writers address Java lists, so reject indices that cannot be represented.
+                    Integer.parseInt(segment);
+                }
+                segments.add(segment);
+                offset = array.end();
+                continue;
+            }
+            var property = (segments.isEmpty() ? FIRST_PROPERTY : NEXT_PROPERTY)
+                    .matcher(normalizedKey).region(offset, normalizedKey.length());
+            if (!property.lookingAt()) {
+                throw new IllegalArgumentException("Invalid destination key. Use object.name, items[0].name or items[*].name.");
+            }
+            segments.add(segments.isEmpty() ? property.group() : property.group(1));
+            offset = property.end();
         }
+        return List.copyOf(segments);
+    }
 
+    /** Formats parsed segments only; numeric segments and wildcards always denote array access, never object keys. */
+    @Nonnull
+    public static String formatDestinationKeySegments(@Nonnull List<String> segments) {
+        var result = new StringBuilder();
         for (var segment : segments) {
-            if (segment.contains("[") || segment.contains("]")) {
-                throw new IllegalArgumentException("Destination keys do not support bracket array syntax.");
-            }
-            if (!"*".equals(segment) && segment.contains("*")) {
-                throw new IllegalArgumentException("The wildcard '*' must be used as its own destination-key segment.");
+            if (isArraySegment(segment)) {
+                result.append('[').append(segment).append(']');
+            } else {
+                if (!result.isEmpty()) {
+                    result.append('.');
+                }
+                result.append(segment);
             }
         }
-
-        if (!allowArrayRoot && isArraySegment(segments.getFirst())) {
-            throw new IllegalArgumentException("Destination key must start with an object segment.");
-        }
-
-        return segments;
+        return result.toString();
     }
 
     private static void assertNoImplicitWildcards(@Nonnull List<String> segments,
