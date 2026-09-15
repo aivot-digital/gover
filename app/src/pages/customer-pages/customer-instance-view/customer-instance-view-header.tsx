@@ -1,3 +1,4 @@
+import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surface';
 import React, {useMemo, useState} from 'react';
 import {Box, Container, IconButton, Stack, Tooltip, Typography, useTheme} from '@mui/material';
 import Accessibility from '@aivot/mui-material-symbols-400-n25-outlined/Accessibility';
@@ -53,8 +54,9 @@ export function CustomerInstanceViewHeader(props: CustomerListPageHeaderProps) {
         >
             <Box
                 sx={{
-                    boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.06)',
-                    backgroundColor: 'background.paper',
+                    backgroundColor: getCustomerPageSurfaceColor,
+                    borderBottom: 1,
+                    borderColor: 'divider',
                 }}
             >
                 <Container>
@@ -107,7 +109,7 @@ export function CustomerInstanceViewHeader(props: CustomerListPageHeaderProps) {
                                     sx={{
                                         color: resolveAccessibleForeground(
                                             theme.palette.primary.main,
-                                            theme.palette.background.paper,
+                                            getCustomerPageSurfaceColor(theme),
                                         ),
                                         display: 'block',
                                         maxWidth: '640px',

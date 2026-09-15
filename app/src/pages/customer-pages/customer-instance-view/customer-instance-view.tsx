@@ -1,3 +1,4 @@
+import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surface';
 import {Box, ThemeProvider, useTheme} from '@mui/material';
 import {Outlet, useNavigate, useParams} from 'react-router-dom';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -171,39 +172,50 @@ export function CustomerInstanceView() {
     return (
         <ThemeProvider theme={resolvedTheme}>
             <SnackbarProvider>
-                <CustomerInstanceViewHeader
-                    status={instanceStatus}
-                />
+                {/* Own the surface above the outlet so identity steps, task content and empty states stay consistent. */}
+                <Box sx={{
+                    backgroundColor: getCustomerPageSurfaceColor,
+                    color: 'text.primary',
+                    minHeight: '100dvh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}>
+                    <CustomerInstanceViewHeader
+                        status={instanceStatus}
+                    />
 
-                <PageWrapper
-                    title={instanceStatus.title}
-                    titlePrefix={AppConfig.providerName}
-                    faviconUrl={instanceStatus.theme.faviconUrl}
-                >
-                    {
-                        instanceStatus.tasks == null &&
-                        <LoadingPlaceholder/>
-                    }
+                    <Box component="main" sx={{flex: '1 0 auto', minWidth: 0}}>
+                        <PageWrapper
+                            title={instanceStatus.title}
+                            titlePrefix={AppConfig.providerName}
+                            faviconUrl={instanceStatus.theme.faviconUrl}
+                        >
+                            {
+                                instanceStatus.tasks == null &&
+                                <LoadingPlaceholder/>
+                            }
 
-                    {
-                        instanceStatus.tasks != null && !selectedTaskExists && activeCustomerTasks.length === 0 &&
-                        <NoTaskToDoPlaceholder/>
-                    }
+                            {
+                                instanceStatus.tasks != null && !selectedTaskExists && activeCustomerTasks.length === 0 &&
+                                <NoTaskToDoPlaceholder/>
+                            }
 
-                    {
-                        instanceStatus.tasks != null && activeCustomerTasks.length > 0 && !selectedTaskExists &&
-                        <LoadingPlaceholder/>
-                    }
+                            {
+                                instanceStatus.tasks != null && activeCustomerTasks.length > 0 && !selectedTaskExists &&
+                                <LoadingPlaceholder/>
+                            }
 
-                    {
-                        instanceStatus.tasks != null && selectedTaskExists &&
-                        <Outlet context={outletContext}/>
-                    }
-                </PageWrapper>
+                            {
+                                instanceStatus.tasks != null && selectedTaskExists &&
+                                <Outlet context={outletContext}/>
+                            }
+                        </PageWrapper>
+                    </Box>
 
-                <CustomerInstanceViewFooter
-                    status={instanceStatus}
-                />
+                    <CustomerInstanceViewFooter
+                        status={instanceStatus}
+                    />
+                </Box>
 
                 <PrivacyDialog
                     onHide={() => dispatch(showDialog(undefined))}

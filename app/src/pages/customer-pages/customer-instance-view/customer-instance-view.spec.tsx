@@ -1,4 +1,5 @@
 import React from 'react';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {ProcessInstanceStatus} from '../../../modules/process/enums/process-instance-status';
@@ -39,12 +40,16 @@ vi.mock('../../../providers/snackbar-provider', () => ({
     SnackbarProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
 }));
 
-vi.mock('./customer-instance-view-header', () => ({
-    CustomerInstanceViewHeader: () => null,
+vi.mock('../../../components/logo/logo', () => ({
+    Logo: () => null,
 }));
 
-vi.mock('./customer-instance-view-footer', () => ({
-    CustomerInstanceViewFooter: () => null,
+vi.mock('../../../components/color-mode-picker/color-mode-picker', () => ({
+    ColorModePicker: () => null,
+}));
+
+vi.mock('../../../components/prosuna-attribution/prosuna-attribution', () => ({
+    ProsunaAttribution: () => null,
 }));
 
 vi.mock('../../../dialogs/privacy-dialog/privacy-dialog', () => ({
@@ -86,6 +91,36 @@ describe('CustomerInstanceView', () => {
         mocks.navigate.mockReset();
         mocks.params.instanceAccessKey = 'instance-key';
         mocks.params.taskAccessKey = undefined;
+    });
+
+    it.each(['light', 'dark'] as const)('uses a neutral full-height surface for task content in %s mode', async mode => {
+        mocks.params.taskAccessKey = 'form-task';
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus').mockResolvedValue(createStatus([
+            createTask('form-task', ProcessTaskStatus.AwaitingCustomer),
+        ]));
+        const theme = createTheme({palette: {mode, background: {default: '#ffeeee', paper: '#eeffee'}}});
+        render(<ThemeProvider theme={theme}><CustomerInstanceView/></ThemeProvider>);
+
+        const task = await screen.findByText('Aufgabenansicht');
+        const main = screen.getByRole('main');
+        const surfaceColor = mode === 'light' ? '#ffffff' : '#1c1c1c';
+        expect(screen.getByRole('banner').firstElementChild).toHaveStyle({
+            backgroundColor: surfaceColor,
+            borderBottomWidth: '1px',
+        });
+        expect(screen.getByRole('contentinfo')).toHaveStyle({
+            backgroundColor: surfaceColor,
+            borderTopWidth: '1px',
+            flexShrink: '0',
+        });
+        expect(main).toContainElement(task);
+        expect(main).toHaveStyle({flex: '1 0 auto'});
+        expect(main.parentElement).toHaveStyle({
+            backgroundColor: mode === 'light' ? '#ffffff' : '#1c1c1c',
+            minHeight: '100dvh',
+            display: 'flex',
+            flexDirection: 'column',
+        });
     });
 
     it('ignores completed history and opens the first active customer task', async () => {
