@@ -1,4 +1,5 @@
 import {InputMode} from '../../models/input-mode';
+import {ResourceInputGallery} from './resource-input-gallery';
 import {useState} from 'react';
 import {
     Box,
@@ -1185,6 +1186,7 @@ export function FieldLayoutGallery() {
                     derivationTriggerIdQueue={[]}
                 />
             </ViewDispatcherContextProvider>
+            <ResourceInputGallery/>
             <ExternalActionGallery/>
         </Box>
     );
