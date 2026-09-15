@@ -3,7 +3,6 @@ package de.aivot.prosuna.backend.plugins.core.v1.storage;
 import de.aivot.prosuna.backend.TestData;
 import de.aivot.prosuna.backend.core.properties.HttpServiceProperties;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.exceptions.StorageException;
@@ -369,7 +368,6 @@ class WebDavStorageProviderDefinitionV1Test {
                                                                     KnownExtensionsService knownExtensionsService,
                                                                     StorageProviderRepository storageProviderRepository) {
         return new WebDavStorageProviderDefinitionV1(
-                mock(SecretRepository.class),
                 mock(SecretService.class),
                 knownExtensionsService,
                 storageProviderRepository,

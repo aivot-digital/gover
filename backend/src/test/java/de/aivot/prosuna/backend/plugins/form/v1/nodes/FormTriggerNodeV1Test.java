@@ -1,11 +1,14 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
@@ -208,6 +211,37 @@ class FormTriggerNodeV1Test {
     }
 
     @Test
+    void getMetadata_ShouldForwardIdentityProviderKeys() {
+        var firstProviderKey = UUID.randomUUID();
+        var secondProviderKey = UUID.randomUUID();
+        var configuration = configuration("antrag-online", validFormLayout());
+        configuration.identities = List.of(new IdentityConfigElementSlot(
+                "applicant",
+                "Antragsteller:in",
+                null,
+                true,
+                false,
+                List.of(
+                        new IdentityConfigElementOption(firstProviderKey, List.of()),
+                        new IdentityConfigElementOption(firstProviderKey, List.of()),
+                        new IdentityConfigElementOption(secondProviderKey, List.of())
+                )
+        ));
+
+        var metadata = node.getMetadata(
+                processNode(),
+                configuration,
+                ProcessNodeDefinitionMetadata.empty()
+        );
+
+        assertEquals(1, metadata.forwardedIdentities().size());
+        assertEquals(
+                List.of(firstProviderKey, secondProviderKey),
+                metadata.forwardedIdentities().getFirst().identityProviderKeys()
+        );
+    }
+
+    @Test
     void getConfigurationLayout_ShouldExposeCopyableSlugUrlTemplate() throws Exception {
         var publicUrlService = new PublicUrlService(prosunaConfig());
         var node = createNode(publicUrlService);
@@ -339,7 +373,7 @@ class FormTriggerNodeV1Test {
         when(pdfService.generateCustomerSummary(
                 same(formLayout),
                 any(AuthoredElementValues.class),
-                eq(FormPdfScope.Citizen),
+                eq(FormPdfScope.Customer),
                 any(ProcessInstanceEntity.class),
                 same(configuration),
                 any(ProcessNodeEntity.class)
@@ -379,7 +413,7 @@ class FormTriggerNodeV1Test {
         verify(pdfService).generateCustomerSummary(
                 same(formLayout),
                 submissionCaptor.capture(),
-                eq(FormPdfScope.Citizen),
+                eq(FormPdfScope.Customer),
                 processInstanceCaptor.capture(),
                 same(configuration),
                 processNodeCaptor.capture()
@@ -425,7 +459,7 @@ class FormTriggerNodeV1Test {
     }
 
     @Test
-    void getCustomerTaskView_ShouldRenderConfiguredPaymentSuccessMessage() throws Exception {
+    void getCompletedCustomerTaskView_ShouldRenderConfiguredPaymentSuccessMessage() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
         var transactionKey = "tx-1";
         var paymentConfig = new PaymentConfigElementValue(
@@ -461,7 +495,7 @@ class FormTriggerNodeV1Test {
         when(processService.retrieve(PROCESS_ID))
                 .thenReturn(Optional.of(process()));
 
-        var layout = node.getCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+        var layout = node.getCompletedCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
                 mock(ProcessNodeExecutionLogger.class),
                 processNode(),
                 processInstance(Map.of()),
@@ -470,14 +504,14 @@ class FormTriggerNodeV1Test {
                 null,
                 nodeConfiguration,
                 null
-        ));
+        )).layout();
 
         var richText = layout.findChild("rtx", RichTextContentElement.class).orElseThrow();
         assertTrue(richText.getContent().contains("# Zahlung erfolgreich\n# Zahlung erhalten\nDanke **Ada**."));
     }
 
     @Test
-    void getCustomerTaskView_ShouldRenderPaymentConfirmationDownloadUrl() throws Exception {
+    void getCompletedCustomerTaskView_ShouldRenderPaymentConfirmationDownloadUrl() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
         var transactionKey = "tx-1";
         var paymentConfig = new PaymentConfigElementValue(
@@ -514,7 +548,7 @@ class FormTriggerNodeV1Test {
         when(processService.retrieve(PROCESS_ID))
                 .thenReturn(Optional.of(process()));
 
-        var layout = node.getCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+        var layout = node.getCompletedCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
                 mock(ProcessNodeExecutionLogger.class),
                 processNode(),
                 instance,
@@ -523,13 +557,38 @@ class FormTriggerNodeV1Test {
                 null,
                 nodeConfiguration,
                 null
-        ));
+        )).layout();
 
         var downloadButton = layout.findChild("download", LinkButtonContentElement.class).orElseThrow();
         assertEquals(
                 "https://example.test/api/public/form/antrag-prozess/antrag-online/submit/instance-access/task-access/payment-confirmation/",
                 downloadButton.getHref()
         );
+    }
+
+    @Test
+    void getCompletedCustomerTaskView_ShouldFallBackToGenericConfirmationWithoutPaymentData() throws Exception {
+        var configuration = new FormTriggerConfigV1();
+
+        var view = node.getCompletedCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+                mock(ProcessNodeExecutionLogger.class),
+                processNode(),
+                processInstance(Map.of()),
+                task(),
+                null,
+                null,
+                configuration,
+                null
+        ));
+
+        var alert = view.layout()
+                .findChild(
+                        node.getKey() + "-completed-customer-task-alert",
+                        AlertContentElement.class
+                )
+                .orElseThrow();
+        assertEquals("Aufgabe abgeschlossen", alert.getTitle());
+        assertTrue(view.events().isEmpty());
     }
 
     private static FormTriggerConfigV1 configuration(String formSlug, FormLayoutElement formLayout) {

@@ -54,7 +54,6 @@ class ProcessNodeInputModePolicyTest {
                 "automatic_content"
         );
         assertDynamicFields(ManualActionNodeV1.ManualActionNodeConfig.class, "task_description");
-        assertDynamicFields(PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.class, "recipientEmail");
         assertDynamicFields(CounterActionNodeV1.CounterActionNodeV1Configuration.class, "increment");
         assertDynamicFields(
                 WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.class,
@@ -81,7 +80,7 @@ class ProcessNodeInputModePolicyTest {
                 "manual_assignment"
         );
         assertLiteralOnlyFields(ManualActionNodeV1.ManualActionNodeConfig.class, "ui_definition", "assignment_context");
-        assertLiteralOnlyFields(PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.class, "payment");
+        assertLiteralOnlyFields(PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.class, "payment", "recipientIdentityId");
         assertLiteralOnlyFields(CounterActionNodeV1.CounterActionNodeV1Configuration.class, "variable");
         assertLiteralOnlyFields(
                 WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.class,
@@ -167,13 +166,25 @@ class ProcessNodeInputModePolicyTest {
                 "automatic_content"
         );
         assertDynamicTextFields(ManualActionNodeV1.ManualActionNodeConfig.class, "task_description");
-        assertDynamicTextFields(PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.class, "recipientEmail");
         assertDynamicTextFields(PdfActionNodeV1.PdfActionNodeConfig.class, "file_name");
         assertDynamicTextFields(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.class, "file_name");
     }
 
+    private static de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement configurationLayout(Class<?> configurationClass) throws Exception {
+        if (configurationClass == EMailActionNodeV1.EMailActionNodeConfig.class) {
+            // The shared message POJO stays policy-neutral; EMail enables its established modes on its own layout.
+            return org.mockito.Mockito.mock(EMailActionNodeV1.class, org.mockito.Mockito.CALLS_REAL_METHODS)
+                    .getConfigurationLayout(new de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext(
+                            null, new de.aivot.prosuna.backend.process.entities.ProcessEntity(),
+                            new de.aivot.prosuna.backend.process.entities.ProcessVersionEntity(),
+                            new de.aivot.prosuna.backend.process.entities.ProcessNodeEntity().setProcessId(1).setProcessVersion(1)
+                    ));
+        }
+        return ElementPOJOMapper.createFromPOJO(configurationClass);
+    }
+
     private static void assertDynamicFields(Class<?> configurationClass, String... fieldIds) throws Exception {
-        var layout = ElementPOJOMapper.createFromPOJO(configurationClass);
+        var layout = configurationLayout(configurationClass);
 
         for (var fieldId : fieldIds) {
             var input = assertInstanceOf(BaseInputElement.class, layout.findChild(fieldId).orElseThrow());
@@ -184,7 +195,7 @@ class ProcessNodeInputModePolicyTest {
     }
 
     private static void assertLiteralOnlyFields(Class<?> configurationClass, String... fieldIds) throws Exception {
-        var layout = ElementPOJOMapper.createFromPOJO(configurationClass);
+        var layout = configurationLayout(configurationClass);
 
         for (var fieldId : fieldIds) {
             var input = assertInstanceOf(BaseInputElement.class, layout.findChild(fieldId).orElseThrow());
@@ -193,7 +204,7 @@ class ProcessNodeInputModePolicyTest {
     }
 
     private static void assertDynamicTextFields(Class<?> configurationClass, String... fieldIds) throws Exception {
-        var layout = ElementPOJOMapper.createFromPOJO(configurationClass);
+        var layout = configurationLayout(configurationClass);
 
         for (var fieldId : fieldIds) {
             var input = assertInstanceOf(DynamicTextElement.class, layout.findChild(fieldId).orElseThrow());

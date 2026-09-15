@@ -73,7 +73,7 @@ export function PaymentProviderDetailsPageTransactions() {
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Eine Liste aller ausstehenden Transaktionen, die für diesen Zahlungsdienstleister derzeit vorliegen.
+                Eine Liste aller ausstehenden Transaktionen, die für diesen Zahlungsanbieter derzeit vorliegen.
             </Typography>
 
             <GenericList<PaymentTransactionResponseDTO>
@@ -102,7 +102,7 @@ export function PaymentProviderDetailsPageTransactions() {
                 noDataPlaceholder={
                     <EmptyDataListPlaceholder
                         title="Noch keine Transaktionen vorhanden"
-                        description="Transaktionen dokumentieren gestartete Zahlungen und deren Status für diesen Zahlungsdienstleister."
+                        description="Transaktionen dokumentieren gestartete Zahlungen und deren Status für diesen Zahlungsanbieter."
                     />
                 }
                 loadingPlaceholder="Lade Transaktionen…"

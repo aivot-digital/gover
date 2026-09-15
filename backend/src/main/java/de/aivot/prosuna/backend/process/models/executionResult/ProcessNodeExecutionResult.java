@@ -11,6 +11,7 @@ public abstract class ProcessNodeExecutionResult {
     private @Nullable Map<String, Object> processData;
     private @Nullable String taskStatusOverride;
     private @Nullable Boolean clearTaskStatusOverride;
+    private @Nullable ProcessNodeExecutionResultCommunicationRequest communicationRequest;
 
     @Nullable
     public Map<String, Object> getRuntimeData() {
@@ -59,6 +60,18 @@ public abstract class ProcessNodeExecutionResult {
 
     public ProcessNodeExecutionResult setClearTaskStatusOverride(@Nullable Boolean clearTaskStatusOverride) {
         this.clearTaskStatusOverride = clearTaskStatusOverride;
+        return this;
+    }
+
+    @Nullable
+    public ProcessNodeExecutionResultCommunicationRequest getCommunicationRequest() {
+        return communicationRequest;
+    }
+
+    public ProcessNodeExecutionResult setCommunicationRequest(
+            @Nullable ProcessNodeExecutionResultCommunicationRequest communicationRequest
+    ) {
+        this.communicationRequest = communicationRequest;
         return this;
     }
 

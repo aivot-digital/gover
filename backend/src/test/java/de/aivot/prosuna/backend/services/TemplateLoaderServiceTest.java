@@ -21,6 +21,9 @@ import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.enums.DateType;
 import de.aivot.prosuna.backend.enums.TimeType;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
+import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.prosuna.backend.pdf.enums.FormPdfScope;
 import de.aivot.prosuna.backend.pdf.models.FormPdfContext;
 import de.aivot.prosuna.backend.pdf.models.PrintableFormPdfData;
@@ -30,9 +33,11 @@ import de.aivot.prosuna.backend.services.pdf.PdfElementsGenerator;
 import org.junit.jupiter.api.Test;
 import org.thymeleaf.templatemode.TemplateMode;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -68,7 +73,7 @@ class TemplateLoaderServiceTest {
         var html = new TemplateLoaderService().processTemplate(
                 "form-parts/elements/rich-text-field.html",
                 Map.of(
-                        "base", createBaseContext(FormPdfScope.Citizen),
+                        "base", createBaseContext(FormPdfScope.Customer),
                         "element", element,
                         "value", "~~Durchgestrichen~~\n\n- [ ] Offen\n- [x] Erledigt\n\n**Fett** und [Link](https://example.org)"
                 ),
@@ -146,6 +151,82 @@ class TemplateLoaderServiceTest {
         assertFalse(html.contains("Responsible Department Name"));
         assertFalse(html.contains("Managing Department Name"));
         assertFalse(html.contains("Name der Kommune"));
+        assertFalse(html.contains("<img"));
+    }
+
+    @Test
+    void briefkopfTemplate_RendersInlineLogoWithoutExternalAssetUrl() {
+        var html = new TemplateLoaderService().processTemplate(
+                "form-parts/briefkopf.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank, "data:image/png;base64,bG9nbw=="),
+                        "responsibleDepartment", new VDepartmentShadowedEntity(),
+                        "managingDepartment", new VDepartmentShadowedEntity()
+                ),
+                TemplateMode.HTML
+        );
+
+        assertTrue(html.contains("src=\"data:image/png;base64,bG9nbw==\""));
+        assertFalse(html.contains("/api/public/assets/"));
+    }
+
+    @Test
+    void paymentConfirmationTemplate_OmitsLogoContainerWithoutLogoUrl() {
+        var paymentRequest = new XBezahldienstePaymentRequest();
+        paymentRequest.setGrosAmount(BigDecimal.TEN);
+        var paymentInformation = new XBezahldienstePaymentInformation();
+        paymentInformation.setTransactionId("transaction-1");
+        paymentInformation.setTransactionTimestamp("2026-09-14T10:00:00Z");
+        var transaction = new PaymentTransactionEntity()
+                .setPaymentRequest(paymentRequest)
+                .setPaymentInformation(paymentInformation);
+        var department = new VDepartmentShadowedEntity()
+                .setName("Example Department")
+                .setPostalAddress("Example Street 1");
+        var context = new HashMap<String, Object>();
+        context.put("transaction", transaction);
+        context.put("caseNumber", "CASE-1");
+        context.put("logoDataUrl", null);
+        context.put("department", department);
+        context.put("generatedAt", "2026-09-14T10:00:00Z");
+
+        var html = new TemplateLoaderService().processTemplate(
+                "payment-confirmation/form-trigger-payment-confirmation.html",
+                context,
+                TemplateMode.HTML
+        );
+
+        assertFalse(html.contains("id=\"logo\""));
+        assertFalse(html.contains("<img"));
+    }
+
+    @Test
+    void paymentConfirmationTemplate_RendersInlineLogoWithoutExternalAssetUrl() {
+        var paymentRequest = new XBezahldienstePaymentRequest();
+        paymentRequest.setGrosAmount(BigDecimal.TEN);
+        var paymentInformation = new XBezahldienstePaymentInformation();
+        paymentInformation.setTransactionId("transaction-1");
+        paymentInformation.setTransactionTimestamp("2026-09-14T10:00:00Z");
+        var transaction = new PaymentTransactionEntity()
+                .setPaymentRequest(paymentRequest)
+                .setPaymentInformation(paymentInformation);
+        var context = new HashMap<String, Object>();
+        context.put("transaction", transaction);
+        context.put("caseNumber", "CASE-1");
+        context.put("logoDataUrl", "data:image/svg+xml;base64,PHN2Zy8+");
+        context.put("department", new VDepartmentShadowedEntity()
+                .setName("Example Department")
+                .setPostalAddress("Example Street 1"));
+        context.put("generatedAt", "2026-09-14T10:00:00Z");
+
+        var html = new TemplateLoaderService().processTemplate(
+                "payment-confirmation/form-trigger-payment-confirmation.html",
+                context,
+                TemplateMode.HTML
+        );
+
+        assertTrue(html.contains("src=\"data:image/svg+xml;base64,PHN2Zy8+\""));
+        assertFalse(html.contains("/api/public/assets/"));
     }
 
     @Test
@@ -531,8 +612,12 @@ class TemplateLoaderServiceTest {
     }
 
     private FormPdfContext createBaseContext(FormPdfScope scope) {
+        return createBaseContext(scope, null);
+    }
+
+    private FormPdfContext createBaseContext(FormPdfScope scope, String logoDataUrl) {
         var prosunaConfig = new ProsunaConfig();
         prosunaConfig.setProsunaHostname("https://prosuna.example/");
-        return new FormPdfContext("", "", "", prosunaConfig, scope);
+        return new FormPdfContext("", logoDataUrl, prosunaConfig, scope);
     }
 }

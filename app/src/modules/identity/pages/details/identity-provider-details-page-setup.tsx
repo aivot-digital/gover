@@ -164,7 +164,7 @@ export function IdentityProviderDetailsPageSetup() {
             {identityProvider?.type === IdentityProviderType.BundID && (
                 <SetupInfoBlock
                     title="Einrichtung der BundID"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BundID einer technischen Anbindung im Self Service Portal (SSP) des Bundesministerium des Innern und für Heimat bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BundID einer technischen Anbindung im Self Service Portal (SSP) des Bundesministeriums für Digitales und Staatsmodernisierung bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,

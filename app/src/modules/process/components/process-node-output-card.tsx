@@ -32,10 +32,9 @@ export function ProcessNodeOutputCard(props: ProcessNodeOutputCardProps): React.
         >
             <Box
                 sx={{
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 1fr) auto',
+                    display: 'flex',
+                    flexWrap: 'wrap',
                     alignItems: 'start',
-                    justifyContent: 'space-between',
                     gap: 1,
                 }}
             >
@@ -44,7 +43,9 @@ export function ProcessNodeOutputCard(props: ProcessNodeOutputCardProps): React.
                     sx={{
                         fontWeight: 600,
                         minWidth: 0,
+                        flex: '1 1 12rem',
                         lineHeight: 1.4,
+                        overflowWrap: 'anywhere',
                     }}
                 >
                     {label}
@@ -56,7 +57,9 @@ export function ProcessNodeOutputCard(props: ProcessNodeOutputCardProps): React.
                         alignItems: 'flex-start',
                         gap: 0.125,
                         color: 'text.secondary',
-                        flexShrink: 0,
+                        flex: '0 1 auto',
+                        minWidth: 0,
+                        maxWidth: '100%',
                         mt: '1px',
                     }}
                 >
@@ -65,7 +68,9 @@ export function ProcessNodeOutputCard(props: ProcessNodeOutputCardProps): React.
                         sx={{
                             color: "text.secondary",
                             fontFamily: 'monospace',
-                            whiteSpace: 'nowrap',
+                            whiteSpace: 'normal',
+                            overflowWrap: 'anywhere',
+                            wordBreak: 'break-word',
                             fontSize: '0.8125rem',
                             lineHeight: 1.4
                         }}>

@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.elements.enums;
 
 public enum ElementDisplayContext {
-    CitizenFacing,
+    CustomerFacing,
     StaffFacing,
     DataObjectSchema,
 }

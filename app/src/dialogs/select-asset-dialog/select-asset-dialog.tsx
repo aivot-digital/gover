@@ -8,7 +8,7 @@ export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProp
         title,
         show,
         mimetype,
-        mode,
+        visibility,
         onCancel,
         onSelect,
         children,
@@ -20,7 +20,7 @@ export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProp
             title={title}
             show={show}
             mimeType={mimetype}
-            mode={mode}
+            visibility={visibility}
             onCancel={onCancel}
             onSelectAsset={(assetKey) => {
                 onSelect(assetKey);

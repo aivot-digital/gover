@@ -204,6 +204,7 @@ class ProcessWorkerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -375,7 +376,7 @@ class ProcessWorkerTest {
 
     private static final class TestProcessNodeService extends ProcessNodeService {
         private TestProcessNodeService() {
-            super(null, null, null, null, null, null, null, new ProsunaConfig());
+            super(null, null, null, null, null, null, null, new ProsunaConfig(), null);
         }
 
         @Nonnull
@@ -449,7 +450,7 @@ class ProcessWorkerTest {
         private boolean handleResultCalled;
 
         private TestProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override

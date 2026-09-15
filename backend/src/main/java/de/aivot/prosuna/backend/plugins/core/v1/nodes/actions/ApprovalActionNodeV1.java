@@ -299,7 +299,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
     @Nonnull
     @Override
-    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) {
+    public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) throws ResponseException {
         var config = context.getConfigurationOfExecutingNode();
 
         var layout = new GroupLayoutElement();
@@ -345,27 +345,16 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         children.add(actionsSpacer);
 
         layout.setChildren(children);
-        return layout;
-    }
 
-    @Nonnull
-    @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) {
-        return List.of(
+        var events = List.of(
                 new TaskViewEvent("Freigeben", EVENT_APPROVE),
                 new TaskViewEvent("Ablehnen", EVENT_REJECT)
         );
-    }
-
-    @Nonnull
-    @Override
-    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) throws ResponseException {
-        var taskView = getStaffTaskView(context);
         var effectiveValues = elementDataTransformService.buildEffectiveValues(
-                taskView,
-                context.getThisTask().getProcessData()
+                layout, context.getThisTask().getProcessData()
         );
-        return authoredInputValueService.toLiteralAuthoredElementValues(taskView, effectiveValues);
+        var initialData = authoredInputValueService.toLiteralAuthoredElementValues(layout, effectiveValues);
+        return ProcessNodeStaffView.of(context, layout, events, initialData);
     }
 
     @Nonnull
@@ -391,7 +380,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         // Derive the effective values based on the staff task view and the saved staff task view data to store the unmapped field values in the unmapped output field
         var staffTaskView = getStaffTaskView(context);
         var effectiveValues = elementDerivationService
-                .derive(staffTaskView, update)
+                .derive((GroupLayoutElement) staffTaskView.layout(), update)
                 .getEffectiveValues();
 
         var nodeData = new HashMap<String, Object>();

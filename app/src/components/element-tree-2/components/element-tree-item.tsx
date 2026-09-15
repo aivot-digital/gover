@@ -676,7 +676,7 @@ function getIcons<T extends AnyElement>(root: AnyElement,
             if (mappedIdentityProviders.length > 0) {
                 actions.push({
                     icon: <AccountCircleOutlined/>,
-                    tooltip: 'Verknüpfung mit Nutzerkontenanbieter vorhanden: ' + mappedIdentityProviders.join(', '),
+                    tooltip: 'Verknüpfung mit Identitätsanbieter vorhanden: ' + mappedIdentityProviders.join(', '),
                     onClick: createNavigateToTabHandler(DefaultTabs.metadata),
                 });
             }

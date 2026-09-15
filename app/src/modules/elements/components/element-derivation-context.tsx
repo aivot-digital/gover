@@ -17,7 +17,17 @@ import {
     resolveComputedElementSubStateStates,
 } from '../../../models/element-data';
 import {AnyElement} from '../../../models/elements/any-element';
-import React, {createContext, RefObject, useContext, useEffect, useMemo, useRef, useState} from 'react';
+import React, {
+    createContext,
+    forwardRef,
+    RefObject,
+    useContext,
+    useEffect,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../../../utils/flatten-elements';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {isAnyElementWithChildren} from '../../../models/elements/any-element-with-children';
@@ -52,6 +62,7 @@ interface ElementDerivationContextProps {
     computedErrors?: ComputedElementErrors | null;
     onDerivedDataChange?: (newData: DerivedRuntimeElementData) => void;
     disabled?: boolean;
+    readOnly?: boolean;
     onDerivationStarted?: (triggeringElementData: AuthoredElementValues) => void;
     onDerivationFinished?: (derivedElementData: DerivedRuntimeElementData) => void;
     suppressErrors?: boolean;
@@ -64,6 +75,11 @@ interface ElementDerivationContextProps {
     taskViewMode?: TaskViewMode | null;
     inputModesEnabled?: boolean;
     inputModeVariables?: InputVariableSuggestion[];
+    deriveOnMount?: boolean;
+}
+
+export interface ElementDerivationContextHandle {
+    replaceAuthoredElementValues: (newData: AuthoredElementValues) => Promise<DerivedRuntimeElementData>;
 }
 
 interface ElementDerivationContextType {
@@ -109,7 +125,10 @@ export function useElementDerivationContext(): ElementDerivationContextType {
 }
 
 
-export function ElementDerivationContext(props: ElementDerivationContextProps) {
+export const ElementDerivationContext = forwardRef<
+    ElementDerivationContextHandle,
+    ElementDerivationContextProps
+>(function ElementDerivationContext(props, ref) {
     const {
         element,
         authoredElementValues,
@@ -118,6 +137,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         computedErrors,
         onDerivedDataChange,
         disabled,
+        readOnly,
         onDerivationStarted,
         onDerivationFinished,
         suppressErrors,
@@ -130,6 +150,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         taskViewMode = null,
         inputModesEnabled = false,
         inputModeVariables = [],
+        deriveOnMount = true,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -172,7 +193,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
         return {
             renderMode: renderMode,
-            isEditable: !disabled,
+            isEditable: !disabled && !readOnly,
             showInvisible: false,
             showTechnical: true,
             scrollContainerRef: null,
@@ -188,6 +209,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         };
     }, [
         disabled,
+        readOnly,
         element,
         authoredElementValues,
         derivedData,
@@ -208,6 +230,10 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     }, [computedErrors]);
 
     useEffect(() => {
+        if (!deriveOnMount) {
+            return;
+        }
+
         const controller = new AbortController();
         let isActive = true;
 
@@ -224,7 +250,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             isActive = false;
             controller.abort();
         };
-    }, [element, disableValidation, disableVisibilities, renderMode]);
+    }, [element, disableValidation, disableVisibilities, renderMode, deriveOnMount]);
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
         const normalizedNewData = normalizeReplicatingContainerValues(element, newData);
@@ -367,6 +393,24 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         });
     };
 
+    const replaceAuthoredElementValues = async (newData: AuthoredElementValues) => {
+        const normalizedNewData = normalizeReplicatingContainerValues(element, newData);
+        const patchedDerivedData = clearDerivedErrorsRecursively(
+            patchDerivedDataWithAuthoredValues(element, normalizedNewData, authoredElementValues, baseDerivedData, new Set()),
+        );
+
+        setErrorSuppressionTargets([]);
+        setInternalDerivedData(patchedDerivedData);
+        onDerivedDataChange?.(patchedDerivedData);
+        onAuthoredElementValuesChange(normalizedNewData);
+
+        return await deriveWithMinimumVisibleDuration(normalizedNewData, ['ALL']);
+    };
+
+    useImperativeHandle(ref, () => ({
+        replaceAuthoredElementValues,
+    }));
+
     return (
         <ElementDerivationContextProvider
             value={contextValue}
@@ -383,6 +427,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                     taskViewMode,
                     inputModesEnabled,
                     inputModeVariables,
+                    readOnly,
                 }}
             >
                 <ViewDispatcherComponent
@@ -423,7 +468,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             </ViewDispatcherContextProvider>
         </ElementDerivationContextProvider>
     );
-}
+});
 
 function checkElementReferencesId(element: AnyElement, id: string): boolean {
     if (element.visibility?.referencedIds?.includes(id)) {

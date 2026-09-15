@@ -12,7 +12,7 @@ export function IdentityProviderDetailsPage() {
     return (
         <>
             <PageWrapper
-                title="Nutzerkontenanbieter bearbeiten"
+                title="Identitätsanbieter bearbeiten"
                 fullWidth
                 background
             >
@@ -27,9 +27,9 @@ export function IdentityProviderDetailsPage() {
                     }}
                     header={{
                         icon: <BadgeOutlinedIcon />,
-                        title: 'Nutzerkontenanbieter bearbeiten',
+                        title: 'Identitätsanbieter bearbeiten',
                         helpDialog: {
-                            title: 'Hilfe zu Nutzerkontenanbietern',
+                            title: 'Hilfe zu Identitätsanbietern',
                             tooltip: 'Hilfe anzeigen',
                             content: (
                                 <>
@@ -39,7 +39,7 @@ export function IdentityProviderDetailsPage() {
                                             marginBottom: "16px"
                                         }}
                                     >
-                                        Konfigurieren Sie hier die Nutzerkontenanbieter, die in Ihrer Prosuna-Instanz global verfügbar sein sollen.
+                                        Konfigurieren Sie hier die Identitätsanbieter, die in Ihrer Prosuna-Instanz global verfügbar sein sollen.
                                         Die angebundenen Nutzerkonten können in Formularen als Authentifizierungsoptionen verwendet werden.
                                         Unterstützt werden alle Anbieter, die eine OpenID Connect (OIDC) kompatible Schnittstelle bereitstellen.
                                     </Typography>
@@ -89,7 +89,7 @@ export function IdentityProviderDetailsPage() {
                                                 <br />
                                                 → Nutzung der User Federation im Staff Realm des Prosuna-Keycloaks.
                                                 <br />
-                                                Diese Nutzerkonten werden nicht über die Funktion "Nutzerkontenanbieter" verwaltet.
+                                                Diese Nutzerkonten werden nicht über die Funktion "Identitätsanbieter" verwaltet.
                                             </Typography>
                                         </li>
                                     </ul>
@@ -99,7 +99,7 @@ export function IdentityProviderDetailsPage() {
                                             marginBottom: "16px"
                                         }}
                                     >
-                                        Es wird empfohlen, für jeden Nutzerkontenanbieter sowohl eine produktive als auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
+                                        Es wird empfohlen, für jeden Identitätsanbieter sowohl eine produktive als auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
                                     </Typography>
                                     <Typography
                                         variant="body1"
@@ -125,6 +125,12 @@ export function IdentityProviderDetailsPage() {
                                 isDisabled: (item: IdentityProviderDetailsDTO | undefined) => item?.key === '',
                                 requiredPermission: Permission.IDENTITY_PROVIDER_UPDATE,
                             },
+                            {
+                                path: '/identity-providers/:key/communication',
+                                label: 'Kommunikation',
+                                isDisabled: (item: IdentityProviderDetailsDTO | undefined) => item?.key === '',
+                                requiredPermission: Permission.COMMUNICATION_PROVIDER_READ,
+                            },
                         ];
 
                         if (!item || item.key === '') {
@@ -144,22 +150,22 @@ export function IdentityProviderDetailsPage() {
                     fetchData={(api, id: string) => new IdentityProvidersApiService().retrieve(id)}
                     getTabTitle={(item: IdentityProviderDetailsDTO) => {
                         if (item.key === '') {
-                            return 'Neuer Nutzerkontenanbieter';
+                            return 'Neuer Identitätsanbieter';
                         } else {
                             return item.name;
                         }
                     }}
                     getHeaderTitle={(item, isNewItem, notFound) => {
                         if (notFound) {
-                            return 'Nutzerkontenanbieter nicht gefunden';
+                            return 'Identitätsanbieter nicht gefunden';
                         }
                         if (isNewItem) {
-                            return 'Neuen Nutzerkontenanbieter anlegen';
+                            return 'Neuen Identitätsanbieter anlegen';
                         }
-                        return `Nutzerkontenanbieter: ${item?.name ?? 'Unbenannt'}`;
+                        return `Identitätsanbieter: ${item?.name ?? 'Unbenannt'}`;
                     }}
                     parentLink={{
-                        label: 'Liste der Nutzerkontenanbieter',
+                        label: 'Liste der Identitätsanbieter',
                         to: '/identity-providers',
                     }}
                     idParam="key"

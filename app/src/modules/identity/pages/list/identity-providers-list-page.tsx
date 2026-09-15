@@ -35,10 +35,10 @@ export function IdentityProvidersListPage() {
 
     const header = useCallback((permissions: GenericListPagePermissionState<IdentityProviderListDTO>) => ({
         icon: <BadgeOutlinedIcon />,
-        title: 'Nutzerkontenanbieter',
+        title: 'Identitätsanbieter',
         actions: [
             {
-                label: 'Neuer Nutzerkontenanbieter',
+                label: 'Neuer Identitätsanbieter',
                 icon: <AddOutlinedIcon />,
                 to: '/identity-providers/new',
                 variant: 'contained' as const,
@@ -47,7 +47,7 @@ export function IdentityProvidersListPage() {
             },
         ],
         helpDialog: {
-            title: 'Hilfe zu Nutzerkontenanbietern',
+            title: 'Hilfe zu Identitätsanbietern',
             tooltip: 'Hilfe anzeigen',
             content: (
                 <>
@@ -57,7 +57,7 @@ export function IdentityProvidersListPage() {
                             marginBottom: "16px"
                         }}
                     >
-                        Konfigurieren Sie hier die Nutzerkontenanbieter, die in Ihrer Prosuna-Instanz global verfügbar sein sollen.
+                        Konfigurieren Sie hier die Identitätsanbieter, die in Ihrer Prosuna-Instanz global verfügbar sein sollen.
                         Die angebundenen Nutzerkonten können in Formularen als Authentifizierungsoptionen verwendet werden.
                         Unterstützt werden alle Anbieter, die eine OpenID Connect (OIDC) kompatible Schnittstelle bereitstellen.
                     </Typography>
@@ -107,7 +107,7 @@ export function IdentityProvidersListPage() {
                                 <br />
                                 → Nutzung der User Federation im Staff Realm des Prosuna-Keycloaks.
                                 <br />
-                                Diese Nutzerkonten werden nicht über die Funktion "Nutzerkontenanbieter" verwaltet.
+                                Diese Nutzerkonten werden nicht über die Funktion "Identitätsanbieter" verwaltet.
                             </Typography>
                         </li>
                     </ul>
@@ -117,7 +117,7 @@ export function IdentityProvidersListPage() {
                             marginBottom: "16px"
                         }}
                     >
-                        Es wird empfohlen, für jeden Nutzerkontenanbieter sowohl eine produktive als auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
+                        Es wird empfohlen, für jeden Identitätsanbieter sowohl eine produktive als auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
                     </Typography>
                     <Typography
                         variant="body1"
@@ -219,9 +219,9 @@ export function IdentityProvidersListPage() {
 
     const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<IdentityProviderListDTO>) => (
         <EmptyDataListPlaceholder
-            title="Keine Nutzerkontenanbieter vorhanden"
-            description="Nutzerkontenanbieter verbinden Prosuna mit Anmeldeverfahren oder Benutzerquellen wie Verzeichnisdiensten."
-            addText="Neuen Nutzerkontenanbieter anlegen"
+            title="Keine Identitätsanbieter vorhanden"
+            description="Identitätsanbieter verbinden Prosuna mit Anmeldeverfahren oder Benutzerquellen wie Verzeichnisdiensten."
+            addText="Neuen Identitätsanbieter anlegen"
             onAdd={() => navigate('/identity-providers/new')}
             addDisabled={!permissions.canCreate}
             addDisabledTooltip={permissions.createDisabledTooltip}
@@ -231,20 +231,20 @@ export function IdentityProvidersListPage() {
     return (
         <>
             <PageWrapper
-                title="Nutzerkontenanbieter"
+                title="Identitätsanbieter"
                 fullWidth
                 background
             >
                 <GenericListPage<IdentityProviderListDTO>
                     header={header}
                     permissionCheck={identityProvidersListPermissionCheck}
-                    searchLabel="Nutzerkontenanbieter suchen"
+                    searchLabel="Identitätsanbieter suchen"
                     searchPlaceholder="Name der Konfiguration eingeben…"
                     fetch={fetchIdentityProviders}
                     columnDefinitions={columnDefinitions}
                     getRowIdentifier={getRowIdentifier}
                     noDataPlaceholder={noDataPlaceholder}
-                    noSearchResultsPlaceholder="Keine Nutzerkontenanbieter gefunden"
+                    noSearchResultsPlaceholder="Keine Identitätsanbieter gefunden"
                     rowActionsCount={2}
                     rowActions={rowActions}
                     defaultSortField="name"

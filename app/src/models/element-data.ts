@@ -35,10 +35,30 @@ export function getLiteralElementValue<T = unknown>(values: AuthoredElementValue
     return getLiteralAuthoredValue<T>(values[key]);
 }
 
-export function toLiteralAuthoredElementValues(values: Record<string, unknown>): AuthoredElementValues {
-    return Object.fromEntries(
+export function toLiteralAuthoredElementValues(values: Record<string, unknown>, layout?: AnyElement | AnyElement[]): AuthoredElementValues {
+    const authoredValues = Object.fromEntries(
         Object.entries(values).map(([key, value]) => [key, literalAuthoredValue(value)]),
     );
+
+    function wrapRows(element: AnyElement): void {
+        if (isReplicatingContainerLayout(element)) {
+            const rows = values[element.id];
+            if (Array.isArray(rows)) {
+                // Only schema-declared containers contain authored child values; ordinary JSON stays opaque.
+                authoredValues[element.id] = literalAuthoredValue(rows.map(row => row == null ? row : ({
+                    ...row,
+                    values: toLiteralAuthoredElementValues(row.values ?? {}, element.children ?? []),
+                })));
+            }
+        } else if (isAnyElementWithChildren(element)) {
+            element.children?.forEach(wrapRows);
+        }
+    }
+
+    if (layout != null) {
+        (Array.isArray(layout) ? layout : [layout]).forEach(wrapRows);
+    }
+    return authoredValues;
 }
 
 export function toLiteralElementValues(values: AuthoredElementValues): Record<string, unknown> {

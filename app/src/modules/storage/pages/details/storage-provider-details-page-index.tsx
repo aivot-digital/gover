@@ -42,6 +42,7 @@ import {StorageProviderStatus} from '../../enums/storage-provider-status';
 import {isApiError} from '../../../../models/api-error';
 import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {getLatestProviderDefinitions} from '../../../../utils/provider-definition-utils';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
@@ -123,8 +124,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     const navigate = useNavigate();
     const {registerSyncPreparationHandler} = useStorageProviderDetailsPageSyncContext();
     const canDeleteStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_DELETE);
-    const canCreateStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_CREATE);
-    const canUpdateStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
 
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
     const [derivedElementData, setDerivedElementData] = useState<DerivedRuntimeElementData | null>(null);
@@ -135,14 +134,11 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         item: originalStorageProvider,
         setItem: setOriginalStorageProvider,
         additionalData,
-        setAdditionalData,
         isBusy,
         setIsBusy,
         isEditable,
         isExistingItem,
     } = useGenericDetailsPageContext<StorageProviderEntity, StorageProviderAdditionalData>();
-    const refreshDefinitionsPermission = isExistingItem === true ? Permission.STORAGE_PROVIDER_UPDATE : Permission.STORAGE_PROVIDER_CREATE;
-    const canRefreshDefinitions = isExistingItem === true ? canUpdateStorageProvider : canCreateStorageProvider;
 
     // Extract the id of the storage provider for later usage.
     const {
@@ -174,6 +170,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         hasNotChanged,
         handleInputBlur,
         handleInputChange,
+        handleInputPatch,
         validate,
         reset,
     } = useFormManager<StorageProviderEntity>(originalStorageProvider, yup.object(storageProviderSchema) as any, true);
@@ -189,6 +186,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     const definitions: StorageProviderDefinition[] = useMemo(() => {
         return additionalData?.definitions ?? [];
     }, [additionalData]);
+    const latestDefinitions = useMemo(() => getLatestProviderDefinitions(definitions), [definitions]);
 
     const definition: StorageProviderDefinition | undefined = useMemo(() => {
         return definitions.find((def) => (
@@ -366,27 +364,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         dispatch(showSuccessSnackbar('Der Speicheranbieter wurde erfolgreich gelöscht.'));
     };
 
-    const handleRefreshDefinitions = async () => {
-        if (!canRefreshDefinitions) {
-            return;
-        }
-
-        setIsBusy(true);
-        try {
-            const updatedDefinitions = await new StorageProvidersApiService().listDefinitions();
-            setAdditionalData({
-                ...additionalData,
-                definitions: updatedDefinitions,
-            });
-            dispatch(showSuccessSnackbar('Auswahllisten wurden erfolgreich neu geladen.'));
-        } catch (error) {
-            console.error('Fehler beim Aktualisieren der Auswahllisten', error);
-            dispatch(showErrorSnackbar('Fehler beim Aktualisieren der Auswahllisten.'));
-        } finally {
-            setIsBusy(false);
-        }
-    };
-
     const inputsDisabled = editedStorageProvider.systemProvider || isBusy || !isEditable;
     const editPermission = isExistingItem === true ? Permission.STORAGE_PROVIDER_UPDATE : Permission.STORAGE_PROVIDER_CREATE;
     const editDisabledTooltip = !isEditable
@@ -394,9 +371,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         : editedStorageProvider.systemProvider
             ? 'Systemanbieter können nicht bearbeitet werden.'
             : undefined;
-    const refreshDefinitionsTooltip = canRefreshDefinitions
-        ? 'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'
-        : formatMissingPermissionTooltip(refreshDefinitionsPermission);
     const defaultStorageDeleteDisabled = isDefaultAttachmentStorage || isDefaultAssetStorage;
     const deleteDisabledTooltip = !canDeleteStorageProvider
         ? formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_DELETE)
@@ -521,11 +495,18 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         label="Speichertyp"
                         required={true}
                         value={editedStorageProvider.storageProviderDefinitionKey}
-                        onChange={handleInputChange('storageProviderDefinitionKey')}
-                        options={definitions.map(createStorageProviderDefinitionOption)}
+                        onChange={(value) => {
+                            const selectedDefinition = latestDefinitions.find((candidate) => candidate.key === value);
+                            handleInputPatch({
+                                storageProviderDefinitionKey: value ?? '',
+                                storageProviderDefinitionVersion: selectedDefinition?.version ?? 0,
+                                configuration: {},
+                            });
+                        }}
+                        options={latestDefinitions.map(createStorageProviderDefinitionOption)}
                         disabled={isExistingItem}
                         error={errors.storageProviderDefinitionKey}
-                        hint="Diese Einstellung kann nach der Erstellung nicht mehr geändert werden."
+                        hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Speichertyps eingeblendet wird. Diese Einstellung kann nach dem initialen Speichern nicht mehr geändert werden."
                     />
                 </Grid>
                 <Grid
@@ -551,7 +532,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                             value: def.version.toString(),
                             label: `Version ${def.version.toString()}`,
                         }))}
-                        disabled={inputsDisabled}
+                        disabled={inputsDisabled || !editedStorageProvider.storageProviderDefinitionKey}
                         error={errors.storageProviderDefinitionVersion}
                         hint="Bestimmt, welche Version der Konfigurationsoberfläche und Einstellungsmöglichkeiten angezeigt werden."
                     />
@@ -569,14 +550,14 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     }}
                 >
                     <TextFieldComponent
-                        label="Name des Speicheranbieters"
+                        label="Name"
                         required
                         value={editedStorageProvider.name}
                         onChange={handleInputChange('name')}
                         onBlur={handleInputBlur('name')}
                         disabled={inputsDisabled}
                         error={errors.name}
-                        hint="Dient der Identifizierung des Speicheranbieters."
+                        hint="Dient der internen Identifizierung des Speicheranbieters."
                     />
                 </Grid>
                 <Grid
@@ -620,7 +601,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         multiline={true}
                         disabled={inputsDisabled}
                         error={errors.description}
-                        hint="Interne Beschreibung des Speicheranbieters zur besseren Identifizierbarkeit."
+                        hint="Interne Beschreibung des Speicheranbieters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
                         rows={6}
                     />
                 </Grid>
@@ -827,20 +808,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         Speichern
                     </Button>
                 </DisabledTooltip>
-
-                <Tooltip title={refreshDefinitionsTooltip} arrow>
-                    <Box component="span">
-                        <Button
-                            onClick={handleRefreshDefinitions}
-                            disabled={isBusy || !canRefreshDefinitions}
-                        >
-                            Auswahllisten neu laden <HelpIconOutlined
-                            fontSize="small"
-                            sx={{ml: 1}}
-                        />
-                        </Button>
-                    </Box>
-                </Tooltip>
 
                 {
                     editedStorageProvider.id !== 0 &&

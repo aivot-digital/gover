@@ -117,6 +117,10 @@ public class ProcessInstanceTaskEntity {
     private String assignedUserId;
 
     @Nullable
+    @Size(max = 36, message = "Die zugewiesene Kunden-Identitäts-ID darf maximal 36 Zeichen lang sein.")
+    private String assignedCustomerIdentityId;
+
+    @Nullable
     @Column(columnDefinition = "timestamp with time zone")
     private Instant deadline;
 
@@ -158,6 +162,7 @@ public class ProcessInstanceTaskEntity {
                                      @Nonnull Map<String, Object> processData,
                                      @Nonnull Map<String, Object> processDataDiff,
                                      @Nullable String assignedUserId,
+                                     @Nullable String assignedCustomerIdentityId,
                                      @Nullable Instant deadline,
                                      @Nullable Instant postponedUntil,
                                      @Nullable Integer retryCount,
@@ -182,6 +187,7 @@ public class ProcessInstanceTaskEntity {
         this.processData = processData;
         this.processDataDiff = processDataDiff;
         this.assignedUserId = assignedUserId;
+        this.assignedCustomerIdentityId = assignedCustomerIdentityId;
         this.deadline = deadline;
         this.postponedUntil = postponedUntil;
         this.retryCount = retryCount;
@@ -196,22 +202,12 @@ public class ProcessInstanceTaskEntity {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         ProcessInstanceTaskEntity that = (ProcessInstanceTaskEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(accessKey, that.accessKey) && Objects.equals(processInstanceId, that.processInstanceId) &&
-                Objects.equals(processId, that.processId) && Objects.equals(processVersion, that.processVersion) &&
-                Objects.equals(processNodeId, that.processNodeId) && Objects.equals(previousProcessInstanceTaskId, that.previousProcessInstanceTaskId) &&
-                Objects.equals(previousProcessNodeId, that.previousProcessNodeId) && Objects.equals(previousProcessNodePortKey, that.previousProcessNodePortKey) &&
-                status == that.status && Objects.equals(statusOverride, that.statusOverride) && Objects.equals(started, that.started) &&
-                Objects.equals(updated, that.updated) && Objects.equals(finished, that.finished) && Objects.equals(runtime, that.runtime) &&
-                Objects.equals(runtimeData, that.runtimeData) && Objects.equals(nodeData, that.nodeData) &&
-                Objects.equals(processData, that.processData) && Objects.equals(processDataDiff, that.processDataDiff) &&
-                Objects.equals(assignedUserId, that.assignedUserId) && Objects.equals(deadline, that.deadline) &&
-                Objects.equals(postponedUntil, that.postponedUntil) && Objects.equals(retryCount, that.retryCount) &&
-                Objects.equals(nextRetryAt, that.nextRetryAt);
+        return Objects.equals(id, that.id) && Objects.equals(accessKey, that.accessKey) && Objects.equals(processInstanceId, that.processInstanceId) && Objects.equals(processId, that.processId) && Objects.equals(processVersion, that.processVersion) && Objects.equals(processNodeId, that.processNodeId) && Objects.equals(previousProcessInstanceTaskId, that.previousProcessInstanceTaskId) && Objects.equals(previousProcessNodeId, that.previousProcessNodeId) && Objects.equals(previousProcessNodePortKey, that.previousProcessNodePortKey) && status == that.status && Objects.equals(statusOverride, that.statusOverride) && Objects.equals(started, that.started) && Objects.equals(updated, that.updated) && Objects.equals(finished, that.finished) && Objects.equals(runtime, that.runtime) && Objects.equals(runtimeData, that.runtimeData) && Objects.equals(nodeData, that.nodeData) && Objects.equals(processData, that.processData) && Objects.equals(processDataDiff, that.processDataDiff) && Objects.equals(assignedUserId, that.assignedUserId) && Objects.equals(assignedCustomerIdentityId, that.assignedCustomerIdentityId) && Objects.equals(deadline, that.deadline) && Objects.equals(postponedUntil, that.postponedUntil) && Objects.equals(retryCount, that.retryCount) && Objects.equals(nextRetryAt, that.nextRetryAt);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, accessKey, processInstanceId, processId, processVersion, processNodeId, previousProcessInstanceTaskId, previousProcessNodeId, previousProcessNodePortKey, status, statusOverride, started, updated, finished, runtime, runtimeData, nodeData, processData, processDataDiff, assignedUserId, deadline, postponedUntil, retryCount, nextRetryAt);
+        return Objects.hash(id, accessKey, processInstanceId, processId, processVersion, processNodeId, previousProcessInstanceTaskId, previousProcessNodeId, previousProcessNodePortKey, status, statusOverride, started, updated, finished, runtime, runtimeData, nodeData, processData, processDataDiff, assignedUserId, assignedCustomerIdentityId, deadline, postponedUntil, retryCount, nextRetryAt);
     }
 
     // endregion
@@ -455,6 +451,16 @@ public class ProcessInstanceTaskEntity {
 
     public ProcessInstanceTaskEntity setNextRetryAt(@Nullable Instant nextRetryAt) {
         this.nextRetryAt = nextRetryAt;
+        return this;
+    }
+
+    @Nullable
+    public String getAssignedCustomerIdentityId() {
+        return assignedCustomerIdentityId;
+    }
+
+    public ProcessInstanceTaskEntity setAssignedCustomerIdentityId(@Nullable String assignedCustomerIdentityId) {
+        this.assignedCustomerIdentityId = assignedCustomerIdentityId;
         return this;
     }
 

@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.identity.constants.IdentityBodyParameterConstant
 import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityResultState;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityAuthTokenData;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -18,6 +19,7 @@ import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.utils.RandomUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.communication.utils.EmailAddressUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
@@ -93,6 +95,7 @@ public class IdentityService {
 
         return identityList
                 .stream()
+                .filter(identity -> identity.getIdentityData() != null)
                 .map(IdentityData::from)
                 .reduce(
                         new IdentityDataMap(),
@@ -124,6 +127,54 @@ public class IdentityService {
             identityCacheRepository.deleteAllBySessionIdAndRelatedProcessNodeId(identitySessionId, relatedProcessNodeId);
             return identityCacheRepository.existsBySessionId(identitySessionId);
         }
+    }
+
+    /** Stores a direct email identity and replaces any previous identity for the same form slot. */
+    @Nonnull
+    public IdentityCacheEntity setEmailIdentity(@Nullable String preexistingIdentitySessionId,
+                                                @Nonnull Integer relatedProcessNodeId,
+                                                @Nonnull String identityId,
+                                                @Nullable String rawEmailAddress) {
+        var sessionId = StringUtils.isNullOrEmpty(preexistingIdentitySessionId)
+                ? generateSessionId()
+                : preexistingIdentitySessionId;
+        var emailAddress = EmailAddressUtils.normalizeSingleAddress(rawEmailAddress);
+        var identity = new IdentityCacheEntity(
+                generateEntityId(),
+                sessionId,
+                relatedProcessNodeId,
+                null,
+                IdentityType.Email,
+                null,
+                identityId,
+                null,
+                emailAddress,
+                "",
+                "",
+                Map.of("email", emailAddress),
+                null,
+                null
+        );
+
+        deleteOtherIdentitiesForSlot(identity, true);
+        return identityCacheRepository.save(identity);
+    }
+
+    /** Clears one identity slot and reports whether the session still contains another identity. */
+    public boolean clearIdentity(@Nullable String identitySessionId,
+                                 @Nonnull Integer relatedProcessNodeId,
+                                 @Nonnull String identityId) {
+        if (StringUtils.isNullOrEmpty(identitySessionId)) {
+            return false;
+        }
+
+        var matching = identityCacheRepository
+                .findAllBySessionIdAndRelatedProcessNodeId(identitySessionId, relatedProcessNodeId)
+                .stream()
+                .filter(entity -> Objects.equals(entity.getIdentityId(), identityId))
+                .toList();
+        identityCacheRepository.deleteAll(matching);
+        return identityCacheRepository.existsBySessionId(identitySessionId);
     }
 
     /**
@@ -164,11 +215,15 @@ public class IdentityService {
                 preexistingIdentitySessionId,
                 relatedProcessNodeId,
                 null,
+                IdentityType.IdentityProvider,
                 providerKey,
                 identityId,
                 provider.getMetadataIdentifier(),
+                null,
                 resolvedOrigin.toString(),
                 stateNonce,
+                null,
+                null,
                 null
         );
 
@@ -224,7 +279,7 @@ public class IdentityService {
                 }
                 default -> {
                     throw ResponseException.internalServerError(
-                            "Die PKCE-Methode %s des Nutzerkontenanbieters %s (%s) wird nicht unterstützt.",
+                            "Die PKCE-Methode %s des Identitätsanbieters %s (%s) wird nicht unterstützt.",
                             provider.getPkceMethod(),
                             provider.getName(),
                             provider.getKey()
@@ -260,7 +315,7 @@ public class IdentityService {
             @Nullable String authorizationCode,
             @Nonnull String state
     ) throws ResponseException {
-        var identity = getValidatedIdentitySession(identityCacheEntityId, state);
+        var identity = getValidatedIdentitySession(identityCacheEntityId, identitySessionId, state);
 
         if (authorizationCode == null) {
             throw ResponseException
@@ -268,6 +323,9 @@ public class IdentityService {
         }
 
         var provider = getIdentityProviderEntity(providerKey);
+        if (!Objects.equals(identity.getProviderKey(), provider.getKey())) {
+            throw ResponseException.badRequest("Der Identitätsanbieter gehört nicht zur Identitätssitzung.");
+        }
 
         var authToken = fetchAuthToken(
                 provider,
@@ -286,7 +344,19 @@ public class IdentityService {
                 authToken
         );
 
+        var uniqueIdFromIdentityProvider = userInfo.get(provider.getUniqueIdAttribute());
+        if (uniqueIdFromIdentityProvider == null || uniqueIdFromIdentityProvider.isBlank()) {
+            throw ResponseException.internalServerError(
+                    "Die Nutzerinformationen des Identitätsanbieters %s (%s) enthalten für die konfigurierte Identitätenkennung %s keinen Wert.",
+                    provider.getName(),
+                    provider.getKey(),
+                    provider.getUniqueIdAttribute()
+            );
+        }
+
+        identity.setUniqueIdFromIdentityProvider(uniqueIdFromIdentityProvider);
         identity.setIdentityData(userInfo);
+        deleteOtherIdentitiesForSlot(identity, false);
         identityCacheRepository
                 .save(identity);
 
@@ -322,7 +392,7 @@ public class IdentityService {
             @Nonnull String error,
             @Nullable String errorDescription
     ) throws ResponseException {
-        var identity = getValidatedIdentitySession(identityCacheEntityId, state);
+        var identity = getValidatedIdentitySession(identityCacheEntityId, identitySessionId, state);
 
         return UriComponentsBuilder
                 .fromUriString(getStoredOrigin(identity))
@@ -374,21 +444,19 @@ public class IdentityService {
         // Check if the provider key is null
         if (providerKey == null) {
             throw ResponseException
-                    .badRequest("Der Nutzerkontenanbieter ist nicht angegeben.");
+                    .badRequest("Der Identitätsanbieter ist nicht angegeben.");
         }
 
         // Retrieve provider or throw not found exception
         var provider = identityProviderService
                 .retrieve(providerKey)
-                .orElseThrow(() -> ResponseException.notFound("Der Nutzerkontenanbieter existiert nicht."));
+                .orElseThrow(() -> ResponseException.notFound("Der Identitätsanbieter existiert nicht."));
 
-        /*
         // Check if the provider is enabled
-        if (!provider.getIsEnabled()) {
+        if (!Boolean.TRUE.equals(provider.getIsEnabled())) {
             throw ResponseException
-                    .badRequest("Der Nutzerkontenanbieter ist nicht aktiviert.");
+                    .badRequest("Der Identitätsanbieter ist nicht aktiviert.");
         }
-         */
 
         return provider;
     }
@@ -488,6 +556,7 @@ public class IdentityService {
     @Nonnull
     private IdentityCacheEntity getValidatedIdentitySession(
             @Nonnull String identityCacheEntityId,
+            @Nonnull String identitySessionId,
             @Nullable String state
     ) throws ResponseException {
         var identity = identityCacheRepository
@@ -495,6 +564,10 @@ public class IdentityService {
                 .orElseThrow(() -> ResponseException
                         .badRequest("Die Identitätssitzung existiert nicht.")
                 );
+
+        if (!Objects.equals(identity.getSessionId(), identitySessionId)) {
+            throw ResponseException.badRequest("Die Identitätssitzung ist ungültig.");
+        }
 
         var storedStateNonce = getStoredStateNonce(identity);
         if (!Objects.equals(storedStateNonce, state)) {
@@ -505,6 +578,20 @@ public class IdentityService {
         getStoredOrigin(identity);
 
         return identity;
+    }
+
+    private void deleteOtherIdentitiesForSlot(@Nonnull IdentityCacheEntity identity,
+                                              boolean includeCurrentIdentity) {
+        var identitiesToDelete = identityCacheRepository
+                .findAllBySessionIdAndRelatedProcessNodeId(
+                        identity.getSessionId(),
+                        identity.getRelatedProcessNodeId()
+                )
+                .stream()
+                .filter(existing -> Objects.equals(existing.getIdentityId(), identity.getIdentityId()))
+                .filter(existing -> includeCurrentIdentity || !Objects.equals(existing.getId(), identity.getId()))
+                .toList();
+        identityCacheRepository.deleteAll(identitiesToDelete);
     }
 
     @Nonnull
@@ -587,7 +674,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verbindungsaufbau zum Nutzerkontenanbieter %s (%s) für den Zugriffsschlüssel",
+                            "Fehler beim Verbindungsaufbau zum Identitätsanbieter %s (%s) für den Zugriffsschlüssel",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -596,7 +683,7 @@ public class IdentityService {
         if (response.statusCode() != 200) {
             throw ResponseException
                     .internalServerError(
-                            "Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Nutzerkontenanbieter %s (%s): %d",
+                            "Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Identitätsanbieter %s (%s): %d",
                             provider.getName(),
                             provider.getKey(),
                             response.statusCode()
@@ -614,7 +701,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verarbeiten der Rückgabe des Zugriffsschlüssels des Nutzerkontenanbieters %s (%s)",
+                            "Fehler beim Verarbeiten der Rückgabe des Zugriffsschlüssels des Identitätsanbieters %s (%s)",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -658,7 +745,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verbindungsaufbau zum Nutzerkontenanbieter %s (%s) für die Nutzerinformationen",
+                            "Fehler beim Verbindungsaufbau zum Identitätsanbieter %s (%s) für die Nutzerinformationen",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -667,7 +754,7 @@ public class IdentityService {
         if (response.statusCode() != 200) {
             throw ResponseException
                     .internalServerError(
-                            "Ungültiger Status-Code beim Abrufen der Nutzerinformationen für Nutzerkontenanbieter %s (%s): %d",
+                            "Ungültiger Status-Code beim Abrufen der Nutzerinformationen für Identitätsanbieter %s (%s): %d",
                             provider.getName(),
                             provider.getKey(),
                             response.statusCode()
@@ -683,7 +770,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verarbeiten der Rückgabe der Nutzerinformationen des Nutzerkontenanbieters %s (%s)",
+                            "Fehler beim Verarbeiten der Rückgabe der Nutzerinformationen des Identitätsanbieters %s (%s)",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -701,7 +788,7 @@ public class IdentityService {
         }
 
         for (var entry : rawData.entrySet()) {
-            map.put(entry.getKey(), entry.getValue().toString());
+            map.put(entry.getKey(), entry.getValue() == null ? null : entry.getValue().toString());
         }
 
         return map;
@@ -746,7 +833,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verbindungsaufbau zum Nutzerkontenanbieter %s (%s) für den Logout",
+                            "Fehler beim Verbindungsaufbau zum Identitätsanbieter %s (%s) für den Logout",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -755,7 +842,7 @@ public class IdentityService {
         if (response.statusCode() >= 400) {
             throw ResponseException
                     .internalServerError(
-                            "Ungültiger Status-Code beim Logout für Nutzerkontenanbieter %s (%s): %d",
+                            "Ungültiger Status-Code beim Logout für Identitätsanbieter %s (%s): %d",
                             provider.getName(),
                             provider.getKey(),
                             response.statusCode()
@@ -783,7 +870,7 @@ public class IdentityService {
                 .retrieve(provider.getClientSecretKey())
                 .orElseThrow(() -> ResponseException
                         .internalServerError(
-                                "Das Geheimnis mit dem Schlüssel %s existiert nicht für den Nutzerkontenanbieter %s (%s)",
+                                "Das Geheimnis mit dem Schlüssel %s existiert nicht für den Identitätsanbieter %s (%s)",
                                 provider.getClientSecretKey(),
                                 provider.getName(),
                                 provider.getKey()
@@ -796,7 +883,7 @@ public class IdentityService {
         } catch (Exception e) {
             throw ResponseException
                     .internalServerError(
-                            "Das Geheimnis mit dem Schlüssel %s für den Nutzerkontenanbieter %s (%s) konnte nicht entschlüsselt werden",
+                            "Das Geheimnis mit dem Schlüssel %s für den Identitätsanbieter %s (%s) konnte nicht entschlüsselt werden",
                             provider.getClientSecretKey(),
                             provider.getName(),
                             provider.getKey()

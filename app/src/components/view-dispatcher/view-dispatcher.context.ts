@@ -15,6 +15,7 @@ export interface ViewDispatcherContextType {
     mode: ViewDispatcherMode;
     showInvisibleElements?: boolean;
     taskViewMode?: TaskViewMode | null;
+    readOnly?: boolean;
 
     rootElement: AnyElement;
     allElements: AnyElement[];

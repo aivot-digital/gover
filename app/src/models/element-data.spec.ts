@@ -7,9 +7,38 @@ import {
     hasAuthoredElementValuesSomeInput,
     hasAnyErrorRecursivelyInParent,
     literalAuthoredValue,
+    toLiteralAuthoredElementValues,
     resolveComputedElementSubState,
 } from './element-data';
 import {ElementType} from '../data/element-type/element-type';
+
+describe('toLiteralAuthoredElementValues', () => {
+    it('wraps schema-declared nested rows while leaving ordinary objects opaque', () => {
+        const opaque = {type: 'Literal', value: 'payload', values: {name: 'raw'}};
+        const layout = {
+            id: 'rows',
+            type: ElementType.ReplicatingContainer,
+            children: [{
+                id: 'nested',
+                type: ElementType.ReplicatingContainer,
+                children: [],
+            }],
+        } as any;
+        const values = {rows: [{id: 'row-1', values: {
+            name: 'Alice',
+            nested: [{id: 'row-2', values: {name: 'Bob'}}],
+        }}], opaque};
+
+        expect(toLiteralAuthoredElementValues(values, layout)).toEqual({
+            rows: literalAuthoredValue([{id: 'row-1', values: {
+                name: literalAuthoredValue('Alice'),
+                nested: literalAuthoredValue([{id: 'row-2', values: {name: literalAuthoredValue('Bob')}}]),
+            }}]),
+            opaque: literalAuthoredValue(opaque),
+        });
+        expect(values.rows[0].values.name).toBe('Alice');
+    });
+});
 
 describe('hasAuthoredElementValuesSomeInput', () => {
     it('should treat an explicit null as authored input', () => {

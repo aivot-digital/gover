@@ -4,8 +4,10 @@ import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugin.enums.PluginComponentType;
 import de.aivot.prosuna.backend.plugin.models.PluginComponent;
@@ -244,82 +246,18 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     }
 
     /**
-     * Get the staff task view layout for nodes of this provider type.
+     * Build the complete staff task view for nodes of this provider type. The returned data already contains an
+     * automatically saved snapshot when one exists.
      *
-     * @param context The context to build the layout for.
-     * @return The task view layout.
-     * @throws ResponseException If an error occurs while generating the layout.
+     * @param context The context to build the view for.
+     * @return The complete staff task view.
+     * @throws ResponseException If an error occurs while generating the view.
      */
     @Nonnull
-    default LayoutElement<?> getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
+    default ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
         var layout = new GroupLayoutElement();
         layout.setId(getKey() + "-staff-task-view");
-        return layout;
-    }
-
-    /**
-     * Get the staff task view events for nodes of this provider type. These events can be used to trigger actions in the task view UI.
-     *
-     * @param context The context to build the events for.
-     * @return The task view events.
-     * @throws ResponseException If an error occurs while generating the events.
-     */
-    @Nonnull
-    default List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
-        return List.of();
-    }
-
-    /**
-     * Build the initial staff task view data from stable sources such as process data, configuration or templates. Saved task view data from the task runtime data is merged on top
-     * by {@link #getStaffTaskViewData(ProcessNodeExecutionContextUIStaff)}. Saved keys with a {@code null} value are treated as explicit deletions and therefore override
-     * regenerated defaults.
-     *
-     * @param context The context to build the data for.
-     * @return The initial task view data.
-     * @throws ResponseException If an error occurs while generating the data.
-     */
-    @Nonnull
-    default AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
-        return new AuthoredElementValues();
-    }
-
-    /**
-     * Read saved staff task view data from the task runtime data.
-     *
-     * @param context The context to read the data for.
-     * @return The saved task view data, or null if none exists.
-     */
-    @Nullable
-    default AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) {
-        var rawSavedData = context
-                .getThisTask()
-                .getRuntimeData()
-                .get(STAFF_TASK_VIEW_DATA_RUNTIME_KEY);
-        if (rawSavedData == null) {
-            return null;
-        }
-
-        return JsonMapperFactory
-                .getNullPreservingInstance()
-                .convertValue(rawSavedData, AuthoredElementValues.class);
-    }
-
-    /**
-     * Get the staff task view data for nodes of this provider type.
-     *
-     * @param context The context to build the data for.
-     * @return The task view data.
-     * @throws ResponseException If an error occurs while generating the data.
-     */
-    @Nonnull
-    default AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
-        var initialData = createDefaultStaffTaskViewData(context);
-        var savedData = getAutoSavedStaffTaskViewData(context);
-        if (savedData == null || savedData.isEmpty()) {
-            return initialData;
-        }
-
-        return savedData;
+        return ProcessNodeStaffView.of(context, layout, List.of(), new AuthoredElementValues());
     }
 
     /**
@@ -362,85 +300,46 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     }
 
     /**
-     * Get the customer task view layout for nodes of this provider type.
+     * Build the complete customer task view for nodes of this provider type. Automatically saved values are merged
+     * onto the initial data and saved {@code null} values override regenerated defaults.
      *
-     * @param context The context to build the layout for.
-     * @return The task view layout.
-     * @throws ResponseException If an error occurs while generating the layout.
+     * @param context The context to build the view for.
+     * @return The complete customer task view.
+     * @throws ResponseException If an error occurs while generating the view.
      */
     @Nonnull
-    default GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
+    default ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
         var layout = new GroupLayoutElement();
         layout.setId(getKey() + "-customer-task-view");
-        return layout;
+        return ProcessNodeCustomerView.of(context, layout, List.of(), new AuthoredElementValues());
     }
 
     /**
-     * Get the customer task view events for nodes of this provider type.
+     * Build the customer view shown after this task has been completed. Completed views are informational and must not
+     * require another identity authentication or expose task events.
      *
-     * @param context The context to build the events for.
-     * @return The task view events.
-     * @throws ResponseException If an error occurs while generating the events.
+     * @param context The context to build the completed task view for.
+     * @return The complete customer task completion view.
+     * @throws ResponseException If an error occurs while generating the view.
      */
     @Nonnull
-    default List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
-        return List.of();
-    }
+    default ProcessNodeCustomerView getCompletedCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
+        var alert = new AlertContentElement()
+                .setTitle("Aufgabe abgeschlossen")
+                .setText("Sie haben diese Aufgabe erfolgreich abgeschlossen.")
+                .setAlertType(AlertType.Success);
+        alert.setId(getKey() + "-completed-customer-task-alert");
 
-    /**
-     * Build the initial customer task view data from stable sources such as process data, configuration or templates. Saved task view data from the task runtime data is merged on
-     * top by {@link #getCustomerTaskViewData(ProcessNodeExecutionContextUICustomer<NodeConfig>)}. Saved keys with a {@code null} value are treated as explicit deletions and therefore override
-     * regenerated defaults.
-     *
-     * @param context The context to build the data for.
-     * @return The initial task view data.
-     * @throws ResponseException If an error occurs while generating the data.
-     */
-    @Nonnull
-    default AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
-        return new AuthoredElementValues();
-    }
+        var layout = new GroupLayoutElement();
+        layout.setId(getKey() + "-completed-customer-task-view");
+        layout.addChild(alert);
 
-    /**
-     * Read saved customer task view data from the task runtime data.
-     *
-     * @param context The context to read the data for.
-     * @return The saved task view data, or null if none exists.
-     */
-    @Nullable
-    default AuthoredElementValues getAutoSavedCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) {
-        var rawSavedData = context
-                .getThisTask()
-                .getRuntimeData()
-                .get(CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY);
-        if (rawSavedData == null) {
-            return null;
-        }
-
-        return JsonMapperFactory
-                .getNullPreservingInstance()
-                .convertValue(rawSavedData, AuthoredElementValues.class);
-    }
-
-    /**
-     * Get the customer task view data for nodes of this provider type.
-     *
-     * @param context The context to build the data for.
-     * @return The task view data.
-     * @throws ResponseException If an error occurs while generating the data.
-     */
-    @Nonnull
-    default AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
-        var initialData = createDefaultCustomerTaskViewData(context);
-        var savedData = getAutoSavedCustomerTaskViewData(context);
-        if (savedData == null || savedData.isEmpty()) {
-            return initialData;
-        }
-
-        var mergedData = new AuthoredElementValues();
-        mergedData.putAll(initialData);
-        mergedData.putAll(savedData);
-        return mergedData;
+        return new ProcessNodeCustomerView(
+                layout,
+                List.of(),
+                new AuthoredElementValues(),
+                null
+        );
     }
 
     /**
@@ -506,5 +405,18 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
             return nodeEntity.getName();
         }
         return getName();
+    }
+
+    @Nullable
+    static AuthoredElementValues getAutoSavedTaskViewData(@Nonnull Map<String, Object> runtimeData,
+                                                                  @Nonnull String runtimeDataKey) {
+        var rawSavedData = runtimeData.get(runtimeDataKey);
+        if (rawSavedData == null) {
+            return null;
+        }
+
+        return JsonMapperFactory
+                .getNullPreservingInstance()
+                .convertValue(rawSavedData, AuthoredElementValues.class);
     }
 }

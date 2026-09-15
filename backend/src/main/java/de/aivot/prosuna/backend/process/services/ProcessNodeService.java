@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
@@ -8,6 +9,7 @@ import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
@@ -49,6 +51,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ProcessNodeService implements EntityService<ProcessNodeEntity, Integer> {
@@ -61,6 +64,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     private final ProcessVersionRepository processDefinitionVersionRepository;
     private final ProcessEdgeRepository processEdgeRepository;
     private final ProsunaConfig prosunaConfig;
+    private final IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService;
 
     @Autowired
     public ProcessNodeService(ProcessNodeRepository processNodeRepository,
@@ -70,7 +74,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                               ProcessRepository processDefinitionRepository,
                               ProcessVersionRepository processDefinitionVersionRepository,
                               ProcessEdgeRepository processEdgeRepository,
-                              ProsunaConfig prosunaConfig) {
+                              ProsunaConfig prosunaConfig,
+                              IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService) {
         this.processNodeRepository = processNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
         this.elementDerivationService = elementDerivationService;
@@ -79,6 +84,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         this.processDefinitionVersionRepository = processDefinitionVersionRepository;
         this.processEdgeRepository = processEdgeRepository;
         this.prosunaConfig = prosunaConfig;
+        this.identityCommunicationAvailabilityService = identityCommunicationAvailabilityService;
     }
 
     @Nonnull
@@ -645,6 +651,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         }
 
         if (derivedConfiguration != null) {
+            validateProcessIdentityIdInputs(
+                    node,
+                    layout,
+                    derivedConfiguration.derivedRuntimeElementData
+            );
+
             ElementStreamUtils.applyAction(
                     layout,
                     derivedConfiguration.derivedRuntimeElementData.getElementStates(),
@@ -690,6 +702,115 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         }
     }
 
+    private void validateProcessIdentityIdInputs(@Nonnull ProcessNodeEntity node,
+                                                 @Nonnull ConfigLayoutElement layout,
+                                                 @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) {
+        var selectionsByElement = new LinkedHashMap<ProcessIdentityIdInputElement, String>();
+        ElementStreamUtils.applyAction(layout, element -> {
+            if (element instanceof ProcessIdentityIdInputElement processIdentityIdInputElement) {
+                var selectedIdentityId = processIdentityIdInputElement.formatValue(
+                        derivedRuntimeElementData
+                                .getEffectiveValues()
+                                .get(processIdentityIdInputElement.getId())
+                );
+                if (selectedIdentityId != null) {
+                    selectionsByElement.put(processIdentityIdInputElement, selectedIdentityId);
+                }
+            }
+        });
+
+        if (selectionsByElement.isEmpty()) {
+            return;
+        }
+
+        ProcessNodeDefinitionMetadata incomingMetadata;
+        try {
+            incomingMetadata = getIncomingProcessNodeDefinitionMetadata(node);
+        } catch (ResponseException ignored) {
+            for (var processIdentityIdInputElement : selectionsByElement.keySet()) {
+                putProcessIdentityValidationError(
+                        derivedRuntimeElementData,
+                        processIdentityIdInputElement,
+                        "Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden."
+                );
+            }
+            return;
+        }
+
+        var forwardedIdentitiesById = incomingMetadata
+                .forwardedIdentities()
+                .stream()
+                .filter(identity -> StringUtils.isNotNullOrEmpty(identity.identityId()))
+                .collect(Collectors.groupingBy(
+                        identity -> identity.identityId().trim(),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        for (var selection : selectionsByElement.entrySet()) {
+            var forwardedIdentities = forwardedIdentitiesById.get(selection.getValue());
+            if (forwardedIdentities == null) {
+                putProcessIdentityValidationError(
+                        derivedRuntimeElementData,
+                        selection.getKey(),
+                        "Die ausgewählte Prozessidentität " + StringUtils.quote(selection.getValue()) + " ist nicht mehr verfügbar."
+                );
+                continue;
+            }
+
+            if (!Boolean.TRUE.equals(selection.getKey().getRequiresCommunication())) {
+                continue;
+            }
+
+            var providerUsages = forwardedIdentities
+                    .stream()
+                    .flatMap(identity -> identity.identityProviderKeys()
+                            .stream()
+                            .map(providerKey -> new IdentityCommunicationAvailabilityService.IdentityProviderUsage(
+                                    providerKey,
+                                    resolveForwardedIdentityName(identity)
+                            )))
+                    .toList();
+            var communicationValidation = identityCommunicationAvailabilityService.validate(providerUsages);
+            if (!communicationValidation.successful()) {
+                putProcessIdentityValidationError(
+                        derivedRuntimeElementData,
+                        selection.getKey(),
+                        "Die Kommunikationsanbindungen konnten nicht überprüft werden."
+                );
+                continue;
+            }
+
+            for (var validationError : communicationValidation.errors()) {
+                putProcessIdentityValidationError(
+                        derivedRuntimeElementData,
+                        selection.getKey(),
+                        validationError
+                );
+            }
+        }
+    }
+
+    @Nonnull
+    private static String resolveForwardedIdentityName(
+            @Nonnull ProcessNodeDefinitionMetadata.ForwardedIdentity identity
+    ) {
+        var label = StringUtils.toNullableTrimmedString(identity.label());
+        return label == null ? identity.identityId().trim() : label;
+    }
+
+    private static void putProcessIdentityValidationError(@Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
+                                                          @Nonnull ProcessIdentityIdInputElement processIdentityIdInputElement,
+                                                          @Nonnull String validationError) {
+        var existingState = derivedRuntimeElementData
+                .getElementStates()
+                .get(processIdentityIdInputElement.getId());
+        var existingError = existingState == null ? null : existingState.getError();
+        var combinedError = combineValidationErrors(Arrays.asList(existingError, validationError));
+
+        derivedRuntimeElementData.putError(processIdentityIdInputElement.getId(), combinedError);
+    }
+
     @Nonnull
     private static String combineValidationErrors(@Nonnull List<String> validationErrors) {
         var cleanedErrors = validationErrors
@@ -712,7 +833,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         }
 
         for (var error : validationErrors.entrySet()) {
-            var combinedValidationError = combineValidationErrors(error.getValue());
+            // Keep errors from identity availability and element derivation alongside provider-specific checks.
+            var state = derivedRuntimeElementData.getElementStates().get(error.getKey());
+            var messages = new ArrayList<String>();
+            messages.add(state == null ? null : state.getError());
+            messages.addAll(error.getValue());
+            var combinedValidationError = combineValidationErrors(messages);
             if (StringUtils.isNotNullOrEmpty(combinedValidationError)) {
                 // Provider errors use element IDs so the editor and runtime worker share the same failure channel.
                 derivedRuntimeElementData.putError(error.getKey(), combinedValidationError);

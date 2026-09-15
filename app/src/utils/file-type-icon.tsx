@@ -110,6 +110,7 @@ export function getFileTypeIcon(contentType: string, props?: SvgIconProps) {
         'text/javascript': CodeOutlinedIcon,
 
         // Certificates & Security Files
+        'application/x-pkcs8': LockOutlinedIcon,
         'application/x-pkcs12': LockOutlinedIcon,
         'application/x-pem-file': LockOutlinedIcon,
         'application/x-x509-ca-cert': LockOutlinedIcon,

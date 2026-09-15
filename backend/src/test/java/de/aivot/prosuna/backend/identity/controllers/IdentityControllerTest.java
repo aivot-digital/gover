@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.identity.controllers;
 
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
+import de.aivot.prosuna.backend.communication.services.IdentityCommunicationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -16,13 +17,15 @@ import static org.mockito.Mockito.verify;
 class IdentityControllerTest {
     @Mock
     private IdentityService identityService;
+    @Mock
+    private IdentityCommunicationService identityCommunicationService;
 
     private IdentityController controller;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        controller = new IdentityController(identityService);
+        controller = new IdentityController(identityService, identityCommunicationService);
     }
 
     @Test

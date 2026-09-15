@@ -39,6 +39,7 @@ import org.springframework.stereotype.Component;
 import org.thymeleaf.templatemode.TemplateMode;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
@@ -398,19 +399,22 @@ public class MailService {
         // Mail clients apply dark mode inconsistently. Embed one light-scheme logo on a neutral raster surface
         // instead of attaching a second variant that clients cannot select reliably.
         var senderLogo = mailLogoService.createSenderLogo(theme.getLogoKey());
+        var mailActionBackgroundColor = normalizeMailActionColor(theme.getPrimaryColor());
         context.put("base", createBaseContext(senderLogo.isPresent()));
         context.put("mailSignature", resolveDefaultMailSignature(context, options));
+        context.put("mailActionBackgroundColor", mailActionBackgroundColor);
+        context.put("mailActionTextColor", readableTextColor(mailActionBackgroundColor));
 
         String textMessage = loadTemplate(template.getKey() + ".txt", context, TemplateMode.TEXT);
         String htmlMessage = loadTemplate(template.getKey() + ".html", context, TemplateMode.HTML);
 
-        message.setFrom(prosunaConfig.getFromMail());
         message.setSubject(subject.replaceAll("\\r?\\n", " "), "utf-8");
         var messageHelper = new MimeMessageHelper(
                 message,
                 MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
                 StandardCharsets.UTF_8.name()
         );
+        applyEnvelopeHeaders(messageHelper, options);
         messageHelper.setText(textMessage, htmlMessage);
 
         if (senderLogo.isPresent()) {
@@ -441,6 +445,27 @@ public class MailService {
         }
     }
 
+    private static String normalizeMailActionColor(String color) {
+        return color != null && color.matches("^#[0-9a-fA-F]{6}$") ? color : "#e5e7eb";
+    }
+
+    private static String readableTextColor(String backgroundColor) {
+        var red = Integer.parseInt(backgroundColor.substring(1, 3), 16);
+        var green = Integer.parseInt(backgroundColor.substring(3, 5), 16);
+        var blue = Integer.parseInt(backgroundColor.substring(5, 7), 16);
+        var luminance = 0.2126 * linearRgb(red) + 0.7152 * linearRgb(green) + 0.0722 * linearRgb(blue);
+        var contrastWithWhite = 1.05 / (luminance + 0.05);
+        var contrastWithBlack = (luminance + 0.05) / 0.05;
+        return contrastWithWhite >= contrastWithBlack ? "#ffffff" : "#000000";
+    }
+
+    private static double linearRgb(int colorComponent) {
+        var channel = colorComponent / 255.0;
+        return channel <= 0.04045
+                ? channel / 12.92
+                : Math.pow((channel + 0.055) / 1.055, 2.4);
+    }
+
     private String resolveDefaultMailSignature(
             Map<String, Object> context,
             MailSendOptions options
@@ -469,6 +494,29 @@ public class MailService {
 
     public boolean isSendingConfigured() {
         return !mailHost.isBlank();
+    }
+
+    private void applyEnvelopeHeaders(MimeMessageHelper messageHelper, MailSendOptions options)
+            throws MessagingException {
+        var senderAddress = options.senderAddress();
+        if (senderAddress == null) {
+            messageHelper.setFrom(prosunaConfig.getFromMail());
+        } else {
+            var senderName = options.senderName();
+            if (senderName == null) {
+                messageHelper.setFrom(senderAddress);
+            } else {
+                try {
+                    messageHelper.setFrom(senderAddress, senderName);
+                } catch (UnsupportedEncodingException exception) {
+                    throw new MessagingException("Der Absendername konnte nicht kodiert werden.", exception);
+                }
+            }
+        }
+
+        if (options.replyToAddress() != null) {
+            messageHelper.setReplyTo(options.replyToAddress());
+        }
     }
 
     private String loadTemplate(String template, Map<String, Object> data, TemplateMode mode) {

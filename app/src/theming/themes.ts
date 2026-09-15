@@ -2,7 +2,7 @@ import {alpha, createTheme, type PaletteMode, type Theme as MuiTheme} from '@mui
 import {deDE as datePickerLocale} from '@mui/x-date-pickers/locales';
 import {deDE as coreLocale} from '@mui/material/locale';
 import {grey as muiGrey} from '@mui/material/colors';
-import {type Theme} from '../modules/themes/models/theme';
+import {type ThemeColors, type ThemeResponseDTO} from '../modules/themes/models/theme';
 import {type PaletteOptions} from '@mui/material/styles';
 import {
     DEFAULT_APPEARANCE_COLORS,
@@ -121,7 +121,7 @@ export function createDefaultAppTheme(
 }
 
 export function createAppTheme(
-    appTheme: Theme | undefined,
+    appTheme: ThemeColors | ThemeResponseDTO | undefined,
     baseTheme: MuiTheme,
     mode: PaletteMode = baseTheme.palette.mode,
 ): MuiTheme {

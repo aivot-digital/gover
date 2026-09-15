@@ -52,7 +52,7 @@ export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIc
         case ProcessTaskStatus.AwaitingCustomer:
             return (
                 <Tooltip
-                    title="Wartet auf Bürger"
+                    title="Wartet auf Nutzer:in"
                 >
                     <ContractEdit color="info"/>
                 </Tooltip>

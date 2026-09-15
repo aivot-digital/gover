@@ -10,6 +10,7 @@ import {RichTextInputComponent} from '../rich-text-input-component/rich-text-inp
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {AssetSelector} from '../../modules/assets/components/asset-selector';
+import {AssetVisibility} from '../../modules/assets/models/asset-visibility';
 
 const eligibleEntities: CheckboxTreeOption[] = [
     {
@@ -154,7 +155,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                                 hint="Öffentliches Bild, das neben der Kurzbeschreibung angezeigt wird. Dieses Logo wird nur angezeigt, wenn Sie auch eine Kurzbeschreibung und einen Alternativtext angegeben haben."
                                 disabled={!props.editable}
                                 mimetype="image"
-                                onlyPublic
+                                visibility={AssetVisibility.Public}
                                 placeholder="Kein Logo ausgewählt"
                             />
 

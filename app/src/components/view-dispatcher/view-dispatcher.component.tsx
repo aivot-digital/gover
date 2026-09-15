@@ -113,6 +113,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
         highlightedElementId,
         inputModesEnabled,
         inputModeVariables,
+        readOnly,
     } = useViewDispatcherContext();
 
     const {
@@ -249,7 +250,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
             onBlur={blurViewValue}
             errors={suppressErrors ? undefined : resolvedErrors}
             errorDetails={suppressErrors ? undefined : resolvedErrorDetails}
-            isBusy={isBusy || disabled}
+            isBusy={isBusy || disabled || (readOnly === true && isAnyInputElement(element))}
             isDeriving={baseIsDeriving}
             inputModeLiteralContext={inputModeLiteralContext}
         />
@@ -283,7 +284,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
                     hint={resolvedInputElement.hint ?? undefined}
                     error={suppressErrors || resolvedErrors == null ? undefined : resolvedErrors.join(' ')}
                     required={resolvedInputElement.required ?? undefined}
-                    readOnly={baseIsBusy || disabled}
+                    readOnly={baseIsBusy || disabled || readOnly}
                     busy={baseIsDeriving && isBusy}
                     allowedModes={inputModePolicy?.allowedModes ?? [InputMode.Literal]}
                     allowedVariableSources={inputModePolicy?.allowedVariableSources}

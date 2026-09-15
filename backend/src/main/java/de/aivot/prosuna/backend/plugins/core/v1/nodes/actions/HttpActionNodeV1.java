@@ -6,8 +6,6 @@ import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.InputMode;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.input.InputModePolicy;
@@ -28,7 +26,6 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.services.*;
-import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.MultipartUtils;
@@ -117,7 +114,6 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final StorageService storageService;
-    private final SecretRepository secretRepository;
     private final SecretService secretService;
 
     public HttpActionNodeV1(HttpService httpService,
@@ -126,7 +122,6 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                             ProcessInstanceAttachmentService processInstanceAttachmentService,
                             ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
                             StorageService storageService,
-                            SecretRepository secretRepository,
                             SecretService secretService) {
         this.httpService = httpService;
         this.templateRenderService = templateRenderService;
@@ -134,7 +129,6 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.storageService = storageService;
-        this.secretRepository = secretRepository;
         this.secretService = secretService;
     }
 
@@ -220,13 +214,6 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             layout.findChild(fieldId, TextInputElement.class)
                     .ifPresent(field -> field.setDynamicTextPolicy(DYNAMIC_TEXT_POLICY));
         }
-
-        layout.findChild(HttpActionNodeV1Config.BasicAuthConfig.PASSWORD_SECRET_KEY_FIELD_ID, SelectInputElement.class)
-                .ifPresent(field -> field.setOptions(secretRepository
-                        .findAll()
-                        .stream()
-                        .map(secret -> SelectInputElementOption.of(secret.getKey().toString(), secret.getName()))
-                        .toList()));
 
         return layout;
     }

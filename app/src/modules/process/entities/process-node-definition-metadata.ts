@@ -45,5 +45,6 @@ export interface ProcessNodeDefinitionMetadataForwardedIdentity {
     identityId: string;
     label: string;
     subLabel: string | null;
+    identityProviderKeys: string[];
     origin: ProcessNodeEntity;
 }

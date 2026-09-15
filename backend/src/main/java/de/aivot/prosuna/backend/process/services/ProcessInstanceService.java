@@ -84,6 +84,11 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
         return processInstanceRepository.findByAccessKey(accessKey);
     }
 
+    @Nonnull
+    public Optional<ProcessInstanceEntity> retrieveByInboundReference(@Nonnull String inboundReference) {
+        return processInstanceRepository.findByInboundReference(inboundReference);
+    }
+
     @Override
     public boolean exists(@Nonnull Long id) {
         return processInstanceRepository.existsById(id);
@@ -144,6 +149,11 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
             try {
                 return processInstanceRepository.saveAndFlush(entity);
             } catch (DataIntegrityViolationException e) {
+                if (entity.getInboundReference() != null &&
+                        processInstanceRepository.existsByInboundReference(entity.getInboundReference())) {
+                    throw ResponseException.conflict("Für diese externe Eingangsreferenz existiert bereits eine Prozessinstanz.");
+                }
+
                 if (processInstanceRepository.existsByCaseNumber(entity.getCaseNumber())) {
                     if (attempt == MAX_CASE_NUMBER_GENERATION_ATTEMPTS) {
                         throw ResponseException.conflict("Es konnte kein eindeutiger Vorgangsschlüssel erzeugt werden. Bitte versuchen Sie es erneut.");

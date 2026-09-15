@@ -116,7 +116,7 @@ class DataChangeActionNodeV1Test {
     }
 
     @Test
-    void getStaffTaskViewData_LoadsSavedDraftFromRuntimeData() throws Exception {
+    void getStaffTaskView_LoadsSavedDraftFromRuntimeData() throws Exception {
         var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada"));
 
         var context = new ProcessNodeExecutionContextUIStaff(
@@ -138,16 +138,17 @@ class DataChangeActionNodeV1Test {
                 currentProcessData(processData)
         );
 
-        var layout = node.getStaffTaskView(context);
+        var view = node.getStaffTaskView(context);
+        var layout = (GroupLayoutElement) view.layout();
         var dataField = layout.findChild("applicantName", TextInputElement.class).orElseThrow();
 
         assertFalse(Boolean.TRUE.equals(dataField.getDisabled()));
         assertEquals(
                 List.of(new TaskViewEvent("Aufgabe abschließen", "complete")),
-                node.getStaffTaskViewEvents(context)
+                view.events()
         );
 
-        var data = node.getStaffTaskViewData(context);
+        var data = view.data();
         assertEquals("Grace", data.getLiteral("applicantName"));
     }
 

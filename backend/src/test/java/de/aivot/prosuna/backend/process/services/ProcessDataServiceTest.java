@@ -195,7 +195,7 @@ class ProcessDataServiceTest {
         var attributes = new HashMap<String, String>();
         attributes.put("vorname", "Ada");
         attributes.put("zusatz", null);
-        var identity = new IdentityData("session", "identity", providerKey, "metadata", attributes);
+        var identity = new IdentityData("session", "identity", de.aivot.prosuna.backend.identity.enums.IdentityType.IdentityProvider, providerKey, "metadata", "provider-user-1", null, attributes, null, Map.of());
         var identities = new IdentityDataMap();
         identities.put("antragsteller", identity);
         var instance = new ProcessInstanceEntity(

@@ -14,7 +14,11 @@ export function PageWrapper(props: PropsWithChildren<PageWrapperProps>) {
             }}
         >
             <LoadingWrapper isLoading={props.isLoading}>
-                <MetaElement title={props.title} />
+                <MetaElement
+                    title={props.title}
+                    titlePrefix={props.titlePrefix}
+                    faviconUrl={props.faviconUrl}
+                />
 
                 <Container
                     sx={{

@@ -37,8 +37,10 @@ public interface VStorageIndexItemWithAssetRepository extends ReadOnlyRepository
                           )
                           OR (
                               :isPublic = false
-                              AND directory = false
-                              AND coalesce(asset_is_private, true) = true
+                              AND (
+                                  directory = true
+                                  OR coalesce(asset_is_private, true) = true
+                              )
                           )
                       )
                       AND (

@@ -17,7 +17,6 @@ import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
-import de.aivot.prosuna.backend.process.controllers.StaffProcessInstanceTaskViewController;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -29,11 +28,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.prosuna.backend.process.models.ProcessNodePort;
-import de.aivot.prosuna.backend.process.models.TaskViewEvent;
+import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
@@ -154,6 +149,7 @@ class StaffProcessInstanceTaskViewControllerTest {
                 Map.of(),
                 Map.of(),
                 Map.of(),
+                null,
                 null,
                 null,
                 null,
@@ -287,11 +283,10 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertEquals("", response.data().getLiteral("requiredField"));
         assertFalse(provider.eventInvoked);
         assertNull(elementDerivationService.lastRequest);
-        var savedDraft = assertInstanceOf(
-                AuthoredElementValues.class,
-                fixture.task().getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY)
-        );
+        var savedDraft = assertInstanceOf(AuthoredElementValues.class,
+                fixture.task().getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
         assertEquals("", savedDraft.getLiteral("requiredField"));
+        assertEquals(2, provider.taskViewInvocationCount);
     }
 
     @Test
@@ -319,6 +314,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertFalse(provider.eventInvoked);
         assertNull(elementDerivationService.lastRequest);
         assertFalse(fixture.task().getRuntimeData().containsKey(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
+        assertEquals(1, provider.taskViewInvocationCount);
     }
 
     @Test
@@ -454,6 +450,7 @@ class StaffProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -529,7 +526,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private final ProcessNodeEntity node;
 
         private TestProcessNodeService(ProcessNodeEntity node) {
-            super(null, null, null, null, null, null, null, new ProsunaConfig());
+            super(null, null, null, null, null, null, null, new ProsunaConfig(), null);
             this.node = node;
         }
 
@@ -557,7 +554,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class ApplyingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private ApplyingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -695,6 +692,7 @@ class StaffProcessInstanceTaskViewControllerTest {
     }
 
     private static final class EventValidatedStaffProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
+        private int taskViewInvocationCount;
         private boolean eventInvoked;
 
         @Override
@@ -752,7 +750,8 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+        public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+            taskViewInvocationCount++;
             var requiredField = new TextInputElement();
             requiredField.setId("requiredField");
             requiredField.setLabel("Required field");
@@ -761,13 +760,12 @@ class StaffProcessInstanceTaskViewControllerTest {
             var layout = new GroupLayoutElement();
             layout.setId("staff-root");
             layout.setChildren(List.of(requiredField));
-            return layout;
-        }
-
-        @Nonnull
-        @Override
-        public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
-            return List.of(new TaskViewEvent("Complete", "complete"));
+            return ProcessNodeStaffView.of(
+                    context,
+                    layout,
+                    List.of(new TaskViewEvent("Complete", "complete")),
+                    new AuthoredElementValues()
+            );
         }
 
         @Nonnull
@@ -853,7 +851,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+        public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
             var linkButton = new LinkButtonContentElement()
                     .setLabel("Complete inline")
                     .setHref(href)
@@ -863,13 +861,7 @@ class StaffProcessInstanceTaskViewControllerTest {
             var layout = new GroupLayoutElement();
             layout.setId("staff-root");
             layout.setChildren(List.of(linkButton));
-            return layout;
-        }
-
-        @Nonnull
-        @Override
-        public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
-            return List.of();
+            return ProcessNodeStaffView.of(context, layout, List.of(), new AuthoredElementValues());
         }
 
         @Nonnull
@@ -948,18 +940,12 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+        public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
             var layout = new GroupLayoutElement();
             layout.setId("staff-root");
-            return layout;
-        }
-
-        @Nonnull
-        @Override
-        public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
             var initialData = new AuthoredElementValues();
             initialData.putLiteral("defaultField", "initial");
-            return initialData;
+            return ProcessNodeStaffView.of(context, layout, List.of(), initialData);
         }
 
         @Nonnull

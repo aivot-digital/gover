@@ -410,7 +410,7 @@ export function ThemeDetailsPageIndex() {
                 >
                     <ImageSelector
                         label="Favicon des Erscheinungsbildes"
-                        hint="Dieses Favicon wird im Browser-Tab angezeigt."
+                        hint="Dieses Favicon wird im Browser-Tab angezeigt. Wird kein Favicon gesetzt, wird das Standard-Favicon von Prosuna verwendet."
                         selectLabel="Favicon für das Erscheinungsbild auswählen"
                         value={theme.faviconKey ?? null}
                         onChange={(key) => {

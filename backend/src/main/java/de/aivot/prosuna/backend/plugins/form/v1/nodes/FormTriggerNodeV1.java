@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
@@ -43,11 +44,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
-import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
-import de.aivot.prosuna.backend.process.models.ProcessNodePort;
+import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultNoop;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
@@ -277,6 +274,15 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                         identity.getId(),
                         identity.getTitle(),
                         identity.getDescription(),
+                        identity.getOptions() == null
+                                ? List.of()
+                                : identity.getOptions()
+                                        .stream()
+                                        .filter(Objects::nonNull)
+                                        .map(IdentityConfigElementOption::getIdentityProviderKey)
+                                        .filter(Objects::nonNull)
+                                        .distinct()
+                                        .toList(),
                         processNodeEntity
                 );
             }
@@ -321,7 +327,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 .findChild(FormTriggerConfigV1.FORM_LAYOUT, UiDefinitionInputElement.class)
                 .ifPresent(uid -> {
                     uid.setElementType(ElementType.FormLayout);
-                    uid.setDisplayContext(ElementDisplayContext.CitizenFacing);
+                    uid.setDisplayContext(ElementDisplayContext.CustomerFacing);
                 });
 
 
@@ -661,7 +667,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             pdfBytes = pdfService.generateCustomerSummary(
                     configuration.formLayout,
                     submission,
-                    FormPdfScope.Citizen,
+                    FormPdfScope.Customer,
                     context.getThisProcessInstance(),
                     context.getConfigurationOfExecutingNode(),
                     context.getThisNode()
@@ -732,32 +738,47 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     @Nonnull
     @Override
-    public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
-        return createPaymentView(context);
+    public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
+        var paymentView = createPaymentView(context);
+        return paymentView == null
+                ? ProcessNodeDefinition.super.getCustomerTaskView(context)
+                : paymentView;
     }
 
     @Nonnull
-    private GroupLayoutElement createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
+    @Override
+    public ProcessNodeCustomerView getCompletedCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
+        var paymentView = createPaymentView(context);
+        return paymentView == null
+                ? ProcessNodeDefinition.super.getCompletedCustomerTaskView(context)
+                : paymentView;
+    }
+
+    @Nullable
+    private ProcessNodeCustomerView createPaymentView(@Nonnull ProcessNodeExecutionContextUICustomer<FormTriggerConfigV1> context) throws ResponseException {
         var paymentTransactionKey = context
                 .getThisTask()
                 .getRuntimeData()
                 .get(DATA_KEY_PAYMENT_TRANSACTION_KEY);
 
         if (paymentTransactionKey == null) {
-            return ProcessNodeDefinition.super.getCustomerTaskView(context);
+            return null;
         }
 
         var transaction = paymentTransactionService
                 .retrieve(String.valueOf(paymentTransactionKey));
 
         if (transaction.isEmpty()) {
-            return ProcessNodeDefinition.super.getCustomerTaskView(context);
+            return null;
         }
 
         var paymentPayloadRawData = context
                 .getThisTask()
                 .getRuntimeData()
                 .get(DATA_KEY_PAYMENT_PAYLOAD);
+        if (paymentPayloadRawData == null) {
+            return null;
+        }
         var paymentPayload = jsonMapper
                 .convertValue(paymentPayloadRawData, PaymentPayload.class);
 
@@ -808,7 +829,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         );
 
         try {
-            return new PaymentGroupPreset(
+            var layout = new PaymentGroupPreset(
                     paymentProvider,
                     paymentProviderDefinition,
                     paymentPayload,
@@ -817,6 +838,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                     failureMessage,
                     downloadUrl
             );
+            return ProcessNodeCustomerView.of(context, layout, List.of(), new AuthoredElementValues());
         } catch (IOException | WriterException e) {
             throw ResponseException.internalServerError(e);
         }

@@ -20,7 +20,7 @@ describe('LinkButtonView', () => {
             openInNewTab: true,
             variant: 'outlined',
             color: 'secondary',
-        });
+        }, null, undefined, true);
 
         const link = screen.getByRole('link', {name: /Mehr erfahren/});
         expect(link).toHaveAttribute('href', 'https://example.org');
@@ -73,12 +73,32 @@ describe('LinkButtonView', () => {
 
         expect(onEvent).not.toHaveBeenCalled();
     });
+
+    it('should disable customer task events in read-only task views', () => {
+        const onEvent = vi.fn().mockResolvedValue(undefined);
+
+        renderLinkButton(
+            {
+                label: 'Absenden',
+                customerTaskEvent: 'submit',
+            },
+            'customer',
+            {onEvent},
+            true,
+        );
+
+        const button = screen.getByRole('button', {name: 'Absenden'});
+        expect(button).toBeDisabled();
+        fireEvent.click(button);
+        expect(onEvent).not.toHaveBeenCalled();
+    });
 });
 
 function renderLinkButton(
     overrides: Partial<LinkButtonElement>,
     taskViewMode: TaskViewMode | null = null,
     propOverrides?: Partial<BaseViewProps<LinkButtonElement, void>>,
+    readOnly = false,
 ) {
     const element = createElement(overrides);
     const authoredElementValues = propOverrides?.authoredElementValues ?? {};
@@ -93,6 +113,7 @@ function renderLinkButton(
                 rootAuthoredElementValues: authoredElementValues,
                 rootDerivedData: derivedData,
                 taskViewMode,
+                readOnly,
             }}
         >
             <LinkButtonView

@@ -17,9 +17,11 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
     const parsedPrivacyDepartmentId = privacyDepartmentId != null && privacyDepartmentId !== '' && !Number.isNaN(parseInt(privacyDepartmentId)) ?
         parseInt(privacyDepartmentId) :
         null;
-    const selectedPrivacyDepartmentId = props.isListingPage ?
-        parsedPrivacyDepartmentId :
-        props.version?.privacyDepartmentId ?? null;
+    const selectedPrivacyDepartmentId = props.departmentId ?? (
+        props.isListingPage ?
+            parsedPrivacyDepartmentId :
+            props.version?.privacyDepartmentId ?? null
+    );
 
     useEffect(() => {
         if (selectedPrivacyDepartmentId == null) {

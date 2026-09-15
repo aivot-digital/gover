@@ -2,12 +2,12 @@ import {Box, Button, Typography} from '@mui/material';
 import {Link} from 'react-router-dom';
 import OpenInNewOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import DescriptionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Description';
-import {type FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
+import {type FormCustomerListResponseDTO} from '../../modules/forms/dtos/form-customer-list-response-d-t-o';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
 import {getCustomerPageSurfaceColor} from '../../theming/customer-page-surface';
 
 interface PublicFormListItemProps {
-    form: FormCitizenListResponseDTO;
+    form: FormCustomerListResponseDTO;
 }
 
 export function PublicFormListItem(props: PublicFormListItemProps) {
