@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {SecretsApiService} from '../secrets-api-service';
@@ -37,6 +38,18 @@ vi.mock('../dialogs/secret-select-dialog', () => ({
 describe('SecretSelectComponent', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
+    });
+
+    it.each(['light', 'dark'] as const)('uses the disabled icon color in %s mode', mode => {
+        const theme = createTheme({palette: {mode}});
+        render(
+            <ThemeProvider theme={theme}>
+                <SecretSelectComponent label="Geheimnis" value={null} onChange={vi.fn()} disabled/>
+            </ThemeProvider>,
+        );
+        const control = getSelectionControl('Geheimnis');
+        expect(control).toBeDisabled();
+        expect(control.querySelector('svg')?.parentElement).toHaveStyle({color: theme.palette.text.disabled});
     });
 
     it('loads and displays secret metadata without exposing the secret value', async () => {

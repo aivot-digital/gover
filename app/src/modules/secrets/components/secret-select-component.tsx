@@ -41,6 +41,7 @@ export function SecretSelectComponent(props: SecretSelectComponentProps): ReactN
     const selectedSecret = currentLoadedSecret?.secret;
     const isUnavailable = currentLoadedSecret?.unavailable === true;
     const isBusy = Boolean(props.busy || isLoadingSelection);
+    const isInteractionDisabled = Boolean(props.disabled || props.readOnly || isBusy);
     const resolvedError = combineErrors(
         props.error,
         isUnavailable ? 'Das ausgewählte Geheimnis ist nicht verfügbar.' : undefined,
@@ -120,7 +121,10 @@ export function SecretSelectComponent(props: SecretSelectComponentProps): ReactN
                 )}
                 secondaryText={selectedSecret?.description || (isUnavailable ? 'Nicht verfügbar' : undefined)}
                 leadingVisual={(
-                    <Box component="span" sx={{display: 'inline-flex', color: hasValue ? 'primary.main' : 'action.active'}}>
+                    <Box component="span" sx={{
+                        display: 'inline-flex',
+                        color: isInteractionDisabled ? 'text.disabled' : hasValue ? 'primary.main' : 'action.active',
+                    }}>
                         <KeyOutlinedIcon sx={{fontSize: 20}} />
                     </Box>
                 )}
