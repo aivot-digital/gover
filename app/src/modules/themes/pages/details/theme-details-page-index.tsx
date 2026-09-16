@@ -117,7 +117,7 @@ export function ThemeDetailsPageIndex() {
         handleInputPatch,
     } = useFormManager<Theme>(item, ThemeSchema as any);
 
-    const apiService = useMemo(() => new ThemesApiService(api), [api]);
+    const apiService = useMemo(() => new ThemesApiService(), []);
     const theme = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
     const lightPreviewTheme = useMemo(

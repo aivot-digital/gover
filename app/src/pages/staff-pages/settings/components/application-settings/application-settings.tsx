@@ -222,7 +222,7 @@ export function ApplicationSettings() {
         setIsLoadingThemes(true);
         setHasThemesLoadingError(false);
 
-        new ThemesApiService(api)
+        new ThemesApiService()
             .listAll()
             .then((themes) => {
                 if (isActive) {
@@ -251,7 +251,7 @@ export function ApplicationSettings() {
         return () => {
             isActive = false;
         };
-    }, [api, canReadThemes, dispatch]);
+    }, [canReadThemes, dispatch]);
 
     useEffect(() => {
         if (!canReadSystemRoles) {

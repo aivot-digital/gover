@@ -1,15 +1,22 @@
-import {CrudApiService} from '../../services/crud-api-service';
-import {Api} from '../../hooks/use-api';
 import {ThemeRequestDTO, ThemeResponseDTO} from './models/theme';
 import {DEFAULT_APPEARANCE_COLORS} from '../../theming/resolve-appearance-colors';
+import {BaseCrudApiService} from "../../services/base-crud-api-service";
 
 interface ThemeFilter {
     name: string;
 }
 
-export class ThemesApiService extends CrudApiService<ThemeRequestDTO, ThemeResponseDTO, ThemeResponseDTO, ThemeResponseDTO, ThemeResponseDTO, number, ThemeFilter> {
-    public constructor(api: Api) {
-        super(api, 'themes/');
+export class ThemesApiService extends BaseCrudApiService<
+    ThemeRequestDTO,
+    ThemeResponseDTO,
+    ThemeResponseDTO,
+    ThemeResponseDTO,
+    number,
+    ThemeFilter,
+    keyof ThemeResponseDTO
+> {
+    public constructor() {
+        super('themes/');
     }
 
     public initialize(): ThemeResponseDTO {

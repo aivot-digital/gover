@@ -125,7 +125,7 @@ export function ThemeListPage() {
     }), []);
 
     const fetchThemes = useCallback((options: GenericListPropsFetchOptions<Theme>) => {
-        return new ThemesApiService(options.api)
+        return new ThemesApiService()
             .list(
                 options.page,
                 options.size,

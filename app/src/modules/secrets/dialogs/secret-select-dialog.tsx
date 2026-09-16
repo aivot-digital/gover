@@ -32,7 +32,7 @@ export function SecretSelectDialog(props: SecretSelectDialogProps) {
         setIsLoading(true);
         setLoadFailed(false);
 
-        new SecretsApiService(api)
+        new SecretsApiService()
             .listAllOrdered('name', 'ASC')
             .then((response) => {
                 if (active) {

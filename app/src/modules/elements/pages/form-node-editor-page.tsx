@@ -470,7 +470,7 @@ export function FormNodeEditorPage() {
         // so the preview reflects unsaved form configuration immediately.
         setDraftPreviewThemeChain([]);
 
-        const themesApi = new ThemesApiService(api);
+        const themesApi = new ThemesApiService();
         const departmentsApi = new VDepartmentShadowedApiService();
 
         const appendTheme = async (themeChain: AppTheme[], themeId: number | null | undefined) => {

@@ -77,7 +77,7 @@ export function SecretsListPage() {
     }), []);
 
     const fetchSecrets = useCallback((options: GenericListPropsFetchOptions<SecretEntityResponseDTO>) => {
-        return new SecretsApiService(options.api)
+        return new SecretsApiService()
             .list(
                 options.page,
                 options.size,

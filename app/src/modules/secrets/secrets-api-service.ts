@@ -13,7 +13,7 @@ export class SecretsApiService extends BaseCrudApiService<
     SecretEntityResponseDTO,
     string,
     SecretFilters,
-    'key' | 'name'
+    keyof SecretEntityResponseDTO
 > {
     public constructor() {
         super('secrets/');

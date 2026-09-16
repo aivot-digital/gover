@@ -59,8 +59,8 @@ export function SecretsDetailsPage() {
                         label: '',
                     },
                 ]}
-                initializeItem={(api) => new SecretsApiService(api).initialize()}
-                fetchData={(api, id: string) => new SecretsApiService(api).retrieve(id)}
+                initializeItem={(api) => new SecretsApiService().initialize()}
+                fetchData={(api, id: string) => new SecretsApiService().retrieve(id)}
                 getTabTitle={(item: Secret) => {
                     if (item.key === '') {
                         return 'Neues Geheimnis';

@@ -283,7 +283,7 @@ export function DepartmentsDetailsPageIndex() {
 
         let isActive = true;
 
-        new ThemesApiService(api)
+        new ThemesApiService()
             .listAll()
             .then((result) => {
                 if (!isActive) {

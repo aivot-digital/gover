@@ -62,7 +62,7 @@ export function SecretSelectComponent(props: SecretSelectComponentProps): ReactN
         let active = true;
         setIsLoadingSelection(true);
 
-        new SecretsApiService(api)
+        new SecretsApiService()
             .retrieve(secretKey)
             .then((secret) => {
                 if (active) {
