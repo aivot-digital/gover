@@ -344,12 +344,10 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 update,
                 derivedRuntimeData.getElementStates()
         );
-        var originalProcessData = JsonMapperFactory.Utils.convertToMapPreservingNulls(context.getThisTask().getProcessData());
-        var updatedProcessData = elementDataTransformService.buildPayload(
+        var updatedProcessData = elementDataTransformService.buildUpdatedProcessData(
                 config.dataDefinition,
-                update,
-                derivedRuntimeData.getElementStates(),
-                JsonMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData)
+                derivedRuntimeData,
+                context.getThisTask().getProcessData()
         );
         var remark = normalizeRemark(authoredUpdate.getLiteral(TASK_VIEW_REMARK_FIELD_ID));
 

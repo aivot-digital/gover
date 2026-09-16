@@ -209,7 +209,10 @@ class ApprovalActionNodeV1Test {
 
     @Test
     void onEventFromStaffTaskView_CompletesTaskViaSelectedPort() throws Exception {
-        var processData = Map.<String, Object>of("approvalValue", "Freizugebender Inhalt");
+        var processData = Map.<String, Object>of(
+                "approvalValue", "Freizugebender Inhalt",
+                "unrelatedValue", "bleibt erhalten"
+        );
 
         var result = node.onEventFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
@@ -222,7 +225,10 @@ class ApprovalActionNodeV1Test {
                         nodeConfiguration(dataModeConfiguration()),
                         currentProcessData(processData)
                 ),
-                authored("approvalRemark", "<p>Passt</p>"),
+                authored(
+                        "approvalValue", "Freigegebener Inhalt",
+                        "approvalRemark", "<p>Passt</p>"
+                ),
                 "approve"
         );
 
@@ -234,6 +240,38 @@ class ApprovalActionNodeV1Test {
         assertEquals("<p>Passt</p>", completed.getNodeData().get("remark"));
         assertEquals("staff-1", completed.getNodeData().get("processedByUserId"));
         assertInstanceOf(Instant.class, completed.getNodeData().get("processedAt"));
+        assertEquals(
+                Map.of(
+                        "approvalValue", "Freigegebener Inhalt",
+                        "unrelatedValue", "bleibt erhalten"
+                ),
+                completed.getProcessData()
+        );
+    }
+
+    @Test
+    void onEventFromStaffTaskView_CustomContentKeepsProcessDataUnchanged() throws Exception {
+        var configuration = customContentConfiguration();
+        var processData = Map.<String, Object>of("status", "offen");
+
+        var result = node.onEventFromStaffTaskView(
+                new ProcessNodeExecutionContextUIStaff(
+                        logger(),
+                        processNode(configuration),
+                        processInstance("process-owner"),
+                        task(77, Map.of(), processData),
+                        null,
+                        user("staff-1"),
+                        nodeConfiguration(configuration),
+                        currentProcessData(processData)
+                ),
+                authored("approvalRemark", "<p>Passt</p>"),
+                "approve"
+        ).orElseThrow();
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result);
+        assertEquals(processData, completed.getProcessData());
+        assertFalse(completed.getProcessData().containsKey("approvalRemark"));
     }
 
     private static AuthoredElementValues dataModeConfiguration() {
@@ -250,6 +288,15 @@ class ApprovalActionNodeV1Test {
                 "criteria", "<p>Bitte fachlich prüfen.</p>",
                 "contentMode", "data",
                 "dataContent", contentRoot,
+                "assignmentContext", assignmentContext()
+        );
+    }
+
+    private static AuthoredElementValues customContentConfiguration() {
+        return authored(
+                "criteria", "<p>Bitte fachlich prüfen.</p>",
+                "contentMode", "custom",
+                "customContent", "<p>Bitte in Drittsystem prüfen.</p>",
                 "assignmentContext", assignmentContext()
         );
     }

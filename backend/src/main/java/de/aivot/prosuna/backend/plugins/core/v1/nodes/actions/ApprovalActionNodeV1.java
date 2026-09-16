@@ -1,7 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -378,10 +377,19 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         }
 
         // Derive the effective values based on the staff task view and the saved staff task view data to store the unmapped field values in the unmapped output field
+        var configuration = context.getConfigurationOfExecutingNode();
         var staffTaskView = getStaffTaskView(context);
-        var effectiveValues = elementDerivationService
-                .derive((GroupLayoutElement) staffTaskView.layout(), update)
-                .getEffectiveValues();
+        var derivedRuntimeData = elementDerivationService
+                .derive((GroupLayoutElement) staffTaskView.layout(), update);
+        var effectiveValues = derivedRuntimeData.getEffectiveValues();
+        var processDataUiDefinition = MODE_DATA.equals(configuration.contentMode)
+                ? configuration.dataContent
+                : null;
+        var updatedProcessData = elementDataTransformService.buildUpdatedProcessData(
+                processDataUiDefinition,
+                derivedRuntimeData,
+                context.getThisTask().getProcessData()
+        );
 
         var nodeData = new HashMap<String, Object>();
         nodeData.put(OUTPUT_DECISION, decision);
@@ -394,7 +402,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 .setViaPort(port) // Set the desired output port
                 .setNodeData(nodeData) // Set the generated node data
                 .setRuntimeData(Map.of()) // Reset runtime data to empty map
-                .setProcessData(context.getThisTask().getProcessData()); // Copy the process data for the next step
+                .setProcessData(updatedProcessData);
 
         return Optional.of(result);
     }
