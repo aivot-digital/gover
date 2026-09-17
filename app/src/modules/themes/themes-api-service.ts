@@ -16,7 +16,7 @@ export class ThemesApiService extends BaseCrudApiService<
     keyof ThemeResponseDTO
 > {
     public constructor() {
-        super('themes/');
+        super('/api/themes/');
     }
 
     public initialize(): ThemeResponseDTO {

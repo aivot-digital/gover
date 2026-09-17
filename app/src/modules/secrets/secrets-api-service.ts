@@ -16,7 +16,7 @@ export class SecretsApiService extends BaseCrudApiService<
     keyof SecretEntityResponseDTO
 > {
     public constructor() {
-        super('secrets/');
+        super('/api/secrets/');
     }
 
     public initialize(): SecretEntityResponseDTO {
