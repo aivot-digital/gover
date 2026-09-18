@@ -2,7 +2,6 @@ import {Box, Button, Typography} from '@mui/material';
 import React, {useContext, useMemo, useState} from 'react';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
-import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
 import {SecretsApiService} from '../../secrets-api-service';
 import {Secret} from '../../models/secret';
@@ -44,7 +43,6 @@ export function SecretsDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    const api = useApi();
     const {
         item,
         setItem,
@@ -65,7 +63,7 @@ export function SecretsDetailsPageIndex() {
         reset,
     } = useFormManager<Secret>(item, SecretSchema as any);
 
-    const apiService = useMemo(() => new SecretsApiService(api), [api]);
+    const apiService = useMemo(() => new SecretsApiService(), []);
 
     const secret = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);

@@ -54,8 +54,8 @@ export function ThemeDetailsPage() {
                         onlyExisting: true,
                     },
                 ]}
-                initializeItem={(api) => new ThemesApiService(api).initialize()}
-                fetchData={(api, id: number) => new ThemesApiService(api).retrieve(id)}
+                initializeItem={() => new ThemesApiService().initialize()}
+                fetchData={(api, id: number) => new ThemesApiService().retrieve(id)}
                 getTabTitle={(item: Theme) => {
                     if (item.id === 0) {
                         return 'Neues Erscheinungsbild';

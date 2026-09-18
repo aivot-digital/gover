@@ -221,7 +221,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
 
     const [themes, setThemes] = useState<ThemeResponseDTO[] | null>(null);
     useEffect(() => {
-        new ThemesApiService(api)
+        new ThemesApiService()
             .listAll()
             .then(({content}) => {
                 setThemes(content);
@@ -230,7 +230,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                 setThemes([]);
                 dispatch(showApiErrorSnackbar(error, 'Fehler beim Laden der Erscheinungsbilder'));
             });
-    }, [api, dispatch]);
+    }, [dispatch]);
 
     return (
         <Dialog
