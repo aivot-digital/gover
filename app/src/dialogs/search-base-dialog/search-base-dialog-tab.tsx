@@ -1,14 +1,30 @@
-import {Box, Button, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText, Typography, useTheme} from '@mui/material';
+import {
+    Box,
+    Button,
+    Grid,
+    IconButton,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText,
+    Tooltip,
+    Typography,
+    useTheme,
+} from '@mui/material';
 import {useEffect, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
-import {SearchInput} from '../../components/search-input-2/search-input';
+import {SearchInput} from '../../components/search-input/search-input';
 import {SearchBaseDialogTabProps} from './search-base-dialog-tab-props';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import CancelOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Cancel';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
+import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
 
 export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
     const theme = useTheme();
+    const generatedId = useNormalizedReactId();
+    const detailsId = `search-dialog-details-${generatedId}`;
     const [search, setSearch] = useState('');
     const [highlightedOption, setHighlightedOption] = useState<T>();
 
@@ -47,8 +63,6 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
             }}
         >
             <Grid
-                item
-                xs={highlightedOption != null ? 6 : 12}
                 sx={{
                     paddingTop: 2,
                     paddingLeft: 2,
@@ -58,12 +72,14 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                     display: 'flex',
                     flexDirection: 'column',
                 }}
-            >
+                size={highlightedOption != null ? 6 : 12}>
                 <SearchInput
                     value={search}
                     onChange={setSearch}
-                    placeholder={props.searchPlaceholder}
+                    label={props.searchPlaceholder}
+                    placeholder="Suchen…"
                     autoFocus
+                    size={"small"}
                     sx={{
                         marginRight: highlightedOption != null ? 2 : 0,
                     }}
@@ -95,7 +111,13 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
 
                     <List>
                         {
-                            searchedOptions.map((option) => (
+                            searchedOptions.map((option) => {
+                                const optionLabel = typeof props.primaryTextKey === 'function'
+                                    ? props.primaryTextKey(option)
+                                    : option[props.primaryTextKey] as string;
+                                const detailsExpanded = highlightedOption === option;
+
+                                return (
                                     <ListItem
                                         key={typeof props.getId === 'function' ? props.getId(option) : option[props.getId] as string}
                                         sx={{
@@ -104,21 +126,29 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                                         }}
                                         secondaryAction={
                                             props.detailsBuilder != null ? (
-                                                <IconButton
-                                                    onClick={() => {
-                                                        if (highlightedOption === option) {
-                                                            setHighlightedOption(undefined);
-                                                        } else {
-                                                            setHighlightedOption(option);
-                                                        }
-                                                    }}
+                                                <Tooltip
+                                                    title={detailsExpanded ? 'Details schließen' : 'Details anzeigen'}
+                                                    arrow
                                                 >
-                                                    {
-                                                        highlightedOption === option ?
-                                                            <CancelOutlinedIcon /> :
-                                                            <InfoOutlinedIcon />
-                                                    }
-                                                </IconButton>
+                                                    <IconButton
+                                                        aria-label={`${optionLabel}: Details ${detailsExpanded ? 'schließen' : 'anzeigen'}`}
+                                                        aria-expanded={detailsExpanded}
+                                                        aria-controls={detailsExpanded ? detailsId : undefined}
+                                                        onClick={() => {
+                                                            if (detailsExpanded) {
+                                                                setHighlightedOption(undefined);
+                                                            } else {
+                                                                setHighlightedOption(option);
+                                                            }
+                                                        }}
+                                                    >
+                                                        {
+                                                            detailsExpanded ?
+                                                                <CancelOutlinedIcon /> :
+                                                                <InfoOutlinedIcon />
+                                                        }
+                                                    </IconButton>
+                                                </Tooltip>
                                             ) : undefined
                                         }
                                     >
@@ -138,9 +168,7 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                                             }
                                             <ListItemText
                                                 primary={
-                                                    typeof props.primaryTextKey === 'function' ?
-                                                        props.primaryTextKey(option) :
-                                                        option[props.primaryTextKey] as string
+                                                    optionLabel
                                                 }
                                                 secondary={
                                                     props.secondaryTextKey == null ?
@@ -153,25 +181,23 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                                             />
                                         </ListItemButton>
                                     </ListItem>
-                                ),
-                            )
+                                );
+                            })
                         }
                     </List>
                 </Box>
             </Grid>
-
             {
                 highlightedOption != null &&
                 props.detailsBuilder != null &&
                 <Grid
-                    item
-                    xs={6}
+                    id={detailsId}
                     sx={{
                         height: '100%',
                         display: 'flex',
                         flexDirection: 'column',
                     }}
-                >
+                    size={6}>
                     <Box
                         sx={{
                             overflowY: 'auto',

@@ -1,0 +1,104 @@
+package de.aivot.prosuna.backend.process.workers;
+
+import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
+import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
+import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
+import de.aivot.prosuna.backend.utils.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import java.util.concurrent.TimeUnit;
+
+@Service
+@EnableScheduling
+public class ProcessStarter {
+    private final Logger logger = LoggerFactory.getLogger(ProcessStarter.class);
+
+    private final ProcessInstanceRepository processInstanceRepository;
+    private final RabbitTemplate rabbitTemplate;
+    private final ProcessRepository processDefinitionRepository;
+    private final ProcessNodeRepository processDefinitionNodeRepository;
+    private final ProcessNodeDefinitionService processNodeProviderService;
+    private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
+
+    @Autowired
+    public ProcessStarter(ProcessInstanceRepository processInstanceRepository,
+                          RabbitTemplate rabbitTemplate,
+                          ProcessRepository processDefinitionRepository,
+                          ProcessNodeRepository processDefinitionNodeRepository,
+                          ProcessNodeDefinitionService processNodeProviderService,
+                          ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
+        this.processInstanceRepository = processInstanceRepository;
+        this.rabbitTemplate = rabbitTemplate;
+        this.processDefinitionRepository = processDefinitionRepository;
+        this.processDefinitionNodeRepository = processDefinitionNodeRepository;
+        this.processNodeProviderService = processNodeProviderService;
+        this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
+    }
+
+    @Scheduled(fixedRate = 5, timeUnit = TimeUnit.SECONDS) // every 5 seconds
+    public void startProcesses() {
+        logger.info("Suche nach neuen Prozessen zum Starten...");
+
+        var allUnstartedProcesses = processInstanceRepository
+                .findAllByStatus(ProcessInstanceStatus.Created);
+
+        for (var processInstance : allUnstartedProcesses) {
+            var logger = processNodeExecutionLoggerFactory
+                    .create(processInstance.getId(), null, null, null);
+
+            try {
+                var initialNode = processDefinitionNodeRepository
+                        .findById(processInstance.getInitialNodeId())
+                        .orElseThrow(RuntimeException::new);
+
+                var payload = new ProcessWorker.DoWorkWorkerPayload(
+                        processInstance.getId(),
+                        null,
+                        null,
+                        null,
+                        initialNode.getId()
+                );
+
+                processInstance.setStatus(ProcessInstanceStatus.Running);
+                processInstanceRepository.save(processInstance);
+
+                rabbitTemplate.convertAndSend(
+                        ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE,
+                        payload
+                );
+
+                var process = processDefinitionRepository
+                        .findById(processInstance.getProcessId())
+                        .orElseThrow(RuntimeException::new);
+
+                var provider = processNodeProviderService
+                        .getProcessNodeDefinition(initialNode.getProcessNodeDefinitionKey(), initialNode.getProcessNodeDefinitionVersion())
+                        .orElseThrow(RuntimeException::new);
+
+                logger.logf(
+                        ProcessNodeExecutionLogLevel.Info,
+                        true,
+                        true,
+                        "Neuer Vorgang " + StringUtils.quote(process.getInternalTitle()) + " gestartet",
+                        "Ein neuer Vorgang für den Prozess %s wurde gestartet. Die erste Aufgabe wird für das Prozesselement %s gestartet.",
+                        StringUtils.quote(process.getInternalTitle()),
+                        StringUtils.quote(initialNode.resolveName(provider))
+                );
+            } catch (Exception e) {
+                logger.logException(e);
+                processInstance.setStatus(ProcessInstanceStatus.Failed);
+                processInstanceRepository.save(processInstance);
+            }
+        }
+    }
+}

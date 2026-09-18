@@ -1,5 +1,5 @@
 export interface JavascriptCode {
-    code: string;
+    code: string | null | undefined;
 }
 
 export function isJavascriptCode(value: any): value is JavascriptCode {

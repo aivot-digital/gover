@@ -1,7 +1,7 @@
-import DebugIcon from '@mui/icons-material/BugReport';
-import InfoIcon from '@mui/icons-material/Info';
-import WarningIcon from '@mui/icons-material/Warning';
-import ErrorIcon from '@mui/icons-material/Report';
+import DebugIcon from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
+import InfoIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import WarningIcon from '@aivot/mui-material-symbols-400-n25-outlined/Warning';
+import ErrorIcon from '@aivot/mui-material-symbols-400-n25-outlined/Report';
 import {LogLevel} from '../../slices/logging-slice';
 
 export function LogLevelIcon({level, active}: { level: LogLevel, active?: boolean }) {

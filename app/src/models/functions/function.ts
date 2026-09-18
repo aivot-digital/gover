@@ -1,4 +1,4 @@
-import {ConditionSet} from "./conditions/condition-set";
+import {ConditionSet} from './conditions/condition-set';
 
 export interface Function {
     requirements: string;

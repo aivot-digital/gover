@@ -1,0 +1,12 @@
+<mj-section css-class="email-signature-section" padding="32px 32px 0">
+    <mj-column>
+        <mj-divider padding="0 0 20px"/>
+
+        <mj-text css-class="email-signature" padding="0">
+            <span th:text="${mailSignature}"
+                  style="white-space: pre-line;">Beispielkommune
+Musterstraße 1
+12345 Musterstadt</span>
+        </mj-text>
+    </mj-column>
+</mj-section>

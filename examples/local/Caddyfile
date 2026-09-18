@@ -1,0 +1,67 @@
+# Local development reverse proxy. Caddy listens on plain HTTP port 80 inside the
+# container; Compose publishes it as http://localhost:9595. Do not use this setup in
+# a public or production environment.
+http://localhost:80 {
+    # Match the four public route groups. The customer matcher is a catch-all, so its
+    # handle block must remain after the more specific staff, identity, and API routes.
+    @customer {
+        path /
+        path /*
+    }
+
+    @staff {
+        path /staff
+        path /staff/*
+    }
+
+    @idp {
+        path /idp
+        path /idp/*
+    }
+
+    @api {
+        path /api
+        path /api/*
+    }
+
+    # Local Keycloak serves from its root path, so remove the public /idp prefix before
+    # forwarding the request.
+    handle @idp {
+        uri strip_prefix /idp
+        reverse_proxy keycloak:8080
+    }
+
+    # Proxy API calls to the backend. Retry connection attempts for up to 30 seconds
+    # while the application finishes starting.
+    handle @api {
+        reverse_proxy prosuna_api:9595 {
+            lb_try_duration 30s
+            lb_try_interval 1s
+        }
+    }
+
+    # The web app shares the API container's network namespace, making its port 8080
+    # available through the prosuna_api hostname for both staff and customer routes.
+    handle @staff {
+        reverse_proxy prosuna_api:8080 {
+            lb_try_duration 30s
+            lb_try_interval 1s
+        }
+    }
+
+    # This catch-all must remain the final handle block.
+    handle @customer {
+        reverse_proxy prosuna_api:8080 {
+            lb_try_duration 30s
+            lb_try_interval 1s
+        }
+    }
+
+    # Allow browser applications on other origins to load the bundled web fonts.
+    header /assets/fonts/* {
+        Access-Control-Allow-Origin *
+    }
+
+    # Keep the legacy security.txt URL canonical.
+    redir /security.txt /.well-known/security.txt 301
+}

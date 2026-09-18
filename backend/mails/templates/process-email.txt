@@ -1,0 +1,8 @@
+[(${messageText})]
+
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde über Prosuna versendet. Bitte nicht auf diese E-Mail antworten.

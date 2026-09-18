@@ -1,38 +1,96 @@
-import Editor, {Monaco} from '@monaco-editor/react';
-import {Box, Typography} from '@mui/material';
+import {type Monaco} from '@monaco-editor/react';
+import {MonacoEditor} from './monaco-editor';
+import {type editor} from 'monaco-editor';
+import {Box, useTheme} from '@mui/material';
 import React, {useCallback, useEffect, useRef} from 'react';
 import {CodeEditorProps} from './code-editor-props';
 import {ActionsProps} from '../actions/actions-props';
 import {Actions} from '../actions/actions';
 import {AlertComponent} from '../alert/alert-component';
+import {JavascriptApiService} from '../../modules/javascript/javascript-api-service';
+import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 
 export function CodeEditor(props: CodeEditorProps & ActionsProps) {
+    const theme = useTheme();
     const {
         onChange,
         value,
         typeHints,
+        onEditorMount,
     } = props;
 
-    const monacoRef = useRef<Monaco>();
-    const editorRef = useRef<any>();
+    const monacoRef = useRef<Monaco>(undefined);
+    const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
+    const onBlurRef = useRef<CodeEditorProps['onBlur']>(props.onBlur);
+    const globalTypeHintsRef = useRef<string>(undefined);
+
+    useEffect(() => {
+        onBlurRef.current = props.onBlur;
+    }, [props.onBlur]);
+
+    useEffect(() => {
+        let isActive = true;
+
+        new JavascriptApiService()
+            .getTypes()
+            .then((globalTypeHints) => {
+                if (!isActive) {
+                    return;
+                }
+
+                globalTypeHintsRef.current = globalTypeHints;
+                monacoAddExtraLib(monacoRef.current, globalTypeHints, '@types/global.d.ts');
+            })
+            .catch(() => {
+                // Type declarations improve IntelliSense but must not make the editor unusable.
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, []);
 
     const hasTopContent = props.label != null || props.actions.length > 0;
 
-    const handleEditorMount = useCallback((editor: any, monaco: Monaco) => {
+    const handleEditorMount = useCallback((editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
         monacoRef.current = monaco;
         editorRef.current = editor;
-        editorRef.current.setValue(value ?? '');
 
+        if (onEditorMount) {
+            onEditorMount(editor);
+        }
+
+        const blurDisposable = editor.onDidBlurEditorText(() => {
+            onBlurRef.current?.(editor.getValue());
+        });
+
+        monacoAddExtraLib(monaco, globalTypeHintsRef.current, '@types/global.d.ts');
         monacoApplyTypeHints(monaco, typeHints);
-    }, []);
+
+        return () => {
+            blurDisposable.dispose();
+        };
+    }, [onEditorMount, typeHints]);
 
     useEffect(() => {
         monacoApplyTypeHints(monacoRef.current, typeHints);
     }, [typeHints]);
 
+    useEffect(() => {
+        const activeEditor = editorRef.current;
+        const nextValue = value ?? '';
+        if (activeEditor == null || activeEditor.getValue() === nextValue) {
+            return;
+        }
+
+        activeEditor.setValue(nextValue);
+    }, [value]);
+
     const handleEditorChange = useCallback((value: string | undefined) => {
         onChange(value ?? '');
     }, [onChange]);
+    const editorAriaLabel = props.ariaLabel ?? props.label ?? 'Code-Editor';
+    const isInteractionDisabled = Boolean(props.disabled || props.readOnly || props.busy);
 
     return (
         <Box sx={props.sx}>
@@ -48,9 +106,9 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
                             alignItems: 'center',
                         }}
                     >
-                        <Typography>
+                        <Box component="span" sx={{fontWeight: 500}}>
                             {props.label}
-                        </Typography>
+                        </Box>
 
                         <Box
                             sx={{
@@ -63,21 +121,57 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
                 )
             }
             <Box
+                id={props.id}
+                role="group"
+                aria-label={props.ariaLabelledBy == null ? editorAriaLabel : undefined}
+                aria-labelledby={props.ariaLabelledBy}
+                aria-describedby={props.ariaDescribedBy}
+                aria-disabled={props.disabled || props.busy || undefined}
+                aria-readonly={props.readOnly || props.busy || undefined}
+                aria-busy={props.busy || undefined}
+                aria-required={props.required || undefined}
+                aria-invalid={props.error || undefined}
                 sx={{
                     mt: hasTopContent ? 2 : 0,
                     py: 2,
-                    border: '1px solid rgba(0, 0, 0, 0.23)',
+                    overflow: 'hidden',
+                    border: '1px solid',
+                    borderColor: props.error ? 'error.main' : 'divider',
                     borderRadius: 1,
+                    backgroundColor: isInteractionDisabled
+                        ? getDisabledFieldBackground
+                        : 'transparent',
+                    '&:focus-within': {
+                        borderColor: props.error ? 'error.main' : 'primary.main',
+                        boxShadow: (theme) => `0 0 0 1px ${
+                            props.error ? theme.palette.error.main : theme.palette.primary.main
+                        }`,
+                    },
+                    // Monaco paints its own surface and focus outline. The field wrapper owns both
+                    // so its light/dark appearance and focus state match the other form controls.
+                    '& .monaco-editor': {
+                        backgroundColor: 'transparent !important',
+                        outline: 'none !important',
+                    },
+                    '& .monaco-editor-background, & .monaco-editor .margin': {
+                        backgroundColor: 'transparent !important',
+                    },
                 }}
             >
-                <Editor
+                {/* React Flow treats descendants of `.nokey` as editors and leaves their keyboard input untouched. */}
+                <MonacoEditor
+                    className="nokey"
                     height={props.height ?? 'max(100vh - 768px, 320px)'}
-                    defaultLanguage={props.language ?? 'javascript'}
+                    language={props.language ?? 'javascript'}
+                    theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'light'}
+                    value={value ?? ''}
                     options={{
                         minimap: {
                             enabled: false,
                         },
-                        readOnly: props.disabled,
+                        readOnly: isInteractionDisabled,
+                        ariaLabel: editorAriaLabel,
+                        wordWrap: props.wordWrap ? 'on' : 'off',
                     }}
                     onMount={handleEditorMount}
                     onChange={handleEditorChange}
@@ -87,15 +181,20 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
     );
 }
 
-function monacoApplyTypeHints(monaco: any, typeHints: CodeEditorProps['typeHints']) {
+function monacoApplyTypeHints(monaco: Monaco | undefined, typeHints: CodeEditorProps['typeHints']) {
     if (monaco == null || typeHints == null || typeHints.length === 0) {
         return;
     }
 
     for (const typeHint of typeHints) {
-        monaco.languages.typescript.javascriptDefaults.addExtraLib(
-            typeHint.content,
-            `@types/${typeHint.name}.d.ts`,
-        );
+        monacoAddExtraLib(monaco, typeHint.content, `@types/${typeHint.name}.d.ts`);
     }
+}
+
+function monacoAddExtraLib(monaco: Monaco | undefined, content: string | undefined, path: string) {
+    if (monaco?.typescript?.javascriptDefaults == null || content == null) {
+        return;
+    }
+
+    monaco.typescript.javascriptDefaults.addExtraLib(content, path);
 }

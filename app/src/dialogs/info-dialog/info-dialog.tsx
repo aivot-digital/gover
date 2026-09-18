@@ -1,16 +1,18 @@
-import {type DialogProps} from '@mui/material/Dialog/Dialog';
+import {type DialogProps} from '@mui/material/Dialog';
 import {Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography, useTheme} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
-import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
-import React from "react";
+import CheckCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import ReportOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Report';
+import React from 'react';
 
 interface InfoDialogProps {
     title: string;
     severity: 'success' | 'error' | 'warning' | 'info';
     onClose?: () => void;
+    actions?: React.ReactNode;
+    closeButtonLabel?: string;
 }
 
 const severityIconMap: Record<string, any> = {
@@ -26,6 +28,8 @@ export function InfoDialog(props: InfoDialogProps & DialogProps) {
         title,
         severity,
         onClose,
+        actions,
+        closeButtonLabel = 'Hinweis schließen',
         ...dialogProps
     } = props;
 
@@ -91,11 +95,20 @@ export function InfoDialog(props: InfoDialogProps & DialogProps) {
             </DialogContent>
 
             <DialogActions>
+                <Box
+                    sx={{
+                        mr: 'auto',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 1,
+                    }}
+                >
+                    {actions}
+                </Box>
                 <Button
                     onClick={props.onClose}
-                    variant="contained"
                 >
-                    Hinweis schließen
+                    {closeButtonLabel}
                 </Button>
             </DialogActions>
         </Dialog>

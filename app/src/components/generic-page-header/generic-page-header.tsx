@@ -5,23 +5,26 @@ import {Actions} from '../actions/actions';
 import {Badge} from '../badge/badge';
 import {InfoDialog} from '../../dialogs/info-dialog/info-dialog';
 import {Action} from '../actions/actions-props';
-import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
+import {isBadgeProps} from '../badge/badge-props';
+import Help from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 
 export function GenericPageHeader(props: GenericPageHeaderProps) {
     const [isHelpDialogOpen, toggleIsHelpDialogOpen] = useReducer((isHelpDialogOpen) => !isHelpDialogOpen, false);
 
     const actions: Action[] = useMemo(() => {
+        const headerActions = props.actions ?? [];
+        const hasVisibleHeaderActions = headerActions.some((action) => action !== 'separator' && action.visible !== false);
         const _actions = [
-            ...(props.actions ?? []),
+            ...headerActions,
         ];
 
-        if (props.actions != null && props.helpDialog != null) {
+        if (hasVisibleHeaderActions && props.helpDialog != null) {
             _actions.push('separator');
         }
 
         if (props.helpDialog) {
             _actions.push({
-                icon: <HelpOutlineOutlinedIcon />,
+                icon: <Help />,
                 tooltip: props.helpDialog.tooltip,
                 onClick: toggleIsHelpDialogOpen,
                 ignoreBusy: true,
@@ -37,6 +40,7 @@ export function GenericPageHeader(props: GenericPageHeaderProps) {
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
+                    minHeight: 34,
                 }}
             >
                 {props.icon}
@@ -57,8 +61,30 @@ export function GenericPageHeader(props: GenericPageHeaderProps) {
                 </Typography>
 
                 {
-                    props.badge &&
-                    <Badge {...props.badge} />
+                    isBadgeProps(props.badge) &&
+                    <Badge {...props.badge} sx={{ml: 1}}/>
+                }
+
+                {
+                    Array.isArray(props.badge) &&
+                    <>
+                        {
+                            props.badge.map((b, index) => (
+                                <Box key={index} sx={{ml: 1}}>
+                                    {isBadgeProps(b) ? <Badge {...b} /> : b}
+                                </Box>
+                            ))
+                        }
+                    </>
+                }
+
+                {
+                    props.badge != null &&
+                    !isBadgeProps(props.badge) &&
+                    !Array.isArray(props.badge) &&
+                    <Box sx={{ml: 1}}>
+                        {props.badge}
+                    </Box>
                 }
 
                 <Actions
@@ -67,6 +93,7 @@ export function GenericPageHeader(props: GenericPageHeaderProps) {
                     sx={{
                         marginLeft: 'auto',
                     }}
+                    dense={true}
                 />
             </Box>
 

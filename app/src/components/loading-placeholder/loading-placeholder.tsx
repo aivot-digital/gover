@@ -1,6 +1,6 @@
 import {Container} from '@mui/material';
 import React, {ReactNode} from 'react';
-import {Loader} from "../loader/loader";
+import {Loader} from '../loader/loader';
 
 export function LoadingPlaceholder({message}: { message?: string | ReactNode }) {
     return (
