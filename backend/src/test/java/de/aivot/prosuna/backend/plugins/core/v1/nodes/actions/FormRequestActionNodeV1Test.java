@@ -29,7 +29,6 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinit
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,7 +67,6 @@ class FormRequestActionNodeV1Test {
         prosunaConfig = new ProsunaConfig();
         prosunaConfig.setProsunaHostname("https://example.test");
         node = new FormRequestActionNodeV1(
-                mock(TemplateRenderService.class),
                 mock(AssignmentContextAssigneeResolverService.class),
                 prosunaConfig,
                 new ElementDataTransformService(),

@@ -8,10 +8,12 @@ import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiCompletionActionNodeV1;
 import de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiProcessDataTransformationActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.ApprovalActionNodeV1;
+import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.CommunicationMessageActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.CounterActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.DataChangeActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.DataMappingActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.EMailActionNodeV1;
+import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.FormRequestActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.LowCodeActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.ManualActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.NoCodeActionNodeV1;
@@ -38,21 +40,23 @@ class ProcessNodeInputModePolicyTest {
             InputMode.NoCode,
             InputMode.LowCode
     );
+    private static final String[] SHARED_MESSAGE_FIELDS = {
+            "manual_subject",
+            "manual_content",
+            "automatic_subject",
+            "automatic_content"
+    };
 
     @Test
     void runtimeValueFields_ShouldExposeAllInputModesAndVariableSources() throws Exception {
         assertDynamicFields(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.class, "model", "prompt");
         assertDynamicFields(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.class, "model", "prompt");
         assertDynamicFields(ApprovalActionNodeV1.ApprovalConfiguration.class, "criteria", "customContent");
-        assertDynamicFields(
-                EMailActionNodeV1.EMailActionNodeConfig.class,
-                "to",
-                "bcc",
-                "manual_subject",
-                "manual_content",
-                "automatic_subject",
-                "automatic_content"
-        );
+        assertDynamicFields(EMailActionNodeV1.EMailActionNodeConfig.class, "to", "bcc");
+        assertDynamicFields(EMailActionNodeV1.EMailActionNodeConfig.class, SHARED_MESSAGE_FIELDS);
+        assertDynamicFields(CommunicationMessageActionNodeV1.Configuration.class, SHARED_MESSAGE_FIELDS);
+        assertDynamicFields(FormRequestActionNodeV1.NodeConfig.class, SHARED_MESSAGE_FIELDS);
+        assertDynamicFields(PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.class, SHARED_MESSAGE_FIELDS);
         assertDynamicFields(ManualActionNodeV1.ManualActionNodeConfig.class, "task_description");
         assertDynamicFields(CounterActionNodeV1.CounterActionNodeV1Configuration.class, "increment");
         assertDynamicFields(
@@ -76,6 +80,21 @@ class ProcessNodeInputModePolicyTest {
         assertLiteralOnlyFields(
                 EMailActionNodeV1.EMailActionNodeConfig.class,
                 "attachment_file_names",
+                "execution_type",
+                "manual_assignment"
+        );
+        assertLiteralOnlyFields(
+                CommunicationMessageActionNodeV1.Configuration.class,
+                "execution_type",
+                "manual_assignment"
+        );
+        assertLiteralOnlyFields(
+                FormRequestActionNodeV1.NodeConfig.class,
+                "execution_type",
+                "manual_assignment"
+        );
+        assertLiteralOnlyFields(
+                PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.class,
                 "execution_type",
                 "manual_assignment"
         );
@@ -156,30 +175,17 @@ class ProcessNodeInputModePolicyTest {
         assertDynamicTextFields(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.class, "prompt");
         assertDynamicTextFields(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.class, "prompt");
         assertDynamicTextFields(ApprovalActionNodeV1.ApprovalConfiguration.class, "criteria", "customContent");
-        assertDynamicTextFields(
-                EMailActionNodeV1.EMailActionNodeConfig.class,
-                "to",
-                "bcc",
-                "manual_subject",
-                "manual_content",
-                "automatic_subject",
-                "automatic_content"
-        );
+        assertDynamicTextFields(EMailActionNodeV1.EMailActionNodeConfig.class, "to", "bcc");
+        assertDynamicTextFields(EMailActionNodeV1.EMailActionNodeConfig.class, SHARED_MESSAGE_FIELDS);
+        assertDynamicTextFields(CommunicationMessageActionNodeV1.Configuration.class, SHARED_MESSAGE_FIELDS);
+        assertDynamicTextFields(FormRequestActionNodeV1.NodeConfig.class, SHARED_MESSAGE_FIELDS);
+        assertDynamicTextFields(PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.class, SHARED_MESSAGE_FIELDS);
         assertDynamicTextFields(ManualActionNodeV1.ManualActionNodeConfig.class, "task_description");
         assertDynamicTextFields(PdfActionNodeV1.PdfActionNodeConfig.class, "file_name");
         assertDynamicTextFields(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.class, "file_name");
     }
 
     private static de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement configurationLayout(Class<?> configurationClass) throws Exception {
-        if (configurationClass == EMailActionNodeV1.EMailActionNodeConfig.class) {
-            // The shared message POJO stays policy-neutral; EMail enables its established modes on its own layout.
-            return org.mockito.Mockito.mock(EMailActionNodeV1.class, org.mockito.Mockito.CALLS_REAL_METHODS)
-                    .getConfigurationLayout(new de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext(
-                            null, new de.aivot.prosuna.backend.process.entities.ProcessEntity(),
-                            new de.aivot.prosuna.backend.process.entities.ProcessVersionEntity(),
-                            new de.aivot.prosuna.backend.process.entities.ProcessNodeEntity().setProcessId(1).setProcessVersion(1)
-                    ));
-        }
         return ElementPOJOMapper.createFromPOJO(configurationClass);
     }
 
