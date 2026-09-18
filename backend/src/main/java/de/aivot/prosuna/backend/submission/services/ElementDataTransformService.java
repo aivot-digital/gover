@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.ComputedElementSubState;
 import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
@@ -121,6 +122,29 @@ public class ElementDataTransformService {
         var payload = new LinkedHashMap<>(existingPayload);
         mergeDestinationKeyPayload(rootElement, effectiveValues, payload, List.of(), computedElementStates);
         return payload;
+    }
+
+    /**
+     * Applies runtime-derived form values to a null-preserving copy of the current process data.
+     * The supplied process data is not mutated. If no form tree is provided, an unchanged copy is
+     * returned.
+     *
+     * @param rootElement the form tree defining which values are written and their destination keys
+     * @param derivedRuntimeData the effective values and runtime element states to apply
+     * @param currentProcessData the process data to copy and update
+     * @return a copy of the process data with the mapped form values applied
+     */
+    @Nonnull
+    public Map<String, Object> buildUpdatedProcessData(@Nullable BaseElement rootElement,
+                                                       @Nonnull DerivedRuntimeElementData derivedRuntimeData,
+                                                       @Nonnull Map<String, Object> currentProcessData) {
+        var processDataCopy = JsonMapperFactory.Utils.convertToMapPreservingNulls(currentProcessData);
+        return buildPayload(
+                rootElement,
+                derivedRuntimeData.getEffectiveValues(),
+                derivedRuntimeData.getElementStates(),
+                processDataCopy
+        );
     }
 
     /**
