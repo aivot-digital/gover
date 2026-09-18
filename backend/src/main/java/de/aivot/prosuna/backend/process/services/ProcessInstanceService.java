@@ -151,7 +151,7 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
             } catch (DataIntegrityViolationException e) {
                 if (entity.getInboundReference() != null &&
                         processInstanceRepository.existsByInboundReference(entity.getInboundReference())) {
-                    throw ResponseException.conflict("Für diese externe Eingangsreferenz existiert bereits eine Prozessinstanz.");
+                    throw ResponseException.conflict("Für diese externe Eingangsreferenz existiert bereits ein Vorgang.");
                 }
 
                 if (processInstanceRepository.existsByCaseNumber(entity.getCaseNumber())) {
@@ -161,7 +161,7 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
                     continue;
                 }
 
-                throw ResponseException.internalServerError("Die Prozessinstanz konnte nicht gespeichert werden.", e);
+                throw ResponseException.internalServerError("Der Vorgang konnte nicht gespeichert werden.", e);
             }
         }
 
