@@ -304,7 +304,7 @@ class PaymentRequestActionNodeV1Test {
     }
 
     @Test
-    void staffTask_DefaultDataRendersManualTemplatesOnce() throws Exception {
+    void staffTask_DefaultDataUsesResolvedManualMessageValues() throws Exception {
         var configuration = nodeConfiguration(paymentConfig(UUID.randomUUID()), "manual");
         var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
         var paymentPayload = paymentPreviewPayload();
@@ -782,12 +782,12 @@ class PaymentRequestActionNodeV1Test {
         configuration.messageConfig.executionType = executionType;
 
         configuration.messageConfig.automaticContent = new SemiAutomaticMessageConfig.AutomaticContent();
-        configuration.messageConfig.automaticContent.subject = "Zahlung für {{ $.name }}";
-        configuration.messageConfig.automaticContent.content = "Hallo **{{ $.name }}**";
+        configuration.messageConfig.automaticContent.subject = "Zahlung für Ada";
+        configuration.messageConfig.automaticContent.content = "Hallo **Ada**";
 
         configuration.messageConfig.manualContent = new SemiAutomaticMessageConfig.ManualContent();
-        configuration.messageConfig.manualContent.subject = "Entwurf für {{ $.name }}";
-        configuration.messageConfig.manualContent.content = "Bitte {{ $.name }} prüfen";
+        configuration.messageConfig.manualContent.subject = "Entwurf für Ada";
+        configuration.messageConfig.manualContent.content = "Bitte Ada prüfen";
         configuration.messageConfig.manualContent.assignmentContext = new AssignmentContextInputElementValue();
         return configuration;
     }
