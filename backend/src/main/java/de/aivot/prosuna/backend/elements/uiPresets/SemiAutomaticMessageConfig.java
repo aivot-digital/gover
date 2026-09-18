@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.elements.uiPresets;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -99,12 +100,6 @@ public class SemiAutomaticMessageConfig {
         @InputElementPOJOBinding(
                 id = EXECUTION_TYPE_FIELD_ID,
                 type = ElementType.Radio,
-                allowedInputModes = {
-                        InputMode.Literal,
-                        InputMode.Variable,
-                        InputMode.NoCode,
-                        InputMode.LowCode
-                },
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),
                         @ElementPOJOBindingProperty(key = "hint", strValue = "Auswahl, ob die Nachricht automatisch versendet oder vorher durch eine Mitarbeiter:in bearbeitet wird."),
