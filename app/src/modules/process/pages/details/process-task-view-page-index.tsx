@@ -1,6 +1,6 @@
 import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import {Box, Button, Link, Skeleton, Tooltip, Typography} from '@mui/material';
-import {Link as RouterLink, useSearchParams} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router-dom';
 import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import Flag from '@aivot/mui-material-symbols-400-n25-outlined/Flag';
 import SellOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Sell';
@@ -165,11 +165,6 @@ export function ProcessTaskViewPageIndex(): ReactNode {
         item,
     } = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
 
-    const [searchParams] = useSearchParams();
-    // Temporary display-only preview; never changes the task or persists example data.
-    const previewMetadata = import.meta.env.DEV && searchParams.get('previewTaskMetadata') === '1';
-    const previewFinished = useMemo(() => new Date(Date.now() - 60 * 60 * 1000).toISOString(), []);
-
     const generalInfoItems = useMemo<StatusTablePropsItem[]>(() => {
         if (item == null) {
             return [];
@@ -261,19 +256,17 @@ export function ProcessTaskViewPageIndex(): ReactNode {
             },
         ];
 
-        if (previewMetadata || item.task.assignedCustomerIdentityId != null) {
+        if (item.task.assignedCustomerIdentityId != null) {
             entries.push({
                 label: 'Externe Beteiligung',
                 icon: <AccountCircle />,
-                children: previewMetadata
-                    ? 'Erika Muster (Beispiel)'
-                    : getExternalAssigneeLabel(item.task.assignedCustomerIdentityId!, item.instance?.identities),
+                children: getExternalAssigneeLabel(item.task.assignedCustomerIdentityId, item.instance?.identities),
             });
         }
 
-        if (previewMetadata || item.task.finished != null) {
+        if (item.task.finished != null) {
             entries.push({
-                label: previewMetadata || item.task.status === ProcessTaskStatus.Completed
+                label: item.task.status === ProcessTaskStatus.Completed
                     ? 'Abgeschlossen am'
                     : item.task.status === ProcessTaskStatus.Aborted
                         ? 'Abgebrochen am'
@@ -281,12 +274,12 @@ export function ProcessTaskViewPageIndex(): ReactNode {
                             ? 'Fehlgeschlagen am'
                             : 'Beendet am',
                 icon: <EventAvailableOutlinedIcon />,
-                children: formatDateTimeWithRelative(previewMetadata ? previewFinished : item.task.finished),
+                children: formatDateTimeWithRelative(item.task.finished),
             });
         }
 
         return entries;
-    }, [item, previewMetadata, previewFinished]);
+    }, [item]);
 
     if (item == null) {
         return (
