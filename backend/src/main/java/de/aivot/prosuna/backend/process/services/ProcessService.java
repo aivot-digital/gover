@@ -68,8 +68,20 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
     public Page<ProcessEntity> listAllByAccessibleForUser(@Nonnull Pageable pageable,
                                                           @Nonnull String userId,
                                                           @Nullable Specification<ProcessEntity> specification) throws ResponseException {
+        var accessSpecification = getReadAccessSpecification(userId);
+        var combinedSpecification = accessSpecification == null ? specification
+                : specification == null ? accessSpecification : specification.and(accessSpecification);
+        return processDefinitionRepository.findAll(combinedSpecification, pageable);
+    }
+
+    /**
+     * Shared by process rows and filter options so explicit grants and system overrides cannot diverge.
+     * A null specification denotes unrestricted system-level read access.
+     */
+    @Nullable
+    public Specification<ProcessEntity> getReadAccessSpecification(@Nonnull String userId) {
         if (permissionService.hasSystemPermission(userId, ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
-            return processDefinitionRepository.findAll(specification, pageable);
+            return null;
         }
 
         // A process can be visible through its owning department or through an explicit process grant.
@@ -86,10 +98,10 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
                 .toList();
 
         if (accessibleDepartmentIds.isEmpty() && accessibleProcessIds.isEmpty()) {
-            return Page.empty(pageable);
+            return (root, query, criteriaBuilder) -> criteriaBuilder.disjunction();
         }
 
-        Specification<ProcessEntity> userAccessSpec = (root, query, criteriaBuilder) -> {
+        return (root, query, criteriaBuilder) -> {
             var predicates = new LinkedList<Predicate>();
 
             if (!accessibleDepartmentIds.isEmpty()) {
@@ -102,10 +114,6 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
 
             return criteriaBuilder.or(predicates.toArray(Predicate[]::new));
         };
-
-        Specification<ProcessEntity> combinedSpec = (specification == null) ? userAccessSpec : specification.and(userAccessSpec);
-
-        return processDefinitionRepository.findAll(combinedSpec, pageable);
     }
 
     @Nonnull
