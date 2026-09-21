@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.elements.models.elements.steps.IntroductionStepE
 import de.aivot.prosuna.backend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.utils.RandomUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -100,7 +101,7 @@ public abstract class BaseElement implements Serializable {
 
     public BaseElement(@Nonnull ElementType type) {
         this.type = type;
-        this.id = UUID.randomUUID().toString();
+        this.id = RandomUtils.generateRandomString(10);
     }
 
     public void recalculateReferencedIds() {
@@ -219,4 +220,63 @@ public abstract class BaseElement implements Serializable {
     }
 
     // endregion
+
+    public static Class<? extends BaseElement> getElementClassByType(@Nonnull ElementType type) {
+        return switch (type) {
+            case FormLayout -> FormLayoutElement.class;
+            case Step -> GenericStepElement.class;
+            case Alert -> AlertContentElement.class;
+            case GroupLayout -> GroupLayoutElement.class;
+            case Checkbox -> CheckboxInputElement.class;
+            case Date -> DateInputElement.class;
+            case Headline -> HeadlineContentElement.class;
+            case MultiCheckbox -> MultiCheckboxInputElement.class;
+            case Number -> NumberInputElement.class;
+            case ReplicatingContainerLayout -> ReplicatingContainerLayoutElement.class;
+            case RichText -> RichTextContentElement.class;
+            case Radio -> RadioInputElement.class;
+            case Select-> SelectInputElement.class;
+            case Spacer -> SpacerContentElement.class;
+            case Table -> TableInputElement.class;
+            case Text -> TextInputElement.class;
+            case Time -> TimeInputElement.class;
+            case IntroductionStep -> IntroductionStepElement.class;
+            case SubmitStep -> SubmitStepElement.class;
+            case SummaryStep -> SummaryStepElement.class;
+            case Image -> ImageContentElement.class;
+            case SubmittedStep -> null;
+            case FileUpload -> FileUploadInputElement.class;
+            case DialogLayout -> DialogLayoutElement.class;
+            case StepperLayout -> StepperLayoutElement.class;
+            case ConfigLayout -> ConfigLayoutElement.class;
+            case FunctionInput -> FunctionInputElement.class;
+            case CodeInput -> CodeInputElement.class;
+            case RichTextInput -> RichTextInputElement.class;
+            case UiDefinitionInput -> UiDefinitionInputElement.class;
+            case IdentityConfig -> IdentityConfigElement.class;
+            case TabLayout -> TabLayoutElement.class;
+            case ChipInput -> ChipInputElement.class;
+            case DateTime -> DateTimeInputElement.class;
+            case DateRange -> DateRangeInputElement.class;
+            case TimeRange -> TimeRangeInputElement.class;
+            case DateTimeRange -> DateTimeRangeInputElement.class;
+            case MapPoint -> MapPointInputElement.class;
+            case DomainAndUserSelect -> DomainAndUserSelectInputElement.class;
+            case AssignmentContext -> AssignmentContextInputElement.class;
+            case DataModelSelect -> DataModelSelectInputElement.class;
+            case DataObjectSelect -> DataObjectSelectInputElement.class;
+            case NoCodeInput -> NoCodeInputElement.class;
+            case SummaryLayout -> SummaryLayoutElement.class;
+            case ProcessDataKeyInput -> ProcessDataKeyInputElement.class;
+            case ProcessAttachmentDisplay -> ProcessAttachmentDisplayContentElement.class;
+            case ProcessInstanceAttachmentSetSelect -> ProcessInstanceAttachmentSetSelectElement.class;
+            case ProcessIdentityIdInput -> ProcessIdentityIdInputElement.class;
+            case SecretSelectInput -> SecretSelectInputElement.class;
+            case AssetSelectInput -> AssetSelectInputElement.class;
+            case HtmlTemplateInput -> HtmlTemplateInputElement.class;
+            case StoragePathSelector -> StoragePathSelectorInputElement.class;
+            case PaymentConfig -> PaymentConfigElement.class;
+            case LinkButton -> LinkButtonContentElement.class;
+        };
+    }
 }

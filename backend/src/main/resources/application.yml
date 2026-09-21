@@ -6,6 +6,20 @@ build:
   buildTimestamp: "@buildTimestamp"
 
 spring:
+  ai:
+    openai:
+      api-key: "${PROSUNA_OPENAI_API_KEY:}"
+      base-url: "${PROSUNA_OPENAI_BASE_URL:https://api.openai.com/v1}"
+      chat:
+        model: "${PROSUNA_OPENAI_CHAT_MODEL:gpt-3.5-turbo}"
+        # Total deadline per model request, including streamed responses.
+        timeout: "${PROSUNA_OPENAI_CHAT_TIMEOUT:10m}"
+      embedding:
+        model: "${PROSUNA_OPENAI_EMBEDDING_MODEL:text-embedding-3-small}"
+    tools:
+      limits:
+        max-calls-per-tool-default: "${PROSUNA_AI_TOOLS_MAX_CALLS_PER_TOOL_DEFAULT:100}"
+
   autoconfigure:
     # Remove the default UserDetailsService auto-configuration
     exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
@@ -205,6 +219,9 @@ prosuna:
     readTimeoutSeconds: "${PROSUNA_HTTP_READ_TIMEOUT_SECONDS:60}"
   ai:
     defaultMaxTokens: "${PROSUNA_AI_DEFAULT_MAX_TOKENS:1000}"
+    chat:
+      trace:
+        retention-days: "${PROSUNA_AI_CHAT_TRACE_RETENTION_DAYS:7}"
     completion:
       maxTokens: "${PROSUNA_AI_COMPLETION_MAX_TOKENS:1000}"
     processDataTransformation:

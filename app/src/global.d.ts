@@ -38,4 +38,5 @@ declare var AppConfig: {
     },
     moduleFlags: Array<'FORM' | 'PROCESS' | 'PORTAL'>,
     processNodeLimits: Record<string, number>;
+    aiEnabled: boolean;
 };

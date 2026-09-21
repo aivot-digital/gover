@@ -16,11 +16,13 @@ import {ProcessStatus} from '../../process/enums/process-status';
 import {literalAuthoredValue} from '../../../models/element-data';
 
 const mocks = vi.hoisted(() => ({
+    api: {},
     confirm: vi.fn(),
     devToolsTab: undefined as number | undefined,
     dispatch: vi.fn(),
     downloadBlobFile: vi.fn(),
     hasChanged: false,
+    hideComponentTree: true,
     replaceAuthoredElementValues: vi.fn(),
     submitValues: {} as Record<string, unknown>,
     uploadTextFile: vi.fn(),
@@ -43,7 +45,7 @@ vi.mock('../../../hooks/use-app-selector', () => ({
             devToolsTab: mocks.devToolsTab,
             disableAutoScrollForSteps: false,
             disableElementContextMenu: false,
-            hideComponentTree: true,
+            hideComponentTree: mocks.hideComponentTree,
         },
         app: {
             showDialog: undefined,
@@ -56,7 +58,7 @@ vi.mock('../../../providers/confirm-provider', () => ({
 }));
 
 vi.mock('../../../hooks/use-api', () => ({
-    useApi: () => ({}),
+    useApi: () => mocks.api,
 }));
 
 vi.mock('../../../hooks/use-change-blocker-2', () => ({
@@ -100,6 +102,17 @@ vi.mock('../../../components/page-wrapper/page-wrapper', () => ({
 }));
 
 vi.mock('../../../components/code-editor/code-editor', () => ({CodeEditor: () => null}));
+
+vi.mock('../../ai/components/ai-chat-window/ai-chat-window', () => ({
+    AiChatWindow: ({rootElement, onElementChange}: {rootElement: any; onElementChange: (element: any) => void}) => (
+        <div>
+            <output aria-label="Chatentwurf">{rootElement.publicTitle}</output>
+            <button onClick={() => onElementChange({...rootElement, publicTitle: 'KI-Entwurf'})}>
+                Tool-Ergebnis übernehmen
+            </button>
+        </div>
+    ),
+}));
 
 vi.mock('../../../components/generic-page-header/generic-page-header', () => ({
     GenericPageHeader: ({actions}: {actions: any[]}) => (
@@ -201,14 +214,17 @@ vi.mock('../../payment/components/payment-request-overview', () => ({PaymentRequ
 describe('FormNodeEditorPage error handling', () => {
     afterEach(() => {
         vi.unstubAllGlobals();
+        localStorage.removeItem('showAiChat');
     });
 
     beforeEach(() => {
+        localStorage.removeItem('showAiChat');
         mocks.confirm.mockReset().mockResolvedValue(true);
         mocks.devToolsTab = undefined;
         mocks.dispatch.mockReset();
         mocks.downloadBlobFile.mockReset();
         mocks.hasChanged = false;
+        mocks.hideComponentTree = true;
         mocks.replaceAuthoredElementValues.mockReset().mockResolvedValue(undefined);
         mocks.submitValues = {};
         mocks.uploadTextFile.mockReset().mockResolvedValue('<xdf/>');
@@ -241,6 +257,34 @@ describe('FormNodeEditorPage error handling', () => {
             startedProcessAccessKey: 'started-process',
         });
         vi.spyOn(XdfApiService.prototype, 'xdfTransform').mockResolvedValue(createFormLayout());
+    });
+
+    it('applies chat results to the unsaved editor draft with undo and redo', async () => {
+        mocks.hideComponentTree = false;
+        localStorage.setItem('showAiChat', 'true');
+        await renderLoadedEditor();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Tool-Ergebnis übernehmen'}));
+
+        expect(screen.getByRole('status', {name: 'Chatentwurf'})).toHaveTextContent('KI-Entwurf');
+        expect(ProcessNodeApiService.prototype.update).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', {name: 'Änderung rückgängig machen'}));
+        expect(screen.getByRole('status', {name: 'Chatentwurf'})).toHaveTextContent('Testformular');
+        fireEvent.click(screen.getByRole('button', {name: 'Änderung wiederherstellen'}));
+        expect(screen.getByRole('status', {name: 'Chatentwurf'})).toHaveTextContent('KI-Entwurf');
+    });
+
+    it('does not apply chat results when the editor is read-only', async () => {
+        mocks.hideComponentTree = false;
+        localStorage.setItem('showAiChat', 'true');
+        vi.mocked(ProcessDefinitionVersionApiService.prototype.retrieve)
+            .mockResolvedValue({...createProcessVersion(), status: ProcessStatus.Published});
+        await renderLoadedEditor();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Tool-Ergebnis übernehmen'}));
+
+        expect(screen.getByRole('status', {name: 'Chatentwurf'})).toHaveTextContent('Testformular');
+        expect(ProcessNodeApiService.prototype.update).not.toHaveBeenCalled();
     });
 
     it.each(['light', 'dark'] as const)('uses a neutral content surface in %s mode even with tinted surrounding surfaces', async mode => {

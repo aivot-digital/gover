@@ -17,60 +17,136 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public enum ElementType implements Identifiable<Integer> {
-    FormLayout(0),
-    Step(1),
-    Alert(2),
-    GroupLayout(3),
-    Checkbox(4),
-    Date(5),
-    Headline(6),
-    MultiCheckbox(7),
-    Number(8),
-    ReplicatingContainerLayout(9),
-    RichText(10),
-    Radio(11),
-    Select(12),
-    Spacer(13),
-    Table(14),
-    Text(15),
-    Time(16),
-    IntroductionStep(17),
-    SubmitStep(18),
-    SummaryStep(19),
-    Image(20),
-    SubmittedStep(21), // This step does not exist anymore, but is kept for compatibility
-    FileUpload(22),
-    DialogLayout(23),
-    StepperLayout(24),
-    ConfigLayout(25),
-    FunctionInput(26),
-    CodeInput(27),
-    RichTextInput(28),
-    UiDefinitionInput(29),
-    IdentityConfig(30),
-    TabLayout(31),
-    ChipInput(32),
-    DateTime(33),
-    DateRange(34),
-    TimeRange(35),
-    DateTimeRange(36),
-    MapPoint(37),
-    DomainAndUserSelect(38),
-    AssignmentContext(39),
-    DataModelSelect(40),
-    DataObjectSelect(41),
-    NoCodeInput(42),
-    SummaryLayout(43),
-    ProcessDataKeyInput(44),
-    ProcessAttachmentDisplay(45),
-    ProcessInstanceAttachmentSetSelect(46),
-    ProcessIdentityIdInput(47),
-    HtmlTemplateInput(48),
-    StoragePathSelector(49),
-    PaymentConfig(50),
-    LinkButton(51),
-    SecretSelectInput(52),
-    AssetSelectInput(53),
+    FormLayout(0, "Formular", "Dieses Element steht für den aktuellen Bereich zur Verfügung."),
+    Step(
+            1,
+            "Abschnitt",
+            "Ein generischer Abschnitt für mehrstufige Formulare, der flexibel mit verschiedenen Elementen befüllt werden kann."
+    ),
+    Alert(2, "Hinweis", "Zeigt hervorgehobene Hinweise im Formular an."),
+    GroupLayout(3, "Gruppierung", "Fasst inhaltlich zusammengehörige Elemente zusammen."),
+    Checkbox(4, "Bestätigung (Ja/Nein)", "Erfasst eine einzelne Ja-/Nein-Angabe."),
+    Date(5, "Datum", "Erfasst ein einzelnes Datum."),
+    Headline(6, "Überschrift", "Gliedert Inhalte mit einer Überschrift."),
+    MultiCheckbox(7, "Mehrfachauswahl", "Ermöglicht die Auswahl mehrerer Optionen."),
+    Number(8, "Zahl", "Erfasst Zahlenwerte und Mengenangaben."),
+    ReplicatingContainerLayout(9, "Strukturierte Listeneingabe", "Wiederholt eine Elementgruppe mehrfach."),
+    RichText(10, "Fließtext", "Zeigt formatierten Fließtext an."),
+    Radio(11, "Einzelauswahl (Optionsfelder)", "Ermöglicht genau eine Auswahl per Optionsfeld."),
+    Select(12, "Einzelauswahl", "Ermöglicht genau eine Auswahl aus vorgegebenen Optionen."),
+    Spacer(13, "Abstand", "Erzeugt gezielten Abstand zwischen Inhalten."),
+    Table(14, "Tabelle", "Erfasst strukturierte Daten in Tabellenform."),
+    Text(15, "Text", "Erfasst freie Texteingaben."),
+    Time(16, "Uhrzeit", "Erfasst eine einzelne Uhrzeit."),
+    IntroductionStep(
+            17,
+            "Allgemeine Informationen",
+            "Optionaler Abschnitt am Anfang eines mehrstufigen Formulars, der zur Einführung oder zur Erklärung des weiteren Ablaufs genutzt werden kann."
+    ),
+    SubmitStep(
+            18,
+            "Abschluss und Einreichung",
+            "Optionaler Abschnitt am Ende eines Formulars. Zeigt Hinweise vor der Einreichung an und schützt die Übermittlung mit einer Sicherheitsprüfung vor automatisierten Einreichungen (Captcha)."
+    ),
+    SummaryStep(
+            19,
+            "Zusammenfassung",
+            "Optionaler Abschnitt mit der Zusammenfassung aller eingegebenen Informationen und einer Bestätigung, dass die eingegebenen Daten korrekt sind."
+    ),
+    Image(20, "Bild", "Bindet ein Bild in den Formularfluss ein."),
+    SubmittedStep(
+            21,
+            "Einreichung abgeschlossen",
+            "Dieses Element steht für den aktuellen Bereich zur Verfügung."
+    ), // This step does not exist anymore, but is kept for compatibility
+    FileUpload(22, "Anlage(n)", "Ermöglicht das Hochladen von Dateien."),
+    DialogLayout(23, "Dialog", "Dieses Element steht für den aktuellen Bereich zur Verfügung."),
+    StepperLayout(24, "Abschnitte", "Dieses Element steht für den aktuellen Bereich zur Verfügung."),
+    ConfigLayout(25, "Konfigurationsbereich", "Dieses Element steht für den aktuellen Bereich zur Verfügung."),
+    FunctionInput(26, "Funktionseingabe", "Dieses Element steht für den aktuellen Bereich zur Verfügung."),
+    CodeInput(27, "Codeeingabe", "Erfasst technischen oder ausführbaren Code."),
+    RichTextInput(28, "Markdown-Eingabe", "Erfasst formatierte Texte in Markdown."),
+    UiDefinitionInput(
+            29,
+            "UI-Definition-Editor",
+            "Definiert eine Benutzeroberfläche (UI) für z. B. Formulare oder Aufgaben."
+    ),
+    IdentityConfig(
+            30,
+            "Identitätseingabe",
+            "Ermöglicht eine Identifizierung über Servicekonten oder alternativ die Eingabe einer E-Mail-Adresse."
+    ),
+    TabLayout(31, "Tabs", "Dieses Element steht für den aktuellen Bereich zur Verfügung."),
+    ChipInput(32, "Tag-Liste (Schlagwörter)", "Erfasst mehrere Stichworte als Liste."),
+    DateTime(33, "Datum und Uhrzeit", "Erfasst Datum und Uhrzeit gemeinsam."),
+    DateRange(34, "Datumsspanne", "Erfasst einen Datumsbereich."),
+    TimeRange(35, "Zeitspanne", "Erfasst einen Uhrzeitbereich."),
+    DateTimeRange(36, "Datum- und Zeitspanne", "Erfasst einen kombinierten Zeitbereich."),
+    MapPoint(37, "Kartenpunkt (Technische Preview)", "Ermöglicht die Auswahl eines Punkts auf der Karte."),
+    DomainAndUserSelect(
+            38,
+            "Domänen- und Mitarbeitendenauswahl",
+            "Wählt Organisationseinheiten oder Mitarbeitende aus."
+    ),
+    AssignmentContext(
+            39,
+            "Verantwortlicher Personenkreis",
+            "Definiert zuständige Personen oder Gruppen."
+    ),
+    DataModelSelect(40, "Datenmodell-Auswahl", "Wählt ein Datenmodell aus."),
+    DataObjectSelect(41, "Datenobjekt-Auswahl", "Wählt ein konkretes Datenobjekt aus."),
+    NoCodeInput(42, "No-Code-Eingabe", "Erfasst Logik über einen No-Code-Ausdruck."),
+    SummaryLayout(43, "Zusammenfassung", "Fasst mehrere Elemente zu einer Übersicht zusammen."),
+    ProcessDataKeyInput(
+            44,
+            "Prozessdaten-Schlüssel",
+            "Erfasst einen Prozessdaten-Schlüssel und schlägt vorhandene Pfade vor."
+    ),
+    ProcessAttachmentDisplay(
+            45,
+            "Anhang zum Vorgang",
+            "Zeigt Vorgangsanhänge zur Ansicht und zum Download an."
+    ),
+    ProcessInstanceAttachmentSetSelect(
+            46,
+            "Anlagensatz-Auswahl",
+            "Wählt einen oder mehrere Anlagensätze der Prozessinstanz aus."
+    ),
+    ProcessIdentityIdInput(
+            47,
+            "Prozessidentitäts-Auswahl",
+            "Wählt eine verfügbare Prozessidentität aus."
+    ),
+    HtmlTemplateInput(
+            48,
+            "HTML-Vorlage",
+            "Befüllt Slots einer HTML-Vorlage mit Text, Rich-Text oder Bildern."
+    ),
+    StoragePathSelector(
+            49,
+            "Speicherpfad-Auswahl",
+            "Wählt einen Speicheranbieter und einen Ordner oder Zielpfad aus."
+    ),
+    PaymentConfig(
+            50,
+            "Zahlungskonfiguration",
+            "Konfiguriert den Zahlungsdienstleister und die Zahlungsposten eines Formulars."
+    ),
+    LinkButton(
+            51,
+            "Link-Button",
+            "Zeigt einen Button an, der einen Link öffnet oder in Aufgabenansichten ein Ereignis auslöst."
+    ),
+    SecretSelectInput(
+            52,
+            "Geheimnis-Auswahl",
+            "Wählt ein sicher hinterlegtes Geheimnis aus und speichert dessen Schlüssel."
+    ),
+    AssetSelectInput(
+            53,
+            "Asset-Auswahl",
+            "Wählt eine Datei aus den Assets aus und speichert deren stabilen Schlüssel."
+    ),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -129,9 +205,25 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_AssetSelectInput = "53";
 
     private final Integer key;
+    private final String displayName;
+    private final String description;
 
-    ElementType(Integer id) {
+    ElementType(
+            Integer id,
+            String displayName,
+            String description
+    ) {
         this.key = id;
+        this.displayName = displayName;
+        this.description = description;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     @Override
@@ -176,7 +268,8 @@ public enum ElementType implements Identifiable<Integer> {
             case SubmitStep -> new SubmitStepElement();
             case SummaryStep -> new SummaryStepElement();
             case Image -> new ImageContentElement();
-            case SubmittedStep -> throw new ElementDataConversionException("Element type SubmittedStep is no longer supported.");
+            case SubmittedStep ->
+                    throw new ElementDataConversionException("Element type SubmittedStep is no longer supported.");
             case FileUpload -> new FileUploadInputElement();
             case DialogLayout -> new DialogLayoutElement();
             case StepperLayout -> new StepperLayoutElement();

@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.dtos.ThemeResponseDTO;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,9 @@ public class AppConfigController {
     @Value("${keycloak.realm}")
     private String oidcRealm;
 
+    @Value("${spring.ai.openai.api-key}")
+    private String openAiApiKey;
+
     @Autowired
     public AppConfigController(ProsunaConfig prosunaConfig,
                                SystemConfigService systemConfigService,
@@ -72,6 +76,7 @@ public class AppConfigController {
     private static final String DEPARTMENT_LEVEL_LABELS_CONFIG_KEY = "departmentLevelLabels";
     private static final String MODULE_FLAGS_KEY = "moduleFlags";
     private static final String PROCESS_NODE_LIMITS_KEY = "processNodeLimits";
+    private static final String AI_ENABLED = "aiEnabled";
 
     private static final String OIDC_KEY = "oidc";
     private static final String OIDC_REALM_KEY = "realm";
@@ -119,6 +124,11 @@ public class AppConfigController {
         appConfig.put(DEPARTMENT_LEVEL_LABELS_CONFIG_KEY, prosunaConfig.getDepartmentLevelLabels());
         appConfig.put(MODULE_FLAGS_KEY, prosunaConfig.getModuleFlags());
         appConfig.put(PROCESS_NODE_LIMITS_KEY, prosunaConfig.getProcessNodeLimits());
+
+        // AI is enabled if the OpenAI API key is set.
+        // This is a simple check to determine if the AI features should be available in the frontend.
+        boolean aiEnabled = StringUtils.isNotNullOrEmpty(openAiApiKey);
+        appConfig.put(AI_ENABLED, aiEnabled);
 
         // TODO: This data should not be required in the fronted because the backend handles the authentication flow
         var oidc = new HashMap<String, String>();

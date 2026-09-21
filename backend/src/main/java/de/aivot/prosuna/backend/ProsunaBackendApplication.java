@@ -8,6 +8,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
 
 @SpringBootApplication
 @EnableJpaRepositories(basePackages = {
+        "de.aivot.prosuna.backend.ai.repositories",
         "de.aivot.prosuna.backend.asset.repositories",
         "de.aivot.prosuna.backend.audit.repositories",
         "de.aivot.prosuna.backend.codeLists.repositories",
@@ -30,6 +31,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
         "de.aivot.prosuna.backend.userRoles.repositories",
 })
 @EnableRedisRepositories(basePackages = {
+        "de.aivot.prosuna.backend.ai.cache.repositories",
         "de.aivot.prosuna.backend.identity.cache.repositories",
 })
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
