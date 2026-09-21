@@ -1,8 +1,14 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.fitconnect;
 
 import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
+import de.aivot.prosuna.backend.elements.enums.ValidationFunctionType;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
@@ -25,6 +31,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,7 +62,26 @@ class FitConnectTriggerNodeV1Test {
                 mock(ProcessNodeEntity.class)
         ));
 
-        assertTrue(layout.findChild(FitConnectTriggerConfigV1.SLUG_CONFIG_KEY).isPresent());
+        var slugField = layout
+                .findChild(FitConnectTriggerConfigV1.SLUG_CONFIG_KEY, TextInputElement.class)
+                .orElseThrow();
+        var slugValidation = slugField.getValidation();
+        assertNotNull(slugValidation);
+        assertEquals(ValidationFunctionType.NoCode, slugValidation.getType());
+        assertEquals(List.of(FitConnectTriggerConfigV1.SLUG_CONFIG_KEY), List.copyOf(slugValidation.getReferencedIds()));
+        var slugExpression = assertInstanceOf(
+                NoCodeExpression.class,
+                slugValidation.getNoCodeList().getFirst().getNoCode()
+        );
+        assertEquals(NoCodeRegexMatchOperator.OPERATOR_ID, slugExpression.getOperatorIdentifier());
+        assertEquals(
+                List.of(
+                        NoCodeReference.of(FitConnectTriggerConfigV1.SLUG_CONFIG_KEY),
+                        NoCodeStaticValue.of("^[a-z0-9-]+$")
+                ),
+                List.copyOf(slugExpression.getOperands())
+        );
+
         assertTrue(layout.findChild(FitConnectTriggerConfigV1.ENVIRONMENT_CONFIG_KEY).isPresent());
         assertTrue(layout.findChild(FitConnectTriggerConfigV1.DESTINATION_ID_CONFIG_KEY).isPresent());
         assertTrue(layout.findChild(FitConnectTriggerConfigV1.SUBSCRIBER_CLIENT_ID_CONFIG_KEY).isPresent());

@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.webhook;
 
 import de.aivot.prosuna.backend.elements.enums.OverrideFunctionType;
+import de.aivot.prosuna.backend.elements.enums.ValidationFunctionType;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -9,8 +10,10 @@ import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
-import de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.webhook.WebhookTriggerConfigV1;
-import de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.webhook.WebhookTriggerNodeV1;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
@@ -22,10 +25,12 @@ import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.services.PublicUrlService;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -92,6 +97,22 @@ class WebhookTriggerNodeV1Test {
 
         assertEquals(true, slugField.getCopyable());
         assertEquals("https://example.test/api/public/webhook/antrag-prozess/{value}/", slugField.getCopyValueTemplate());
+        var slugValidation = slugField.getValidation();
+        assertNotNull(slugValidation);
+        assertEquals(ValidationFunctionType.NoCode, slugValidation.getType());
+        assertEquals(List.of(WebhookTriggerConfigV1.SLUG_CONFIG_KEY), List.copyOf(slugValidation.getReferencedIds()));
+        var slugExpression = assertInstanceOf(
+                NoCodeExpression.class,
+                slugValidation.getNoCodeList().getFirst().getNoCode()
+        );
+        assertEquals(NoCodeRegexMatchOperator.OPERATOR_ID, slugExpression.getOperatorIdentifier());
+        assertEquals(
+                List.of(
+                        NoCodeReference.of(WebhookTriggerConfigV1.SLUG_CONFIG_KEY),
+                        NoCodeStaticValue.of("^[a-z0-9-]+$")
+                ),
+                List.copyOf(slugExpression.getOperands())
+        );
         assertNotNull(slugField.getOverride());
         assertEquals(OverrideFunctionType.Javascript, slugField.getOverride().getType());
         assertNotNull(slugField.getOverride().getJavascriptCode());

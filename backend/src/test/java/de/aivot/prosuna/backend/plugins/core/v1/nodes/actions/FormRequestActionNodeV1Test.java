@@ -218,6 +218,13 @@ class FormRequestActionNodeV1Test {
         var configuration = new FormRequestActionNodeV1.NodeConfig();
         configuration.recipientIdentityId = RECIPIENT_IDENTITY_ID;
         configuration.uiDefinition = layout;
+        var processData = Map.<String, Object>of(
+                "applicant", Map.of(
+                        "name", "Vorheriger Name",
+                        "reference", "bleibt erhalten"
+                ),
+                "status", "offen"
+        );
 
         var activeFile = new FileUploadInputElementItem()
                 .setName("Nachweis.pdf")
@@ -238,7 +245,7 @@ class FormRequestActionNodeV1Test {
 
         var beforeSubmission = Instant.now();
         var result = node.onEventFromCustomerTaskView(
-                context(configuration),
+                context(configuration, processData),
                 new AuthoredElementValues(),
                 derived,
                 "submit"
@@ -247,7 +254,16 @@ class FormRequestActionNodeV1Test {
 
         var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result);
         assertEquals("submitted", completed.getViaPort());
-        assertNull(completed.getProcessData());
+        assertEquals(
+                Map.of(
+                        "applicant", Map.of(
+                                "name", "Ada",
+                                "reference", "bleibt erhalten"
+                        ),
+                        "status", "offen"
+                ),
+                completed.getProcessData()
+        );
 
         var nodeData = completed.getNodeData();
         assertEquals(RECIPIENT_IDENTITY_ID, nodeData.get("recipientIdentityId"));
@@ -294,7 +310,8 @@ class FormRequestActionNodeV1Test {
 
     @SuppressWarnings("unchecked")
     private static ProcessNodeExecutionContextUICustomer<FormRequestActionNodeV1.NodeConfig> context(
-            FormRequestActionNodeV1.NodeConfig configuration
+            FormRequestActionNodeV1.NodeConfig configuration,
+            Map<String, Object> processData
     ) {
         var context = mock(ProcessNodeExecutionContextUICustomer.class);
         when(context.getConfigurationOfExecutingNode()).thenReturn(configuration);
@@ -302,7 +319,9 @@ class FormRequestActionNodeV1Test {
                 new ProcessInstanceEntity().setId(PROCESS_INSTANCE_ID)
         );
         when(context.getThisTask()).thenReturn(
-                new ProcessInstanceTaskEntity().setId(PROCESS_INSTANCE_TASK_ID)
+                new ProcessInstanceTaskEntity()
+                        .setId(PROCESS_INSTANCE_TASK_ID)
+                        .setProcessData(processData)
         );
         return context;
     }

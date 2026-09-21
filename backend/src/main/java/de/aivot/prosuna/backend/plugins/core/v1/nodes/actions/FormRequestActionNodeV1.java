@@ -417,26 +417,30 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
         var effectiveValues = derived.getEffectiveValues();
         var configuration = context.getConfigurationOfExecutingNode();
+        var payload = elementDataTransformService.buildPayload(
+                configuration.uiDefinition,
+                effectiveValues,
+                derived.getElementStates()
+        );
+        var updatedProcessData = elementDataTransformService.buildUpdatedProcessData(
+                configuration.uiDefinition,
+                derived,
+                context.getThisTask().getProcessData()
+        );
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(
                 OUTPUT_RECIPIENT_IDENTITY_ID,
                 requireRecipientIdentity(configuration.recipientIdentityId)
         );
-        nodeData.put(
-                OUTPUT_PAYLOAD,
-                elementDataTransformService.buildPayload(
-                        configuration.uiDefinition,
-                        effectiveValues,
-                        derived.getElementStates()
-                )
-        );
+        nodeData.put(OUTPUT_PAYLOAD, payload);
         nodeData.put(OUTPUT_UNMAPPED, effectiveValues);
         nodeData.put(OUTPUT_ATTACHMENTS, resolveSubmittedAttachments(context, effectiveValues));
         nodeData.put(OUTPUT_STARTED, Instant.now());
 
         var result = new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_SUBMITTED)
-                .setNodeData(nodeData);
+                .setNodeData(nodeData)
+                .setProcessData(updatedProcessData);
 
         return Optional.of(result);
     }

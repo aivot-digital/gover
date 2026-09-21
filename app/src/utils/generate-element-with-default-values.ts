@@ -330,7 +330,6 @@ const elementConstructors: {
         isMultiline: false,
         maxCharacters: undefined,
         minCharacters: undefined,
-        pattern: undefined,
         suggestions: undefined,
         prefix: undefined,
         copyable: false,

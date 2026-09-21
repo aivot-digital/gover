@@ -3,18 +3,22 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.fitconnect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
@@ -177,9 +181,14 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
         layout
                 .findChild(FitConnectTriggerConfigV1.SLUG_CONFIG_KEY, TextInputElement.class)
                 .ifPresent(field -> {
-                    field.setPattern(new TextInputElementPattern()
-                            .setRegex("^[a-z0-9-]+$")
-                            .setMessage("Das URL-Segment darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."));
+                    field.setValidation(ElementValidationFunctions.of(
+                            NoCodeExpression.of(
+                                    NoCodeRegexMatchOperator.OPERATOR_ID,
+                                    NoCodeReference.of(FitConnectTriggerConfigV1.SLUG_CONFIG_KEY),
+                                    NoCodeStaticValue.of("^[a-z0-9-]+$")
+                            ),
+                            "Das URL-Segment darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
+                    ));
                     field.setPrefix(publicUrlService.createProcessNamespaceDisplayPrefix());
                     field.setCopyable(true);
                     field.setCopyValueTemplate(createCallbackCopyValueTemplate(context.processDefinition()));
