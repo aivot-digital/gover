@@ -370,6 +370,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                                     onChange={(val) => {
                                         setEditedSlotValue(val);
                                     }}
+                                    dynamicText={true}
                                 />
                             }
 
