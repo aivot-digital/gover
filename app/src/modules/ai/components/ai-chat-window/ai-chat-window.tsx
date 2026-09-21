@@ -8,6 +8,7 @@ import {ElementType} from "../../../../data/element-type/element-type";
 import {Chip} from "../../../../components/chip/chip";
 import {Actions} from "../../../../components/actions/actions";
 import Send from "@aivot/mui-material-symbols-400-n25-outlined/Send";
+import StopCircle from "@aivot/mui-material-symbols-400-n25-outlined/StopCircle";
 import Download from "@aivot/mui-material-symbols-400-n25-outlined/Download";
 import Close from "@aivot/mui-material-symbols-400-n25-outlined/Close";
 import {downloadBlobFile} from '../../../../utils/download-utils';
@@ -63,7 +64,10 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
     const [message, setMessage] = useState<string | null>(null);
 
     const sendingRef = useRef(false);
+    const cancelRequestedRef = useRef(false);
     const [isThinking, setIsThinking] = useState<boolean>(false);
+    const [isCancellable, setIsCancellable] = useState<boolean>(false);
+    const [isCancelling, setIsCancelling] = useState<boolean>(false);
     const [isDownloadingTrace, setIsDownloadingTrace] = useState<boolean>(false);
     const [messageBuffer, setMessageBuffer] = useState<(AiChatMessage | {
         role: 'error';
@@ -127,9 +131,44 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
         }
 
         sendingRef.current = true;
+        cancelRequestedRef.current = false;
         setIsThinking(true);
+        setIsCancellable(true);
+        setIsCancelling(false);
         const controller = new AbortController();
         requestRef.current = controller;
+        const service = new AiChatService();
+        const outgoingMessage = message;
+        let activeSessionId = sessionId;
+        let turnStarted = false;
+        let editorReloaded = false;
+
+        const reloadEditor = async () => {
+            if (activeSessionId == null || !mountedRef.current) {
+                return;
+            }
+
+            editorReloaded = true;
+            requestRef.current = null;
+            setIsCancellable(false);
+            try {
+                if (props.mode === 'process') {
+                    await props.afterTurn();
+                } else {
+                    const element = await service.getCurrentElement(activeSessionId);
+                    if (mountedRef.current) props.onElementChange(element);
+                }
+            } catch (error) {
+                if (!mountedRef.current) return;
+                console.error('Error reloading the editor after AI chat:', error);
+                setMessageBuffer((prevBuffer) => [
+                    ...prevBuffer,
+                    {role: 'error', content: props.mode === 'process'
+                        ? 'Der Prozess konnte nach der KI-Anfrage nicht vollständig geladen werden. Laden Sie ihn erneut, bevor Sie weiterarbeiten.'
+                        : 'Der aktuelle Formularentwurf konnte nach der KI-Anfrage nicht geladen werden.'},
+                ]);
+            }
+        };
 
         try {
             if (props.mode === 'process') {
@@ -144,19 +183,15 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                 }
             }
             if (controller.signal.aborted) return;
-            const service = new AiChatService();
-            let activeSessionId = sessionId;
             if (activeSessionId == null) {
                 let session;
                 try {
                     session = await service
-                        .startChatSession();
+                        .startChatSession(controller.signal);
                 } catch (error) {
                     if (controller.signal.aborted) return;
                     setMessageBuffer(previous => [...previous, {role: 'error', content:
                         'Die KI-Anfrage konnte nicht gestartet werden. Versuchen Sie es später erneut.'}]);
-
-                    setIsThinking(false);
                     return;
                 }
                 if (controller.signal.aborted) return;
@@ -167,13 +202,14 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
 
             setMessageBuffer((prevBuffer) => [
                 ...prevBuffer,
-                {role: 'user', content: message},
+                {role: 'user', content: outgoingMessage},
             ]);
             setMessage(null);
 
             let receivedAssistantContent = false;
             try {
-                await service.sendMessage(activeSessionId, message, (chunk) => {
+                turnStarted = true;
+                await service.sendMessage(activeSessionId, outgoingMessage, (chunk) => {
                     if (controller.signal.aborted) return;
                     if (chunk.trim().length > 0) {
                         receivedAssistantContent = true;
@@ -222,23 +258,7 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                 ]);
             }
 
-            try {
-                if (props.mode === 'process') {
-                    await props.afterTurn();
-                } else {
-                    const element = await service.getCurrentElement(activeSessionId);
-                    if (!controller.signal.aborted) props.onElementChange(element);
-                }
-            } catch (error) {
-                if (controller.signal.aborted) return;
-                console.error('Error reloading the editor after AI chat:', error);
-                setMessageBuffer((prevBuffer) => [
-                    ...prevBuffer,
-                    {role: 'error', content: props.mode === 'process'
-                        ? 'Der Prozess konnte nach der KI-Anfrage nicht vollständig geladen werden. Laden Sie ihn erneut, bevor Sie weiterarbeiten.'
-                        : 'Der aktuelle Formularentwurf konnte nach der KI-Anfrage nicht geladen werden.'},
-                ]);
-            }
+            await reloadEditor();
         } catch (error) {
             if (controller.signal.aborted) return;
             console.error('Error starting chat session:', error);
@@ -247,9 +267,38 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                 {role: 'error', content: 'Die KI-Anfrage konnte nicht gestartet werden. Versuchen Sie es später erneut.'},
             ]);
         } finally {
+            if (cancelRequestedRef.current && mountedRef.current) {
+                if (turnStarted && !editorReloaded) {
+                    await reloadEditor();
+                }
+                if (mountedRef.current) {
+                    setMessageBuffer(previous => [...previous, {
+                        role: 'error',
+                        content: 'Die Anfrage wurde abgebrochen. Bereits ausgeführte Änderungen können erhalten bleiben.',
+                    }]);
+                }
+            }
+            requestRef.current = null;
+            cancelRequestedRef.current = false;
             sendingRef.current = false;
-            if (mountedRef.current) setIsThinking(false);
+            if (mountedRef.current) {
+                setIsCancellable(false);
+                setIsCancelling(false);
+                setIsThinking(false);
+            }
         }
+    };
+
+    const handleCancelMessage = () => {
+        const request = requestRef.current;
+        if (!isThinking || request == null || request.signal.aborted) {
+            return;
+        }
+
+        cancelRequestedRef.current = true;
+        setIsCancelling(true);
+        setIsCancellable(false);
+        request.abort();
     };
 
     const handleDownloadTrace = async () => {
@@ -371,7 +420,7 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                 {
                     isThinking &&
                     <Chip
-                        label="Anfrage wird bearbeitet …"
+                        label={isCancelling ? 'Abbruch wird abgeschlossen …' : 'Anfrage wird bearbeitet …'}
                     />
                 }
                 </Box>
@@ -415,9 +464,18 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                                 disabled: isThinking || isLoadingHistory || isDownloadingTrace,
                             },
                             {
+                                icon: <StopCircle/>,
+                                tooltip: "Anfrage abbrechen",
+                                disabledTooltip: "Abbruch wird abgeschlossen …",
+                                onClick: handleCancelMessage,
+                                visible: isCancellable || isCancelling,
+                                disabled: isCancelling,
+                            },
+                            {
                                 icon: <Send/>,
                                 tooltip: "Absenden",
                                 onClick: handleSendMessage,
+                                visible: !isThinking,
                                 disabled: disabled || isThinking || isLoadingHistory || message == null || message.trim() === '',
                             }
                         ]}

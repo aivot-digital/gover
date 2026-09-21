@@ -61,7 +61,8 @@ describe('process chat lifecycle', () => {
         refresh.mockReturnValueOnce(reloading.promise);
         render(<Editor/>);
         send();
-        fireEvent.click(screen.getByRole('button', {name: 'Absenden'}));
+        expect(screen.queryByRole('button', {name: 'Absenden'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Anfrage abbrechen'})).toBeEnabled();
         expect(save).toHaveBeenCalledTimes(1);
         expect(AiChatService.prototype.sendMessage).not.toHaveBeenCalled();
         expect(screen.getByRole('button', {name: 'Manuell bearbeiten'})).toBeDisabled();
@@ -100,6 +101,26 @@ describe('process chat lifecycle', () => {
         expect(screen.getByRole('button', {name: 'Manuell bearbeiten'})).toBeEnabled();
     });
 
+    it('cancels while saving without starting a tool turn or reloading the process', async () => {
+        const saving = deferred();
+        save.mockReturnValueOnce(saving.promise);
+        render(<Editor/>);
+        send();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Anfrage abbrechen'}));
+        expect(screen.getByText('Abbruch wird abgeschlossen …')).toBeVisible();
+        await act(async () => saving.resolve());
+
+        expect(await screen.findByText(
+            'Die Anfrage wurde abgebrochen. Bereits ausgeführte Änderungen können erhalten bleiben.',
+        )).toBeVisible();
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toHaveValue('Prozess modellieren');
+        expect(AiChatService.prototype.startChatSession).not.toHaveBeenCalled();
+        expect(AiChatService.prototype.sendMessage).not.toHaveBeenCalled();
+        expect(reload).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', {name: 'Manuell bearbeiten'})).toBeEnabled();
+    });
+
     it.each(['error', 'empty'])('reloads committed changes after an %s response', async outcome => {
         if (outcome === 'error') vi.mocked(AiChatService.prototype.sendMessage).mockRejectedValueOnce(new Error('Stream failed'));
         else vi.mocked(AiChatService.prototype.sendMessage).mockResolvedValueOnce();
@@ -108,6 +129,36 @@ describe('process chat lifecycle', () => {
         expect(await screen.findByText(/Bereits ausgeführte Änderungen bleiben gespeichert/)).toBeVisible();
         await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
         expect(screen.getByRole('button', {name: 'Manuell bearbeiten'})).toBeEnabled();
+    });
+
+    it('cancels an active turn and keeps editing locked until committed changes are reloaded', async () => {
+        const reloading = deferred();
+        refresh.mockReturnValueOnce(reloading.promise);
+        vi.mocked(AiChatService.prototype.sendMessage).mockImplementationOnce(
+            async (_id, _text, chunk, signal) => {
+                chunk('Teilweise geändert.');
+                await new Promise<void>((_resolve, reject) => signal?.addEventListener(
+                    'abort', () => reject(signal.reason), {once: true},
+                ));
+            },
+        );
+        render(<Editor/>);
+        send();
+        expect(await screen.findByText('Teilweise geändert.')).toBeVisible();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Anfrage abbrechen'}));
+
+        expect(await screen.findByText('Abbruch wird abgeschlossen …')).toBeVisible();
+        await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+        expect(screen.getByRole('button', {name: 'Manuell bearbeiten'})).toBeDisabled();
+        expect(screen.queryByText(/Die Anfrage wurde abgebrochen/)).not.toBeInTheDocument();
+        await act(async () => reloading.resolve());
+        expect(await screen.findByText(
+            'Die Anfrage wurde abgebrochen. Bereits ausgeführte Änderungen können erhalten bleiben.',
+        )).toBeVisible();
+        expect(screen.getByRole('button', {name: 'Manuell bearbeiten'})).toBeEnabled();
+        expect(screen.getByText('Teilweise geändert.')).toBeVisible();
+        expect(screen.queryByText(/Die KI-Anfrage wurde mit einem Fehler beendet/)).not.toBeInTheDocument();
     });
 
     it('blocks more edits and messages until a failed reload is successfully retried, without replaying tools', async () => {

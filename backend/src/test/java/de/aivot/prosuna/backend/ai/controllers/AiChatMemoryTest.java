@@ -45,6 +45,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -158,6 +160,27 @@ class AiChatMemoryTest {
 
         verify(traceService).finishTurn(any(), eq(AiChatTraceService.TurnStatus.EMPTY_RESPONSE), eq(""), eq(0),
                 anyLong(), isNull());
+    }
+
+    @Test
+    void propagatesClientCancellationToTheModelStreamAndTrace() throws Exception {
+        var subscribed = new CountDownLatch(1);
+        var cancelled = new CountDownLatch(1);
+        doReturn(Flux.<ChatResponse>never()
+                .doOnSubscribe(ignored -> subscribed.countDown())
+                .doOnCancel(cancelled::countDown))
+                .when(model).stream(any(Prompt.class));
+        var jwt = Jwt.withTokenValue("token").header("alg", "none").subject("owner").build();
+        var subscription = controller().send(jwt, "session", "Auftrag", null, null, null, null, null)
+                .subscribe();
+
+        assertThat(subscribed.await(1, TimeUnit.SECONDS)).isTrue();
+        subscription.dispose();
+
+        assertThat(cancelled.await(1, TimeUnit.SECONDS)).isTrue();
+        verify(traceService, timeout(1_000)).recordModelCancellation(any(), anyInt(), anyLong());
+        verify(traceService, timeout(1_000)).finishTurn(any(), eq(AiChatTraceService.TurnStatus.CANCELLED),
+                eq(""), eq(0), anyLong(), isNull());
     }
 
     private DatabaseChatMemoryRepository repository() {

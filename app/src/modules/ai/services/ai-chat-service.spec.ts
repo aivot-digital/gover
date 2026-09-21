@@ -49,6 +49,18 @@ describe('AiChatService.getCurrentElement', () => {
     });
 });
 
+describe('AiChatService.startChatSession', () => {
+    it('passes the caller abort signal to the session request', async () => {
+        const service = new AiChatService();
+        const signal = new AbortController().signal;
+        const post = vi.spyOn(service, 'post').mockResolvedValue({sessionId: 'session'});
+
+        await expect(service.startChatSession(signal)).resolves.toEqual({sessionId: 'session'});
+
+        expect(post).toHaveBeenCalledWith('/api/ai/chat/start/', {}, {abort: signal});
+    });
+});
+
 describe('AiChatService.getMessages', () => {
     it('retrieves persisted messages with optional cancellation', async () => {
         const service = new AiChatService();

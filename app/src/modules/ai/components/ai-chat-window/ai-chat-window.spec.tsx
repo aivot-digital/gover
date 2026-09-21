@@ -192,14 +192,69 @@ describe('AiChatWindow', () => {
         mount();
         const send = screen.getByRole('button', {name: 'Absenden'});
         fireEvent.click(send);
-        fireEvent.click(send);
-        expect(send).toBeDisabled();
+        expect(screen.queryByRole('button', {name: 'Absenden'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Anfrage abbrechen'})).toBeEnabled();
         expect(screen.getByRole('textbox', {name: 'Nachricht'})).toBeDisabled();
         expect(AiChatService.prototype.startChatSession).toHaveBeenCalledTimes(1);
         expect(AiChatService.prototype.sendMessage).not.toHaveBeenCalled();
         await act(async () => resolveSession({sessionId: 'new-session'}));
         await waitFor(() => expect(onElementChange).toHaveBeenCalled());
         expect(AiChatService.prototype.sendMessage).toHaveBeenCalledTimes(1);
+    });
+
+    it('cancels session creation without consuming the message', async () => {
+        vi.mocked(AiChatService.prototype.startChatSession).mockImplementationOnce(async signal => {
+            await new Promise<void>((_resolve, reject) => signal?.addEventListener(
+                'abort', () => reject(signal.reason), {once: true},
+            ));
+            return {sessionId: 'unreachable'};
+        });
+        mount();
+        fireEvent.click(screen.getByRole('button', {name: 'Absenden'}));
+
+        const cancel = await screen.findByRole('button', {name: 'Anfrage abbrechen'});
+        fireEvent.click(cancel);
+
+        expect(await screen.findByText(
+            'Die Anfrage wurde abgebrochen. Bereits ausgeführte Änderungen können erhalten bleiben.',
+        )).toBeVisible();
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toHaveValue('Neuen Abschnitt erstellen');
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toBeEnabled();
+        expect(AiChatService.prototype.startChatSession).toHaveBeenCalledWith(expect.any(AbortSignal));
+        expect(AiChatService.prototype.sendMessage).not.toHaveBeenCalled();
+        expect(AiChatService.prototype.getCurrentElement).not.toHaveBeenCalled();
+    });
+
+    it('cancels an active turn, keeps partial content and reuses the session', async () => {
+        vi.mocked(AiChatService.prototype.sendMessage).mockImplementationOnce(
+            async (_id, _text, onStream, signal) => {
+                onStream('Teilantwort');
+                await new Promise<void>((_resolve, reject) => signal?.addEventListener(
+                    'abort', () => reject(signal.reason), {once: true},
+                ));
+            },
+        );
+        mount();
+        fireEvent.click(screen.getByRole('button', {name: 'Absenden'}));
+        expect(await screen.findByText('Teilantwort')).toBeVisible();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Anfrage abbrechen'}));
+
+        expect(await screen.findByText(
+            'Die Anfrage wurde abgebrochen. Bereits ausgeführte Änderungen können erhalten bleiben.',
+        )).toBeVisible();
+        expect(screen.getByText('Teilantwort')).toBeVisible();
+        expect(onElementChange).toHaveBeenCalledWith(updated);
+        expect(screen.queryByText(/Die KI-Anfrage wurde mit einem Fehler beendet/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Die KI hat die Bearbeitung ohne Antwort beendet/)).not.toBeInTheDocument();
+
+        fireEvent.change(screen.getByRole('textbox', {name: 'Nachricht'}), {target: {value: 'Weiterarbeiten'}});
+        fireEvent.click(screen.getByRole('button', {name: 'Absenden'}));
+        await waitFor(() => expect(AiChatService.prototype.sendMessage).toHaveBeenCalledTimes(2));
+        expect(AiChatService.prototype.startChatSession).toHaveBeenCalledTimes(1);
+        expect(AiChatService.prototype.sendMessage).toHaveBeenLastCalledWith(
+            'new-session', 'Weiterarbeiten', expect.any(Function), expect.any(AbortSignal), expect.any(Object),
+        );
     });
 
     it('shows a start error and keeps the unsent message', async () => {

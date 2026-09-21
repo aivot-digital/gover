@@ -17,8 +17,8 @@ export interface AiChatMessage {
 }
 
 export class AiChatService extends BaseApiService {
-    public async startChatSession(): Promise<{sessionId: string}> {
-        return await this.post('/api/ai/chat/start/', {});
+    public async startChatSession(signal?: AbortSignal): Promise<{sessionId: string}> {
+        return await this.post('/api/ai/chat/start/', {}, {abort: signal});
     }
 
     public async getCurrentElement(sessionId: string, signal?: AbortSignal): Promise<AnyElement> {
