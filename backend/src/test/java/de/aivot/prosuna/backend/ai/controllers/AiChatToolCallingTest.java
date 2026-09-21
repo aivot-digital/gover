@@ -9,6 +9,10 @@ import de.aivot.prosuna.backend.ai.services.AiChatElementService;
 import de.aivot.prosuna.backend.ai.services.AiChatTraceService;
 import de.aivot.prosuna.backend.ai.tools.AiChatElementTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatSharedTools;
+import de.aivot.prosuna.backend.ai.tools.AiChatProcessTools;
+import de.aivot.prosuna.backend.ai.tools.AiChatElementSchemaTools;
+import de.aivot.prosuna.backend.ai.services.AiChatProcessService;
+import de.aivot.prosuna.backend.ai.services.AiInputValueSchemaService;
 import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.enums.ElementType;
@@ -59,6 +63,7 @@ class AiChatToolCallingTest {
     private final List<Prompt> prompts = new ArrayList<>();
     private final Jwt jwt = Jwt.withTokenValue("token").header("alg", "none").subject("owner").build();
     private AiChatController controller;
+    private final AiChatProcessService processService = mock(AiChatProcessService.class);
 
     @BeforeEach
     void setUp() {
@@ -88,7 +93,7 @@ class AiChatToolCallingTest {
                 .thenReturn(new AiChatTraceContext("owner", "session", "turn"));
         controller = new AiChatController(ChatClient.builder(model), new AiChatElementTools(mapper, cache),
                 antivirus, permissions, embeddings, sessions,
-                new AiChatElementService(permissions, sessions, cache, mapper), new AiChatSharedTools(),
+                new AiChatElementService(permissions, sessions, cache, mapper), new AiChatSharedTools(), new AiChatElementSchemaTools(mapper, new AiInputValueSchemaService(mapper)), new AiChatProcessTools(processService), processService,
                 traceService, ToolCallingManager.builder().build(), MessageWindowChatMemory.builder().build(),
                 Duration.ofMinutes(10));
     }
@@ -162,7 +167,7 @@ class AiChatToolCallingTest {
                     : AssistantMessage.builder().toolCalls(List.of(call)).build()));
         }).when(model).stream(any(Prompt.class));
 
-        assertThat(controller.send(jwt, "session", REQUEST, null, draft, 42, 1, null)
+        assertThat(controller.send(jwt, "session", REQUEST, null, draft, null, null, null)
                 .collectList().block(Duration.ofSeconds(10))).containsExactly("Entwurf angepasst.");
 
         assertThat(prompts).hasSize(5);
@@ -192,15 +197,17 @@ class AiChatToolCallingTest {
             return Flux.just(response(new AssistantMessage("Antwort")));
         }).when(model).stream(any(Prompt.class));
 
-        controller.send(jwt, "session", "Hallo", ElementType.FormLayout, null,
-                processContext ? 42 : null, null, null).collectList().block(Duration.ofSeconds(10));
+        controller.send(jwt, "session", "Hallo", processContext ? null : ElementType.FormLayout, null,
+                processContext ? 42 : null, processContext ? 1 : null, null).collectList().block(Duration.ofSeconds(10));
 
         assertThat(prompts).hasSize(1);
         assertThat(prompts.getFirst().getSystemMessage().getText())
-                .contains(processContext ? "Prozess-Modus" : "allgemeinen Modus");
+                .contains(processContext ? "geöffneten Prozessversion" : "allgemeinen Modus");
         var options = (ToolCallingChatOptions) prompts.getFirst().getOptions();
-        assertThat(options.getToolCallbacks()).extracting(callback -> callback.getToolDefinition().name())
-                .containsExactly("hole-chatmodus");
+        var names = options.getToolCallbacks().stream().map(callback -> callback.getToolDefinition().name()).toList();
+        assertThat(names).doesNotContain("erstelle-element", "hole-formularstruktur", "aktualisiere-element-eigenschaften");
+        if (processContext) assertThat(names).contains("hole-prozessstruktur", "erstelle-prozessknoten", "hole-eingabewert-schema");
+        else assertThat(names).containsExactly("hole-chatmodus");
         assertThat(options.getToolContext()).doesNotContainKey("targetRootType");
         assertThat(stored.get("session")).isSameAs(previous);
     }
@@ -257,6 +264,61 @@ class AiChatToolCallingTest {
                 .collectList().block(Duration.ofSeconds(10));
     }
 
+    @Test
+    void rejectsIncompleteOrMixedProcessContextBeforeCallingModel() {
+        assertThatThrownBy(() -> controller.send(jwt, "session", REQUEST, null, null, 7, null, null))
+                .isInstanceOf(de.aivot.prosuna.backend.lib.exceptions.ResponseException.class);
+        assertThatThrownBy(() -> controller.send(jwt, "session", REQUEST, ElementType.FormLayout, null, 7, 2, null))
+                .isInstanceOf(de.aivot.prosuna.backend.lib.exceptions.ResponseException.class);
+        assertThat(prompts).isEmpty();
+        verifyNoInteractions(processService, traceService);
+    }
+
+    @Test
+    void modelsProcessAcrossToolRoundsAndRecoversUnknownToolWithoutRepeatingMutation() throws Exception {
+        var scope = new de.aivot.prosuna.backend.ai.models.AiProcessChatContext("owner", "session", 7, 2);
+        when(processService.createNode(eq(scope), eq("counter"), eq(1), eq("count"), isNull())).thenReturn(Map.of("id", 10, "saved", true));
+        when(processService.structure(eq(scope), any(), any())).thenReturn(Map.of("nodes", List.of(Map.of("id", 10))));
+        when(processService.saveEdge(eq(scope), isNull(), eq(10), eq(10), eq("next"))).thenReturn(Map.of("id", 20, "saved", true));
+        when(processService.fields(eq(scope), eq(10), any(), any(), any())).thenReturn(Map.of("items", List.of(Map.of("valuePath", "/amount"))));
+        when(processService.updateNode(eq(scope), eq(10), any(), any(), any())).thenReturn(Map.of("saved", true, "savedWithErrors", false));
+        when(processService.validate(eq(scope), any(), any())).thenReturn(Map.of("valid", true));
+        doAnswer(invocation -> {
+            prompts.add(invocation.getArgument(0));
+            var calls = switch (prompts.size()) {
+                case 1 -> List.of(
+                        new AssistantMessage.ToolCall("create", "function", "erstelle-prozessknoten", "{\"key\":\"counter\",\"version\":1,\"dataKey\":\"count\"}"),
+                        new AssistantMessage.ToolCall("typo", "function", "hol-prozessstruktur", "{}"));
+                case 2 -> List.of(new AssistantMessage.ToolCall("read", "function", "hole-prozessstruktur", "{}"));
+                case 3 -> List.of(new AssistantMessage.ToolCall("edge", "function", "speichere-prozessverbindung", "{\"fromNodeId\":10,\"toNodeId\":10,\"port\":\"next\"}"));
+                case 4 -> List.of(new AssistantMessage.ToolCall("fields", "function", "liste-knotenkonfigurationsfelder", "{\"nodeId\":10}"));
+                case 5 -> List.of(new AssistantMessage.ToolCall("configure", "function", "aktualisiere-prozessknoten", "{\"nodeId\":10,\"values\":{\"/amount\":{\"type\":\"Literal\",\"value\":1}}}"));
+                case 6 -> List.of(new AssistantMessage.ToolCall("validate", "function", "pruefe-prozess", "{}"));
+                default -> List.<AssistantMessage.ToolCall>of();
+            };
+            return Flux.just(response(calls.isEmpty() ? new AssistantMessage("Prozess gespeichert.") : AssistantMessage.builder().toolCalls(calls).build()));
+        }).when(model).stream(any(Prompt.class));
+        assertThat(controller.send(jwt, "session", "Modellieren Sie den Prozess.", null, null, 7, 2, null)
+                .collectList().block(Duration.ofSeconds(10))).containsExactly("Prozess gespeichert.");
+        verify(processService).requireContext(scope);
+        verify(processService, times(1)).createNode(scope, "counter", 1, "count", null);
+        verify(processService, times(1)).updateNode(eq(scope), eq(10), eq(Map.of()), any(), eq(List.of()));
+        verify(processService, times(1)).saveEdge(scope, null, 10, 10, "next");
+        verify(processService).validate(scope, null, null);
+        assertThat(prompts.get(1).getInstructions().stream().filter(ToolResponseMessage.class::isInstance)
+                .map(ToolResponseMessage.class::cast).flatMap(message -> message.getResponses().stream()).toList())
+                .anySatisfy(result -> {
+                    assertThat(result.id()).isEqualTo("typo");
+                    assertThat(result.responseData()).contains("hole-prozessstruktur");
+                });
+        var options = (ToolCallingChatOptions) prompts.getFirst().getOptions();
+        assertThat(options.getToolContext()).containsEntry(de.aivot.prosuna.backend.ai.models.AiProcessChatContext.KEY, scope);
+        assertThat(options.getToolCallbacks()).allSatisfy(callback ->
+                assertThat(callback.getToolDefinition().inputSchema()).doesNotContain("userId", "sessionId", "processId", "processVersion"));
+        verify(traceService, times(6)).recordToolExecution(any(), any(), any(), anyLong());
+        assertThat(stored).isEmpty();
+    }
+
     private void assertToolExecution() {
         assertThat(prompts).hasSize(2);
         assertThat(prompts).allSatisfy(prompt ->
@@ -267,7 +329,7 @@ class AiChatToolCallingTest {
                 .containsExactlyInAnyOrder("hole-chatmodus", "erstelle-element", "liste-verfuegbare-elemente",
                         "liste-eigenschaften-fuer-element", "hole-json-schema-fuer-element-eigenschaft",
                         "hole-formularstruktur", "hole-element-an-pfad", "aktualisiere-element-eigenschaften",
-                        "pruefe-formularstruktur");
+                        "pruefe-formularstruktur", "hole-eingabewert-schema");
         assertThat(prompts.get(1).getInstructions()).anyMatch(ToolResponseMessage.class::isInstance);
         var tree = JsonMapperTestUtils.createMapper().readTree(stored.get("session").getCurrentElementJson());
         assertThat(tree.path("children").size()).isEqualTo(1);

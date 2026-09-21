@@ -8,6 +8,10 @@ import de.aivot.prosuna.backend.ai.services.AiChatElementService;
 import de.aivot.prosuna.backend.ai.services.AiChatTraceService;
 import de.aivot.prosuna.backend.ai.tools.AiChatElementTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatSharedTools;
+import de.aivot.prosuna.backend.ai.tools.AiChatProcessTools;
+import de.aivot.prosuna.backend.ai.tools.AiChatElementSchemaTools;
+import de.aivot.prosuna.backend.ai.services.AiChatProcessService;
+import de.aivot.prosuna.backend.ai.services.AiInputValueSchemaService;
 import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import org.junit.jupiter.api.Test;
@@ -74,6 +78,9 @@ class AiChatRequestTimeoutTest {
             .withBean(ToolCallingManager.class, () -> ToolCallingManager.builder().build())
             .withBean(AiChatElementTools.class, () -> mock(AiChatElementTools.class))
             .withBean(AiChatSharedTools.class)
+            .withBean(AiChatElementSchemaTools.class, () -> mock(AiChatElementSchemaTools.class))
+            .withBean(AiChatProcessTools.class, () -> mock(AiChatProcessTools.class))
+            .withBean(AiChatProcessService.class, () -> mock(AiChatProcessService.class))
             .withBean(AVService.class, () -> mock(AVService.class))
             .withBean(PermissionService.class, () -> mock(PermissionService.class))
             .withBean(EmbeddingModel.class, () -> mock(EmbeddingModel.class))

@@ -1,4 +1,4 @@
-import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Box, Button, Divider, Paper, Typography} from '@mui/material';
 import {Outlet, useLocation, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
@@ -61,6 +61,9 @@ import {useDelayedVisibility} from '../../../../hooks/use-delayed-visibility';
 import Undo from '@aivot/mui-material-symbols-400-n25-outlined/Undo';
 import Redo from '@aivot/mui-material-symbols-400-n25-outlined/Redo';
 import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
+import Chat from '@aivot/mui-material-symbols-400-n25-outlined/Chat';
+import {AiChatWindow} from '../../../ai/components/ai-chat-window/ai-chat-window';
+import {useProcessAiChat, type ProcessChatEditor} from './hooks/use-process-ai-chat';
 import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
 import HomeStorage from '@aivot/mui-material-symbols-400-n25-outlined/HomeStorage';
@@ -91,7 +94,7 @@ import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {NodeProblemsAlert} from '../../components/node-problems-alert';
 import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
 import {AlertComponent} from '../../../../components/alert/alert-component';
-import {useHasSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {useHasProcessPermission, useHasSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
 import {getProcessNodeLimit, isFormModuleEnabled, isProcessNodeTypeUnlimited} from '../../../../utils/module-flags';
 import {
     buildProcessInstanceAttachmentSetItems,
@@ -127,6 +130,20 @@ export interface ProcessFlow {
     version: ProcessVersionEntity;
     nodes: ProcessNodeEntity[];
     edges: ProcessDefinitionEdgeEntity[];
+}
+
+async function loadProcessFlow(processId: number, processVersion: number): Promise<ProcessFlow> {
+    const [definition, version, nodes, edges] = await Promise.all([
+        new ProcessDefinitionApiService().retrieve(processId),
+        new ProcessDefinitionVersionApiService().retrieve({
+            processDefinitionId: processId, processDefinitionVersion: processVersion,
+        }),
+        new ProcessNodeApiService().listAll({processId, processVersion}),
+        new ProcessDefinitionEdgeApiService().listAll({
+            processDefinitionId: processId, processDefinitionVersion: processVersion,
+        }),
+    ]);
+    return {definition, version, nodes: nodes.content, edges: edges.content};
 }
 
 interface ReplaceNodeRequest {
@@ -530,6 +547,14 @@ export function ProcessDetailsPage(): ReactNode {
     const [isLoadingFlowNodeProviders, setIsLoadingFlowNodeProviders] = useState(false);
     const [hasFlowNodeProviderLoadError, setHasFlowNodeProviderLoadError] = useState(false);
     const [readyFlowEditorKey, setReadyFlowEditorKey] = useState<string | null>(null);
+    const [showAiChat, setShowAiChat] = useState(false);
+    const editorAreaRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        if (showAiChat && editorAreaRef.current != null) {
+            editorAreaRef.current.scrollLeft = editorAreaRef.current.scrollWidth;
+        }
+    }, [showAiChat]);
+    const [loadedTestClaimContext, setLoadedTestClaimContext] = useState<string | null>(null);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     const [processNodeProblems, setProcessNodeProblems] = useState<ProcessNodeProblems[]>([]);
     const [showProcessNodeProblemsForNodes, setShowProcessNodeProblemsForNodes] = useState<Record<number, boolean>>({});
@@ -685,12 +710,14 @@ export function ProcessDetailsPage(): ReactNode {
             setProcessNodeProblems([]);
             return;
         }
+        let cancelled = false;
         new ProcessDefinitionVersionApiService()
             .validate({
                 processDefinitionId: processId,
                 processDefinitionVersion: processVersion,
             })
             .then((problems) => {
+                if (cancelled) return;
                 const nodeProblems = problems.nodeProblems;
                 setProcessNodeProblems(nodeProblems);
 
@@ -702,7 +729,10 @@ export function ProcessDetailsPage(): ReactNode {
                     previousShownProblems,
                     nodeProblems,
                 ));
+            }).catch(error => {
+                if (!cancelled) dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht geprüft werden.'));
             });
+        return () => { cancelled = true; };
     }, [processId, processVersion, processFlow?.nodes, processFlow?.edges]);
 
     const instanceId = useMemo(() => {
@@ -712,6 +742,38 @@ export function ProcessDetailsPage(): ReactNode {
         }
         return parseInt(instanceIdParam);
     }, [searchParams]);
+
+    const canUseAiChat = useHasSystemPermission(Permission.AI_CHAT_USE);
+    const canReadProcess = useHasProcessPermission(processId, Permission.PROCESS_DEFINITION_READ);
+    const canUpdateProcess = useHasProcessPermission(processId, Permission.PROCESS_DEFINITION_UPDATE);
+    const aiChatContextKey = `${user?.id}:${processId}:${processVersion}:${instanceId}`;
+    const aiChatAvailable = canUseAiChat && canReadProcess && canUpdateProcess &&
+        user != null && processFlow?.definition.id === processId &&
+        processFlow?.version.processVersion === processVersion &&
+        processFlow.version.status === ProcessStatus.Drafted && currentTestClaim == null && instanceId == null &&
+        loadedTestClaimContext === `${user.id}:${processId}:${processVersion}`;
+
+    const refreshAfterChat = useCallback(async (editor: ProcessChatEditor | null, isCurrent: () => boolean) => {
+        const flow = await loadProcessFlow(processId, processVersion);
+        const validation = await new ProcessDefinitionVersionApiService().validate({
+            processDefinitionId: processId, processDefinitionVersion: processVersion,
+        });
+        if (!isCurrent()) return;
+        const selectedStillExists = editor != null && flow.nodes.some(node => node.id === editor.nodeId);
+        if (selectedStillExists) await editor.refresh();
+        if (!isCurrent()) return;
+        setProcessFlow(flow);
+        setProcessNodeProblems(validation.nodeProblems);
+        setShowProcessNodeProblemsForNodes(previous => includeNodeProblems(previous, validation.nodeProblems));
+        if (editor != null && !selectedStillExists) {
+            navigate(`/processes/${processId}/versions/${processVersion}?${searchParams.toString()}`, {replace: true});
+        }
+    }, [processId, processVersion, navigate, searchParams]);
+    const processChat = useProcessAiChat(aiChatContextKey, refreshAfterChat);
+
+    useEffect(() => {
+        setShowAiChat(false);
+    }, [aiChatContextKey]);
 
     const activeTestClaimId = currentTestClaim?.claim.id ?? runtimeData?.instance.createdForTestClaimId ?? null;
     const showRuntimePendingStartHint = runtimeData != null &&
@@ -922,32 +984,10 @@ export function ProcessDetailsPage(): ReactNode {
         let cancelled = false;
         setIsLoadingProcessFlow(true);
 
-        Promise.all([
-            new ProcessDefinitionApiService().retrieve(processId),
-            new ProcessDefinitionVersionApiService().retrieve({
-                processDefinitionId: processId,
-                processDefinitionVersion: processVersion,
-            }),
-            new ProcessNodeApiService().listAll({
-                processId: processId,
-                processVersion: processVersion,
-            }),
-            new ProcessDefinitionEdgeApiService().listAll({
-                processDefinitionId: processId,
-                processDefinitionVersion: processVersion,
-            }),
-        ])
-            .then(([definition, version, nodes, edges]) => {
-                if (cancelled) {
-                    return;
-                }
-
-                setProcessFlow({
-                    definition,
-                    version,
-                    nodes: nodes.content,
-                    edges: edges.content,
-                });
+        loadProcessFlow(processId, processVersion)
+            .then((flow) => {
+                if (cancelled) return;
+                setProcessFlow(flow);
 
                 new SearchItemService()
                     .recordRecentSearchItem({
@@ -982,6 +1022,7 @@ export function ProcessDetailsPage(): ReactNode {
                     return;
                 }
 
+                setLoadedTestClaimContext(`${user?.id}:${processId}:${processVersion}`);
                 if (content.length > 0) {
                     const claim = content[0];
                     const claimOwnerUser = user?.id === claim.owningUserId ? user : null;
@@ -1621,9 +1662,11 @@ export function ProcessDetailsPage(): ReactNode {
         const updated = await new ProcessNodeApiService()
             .update(node.id, node, options);
 
-        setProcessFlow({
-            ...processFlow,
-            nodes: processFlow.nodes.map((n) => n.id === updated.id ? updated : n),
+        setProcessFlow(current => {
+            if (current?.definition.id !== updated.processId || current.version.processVersion !== updated.processVersion) {
+                return current;
+            }
+            return {...current, nodes: current.nodes.map(node => node.id === updated.id ? updated : node)};
         });
 
         setShowProcessNodeProblemsForNodes((prev) => ({
@@ -2194,6 +2237,14 @@ export function ProcessDetailsPage(): ReactNode {
         ];
 
         return [
+            {
+                label: 'KI-Chat',
+                tooltip: showAiChat ? 'KI-Chat schließen' : 'KI-Chat öffnen',
+                icon: <Chat/>,
+                visible: canUseAiChat && canReadProcess && canUpdateProcess,
+                disabled: !aiChatAvailable || processChat.locked,
+                onClick: () => setShowAiChat(previous => !previous),
+            },
             ...testClaimInstanceActions,
             ...runtimeActions,
             ...(!isInTestMode ? [
@@ -2271,6 +2322,7 @@ export function ProcessDetailsPage(): ReactNode {
         ];
     }, [
         processFlow,
+        showAiChat, canUseAiChat, canReadProcess, canUpdateProcess, aiChatAvailable, processChat.locked,
         activeTestClaimId,
         currentTestClaim,
         instanceId,
@@ -2357,7 +2409,7 @@ export function ProcessDetailsPage(): ReactNode {
         );
     }
 
-    const isProcessEditable = processFlow.version.status === ProcessStatus.Drafted;
+    const isProcessEditable = processFlow.version.status === ProcessStatus.Drafted && !processChat.locked;
     const isProcessStructureEditable = isProcessEditable && currentTestClaim == null;
 
     return (
@@ -2367,18 +2419,21 @@ export function ProcessDetailsPage(): ReactNode {
             fullHeight={true}
         >
             <Box
+                ref={editorAreaRef}
                 sx={{
                     height: '100vh',
+                    overflowX: 'auto',
                     '--focus-border': (theme) => theme.palette.secondary.main,
                     position: 'relative',
                 }}
             >
+                <Box sx={{height: '100%', minWidth: showAiChat ? DISPLAYABLE_AREA + 380 : DISPLAYABLE_AREA}}>
                 <Allotment
                     onDragStart={() => setHideEditorPaneExpandButton(true)}
                     onDragEnd={handleEditorPaneDragEnd}
                 >
                     <Allotment.Pane minSize={DISPLAYABLE_AREA - MIN_EDITOR_DRAWER_WIDTH_PX}>
-                        <Box
+                        <Box inert={processChat.locked}
                             sx={{
                                 px: 2,
                                 py: 2,
@@ -2394,7 +2449,7 @@ export function ProcessDetailsPage(): ReactNode {
                                     label: `Version ${processFlow.version.processVersion}`,
                                 }}
                                 icon={ModuleIcons.processes}
-                                actions={headerActions}
+                                actions={processChat.locked ? headerActions.map(action => action === 'separator' ? action : {...action, disabled: true}) : headerActions}
                             />
 
                             <Box
@@ -2622,6 +2677,7 @@ export function ProcessDetailsPage(): ReactNode {
                         visible={!isEditorPaneCollapsed}
                     >
                         <Paper
+                            inert={processChat.locked}
                             sx={{
                                 px: 0,
                                 boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
@@ -2635,6 +2691,7 @@ export function ProcessDetailsPage(): ReactNode {
                         >
                             <ProcessDetailsPageProvider
                                 value={{
+                                    registerChatEditor: processChat.registerEditor,
                                     editable: isProcessEditable,
                                     structureEditable: isProcessStructureEditable,
                                     onSave: handleSaveNode,
@@ -2652,7 +2709,26 @@ export function ProcessDetailsPage(): ReactNode {
 
 
                     </Allotment.Pane>
+                    {showAiChat && user != null && <Allotment.Pane minSize={380} preferredSize={380}>
+                        <AiChatWindow
+                            mode="process"
+                            userId={user.id}
+                            processId={processId}
+                            processVersion={processVersion}
+                            beforeSend={processChat.beforeSend}
+                            afterTurn={processChat.afterTurn}
+                            onThinking={processChat.onThinking}
+                            disabled={!aiChatAvailable || processChat.reloadFailed || processChat.busy}
+                            reloadFailed={processChat.reloadFailed}
+                            onRetry={() => void processChat.retry()}
+                            isRetrying={processChat.busy}
+                            unavailable={!aiChatAvailable}
+                            onClose={() => setShowAiChat(false)}
+                            closeDisabled={processChat.locked}
+                        />
+                    </Allotment.Pane>}
                 </Allotment>
+                </Box>
 
                 {
                     /* TODO: Implement this again, when the corresponding user story is worked on.

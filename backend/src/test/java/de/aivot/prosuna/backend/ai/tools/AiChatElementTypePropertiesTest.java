@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 class AiChatElementTypePropertiesTest {
     private final AiUiElementChatSessionCacheRepository repository = mock(AiUiElementChatSessionCacheRepository.class);
-    private final AiChatElementTools tools = new AiChatElementTools(JsonMapperTestUtils.createMapper(), repository);
+    private final AiChatElementSchemaTools tools = new AiChatElementSchemaTools(JsonMapperTestUtils.createMapper(), new de.aivot.prosuna.backend.ai.services.AiInputValueSchemaService(JsonMapperTestUtils.createMapper()));
 
     @Test
     void listsInheritedAndJsonNamedPropertiesWithoutNestedDetails() {

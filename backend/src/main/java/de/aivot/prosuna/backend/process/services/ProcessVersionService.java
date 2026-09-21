@@ -3,10 +3,9 @@ package de.aivot.prosuna.backend.process.services;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.lib.services.EntityService;
-import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.process.models.ProcessNodeProblems;
 import de.aivot.prosuna.backend.process.models.ProcessVersionProblems;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
@@ -115,6 +114,11 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     }
 
     public ProcessVersionProblems validate(@Nonnull ProcessVersionEntity entity) throws ResponseException {
+        return validate(entity, null);
+    }
+
+    public ProcessVersionProblems validate(@Nonnull ProcessVersionEntity entity,
+                                          @Nullable UserEntity user) throws ResponseException {
         var nodes = processNodeService
                 .findAllByProcessIdAndProcessVersion(entity.getProcessId(), entity.getProcessVersion());
 
@@ -125,7 +129,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
                     .getProcessNodeDefinition(node)
                     .orElseThrow(() -> ResponseException.internalServerError("No provider found for node with id " + node.getId()));
 
-            val(node, provider)
+            processNodeService.validate(node, provider, true, user)
                     .ifPresent(nodeProblems::add);
         }
 
@@ -153,11 +157,6 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         }
 
         return problems;
-    }
-
-    private <NodeConfig> Optional<ProcessNodeProblems> val(ProcessNodeEntity node, ProcessNodeDefinition<NodeConfig> provider) throws ResponseException {
-        return processNodeService
-                .validate(node, provider, true);
     }
 
     public Optional<ProcessVersionEntity> getLatestVersion(Integer processDefinitionId) {

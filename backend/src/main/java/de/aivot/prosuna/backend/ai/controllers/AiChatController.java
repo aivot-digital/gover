@@ -5,6 +5,10 @@ import de.aivot.prosuna.backend.ai.data.SystemPrompts;
 import de.aivot.prosuna.backend.ai.entities.AiChatSessionEntity;
 import de.aivot.prosuna.backend.ai.models.AiChatTraceContext;
 import de.aivot.prosuna.backend.ai.models.ChatContextModel;
+import de.aivot.prosuna.backend.ai.models.AiProcessChatContext;
+import de.aivot.prosuna.backend.ai.services.AiChatProcessService;
+import de.aivot.prosuna.backend.ai.tools.AiChatProcessTools;
+import de.aivot.prosuna.backend.ai.tools.AiChatElementSchemaTools;
 import de.aivot.prosuna.backend.ai.permissions.AiChatPermissionProvider;
 import de.aivot.prosuna.backend.ai.repositories.AiChatSessionRepository;
 import de.aivot.prosuna.backend.ai.repositories.DatabaseChatMemoryRepository;
@@ -88,6 +92,9 @@ class AiChatController {
     private final AiChatSharedTools aiChatSharedTools;
     private final AiChatTraceService aiChatTraceService;
     private final ChatMemory chatMemory;
+    private final AiChatProcessService aiChatProcessService;
+    private final AiChatProcessTools aiChatProcessTools;
+    private final AiChatElementSchemaTools aiChatElementSchemaTools;
 
     AiChatController(ChatClient.Builder chatClientBuilder,
                      AiChatElementTools aiChatElementTools,
@@ -97,6 +104,9 @@ class AiChatController {
                      AiChatSessionRepository aiChatSessionRepository,
                      AiChatElementService aiChatElementService,
                      AiChatSharedTools aiChatSharedTools,
+                     AiChatElementSchemaTools aiChatElementSchemaTools,
+                     AiChatProcessTools aiChatProcessTools,
+                     AiChatProcessService aiChatProcessService,
                      @Nonnull AiChatTraceService aiChatTraceService,
                      @Nonnull ToolCallingManager toolCallingManager,
                      @Nonnull ChatMemory chatMemory,
@@ -122,6 +132,9 @@ class AiChatController {
         this.aiChatSharedTools = aiChatSharedTools;
         this.aiChatTraceService = aiChatTraceService;
         this.chatMemory = chatMemory;
+        this.aiChatElementSchemaTools = aiChatElementSchemaTools;
+        this.aiChatProcessTools = aiChatProcessTools;
+        this.aiChatProcessService = aiChatProcessService;
     }
 
     @PostMapping("start/")
@@ -213,7 +226,10 @@ class AiChatController {
                     + "and currentState contain the numeric form element type and the unsaved form draft respectively. "
                     + "Files may be supplied as repeated attachments parts. "
                     + "A supplied currentState replaces the session's cached form draft and enables form editing. "
-                    + "Without currentState, form editing tools are unavailable. Returns a text/event-stream.")
+                    + "Without currentState, form editing tools are unavailable. processId and processVersion must be paired "
+                    + "and cannot be combined with form editing. Process tools require process_definition.read, "
+                    + "and mutations additionally process_definition.update and Drafted status. "
+                    + "Process changes are persisted immediately. Returns a text/event-stream.")
     public Flux<String> send(
             @Nonnull @AuthenticationPrincipal final Jwt jwt,
             @Nonnull @RequestParam(required = true) final String chatSessionId,
@@ -227,6 +243,15 @@ class AiChatController {
         String userId = UserService
                 .getIdFromJWT(jwt);
         assert userId != null;
+
+        if ((processId == null) != (processVersion == null)) {
+            throw ResponseException.badRequest("Prozess-ID und Prozessversion müssen gemeinsam angegeben werden.");
+        }
+        if (processId != null && (currentState != null || targetRootType != null)) {
+            throw ResponseException.badRequest("Formular- und Prozessbearbeitung können nicht in derselben Anfrage kombiniert werden.");
+        }
+        var processContext = processId == null ? null : new AiProcessChatContext(userId, chatSessionId, processId, processVersion);
+        if (processContext != null) aiChatProcessService.requireContext(processContext);
 
         var effectiveRootType = aiChatElementService
                 .cacheCurrentElement(userId, chatSessionId, targetRootType, currentState);
@@ -246,6 +271,7 @@ class AiChatController {
             VectorStore transientVectorStore = getTransientVectorStore(attachments);
             var toolContext = new HashMap<>(context.toMap());
             toolContext.put(AiChatTraceContext.CONTEXT_KEY, traceContext);
+            if (processContext != null) toolContext.put(AiProcessChatContext.KEY, processContext);
 
             var request = chatClient
                     .prompt()
@@ -253,7 +279,9 @@ class AiChatController {
                     .tools(aiChatSharedTools);
 
             if (context.getAppContext() == ChatContextModel.AppContext.FormEditor) {
-                request.tools(aiChatElementTools);
+                request.tools(aiChatElementSchemaTools, aiChatElementTools);
+            } else if (context.getAppContext() == ChatContextModel.AppContext.ProcessEditor) {
+                request.tools(aiChatElementSchemaTools, aiChatProcessTools);
             }
 
             var streamedContent = new StringBuilder();

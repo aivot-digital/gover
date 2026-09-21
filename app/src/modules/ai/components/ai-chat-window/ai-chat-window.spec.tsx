@@ -44,8 +44,16 @@ describe('AiChatWindow', () => {
     function mount() {
         render(<AiChatWindow rootElement={root} targetRootType={ElementType.FormLayout}
                              onElementChange={onElementChange} onThinking={onThinking}/>);
-        fireEvent.change(screen.getByRole('textbox', {name: 'Message'}), {target: {value: 'Neuen Abschnitt erstellen'}});
+        fireEvent.change(screen.getByRole('textbox', {name: 'Nachricht'}), {target: {value: 'Neuen Abschnitt erstellen'}});
     }
+
+    it('renders the shared chat window for form editing', () => {
+        mount();
+
+        expect(screen.getByRole('heading', {name: 'KI-Chat'})).toBeVisible();
+        expect(screen.getByText('Änderungen durch die KI werden in den Formularentwurf übernommen.')).toBeVisible();
+        expect(screen.queryByRole('button', {name: 'KI-Chat schließen'})).not.toBeInTheDocument();
+    });
 
     it('uses the new session for the first message and updated element', async () => {
         mount();
@@ -53,26 +61,26 @@ describe('AiChatWindow', () => {
 
         await waitFor(() => expect(onElementChange).toHaveBeenCalledWith(updated));
         expect(AiChatService.prototype.sendMessage).toHaveBeenCalledWith('new-session', 'Neuen Abschnitt erstellen',
-            expect.any(Function), undefined, {currentState: root, targetRootType: ElementType.FormLayout});
+            expect.any(Function), expect.any(AbortSignal), {currentState: root, targetRootType: ElementType.FormLayout});
         expect(AiChatService.prototype.getCurrentElement).toHaveBeenCalledWith('new-session');
         expect(localStorage.getItem('aiChatSessionId')).toBe('new-session');
         expect(screen.getByText('Abschnitt erstellt.')).toBeInTheDocument();
-        await waitFor(() => expect(screen.getByRole('textbox', {name: 'Message'})).toHaveValue(''));
+        await waitFor(() => expect(screen.getByRole('textbox', {name: 'Nachricht'})).toHaveValue(''));
         expect(onThinking).toHaveBeenLastCalledWith(false);
     });
 
     it('reuses a stored session', async () => {
         localStorage.setItem('aiChatSessionId', 'existing-session');
         mount();
-        await waitFor(() => expect(screen.getByRole('textbox', {name: 'Message'})).toBeEnabled());
-        fireEvent.change(screen.getByRole('textbox', {name: 'Message'}), {
+        await waitFor(() => expect(screen.getByRole('textbox', {name: 'Nachricht'})).toBeEnabled());
+        fireEvent.change(screen.getByRole('textbox', {name: 'Nachricht'}), {
             target: {value: 'Neuen Abschnitt erstellen'},
         });
         fireEvent.click(screen.getByRole('button', {name: 'Absenden'}));
         await waitFor(() => expect(onElementChange).toHaveBeenCalled());
         expect(AiChatService.prototype.startChatSession).not.toHaveBeenCalled();
         expect(AiChatService.prototype.sendMessage).toHaveBeenCalledWith('existing-session', expect.any(String),
-            expect.any(Function), undefined, expect.any(Object));
+            expect.any(Function), expect.any(AbortSignal), expect.any(Object));
         expect(AiChatService.prototype.getCurrentElement).toHaveBeenCalledWith('existing-session');
     });
 
@@ -86,7 +94,7 @@ describe('AiChatWindow', () => {
         mount();
 
         expect(screen.getByText('Chatverlauf wird geladen …')).toBeVisible();
-        expect(screen.getByRole('textbox', {name: 'Message'})).toBeDisabled();
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toBeDisabled();
         await act(async () => resolveHistory([
             {role: 'user', content: 'Mein Hund heißt Bello.'},
             {role: 'assistant', content: 'Ich habe den Namen übernommen.'},
@@ -95,7 +103,7 @@ describe('AiChatWindow', () => {
         expect(await screen.findByText('Mein Hund heißt Bello.')).toBeVisible();
         expect(screen.getByText('Ich habe den Namen übernommen.')).toBeVisible();
         expect(screen.queryByText('Chatverlauf wird geladen …')).not.toBeInTheDocument();
-        expect(screen.getByRole('textbox', {name: 'Message'})).toBeEnabled();
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toBeEnabled();
         expect(AiChatService.prototype.getMessages).toHaveBeenCalledWith(
             'existing-session', expect.any(AbortSignal),
         );
@@ -116,11 +124,11 @@ describe('AiChatWindow', () => {
             'Der bisherige Chat ist nicht mehr verfügbar. Mit Ihrer nächsten Nachricht wird ein neuer Chat gestartet.',
         )).toBeVisible();
         expect(localStorage.getItem('aiChatSessionId')).toBeNull();
-        fireEvent.change(screen.getByRole('textbox', {name: 'Message'}), {target: {value: 'Neu beginnen'}});
+        fireEvent.change(screen.getByRole('textbox', {name: 'Nachricht'}), {target: {value: 'Neu beginnen'}});
         fireEvent.click(screen.getByRole('button', {name: 'Absenden'}));
 
         await waitFor(() => expect(AiChatService.prototype.sendMessage).toHaveBeenCalledWith(
-            'new-session', 'Neu beginnen', expect.any(Function), undefined, expect.any(Object),
+            'new-session', 'Neu beginnen', expect.any(Function), expect.any(AbortSignal), expect.any(Object),
         ));
         expect(AiChatService.prototype.startChatSession).toHaveBeenCalledTimes(1);
     });
@@ -135,7 +143,7 @@ describe('AiChatWindow', () => {
             'Der Chatverlauf konnte nicht geladen werden. Öffnen Sie den Chat erneut, um es noch einmal zu versuchen.',
         )).toBeVisible();
         expect(localStorage.getItem('aiChatSessionId')).toBe('existing-session');
-        expect(screen.getByRole('textbox', {name: 'Message'})).toBeEnabled();
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toBeEnabled();
     });
 
     it('cancels history loading when the chat is closed', () => {
@@ -164,15 +172,15 @@ describe('AiChatWindow', () => {
             </>;
         }
         render(<Editor/>);
-        fireEvent.change(screen.getByRole('textbox', {name: 'Message'}), {target: {value: 'Ändern'}});
+        fireEvent.change(screen.getByRole('textbox', {name: 'Nachricht'}), {target: {value: 'Ändern'}});
         fireEvent.click(screen.getByRole('button', {name: 'Absenden'}));
         await waitFor(() => expect(screen.getByRole('status', {name: 'Entwurf'})).toHaveTextContent('Updated'));
         fireEvent.click(screen.getByRole('button', {name: 'Lokal bearbeiten'}));
-        fireEvent.change(screen.getByRole('textbox', {name: 'Message'}), {target: {value: 'Weiter ändern'}});
+        fireEvent.change(screen.getByRole('textbox', {name: 'Nachricht'}), {target: {value: 'Weiter ändern'}});
         fireEvent.click(screen.getByRole('button', {name: 'Absenden'}));
 
         await waitFor(() => expect(AiChatService.prototype.sendMessage).toHaveBeenNthCalledWith(2,
-            'new-session', 'Weiter ändern', expect.any(Function), undefined,
+            'new-session', 'Weiter ändern', expect.any(Function), expect.any(AbortSignal),
             {currentState: {...updated, name: 'Lokale Änderung'}, targetRootType: ElementType.FormLayout}));
     });
 
@@ -186,7 +194,7 @@ describe('AiChatWindow', () => {
         fireEvent.click(send);
         fireEvent.click(send);
         expect(send).toBeDisabled();
-        expect(screen.getByRole('textbox', {name: 'Message'})).toBeDisabled();
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toBeDisabled();
         expect(AiChatService.prototype.startChatSession).toHaveBeenCalledTimes(1);
         expect(AiChatService.prototype.sendMessage).not.toHaveBeenCalled();
         await act(async () => resolveSession({sessionId: 'new-session'}));
@@ -200,8 +208,8 @@ describe('AiChatWindow', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Absenden'}));
 
         expect(await screen.findByText('Die KI-Anfrage konnte nicht gestartet werden. Versuchen Sie es später erneut.')).toBeVisible();
-        expect(screen.getByRole('textbox', {name: 'Message'})).toBeEnabled();
-        expect(screen.getByRole('textbox', {name: 'Message'})).toHaveValue('Neuen Abschnitt erstellen');
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toBeEnabled();
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toHaveValue('Neuen Abschnitt erstellen');
         expect(onThinking).toHaveBeenLastCalledWith(false);
         expect(onElementChange).not.toHaveBeenCalled();
         expect(AiChatService.prototype.sendMessage).not.toHaveBeenCalled();
@@ -220,7 +228,7 @@ describe('AiChatWindow', () => {
         )).toBeVisible();
         await waitFor(() => expect(onElementChange).toHaveBeenCalledWith(updated));
         expect(AiChatService.prototype.getCurrentElement).toHaveBeenCalledWith('new-session');
-        expect(screen.getByRole('textbox', {name: 'Message'})).toBeEnabled();
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toBeEnabled();
         expect(onThinking).toHaveBeenLastCalledWith(false);
     });
 
@@ -233,7 +241,7 @@ describe('AiChatWindow', () => {
             'Der aktuelle Formularentwurf konnte nach der KI-Anfrage nicht geladen werden.',
         )).toBeVisible();
         expect(onElementChange).not.toHaveBeenCalled();
-        expect(screen.getByRole('textbox', {name: 'Message'})).toBeEnabled();
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toBeEnabled();
         expect(onThinking).toHaveBeenLastCalledWith(false);
     });
 

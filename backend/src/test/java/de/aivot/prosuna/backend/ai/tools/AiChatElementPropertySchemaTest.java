@@ -18,8 +18,8 @@ import static org.mockito.Mockito.mock;
 
 class AiChatElementPropertySchemaTest {
     private final JsonMapper mapper = JsonMapperTestUtils.createMapper();
-    private final ToolCallback tool = Arrays.stream(ToolCallbacks.from(new AiChatElementTools(mapper,
-                    mock(AiUiElementChatSessionCacheRepository.class))))
+    private final ToolCallback tool = Arrays.stream(ToolCallbacks.from(new AiChatElementSchemaTools(mapper,
+                    new de.aivot.prosuna.backend.ai.services.AiInputValueSchemaService(mapper))))
             .filter(callback -> callback.getToolDefinition().name().equals("hole-json-schema-fuer-element-eigenschaft"))
             .findFirst().orElseThrow();
 

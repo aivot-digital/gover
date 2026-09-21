@@ -1499,30 +1499,18 @@ export function FormNodeEditorPage() {
                                         minSize={380}
                                         preferredSize={380}
                                     >
-                                        <Paper
-                                            sx={{
-                                                boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                                                borderLeft: '1px solid',
-                                                borderLeftColor: 'divider',
-                                                borderRadius: 0,
-                                                position: 'relative',
-                                                height: '100%',
-                                                overflow: 'hidden',
+                                        <AiChatWindow
+                                            rootElement={formLayout}
+                                            targetRootType={ElementType.FormLayout}
+                                            onElementChange={(element) => {
+                                                if (element.type === ElementType.FormLayout) {
+                                                    handlePatch(element as FormLayoutElement);
+                                                }
                                             }}
-                                        >
-                                            <AiChatWindow
-                                                rootElement={formLayout}
-                                                targetRootType={ElementType.FormLayout}
-                                                onElementChange={(element) => {
-                                                    if (element.type === ElementType.FormLayout) {
-                                                        handlePatch(element as FormLayoutElement);
-                                                    }
-                                                }}
-                                                onThinking={(isThinking) => {
-                                                    setLockEditing(isThinking);
-                                                }}
-                                            />
-                                        </Paper>
+                                            onThinking={(isThinking) => {
+                                                setLockEditing(isThinking);
+                                            }}
+                                        />
                                     </Allotment.Pane>
                                 )
                             }

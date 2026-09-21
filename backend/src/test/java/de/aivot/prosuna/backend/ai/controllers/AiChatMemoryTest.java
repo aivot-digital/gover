@@ -10,6 +10,10 @@ import de.aivot.prosuna.backend.ai.services.AiChatElementService;
 import de.aivot.prosuna.backend.ai.services.AiChatTraceService;
 import de.aivot.prosuna.backend.ai.tools.AiChatElementTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatSharedTools;
+import de.aivot.prosuna.backend.ai.tools.AiChatProcessTools;
+import de.aivot.prosuna.backend.ai.tools.AiChatElementSchemaTools;
+import de.aivot.prosuna.backend.ai.services.AiChatProcessService;
+import de.aivot.prosuna.backend.ai.services.AiInputValueSchemaService;
 import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -165,7 +169,7 @@ class AiChatMemoryTest {
         var elements = mock(AiUiElementChatSessionCacheRepository.class);
         return new AiChatController(ChatClient.builder(model), new AiChatElementTools(mapper, elements), mock(AVService.class),
                 permissions, embeddings, sessions, new AiChatElementService(permissions, sessions, elements, mapper),
-                new AiChatSharedTools(), traceService, ToolCallingManager.builder().build(),
+                new AiChatSharedTools(), new AiChatElementSchemaTools(mapper, new AiInputValueSchemaService(mapper)), new AiChatProcessTools(mock(AiChatProcessService.class)), mock(AiChatProcessService.class), traceService, ToolCallingManager.builder().build(),
                 new AiChatMemoryConfiguration().chatMemory(repository()), Duration.ofMinutes(10));
     }
 

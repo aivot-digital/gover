@@ -1,5 +1,5 @@
 import {AnyElement} from "../../../../models/elements/any-element";
-import {Box, Stack} from "@mui/material";
+import {Alert, Box, Button, IconButton, Paper, Stack, Typography} from "@mui/material";
 import {TextFieldComponent} from "../../../../components/text-field/text-field-component";
 import {MarkdownContent} from "../../../../components/markdown-content/markdown-content";
 import {useEffect, useRef, useState} from "react";
@@ -9,30 +9,56 @@ import {Chip} from "../../../../components/chip/chip";
 import {Actions} from "../../../../components/actions/actions";
 import Send from "@aivot/mui-material-symbols-400-n25-outlined/Send";
 import Download from "@aivot/mui-material-symbols-400-n25-outlined/Download";
+import Close from "@aivot/mui-material-symbols-400-n25-outlined/Close";
 import {downloadBlobFile} from '../../../../utils/download-utils';
 import {isApiError} from '../../../../models/api-error';
-import {showApiErrorSnackbar} from "../../../../slices/snackbar-slice";
-import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
 
 interface AiChatWindowPropsElementEditing {
+    mode?: 'element';
     rootElement: AnyElement;
     targetRootType: ElementType;
     onElementChange: (element: AnyElement) => void;
 }
 
+interface AiChatWindowPropsProcessEditing {
+    mode: 'process';
+    userId: string;
+    processId: number;
+    processVersion: number;
+    beforeSend: () => Promise<void>;
+    afterTurn: () => Promise<void>;
+    disabled?: boolean;
+    reloadFailed: boolean;
+    onRetry: () => void;
+    isRetrying: boolean;
+    unavailable: boolean;
+}
+
 type AiChatWindowProps = {
     onThinking: (isThinking: boolean) => void;
-} & AiChatWindowPropsElementEditing;
+    onClose?: () => void;
+    closeDisabled?: boolean;
+} & (AiChatWindowPropsElementEditing | AiChatWindowPropsProcessEditing);
 
 export function AiChatWindow(props: AiChatWindowProps) {
-    const {
-        rootElement,
-        targetRootType,
-        onElementChange,
-        onThinking,
-    } = props;
+    const sessionKey = props.mode === 'process'
+        ? `aiChatSessionId:process:${props.userId}:${props.processId}:${props.processVersion}`
+        : 'aiChatSessionId';
+    return <AiChatSession key={sessionKey} {...props} sessionKey={sessionKey}/>;
+}
 
-    const dispatch = useAppDispatch();
+function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
+    const {onThinking, sessionKey, onClose, closeDisabled} = props;
+    const disabled = props.mode === 'process' && props.disabled;
+    const requestRef = useRef<AbortController | null>(null);
+    const mountedRef = useRef(false);
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+            requestRef.current?.abort();
+        };
+    }, []);
 
     const [message, setMessage] = useState<string | null>(null);
 
@@ -44,11 +70,10 @@ export function AiChatWindow(props: AiChatWindowProps) {
         content: string;
     })[]>([]);
 
-    const initialSessionIdRef = useRef<string | null>(localStorage.getItem('aiChatSessionId'));
+    const initialSessionIdRef = useRef<string | null>(localStorage.getItem(sessionKey));
     const [sessionId, setSessionId] = useState<string | null>(initialSessionIdRef.current);
     const [isLoadingHistory, setIsLoadingHistory] = useState(initialSessionIdRef.current != null);
 
-    const [shouldScrollToBottomOnMessageReceived, setShouldScrollToBottomOnMessageReceived] = useState<boolean>(true);
     const chatMessagesBoxRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -74,7 +99,7 @@ export function AiChatWindow(props: AiChatWindowProps) {
                 }
                 console.error('Error loading AI chat history:', error);
                 if (isApiError(error) && error.status === 404) {
-                    localStorage.removeItem('aiChatSessionId');
+                    localStorage.removeItem(sessionKey);
                     setSessionId(null);
                     setMessageBuffer([{
                         role: 'error',
@@ -97,14 +122,28 @@ export function AiChatWindow(props: AiChatWindowProps) {
     }, []);
 
     const handleSendMessage = async () => {
-        if (sendingRef.current || isLoadingHistory || message == null || message.trim() === '') {
+        if (sendingRef.current || disabled || isLoadingHistory || message == null || message.trim() === '') {
             return;
         }
 
         sendingRef.current = true;
         setIsThinking(true);
+        const controller = new AbortController();
+        requestRef.current = controller;
 
         try {
+            if (props.mode === 'process') {
+                try {
+                    await props.beforeSend();
+                } catch {
+                    if (!controller.signal.aborted) {
+                        setMessageBuffer(previous => [...previous, {role: 'error', content:
+                            'Die offenen Änderungen konnten nicht gespeichert werden. Prüfen Sie die Knotenkonfiguration, bevor Sie die Nachricht erneut senden.'}]);
+                    }
+                    return;
+                }
+            }
+            if (controller.signal.aborted) return;
             const service = new AiChatService();
             let activeSessionId = sessionId;
             if (activeSessionId == null) {
@@ -113,14 +152,17 @@ export function AiChatWindow(props: AiChatWindowProps) {
                     session = await service
                         .startChatSession();
                 } catch (error) {
-                    dispatch(showApiErrorSnackbar(error, 'Die KI-Anfrage konnte nicht gestartet werden. Versuchen Sie es später erneut.'));
+                    if (controller.signal.aborted) return;
+                    setMessageBuffer(previous => [...previous, {role: 'error', content:
+                        'Die KI-Anfrage konnte nicht gestartet werden. Versuchen Sie es später erneut.'}]);
 
                     setIsThinking(false);
                     return;
                 }
+                if (controller.signal.aborted) return;
                 activeSessionId = session.sessionId;
                 setSessionId(activeSessionId);
-                localStorage.setItem('aiChatSessionId', activeSessionId);
+                localStorage.setItem(sessionKey, activeSessionId);
             }
 
             setMessageBuffer((prevBuffer) => [
@@ -132,6 +174,7 @@ export function AiChatWindow(props: AiChatWindowProps) {
             let receivedAssistantContent = false;
             try {
                 await service.sendMessage(activeSessionId, message, (chunk) => {
+                    if (controller.signal.aborted) return;
                     if (chunk.trim().length > 0) {
                         receivedAssistantContent = true;
                     }
@@ -145,43 +188,59 @@ export function AiChatWindow(props: AiChatWindowProps) {
                         }
                         return [...prevBuffer, {role: 'assistant', content: chunk}];
                     });
-                }, undefined, {
-                    currentState: rootElement,
-                    targetRootType,
+                }, controller.signal, props.mode === 'process' ? {
+                    processId: props.processId,
+                    processVersion: props.processVersion,
+                } : {
+                    currentState: props.rootElement,
+                    targetRootType: props.targetRootType,
                 });
+                if (controller.signal.aborted) return;
 
                 if (!receivedAssistantContent) {
                     setMessageBuffer((prevBuffer) => [
                         ...prevBuffer,
                         {
                             role: 'error',
-                            content: 'Die KI hat die Bearbeitung ohne Antwort beendet. Prüfen Sie den aktuellen Formularentwurf und laden Sie bei Bedarf die KI-Diagnose herunter.',
+                            content: props.mode === 'process'
+                                ? 'Die KI hat die Bearbeitung ohne Antwort beendet. Bereits ausgeführte Änderungen bleiben gespeichert. Prüfen Sie den Prozess und laden Sie bei Bedarf die KI-Diagnose herunter.'
+                                : 'Die KI hat die Bearbeitung ohne Antwort beendet. Prüfen Sie den aktuellen Formularentwurf und laden Sie bei Bedarf die KI-Diagnose herunter.',
                         },
                     ]);
                 }
             } catch (error) {
+                if (controller.signal.aborted) return;
                 console.error('Error sending message:', error);
                 setMessageBuffer((prevBuffer) => [
                     ...prevBuffer,
                     {
                         role: 'error',
-                        content: 'Die KI-Anfrage wurde mit einem Fehler beendet. Prüfen Sie den aktuellen Formularentwurf, bevor Sie die Anfrage erneut senden.',
+                        content: props.mode === 'process'
+                            ? 'Die KI-Anfrage wurde mit einem Fehler beendet. Bereits ausgeführte Änderungen bleiben gespeichert. Prüfen Sie den Prozess, bevor Sie die Anfrage erneut senden.'
+                            : 'Die KI-Anfrage wurde mit einem Fehler beendet. Prüfen Sie den aktuellen Formularentwurf, bevor Sie die Anfrage erneut senden.',
                     },
                 ]);
             }
 
             try {
-                await service
-                    .getCurrentElement(activeSessionId)
-                    .then(onElementChange);
+                if (props.mode === 'process') {
+                    await props.afterTurn();
+                } else {
+                    const element = await service.getCurrentElement(activeSessionId);
+                    if (!controller.signal.aborted) props.onElementChange(element);
+                }
             } catch (error) {
-                console.error('Error loading the current form draft:', error);
+                if (controller.signal.aborted) return;
+                console.error('Error reloading the editor after AI chat:', error);
                 setMessageBuffer((prevBuffer) => [
                     ...prevBuffer,
-                    {role: 'error', content: 'Der aktuelle Formularentwurf konnte nach der KI-Anfrage nicht geladen werden.'},
+                    {role: 'error', content: props.mode === 'process'
+                        ? 'Der Prozess konnte nach der KI-Anfrage nicht vollständig geladen werden. Laden Sie ihn erneut, bevor Sie weiterarbeiten.'
+                        : 'Der aktuelle Formularentwurf konnte nach der KI-Anfrage nicht geladen werden.'},
                 ]);
             }
         } catch (error) {
+            if (controller.signal.aborted) return;
             console.error('Error starting chat session:', error);
             setMessageBuffer((prevBuffer) => [
                 ...prevBuffer,
@@ -189,7 +248,7 @@ export function AiChatWindow(props: AiChatWindowProps) {
             ]);
         } finally {
             sendingRef.current = false;
-            setIsThinking(false);
+            if (mountedRef.current) setIsThinking(false);
         }
     };
 
@@ -201,38 +260,102 @@ export function AiChatWindow(props: AiChatWindowProps) {
         setIsDownloadingTrace(true);
         try {
             const trace = await new AiChatService().downloadTrace(sessionId);
+            if (!mountedRef.current) return;
             downloadBlobFile(`prosuna-ai-chat-trace-${sessionId}.json`, trace);
         } catch (error) {
+            if (!mountedRef.current) return;
             console.error('Error downloading AI chat trace:', error);
             setMessageBuffer((prevBuffer) => [
                 ...prevBuffer,
                 {role: 'error', content: 'Die KI-Diagnose konnte nicht heruntergeladen werden.'},
             ]);
         } finally {
-            setIsDownloadingTrace(false);
+            if (mountedRef.current) setIsDownloadingTrace(false);
         }
     };
 
     return (
-        <Stack
-            direction="column"
+        <Paper
             sx={{
-                p: 3,
+                boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
+                borderLeft: '1px solid',
+                borderLeftColor: 'divider',
+                borderRadius: 0,
+                position: 'relative',
                 height: '100%',
-                backgroundColor: 'background.paper',
+                overflow: 'hidden',
             }}
         >
-            <Box
-                ref={chatMessagesBoxRef}
+            <Stack
+                direction="column"
                 sx={{
-                    overflowY: 'auto',
-                    pr: 2,
+                    p: 3,
+                    height: '100%',
+                    backgroundColor: 'background.paper',
                 }}
             >
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 1,
+                    }}
+                >
+                    <Typography variant="h6">KI-Chat</Typography>
+                    {onClose != null && (
+                        <IconButton
+                            aria-label="KI-Chat schließen"
+                            disabled={closeDisabled}
+                            onClick={onClose}
+                        >
+                            <Close/>
+                        </IconButton>
+                    )}
+                </Box>
+
+                <Typography variant="body2" sx={{mb: 2}}>
+                    {props.mode === 'process'
+                        ? 'Änderungen durch die KI werden direkt gespeichert.'
+                        : 'Änderungen durch die KI werden in den Formularentwurf übernommen.'}
+                </Typography>
+
+                {props.mode === 'process' && props.reloadFailed && (
+                    <Alert
+                        severity="error"
+                        sx={{mb: 2}}
+                        action={(
+                            <Button
+                                disabled={props.isRetrying}
+                                onClick={props.onRetry}
+                            >
+                                Erneut laden
+                            </Button>
+                        )}
+                    >
+                        Der Prozess konnte nicht vollständig geladen werden.
+                    </Alert>
+                )}
+
+                {props.mode === 'process' && props.unavailable && (
+                    <Alert severity="info" sx={{mb: 2}}>
+                        Der KI-Chat steht nur für bearbeitbare Entwürfe außerhalb des Testmodus zur Verfügung.
+                    </Alert>
+                )}
+
+                <Box
+                    ref={chatMessagesBoxRef}
+                    sx={{
+                        flex: 1,
+                        minHeight: 0,
+                        overflowY: 'auto',
+                        pr: 2,
+                    }}
+                >
                 {
                     messageBuffer.map((msg, index) => (
                         <Box key={index} sx={{marginBottom: 2}}>
-                            <strong>{msg.role === 'user' ? 'You' : 'AI'}:</strong>
+                            <strong>{msg.role === 'user' ? 'Sie' : msg.role === 'error' ? 'Hinweis' : 'KI'}:</strong>
                             <MarkdownContent markdown={msg.content}/>
                         </Box>
                     ))
@@ -248,57 +371,59 @@ export function AiChatWindow(props: AiChatWindowProps) {
                 {
                     isThinking &&
                     <Chip
-                        label="Denke nach..."
+                        label="Anfrage wird bearbeitet …"
                     />
                 }
-            </Box>
+                </Box>
 
-            <Box
-                sx={{
-                    position: 'relative',
-                    mt: 'auto',
-                }}
-            >
-                <TextFieldComponent
-                    label="Message"
-                    value={message}
-                    onChange={setMessage}
-                    required
-                    multiline
-                    rows={4}
-                    disabled={isThinking || isLoadingHistory}
-                />
-
-                <Actions
+                <Box
                     sx={{
-                        position: 'absolute',
-                        right: 0,
-                        bottom: 0,
-                        mr: 2,
-                        mb: 2,
-                        width: 'fit-content',
+                        position: 'relative',
+                        mt: 'auto',
+                        flexShrink: 0,
                     }}
-                    direction="column"
-                    tooltipPlacement="top"
-                    dense={true}
-                    size="small"
-                    actions={[
-                        {
-                            icon: <Download/>,
-                            tooltip: "KI-Diagnose herunterladen",
-                            onClick: handleDownloadTrace,
-                            visible: sessionId != null,
-                            disabled: isThinking || isLoadingHistory || isDownloadingTrace,
-                        },
-                        {
-                            icon: <Send/>,
-                            tooltip: "Absenden",
-                            onClick: handleSendMessage,
-                            disabled: isThinking || isLoadingHistory || message == null || message.trim() === '',
-                        }
-                    ]}
-                />
-            </Box>
-        </Stack>
+                >
+                    <TextFieldComponent
+                        label="Nachricht"
+                        value={message}
+                        onChange={setMessage}
+                        required
+                        multiline
+                        rows={4}
+                        disabled={disabled || isThinking || isLoadingHistory}
+                    />
+
+                    <Actions
+                        sx={{
+                            position: 'absolute',
+                            right: 0,
+                            bottom: 0,
+                            mr: 2,
+                            mb: 2,
+                            width: 'fit-content',
+                        }}
+                        direction="column"
+                        tooltipPlacement="top"
+                        dense={true}
+                        size="small"
+                        actions={[
+                            {
+                                icon: <Download/>,
+                                tooltip: "KI-Diagnose herunterladen",
+                                onClick: handleDownloadTrace,
+                                visible: sessionId != null,
+                                disabled: isThinking || isLoadingHistory || isDownloadingTrace,
+                            },
+                            {
+                                icon: <Send/>,
+                                tooltip: "Absenden",
+                                onClick: handleSendMessage,
+                                disabled: disabled || isThinking || isLoadingHistory || message == null || message.trim() === '',
+                            }
+                        ]}
+                    />
+                </Box>
+            </Stack>
+        </Paper>
     );
 }

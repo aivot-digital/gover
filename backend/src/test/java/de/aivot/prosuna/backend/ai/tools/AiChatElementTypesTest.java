@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 class AiChatElementTypesTest {
     private final AiUiElementChatSessionCacheRepository repository = mock(AiUiElementChatSessionCacheRepository.class);
-    private final AiChatElementTools tools = new AiChatElementTools(JsonMapperTestUtils.createMapper(), repository);
+    private final AiChatElementSchemaTools tools = new AiChatElementSchemaTools(JsonMapperTestUtils.createMapper(), new de.aivot.prosuna.backend.ai.services.AiInputValueSchemaService(JsonMapperTestUtils.createMapper()));
 
     @Test
     void listsEveryElementTypeWithItsNumericKeyAndDescription() {
@@ -32,16 +32,23 @@ class AiChatElementTypesTest {
     }
 
     @Test
-    void exposesTheListAsAnArgumentlessKebabCaseTool() {
+    void exposesPaginatedSearchWithOptionalArguments() {
         var callback = Arrays.stream(ToolCallbacks.from(tools))
                 .filter(candidate -> candidate.getToolDefinition().name().equals("liste-verfuegbare-elemente"))
                 .findFirst()
                 .orElseThrow();
         var schema = JsonMapperTestUtils.createMapper().readTree(callback.getToolDefinition().inputSchema());
 
-        assertThat(schema.path("properties").isEmpty()).isTrue();
-        assertThat(JsonMapperTestUtils.createMapper().readTree(callback.call("{}")).asString())
-                .isEqualTo(tools.listElementTypes());
+        assertThat(schema.path("properties").propertyNames()).containsExactlyInAnyOrder("query", "offset", "limit");
+        assertThat(schema.path("required").isEmpty()).isTrue();
+        var firstPage = JsonMapperTestUtils.createMapper().readTree(callback.call("{}"));
+        assertThat(firstPage.path("items")).hasSize(20);
+        assertThat(firstPage.path("nextOffset").asInt()).isEqualTo(20);
+        var lastPage = JsonMapperTestUtils.createMapper().readTree(callback.call("{\"offset\":40}"));
+        assertThat(lastPage.path("items")).hasSize(ElementType.values().length - 40);
+        assertThat(lastPage.path("nextOffset").isNull()).isTrue();
+        var found = JsonMapperTestUtils.createMapper().readTree(callback.call("{\"query\":\"Schlagwörter\"}"));
+        assertThat(found.path("items")).hasSize(1);
         verifyNoInteractions(repository);
     }
 }

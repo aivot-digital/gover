@@ -105,7 +105,7 @@ describe('AiChatService.sendMessage', () => {
         },
     );
 
-    it('transmits JSON parts, numeric fields including zero, multiple files and the abort signal', async () => {
+    it('transmits form JSON parts, multiple files and the abort signal', async () => {
         const service = new AiChatService();
         const fetch = vi.spyOn(service, 'fetch').mockResolvedValue(streamResponse());
         const signal = new AbortController().signal;
@@ -118,15 +118,13 @@ describe('AiChatService.sendMessage', () => {
         await service.sendMessage('session', 'Edit', vi.fn(), signal, {
             targetRootType: ElementType.FormLayout,
             currentState,
-            processId: 42,
-            processVersion: 0,
             attachments,
         });
 
         const body = fetch.mock.calls[0][2] as FormData;
         expect(Array.from(body.keys())).toEqual([
             'chatSessionId', 'userInput', 'targetRootType', 'currentState',
-            'processId', 'processVersion', 'attachments', 'attachments',
+            'attachments', 'attachments',
         ]);
         const rootTypePart = body.get('targetRootType') as Blob;
         const statePart = body.get('currentState') as Blob;
@@ -134,11 +132,23 @@ describe('AiChatService.sendMessage', () => {
         expect(JSON.parse(await readBlob(rootTypePart))).toBe(0);
         expect(statePart.type).toBe('application/json');
         expect(JSON.parse(await readBlob(statePart))).toEqual(currentState);
-        expect(body.get('processId')).toBe('42');
-        expect(body.get('processVersion')).toBe('0');
+        expect(body.has('processId')).toBe(false);
+        expect(body.has('processVersion')).toBe(false);
         expect(body.getAll('attachments')).toEqual(attachments);
         expect(await Promise.all((body.getAll('attachments') as File[]).map(readBlob))).toEqual(['First', 'Second']);
         expect(fetch.mock.calls[0][3]?.abort).toBe(signal);
+    });
+
+    it('sends process context without form JSON parts', async () => {
+        const service = new AiChatService();
+        const fetch = vi.spyOn(service, 'fetch').mockResolvedValue(streamResponse());
+        await service.sendMessage('session', 'Prozess bearbeiten', vi.fn(), undefined, {
+            processId: 42, processVersion: 3,
+        });
+        expect(Array.from((fetch.mock.calls[0][2] as FormData).entries())).toEqual([
+            ['chatSessionId', 'session'], ['userInput', 'Prozess bearbeiten'],
+            ['processId', '42'], ['processVersion', '3'],
+        ]);
     });
 
     it('delivers complete SSE data while preserving Unicode, spaces and newlines', async () => {

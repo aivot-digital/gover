@@ -11,6 +11,10 @@ import de.aivot.prosuna.backend.ai.services.AiChatElementService;
 import de.aivot.prosuna.backend.ai.services.AiChatTraceService;
 import de.aivot.prosuna.backend.ai.tools.AiChatElementTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatSharedTools;
+import de.aivot.prosuna.backend.ai.tools.AiChatProcessTools;
+import de.aivot.prosuna.backend.ai.tools.AiChatElementSchemaTools;
+import de.aivot.prosuna.backend.ai.services.AiChatProcessService;
+import de.aivot.prosuna.backend.ai.services.AiInputValueSchemaService;
 import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
@@ -78,7 +82,7 @@ class AiChatControllerTest {
                 .thenReturn(new AiChatTraceContext(USER_ID, SESSION_ID, "turn"));
         var service = new AiChatElementService(permissions, sessions, cache, mapper);
         controller = new AiChatController(builder, new AiChatElementTools(mapper, cache), antivirus,
-                permissions, embeddings, sessions, service, new AiChatSharedTools(),
+                permissions, embeddings, sessions, service, new AiChatSharedTools(), new AiChatElementSchemaTools(mapper, new AiInputValueSchemaService(mapper)), new AiChatProcessTools(mock(AiChatProcessService.class)), mock(AiChatProcessService.class),
                 traceService, ToolCallingManager.builder().build(), chatMemory,
                 Duration.ofMinutes(10));
         mvc = MockMvcBuilders.standaloneSetup(controller)
