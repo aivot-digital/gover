@@ -125,6 +125,7 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                 onClose={() => {
                     setShowEditorDialog(false);
                 }}
+                readOnly={disabled || assetKey == null || isStringNullOrEmpty(assetKey) || isLoadingTemplate || templateLoadError != null}
             />
         </>
     );
